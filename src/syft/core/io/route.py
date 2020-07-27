@@ -4,13 +4,13 @@ a particular type at a specific location. We assume that
 a Client may have multiple ways of interacting with a node
 (such as multiple protocols, http, websockets, broadcast server
 , etc.). We assume that a Client also has knowledge of the
-full variety of messages and message types which can be sent
+full variety of messages and old_message types which can be sent
 to a Node. It is the highest level of abstraction.
 
 A connection is the lowest level of abstraction, representing
 a real network interface to a single destination. Importantly,
 this destination may not even be the ultimate destination
-for a message. In this sense, a connection is just a single "hop"
+for a old_message. In this sense, a connection is just a single "hop"
 in a potentially long series of hops between a Client and
 a Node.
 
@@ -26,7 +26,7 @@ an intentional information bottleneck.
 
 This might beg the question, what is the point of Route if
 the right combination of Clients and Connnections can always
-get a message to where it needs to go?
+get a old_message to where it needs to go?
 
 The answer is that neither a Connection, Client, or Node are
 appropriate for the nature of four combined constraints.
@@ -41,7 +41,7 @@ cloud networking costs being the biggest)
 
 We need the ability for an arbitrary client (which represents
 an abstract, indirect connection to a specific remote node of
-a specific type) to be able to consider a message, it's address
+a specific type) to be able to consider a old_message, it's address
 , and other metadata, and make a logical decision on which connection
 should be used. (For example, some messages block for a reply)
 
@@ -60,10 +60,10 @@ where any collection of hops within the route is called a
 it's source and destination(s). 
 
 When a route is used by a client, it is used to decide which route
-would be best to take for a particular message.
+would be best to take for a particular old_message.
 
-When a route is attached to a message, it implies the expected
-journey the message is to take to the address. A node may or may
+When a route is attached to a old_message, it implies the expected
+journey the old_message is to take to the address. A node may or may
 not actually respect this journey.
 
 Routes can be created locally, but they are best created by asking
@@ -84,12 +84,10 @@ nodes, propagating the model to all nodes which asked for it.
 """
 
 from ...common.object import ObjectWithId
-from ...common.id import UID
 from .location import Location
-from .location import LocationGroup
 from typing import Set
-from ..message.syft_message import SyftMessageWithReply
-from ..message.syft_message import SyftMessageWithoutReply
+from syft.core.message import SyftMessageWithReply
+from syft.core.message import SyftMessageWithoutReply
 from .connection import ClientConnection
 from typing import List
 
@@ -100,7 +98,7 @@ class RouteSchema(ObjectWithId):
     two groups of functionality:
 
     1) Discovering new routes
-    2) Comparing known routes to find the best one for a message
+    2) Comparing known routes to find the best one for a old_message
     """
 
     def __init__(self, source: Location, destination: Location):

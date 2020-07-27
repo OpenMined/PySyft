@@ -2,11 +2,10 @@ from __future__ import annotations
 from syft import type_hints
 from typing import List
 from typing import final
-from .....decorators.syft_decorator import syft_decorator
 
 from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import ImmediateSyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from .....common.id import UID
 

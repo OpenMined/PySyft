@@ -1,5 +1,5 @@
 from .. import ast
-from ..core import message as msg
+from ..core import old_message as msg
 from ..core import pointer as ptr
 from ..core.nodes.common.action.save_object_action import SaveObjectAction
 from ..core.nodes.common.action.run_class_method_action import RunClassMethodAction
@@ -50,12 +50,12 @@ class Class(ast.callable.Callable):
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
 
-            # Step 2: create message which contains object to send
+            # Step 2: create old_message which contains object to send
             obj_msg = SaveObjectAction(
                 obj_id=ptr.id_at_location, obj=self, address=location.address
             )
 
-            # Step 3: send message
+            # Step 3: send old_message
             location.send_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer

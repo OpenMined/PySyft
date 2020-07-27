@@ -4,8 +4,8 @@ from .....decorators import syft_decorator
 from .node_service import ImmediateNodeServiceWithoutReply
 from .node_service import ImmediateNodeServiceWithReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import ImmediateSyftMessageWithoutReply
-from ....message.syft_message import ImmediateSyftMessageWithReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithReply
 from typing import List
 
 
@@ -29,7 +29,7 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
         if pub_addr.network is not None and node.store.has_object(pub_addr.network):
             return node.store.get_object(pub_addr.network).send_msg_without_reply(msg=msg)
 
-        raise Exception("Address unknown - cannot forward message. Throwing it away.")
+        raise Exception("Address unknown - cannot forward old_message. Throwing it away.")
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -57,7 +57,7 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
         if pub_addr.network is not None and node.store.has_object(pub_addr.network):
             return node.store.get_object(pub_addr.network).send_msg_with_reply(msg=msg)
 
-        raise Exception("Address unknown - cannot forward message. Throwing it away.")
+        raise Exception("Address unknown - cannot forward old_message. Throwing it away.")
 
     @staticmethod
     @syft_decorator(typechecking=True)

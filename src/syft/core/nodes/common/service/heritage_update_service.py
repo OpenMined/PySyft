@@ -12,10 +12,10 @@ from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from ....io.address import Address
 from .....common.id import UID
-from ....message.syft_message import ImmediateSyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
 from typing import List
 
-#TODO: change all message names in syft to have "WithReply" or "WithoutReply" at teh end of the name
+#TODO: change all old_message names in syft to have "WithReply" or "WithoutReply" at teh end of the name
 
 
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):

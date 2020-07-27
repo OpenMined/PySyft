@@ -1,5 +1,5 @@
-from ..message.syft_message import SyftMessageWithReply
-from ..message.syft_message import SyftMessageWithoutReply
+from syft.core.message import SyftMessageWithReply
+from syft.core.message import SyftMessageWithoutReply
 from ...decorators import syft_decorator
 from typing import final
 
