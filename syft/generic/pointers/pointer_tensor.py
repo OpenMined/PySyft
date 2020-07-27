@@ -18,6 +18,7 @@ from syft.exceptions import RemoteObjectFoundError
 
 import torch
 
+
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
