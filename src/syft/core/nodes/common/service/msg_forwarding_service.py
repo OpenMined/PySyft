@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from .node_service import NodeServiceWithoutReply
-from .node_service import NodeServiceWithReply
+from .node_service import ImmediateNodeServiceWithoutReply
+from .node_service import ImmediateNodeServiceWithReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import SyftMessageWithoutReply
-from ....message.syft_message import SyftMessageWithReply
+from ....message.syft_message import ImmediateSyftMessageWithoutReply
+from ....message.syft_message import ImmediateSyftMessageWithReply
 from typing import List
 
 
-class MessageWithoutReplyForwardingService(NodeServiceWithoutReply):
+class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: SyftMessageWithoutReply) -> None:
+    def process(self, node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
 
         addr = msg.address
         pri_addr = addr.pri_address
@@ -34,12 +34,12 @@ class MessageWithoutReplyForwardingService(NodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [SyftMessageWithoutReply]
+        return [ImmediateSyftMessageWithoutReply]
 
 
-class MessageWithReplyForwardingService(NodeServiceWithReply):
+class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: SyftMessageWithReply) -> None:
+    def process(self, node: AbstractNode, msg: ImmediateSyftMessageWithReply) -> None:
 
         addr = msg.address
         pri_addr = addr.pri_address
@@ -62,4 +62,4 @@ class MessageWithReplyForwardingService(NodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [SyftMessageWithReply]
+        return [ImmediateSyftMessageWithReply]

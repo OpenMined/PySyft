@@ -3,16 +3,26 @@ from ....message.syft_message import SyftMessage
 from ....message.syft_message import SyftMessageWithoutReply
 from ....message.syft_message import SyftMessageWithReply
 
+
 class Action(SyftMessage):
     ""
 
-class ActionWithoutReply(Action, SyftMessageWithoutReply):
+
+class ImmediateActionWithoutReply(Action, SyftMessageWithoutReply):
     ""
 
     def execute_action(self, node: AbstractNode):
         raise NotImplementedError
 
-class ActionWithReply(Action, SyftMessageWithReply):
+
+class EventualActionWithoutReply(Action, SyftMessageWithoutReply):
+    ""
+
+    def execute_action(self, node: AbstractNode):
+        raise NotImplementedError
+
+
+class ImmediateActionWithReply(Action, SyftMessageWithReply):
     ""
 
     def execute_action(self, node: AbstractNode) -> SyftMessageWithoutReply:

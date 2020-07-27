@@ -8,17 +8,17 @@ information to populate complete addresses into their clients."""
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from .node_service import NodeServiceWithoutReply
+from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from ....io.address import Address
 from .....common.id import UID
-from ....message.syft_message import SyftMessageWithoutReply
+from ....message.syft_message import ImmediateSyftMessageWithoutReply
 from typing import List
 
 #TODO: change all message names in syft to have "WithReply" or "WithoutReply" at teh end of the name
 
 
-class HeritageUpdateMessage(SyftMessageWithoutReply):
+class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self, new_ancestry_address:Address, address: Address, msg_id: UID = None
     ):
@@ -26,7 +26,7 @@ class HeritageUpdateMessage(SyftMessageWithoutReply):
         self.new_ancestry_address = new_ancestry_address
 
 
-class HeritageUpdateService(NodeServiceWithoutReply):
+class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
         print(f"Updating to {msg.new_ancestry_address} on note {node}")
