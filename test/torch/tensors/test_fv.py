@@ -252,20 +252,10 @@ def test_mul_ct_sk(poly_mod, coeff_mod, plain_mod, sk, ct, result):
 
 @pytest.mark.parametrize(
     "plain_modulus, value",
-    [
-        (0xFFFFFFFFFFFFFFF, 1),
-        (0xFFFFFFFFFFFFFFF, 2),
-        (0xFFFFFFFFFFFFFFF, -3),
-        (0xFFFFFFFFFFFFFFF, 64),
-        (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF),
-        (0xFFFFFFFFFFFFFFF, 0x80F02),
-        (1024, 64),
-    ],
+    [(128, 1), (64, 2), (32, -3), (256, 64), (128, 0xFFFFFFFFFFFFFFFF), (128, 0x80F02), (128, 64)],
 )
 def test_integer_encoder(plain_modulus, value):
-    enc_param = EncryptionParams(
-        16, CoeffModulus().create(plain_modulus, [100, 100, 100]), plain_modulus
-    )
+    enc_param = EncryptionParams(16, CoeffModulus().create(16, [30]), plain_modulus)
     ctx = Context(enc_param)
     encoder = IntegerEncoder(ctx)
     poly = encoder.encode(value)
