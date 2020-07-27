@@ -41,7 +41,7 @@ class Context:
         ):
             raise RuntimeError(
                 f"Invalid coefficient modulus count {len(params.coeff_modulus)}, "
-                + "should be in range [1, 62]"
+                + "should be in range [{COEFF_MOD_COUNT_MIN}, {COEFF_MOD_COUNT_MAX}]"
             )
 
         # Check for the range of coefficient modulus primes.
@@ -51,7 +51,7 @@ class Context:
             ):
                 raise RuntimeError(
                     f"Invalid coefficient modulus values {params.coeff_modulus[i]}, "
-                    + "should be in smaller than 60 bit number."
+                    + "should be in smaller than {COEFF_MOD_BIT_COUNT_MAX} bit number."
                 )
 
             # Check for the relative prime of coefficient modulus primes
