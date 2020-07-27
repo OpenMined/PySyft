@@ -252,9 +252,9 @@ class DPF:
             CWi = uncompress(_CW[i])
 
             for b in (0, 1):
-                τ = [g0, g1][b] ^ (t[i, b] * CWi)
-                filtered_τ = multi_dim_filter(τ, α[i])
-                s[i + 1, b], t[i + 1, b] = split(filtered_τ, (EQ, λs, 1))
+                dual_state = [g0, g1][b] ^ (t[i, b] * CWi)
+                state = multi_dim_filter(dual_state, α[i])
+                s[i + 1, b], t[i + 1, b] = split(state, (EQ, λs, 1))
 
         CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
         CW_n = CW_n.astype(np.int64)
@@ -272,9 +272,9 @@ class DPF:
         t[0] = b
         for i in range(0, n):
             CWi = uncompress(_CW[i])
-            τ = G(s[i]) ^ (t[i] * CWi)
-            filtered_τ = multi_dim_filter(τ, x[i])
-            s[i + 1], t[i + 1] = split(filtered_τ, (EQ, λs, 1))
+            dual_state = G(s[i]) ^ (t[i] * CWi)
+            state = multi_dim_filter(dual_state, x[i])
+            s[i + 1], t[i + 1] = split(state, (EQ, λs, 1))
 
         flat_result = (-1) ** b * (t[n].squeeze() * _CWn + convert(s[n]))
         return flat_result.astype(np.int64).reshape(original_shape)
