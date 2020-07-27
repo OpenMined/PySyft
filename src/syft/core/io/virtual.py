@@ -10,8 +10,8 @@ from ..nodes.abstract.node import AbstractNode
 from ...decorators import syft_decorator
 from typing import final
 
-from .abstract import ServerConnection
-from .abstract import ClientConnection
+from .connection import ServerConnection
+from .connection import ClientConnection
 
 known_objects = {}
 

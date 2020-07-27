@@ -2,12 +2,14 @@ from ...message.syft_message import SyftMessageWithReply
 from ...message.syft_message import SyftMessageWithoutReply
 from ....decorators import syft_decorator
 from ....common.id import UID
-from ...io.abstract import ClientConnection
+from ...io.connection import ClientConnection
 from ...io.address import Address
 from ...io.address import address as create_address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from ...io.route import Route
+from typing import List
 
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -19,11 +21,11 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
 
     @syft_decorator(typechecking=True)
-    def __init__(self, address: Address, name: str, connection: ClientConnection):
+    def __init__(self, address: Address, name: str, routes: List[Route]):
         LocationAwareObject.__init__(self, address=address)
 
         self.name = name
-        self.connection = connection
+        self.routes = routes
 
     def add_me_to_my_address(self):
         raise NotImplementedError
@@ -45,11 +47,11 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
     @syft_decorator(typechecking=True)
     def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
-        return self.connection.send_msg_with_reply(msg=msg)
+        return self.routes[0].send_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        return self.connection.send_msg_without_reply(msg=msg)
+        return self.routes[0].send_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

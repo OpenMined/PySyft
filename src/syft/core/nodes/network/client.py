@@ -3,14 +3,15 @@ from typing import final
 from ....decorators import syft_decorator
 from ....common.id import UID
 from ...io.address import Address
-from ...io.abstract import ClientConnection
-
+from ...io.connection import ClientConnection
+from ...io.route import Route
+from typing import List
 
 @final
 class NetworkClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self, address: Address, name: str, connection: ClientConnection):
-        super().__init__(address=address, name=name, connection=connection)
+    def __init__(self, address: Address, name: str, routes: List[Route]):
+        super().__init__(address=address, name=name, routes=routes)
 
     def add_me_to_my_address(self):
         # I should already be added
