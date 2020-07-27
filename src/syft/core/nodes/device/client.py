@@ -2,13 +2,15 @@ from ..common.client import Client
 from typing import final
 from ....decorators.syft_decorator import syft_decorator
 from ....common.id import UID
+from ...io.route import Route
+from typing import List
 
 
 @final
 class DeviceClient(Client):
 
-    def __init__(self, address, name, connection):
-        super().__init__(address=address, name=name, connection=connection)
+    def __init__(self, address, name, routes: List[Route]):
+        super().__init__(address=address, name=name, routes=routes)
 
     # def create_vm(self, name:str):
     #

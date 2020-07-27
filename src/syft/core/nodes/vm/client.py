@@ -2,14 +2,14 @@ from ..common.client import Client
 from typing import final
 from ....decorators import syft_decorator
 from ...io.address import Address
-from ...io.abstract import ClientConnection
-
+from ...io.route import Route
+from typing import List
 
 @final
 class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self, address: Address, name: str, connection: ClientConnection):
-        super().__init__(address=address, name=name, connection=connection)
+    def __init__(self, address: Address, name: str, routes: List[Route]):
+        super().__init__(address=address, name=name, routes=routes)
 
         # if this client doesn't know the ID of the VM it's supposed to point to
         # then something went wrong. The addressing system is a little fancy to

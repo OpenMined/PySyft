@@ -1,7 +1,7 @@
 from ....common.object import ObjectWithId
+from ...io.location import Location
 
-
-class AbstractNode(ObjectWithId):
+class AbstractNode(Location):
     """"""
 
 

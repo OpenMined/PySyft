@@ -1,11 +1,12 @@
 from ..common.client import Client
 from ....common.id import UID
 from ....decorators.syft_decorator import syft_decorator
-
+from ...io.route import Route
+from typing import List
 
 class DomainClient(Client):
-    def __init__(self, address, name, connection):
-        super().__init__(address=address, name=name, connection=connection)
+    def __init__(self, address, name, routes:List[Route]):
+        super().__init__(address=address, name=name, routes=routes)
 
     def add_me_to_my_address(self):
         # I should already be added

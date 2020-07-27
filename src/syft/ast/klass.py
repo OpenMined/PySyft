@@ -1,6 +1,8 @@
 from .. import ast
 from ..core import message as msg
 from ..core import pointer as ptr
+from ..core.nodes.common.action.save_object_action import SaveObjectAction
+from ..core.nodes.common.action.run_class_method_action import RunClassMethodAction
 
 from forbiddenfruit import curse
 
@@ -21,15 +23,15 @@ class Class(ast.callable.Callable):
             # TODO: lookup actual return type instead of just guessing that it's identical
             result = getattr(self, self.pointer_name)(location=__self.location)
 
-            cmd = msg.RunClassMethodMessage(
+            cmd = RunClassMethodAction(
                 path=attr_path_and_name,
                 _self=__self,
                 args=args,
                 kwargs=kwargs,
                 id_at_location=result.id_at_location,
-                msg_destination=__self.location,
+                address=__self.location.address,
             )
-            __self.location.send_msg(cmd)
+            __self.location.send_msg_without_reply(msg=cmd)
 
             return result
 
@@ -49,12 +51,12 @@ class Class(ast.callable.Callable):
             ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
 
             # Step 2: create message which contains object to send
-            obj_msg = msg.SaveObjectMessage(
-                id=ptr.id_at_location, obj=self, msg_destination=location
+            obj_msg = SaveObjectAction(
+                obj_id=ptr.id_at_location, obj=self, address=location.address
             )
 
             # Step 3: send message
-            location.send_msg(obj_msg)
+            location.send_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer
             return ptr

@@ -22,8 +22,13 @@ from .service.repr_service import ReprService
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
+from .service.obj_action_service import ObjectActionServiceWithoutReply
+from .service.obj_action_service import ObjectActionServiceWithReply
 from ...io.address import Address
 from ...io.virtual import create_virtual_connection
+from ...io.route import SoloRoute
+from ...io.route import RouteSchema
+from ...io.route import LocationGroup
 
 from .location_aware_object import LocationAwareObject
 
@@ -114,6 +119,8 @@ class Node(AbstractNode, LocationAwareObject):
         self.services_without_reply.append(ReprService)
         self.services_without_reply.append(HeritageUpdateService)
         self.services_without_reply.append(ChildNodeLifecycleService)
+        self.services_without_reply.append(ObjectActionServiceWithoutReply)
+        self.services_without_reply.append(ObjectActionServiceWithReply)
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
@@ -129,7 +136,8 @@ class Node(AbstractNode, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def get_client(self) -> Client:
         conn_client = create_virtual_connection(node=self)
-        return self.client_type(address=self.address, name=self.name, connection=conn_client)
+        route = SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
+        return self.client_type(address=self.address, name=self.name, routes=[route])
 
     @property
     def known_nodes(self) -> List[Client]:
