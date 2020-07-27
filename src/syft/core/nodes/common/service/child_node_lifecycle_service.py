@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from ...common.service.node_service import NodeService
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from typing import List
 
 from ....io.address import Address
 from .....common.id import UID
-from ....message.syft_message import SyftMessageWithoutReply
+from ....message.syft_message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNodeClient
 
 from .heritage_update_service import HeritageUpdateMessage
 
 
-class RegisterChildNodeMessage(SyftMessageWithoutReply):
+class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         child_node_client: AbstractNodeClient,
@@ -24,7 +24,7 @@ class RegisterChildNodeMessage(SyftMessageWithoutReply):
         self.child_node_client = child_node_client
 
 
-class ChildNodeLifecycleService(NodeService):
+class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 

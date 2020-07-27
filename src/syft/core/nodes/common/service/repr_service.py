@@ -4,20 +4,20 @@ from typing import List
 from typing import final
 from .....decorators.syft_decorator import syft_decorator
 
-from .node_service import NodeServiceWithoutReply
+from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import SyftMessageWithoutReply
+from ....message.syft_message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from .....common.id import UID
 
 
 @final
-class ReprMessage(SyftMessageWithoutReply):
+class ReprMessage(ImmediateSyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: (UID, None) = None):
         super().__init__(address=address, msg_id=msg_id)
 
 
-class ReprService(NodeServiceWithoutReply):
+class ReprService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @type_hints
     def process(node: AbstractNode, msg: ReprMessage) -> None:

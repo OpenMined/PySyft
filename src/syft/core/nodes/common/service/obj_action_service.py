@@ -1,33 +1,33 @@
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from ...common.service.node_service import NodeServiceWithoutReply
-from ...common.service.node_service import NodeServiceWithReply
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import SyftMessageWithReply
-from ..action.common import ActionWithReply
-from ..action.common import ActionWithoutReply
+from ....message.syft_message import ImmediateSyftMessageWithReply
+from ..action.common import ImmediateActionWithReply
+from ..action.common import ImmediateActionWithoutReply
 from typing import List
 
 
-class ObjectActionServiceWithoutReply(NodeServiceWithoutReply):
+class ObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
 
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: ActionWithoutReply) -> None:
+    def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> None:
         msg.execute_action(node=node)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [ActionWithoutReply]
+        return [ImmediateActionWithoutReply]
 
-class ObjectActionServiceWithReply(NodeServiceWithReply):
+class ObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
 
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: ActionWithoutReply) -> SyftMessageWithReply:
+    def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> ImmediateSyftMessageWithReply:
         return msg.execute_action(node=node)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [ActionWithReply]
+        return [ImmediateActionWithReply]
