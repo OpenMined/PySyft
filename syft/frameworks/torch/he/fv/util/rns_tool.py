@@ -134,13 +134,13 @@ class RNSTool:
         result = [0] * self.coeff_count
 
         # Computing |gamma * t|_qi * ct(s)
-        temp = [[0 for coeff in range(self.coeff_count)] for q in range(len(self.q))]
-
-        for j in range(len(self.q)):
-            for i in range(self.coeff_count):
-                temp[j][i] = multiply_mod(
-                    input[j][i], self.prod_t_gamma_mod_q[j], self.base_q.base[j]
-                )
+        temp = [
+            [
+                multiply_mod(input[j][i], self.prod_t_gamma_mod_q[j], self.base_q.base[j])
+                for i in range(self.coeff_count)
+            ]
+            for j in range(len(self.q))
+        ]
 
         temp_t_gamma = self.base_q_to_t_gamma_conv.fast_convert_list(temp, self.coeff_count)
 
@@ -189,11 +189,13 @@ class RNSTool:
         # m_tilde can be easily merge into the base conversion operation; however, then
         # we could not use the BaseConvertor as below without modifications.
 
-        temp = [[0 for coeff in range(self.coeff_count)] for q in range(len(self.q))]
-
-        for i in range(len(self.q)):
-            for j in range(self.coeff_count):
-                temp[i][j] = multiply_mod(input[i][j], self.m_tilde, self.base_q.base[i])
+        temp = [
+            [
+                multiply_mod(input[i][j], self.m_tilde, self.base_q.base[i])
+                for j in range(self.coeff_count)
+            ]
+            for i in range(len(self.q))
+        ]
 
         # Now convert to Bsk
         result = self.base_q_to_Bsk_conv.fast_convert_list(temp, self.coeff_count)
@@ -211,11 +213,14 @@ class RNSTool:
         result = []
 
         # Compute r_m_tilde; The last component of the input is mod m_tilde
-        r_m_tilde = [0] * self.coeff_count
+        r_m_tilde = []
         for i in range(self.coeff_count):
-            assert len(input[-1]) == self.coeff_count
-            temp = multiply_mod(input[-1][i], self.inv_prod_q_mod_m_tilde, self.m_tilde)
-            r_m_tilde[i] = negate_mod(temp, self.m_tilde)
+            r_m_tilde.append(
+                negate_mod(
+                    multiply_mod(input[-1][i], self.inv_prod_q_mod_m_tilde, self.m_tilde),
+                    self.m_tilde,
+                )
+            )
 
         for k in range(self.base_Bsk.size):
             base_Bsk_elt = self.base_Bsk.base[k]
@@ -280,12 +285,12 @@ class RNSTool:
 
         # Take the m_sk part of input, subtract from temp, and multiply by inv_prod_B_mod_m_sk_
         # input_sk is allocated in input + (base_B_size * coeff_count_)
-        alpha_sk_ptr = [0] * self.coeff_count
+        alpha_sk_ptr = []
         for i in range(self.coeff_count):
             # It is not necessary for the negation to be reduced modulo the small prime
-            alpha_sk_ptr[i] = (
-                (temp[0][i] + (self.m_sk - input[-1][i])) * self.inv_prod_B_mod_m_sk
-            ) % self.m_sk
+            alpha_sk_ptr.append(
+                ((temp[0][i] + (self.m_sk - input[-1][i])) * self.inv_prod_B_mod_m_sk) % self.m_sk
+            )
 
         # alpha_sk is now ready for the Shenoy-Kumaresan conversion; however, note that our
         # alpha_sk here is not a centered reduction, so we need to apply a correction below.

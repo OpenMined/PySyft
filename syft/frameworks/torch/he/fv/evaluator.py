@@ -274,13 +274,10 @@ class Evaluator:
             tmp_encrypted2_bsk.append(rns_tool.sm_mrq(rns_tool.fastbconv_m_tilde(ct2[i])))
 
         tmp_des_coeff_base = [
-            [[0] * self.poly_modulus for y in range(len(self.coeff_modulus))]
-            for x in range(dest_count)
+            [[0] for y in range(len(self.coeff_modulus))] for x in range(dest_count)
         ]
 
-        tmp_des_bsk_base = [
-            [[0] * self.poly_modulus for y in range(bsk_base_mod_count)] for x in range(dest_count)
-        ]
+        tmp_des_bsk_base = [[[0] for y in range(bsk_base_mod_count)] for x in range(dest_count)]
 
         for m in range(dest_count):
             # Loop over encrypted1 components [i], seeing if a match exists with an encrypted2
@@ -325,7 +322,7 @@ class Evaluator:
         # allocate them together in one container as
         # (te0)q(te'0)Bsk | ... |te count)q (te' count)Bsk to make it ready for
         # fast_floor
-        tmp_coeff_bsk_together = []
+        result = []
         for i in range(dest_count):
             temp = []
             for j in range(len(self.coeff_modulus)):
@@ -339,11 +336,7 @@ class Evaluator:
                 temp.append(
                     [(x * self.plain_modulus) % bsk_base_mod[j] for x in tmp_des_bsk_base[i][j]]
                 )
-            tmp_coeff_bsk_together.append(temp)
-
-        result = []
-        for i in range(dest_count):
-            result.append(rns_tool.fastbconv_sk(rns_tool.fast_floor(tmp_coeff_bsk_together[i])))
+            result.append(rns_tool.fastbconv_sk(rns_tool.fast_floor(temp)))
 
         return CipherText(result)
 
