@@ -27,8 +27,10 @@ from .service.obj_action_service import ObjectActionServiceWithReply
 from ...io.address import Address
 from ...io.virtual import create_virtual_connection
 from ...io.route import SoloRoute
-from ...io.route import RouteSchema
-from ...io.route import LocationGroup
+
+from ....lib.torch import ast as torch_ast
+from ....lib.numpy import ast as numpy_ast
+from ....ast.globals import Globals
 
 from .location_aware_object import LocationAwareObject
 
@@ -132,6 +134,11 @@ class Node(AbstractNode, LocationAwareObject):
         # all messages are applied to" but for now this will do.
         self.message_without_reply_forwarding_service = MessageWithoutReplyForwardingService()
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
+
+        # now we need to load the relevant frameworks onto the node
+        self.lib_ast = Globals()
+        self.lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs['torch'])
+        self.lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs['numpy'])
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> Client:

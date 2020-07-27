@@ -12,4 +12,20 @@ class RunClassMethodAction(ActionWithoutReply):
         self.id_at_location = id_at_location
 
     def execute_action(self, node:AbstractNode):
-        print(self.path)
+        method = node.lib_ast(self.path)
+
+        resolved_self = node.store.get_object(id=self._self.id_at_location)
+
+        resolved_args = list()
+        for arg in self.args:
+            r_arg = node.store.get_object(id=arg.id_at_location)
+            resolved_args.append(r_arg)
+
+        resolved_kwargs = {}
+        for arg_name, arg in self.kwargs.items():
+            r_arg = node.store.get_object(id=arg.id_at_location)
+            resolved_kwargs[arg_name] = r_arg
+
+        result = method(resolved_self, *resolved_args, **resolved_kwargs)
+
+        node.store.store_object(id=self.id_at_location, obj=result)
