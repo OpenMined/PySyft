@@ -11,8 +11,8 @@ from ....decorators import syft_decorator
 from typing import List
 from ....util import get_subclasses
 from syft.core.message import SyftMessage
-from syft.core.message import SyftMessageWithReply
-from syft.core.message import SyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
@@ -122,7 +122,8 @@ class Node(AbstractNode, LocationAwareObject):
         self.services_without_reply.append(HeritageUpdateService)
         self.services_without_reply.append(ChildNodeLifecycleService)
         self.services_without_reply.append(ObjectActionServiceWithoutReply)
-        self.services_without_reply.append(ObjectActionServiceWithReply)
+
+        self.services_with_reply.append(ObjectActionServiceWithReply)
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
@@ -169,7 +170,7 @@ class Node(AbstractNode, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+    def recv_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
@@ -187,7 +188,7 @@ class Node(AbstractNode, LocationAwareObject):
             return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
-    def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+    def recv_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
 
         if self.message_is_for_me(msg):
             print("the old_message is for me!!!")

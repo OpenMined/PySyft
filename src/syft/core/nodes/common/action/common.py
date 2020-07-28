@@ -1,29 +1,30 @@
 from ...abstract.node import AbstractNode
 from syft.core.message import SyftMessage
-from syft.core.message import SyftMessageWithoutReply
-from syft.core.message import SyftMessageWithReply
+from ....message import ImmediateSyftMessageWithoutReply
+from ....message import EventualSyftMessageWithoutReply
+from ....message import ImmediateSyftMessageWithReply
 
 
 class Action(SyftMessage):
     ""
 
 
-class ImmediateActionWithoutReply(Action, SyftMessageWithoutReply):
+class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
     ""
 
     def execute_action(self, node: AbstractNode):
         raise NotImplementedError
 
 
-class EventualActionWithoutReply(Action, SyftMessageWithoutReply):
+class EventualActionWithoutReply(Action, EventualSyftMessageWithoutReply):
     ""
 
     def execute_action(self, node: AbstractNode):
         raise NotImplementedError
 
 
-class ImmediateActionWithReply(Action, SyftMessageWithReply):
+class ImmediateActionWithReply(Action, ImmediateSyftMessageWithReply):
     ""
 
-    def execute_action(self, node: AbstractNode) -> SyftMessageWithoutReply:
+    def execute_action(self, node: AbstractNode) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
