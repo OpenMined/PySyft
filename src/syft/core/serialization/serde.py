@@ -4,8 +4,6 @@ from .store import serialization_store
 def serialize(obj):
     current_type = type(obj)
 
-    syft_message = SyftMessagePB()
-
     if type(obj) in serialization_store.serde_types:
         schema = current_type.to_protobuf(obj)
     else:

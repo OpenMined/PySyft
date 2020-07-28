@@ -98,19 +98,89 @@ def get_protobuf_classes() -> set:
 
     return get_from_inheritance_chain(check_implementation)
 
+
 class Serializable:
+    """
+        Interface for the communication protocols. There are two ways of using this interace:
+
+        1. adding serialization support on a type directly.
+        2. adding serialization support by wrapping a type.
+
+        In the first case, one should implement on the new type:
+        * to_protobuf
+        * from_protobuf
+        * get_protobuf_schema
+
+
+        In the second case, one should implement on the wrapper:
+        * to_protobuf
+        * unbufferize
+        * get_protobuf_schema
+        * get_wrapped_type
+
+        Note: the interface can be inherited from parent class, but each class
+        has to write it's own explicit methods, even if they are the ones from the parent class.
+    """
     @staticmethod
-    def to_protobuf(self):
+    def to_protobuf(obj: any) -> any:
+        """
+            Create a protobuf object from the current type.
+
+            Args:
+                obj (any): This object must have the same type as the class that implements this
+                interface
+
+            Returns:
+                any: a protobuf schema that will be used for serialization. This will be serialized
+                further mode by the serde module.
+
+            Note:
+                The types of this function should be specialised for each implementation.
+                This functions is mandatory to be implemented.
+        """
         raise NotImplementedError
 
     @staticmethod
     def from_protobuf(proto):
+        """
+            Create an instance object of the type that implements this interface.
+
+            Args:
+                proto (any): This object is a protobuf schema, from which we can generate an
+                instance of the type that implements this interface.
+
+            Returns:
+                any: a protobuf schema that will be used for serialization.
+
+            Note:
+                The types of this function should be specialised for each implementation.
+                This functions is mandatory to be implemented.
+        """
         raise NotImplementedError
 
     @staticmethod
-    def get_protobuf_schema(self):
+    def get_protobuf_schema() -> type:
+        """
+            Returns the protobuf schema used by this class.
+
+            Returns:
+                any: The type of the protobuf schema used by the current type.
+
+            Note:
+                The types of this function should be specialised for each implementation.
+                This functions is mandatory to be implemented.
+        """
         raise NotImplementedError
 
     @staticmethod
-    def get_wrapped_type(self):
+    def get_wrapped_type() -> type:
+        """
+            Returns the  type wrapped by the current class.
+
+            Returns:
+                any: The type wrapped by the current class.
+
+            Note:
+                This functions is optional, should be implemented only by wrapper classes.
+        """
         raise NotImplementedError
