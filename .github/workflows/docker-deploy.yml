@@ -4,17 +4,12 @@ on:
   push:
     branches:
       - dev
-  pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged
-
     steps:
       - name: checkout
-        if: github.event.pull_request.merged
         uses: actions/checkout@v1
         with:
           ref: dev
