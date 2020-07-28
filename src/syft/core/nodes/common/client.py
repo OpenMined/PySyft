@@ -1,5 +1,5 @@
-from syft.core.message import SyftMessageWithReply
-from syft.core.message import SyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
 from ....decorators import syft_decorator
 from ....common.id import UID
 from ...io.address import Address
@@ -44,11 +44,11 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+    def send_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
         return self.routes[0].send_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
         return self.routes[0].send_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)

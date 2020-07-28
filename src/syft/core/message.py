@@ -23,17 +23,23 @@ class EventualMessage(SyftMessage):
     ""
 
 
-class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage):
+class SyftMessageWithReply(SyftMessage):
+    ""
+
+class SyftMessageWithoutReply(SyftMessage):
+    ""
+
+class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: UID = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
 
 
-class EventualSyftMessageWithoutReply(EventualMessage):
+class EventualSyftMessageWithoutReply(EventualMessage, SyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: UID = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
 
 
-class ImmediateSyftMessageWithReply(ImmediateSyftMessage):
+class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
     def __init__(self, reply_to: Address, address: Address, msg_id: UID = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
