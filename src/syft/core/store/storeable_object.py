@@ -32,6 +32,7 @@ class StorableObject(Serializable):
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     """
+    __slots__ = ["key", "data", "description", "tags"]
 
     key: UID
     data: Serializable
@@ -49,9 +50,9 @@ class StorableObject(Serializable):
         raise NotImplementedError
 
     @staticmethod
-    def get_protobuf_schema(self):
+    def get_protobuf_schema():
         raise NotImplementedError
 
     @staticmethod
-    def get_wrapped_type(self):
+    def get_wrapped_type():
         raise NotImplementedError
