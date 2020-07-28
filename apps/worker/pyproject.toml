@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "openmined.gridworker"
+version = "0.1.0"
+description = "PyGrid Worker"
+authors = ["OpenMined <contact@openmined.org>"]
+license = "Apache-2.0"
+packages = [{ include = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+aiounittest = "^1.4.0"
+black = "^19.10b0"
+coverage = "^4.5.3"
+pre-commit = "^2.6.0"
+pytest = "^5.4.3"
+isort = "^5.0.5"
+docformatter = "^1.3.1"
+flake8 = "^3.8.3"
+flake8-comprehensions = "^3.2.3"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
