@@ -156,6 +156,10 @@ You can pass the arguments or use environment variables to set the network confi
 - `DATABASE_URL` - The Network database URL
 - `SECRET_KEY` - The secret key
 
+## Contributing
+
+If you're interested in contributing, check out our [Contributor Guidelines](CONTRIBUTING.md).
+
 ## Support
 
 For support in using this library, please join the **#lib_pygrid** Slack channel. If you’d like to follow along with any code changes to the library, please join the **#code_pygrid** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
