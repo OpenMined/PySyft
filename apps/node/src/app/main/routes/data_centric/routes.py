@@ -11,14 +11,14 @@ from flask_cors import cross_origin
 from syft.codes import RESPONSE_MSG
 from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 
-from ... import data_centric, local_worker, main
+from ... import data_centric_routes, local_worker
 from ...core.codes import MSG_FIELD
-from ...dfl.persistence import model_controller
+from ...data_centric.persistence import model_controller
 
 # ======= WEB ROUTES ======
 
 
-@data_centric.route("/detailed-models-list/")
+@data_centric_routes.route("/detailed-models-list/")
 def list_models_with_details():
     """Generates a detailed list of models currently saved at the worker.
 
@@ -50,7 +50,7 @@ def list_models_with_details():
     )
 
 
-@data_centric.route("/identity/")
+@data_centric_routes.route("/identity/")
 def identity():
     """Generates a response with the name of this node.
 
@@ -65,7 +65,7 @@ def identity():
     )
 
 
-@data_centric.route("/status/")
+@data_centric_routes.route("/status/")
 def show_status():
     """Generates a response with the status of this node. if the nodes is
     connected to workers, the status is online.
@@ -88,7 +88,7 @@ def show_status():
     )
 
 
-@data_centric.route("/workers/")
+@data_centric_routes.route("/workers/")
 def list_workers():
     """Generates a list of remote nodes directly connected to this node.
 
@@ -108,7 +108,7 @@ def list_workers():
 # ======= REST API =======
 
 
-@data_centric.route("/models/", methods=["GET"])
+@data_centric_routes.route("/models/", methods=["GET"])
 @cross_origin()
 def list_models():
     """Generates a list of models currently saved at the worker.
@@ -123,7 +123,7 @@ def list_models():
     )
 
 
-@data_centric.route("/serve-model/", methods=["POST"])
+@data_centric_routes.route("/serve-model/", methods=["POST"])
 @cross_origin()
 def serve_model():
     """Host an AI model Uploading and registering it by an specific ID.
@@ -166,7 +166,7 @@ def serve_model():
         return Response(json.dumps(response), status=409, mimetype="application/json")
 
 
-@data_centric.route("/dataset-tags", methods=["GET"])
+@data_centric_routes.route("/dataset-tags", methods=["GET"])
 @cross_origin()
 def get_available_tags():
     """Returns all tags stored in this node. Can be very useful to know what
@@ -187,7 +187,7 @@ def get_available_tags():
     )
 
 
-@data_centric.route("/search-encrypted-models", methods=["POST"])
+@data_centric_routes.route("/search-encrypted-models", methods=["POST"])
 @cross_origin()
 def search_encrypted_models():
     """Check if exist some encrypted model hosted on this node using a specific
@@ -248,7 +248,7 @@ def search_encrypted_models():
     )
 
 
-@data_centric.route("/search", methods=["POST"])
+@data_centric_routes.route("/search", methods=["POST"])
 @cross_origin()
 def search_dataset_tags():
     """Search for a specific dataset tag stored at this node."""

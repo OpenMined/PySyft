@@ -1,4 +1,4 @@
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class Worker(BaseModel):
@@ -12,7 +12,7 @@ class Worker(BaseModel):
         worker_cycles (WorkerCycle): Relationship between workers and cycles (One to many).
     """
 
-    __tablename__ = "static_worker"
+    __tablename__ = "model_centric_worker"
 
     id = db.Column(db.String, primary_key=True)
     ping = db.Column(db.Float)

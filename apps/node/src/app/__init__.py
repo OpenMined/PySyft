@@ -7,6 +7,7 @@ from flask_executor import Executor
 from flask_migrate import Migrate
 from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
+
 from .version import __version__
 
 # Default secret key used only for testing / development
@@ -79,10 +80,16 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     app.config["N_REPLICA"] = n_replica
     sockets = Sockets(app)
 
-    from .main import main, model_centric, data_centric, ws, local_worker, auth, hook
-
     # Register app blueprints
-    from .main import auth, hook, local_worker, main, ws
+    from .main import (
+        auth,
+        data_centric_routes,
+        hook,
+        local_worker,
+        main_routes,
+        model_centric_routes,
+        ws,
+    )
 
     # set_node_id(id)
     local_worker.id = node_id
@@ -90,9 +97,9 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     local_worker.add_worker(hook.local_worker)
 
     # Register app blueprints
-    app.register_blueprint(main, url_prefix=r"/")
-    app.register_blueprint(model_centric, url_prefix=r"/model-centric")
-    app.register_blueprint(data_centric, url_prefix=r"/data-centric")
+    app.register_blueprint(main_routes, url_prefix=r"/")
+    app.register_blueprint(model_centric_routes, url_prefix=r"/model-centric")
+    app.register_blueprint(data_centric_routes, url_prefix=r"/data-centric")
 
     sockets.register_blueprint(ws, url_prefix=r"/")
 

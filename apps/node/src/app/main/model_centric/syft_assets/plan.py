@@ -1,4 +1,4 @@
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class Plan(BaseModel):
@@ -13,7 +13,7 @@ class Plan(BaseModel):
         fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
-    __tablename__ = "static_plan"
+    __tablename__ = "model_centric_plan"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())
@@ -21,7 +21,7 @@ class Plan(BaseModel):
     value_ts = db.Column(db.LargeBinary)
     value_tfjs = db.Column(db.LargeBinary)
     is_avg_plan = db.Column(db.Boolean, default=False)
-    fl_process_id = db.Column(db.Integer, db.ForeignKey("static_fl_process.id"))
+    fl_process_id = db.Column(db.Integer, db.ForeignKey("model_centric_fl_process.id"))
 
     def __str__(self):
         return (

@@ -1,11 +1,11 @@
-import pytest
 import sys
+from random import randint
+
+import pytest
+from src.app.main.model_centric.models.ai_model import Model, ModelCheckPoint
 
 from . import BIG_INT
 from .presets.model import MODEL_ATTRIBUTES
-
-from random import randint
-from src.app.main.sfl.models.ai_model import Model, ModelCheckPoint
 
 sys.path.append(".")
 

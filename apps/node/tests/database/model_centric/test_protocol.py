@@ -1,9 +1,10 @@
-import pytest
 import sys
-from . import BIG_INT
 from random import randint
-from src.app.main.sfl.syft_assets.protocol import Protocol
 
+import pytest
+from src.app.main.model_centric.syft_assets.protocol import Protocol
+
+from . import BIG_INT
 
 sys.path.append(".")
 
@@ -19,6 +20,6 @@ sys.path.append(".")
     ],
 )
 def test_create_protocol_object(id, value, value_ts, database):
-    my_protocol = Protocol(id=id, value=value, value_ts=value_ts,)
+    my_protocol = Protocol(id=id, value=value, value_ts=value_ts)
     database.session.add(my_protocol)
     database.session.commit()

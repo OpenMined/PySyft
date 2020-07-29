@@ -2,7 +2,7 @@
 import datetime
 
 # Local imports
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class WorkerCycle(BaseModel):
@@ -15,12 +15,12 @@ class WorkerCycle(BaseModel):
         request_key (String): unique token that permits downloading specific Plans, Protocols, etc.
     """
 
-    __tablename__ = "static_worker_cycle"
+    __tablename__ = "model_centric_worker_cycle"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     request_key = db.Column(db.String())
-    cycle_id = db.Column(db.Integer, db.ForeignKey("static_cycle.id"))
-    worker_id = db.Column(db.String, db.ForeignKey("static_worker.id"))
+    cycle_id = db.Column(db.Integer, db.ForeignKey("model_centric_cycle.id"))
+    worker_id = db.Column(db.String, db.ForeignKey("model_centric_worker.id"))
     started_at = db.Column(db.DateTime(), default=datetime.datetime.utcnow())
     is_completed = db.Column(db.Boolean(), default=False)
     completed_at = db.Column(db.DateTime())

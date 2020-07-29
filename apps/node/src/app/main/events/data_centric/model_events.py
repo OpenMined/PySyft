@@ -12,9 +12,9 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 # Local imports
 from ... import hook, local_worker
 from ...core.codes import MSG_FIELD
-from ...dfl.auth import authenticated_only
-from ...dfl.persistence import model_controller
-from ...dfl.persistence.object_storage import recover_objects
+from ...data_centric.auth import authenticated_only
+from ...data_centric.persistence import model_controller
+from ...data_centric.persistence.object_storage import recover_objects
 
 
 @authenticated_only

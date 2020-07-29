@@ -1,6 +1,5 @@
 import binascii
 import json
-from tests import NETWORK_WS_URL
 from uuid import UUID
 
 import aiounittest
@@ -12,8 +11,9 @@ from torch import nn as nn
 from torch import optim as optim
 from torch.nn import functional as F
 
-from apps.node.src.app.main.sfl.models.model_manager import ModelManager
-from apps.node.src.app.main.sfl.syft_assets.plan_manager import PlanManager
+from apps.node.src.app.main.model_centric.models.model_manager import ModelManager
+from apps.node.src.app.main.model_centric.syft_assets.plan_manager import PlanManager
+from tests import NETWORK_WS_URL
 
 hook = sy.TorchHook(th)
 
@@ -42,8 +42,6 @@ async def get_protocol():
         {"type": "get-protocol", "data": {"protocolId": "test-protocol"}}
     )
 
-
-""" sample testing plans/model """
 
 # Plan Functions
 @sy.func2plan(args_shape=[(1,), (1,), (1,)])
@@ -97,10 +95,8 @@ serialized_protocol_mockup = binascii.hexlify(
     "serialized_protocol_mockup".encode("utf-8")
 ).decode()
 
-""" end sample testing plans/model """
 
-
-class StaticAPISocketsTest(aiounittest.AsyncTestCase):
+class ModelCentricAPISocketsTest(aiounittest.AsyncTestCase):
     async def test_socket_ping_alive(self):
         response = await send_ws_message({"type": "socket-ping", "data": {}})
         self.assertEqual(response, {"alive": "True"})
@@ -276,7 +272,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         auth_msg = {
             "type": "model-centric/authenticate",
-            "data": {"model_name": "my-federated-model-2", "model_version": "0.1.0",},
+            "data": {"model_name": "my-federated-model-2", "model_version": "0.1.0"},
         }
 
         response = await send_ws_message(auth_msg)
@@ -354,7 +350,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         auth_msg = {
             "type": "model-centric/authenticate",
-            "data": {"model_name": "my-federated-model-3", "model_version": "0.1.0",},
+            "data": {"model_name": "my-federated-model-3", "model_version": "0.1.0"},
         }
 
         response = await send_ws_message(auth_msg)

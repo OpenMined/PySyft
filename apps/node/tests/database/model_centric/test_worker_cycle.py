@@ -1,24 +1,22 @@
-import pytest
 import sys
-
-from . import BIG_INT
-
-from .presets.fl_process import (
-    MODELS,
-    AVG_PLANS,
-    TRAINING_PLANS,
-    VALIDATION_PLANS,
-    PROTOCOLS,
-    CLIENT_CONFIGS,
-    SERVER_CONFIGS,
-    CYCLES,
-)
-from .presets.worker_cycle import WORKERS
-
 from random import randint
 
-from src.app.main.sfl.processes.fl_process import FLProcess
-from src.app.main.sfl.cycles.worker_cycle import WorkerCycle
+import pytest
+from src.app.main.model_centric.cycles.worker_cycle import WorkerCycle
+from src.app.main.model_centric.processes.fl_process import FLProcess
+
+from . import BIG_INT
+from .presets.fl_process import (
+    AVG_PLANS,
+    CLIENT_CONFIGS,
+    CYCLES,
+    MODELS,
+    PROTOCOLS,
+    SERVER_CONFIGS,
+    TRAINING_PLANS,
+    VALIDATION_PLANS,
+)
+from .presets.worker_cycle import WORKERS
 
 sys.path.append(".")
 

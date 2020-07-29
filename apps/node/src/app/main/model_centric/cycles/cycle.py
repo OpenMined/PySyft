@@ -1,4 +1,4 @@
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class Cycle(BaseModel):
@@ -14,7 +14,7 @@ class Cycle(BaseModel):
         fl_process_id (Integer,ForeignKey): Federated learning ID that owns this cycle.
     """
 
-    __tablename__ = "static_cycle"
+    __tablename__ = "model_centric_cycle"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     start = db.Column(db.DateTime())
@@ -22,7 +22,7 @@ class Cycle(BaseModel):
     sequence = db.Column(db.Integer())
     version = db.Column(db.String())
     worker_cycles = db.relationship("WorkerCycle", backref="cycle")
-    fl_process_id = db.Column(db.Integer, db.ForeignKey("static_fl_process.id"))
+    fl_process_id = db.Column(db.Integer, db.ForeignKey("model_centric_fl_process.id"))
     is_completed = db.Column(db.Boolean, default=False)
 
     def __str__(self):

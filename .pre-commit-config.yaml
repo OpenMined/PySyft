@@ -1,30 +1,20 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v1.3.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: check-docstring-first
-    -   id: check-json
-    -   id: check-added-large-files
-    -   id: check-yaml
-    -   id: debug-statements
-    -   id: name-tests-test
-    -   id: requirements-txt-fixer
-    -   id: flake8
--   repo: https://github.com/ambv/black
+      - id: trailing-whitespace
+      - id: check-docstring-first
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-yaml
+      - id: debug-statements
+      - id: requirements-txt-fixer
+      - id: flake8
+  - repo: https://github.com/ambv/black
     rev: 19.3b0
     hooks:
-    -   id: black
--   repo: https://github.com/pre-commit/pygrep-hooks
+      - id: black
+  - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.1.0
     hooks:
-    -   id: python-use-type-annotations
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.0.5
-    hooks:
-    -   id: isort
-        name: isort
-        entry: isort
-        language: python
-        'types': [python]
-        args: ["--verbose"]
+      - id: python-use-type-annotations

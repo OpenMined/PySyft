@@ -1,8 +1,8 @@
 from random import randint
 
-from .. import BIG_INT
+from src.app.main.model_centric.workers.worker import Worker
 
-from src.app.main.sfl.workers.worker import Worker
+from .. import BIG_INT
 
 WORKERS = [
     Worker(
@@ -10,5 +10,5 @@ WORKERS = [
         ping=randint(0, 100),
         avg_download=randint(0, 100),
         avg_upload=randint(0, 100),
-    ),
+    )
 ]

@@ -1,15 +1,15 @@
 # PyGrid imports
-from ...core.codes import MSG_FIELD, RESPONSE_MSG, CYCLE, MODEL_CENTRIC_FL_EVENTS
-from ..processes import process_manager
-from ..processes import process_manager
-
-# Generic imports
-import jwt
-import requests
 import base64
 import json
 import logging
 import uuid
+
+# Generic imports
+import jwt
+import requests
+
+from ...core.codes import CYCLE, MODEL_CENTRIC_FL_EVENTS, MSG_FIELD, RESPONSE_MSG
+from ..processes import process_manager
 
 
 def verify_token(auth_token, model_name, model_version=None):

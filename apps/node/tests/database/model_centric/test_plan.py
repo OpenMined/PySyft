@@ -1,9 +1,10 @@
-import pytest
 import sys
-from . import BIG_INT
 from random import randint
-from src.app.main.sfl.syft_assets.plan import Plan
 
+import pytest
+from src.app.main.model_centric.syft_assets.plan import Plan
+
+from . import BIG_INT
 
 sys.path.append(".")
 
@@ -19,6 +20,6 @@ sys.path.append(".")
     ],
 )
 def test_create_plan_object(id, value, value_ts, database):
-    my_plan = Plan(id=id, value=value, value_ts=value_ts,)
+    my_plan = Plan(id=id, value=value, value_ts=value_ts)
     database.session.add(my_plan)
     database.session.commit()

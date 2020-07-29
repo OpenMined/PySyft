@@ -8,8 +8,8 @@ from syft.exceptions import GetNotPermittedError
 
 # Local imports
 from ... import hook, local_worker
-from ...dfl.auth import UserSession, authenticated_only
-from ...dfl.persistence.object_storage import recover_objects
+from ...data_centric.auth import UserSession, authenticated_only
+from ...data_centric.persistence.object_storage import recover_objects
 
 
 @authenticated_only

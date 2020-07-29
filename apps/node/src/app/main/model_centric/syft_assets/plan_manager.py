@@ -124,9 +124,7 @@ class PlanManager:
             "default": PlanTranslatorDefault,
         }
 
-        fw_translators = {
-            "tfjs": PlanTranslatorTfjs,
-        }
+        fw_translators = {"tfjs": PlanTranslatorTfjs}
 
         if variant not in type_translators and variant not in fw_translators:
             raise PlanTranslationError

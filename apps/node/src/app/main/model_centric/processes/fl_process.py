@@ -1,4 +1,4 @@
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class FLProcess(BaseModel):
@@ -17,7 +17,7 @@ class FLProcess(BaseModel):
         cycles [Cycles]: FL Cycles.
     """
 
-    __tablename__ = "static_fl_process"
+    __tablename__ = "model_centric_fl_process"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())

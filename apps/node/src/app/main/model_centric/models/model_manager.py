@@ -22,7 +22,7 @@ class ModelManager:
 
         # Save model initial weights into ModelCheckpoint
         self._model_checkpoints.register(
-            value=model, model=_model_obj, number=1, alias="latest",
+            value=model, model=_model_obj, number=1, alias="latest"
         )
 
         return _model_obj
@@ -46,7 +46,7 @@ class ModelManager:
 
         # Create new checkpoint
         new_checkpoint = self._model_checkpoints.register(
-            model_id=model_id, value=data, number=checkpoints_count + 1, alias="latest",
+            model_id=model_id, value=data, number=checkpoints_count + 1, alias="latest"
         )
         return new_checkpoint
 
@@ -80,7 +80,7 @@ class ModelManager:
     def serialize_model_params(params):
         """Serializes list of tensors into State/protobuf."""
         model_params_state = State(
-            state_placeholders=[PlaceHolder().instantiate(param) for param in params],
+            state_placeholders=[PlaceHolder().instantiate(param) for param in params]
         )
 
         # make fake local worker for serialization

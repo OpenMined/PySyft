@@ -1,11 +1,11 @@
-import pytest
 import sys
+from random import randint
+
+import pytest
+from src.app.main.model_centric.workers.worker import Worker
 
 from . import BIG_INT
 from .presets.worker import worker_metrics
-
-from random import randint
-from src.app.main.sfl.workers.worker import Worker
 
 sys.path.append(".")
 

@@ -1,4 +1,4 @@
-from ... import db, BaseModel
+from ... import BaseModel, db
 
 
 class Protocol(BaseModel):
@@ -12,14 +12,14 @@ class Protocol(BaseModel):
         fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
-    __tablename__ = "static_protocol"
+    __tablename__ = "model_centric_protocol"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())
     value = db.Column(db.LargeBinary)
     value_ts = db.Column(db.LargeBinary)
     value_tfjs = db.Column(db.LargeBinary)
-    fl_process_id = db.Column(db.Integer, db.ForeignKey("static_fl_process.id"))
+    fl_process_id = db.Column(db.Integer, db.ForeignKey("model_centric_fl_process.id"))
 
     def __str__(self):
         return f"<Protocol id: {self.id}, values: {self.value}, torchscript: {self.value_ts}>"

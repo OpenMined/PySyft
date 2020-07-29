@@ -1,11 +1,11 @@
-import pytest
 import sys
+from random import randint
+
+import pytest
+from src.app.main.model_centric.processes.config import Config
 
 from . import BIG_INT
 from .presets.config import configs
-
-from random import randint
-from src.app.main.sfl.processes.config import Config
 
 sys.path.append(".")
 

@@ -10,7 +10,7 @@ from ... import hook, local_worker, sy
 
 # Local imports
 from ...core.codes import MSG_FIELD
-from ...dfl.auth import authenticated_only, get_session
+from ...data_centric.auth import authenticated_only, get_session
 
 
 def get_node_infos(message: dict) -> str:

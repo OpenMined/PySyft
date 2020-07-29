@@ -1,3 +1,3 @@
-from .dfl.routes import *
+from .data_centric.routes import *
 from .general import *
-from .sfl.routes import *
+from .model_centric.routes import *

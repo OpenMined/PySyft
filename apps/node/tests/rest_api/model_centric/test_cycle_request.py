@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from src.app.main.core.exceptions import PyGridError
-from src.app.main.routes.sfl import routes
+from src.app.main.routes.model_centric import routes
 
 
 def test_worker_cycle_request_bad_request_json(client):
@@ -15,7 +15,7 @@ def test_worker_cycle_request_bad_request_json(client):
     )
 
 
-@patch("src.app.main.routes.sfl.routes.cycle_request")
+@patch("src.app.main.routes.model_centric.routes.cycle_request")
 def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
     """assert that the endpoint returns a 400 for a PyGridError."""
     mock_cycle_request.side_effect = PyGridError("test")
@@ -26,7 +26,7 @@ def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
     assert result.get_json().get("error") == "test"
 
 
-@patch("src.app.main.routes.sfl.routes.cycle_request")
+@patch("src.app.main.routes.model_centric.routes.cycle_request")
 def test_worker_cycle_request_internal_server_error(mock_cycle_request, client):
     """assert that the endpoint returns a 500 for an unknown error
     condition."""

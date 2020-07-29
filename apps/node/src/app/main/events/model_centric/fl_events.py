@@ -11,10 +11,10 @@ from ...core.exceptions import (
     MaxCycleLimitExceededError,
     PyGridError,
 )
-from ...sfl.auth.federated import verify_token
-from ...sfl.processes import process_manager
-from ...sfl.workers import worker_manager
-from ...sfl.controller import processes
+from ...model_centric.auth.federated import verify_token
+from ...model_centric.controller import processes
+from ...model_centric.processes import process_manager
+from ...model_centric.workers import worker_manager
 
 # Local imports
 # Local imports

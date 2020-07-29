@@ -18,10 +18,10 @@ hook = sy.TorchHook(th)
 local_worker = sy.VirtualWorker(hook, auto_add=False)
 hook.local_worker.is_client_worker = False
 
-main = Blueprint("main", __name__)
-model_centric = Blueprint("model-centric", __name__)
-data_centric = Blueprint("data-centric", __name__)
+main_routes = Blueprint("main", __name__)
+model_centric_routes = Blueprint("model-centric", __name__)
+data_centric_routes = Blueprint("data-centric", __name__)
 ws = Blueprint(r"ws", __name__)
 
 from . import events, routes
-from .dfl import auth
+from .data_centric import auth

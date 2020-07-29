@@ -1,22 +1,20 @@
-import pytest
 import sys
+from random import randint
+
+import pytest
+from src.app.main.model_centric.processes.fl_process import FLProcess
 
 from . import BIG_INT
 from .presets.fl_process import (
-    MODELS,
     AVG_PLANS,
+    CLIENT_CONFIGS,
+    CYCLES,
+    MODELS,
+    PROTOCOLS,
+    SERVER_CONFIGS,
     TRAINING_PLANS,
     VALIDATION_PLANS,
-    PROTOCOLS,
-    CLIENT_CONFIGS,
-    SERVER_CONFIGS,
-    CYCLES,
 )
-
-from random import randint
-
-from src.app.main.sfl.processes.fl_process import FLProcess
-
 
 sys.path.append(".")
 

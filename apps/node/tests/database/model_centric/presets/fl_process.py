@@ -1,13 +1,12 @@
 from datetime import datetime
 from random import randint
 
-
-from src.app.main.sfl.cycles.cycle import Cycle
-from src.app.main.sfl.models.ai_model import Model, ModelCheckPoint
-from src.app.main.sfl.processes.config import Config
-from src.app.main.sfl.processes.fl_process import FLProcess
-from src.app.main.sfl.syft_assets.plan import Plan
-from src.app.main.sfl.syft_assets.protocol import Protocol
+from src.app.main.model_centric.cycles.cycle import Cycle
+from src.app.main.model_centric.models.ai_model import Model, ModelCheckPoint
+from src.app.main.model_centric.processes.config import Config
+from src.app.main.model_centric.processes.fl_process import FLProcess
+from src.app.main.model_centric.syft_assets.plan import Plan
+from src.app.main.model_centric.syft_assets.protocol import Protocol
 
 BIG_INT = 2 ** 32
 
