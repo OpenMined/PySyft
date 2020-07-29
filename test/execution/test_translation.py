@@ -16,7 +16,7 @@ from syft.serde.serde import serialize
 @pytest.fixture(scope="function", autouse=True)
 def mnist_example():
     """
-    Prepares simple static federated learning training plan example.
+    Prepares simple model-centric federated learning training plan example.
     """
     # Disable translators
     Plan._build_translators = []

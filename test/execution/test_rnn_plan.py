@@ -94,7 +94,7 @@ class CustomGru(nn.Module):
 
 def test_rnn_plan_example():
     """
-    Prepares simple static federated learning training plan example that use an RNN.
+    Prepares simple model-centric federated learning training plan example that use an RNN.
     """
     # Disable translators
     Plan._build_translators = []

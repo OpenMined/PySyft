@@ -13,7 +13,7 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 TIMEOUT_INTERVAL = 60
 
 
-class StaticFLClient:
+class ModelCentricFLClient:
     def __init__(self, id: str, address: str, secure: bool = False):
         self.id = id
         self.address = address
