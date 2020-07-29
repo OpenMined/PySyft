@@ -10,8 +10,8 @@ grid.egg-info/
 .ropeproject
 *.h5
 *.log
-*.lock
 *.db
+*.egg-info
 .DS_Store
 .openmined
 nohup.out

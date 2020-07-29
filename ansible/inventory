@@ -1,3 +1,0 @@
-[hosts]
-0.0.0.0 ansible_user=user
-127.0.0.1 ansible_user=user

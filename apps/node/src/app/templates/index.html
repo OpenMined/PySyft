@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- UIkit CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.2.0/css/uikit.min.css"
+    />
+    <!-- UIkit JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.2.0/js/uikit.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.2.0/js/uikit-icons.min.js"></script>
+
+    <!-- Local CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/template.css') }}"
+    />
+
+    <title>PyGrid Network</title>
+  </head>
+  <body
+    style="
+      background-image: url(static/images/background-gradient.bd2e1d32.svg);
+      background-size: cover;
+      height: 100%;
+      overflow: hidden;
+    "
+  >
+    <div
+      style="height: 900px;"
+      class="uk-background-cover uk-align-center uk-container-expand"
+    >
+      <div class="uk-section uk-padding-remove-vertical">
+        <div class="uk-flex uk-flex-center uk-flex-middle uk-padding-medium">
+          <img
+            class=""
+            width="50"
+            height="50"
+            alt="Grid Icon"
+            uk-img="/static/images/grid-white.01b839c4.svg"
+            uk-svg
+          />
+          <h2 class="uk-margin left" style="color: white;">PyGrid Network</h2>
+        </div>
+
+        <!-- General Info -->
+        <div class="uk-width-medium uk-align-center uk-flex uk-flex-center">
+          <div class="uk-flex uk-flex-center uk-flex-middle uk-margin-left">
+            <div style="color: white;" class="uk-text-lighter uk-text-left">
+              Address:
+            </div>
+            <div style="color: white;" id="server_ip" class="uk-text-bold">
+              [[ ip ]]
+            </div>
+          </div>
+        </div>
+        <!-- General Info End -->
+      </div>
+    </div>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/main.js') }}"
+    ></script>
+  </body>
+</html>
