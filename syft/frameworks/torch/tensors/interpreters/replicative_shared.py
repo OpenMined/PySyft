@@ -29,17 +29,16 @@ class ReplicatedSharingTensor(AbstractTensor):
             workers = [syft.hook.local_worker] + workers
         return workers
 
-    def generate_shares(self, secret, number_of_shares=3):
+    def generate_shares(self, plain_text, number_of_shares=3):
         shares = []
         for _ in range(number_of_shares - 1):
             shares.append(torch.tensor(random.randrange(self.ring_size)))
-        shares.append(torch.tensor((secret - sum(shares)) % self.ring_size))
+        shares.append(torch.tensor((plain_text - sum(shares)) % self.ring_size))
         return shares
 
     @staticmethod
     def __distribute_shares(workers, shares):
         shares_map = {}
-        assert len(workers) == len(shares)
         for i in range(len(shares)):
             pointer1 = shares[i].send(workers[i])
             pointer2 = shares[(i + 1) % len(shares)].send(workers[i])
@@ -47,8 +46,8 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     def reconstruct(self):
-        shares_locations = self.child
-        shares = self.__retrieve_shares(shares_locations)
+        shares_map = self.get_shares_map()
+        shares = self.__retrieve_shares(shares_map)
         plain_text_mod = self.__sum_shares(shares)
         plain_text = self.__map_modular_to_real(plain_text_mod)
         return plain_text
@@ -78,40 +77,36 @@ class ReplicatedSharingTensor(AbstractTensor):
         return real_number
 
     def add(self, value):
-        return self.switch_public_private(value, self.public_add, self.private_add)
+        return self.__switch_public_private(value, self.public_add, self.private_add)
 
     def public_add(self, plain_text):
-        players = self.get_players()
-        shares_map = self.get_shares_map()
-        plain_text = torch.tensor(plain_text).send(players[0])
-        shares_map[players[0]] = (shares_map[players[0]][0] + plain_text, shares_map[players[0]][1])
-        return syft.ReplicatedSharingTensor(shares_map)
+        return self.public_linear_operation(plain_text, add)
 
     def private_add(self, secret):
-        return self.linear_operation(secret, add)
+        return self.private_linear_operation(secret, add)
 
     def sub(self, value):
-        return self.switch_public_private(value, self.public_sub, self.private_sub)
+        return self.__switch_public_private(value, self.public_sub, self.private_sub)
 
     def public_sub(self, plain_text):
-        return self.add(-plain_text)
+        return self.public_linear_operation(plain_text, sub)
 
     def private_sub(self, secret):
-        return self.linear_operation(secret, sub)
+        return self.private_linear_operation(secret, sub)
 
     @staticmethod
-    def switch_public_private(value, public_function, private_function):
-        if isinstance(value, (int, float, torch.Tensor)):
+    def __switch_public_private(value, public_function, private_function):
+        if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
             return public_function(value)
         elif isinstance(value, syft.ReplicatedSharingTensor):
             return private_function(value)
         else:
-            raise ValueError(
+            raise NotImplementedError(
                 "ReplicatedSharingTensor can only be added to"
                 " int, float, torch tensor, or ReplicatedSharingTensor"
             )
 
-    def linear_operation(self, secret, operator):
+    def private_linear_operation(self, secret, operator):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
@@ -119,6 +114,16 @@ class ReplicatedSharingTensor(AbstractTensor):
         for player in x.keys():
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
+
+    def public_linear_operation(self, plain_text, operator):
+        players = self.get_players()
+        shares_map = self.get_shares_map()
+        plain_text = torch.tensor(plain_text).send(players[0])
+        shares_map[players[0]] = (
+            operator(shares_map[players[0]][0], plain_text),
+            shares_map[players[0]][1],
+        )
+        return syft.ReplicatedSharingTensor(shares_map)
 
     def verify_matching_players(self, *secrets):
         players_set_0 = self.get_players()
