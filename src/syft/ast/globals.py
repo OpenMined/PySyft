@@ -8,12 +8,12 @@ class Globals(ast.module.Module):
     """The collection of frameworks held in a global namespace"""
 
     def __init__(self):
-        super().__init__("globals", None, None)
+        super().__init__("globals", None, None, None)
 
     def add_framework(self, attr_name, attr):
         self.attrs[attr_name] = attr
 
-    def add_path(self, path, framework_reference=None):
+    def add_path(self, path, return_type_name=None, framework_reference=None):
         if isinstance(path, str):
             path = path.split(".")
 
@@ -22,7 +22,7 @@ class Globals(ast.module.Module):
         if framework_name not in self.attrs:
             if framework_reference is not None:
                 self.attrs[framework_name] = ast.module.Module(
-                    framework_name, unsplit(path), framework_reference
+                    name=framework_name, path_and_name=unsplit(path), ref=framework_reference, return_type_name=return_type_name
                 )
             else:
                 raise Exception(
@@ -30,4 +30,4 @@ class Globals(ast.module.Module):
                     "within a framework."
                 )
 
-        self.attrs[framework_name].add_path(path, 1)
+        self.attrs[framework_name].add_path(path, 1, return_type_name=return_type_name)

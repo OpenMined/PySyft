@@ -19,7 +19,7 @@ class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
 class EventualActionWithoutReply(Action, EventualSyftMessageWithoutReply):
     ""
 
-    def execute_action(self, node: AbstractNode):
+    def execute_action(self, node: AbstractNode) -> None:
         raise NotImplementedError
 
 

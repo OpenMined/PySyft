@@ -18,16 +18,16 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
         pub_addr = addr.pub_address
 
         if pri_addr.vm is not None and node.store.has_object(pri_addr.vm):
-            return node.store.get_object(pri_addr.vm).send_msg_without_reply(msg=msg)
+            return node.store.get_object(pri_addr.vm).send_immediate_msg_without_reply(msg=msg)
 
         if pri_addr.device is not None and node.store.has_object(pri_addr.device):
-            return node.store.get_object(pri_addr.device).send_msg_without_reply(msg=msg)
+            return node.store.get_object(pri_addr.device).send_immediate_msg_without_reply(msg=msg)
 
         if pub_addr.domain is not None and node.store.has_object(pub_addr.domain):
-            return node.store.get_object(pub_addr.domain).send_msg_without_reply(msg=msg)
+            return node.store.get_object(pub_addr.domain).send_immediate_msg_without_reply(msg=msg)
 
         if pub_addr.network is not None and node.store.has_object(pub_addr.network):
-            return node.store.get_object(pub_addr.network).send_msg_without_reply(msg=msg)
+            return node.store.get_object(pub_addr.network).send_immediate_msg_without_reply(msg=msg)
 
         raise Exception("Address unknown - cannot forward old_message. Throwing it away.")
 
@@ -46,16 +46,16 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
         pub_addr = addr.pub_address
 
         if pri_addr.vm is not None and node.store.has_object(pri_addr.vm):
-            return node.store.get_object(pri_addr.vm).send_msg_with_reply(msg=msg)
+            return node.store.get_object(pri_addr.vm).send_immediate_msg_with_reply(msg=msg)
 
         if pri_addr.device is not None and node.store.has_object(pri_addr.device):
-            return node.store.get_object(pri_addr.device).send_msg_with_reply(msg=msg)
+            return node.store.get_object(pri_addr.device).send_immediate_msg_with_reply(msg=msg)
 
         if pub_addr.domain is not None and node.store.has_object(pub_addr.domain):
-            return node.store.get_object(pub_addr.domain).send_msg_with_reply(msg=msg)
+            return node.store.get_object(pub_addr.domain).send_immediate_msg_with_reply(msg=msg)
 
         if pub_addr.network is not None and node.store.has_object(pub_addr.network):
-            return node.store.get_object(pub_addr.network).send_msg_with_reply(msg=msg)
+            return node.store.get_object(pub_addr.network).send_immediate_msg_with_reply(msg=msg)
 
         raise Exception("Address unknown - cannot forward old_message. Throwing it away.")
 

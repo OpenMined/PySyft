@@ -41,7 +41,7 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         # TODO: solve this with node group address?
         for node_client in node.known_child_nodes:
             msg.address = node_client.address
-            node_client.send_msg_without_reply(msg=msg)
+            node_client.send_immediate_msg_without_reply(msg=msg)
 
 
     @staticmethod

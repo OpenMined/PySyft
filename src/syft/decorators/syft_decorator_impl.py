@@ -19,15 +19,16 @@ def syft_decorator(
 
         def wrapper(*args, **kwargs):
 
-            try:
-                return function(*args, **kwargs)
-            except Exception as e:
-                if LONG_TYPECHECK_STACK_TRACES:
-                    raise e
-                # Truncate stacktrace concerned with the
-                # type checking decorator so that the
-                # true problem is easier to see
-                raise Exception(str(e))
+            return function(*args, **kwargs)
+            # try:
+            #     return function(*args, **kwargs)
+            # except Exception as e:
+            #     if LONG_TYPECHECK_STACK_TRACES:
+            #         raise e
+            #     # Truncate stacktrace concerned with the
+            #     # type checking decorator so that the
+            #     # true problem is easier to see
+            #     raise Exception(str(e))
 
         if other_decorators:
             for other_decorator in other_decorators:

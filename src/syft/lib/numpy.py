@@ -9,7 +9,7 @@ whitelist.add("numpy.ndarray.__add__")
 ast = Globals()
 
 for method in whitelist:
-    ast.add_path(method, np)
+    ast.add_path(path=method, framework_reference=np, return_type_name=None)
 
 for klass in ast.classes:
     klass.create_pointer_class()

@@ -11,8 +11,8 @@ class Class(ast.callable.Callable):
 
     ""
 
-    def __init__(self, name, path_and_name, ref):
-        super().__init__(name, path_and_name, ref)
+    def __init__(self, name, path_and_name, ref, return_type_name):
+        super().__init__(name, path_and_name, ref, return_type_name=return_type_name)
         self.pointer_name = self.path_and_name + "Pointer"
 
     def __repr__(self):
@@ -31,7 +31,7 @@ class Class(ast.callable.Callable):
                 id_at_location=result.id_at_location,
                 address=__self.location.address,
             )
-            __self.location.send_msg_without_reply(msg=cmd)
+            __self.location.send_immediate_msg_without_reply(msg=cmd)
 
             return result
 
@@ -56,7 +56,7 @@ class Class(ast.callable.Callable):
             )
 
             # Step 3: send old_message
-            location.send_msg_without_reply(msg=obj_msg)
+            location.send_immediate_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer
             return ptr
