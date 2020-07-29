@@ -23,7 +23,7 @@ MAX_BUFFER_SIZE = 1048576 * 64  # 64 MB
 MAX_SPEED_TESTS = 3
 
 
-class StaticFLWorker:
+class ModelCentricFLWorker:
     CYCLE_STATUS_ACCEPTED = "accepted"
     CYCLE_STATUS_REJECTED = "rejected"
     PLAN_TYPE_LIST = "list"
