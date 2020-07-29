@@ -62,9 +62,8 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     @staticmethod
     def __retrieve_pointers(shares_map):
-        pointers = []
         players = list(shares_map.keys())
-        pointers = pointers + list(shares_map[players[0]])
+        pointers = list(shares_map[players[0]])
         pointers.append(shares_map[players[1]][1])
         return pointers
 
