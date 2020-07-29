@@ -40,16 +40,16 @@ def test_verify_players(workers):
 
 def test_private_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
-    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
-    assert x.add(y).reconstruct() == 10
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor([2, 5]).share(bob, alice, james, protocol="falcon")
+    assert (x.add(y).reconstruct() == torch.Tensor([9, 9])).all()
 
 
 def test_public_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
-    y = 3
-    assert x.add(y).reconstruct() == 10
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = torch.Tensor([2, 5])
+    assert (x.add(y).reconstruct() == torch.Tensor([9, 9])).all()
 
 
 def test_private_sub(workers):
