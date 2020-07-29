@@ -85,7 +85,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         plain_text = torch.tensor(plain_text)
         players = self.get_players()
         y = plain_text.send(players[0])
-        shares_map = self.get_shares_map(self)
+        shares_map = self.get_shares_map()
         shares_map[players[0]] = (shares_map[players[0]][0] + y, shares_map[players[0]][1])
         return syft.ReplicatedSharingTensor(shares_map)
 
@@ -117,7 +117,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
-        x, y = self.get_shares_map(self, secret)
+        x, y = self.get_shares_map(), secret.get_shares_map()
         for player in x.keys():
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
@@ -131,13 +131,11 @@ class ReplicatedSharingTensor(AbstractTensor):
         return True
 
     def get_players(self):
-        return list(self.get_shares_map(self).keys())
+        return list(self.get_shares_map().keys())
 
-    @staticmethod
-    def get_shares_map(*secrets):
+    def get_shares_map(self):
         """shares_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
-        shares_map = [secret.child for secret in secrets]
-        return shares_map if len(shares_map) > 1 else shares_map[0]
+        return self.child
 
     def __repr__(self):
         return self.__str__()
