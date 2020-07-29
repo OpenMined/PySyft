@@ -3,7 +3,7 @@ name: Docker deploy
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   deploy:
@@ -12,7 +12,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v1
         with:
-          ref: dev
+          ref: master
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Build images
