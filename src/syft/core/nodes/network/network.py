@@ -5,7 +5,6 @@ from ..domain.client import DomainClient
 from .client import NetworkClient
 
 
-
 class Network(Node):
 
     client_type = NetworkClient

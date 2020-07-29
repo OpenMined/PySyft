@@ -29,10 +29,14 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
     def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 
         # Step 1: Store the client to the child in our object store.
-        node.store.store_object(id=msg.child_node_client.address.target_id, obj=msg.child_node_client)
+        node.store.store_object(
+            id=msg.child_node_client.address.target_id, obj=msg.child_node_client
+        )
 
         # Step 2: update the child node and its descendants with our node.id in their .address objects
-        heritage_msg = HeritageUpdateMessage(new_ancestry_address=node.address, address=msg.child_node_client.address)
+        heritage_msg = HeritageUpdateMessage(
+            new_ancestry_address=node.address, address=msg.child_node_client.address
+        )
         msg.child_node_client.send_msg_without_reply(msg=heritage_msg)
 
     @staticmethod

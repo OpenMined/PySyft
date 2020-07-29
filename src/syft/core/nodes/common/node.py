@@ -34,6 +34,7 @@ from ....ast.globals import Globals
 
 from .location_aware_object import LocationAwareObject
 
+
 class Node(AbstractNode, LocationAwareObject):
 
     """
@@ -133,13 +134,15 @@ class Node(AbstractNode, LocationAwareObject):
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
-        self.message_without_reply_forwarding_service = MessageWithoutReplyForwardingService()
+        self.message_without_reply_forwarding_service = (
+            MessageWithoutReplyForwardingService()
+        )
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = Globals()
-        self.lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs['torch'])
-        self.lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs['numpy'])
+        self.lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
+        self.lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> Client:
@@ -160,7 +163,7 @@ class Node(AbstractNode, LocationAwareObject):
 
     @property
     def known_child_nodes(self) -> List:
-        if(self.child_type_client_type is not None):
+        if self.child_type_client_type is not None:
             return self.store.get_objects_of_type(obj_type=self.child_type_client_type)
         else:
             return []
@@ -170,7 +173,9 @@ class Node(AbstractNode, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def recv_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def recv_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
@@ -185,7 +190,9 @@ class Node(AbstractNode, LocationAwareObject):
                 self.ensure_services_have_been_registered_error_if_not()
         else:
             print("the old_message is not for me...")
-            return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
+            return self.message_with_reply_forwarding_service.process(
+                node=self, msg=msg
+            )
 
     @syft_decorator(typechecking=True)
     def recv_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:

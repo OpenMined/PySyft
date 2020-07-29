@@ -50,17 +50,9 @@ connection health, and overall cost of each connection option as
 measured by fixed constants as well as previous uses of the
 connection.
 
-<<<<<<< HEAD
-@syft_decorator(typechecking=True)
-def route(
-    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
-) -> Route:
-    """A convenience method for creating routes"""
-=======
 This necessitates an abstraction which lets us store connection
 information both about hops we know about and about hops we don't
 know about.
->>>>>>> syft_0.3.0
 
 This abstraction is called a "Route" and each hop is called a "Hop"
 where any collection of hops within the route is called a 
@@ -99,6 +91,7 @@ from syft.core.message import SyftMessageWithoutReply
 from .connection import ClientConnection
 from typing import List
 
+
 class RouteSchema(ObjectWithId):
     """An object which contains the IDs of the origin node and
     set of destination nodes. Multiple routes can subscribe
@@ -115,29 +108,30 @@ class RouteSchema(ObjectWithId):
 
 
 class Route(ObjectWithId):
-
     def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
         self.schema = schema
         self.stops = stops
 
-    def send_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
 
 class BroadcastRoute(Route):
-
-    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
+    def send_msg_with_reply(
+        self, msg: SyftMessageWithReply
+    ) -> Set[SyftMessageWithoutReply]:
         raise NotImplementedError
 
 
 class SoloRoute(Route):
-
-    def __init__(self, source: Location, destination: Location, connection: ClientConnection):
+    def __init__(
+        self, source: Location, destination: Location, connection: ClientConnection
+    ):
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
-    def send_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         self.connection.send_msg_without_reply(msg=msg)
 
-    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> SyftMessageWithoutReply:
+    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         return self.connection.send_msg_with_reply(msg=msg)

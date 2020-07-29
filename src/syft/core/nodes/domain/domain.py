@@ -5,7 +5,6 @@ from ..device.device import Device
 from ..device.client import DeviceClient
 
 
-
 class Domain(Node):
 
     client_type = DomainClient
@@ -31,4 +30,3 @@ class Domain(Node):
             msg.address.pub_address.domain == self.id
             and msg.address.pri_address.device is None
         )
-

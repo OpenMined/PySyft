@@ -9,6 +9,7 @@ from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ...io.route import Route
 from typing import List
 
+
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -16,7 +17,6 @@ class Client(AbstractNodeClient, LocationAwareObject):
     with all of the metadata in it, you should have all the information
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
-
 
     @syft_decorator(typechecking=True)
     def __init__(self, address: Address, name: str, routes: List[Route]):
@@ -44,7 +44,9 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def send_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         return self.routes[0].send_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)

@@ -2,14 +2,15 @@ from ...common.id import UID
 from ...common.object import ObjectWithId
 from typing import Set
 
+
 class Location(ObjectWithId):
     """This represents the location of a node, including
     location-relevant metadata (such as how long it takes
     for us to communicate with this location, etc.)"""
 
-
     def __init__(self):
         super().__init__()
+
 
 class LocationGroup(Location):
 
@@ -24,8 +25,8 @@ class LocationGroup(Location):
     def __init__(self, known_group_members: Set[Location]):
         self.known_group_members = known_group_members
 
-class SubscriptionBackedLocationGroup(LocationGroup):
 
+class SubscriptionBackedLocationGroup(LocationGroup):
     def __init__(self, topic: str, known_group_members: Set[Location]):
         super().__init__(known_group_members=known_group_members)
         self.topic = topic

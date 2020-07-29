@@ -1,7 +1,9 @@
 from typing import List, Optional
 from dataclasses import dataclass
 
-from syft_proto.core.storable.storable_object_pb2 import StorableObject as StorableObjectPB
+from syft_proto.core.storable.storable_object_pb2 import (
+    StorableObject as StorableObjectPB,
+)
 
 from ...common.id import UID
 from ..serialization import Serializable
@@ -32,6 +34,7 @@ class StorableObject(Serializable):
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     """
+
     __slots__ = ["key", "data", "description", "tags"]
 
     key: UID

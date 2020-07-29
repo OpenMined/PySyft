@@ -12,6 +12,7 @@ class NodeService:
     def message_handler_types() -> List[type]:
         raise NotImplementedError
 
+
 class ImmediateNodeService(NodeService):
     """A service for messages which should be immediately executed"""
 
@@ -24,7 +25,9 @@ class EventualNodeService(NodeService):
 class ImmediateNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SyftMessage) -> ImmediateSyftMessageWithoutReply:
+    def process(
+        node: AbstractNode, msg: SyftMessage
+    ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     @staticmethod
@@ -36,7 +39,9 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SyftMessage) -> ImmediateSyftMessageWithoutReply:
+    def process(
+        node: AbstractNode, msg: SyftMessage
+    ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     @staticmethod

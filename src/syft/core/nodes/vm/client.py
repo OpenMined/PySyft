@@ -5,6 +5,7 @@ from ...io.address import Address
 from ...io.route import Route
 from typing import List
 
+
 @final
 class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
