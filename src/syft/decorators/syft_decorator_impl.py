@@ -22,7 +22,7 @@ def syft_decorator(
             try:
                 return function(*args, **kwargs)
             except Exception as e:
-                if(LONG_TYPECHECK_STACK_TRACES):
+                if LONG_TYPECHECK_STACK_TRACES:
                     raise e
                 raise Exception(str(e))
 
