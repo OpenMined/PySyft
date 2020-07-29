@@ -1,38 +1,33 @@
 from .client import VirtualMachineClient
-from ..abstract.worker import Worker
-from . import service
-from ...io.virtual import create_virtual_connection
+from ..common.node import Node
 from ....decorators import syft_decorator
-from ...message import SyftMessage
+from syft.core.message import SyftMessage
 from typing import final
 
 
 @final
-class VirtualMachine(Worker):
+class VirtualMachine(Node):
+
+    client_type = VirtualMachineClient
+
     @syft_decorator(typechecking=True)
     def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
 
-        services = list()
-        services.append(service.get_object_service.GetObjectService)
-        services.append(service.save_object_service.SaveObjectService)
-        services.append(service.run_class_service.RunClassMethodService)
-        services.append(service.delete_object_service.DeleteObjectService)
-        services.append(
-            service.run_function_or_constructor_service.RunFunctionOrConstructorService
-        )
-        services.append(service.repr_service.ReprService)
+        # All node subclasses have to call this at the end of their __init__
+        self._register_services()
 
-        self._set_services(services=services)
+        # if this VM doesn't even know the id of itself at this point
+        # then something went wrong with the fancy address system.
+        assert self.vm_id is not None
 
-    @syft_decorator(typechecking=True)
-    def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.recv_msg(msg=msg)
+    def add_me_to_my_address(self):
 
-    @syft_decorator(typechecking=True)
-    def get_client(self) -> VirtualMachineClient:
-        conn = create_virtual_connection(worker=self)
-        return VirtualMachineClient(vm_id=self.id, name=self.name, connection=conn)
+        # This line implicitly adds it to the address as well
+        self.vm_id = self.id
+
+    def message_is_for_me(self, msg: SyftMessage) -> bool:
+        return msg.address.pri_address.vm == self.id
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
@@ -46,6 +41,3 @@ class VirtualMachine(Worker):
                         "Framework already imported. Why are you importing it twice?"
                     )
                 self.frameworks.attrs[name] = ast
-
-    def __repr__(self):
-        return f"VirtualMachine:{self.name}"

@@ -1,6 +1,6 @@
 import random
 
-from ..message import GetObjectMessage
+from ..nodes.common.action.get_object_action import GetObjectAction
 
 
 class Pointer:
@@ -12,7 +12,7 @@ class Pointer:
         self.id_at_location = id_at_location
 
     def get(self):
-        obj_msg = GetObjectMessage(
-            id=self.id_at_location, msg_destination=self.location
+        obj_msg = GetObjectAction(
+            obj_id=self.id_at_location, address=self.location.address, reply_to=None
         )
-        return self.location.send_msg(obj_msg)
+        return self.location.send_msg_with_reply(msg=obj_msg).obj

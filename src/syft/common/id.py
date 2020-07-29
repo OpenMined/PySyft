@@ -22,3 +22,14 @@ class UID(Serializable):
     @staticmethod
     def get_protobuf_schema():
         pass
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __eq__(self, other):
+        if isinstance(other, UID):
+            return self.value == other.value
+        return False
+
+    def __repr__(self):
+        return f"<UID:{self.value}>"

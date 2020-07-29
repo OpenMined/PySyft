@@ -14,17 +14,17 @@ to be universal across all Syft languages (javascript, kotlin, swift, etc.).
 Syft "python" includes all functionality which by its very nature cannot be
 truly polyglot. Syft "core" functionality includes the following modules:
 
-* :py:mod:`syft.core.worker` - APIs for interacting with remote machines you do not directly
+* :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly
 control.
-* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Worker
+* :py:mod:`syft.core.old_message` - APIs for serializing messages sent between Client and Node
 classes.
-* :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Worker
-* :py:mod:`syft.core.store` - Server side API for referring to object storage on a worker
+* :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Node
+* :py:mod:`syft.core.store` - Server side API for referring to object storage on a node
 (things pointers point to)
 
 Syft "python" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library abstract syntax tree using a white\
+* :py:mod:`syft.ast` - code generates external library common syntax tree using a white\
 list of methods
 * :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive
 use of kwargs.
@@ -63,3 +63,15 @@ except DistributionNotFound:
     __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
+
+from syft.core.nodes.vm.vm import VirtualMachine
+from syft.core.nodes.device.device import Device
+from syft.core.nodes.domain.domain import Domain
+from syft.core.nodes.network.network import Network
+
+from syft.core.nodes.common.service.repr_service import ReprMessage
+
+# def get_client(host="127.0.0.1", port="5000"):
+#     res = requests.get(f"http://{host}:{port}/")
+#     client = pickle.loads(bytes.fromhex(res.text))
+#     return client

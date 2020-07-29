@@ -25,10 +25,10 @@ syft.common.object module
    :undoc-members:
    :show-inheritance:
 
-syft.common.worker module
+syft.common.node module
 -------------------------
 
-.. automodule:: syft.common.worker
+.. automodule:: syft.common.node
    :members:
    :undoc-members:
    :show-inheritance:
