@@ -18,8 +18,11 @@ jobs:
       - name: Build images
         run: |
           sudo apt install gcc
-          docker build . --file ./apps/node/Dockerfile --tag openmined/grid-node:latest
-          docker build . --file ./apps/network/Dockerfile --tag openmined/grid-network:latest
+          cd ./apps/node/
+          docker build . --tag openmined/grid-node:latest
+
+          cd ../network/
+          docker build . --tag openmined/grid-network:latest
       - name: Push images
         run: |
           docker push openmined/grid-node:latest
