@@ -12,8 +12,6 @@ PyGrid platform is composed by three different components.
 - **Node** - A Flask-based application used to store private data and models for federated learning, as well as to issue instructions to various PyGrid Workers.
 - **Worker** - An emphemeral instance, managed by a PyGrid Node, that is used to compute data.
 
-![PyGrid Architecture](https://github.com/OpenMined/Roadmap/blob/master/federated_learning/projects/images/new-workflow-network.png?raw=true)
-
 ## Use Cases
 
 ### Federated Learning
@@ -34,6 +32,8 @@ This takes place potentially with hundreds, or thousands of devices simultaneous
 
 _Note:_ For posterity sake, we previously used to refer to this process as "static federated learning".
 
+![Cycled MCFL](assets/MCFL-cycled.png)
+
 #### Data-centric FL
 
 Data-centric FL is the same problem as model-centric FL, but from the opposite perspective. The most likely scenario for data-centric FL is where a person or organization has data they want to protect in PyGrid (instead of hosting the model, they host data). This would allow a data scientist who is not the data owner, to make requests for training or inference against that data. The following workflow will take place:
@@ -49,6 +49,18 @@ Data-centric FL is the same problem as model-centric FL, but from the opposite p
 For the last step, we're working on adding the capability for privacy budget tracking to be applied that will allow a data owner to "sign off" on whether or not a trained model should be released.
 
 _Note:_ For posterity sake, we previously used to refer to this process as "dynamic federated learning".
+
+**Node-only data-centric FL**
+
+Technically speaking, it isn't required to run a Network when performing data-centric federated learning. Alternatively, as a data owner, you may opt to only run a Node, but participate in a Network hosted by someone else. The Network host will not have access to your data.
+
+![Node-only DCFL](assets/DCFL-node.png)
+
+**Network-based data-centric FL**
+
+Many times you will wat to use a Network to allow multiple Nodes to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Nodes. PyGrid doesn't prescribe one way to organize Nodes and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
+
+![Network-based DCFL](assets/DCFL-network.png)
 
 ## Getting started
 
