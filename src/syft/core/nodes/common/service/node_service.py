@@ -37,20 +37,8 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithReply
+        node: AbstractNode, msg: SyftMessage
     ) -> ImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
-
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
-        raise NotImplementedError
-
-
-class EventualNodeServiceWithoutReply(NodeService):
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -62,7 +50,9 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def process(
+        node: AbstractNode, msg: SyftMessage
+    ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     @staticmethod

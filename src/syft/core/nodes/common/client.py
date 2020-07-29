@@ -12,6 +12,7 @@ from typing import List
 from ....lib import lib_ast
 
 
+
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -56,16 +57,10 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_with_reply(
+    def send_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
-        return self.routes[0].send_immediate_msg_with_reply(msg=msg)
-
-    @syft_decorator(typechecking=True)
-    def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
-    ) -> None:
-        return self.routes[0].send_immediate_msg_without_reply(msg=msg)
+        return self.routes[0].send_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(

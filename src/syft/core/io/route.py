@@ -50,11 +50,9 @@ connection health, and overall cost of each connection option as
 measured by fixed constants as well as previous uses of the
 connection.
 
-@syft_decorator(typechecking=True)
-def route(
-    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
-) -> Route:
-    """A convenience method for creating routes"""
+This necessitates an abstraction which lets us store connection
+information both about hops we know about and about hops we don't
+know about.
 
 This abstraction is called a "Route" and each hop is called a "Hop"
 where any collection of hops within the route is called a 
@@ -85,7 +83,7 @@ would have instructions for how to forward to a binary tree of other
 nodes, propagating the model to all nodes which asked for it.
 """
 
-from syft.core.common.object import ObjectWithId
+from ...interfaces.object import ObjectWithId
 from .location import Location
 from typing import Set
 from syft.core.message import SyftMessageWithReply
@@ -115,12 +113,12 @@ class Route(ObjectWithId):
         self.schema = schema
         self.stops = stops
 
-    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
 
 class BroadcastRoute(Route):
-    def send_immediate_msg_with_reply(
+    def send_msg_with_reply(
         self, msg: SyftMessageWithReply
     ) -> Set[SyftMessageWithoutReply]:
         raise NotImplementedError
@@ -133,15 +131,8 @@ class SoloRoute(Route):
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
-    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        self.connection.send_immediate_msg_without_reply(msg=msg)
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        self.connection.send_msg_without_reply(msg=msg)
 
-    def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
-    ) -> None:
-        self.connection.send_eventual_msg_without_reply(msg=msg)
-
-    def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> SyftMessageWithoutReply:
-        return self.connection.send_immediate_msg_with_reply(msg=msg)
+    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+        return self.connection.send_msg_with_reply(msg=msg)

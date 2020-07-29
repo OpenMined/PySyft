@@ -16,7 +16,7 @@ from syft.core.message import EventualSyftMessageWithoutReply
 from syft.core.message import ImmediateSyftMessageWithoutReply
 
 # CORE IMPORTS
-from ...store.store import ObjectStore
+from ...store import ObjectStore
 from .service.msg_forwarding_service import MessageWithoutReplyForwardingService
 from .service.msg_forwarding_service import MessageWithReplyForwardingService
 from .service.repr_service import ReprService
@@ -150,7 +150,9 @@ class Node(AbstractNode, LocationAwareObject):
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
         # now we need to load the relevant frameworks onto the node
-        self.lib_ast = lib_ast
+        self.lib_ast = Globals()
+        self.lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
+        self.lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> Client:
@@ -188,7 +190,7 @@ class Node(AbstractNode, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def recv_immediate_msg_with_reply(
+    def recv_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
         if self.message_is_for_me(msg):
@@ -210,35 +212,6 @@ class Node(AbstractNode, LocationAwareObject):
             return self.message_with_reply_forwarding_service.process(
                 node=self, msg=msg
             )
-
-    @syft_decorator(typechecking=True)
-    def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
-    ) -> None:
-
-        if self.message_is_for_me(msg):
-            print("the message is for me!!!")
-            try:  # we use try/except here because it's marginally faster in Python
-
-                self.immediate_msg_without_reply_router[type(msg)].process(
-                    node=self, msg=msg
-                )
-
-            except KeyError as e:
-
-                if type(msg) not in self.immediate_msg_without_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise e
-
-        else:
-            print("the message is not for me...")
-            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(

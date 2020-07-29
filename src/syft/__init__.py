@@ -64,9 +64,6 @@ finally:
 
 # Convenience Constructors
 from syft.core.nodes.vm.vm import VirtualMachine
-from syft.core.nodes.vm.vm import VirtualMachineClient
-from syft.core.nodes.device.device import Device
-from syft.core.nodes.device.device import DeviceClient
 from syft.core.nodes.domain.domain import Domain
 from syft.core.nodes.domain.domain import DomainClient
 from syft.core.nodes.network.network import Network
