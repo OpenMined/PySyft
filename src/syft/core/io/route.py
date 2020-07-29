@@ -88,6 +88,7 @@ from .location import Location
 from typing import Set
 from syft.core.message import SyftMessageWithReply
 from syft.core.message import SyftMessageWithoutReply
+from syft.core.message import EventualSyftMessageWithoutReply
 from .connection import ClientConnection
 from typing import List
 
@@ -128,8 +129,11 @@ class SoloRoute(Route):
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
-    def send_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         self.connection.send_msg_without_reply(msg=msg)
 
-    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> SyftMessageWithoutReply:
+    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+        self.connection.send_msg_without_reply(msg=msg)
+
+    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         return self.connection.send_msg_with_reply(msg=msg)

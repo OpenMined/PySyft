@@ -1,6 +1,7 @@
 import random
 
 from ..nodes.common.action.get_object_action import GetObjectAction
+from ..nodes.common.action.garbage_collect_object_action import GarbageCollectObjectAction
 
 
 class Pointer:
@@ -16,3 +17,11 @@ class Pointer:
             obj_id=self.id_at_location, address=self.location.address, reply_to=None
         )
         return self.location.send_msg_with_reply(msg=obj_msg).obj
+
+    def __del__(self):
+        print("Deleted:" + str(self))
+        obj_msg = GarbageCollectObjectAction(
+            obj_id=self.id_at_location, address=self.location.address
+        )
+
+        self.location.send_eventual_msg_without_reply(msg=obj_msg)

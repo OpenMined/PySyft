@@ -1,5 +1,6 @@
 from syft.core.message import ImmediateSyftMessageWithReply
 from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.message import EventualSyftMessageWithoutReply
 from ....decorators import syft_decorator
 from ....common.id import UID
 from ...io.address import Address
@@ -50,6 +51,10 @@ class Client(AbstractNodeClient, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def send_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
         return self.routes[0].send_msg_without_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+        return self.routes[0].send_eventual_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
