@@ -16,6 +16,8 @@ from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as P
 
 from syft.exceptions import RemoteObjectFoundError
 
+import torch
+
 
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
@@ -151,7 +153,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             enough remote error handling yet to do anything better."""
             return True
 
-    def clone(self):
+    def clone(self, memory_format=torch.preserve_format):
         """
         Clone should keep ids unchanged, contrary to copy.
         We make the choice that a clone action is local, and can't affect
