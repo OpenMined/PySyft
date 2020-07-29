@@ -13,7 +13,7 @@ import hashlib
 import math
 import time
 import numpy as np
-import sha_loop
+import shaloop
 import multiprocessing
 import asyncio
 
@@ -459,7 +459,7 @@ def G(seed):
 
     out = np.empty((n_values, 4 * 8), dtype=np.uint8)
 
-    out = sha_loop.sha256_loop_func(x, out)
+    shaloop.sha256_loop_func(x, out)
 
     buffer = out.view(np.uint64).T
 
@@ -507,7 +507,7 @@ def H(seed, idx=0):
 
     out, valuebits = empty_dict[(n_values, idx)]
 
-    out = sha_loop.sha512_loop_func(x, out)
+    shaloop.sha512_loop_func(x, out)
 
     buffer = out.view(np.uint64).T  # is of size 8 * 64 bits
 
