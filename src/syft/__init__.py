@@ -53,7 +53,6 @@ from pkg_resources import get_distribution, DistributionNotFound  # noqa: F401
 # PACKAGE IMPORTS
 from . import lib  # noqa: F401
 
-
 # VERSIONING
 try:
     # Change here if project is renamed and does not equal the package name
@@ -75,3 +74,18 @@ from syft.core.nodes.common.service.repr_service import ReprMessage
 #     res = requests.get(f"http://{host}:{port}/")
 #     client = pickle.loads(bytes.fromhex(res.text))
 #     return client
+
+#LIBRARY CONFIG
+
+# When you pass in an argument which is of the incorrect type,
+# do you want the long or abbreviated stack trace?
+
+import syft as sy
+
+
+def LONG_TYPECHECK_STACK_TRACES(setting=None):
+    if setting is not None:
+        sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES = setting
+    return sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES
+
+LONG_TYPECHECK_STACK_TRACES(False)

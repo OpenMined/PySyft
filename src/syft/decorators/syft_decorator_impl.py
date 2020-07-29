@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 from .typecheck import type_hints
 
+# this flag is set in syft.__init__.py
+LONG_TYPECHECK_STACK_TRACES = None
 
 def syft_decorator(
     typechecking=False,
@@ -11,11 +13,18 @@ def syft_decorator(
     other_decorators: list = None,
 ):
     def decorator(function):
+
         if typechecking:
             function = type_hints(function)
 
         def wrapper(*args, **kwargs):
-            return function(*args, **kwargs)
+
+            try:
+                return function(*args, **kwargs)
+            except Exception as e:
+                if(LONG_TYPECHECK_STACK_TRACES):
+                    raise e
+                raise Exception(str(e))
 
         if other_decorators:
             for other_decorator in other_decorators:
