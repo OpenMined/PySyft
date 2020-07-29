@@ -15,10 +15,19 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def share_secret(self, secret, workers):
         number_of_shares = len(workers)
+        workers = self.__arrange_workers(workers)
         shares = self.generate_shares(secret, number_of_shares)
-        shares_locations = self.__distribute_shares(workers, shares)
-        self.child = shares_locations
+        shares_map = self.__distribute_shares(workers, shares)
+        self.child = shares_map
         return self
+
+    @staticmethod
+    def __arrange_workers(workers):
+        """ having local worker in index 0 saves one communication round"""
+        if syft.hook.local_worker in workers:
+            workers.pop(syft.hook.local_worker)
+            workers = [syft.hook.local_worker] + workers
+        return workers
 
     def generate_shares(self, secret, number_of_shares=3):
         shares = []
@@ -44,14 +53,20 @@ class ReplicatedSharingTensor(AbstractTensor):
         plain_text = self.__map_modular_to_real(plain_text_mod)
         return plain_text
 
-    @staticmethod
-    def __retrieve_shares(shares_locations):
+    def __retrieve_shares(self, shares_map):
+        pointers = self.__retrieve_pointers(shares_map)
         shares = []
-        pointers = list(shares_locations.values())
-        for pointer_double in pointers:
-            share0 = pointer_double[0].get()
-            shares.append(share0)
+        for pointer in pointers:
+            shares.append(pointer.get())
         return shares
+
+    @staticmethod
+    def __retrieve_pointers(shares_map):
+        pointers = []
+        players = list(shares_map.keys())
+        pointers = pointers + list(shares_map[players[0]])
+        pointers.append(shares_map[players[1]][1])
+        return pointers
 
     def __sum_shares(self, shares):
         return sum(shares) % self.ring_size
@@ -101,7 +116,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
-        x, y = self.get_pointer_map(self, secret)
+        x, y = self.get_shares_map(self, secret)
         for player in x.keys():
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
@@ -115,13 +130,13 @@ class ReplicatedSharingTensor(AbstractTensor):
         return True
 
     def get_players(self):
-        return list(self.get_pointer_map(self).keys())
+        return list(self.get_shares_map(self).keys())
 
     @staticmethod
-    def get_pointer_map(*secrets):
-        """pointer_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
-        pointers_maps = [secret.child for secret in secrets]
-        return pointers_maps if len(pointers_maps) > 1 else pointers_maps[0]
+    def get_shares_map(*secrets):
+        """shares_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
+        shares_map = [secret.child for secret in secrets]
+        return shares_map if len(shares_map) > 1 else shares_map[0]
 
     def __repr__(self):
         return self.__str__()
