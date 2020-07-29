@@ -84,9 +84,10 @@ class ReplicatedSharingTensor(AbstractTensor):
     def public_add(self, plain_text):
         plain_text = torch.tensor(plain_text)
         players = self.get_players()
-        y = syft.ReplicatedSharingTensor().share_secret(plain_text, players)
-        z = self.private_add(y)
-        return z
+        y = plain_text.send(players[0])
+        shares_map = self.get_shares_map(self)
+        shares_map[players[0]] = (shares_map[players[0]][0] + y, shares_map[players[0]][1])
+        return syft.ReplicatedSharingTensor(shares_map)
 
     def private_add(self, secret):
         return self.linear_operation(secret, add)
