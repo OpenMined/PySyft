@@ -4,11 +4,20 @@ from . import StorableObject, ObjectStore
 
 
 class MemoryStore(ObjectStore):
-    """Logic to store and retrieve objects within a worker"""
+    """
+    Class that implements an in-memory ObjectStorage, backed by a dict.
+
+    Attributes:
+        _objects (dict): the dict that backs the storage of the MemoryStorage.
+        _search_engine (ObjectSearchEngine): the objects that handles searching by using tags or
+        description.
+    """
+
+    __slots__ = ["_objects", "_search_engine"]
 
     def __init__(self):
-        self._objects = {}
-        self.search_engine = None
+        _objects = {}
+        _search_engine = None
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
