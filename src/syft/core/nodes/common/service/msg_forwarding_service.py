@@ -39,7 +39,7 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
 
 class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: ImmediateSyftMessageWithReply) -> None:
+    def process(self, node: AbstractNode, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
 
         addr = msg.address
         pri_addr = addr.pri_address

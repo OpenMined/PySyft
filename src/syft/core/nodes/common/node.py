@@ -12,6 +12,7 @@ from typing import List
 from ....util import get_subclasses
 from syft.core.message import SyftMessage
 from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.message import EventualSyftMessageWithoutReply
 from syft.core.message import ImmediateSyftMessageWithoutReply
 
 # CORE IMPORTS
@@ -22,8 +23,9 @@ from .service.repr_service import ReprService
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
-from .service.obj_action_service import ObjectActionServiceWithoutReply
-from .service.obj_action_service import ObjectActionServiceWithReply
+from .service.obj_action_service import ImmediateObjectActionServiceWithoutReply
+from .service.obj_action_service import EventualObjectActionServiceWithoutReply
+from .service.obj_action_service import ImmediateObjectActionServiceWithReply
 from ...io.address import Address
 from ...io.virtual import create_virtual_connection
 from ...io.route import SoloRoute
@@ -33,6 +35,7 @@ from ....lib.numpy import ast as numpy_ast
 from ....ast.globals import Globals
 
 from .location_aware_object import LocationAwareObject
+
 
 class Node(AbstractNode, LocationAwareObject):
 
@@ -109,21 +112,28 @@ class Node(AbstractNode, LocationAwareObject):
         # which addresses that old_message
         self.msg_without_reply_router = {}
 
-        # for services which return a reply
-        self.services_with_reply = list()
-
-        # for services which do not return a reply
-        self.services_without_reply = list()
+        # for messages which don't need to be run right now
+        # and will not generate a reply.
+        self.eventual_msg_without_reply_router = {}
 
         # This is the list of services which all nodes support.
         # You can read more about them by reading their respective
         # class documentation.
-        self.services_without_reply.append(ReprService)
-        self.services_without_reply.append(HeritageUpdateService)
-        self.services_without_reply.append(ChildNodeLifecycleService)
-        self.services_without_reply.append(ObjectActionServiceWithoutReply)
 
-        self.services_with_reply.append(ObjectActionServiceWithReply)
+        # for services which run immediately and do not return a reply
+        self.immediate_services_without_reply = list()
+        self.immediate_services_without_reply.append(ReprService)
+        self.immediate_services_without_reply.append(HeritageUpdateService)
+        self.immediate_services_without_reply.append(ChildNodeLifecycleService)
+        self.immediate_services_without_reply.append(ImmediateObjectActionServiceWithoutReply)
+
+        # for services which run immediately and return a reply
+        self.immediate_services_with_reply = list()
+        self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
+
+        # for services which can run at a later time and do not return a reply
+        self.eventual_services_without_reply = list()
+        self.eventual_services_without_reply.append(EventualObjectActionServiceWithoutReply)
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
@@ -191,7 +201,7 @@ class Node(AbstractNode, LocationAwareObject):
     def recv_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
 
         if self.message_is_for_me(msg):
-            print("the old_message is for me!!!")
+            print("the message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
 
                 self.msg_without_reply_router[type(msg)].process(node=self, msg=msg)
@@ -199,6 +209,32 @@ class Node(AbstractNode, LocationAwareObject):
             except KeyError as e:
 
                 if type(msg) not in self.msg_without_reply_router:
+                    raise KeyError(
+                        f"The node {self.id} of type {type(self)} cannot process messages of type "
+                        + f"{type(msg)} because there is no service running to process it."
+                    )
+
+                self.ensure_services_have_been_registered_error_if_not()
+
+                raise e
+
+        else:
+            print("the message is not for me...")
+            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
+
+
+    @syft_decorator(typechecking=True)
+    def recv_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+
+        if self.message_is_for_me(msg):
+            print("the old_message is for me!!!")
+            try:  # we use try/except here because it's marginally faster in Python
+
+                self.eventual_msg_without_reply_router[type(msg)].process(node=self, msg=msg)
+
+            except KeyError as e:
+
+                if type(msg) not in self.eventual_msg_without_reply_router:
                     raise KeyError(
                         f"The node {self.id} of type {type(self)} cannot process messages of type "
                         + f"{type(msg)} because there is no service running to process it."
@@ -230,7 +266,7 @@ class Node(AbstractNode, LocationAwareObject):
         correspond to it, but each old_message type can only have one service (per node
         subclass) which corresponds to it."""
 
-        for s in self.services_with_reply:
+        for s in self.immediate_services_with_reply:
             # Create a single instance of the service to cache in the router corresponding
             # to one or more old_message types.
             service_instance = s()
@@ -244,7 +280,7 @@ class Node(AbstractNode, LocationAwareObject):
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.msg_with_reply_router[handler_type_subclass] = service_instance
 
-        for s in self.services_without_reply:
+        for s in self.immediate_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
             # to one or more old_message types.
             service_instance = s()
@@ -257,6 +293,22 @@ class Node(AbstractNode, LocationAwareObject):
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.msg_without_reply_router[
+                        handler_type_subclass
+                    ] = service_instance
+
+        for s in self.eventual_services_without_reply:
+            # Create a single instance of the service to cache in the router corresponding
+            # to one or more old_message types.
+            service_instance = s()
+            for handler_type in s.message_handler_types():
+
+                # for each explicitly supported type, add it to the router
+                self.eventual_msg_without_reply_router[handler_type] = service_instance
+
+                # for all sub-classes of the explicitly supported type, add them
+                # to the router as well.
+                for handler_type_subclass in get_subclasses(obj_type=handler_type):
+                    self.eventual_msg_without_reply_router[
                         handler_type_subclass
                     ] = service_instance
 
