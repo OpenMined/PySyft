@@ -1,19 +1,15 @@
-FROM openmined/pysyft-lite as base
-
-FROM base as builder
+FROM python:3.7-slim
+RUN mkdir /app
+WORKDIR /app
 
 RUN apt-get update
-RUN apt-get install -y git python3-pip python3-dev
-COPY requirements.txt /app/pip-dep
+RUN apt-get install -y git python3-pip
 
-WORKDIR /app
-RUN pip3 install --user -Ur pip-dep/requirements.txt
+RUN pip3 install poetry
+COPY poetry.lock pyproject.toml entrypoint.sh /app/
+COPY /src /app/src
 
+WORKDIR /app/
+RUN poetry install
 
-FROM openmined/pysyft-lite as grid_app
-
-COPY --from=builder root/.local root/.local
-
-COPY . /app
-WORKDIR /app
 ENTRYPOINT ["sh", "entrypoint.sh"]

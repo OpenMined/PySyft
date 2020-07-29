@@ -1,16 +1,15 @@
 FROM python:3.7-slim
+RUN mkdir /app
+WORKDIR /app
 
 RUN apt-get update
 RUN apt-get install -y git python3-pip
 
-ENV PORT=5000
+RUN pip3 install poetry
+COPY poetry.lock pyproject.toml entrypoint.sh /app/
+COPY /src /app/src
 
-COPY ./requirements.txt /app/requirements.txt
-WORKDIR /app
-
-RUN pip3 install -r requirements.txt
-COPY . /app
-WORKDIR /app
-EXPOSE 5000
+WORKDIR /app/
+RUN poetry install
 
 ENTRYPOINT ["sh", "entrypoint.sh"]

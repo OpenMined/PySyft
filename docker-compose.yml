@@ -1,62 +1,59 @@
 version: '3'
 services:
   network:
-    image: openmined/grid-network:latest
-    build: .
+    image: network
+    build: ./apps/network
     environment:
-      - NODE_ID=Bob
-      - GRID_PORT=5000
+      - PORT=5000
       - SECRET_KEY=ineedtoputasecrethere
       - DATABASE_URL=sqlite:///databasenetwork.db
     ports:
       - 5000:5000
-  redis:
-    image: redis:latest
-    expose:
-      - 6379
-    ports:
-      - 6379:6379
   bob:
-    image: openmined/grid-node:latest
+    image: node
+    build: ./apps/node
     environment:
-      - ID=Bob
+      - NODE_ID=Bob
       - ADDRESS=http://bob:3000/
       - PORT=3000
+      - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
-      - 'redis'
     ports:
       - 3000:3000
   alice:
-    image: openmined/grid-node:latest
+    image: node
+    build: ./apps/node
     environment:
-      - ID=Alice
+      - NODE_ID=Alice
       - ADDRESS=http://alice:3001/
       - PORT=3001
+      - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
-      - 'redis'
     ports:
       - 3001:3001
   bill:
-    image: openmined/grid-node:latest
+    image: node
+    build: ./apps/node
     environment:
-      - ID=Bill
+      - NODE_ID=Bill
       - ADDRESS=http://bill:3002/
       - PORT=3002
+      - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
-      - 'redis'
     ports:
       - 3002:3002
   james:
-    image: openmined/grid-node:latest
+    image: node
+    build: ./apps/node
     environment:
-      - ID=James
+      - NODE_ID=James
       - ADDRESS=http://james:3003/
       - PORT=3003
+      - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
-      - 'redis'
     ports:
       - 3003:3003
