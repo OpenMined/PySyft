@@ -7,10 +7,10 @@ from operator import add, sub
 
 class ReplicatedSharingTensor(AbstractTensor):
     def __init__(
-        self, shares=None, owner=None, id=None, tags=None, description=None,
+        self, shares_map=None, owner=None, id=None, tags=None, description=None,
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        self.child = shares
+        self.child = shares_map
         self.ring_size = 2 ** 5
 
     def share_secret(self, secret, workers):
@@ -77,35 +77,34 @@ class ReplicatedSharingTensor(AbstractTensor):
         real_number = (element_wise_comparison * -self.ring_size) + mod_number
         return real_number
 
-    def add(self, y):
-        return self.switch_public_private(y, self.public_add, self.private_add)
+    def add(self, value):
+        return self.switch_public_private(value, self.public_add, self.private_add)
 
     def public_add(self, plain_text):
-        plain_text = torch.tensor(plain_text)
         players = self.get_players()
-        y = plain_text.send(players[0])
         shares_map = self.get_shares_map()
-        shares_map[players[0]] = (shares_map[players[0]][0] + y, shares_map[players[0]][1])
+        plain_text = torch.tensor(plain_text).send(players[0])
+        shares_map[players[0]] = (shares_map[players[0]][0] + plain_text, shares_map[players[0]][1])
         return syft.ReplicatedSharingTensor(shares_map)
 
     def private_add(self, secret):
         return self.linear_operation(secret, add)
 
-    def sub(self, y):
-        return self.switch_public_private(y, self.public_sub, self.private_sub)
+    def sub(self, value):
+        return self.switch_public_private(value, self.public_sub, self.private_sub)
 
-    def public_sub(self, y):
-        return self.add(-y)
+    def public_sub(self, plain_text):
+        return self.add(-plain_text)
 
     def private_sub(self, secret):
         return self.linear_operation(secret, sub)
 
     @staticmethod
-    def switch_public_private(y, public, private):
-        if isinstance(y, (int, float, torch.Tensor)):
-            return public(y)
-        elif isinstance(y, syft.ReplicatedSharingTensor):
-            return private(y)
+    def switch_public_private(value, public_function, private_function):
+        if isinstance(value, (int, float, torch.Tensor)):
+            return public_function(value)
+        elif isinstance(value, syft.ReplicatedSharingTensor):
+            return private_function(value)
         else:
             raise ValueError(
                 "ReplicatedSharingTensor can only be added to"
@@ -133,7 +132,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         return list(self.get_shares_map().keys())
 
     def get_shares_map(self):
-        """shares_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
         return self.child
 
     def __repr__(self):
