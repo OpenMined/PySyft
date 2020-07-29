@@ -33,7 +33,7 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
 
         # Step 2: update the child node and its descendants with our node.id in their .address objects
         heritage_msg = HeritageUpdateMessage(new_ancestry_address=node.address, address=msg.child_node_client.address)
-        msg.child_node_client.send_msg_without_reply(msg=heritage_msg)
+        msg.child_node_client.send_immediate_msg_without_reply(msg=heritage_msg)
 
     @staticmethod
     @syft_decorator(typechecking=True)

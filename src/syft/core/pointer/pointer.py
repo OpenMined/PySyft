@@ -16,7 +16,7 @@ class Pointer:
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location, address=self.location.address, reply_to=None
         )
-        return self.location.send_msg_with_reply(msg=obj_msg).obj
+        return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
 
     def __del__(self):
         print("Deleted:" + str(self))

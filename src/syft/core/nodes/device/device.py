@@ -33,9 +33,11 @@ class Device(Node):
 
         self._register_services()
 
-    def add_me_to_my_address(self):
+    @syft_decorator(typechecking=True)
+    def add_me_to_my_address(self) -> None:
         self.address.pri_address.device = self.id
 
+    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pri_address.device == self.id

@@ -43,10 +43,10 @@ class Address(object):
 
     def __repr__(self):
         out = ""
-        out += f"Public(Network:{self.pub_address.network},"
-        out += f" Domain:{self.pub_address.domain}) "
-        out += f" Private(Device:{self.pri_address.device},"
-        out += f" VM:{self.pri_address.vm})"
+        out += f" Network:{self.pub_address.network}," # OpenGrid
+        out += f" Domain:{self.pub_address.domain}) " # UCSF
+        out += f" Device:{self.pri_address.device}," # One of UCSF's Dell Servers
+        out += f" VM:{self.pri_address.vm})" # 8GB of RAM set aside for Andrew Trask on UCSF-Server-5
         return out
 
 

@@ -4,8 +4,9 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from syft.core.message import SyftMessageWithReply
-from syft.core.message import SyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.message import EventualSyftMessageWithoutReply
 from ..nodes.abstract.node import AbstractNode
 from ...decorators import syft_decorator
 from typing import final
@@ -23,12 +24,16 @@ class VirtualServerConnection(ServerConnection):
         self.node = node
 
     @syft_decorator(typechecking=True)
-    def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
-        return self.node.recv_msg_with_reply(msg=msg)
+    def recv_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+        return self.node.recv_immediate_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        self.node.recv_msg_without_reply(msg=msg)
+    def recv_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+        self.node.recv_immediate_msg_without_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def recv_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+        self.node.recv_eventual_msg_without_reply(msg=msg)
 
 
 @final
@@ -37,12 +42,16 @@ class VirtualClientConnection(ClientConnection):
     def __init__(self, server: VirtualServerConnection):
         self.server = server
 
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        self.server.recv_msg_without_reply(msg=msg)
+    def send_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+        self.server.recv_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
-        return self.server.recv_msg_with_reply(msg=msg)
+    def send_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+        return self.server.recv_immediate_msg_with_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+        return self.server.recv_eventual_msg_without_reply(msg=msg)
 
 
 @syft_decorator(typechecking=True)

@@ -7,6 +7,7 @@ from ...io.address import Address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from ..common.action.function_or_constructor_action import RunFunctionOrConstructorAction
 from ...io.route import Route
 from typing import List
 
@@ -32,7 +33,7 @@ class Client(AbstractNodeClient, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
         msg = RegisterChildNodeMessage(child_node_client=client, address=self.address)
-        self.send_msg_without_reply(msg=msg)
+        self.send_immediate_msg_without_reply(msg=msg)
 
     @property
     def target_node_id(self) -> UID:
@@ -45,12 +46,12 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
-        return self.routes[0].send_msg_with_reply(msg=msg)
+    def send_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+        return self.routes[0].send_immediate_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
-        return self.routes[0].send_msg_without_reply(msg=msg)
+    def send_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+        return self.routes[0].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:

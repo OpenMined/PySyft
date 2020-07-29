@@ -6,14 +6,6 @@ syft.core.nodes.domain package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   syft.core.nodes.domain.service
-
 Submodules
 ----------
 

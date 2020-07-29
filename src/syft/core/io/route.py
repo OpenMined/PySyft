@@ -113,13 +113,13 @@ class Route(ObjectWithId):
         self.schema = schema
         self.stops = stops
 
-    def send_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
+    def send_immediate_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
 
 class BroadcastRoute(Route):
 
-    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
+    def send_immediate_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
         raise NotImplementedError
 
 
@@ -129,11 +129,11 @@ class SoloRoute(Route):
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        self.connection.send_msg_without_reply(msg=msg)
+    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
-        self.connection.send_msg_without_reply(msg=msg)
+        self.connection.send_eventual_msg_without_reply(msg=msg)
 
-    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
-        return self.connection.send_msg_with_reply(msg=msg)
+    def send_immediate_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+        return self.connection.send_immediate_msg_with_reply(msg=msg)

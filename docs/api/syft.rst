@@ -15,5 +15,18 @@ Subpackages
    syft.ast
    syft.common
    syft.core
+   syft.decorators
+   syft.grid
    syft.lib
-   syft.typecheck
+
+Submodules
+----------
+
+syft.util module
+----------------
+
+.. automodule:: syft.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

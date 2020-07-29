@@ -8,6 +8,7 @@ from ...abstract.node import AbstractNode
 from syft.core.message import ImmediateSyftMessageWithoutReply
 from ..action.common import ImmediateActionWithReply
 from ..action.common import ImmediateActionWithoutReply
+from ..action.common import EventualActionWithoutReply
 from typing import List
 
 
@@ -22,16 +23,17 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
     def message_handler_types() -> List[type]:
         return [ImmediateActionWithoutReply]
 
+
 class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> None:
+    def process(self, node: AbstractNode, msg: EventualActionWithoutReply) -> None:
         msg.execute_action(node=node)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [ImmediateActionWithoutReply]
+        return [EventualActionWithoutReply]
 
 
 class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):

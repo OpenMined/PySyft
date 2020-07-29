@@ -17,6 +17,14 @@ syft.lib.numpy module
    :undoc-members:
    :show-inheritance:
 
+syft.lib.tensorflow module
+--------------------------
+
+.. automodule:: syft.lib.tensorflow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.lib.torch module
 ---------------------
 

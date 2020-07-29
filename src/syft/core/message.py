@@ -19,7 +19,7 @@ class ImmediateSyftMessage(SyftMessage):
     ""
 
 
-class EventualMessage(SyftMessage):
+class EventualSyftMessage(SyftMessage):
     ""
 
 
@@ -34,7 +34,7 @@ class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutR
         super().__init__(address=address, msg_id=msg_id)
 
 
-class EventualSyftMessageWithoutReply(EventualMessage, SyftMessageWithoutReply):
+class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: UID = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
 
