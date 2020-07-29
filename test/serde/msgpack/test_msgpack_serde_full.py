@@ -69,6 +69,8 @@ samples[
 ] = make_fixedprecisiontensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 
+samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
+
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
 samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
@@ -86,6 +88,8 @@ samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
+samples[syft.messaging.message.CryptenInitPlan] = make_crypteninitplan
+samples[syft.messaging.message.CryptenInitJail] = make_crypteninitjail
 
 samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 

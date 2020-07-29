@@ -88,6 +88,8 @@ class BaseWorker(AbstractWorker):
             precision.
     """
 
+    _framework_message_handler = {}
+
     def __init__(
         self,
         hook: "FrameworkHook",
@@ -167,6 +169,10 @@ class BaseWorker(AbstractWorker):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
+
+        # Register the specific handlers for each framework
+        for _, message_handler_constructor in BaseWorker._framework_message_handler.items():
+            self.message_handlers.append(message_handler_constructor(self.object_store, self))
 
         self.syft = sy
 
@@ -805,12 +811,9 @@ class BaseWorker(AbstractWorker):
         self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
-
         This method is executed for local execution.
-
         Args:
             protocol_id: A string indicating the protocol id.
-
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """
@@ -1003,6 +1006,13 @@ class BaseWorker(AbstractWorker):
 
         return result
 
+    @staticmethod
+    def register_message_handlers():
+        if sy.dependency_check.crypten_available:
+            from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
+            BaseWorker._framework_message_handler["crypten"] = CryptenMessageHandler
+
     @classmethod
     def is_framework_supported(cls, framework: str) -> bool:
         """
@@ -1011,3 +1021,6 @@ class BaseWorker(AbstractWorker):
         :return: True/False
         """
         return framework.lower() in framework_packages
+
+
+BaseWorker.register_message_handlers()

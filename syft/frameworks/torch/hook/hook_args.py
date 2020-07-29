@@ -1,5 +1,6 @@
 import torch
 
+from syft import dependency_check
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.generic.frameworks.hook.hook_args import (
     register_ambiguous_method,
@@ -32,11 +33,27 @@ backward_func = {
     torch.nn.Parameter: lambda i, **kwargs: torch.nn.Parameter(data=i),
 }
 
+if dependency_check.crypten_available:
+    import crypten
+
+    type_rule[crypten.mpc.MPCTensor] = one
+    forward_func[crypten.mpc.MPCTensor] = (
+        lambda i: i.child if hasattr(i, "child") else ().throw(PureFrameworkTensorFoundError)
+    )
+    backward_func[crypten.mpc.MPCTensor] = lambda i, **kwargs: i.wrap(**kwargs)
+
+    type_rule[crypten.nn.Module] = one
+    forward_func[crypten.nn.Module] = (
+        lambda i: i.child if hasattr(i, "child") else ().throw(PureFrameworkTensorFoundError)
+    )
+
+
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = {
     "__getitem__",
     "__setitem__",
+    "__call__",
     "_getitem_public",
     "add_",
     "backward",
