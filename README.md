@@ -109,7 +109,7 @@ To start the PyGrid Node manually, run:
 
 ```
 cd apps/node
-./run.sh --port 5000 --start_local_db
+./run.sh --id bob --port 5000 --start_local_db
 ```
 
 You can pass the arguments or use environment variables to set the network configs.
