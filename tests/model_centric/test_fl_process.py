@@ -142,9 +142,9 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
             },
         }
 
-        # "model_centric/host-training" request body
+        # "model-centric/host-training" request body
         host_training_message = {
-            "type": "model_centric/host-training",
+            "type": "model-centric/host-training",
             "data": {
                 "model": serialized_plan_model,
                 "plans": {
@@ -164,9 +164,9 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         """ 2 - Authentication Request """
 
-        # "model_centric/authenticate" request body
+        # "model-centric/authenticate" request body
         auth_msg = {
-            "type": "model_centric/authenticate",
+            "type": "model-centric/authenticate",
             "data": {"model_name": "my-federated-model", "model_version": "0.1.0"},
         }
 
@@ -207,7 +207,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         self.assertIsNotNone(worker_id)
 
         """ 3 - Cycle Request """
-        # "model_centric/cycle-request" request body
+        # "model-centric/cycle-request" request body
         req_cycle_msg = {
             "worker_id": worker_id,
             "model": "my-federated-model",
@@ -217,7 +217,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
             "upload": 23.7,
         }
 
-        message = {"type": "model_centric/cycle-request", "data": req_cycle_msg}
+        message = {"type": "model-centric/cycle-request", "data": req_cycle_msg}
 
         # Send worker authentication message
         response = await send_ws_message(message)
@@ -257,7 +257,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         }
 
         host_training_message = {
-            "type": "model_centric/host-training",
+            "type": "model-centric/host-training",
             "data": {
                 "model": serialized_plan_model,
                 "plans": {
@@ -275,7 +275,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         await send_ws_message(host_training_message)
 
         auth_msg = {
-            "type": "model_centric/authenticate",
+            "type": "model-centric/authenticate",
             "data": {"model_name": "my-federated-model-2", "model_version": "0.1.0",},
         }
 
@@ -289,7 +289,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         # Speed must be required in cycle-request
         cycle_req = {
-            "type": "model_centric/cycle-request",
+            "type": "model-centric/cycle-request",
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-2",
@@ -302,7 +302,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         # Should accept into cycle if all speed fields are sent
         cycle_req = {
-            "type": "model_centric/cycle-request",
+            "type": "model-centric/cycle-request",
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-2",
@@ -335,7 +335,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         }
 
         host_training_message = {
-            "type": "model_centric/host-training",
+            "type": "model-centric/host-training",
             "data": {
                 "model": serialized_plan_model,
                 "plans": {
@@ -353,7 +353,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         await send_ws_message(host_training_message)
 
         auth_msg = {
-            "type": "model_centric/authenticate",
+            "type": "model-centric/authenticate",
             "data": {"model_name": "my-federated-model-3", "model_version": "0.1.0",},
         }
 
@@ -367,7 +367,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         # Speed is not required in cycle-request
         cycle_req = {
-            "type": "model_centric/cycle-request",
+            "type": "model-centric/cycle-request",
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-3",

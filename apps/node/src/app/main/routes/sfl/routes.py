@@ -283,7 +283,7 @@ def auth():
     )
 
 
-@model_centric.route("/req_join", methods=["GET"])
+@model_centric.route("/req-join", methods=["GET"])
 def fl_cycle_application_decision():
     """use the temporary req_join endpoint to mockup:
 

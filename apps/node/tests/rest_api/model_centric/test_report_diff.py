@@ -7,7 +7,7 @@ from src.app.main.routes.sfl import routes
 def test_report_diff_bad_request_json(client):
     """assert that the endpoint returns a 400 for malformed JSON."""
     result = client.post(
-        "/model_centric/report", data="{bad", content_type="application/json"
+        "/model-centric/report", data="{bad", content_type="application/json"
     )
     assert result.status_code == 400
     assert result.get_json().get("error") == (
@@ -20,7 +20,7 @@ def test_report_diff_bad_request_pygrid(mock_report, client):
     """assert that the endpoint returns a 400 for a PyGridError."""
     mock_report.side_effect = PyGridError("test")
 
-    result = client.post("/model_centric/report", json={"test": "data"})
+    result = client.post("/model-centric/report", json={"test": "data"})
 
     assert result.status_code == 400
     assert result.get_json().get("error") == "test"
@@ -32,7 +32,7 @@ def test_report_diff_internal_server_error(mock_report, client):
     condition."""
     mock_report.side_effect = RuntimeError("test")
 
-    result = client.post("/model_centric/report", json={"test": "data"})
+    result = client.post("/model-centric/report", json={"test": "data"})
 
     assert result.status_code == 500
     assert result.get_json().get("error") == "test"

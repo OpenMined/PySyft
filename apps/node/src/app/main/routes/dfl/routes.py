@@ -18,7 +18,7 @@ from ...dfl.persistence import model_controller
 # ======= WEB ROUTES ======
 
 
-@data_centric.route("/detailed_models_list/")
+@data_centric.route("/detailed-models-list/")
 def list_models_with_details():
     """Generates a detailed list of models currently saved at the worker.
 
