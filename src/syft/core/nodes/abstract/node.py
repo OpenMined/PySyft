@@ -1,4 +1,4 @@
-from ....common.object import ObjectWithId
+from ....interfaces import ObjectWithId
 from ...io.location import Location
 
 

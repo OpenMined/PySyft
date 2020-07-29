@@ -1,5 +1,5 @@
 from ...common.id import UID
-from ...common.object import ObjectWithId
+from ...interfaces import ObjectWithId
 from typing import Set
 
 

@@ -15,7 +15,7 @@ from syft.core.message import ImmediateSyftMessageWithReply
 from syft.core.message import ImmediateSyftMessageWithoutReply
 
 # CORE IMPORTS
-from ...store.store import ObjectStore
+from ...store import ObjectStore
 from .service.msg_forwarding_service import MessageWithoutReplyForwardingService
 from .service.msg_forwarding_service import MessageWithReplyForwardingService
 from .service.repr_service import ReprService

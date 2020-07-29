@@ -1,6 +1,6 @@
 from ...decorators import syft_decorator
 from ...common.id import UID
-from ..serialization import Serializable
+from ...interfaces import Serializable
 from .storeable_object import StorableObject
 from typing import Iterable
 from abc import ABC

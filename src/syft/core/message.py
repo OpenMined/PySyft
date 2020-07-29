@@ -1,4 +1,4 @@
-from syft.common.message import AbstractMessage
+from ..interfaces.message import AbstractMessage
 from syft.common.id import UID
 from syft.core.io.address import Address
 
