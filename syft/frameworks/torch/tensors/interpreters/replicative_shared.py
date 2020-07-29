@@ -38,13 +38,13 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     @staticmethod
     def __distribute_shares(workers, shares):
-        shares_locations = {}
+        shares_map = {}
         assert len(workers) == len(shares)
         for i in range(len(shares)):
             pointer1 = shares[i].send(workers[i])
             pointer2 = shares[(i + 1) % len(shares)].send(workers[i])
-            shares_locations[workers[i]] = (pointer1, pointer2)
-        return shares_locations
+            shares_map[workers[i]] = (pointer1, pointer2)
+        return shares_map
 
     def reconstruct(self):
         shares_locations = self.child
@@ -132,6 +132,9 @@ class ReplicatedSharingTensor(AbstractTensor):
         return list(self.get_shares_map().keys())
 
     def get_shares_map(self):
+        """
+        shares_map: dic(worker i : (share_pointer i, share_pointer i+1)
+        """
         return self.child
 
     def __repr__(self):
