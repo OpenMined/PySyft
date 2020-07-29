@@ -1,4 +1,4 @@
-from ....common.message import AbstractMessage
+from syft.interfaces.message import AbstractMessage
 
 
 class AbstractDeviceMessage(AbstractMessage):

@@ -2,6 +2,7 @@ from ...decorators import syft_decorator
 from ...common.id import UID
 from . import StorableObject, ObjectStore
 
+
 class MemoryStore(ObjectStore):
     """Logic to store and retrieve objects within a worker"""
 

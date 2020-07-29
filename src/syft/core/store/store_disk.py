@@ -21,7 +21,6 @@ class DiskObjectStore(ObjectStore):
     def store(self, obj: StorableObject) -> None:
         self.db[obj.key] = obj.serialize()
 
-
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
         return self.db.__sizeof__()
