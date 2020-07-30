@@ -19,7 +19,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: openmined/grid-node
           tags: production
-          dockerfile: ../../apps/node/Dockerfile
+          path: apps/node
 
       - name: Build and push Docker image (network)
         uses: docker/build-push-action@v1
@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: openmined/grid-network
           tags: production
-          dockerfile: ../../apps/network/Dockerfile
+          path: apps/network
 
       - name: Updating readme (node)
         uses: ms-jpq/sync-dockerhub-readme@v1
