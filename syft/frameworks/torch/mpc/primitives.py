@@ -2,8 +2,10 @@ from collections import defaultdict
 from typing import List
 
 import numpy as np
+import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.frameworks.torch.mpc.beaver import build_triple
 from syft.workers.abstract import AbstractWorker
 
 
@@ -26,11 +28,15 @@ class PrimitiveStorage:
         """
         self.fss_eq: list = []
         self.fss_comp: list = []
+        self.mul: list = defaultdict(list)
+        self.matmul: list = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
             "fss_eq": self.build_fss_keys(op="eq"),
             "fss_comp": self.build_fss_keys(op="comp"),
+            "mul": self.build_triples(op="mul"),
+            "matmul": self.build_triples(op="matmul"),
         }
 
         self.force_preprocessing = False
@@ -51,7 +57,38 @@ class PrimitiveStorage:
         """
         primitive_stack = getattr(self, op)
 
-        if op in {"fss_eq", "fss_comp"}:
+        if op in {"mul", "matmul"}:
+            shapes = kwargs.get("shapes")
+            dtype = kwargs.get("dtype")
+            torch_dtype = kwargs.get("torch_dtype")
+            field = kwargs.get("field")
+            config = (shapes, dtype, torch_dtype, field)
+            primitive_stack = primitive_stack[config]
+            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            if available_instances >= n_instances:
+                keys = []
+                for i, prim in enumerate(primitive_stack):
+                    if n_instances == 1:
+                        keys.append(prim[0])
+                        if remove:
+                            primitive_stack[i] = prim[1:]
+                    else:
+                        keys.append(prim[:n_instances])
+                        if remove:
+                            primitive_stack[i] = prim[n_instances:]
+                return keys
+            else:
+                if self._owner.verbose:
+                    print(
+                        f"Autogenerate: "
+                        f'"{op}", '
+                        f"[({str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})], "
+                        f"n_instances={n_instances}"
+                    )
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                )
+        elif op in {"fss_eq", "fss_comp"}:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = []
@@ -145,7 +182,16 @@ class PrimitiveStorage:
             assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
             current_primitives = getattr(self, op)
-            if op in ("fss_eq", "fss_comp"):
+            if op in ("mul", "matmul"):
+                for params, primitive_triple in primitives:
+                    if params not in current_primitives or len(current_primitives[params]) == 0:
+                        current_primitives[params] = primitive_triple
+                    else:
+                        for i, primitive in enumerate(primitive_triple):
+                            current_primitives[params][i] = th.cat(
+                                (current_primitives[params][i], primitive)
+                            )
+            elif op in ("fss_eq", "fss_comp"):
                 if len(current_primitives) == 0:
                     setattr(self, op, list(primitives))
                 else:
@@ -191,3 +237,31 @@ class PrimitiveStorage:
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys
+
+    def build_triples(self, op: str):
+        """
+        The builder to generate beaver triple for multiplication or matrix multiplication
+        """
+
+        def build_separate_triples(n_party: int, n_instances: int, **kwargs):
+            assert n_party == 2, f"Only 2 workers supported for the moment"
+            shapes = kwargs["shapes"]
+            if not isinstance(shapes, list):
+                assert len(shapes) == 2
+                shapes = [shapes]
+
+            # get params and set default values
+            dtype = kwargs.get("dtype", "long")
+            torch_dtype = kwargs.get("torch_dtype", th.int64)
+            field = kwargs.get("field", 2 ** 64)
+
+            primitives_worker = [[] for _ in range(n_party)]
+            for shape in shapes:
+                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
+                config = (shape, dtype, torch_dtype, field)
+                for primitives, shares in zip(primitives_worker, shares_worker):
+                    primitives.append((config, shares))
+
+            return primitives_worker
+
+        return build_separate_triples
