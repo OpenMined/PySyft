@@ -1,4 +1,4 @@
-name: Deploy to docker (production)
+name: Update readmes
 
 on:
   push:
