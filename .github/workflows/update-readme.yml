@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  deploy:
+  readme:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
