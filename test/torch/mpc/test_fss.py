@@ -96,7 +96,7 @@ def test_using_crypto_store(workers, op):
     gather_op = {"eq": "__add__", "le": "__add__"}[op]
     primitive = {"eq": "fss_eq", "le": "fss_comp"}[op]
 
-    me.crypto_store.provide_primitives([primitive], [alice, bob], n_instances=6)
+    me.crypto_store.provide_primitives(primitive, [alice, bob], n_instances=6)
     k0 = alice.crypto_store.get_keys(primitive, 3, remove=True)
     k1 = bob.crypto_store.get_keys(primitive, 3, remove=True)
 

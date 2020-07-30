@@ -9,9 +9,7 @@ Useful papers are:
 
 Note that the protocols are quite different in aspect from those papers
 """
-import hashlib
 import math
-import time
 import numpy as np
 import shaloop
 import multiprocessing
@@ -25,9 +23,9 @@ from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
 
-λ = 127  # 6  # 110 or 63  # security parameter
-n = 32  # 8  # 32  # bit precision
-λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
+λ = 127  # security parameter
+n = 32  # bit precision
+λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
 assert λs == 2
 
 no_wrap = {"no_wrap": True}
@@ -254,9 +252,9 @@ class DPF:
             CWi = uncompress(_CW[i])
 
             for b in (0, 1):
-                τ = [g0, g1][b] ^ (t[i, b] * CWi)
-                filtered_τ = multi_dim_filter(τ, α[i])
-                s[i + 1, b], t[i + 1, b] = split(filtered_τ, (EQ, λs, 1))
+                dual_state = [g0, g1][b] ^ (t[i, b] * CWi)
+                state = multi_dim_filter(dual_state, α[i])
+                s[i + 1, b], t[i + 1, b] = split(state, (EQ, λs, 1))
 
         CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
         CW_n = CW_n.astype(np.int64)
@@ -274,9 +272,9 @@ class DPF:
         t[0] = b
         for i in range(0, n):
             CWi = uncompress(_CW[i])
-            τ = G(s[i]) ^ (t[i] * CWi)
-            filtered_τ = multi_dim_filter(τ, x[i])
-            s[i + 1], t[i + 1] = split(filtered_τ, (EQ, λs, 1))
+            dual_state = G(s[i]) ^ (t[i] * CWi)
+            state = multi_dim_filter(dual_state, x[i])
+            s[i + 1], t[i + 1] = split(state, (EQ, λs, 1))
 
         flat_result = (-1) ** b * (t[n].squeeze() * _CWn + convert(s[n]))
         return flat_result.astype(np.int64).reshape(original_shape)
@@ -369,6 +367,11 @@ class DIF:
 
 
 def compress(CWi, alpha_i, op=EQ):
+    """Compression technique which reduces the size of the CWi by dropping some
+    non-necessary randomness.
+
+    The original paper on FSS explains that this trick doesn't affect the security.
+    """
     if op == EQ:
         sL, tL, sR, tR = split(CWi, (op, λs, 1, λs, 1))
         return (tL.astype(np.bool), tR.astype(np.bool), (1 - alpha_i) * sR + alpha_i * sL)
@@ -385,6 +388,8 @@ def compress(CWi, alpha_i, op=EQ):
 
 
 def uncompress(_CWi, op=EQ):
+    """Decompress the compressed CWi by duplicating the randomness to recreate
+    the original shape."""
     if op == EQ:
         CWi = concat(
             _CWi[2],
@@ -433,18 +438,13 @@ def randbit(shape):
 def concat(*args, **kwargs):
     return np.concatenate(args, **kwargs)
 
-
 def split_last_bit(buffer):
     # Numbers are on 64 bits
     return buffer & 0b1111111111111111111111111111111111111111111111111111111111111110, buffer & 0b1
 
 
-def huge_loop(seed_t_bytes, n_iter):
-    return [hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest() for i in range(n_iter)]
-
-
 def G(seed):
-    """ λ -> 2(λ + 1)"""
+    """Pseudo Random Generator λ -> 2(λ + 1)"""
 
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
@@ -481,7 +481,8 @@ empty_dict = {}
 
 
 def H(seed, idx=0):
-    """ λ -> 4(λ + 1)
+    """
+    Pseudo Random Generator λ -> 4(λ + 1)
 
     idx is here to allow not reusing the same empty dict. Otherwise in key generation
     h0 is erased by h1
@@ -514,8 +515,6 @@ def H(seed, idx=0):
     # [λ, 1, λ, 1, λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
 
-    # valuebits[0] = buffer[0] & b63_, buffer[1], buffer[0] & b_1, buffer[2] & b63_, buffer[3], buffer[2] & b_1
-    # valuebits[1] = buffer[4] & b63_, buffer[5], buffer[4] & b_1, buffer[6] & b63_, buffer[7], buffer[6] & b_1
     valuebits[0, 0], last_bit = split_last_bit(buffer[0])
     valuebits[0, 1] = buffer[1]
     valuebits[0, 2] = last_bit

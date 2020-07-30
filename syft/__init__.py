@@ -17,6 +17,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
@@ -124,7 +125,7 @@ __all__.extend(
         "PrivateGridNetwork",
         "PublicGridNetwork",
         "create_sandbox",
-        "hook",
+        "make_hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",

@@ -13,7 +13,7 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 TIMEOUT_INTERVAL = 60
 
 
-class StaticFLClient:
+class ModelCentricFLClient:
     def __init__(self, id: str, address: str, secure: bool = False):
         self.id = id
         self.address = address
@@ -105,9 +105,9 @@ class StaticFLClient:
         serialized_protocols = self._serialize_object(client_protocols)
         serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
 
-        # "federated/host-training" request body
+        # "model_centric/host-training" request body
         message = {
-            "type": "federated/host-training",
+            "type": "model_centric/host-training",
             "data": {
                 "model": serialized_model,
                 "plans": serialized_plans,
@@ -126,5 +126,5 @@ class StaticFLClient:
             "version": version,
             "checkpoint": checkpoint,
         }
-        serialized_model = self._send_http_req("GET", "/get-model", params)
+        serialized_model = self._send_http_req("GET", "/model_centric/retrieve-model", params)
         return self._unserialize(serialized_model, StatePB)

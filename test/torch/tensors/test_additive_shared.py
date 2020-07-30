@@ -871,7 +871,7 @@ def test_max_pool2d(workers, protocol):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
