@@ -1043,7 +1043,6 @@ class AdditiveSharingTensor(AbstractTensor):
     def argmax(self, dim=None, keepdim=False, one_hot=False):
         """
         Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
-        
         This is inspired from CrypTen.
         Args:
             dim: compute argmax over a specific dimension
