@@ -23,7 +23,7 @@ sqlalchemy_mixins = "^1.2.1"
 pyjwt = "^1.7.1"
 psycopg2-binary = "^2.8.5"
 requests-toolbelt = "^0.9.1"
-syft = "^0.2.7"
+syft = "^0.2.8"
 redis = "^3.5.3"
 
 [tool.poetry.dev-dependencies]

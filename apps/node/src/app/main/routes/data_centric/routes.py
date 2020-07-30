@@ -9,7 +9,7 @@ import syft as sy
 from flask import Response, render_template, request, send_from_directory
 from flask_cors import cross_origin
 from syft.codes import RESPONSE_MSG
-from syft.grid.clients.dynamic_fl_client import DynamicFLClient
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 
 from ... import data_centric_routes, local_worker
 from ...core.codes import MSG_FIELD
@@ -75,7 +75,8 @@ def show_status():
     """
 
     connected_workers = filter(
-        lambda x: isinstance(x, DynamicFLClient), local_worker._known_workers.values()
+        lambda x: isinstance(x, DataCentricFLClient),
+        local_worker._known_workers.values(),
     )
     ids = map(lambda x: x.id, connected_workers)
 
@@ -96,7 +97,8 @@ def list_workers():
         Response : List of node's ids.
     """
     connected_workers = filter(
-        lambda x: isinstance(x, DynamicFLClient), local_worker._known_workers.values()
+        lambda x: isinstance(x, DataCentricFLClient),
+        local_worker._known_workers.values(),
     )
     ids = map(lambda x: x.id, connected_workers)
     response_body = {RESPONSE_MSG.SUCCESS: True, "workers": list(ids)}

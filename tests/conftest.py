@@ -10,7 +10,7 @@ import syft
 import torch
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
-from syft.grid.clients.dynamic_fl_client import DynamicFLClient
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 from syft.grid.public_grid import PublicGridNetwork
 
 from . import NETWORK_PORT, NETWORK_URL, IDS, PORTS
@@ -52,6 +52,7 @@ def setUpPyGrid(port, node_id):
     server = pywsgi.WSGIServer(("", int(port)), app, handler_class=WebSocketHandler)
     server.serve_forever()
 
+
 @pytest.fixture(scope="session", autouse=True)
 def init_pygrid_instances(node_infos):
     jobs = []
@@ -90,5 +91,5 @@ def connected_node(hook):
 
 
 def create_websocket_client(hook, port, id):
-    node = DynamicFLClient(hook, "http://localhost:" + port, id=id)
+    node = DataCentricFLClient(hook, "http://localhost:" + port, id=id)
     return node
