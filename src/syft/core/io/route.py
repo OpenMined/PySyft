@@ -125,10 +125,10 @@ class BroadcastRoute(Route):
         self.connection = connection
         self.topic = topic
 
-    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
+    def send_msg_with_reply(self, msg):
         self.connection.send_msg_with_reply(topic = self.topic, msg = msg)
 
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+    def send_msg_without_reply(self, msg):
         self.connection.send_msg_without_reply(topic = self.topic, msg = msg)
 
     def listen(self, processor: Callable, background: bool = True) -> None:

@@ -351,9 +351,14 @@ class Node(AbstractNode, LocationAwareObject):
         self.services_registered = True
 
     @syft_decorator(typechecking=True)
+    def recv_broadcast_msg(self, msg: SyftBroadcastMessage) -> None:
+        print("got a broadcast message")
+        return
+
+    @syft_decorator(typechecking=True)
     def listen_on_route(self, route: Route, background: bool = True) -> None:
         route.listen(background = background,
-            processor = self.recv_msg_without_reply)
+            processor = self.recv_broadcast_msg)
 
     def __repr__(self):
         return f"{self.node_type}:{self.name}:{self.id}"
