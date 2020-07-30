@@ -7,12 +7,10 @@ import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
-from syft.workers.abstract import AbstractWorker
 
 from syft.frameworks.torch.mpc.fss import N_CORES
 
 no_wrap = {"no_wrap": True}
-
 
 
 def full_name(f):
