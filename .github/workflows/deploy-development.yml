@@ -19,7 +19,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: openmined/grid-node
           tags: development
-          dockerfile: /apps/node/Dockerfile
+          path: apps/node
 
       - name: Build and push Docker image (network)
         uses: docker/build-push-action@v1
@@ -28,4 +28,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: openmined/grid-network
           tags: development
-          dockerfile: /apps/network/Dockerfile
+          path: apps/network
