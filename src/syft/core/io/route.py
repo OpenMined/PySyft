@@ -121,11 +121,22 @@ class Route(ObjectWithID):
 
 
 class BroadcastRoute(Route):
-    def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> Set[SyftMessageWithoutReply]:
-        raise NotImplementedError
+    def __init__(self, topic: str, connection: ClientConnection) -> None:
+        self.connection = connection
+        self.topic = topic
 
+    def send_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
+        self.connection.send_msg_with_reply(topic = self.topic, msg = msg)
+
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        self.connection.send_msg_without_reply(topic = self.topic, msg = msg)
+
+    def listen(self, processor: Callable, background: bool = True) -> None:
+        self.connection.listen( topic = self.topic, background = background,
+            processor = processor)
+
+    def __repr__(self) -> str:
+        return self.topic
 
 class SoloRoute(Route):
     def __init__(

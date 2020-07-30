@@ -30,6 +30,7 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
         self.name = name
         self.routes = routes
+        self.default_route_index = 0
 
         self.install_supported_frameworks()
 
@@ -60,23 +61,30 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
-        return self.routes[0].send_immediate_msg_with_reply(msg=msg)
+    def send_msg_with_reply(self, msg: ImmediateSyftMessageWithReply,
+        route_index: int = 0) -> ImmediateSyftMessageWithoutReply:
+        route_index = route_index or self.default_route_index
+        return self.routes[route_index].send_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
-    ) -> None:
-        return self.routes[0].send_immediate_msg_without_reply(msg=msg)
+    def send_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply,
+        route_index: int = 0) -> None:
+        route_index = route_index or self.default_route_index
+        return self.routes[route_index].send_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
-    ) -> None:
-        return self.routes[0].send_eventual_msg_without_reply(msg=msg)
+    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply, route_index: int = 0) -> None:
+        route_index = route_index or self.default_route_index
+        return self.routes[route_index].send_eventual_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.node_id}>"
+
+    @syft_decorator(typechecking=True)
+    def register_route(self, route: Route) -> None:
+        self.routes.append(route)
+
+    @syft_decorator(typechecking=True)
+    def set_default_route(self, route_index: int) -> None:
+        self.default_route = route_index
