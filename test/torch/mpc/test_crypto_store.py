@@ -10,7 +10,7 @@ def test_primitives_usage(workers):
         workers["bob"],
         workers["james"],
     )
-    me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
+    me.crypto_store.provide_primitives("fss_eq", [alice, bob], n_instances=6)
     _ = alice.crypto_store.get_keys("fss_eq", 2, remove=False)
 
     assert len(alice.crypto_store.fss_eq[0]) == 6
