@@ -1,9 +1,9 @@
-name: Docker deploy
+name: Deploy to docker (development)
 
 on:
   push:
     branches:
-      - master
+      - dev
 
 jobs:
   deploy:
@@ -12,18 +12,18 @@ jobs:
       - name: checkout
         uses: actions/checkout@v1
         with:
-          ref: master
+          ref: dev
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Build images
         run: |
           sudo apt install gcc
           cd ./apps/node/
-          docker build . --tag openmined/grid-node:latest
+          docker build . --tag openmined/grid-node:development
 
           cd ../network/
-          docker build . --tag openmined/grid-network:latest
+          docker build . --tag openmined/grid-network:development
       - name: Push images
         run: |
-          docker push openmined/grid-node:latest
-          docker push openmined/grid-network:latest
+          docker push openmined/grid-node:development
+          docker push openmined/grid-network:development
