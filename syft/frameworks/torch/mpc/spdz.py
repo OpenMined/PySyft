@@ -1,19 +1,18 @@
-from typing import Callable
-import math
-
-import torch as th
-import multiprocessing
-import syft as sy
 import asyncio
+import math
+import multiprocessing
+import torch as th
+
+import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 from syft.workers.abstract import AbstractWorker
-from syft.workers.websocket_client import WebsocketClientWorker
+
+from syft.frameworks.torch.mpc.fss import N_CORES
 
 no_wrap = {"no_wrap": True}
 
-from syft.frameworks.torch.mpc.fss import N_CORES
 
 
 def full_name(f):
