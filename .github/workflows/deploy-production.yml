@@ -27,3 +27,17 @@ jobs:
         run: |
           docker push openmined/grid-node:production
           docker push openmined/grid-network:production
+      - name: Updating readme (node)
+        uses: ms-jpq/sync-dockerhub-readme@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          repository: openmined/grid-node
+          readme: '/README.md'
+      - name: Updating readme (network)
+        uses: ms-jpq/sync-dockerhub-readme@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          repository: openmined/grid-network
+          readme: '/README.md'
