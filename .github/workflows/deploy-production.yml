@@ -9,24 +9,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v1
-        with:
-          ref: master
-      - name: Login to DockerHub Registry
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-      - name: Build images
-        run: |
-          sudo apt install gcc
-          cd ./apps/node/
-          docker build . --tag openmined/grid-node:production
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-          cd ../network/
-          docker build . --tag openmined/grid-network:production
-      - name: Push images
-        run: |
-          docker push openmined/grid-node:production
-          docker push openmined/grid-network:production
+      - name: Build and push Docker image (node)
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: openmined/grid-node
+          tags: production
+          dockerfile: /apps/node/Dockerfile
+
+      - name: Build and push Docker image (network)
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: openmined/grid-network
+          tags: production
+          dockerfile: /apps/network/Dockerfile
+
       - name: Updating readme (node)
         uses: ms-jpq/sync-dockerhub-readme@v1
         with:
@@ -34,6 +37,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           repository: openmined/grid-node
           readme: '/README.md'
+
       - name: Updating readme (network)
         uses: ms-jpq/sync-dockerhub-readme@v1
         with:
