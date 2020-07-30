@@ -438,6 +438,7 @@ def randbit(shape):
 def concat(*args, **kwargs):
     return np.concatenate(args, **kwargs)
 
+
 def split_last_bit(buffer):
     # Numbers are on 64 bits
     return buffer & 0b1111111111111111111111111111111111111111111111111111111111111110, buffer & 0b1
