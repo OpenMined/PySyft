@@ -9,6 +9,14 @@ syft.core.nodes.network package
 Submodules
 ----------
 
+syft.core.nodes.network.client module
+-------------------------------------
+
+.. automodule:: syft.core.nodes.network.client
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.nodes.network.network module
 --------------------------------------
 

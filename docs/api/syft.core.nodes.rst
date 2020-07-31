@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    syft.core.nodes.abstract
+   syft.core.nodes.common
    syft.core.nodes.device
    syft.core.nodes.domain
    syft.core.nodes.network

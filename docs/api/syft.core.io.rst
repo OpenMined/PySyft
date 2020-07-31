@@ -9,10 +9,34 @@ syft.core.io package
 Submodules
 ----------
 
-syft.core.io.abstract module
+syft.core.io.address module
+---------------------------
+
+.. automodule:: syft.core.io.address
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.io.connection module
+------------------------------
+
+.. automodule:: syft.core.io.connection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.io.hop module
+-----------------------
+
+.. automodule:: syft.core.io.hop
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.io.location module
 ----------------------------
 
-.. automodule:: syft.core.io.abstract
+.. automodule:: syft.core.io.location
    :members:
    :undoc-members:
    :show-inheritance:

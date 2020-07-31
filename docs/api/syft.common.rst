@@ -17,18 +17,18 @@ syft.common.id module
    :undoc-members:
    :show-inheritance:
 
-syft.common.object module
--------------------------
+syft.common.message module
+--------------------------
 
-.. automodule:: syft.common.object
+.. automodule:: syft.common.message
    :members:
    :undoc-members:
    :show-inheritance:
 
-syft.common.node module
+syft.common.object module
 -------------------------
 
-.. automodule:: syft.common.node
+.. automodule:: syft.common.object
    :members:
    :undoc-members:
    :show-inheritance:

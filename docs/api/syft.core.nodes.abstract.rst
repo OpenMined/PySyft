@@ -9,16 +9,8 @@ syft.core.nodes.abstract package
 Submodules
 ----------
 
-syft.core.nodes.abstract.client module
---------------------------------------
-
-.. automodule:: syft.core.nodes.abstract.client
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.nodes.abstract.node module
---------------------------------------
+------------------------------------
 
 .. automodule:: syft.core.nodes.abstract.node
    :members:

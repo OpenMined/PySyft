@@ -23,6 +23,7 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
     def message_handler_types() -> List[type]:
         return [ImmediateActionWithoutReply]
 
+
 class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 
     @syft_decorator(typechecking=True)

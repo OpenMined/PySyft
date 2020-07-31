@@ -12,7 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   syft.core.nodes.device.service
+   syft.core.nodes.device.device_type
 
 Submodules
 ----------

@@ -7,6 +7,8 @@ from ....message import ImmediateSyftMessageWithReply
 
 class Action(SyftMessage):
     ""
+    def execute_action(self, node: AbstractNode):
+        raise NotImplementedError
 
 
 class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
