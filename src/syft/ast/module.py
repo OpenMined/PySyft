@@ -18,7 +18,7 @@ class Module(ast.attribute.Attribute):
     def __call__(self, path=None, index=0, return_callable=False):
         if isinstance(path, str):
             path = path.split(".")
-        return self.attrs[path[index]](path, index + 1, return_callable=return_callable)
+        return self.attrs[path[index]](path=path, index=index + 1, return_callable=return_callable)
 
     def add_path(self, path, index, return_type_name):
 

@@ -2,15 +2,40 @@ from .. import ast
 
 from .util import unsplit
 from .util import module_type
-
+from ..core.nodes.common.action.function_or_constructor_action import RunFunctionOrConstructorAction
 
 class Callable(ast.attribute.Attribute):
 
     """A method, function, or constructor which can be directly executed"""
 
-    def __call__(self, path, index, return_callable=False):
+    def __call__(self, *args, return_callable=False, **kwargs):
+
+        if(self.client is not None and return_callable==False):
+            print(f"call {self.path_and_name} on client {self.client}")
+
+            path_and_name = 'torch.zeros'
+            args = [2, 3]
+            kwargs = {}
+
+            return_tensor_type_pointer_type = self.client.lib_ast(path=self.return_type_name, return_callable=True).pointer_type
+            ptr = return_tensor_type_pointer_type(location=self.client)
+
+            msg = RunFunctionOrConstructorAction(path=path_and_name,
+                                                 args=args,
+                                                 kwargs=kwargs,
+                                                 id_at_location=ptr.id_at_location,
+                                                 address=self.client.address)
+
+            self.client.send_immediate_msg_without_reply(msg=msg)
+            return ptr
+
+
+
+        path = kwargs['path']
+        index = kwargs['index']
+
         if len(path) == index:
-            if(return_callable):
+            if return_callable:
                 return self
             return self.ref
         else:

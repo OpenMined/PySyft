@@ -18,6 +18,10 @@ class Class(ast.callable.Callable):
     def __repr__(self):
         return f"<Class:{self.name}>"
 
+    @property
+    def pointer_type(self):
+        return getattr(self, self.pointer_name)
+
     def create_pointer_class(self):
         def run_class_method(attr, attr_path_and_name, __self, args, kwargs):
             # TODO: lookup actual return type instead of just guessing that it's identical

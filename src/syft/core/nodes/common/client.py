@@ -10,6 +10,7 @@ from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ..common.action.function_or_constructor_action import RunFunctionOrConstructorAction
 from ...io.route import Route
 from typing import List
+from ....lib import lib_ast
 
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -26,6 +27,17 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
         self.name = name
         self.routes = routes
+
+        self.install_supported_frameworks()
+
+    def install_supported_frameworks(self):
+
+        self.lib_ast = lib_ast.copy()
+        self.lib_ast.set_client(self)
+
+        for attr_name, attr in self.lib_ast.attrs.items():
+            setattr(self, attr_name, attr)
+
 
     def add_me_to_my_address(self):
         raise NotImplementedError
