@@ -13,7 +13,6 @@ Subpackages
    :maxdepth: 4
 
    syft.ast
-   syft.common
    syft.core
    syft.decorators
    syft.grid
