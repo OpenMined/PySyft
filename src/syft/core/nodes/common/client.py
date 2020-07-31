@@ -7,7 +7,6 @@ from ...io.address import Address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-from ..common.action.function_or_constructor_action import RunFunctionOrConstructorAction
 from ...io.route import Route
 from typing import List
 from ....lib import lib_ast
