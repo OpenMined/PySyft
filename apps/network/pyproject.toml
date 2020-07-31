@@ -17,6 +17,7 @@ requests = "^2.24.0"
 idna = "^2.10"
 Flask-SQLAlchemy = "^2.4.4"
 Flask-Migrate = "^2.5.3"
+sqlalchemy_utils = "^0.36.8"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"

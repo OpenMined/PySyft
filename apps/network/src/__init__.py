@@ -8,6 +8,7 @@ from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
+from sqlalchemy_utils.functions import database_exists
 
 # Set routes/events
 ws = Blueprint(r"ws", __name__)
@@ -17,6 +18,7 @@ db = SQLAlchemy()
 
 from . import utils  # isort:skip
 from . import routes, events  # isort:skip
+from .users import Role  # isort:skip
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 __version__ = "0.1.0"
@@ -34,7 +36,7 @@ def set_database_config(app, db_config=None, verbose=False):
         app: Flask application.
 
     Raises:
-        RuntimeError : If DATABASE_URL or db_config didn't initialized, RuntimeError exception will be raised.
+        RuntimeError : If DATABASE_URL or db_config didn't initialize, RuntimeError exception will be raised.
     """
     db_url = os.environ.get("DATABASE_URL")
     migrate = Migrate(app, db)
@@ -59,6 +61,29 @@ def set_database_config(app, db_config=None, verbose=False):
         )
     app.config["VERBOSE"] = verbose
     db.init_app(app)
+
+
+def seed_db():
+    """Adds Administrator and Owner Roles to database."""
+    global db
+    new_user = Role(
+        name="Administrator",
+        can_edit_settings=False,
+        can_create_users=False,
+        can_edit_roles=False,
+        can_manage_roles=False,
+    )
+    db.session.add(new_user)
+    new_user = Role(
+        name="Owner",
+        can_edit_settings=True,
+        can_create_users=True,
+        can_edit_roles=True,
+        can_manage_roles=True,
+    )
+    db.session.add(new_user)
+
+    db.session.commit()
 
 
 def create_app(debug=False, secret_key=DEFAULT_SECRET_KEY, db_config=None) -> Flask:
@@ -86,7 +111,13 @@ def create_app(debug=False, secret_key=DEFAULT_SECRET_KEY, db_config=None) -> Fl
     global db
     set_database_config(app, db_config=db_config)
     s = app.app_context().push()
-    db.create_all()
+
+    if database_exists(db.engine.url):
+        db.create_all()
+    else:
+        db.create_all()
+        seed_db()
+
     db.session.commit()
 
     return app
