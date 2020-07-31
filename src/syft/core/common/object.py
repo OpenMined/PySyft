@@ -1,5 +1,5 @@
 from .uid import UID
-from ..proto import ProtoObjectWithId
+from syft.proto import ProtoObjectWithId
 
 
 class AbstractObjectWithID:

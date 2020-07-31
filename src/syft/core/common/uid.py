@@ -1,7 +1,7 @@
 import uuid
 from typing import final
-from ..proto import ProtoUID
-from ..decorators.syft_decorator_impl import syft_decorator
+from syft.proto import ProtoUID
+from syft.decorators.syft_decorator_impl import syft_decorator
 
 @final
 class UID(object):

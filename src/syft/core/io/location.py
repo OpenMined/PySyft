@@ -1,5 +1,4 @@
-from ...common.uid import UID
-from ...common.object import ObjectWithId
+from syft.core.common.object import ObjectWithId
 from typing import Set
 
 

@@ -1,4 +1,4 @@
-from ....common.uid import UID
+from syft.core.common.uid import UID
 from ...io.address import Address
 from ...io.address import address as create_address
 

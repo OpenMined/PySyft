@@ -41,8 +41,7 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.nodes.vm.vm`
 
 
 # ASTRACT OBJECT IMPORTS
-from . import common  # noqa: F401
-
+from syft.core import common
 
 # CONVENIENCE FUNCTIONS
 from .decorators import type_hints  # noqa: F401

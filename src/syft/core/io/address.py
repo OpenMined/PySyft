@@ -1,5 +1,5 @@
 from ...decorators import syft_decorator
-from ...common.uid import UID
+from syft.core.common.uid import UID
 from typing import final
 
 
