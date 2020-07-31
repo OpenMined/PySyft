@@ -1,14 +1,20 @@
 import uuid
 from typing import final
+from ..proto import ProtoUID
+
+
+class AbstractUID:
+    ""
 
 
 @final
-class UID(object):
+class UID(AbstractUID):
     """A unique id"""
 
-    def __init__(self):
-        # TODO find out what type is smaller for protobuf msgs.
-        self.value = uuid.uuid4()
+    def __init__(self, value=None):
+        if value is None:
+            value = uuid.uuid4()
+        self.value = value
 
     def __hash__(self):
         return hash(self.value)
@@ -20,3 +26,10 @@ class UID(object):
 
     def __repr__(self):
         return f"<UID:{self.value}>"
+
+    def serialize(self):
+        return ProtoUID(value=self.value.bytes)
+
+    @staticmethod
+    def deserialize(proto_uid: ProtoUID) -> AbstractUID:
+        return UID(value=uuid.UUID(bytes=proto_uid.value))
