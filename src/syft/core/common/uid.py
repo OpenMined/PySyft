@@ -3,8 +3,14 @@ from typing import final
 from syft.proto import ProtoUID
 from syft.decorators.syft_decorator_impl import syft_decorator
 
+
 @final
-class UID(object):
+class AbstractUID(object):
+    """This exists to allow us to typecheck on the UID object"""
+
+
+@final
+class UID(AbstractUID):
     """This object creates a unique ID for every object in the Syft
     ecosystem. This ID is guaranteed to be unique for the node on
     which it is initialized and is very likely to be unique across
@@ -19,7 +25,7 @@ class UID(object):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value:bool = None):
+    def __init__(self, value: bool = None):
         """This initializes the object. Normal use for this object is
         to initialize the constructor with value==None because you
         want to initialize with a novel ID. The only major exception
@@ -37,7 +43,8 @@ class UID(object):
         # itself instead of saving the
         self.value = value
 
-    def __hash__(self):
+    @syft_decorator(typechecking=True)
+    def __hash__(self) -> int:
         """A very common use of UID objects is as a key in a dictionary
         or database. The object must be able to be hashed in order to
         be used in this way. We take the 128-bit int representation of the
@@ -49,7 +56,8 @@ class UID(object):
 
         return self.value.int
 
-    def __eq__(self, other):
+    @syft_decorator(typechecking=True)
+    def __eq__(self, other: AbstractUID):
         if isinstance(other, UID):
             return self.value == other.value
         return False
@@ -60,11 +68,6 @@ class UID(object):
     def serialize(self):
         return ProtoUID(value=self.value.bytes)
 
-@staticmethod
-def deserialize(proto_uid: ProtoUID) -> UID:
-    return UID(value=uuid.UUID(bytes=proto_uid.value))
-
-# We first create the UID class and then add this static
-# method so that we can add the UID class as a return
-# type hint directly.
-UID.deserialize = deserialize
+    @staticmethod
+    def deserialize(proto_uid: ProtoUID) -> AbstractUID:
+        return UID(value=uuid.UUID(bytes=proto_uid.value))
