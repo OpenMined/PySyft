@@ -1018,6 +1018,25 @@ class AdditiveSharingTensor(AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
+    def _one_hot_to_index(self, dim, keepdim):
+        """
+        Convert a one-hot tensor (self) composed of 0 and 1 to a tensor containing
+        the indices where self was equal to 1.
+        This is used with argmax / argmin.
+        This is inspired from CrypTen.
+        """
+        if dim is None:
+            result = self.flatten()
+            n_elem = result.numel()
+            result = result * torch.tensor(list(range(n_elem)), dtype=self.torch_dtype)
+            return result.sum()
+        else:
+            size = [1] * self.dim()
+            size[dim] = self.shape[dim]
+            n_elem = self.shape[dim]
+            result = self * torch.tensor(list(range(n_elem)), dtype=self.torch_dtype).view(size)
+            return result.sum(dim, keepdim=keepdim)
+
     def max(self, dim=None, return_idx=False):
         """
         Return the maximum value of an additive shared tensor
