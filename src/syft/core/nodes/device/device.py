@@ -11,7 +11,6 @@ from typing import Dict
 from syft.core.message import SyftMessage
 
 
-
 @final
 class Device(Node):
 

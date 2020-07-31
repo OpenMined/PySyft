@@ -2,13 +2,14 @@ from .. import ast
 from abc import ABC
 from copy import deepcopy
 
+
 class Attribute(ABC):
     def __init__(self, name, path_and_name, ref, return_type_name):
         self.name = name  # __add__
         self.path_and_name = path_and_name  # torch.Tensor.__add__
         self.ref = ref  # <the actual add method object>
         self.attrs = {}  # any attrs of __add__ ... is none in this case
-        self.return_type_name=return_type_name
+        self.return_type_name = return_type_name
         self.client = None
 
     def set_client(self, client):

@@ -9,10 +9,11 @@ def create_lib_ast():
     numpy_ast = create_numpy_ast()
 
     lib_ast = Globals()
-    lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs['torch'])
-    lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs['numpy'])
+    lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
+    lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast
+
 
 lib_ast = create_lib_ast()
 lib_ast.copy = create_lib_ast

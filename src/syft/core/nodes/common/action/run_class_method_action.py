@@ -11,7 +11,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-    def execute_action(self, node:AbstractNode):
+    def execute_action(self, node: AbstractNode):
         method = node.lib_ast(self.path)
 
         resolved_self = node.store.get_object(id=self._self.id_at_location)
