@@ -7,7 +7,9 @@ from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import allow_command
 from syft.generic.utils import memorize
+from syft.generic.utils import remote
 
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
@@ -1023,6 +1025,7 @@ class AdditiveSharingTensor(AbstractTensor):
         Convert a one-hot tensor (self) composed of 0 and 1 to a tensor containing
         the indices where self was equal to 1.
         This is used with argmax / argmin.
+
         This is inspired from CrypTen.
         """
         if dim is None:
@@ -1037,60 +1040,62 @@ class AdditiveSharingTensor(AbstractTensor):
             result = self * torch.tensor(list(range(n_elem)), dtype=self.torch_dtype).view(size)
             return result.sum(dim, keepdim=keepdim)
 
-    def max(self, dim=None, return_idx=False):
+    def argmax(self, dim=None, keepdim=False, one_hot=False):
         """
-        Return the maximum value of an additive shared tensor
-
+        Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
+        This is inspired from CrypTen.
         Args:
-            dim (None or int): if not None, the dimension on which
-                the comparison should be done
-            return_idx (bool): Return the index of the maximum value
-                Note that if dim is specified then the index is returned
-                anyway to match the Pytorch syntax.
-
-        return:
-            the maximum value (possibly across an axis)
-            and optionally the index of the maximum value (possibly across an axis)
+            dim: compute argmax over a specific dimension
+            keepdim: when one_hot is true, keep all the dimensions of the tensor
+            one_hot: return the argmax as a one hot vector
         """
-        values = self
-        n_dim = self.dim()
+        x = self.flatten() if dim is None and len(self.shape) > 1 else self
 
-        # Make checks and transformation
-        assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
-        # FIXME make it cleaner and robust for more options
-        if n_dim == 2:
-            if dim is None:
-                values = values.view(-1)
-            elif dim == 1:
-                values = values.t()
-        assert n_dim <= 2, "Max on tensor with len(shape) > 2 is not supported."
+        x_pairwise_shares = {}
+        for worker, share in x.child.items():
+            share = remote(helper_argmax_pairwise, location=worker)(share, dim, return_value=False)
+            x_pairwise_shares[worker] = share
 
-        # Init max vals and idx to the first element
-        max_value = values[0]
-        max_index = torch.tensor([0]).share(
-            *self.locations,
-            field=self.field,
-            dtype=self.dtype,
-            crypto_provider=self.crypto_provider,
-            **no_wrap,
+        x_pairwise = AdditiveSharingTensor(**self.get_class_attributes()).on(
+            x_pairwise_shares, wrap=False
         )
+        pairwise_comparisons = x_pairwise >= 0
 
-        for i in range(1, len(values)):
-            a = values[i]
-            beta = a >= max_value
-            max_index = max_index + beta * (i - max_index)
-            max_value = max_value + beta * (a - max_value)
+        # re-compute row_length
+        _dim = -1 if dim is None else dim
+        row_length = x.shape[_dim] if x.shape[_dim] > 1 else 2
 
-        if dim is None and return_idx is False:
-            return max_value
+        result = pairwise_comparisons.sum(0)
+        result = result >= (row_length - 1)
+
+        result = result.reshape(self.shape) if dim is None and len(self.shape) > 1 else result
+
+        if not one_hot:
+            result = result._one_hot_to_index(dim, keepdim)
+        return result
+
+    def max(self, dim=None, keepdim=False, algorithm="pairwise"):
+        """
+        Returns the maximum value of all elements in the input tensor, using argmax
+        Args:
+            dim: compute the max over a specific dimension
+            keepdim: keep the dimension of the tensor when dim is not None
+            algorithm: method to compute the maximum
+        Returns:
+            the max of the tensor self
+        """
+        assert algorithm == "pairwise", "Other methods not supported for the moment"
+
+        argmax_result = self.argmax(dim=dim, keepdim=keepdim, one_hot=True)
+        if dim is not None:
+            max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
+            if keepdim:
+                max_result = (
+                    max_result.unsqueeze(dim) if max_result.dim() < self.dim() else max_result
+                )
         else:
-            return max_value, max_index * 1000
-
-    def argmax(self, dim=None):
-
-        max_value, max_index = self.max(dim=dim, return_idx=True)
-
-        return max_index
+            max_result = (self * argmax_result).sum()
+        return max_result
 
     ## STANDARD
 
@@ -1325,3 +1330,17 @@ class AdditiveSharingTensor(AbstractTensor):
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(AdditiveSharingTensor)
+
+
+@allow_command
+def helper_argmax_pairwise(self, dim=None):
+    dim = -1 if dim is None else dim
+    row_length = self.size(dim) if self.size(dim) > 1 else 2
+
+    # Copy each row (length - 1) times to compare to each other row
+    a = self.expand(row_length - 1, *self.size())
+
+    # Generate cyclic permutations for each row
+    b = torch.stack([self.roll(i + 1, dims=dim) for i in range(row_length - 1)])
+
+    return a - b
