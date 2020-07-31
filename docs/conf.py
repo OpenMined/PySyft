@@ -82,6 +82,13 @@ extensions.append("recommonmark")
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
+# override autodoc defaults to skip/not skip certain methods
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__init__":
+        return False
+    if name == "__hash__":
+        return False
+    return would_skip
 
 # To configure AutoStructify
 def setup(app):
@@ -98,6 +105,7 @@ def setup(app):
         True,
     )
     app.add_transform(AutoStructify)
+    app.connect("autodoc-skip-member", skip)
 
 
 # The suffix of source filenames.
@@ -205,6 +213,9 @@ else:
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+# sort methods by source order
+autodoc_member_order = 'bysource'
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
