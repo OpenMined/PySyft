@@ -23,7 +23,6 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
         return [ImmediateActionWithoutReply]
 
 
-
 class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: EventualActionWithoutReply) -> None:

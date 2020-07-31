@@ -160,9 +160,9 @@ class Node(AbstractNode, LocationAwareObject):
 
     def get_metadata_for_client(self):
         metadata = {}
-        metadata['address'] = self.address
-        metadata['name'] = self.name
-        metadata['id'] = self.id
+        metadata["address"] = self.address
+        metadata["name"] = self.name
+        metadata["id"] = self.id
         return metadata
 
     @property
