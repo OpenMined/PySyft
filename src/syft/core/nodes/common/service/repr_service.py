@@ -7,7 +7,7 @@ from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from syft.core.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
-from .....common.id import UID
+from .....common.uid import UID
 
 
 @final

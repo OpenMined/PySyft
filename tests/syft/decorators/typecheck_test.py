@@ -1,10 +1,10 @@
 import pytest
 from typing import List, Union, Optional, Dict
-from syft.decorators.decorators import type_hints
+from syft.decorators.syft_decorator_impl import syft_decorator
 
 
 def test_typecheck_basic_dtypes():
-    @type_hints
+    @syft_decorator(typechecking=True)
     def func(x: int, y: int) -> int:
         return x + y
 
@@ -17,7 +17,7 @@ def test_typecheck_basic_dtypes():
 
 
 def test_typecheck_generic_dtypes():
-    @type_hints
+    @syft_decorator(typechecking=True)
     def func(x: List[str], y: Union[List[str], List[int]]) -> int:
         return 0
 
@@ -34,7 +34,7 @@ def test_typecheck_generic_dtypes():
 
 
 def test_optional():
-    @type_hints
+    @syft_decorator(typechecking=True)
     def func(x: Optional[int]) -> int:
         return 0
 
@@ -46,7 +46,7 @@ def test_optional():
 
 
 def test_mappings():
-    @type_hints
+    @syft_decorator(typechecking=True)
     def func(x: Dict[str, str]) -> int:
         return 0
 
@@ -59,7 +59,7 @@ def test_mappings():
 
 
 def test_ret_type():
-    @type_hints
+    @syft_decorator(typechecking=True)
     def func() -> int:
         return 0
 
@@ -67,7 +67,7 @@ def test_ret_type():
 
     with pytest.raises(TypeError) as e:
 
-        @type_hints
+        @syft_decorator(typechecking=True)
         def func() -> int:
             return 1.0
 

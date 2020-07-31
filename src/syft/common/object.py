@@ -1,4 +1,4 @@
-from .id import UID
+from .uid import UID
 from ..proto import ProtoObjectWithId
 
 

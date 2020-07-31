@@ -1,5 +1,5 @@
 from ..common.client import Client
-from ....common.id import UID
+from ....common.uid import UID
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.route import Route
 from typing import List
