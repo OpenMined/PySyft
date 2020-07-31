@@ -64,9 +64,13 @@ finally:
     del get_distribution, DistributionNotFound
 
 from syft.core.nodes.vm.vm import VirtualMachine
+from syft.core.nodes.vm.vm import VirtualMachineClient
 from syft.core.nodes.device.device import Device
+from syft.core.nodes.device.device import DeviceClient
 from syft.core.nodes.domain.domain import Domain
+from syft.core.nodes.domain.domain import DomainClient
 from syft.core.nodes.network.network import Network
+from syft.core.nodes.network.network import NetworkClient
 
 from syft.core.nodes.common.service.repr_service import ReprMessage
 from syft.lib import lib_ast
