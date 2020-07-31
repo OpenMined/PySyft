@@ -11,7 +11,7 @@ from .....decorators import syft_decorator
 from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from ....io.address import Address
-from .....common.uid import UID
+from syft.core.common.uid import UID
 from syft.core.message import ImmediateSyftMessageWithoutReply
 from typing import List
 

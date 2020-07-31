@@ -1,9 +1,8 @@
 from ..common.client import Client
 from typing import final
 from ....decorators import syft_decorator
-from ....common.uid import UID
+from syft.core.common.uid import UID
 from ...io.address import Address
-from ...io.connection import ClientConnection
 from ...io.route import Route
 from typing import List
 

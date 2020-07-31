@@ -1,4 +1,3 @@
-from ....common.object import ObjectWithId
 from ...io.location import Location
 
 
