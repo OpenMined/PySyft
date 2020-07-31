@@ -4,8 +4,9 @@ from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.route import Route
 from typing import List
 
+
 class DomainClient(Client):
-    def __init__(self, address, name, routes:List[Route]):
+    def __init__(self, address, name, routes: List[Route]):
         super().__init__(address=address, name=name, routes=routes)
 
     def add_me_to_my_address(self):

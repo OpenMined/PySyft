@@ -8,6 +8,6 @@ class SaveObjectAction(ImmediateActionWithoutReply):
         self.obj_id = obj_id
         self.obj = obj
 
-    def execute_action(self, node:AbstractNode):
+    def execute_action(self, node: AbstractNode):
         # save the object to the store
         node.store.store_object(id=self.obj_id, obj=self.obj)

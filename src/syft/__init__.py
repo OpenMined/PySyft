@@ -70,12 +70,13 @@ from syft.core.nodes.network.network import Network
 
 from syft.core.nodes.common.service.repr_service import ReprMessage
 from syft.lib import lib_ast
+
 # def get_client(host="127.0.0.1", port="5000"):
 #     res = requests.get(f"http://{host}:{port}/")
 #     client = pickle.loads(bytes.fromhex(res.text))
 #     return client
 
-#LIBRARY CONFIG
+# LIBRARY CONFIG
 
 # When you pass in an argument which is of the incorrect type,
 # do you want the long or abbreviated stack trace?
@@ -87,5 +88,6 @@ def LONG_TYPECHECK_STACK_TRACES(setting=None):
     if setting is not None:
         sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES = setting
     return sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES
+
 
 LONG_TYPECHECK_STACK_TRACES(True)

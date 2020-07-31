@@ -15,6 +15,7 @@ class SyftMessage(AbstractMessage):
 #     def sign(self, signature):
 #         self.my_route = my_route
 
+
 class ImmediateSyftMessage(SyftMessage):
     ""
 
@@ -26,8 +27,10 @@ class EventualSyftMessage(SyftMessage):
 class SyftMessageWithReply(SyftMessage):
     ""
 
+
 class SyftMessageWithoutReply(SyftMessage):
     ""
+
 
 class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: UID = None) -> None:

@@ -24,15 +24,21 @@ class VirtualServerConnection(ServerConnection):
         self.node = node
 
     @syft_decorator(typechecking=True)
-    def recv_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def recv_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         return self.node.recv_immediate_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def recv_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def recv_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
         self.node.recv_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def recv_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+    def recv_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         self.node.recv_eventual_msg_without_reply(msg=msg)
 
 
@@ -42,15 +48,21 @@ class VirtualClientConnection(ClientConnection):
     def __init__(self, server: VirtualServerConnection):
         self.server = server
 
-    def send_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def send_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
         self.server.recv_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def send_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         return self.server.recv_immediate_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         return self.server.recv_eventual_msg_without_reply(msg=msg)
 
 

@@ -2,9 +2,9 @@ from ....common.id import UID
 from ...io.address import Address
 from ...io.address import address as create_address
 
-class LocationAwareObject:
 
-    def __init__(self, address: Address=None):
+class LocationAwareObject:
+    def __init__(self, address: Address = None):
 
         # All nodes should have a representation of where they think
         # they are currently held. Note that this is at risk of going
@@ -20,10 +20,7 @@ class LocationAwareObject:
         # be able to check for it there. TODO: did we check for it?
 
         if address is None:
-            address = create_address(network=None,
-                                     domain=None,
-                                     device=None,
-                                     vm = None)
+            address = create_address(network=None, domain=None, device=None, vm=None)
 
         self._address = address
 
@@ -61,7 +58,6 @@ class LocationAwareObject:
 
         return self._network_id
 
-
     @network_id.setter
     def network_id(self, new_network_id: UID) -> UID:
         """This client points to a node, if that node lives within a network
@@ -74,7 +70,6 @@ class LocationAwareObject:
         self._address.pub_address.network = new_network_id
         return self._network_id
 
-
     @property
     def domain_id(self) -> UID:
         """This client points to a node, if that node lives within a domain
@@ -82,7 +77,6 @@ class LocationAwareObject:
         if it is known by the client."""
 
         return self._domain_id
-
 
     @domain_id.setter
     def domain_id(self, new_domain_id: UID) -> UID:
@@ -97,14 +91,12 @@ class LocationAwareObject:
         self._address.pub_address.domain = new_domain_id
         return self._domain_id
 
-
     @property
     def device_id(self) -> UID:
         """This client points to a node, if that node lives within a device
         or is a device itself, this property will return the ID of that device
         if it is known by the client."""
         return self._device_id
-
 
     @device_id.setter
     def device_id(self, new_device_id: UID) -> UID:
@@ -119,7 +111,6 @@ class LocationAwareObject:
         self._address.pri_address.device = new_device_id
         return self._device_id
 
-
     @property
     def vm_id(self) -> UID:
         """This client points to an node, if that node lives within a vm
@@ -127,7 +118,6 @@ class LocationAwareObject:
         if it is known by the client."""
 
         return self._vm_id
-
 
     @vm_id.setter
     def vm_id(self, new_vm_id: UID) -> UID:
@@ -142,7 +132,6 @@ class LocationAwareObject:
         self._address.pri_address.vm = new_vm_id
         return self._vm_id
 
-
     @property
     def address(self) -> Address:
         """Returns the address to use when sending messages from this client to the node.
@@ -152,7 +141,9 @@ class LocationAwareObject:
 
     @address.setter
     def address(self, new_address: Address) -> Address:
-        raise Exception("We did not design the address attribute to be updated in this"
-                        " way. Please update individual attributes (.vm_id, .device_id, "
-                        " .domain_id, or .network_id) directly. If you absolutely must,"
-                        " you can update ._address but we don't recommend this.")
+        raise Exception(
+            "We did not design the address attribute to be updated in this"
+            " way. Please update individual attributes (.vm_id, .device_id, "
+            " .domain_id, or .network_id) directly. If you absolutely must,"
+            " you can update ._address but we don't recommend this."
+        )

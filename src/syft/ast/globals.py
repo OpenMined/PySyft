@@ -22,7 +22,10 @@ class Globals(ast.module.Module):
         if framework_name not in self.attrs:
             if framework_reference is not None:
                 self.attrs[framework_name] = ast.module.Module(
-                    name=framework_name, path_and_name=unsplit(path), ref=framework_reference, return_type_name=return_type_name
+                    name=framework_name,
+                    path_and_name=unsplit(path),
+                    ref=framework_reference,
+                    return_type_name=return_type_name,
                 )
             else:
                 raise Exception(

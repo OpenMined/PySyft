@@ -6,6 +6,7 @@ whitelist.add("numpy.array")
 whitelist.add("numpy.ndarray")
 whitelist.add("numpy.ndarray.__add__")
 
+
 def create_numpy_ast():
 
     ast = Globals()
