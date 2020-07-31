@@ -1,4 +1,4 @@
-from ...common.id import UID
+from ...common.uid import UID
 from ...common.object import ObjectWithId
 from typing import Set
 

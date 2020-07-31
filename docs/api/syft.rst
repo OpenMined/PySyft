@@ -18,6 +18,7 @@ Subpackages
    syft.decorators
    syft.grid
    syft.lib
+   syft.proto
 
 Submodules
 ----------

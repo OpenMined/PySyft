@@ -2,7 +2,7 @@ from syft.core.message import ImmediateSyftMessageWithReply
 from syft.core.message import ImmediateSyftMessageWithoutReply
 from syft.core.message import EventualSyftMessageWithoutReply
 from ....decorators import syft_decorator
-from ....common.id import UID
+from ....common.uid import UID
 from ...io.address import Address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject

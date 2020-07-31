@@ -14,7 +14,6 @@ Subpackages
 
    syft.core.io
    syft.core.nodes
-   syft.core.old_message
    syft.core.pointer
    syft.core.search
    syft.core.store

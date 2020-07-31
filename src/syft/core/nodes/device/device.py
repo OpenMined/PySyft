@@ -2,7 +2,7 @@ from ..common.node import Node
 from typing import final
 from .client import DeviceClient
 from ....decorators import syft_decorator
-from ....common.id import UID
+from ....common.uid import UID
 from .device_type.device_type import DeviceType
 from .device_type.unknown import unknown_device
 from ..vm.vm import VirtualMachine
