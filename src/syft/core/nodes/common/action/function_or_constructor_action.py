@@ -2,6 +2,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from ....pointer.pointer import Pointer
 
+
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(self, path, args, kwargs, id_at_location, address, msg_id=None):
         super().__init__(address=address, msg_id=msg_id)
@@ -10,7 +11,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-    def execute_action(self, node:AbstractNode):
+    def execute_action(self, node: AbstractNode):
         method = node.lib_ast(self.path)
 
         resolved_args = list()

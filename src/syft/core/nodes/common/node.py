@@ -31,10 +31,6 @@ from ...io.virtual import create_virtual_connection
 from ...io.route import SoloRoute
 from ....lib import lib_ast
 
-from ....lib.torch import ast as torch_ast
-from ....lib.numpy import ast as numpy_ast
-from ....ast.globals import Globals
-
 from .location_aware_object import LocationAwareObject
 
 
@@ -126,7 +122,9 @@ class Node(AbstractNode, LocationAwareObject):
         self.immediate_services_without_reply.append(ReprService)
         self.immediate_services_without_reply.append(HeritageUpdateService)
         self.immediate_services_without_reply.append(ChildNodeLifecycleService)
-        self.immediate_services_without_reply.append(ImmediateObjectActionServiceWithoutReply)
+        self.immediate_services_without_reply.append(
+            ImmediateObjectActionServiceWithoutReply
+        )
 
         # for services which run immediately and return a reply
         self.immediate_services_with_reply = list()
@@ -134,7 +132,9 @@ class Node(AbstractNode, LocationAwareObject):
 
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
-        self.eventual_services_without_reply.append(EventualObjectActionServiceWithoutReply)
+        self.eventual_services_without_reply.append(
+            EventualObjectActionServiceWithoutReply
+        )
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
@@ -144,7 +144,9 @@ class Node(AbstractNode, LocationAwareObject):
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
-        self.message_without_reply_forwarding_service = MessageWithoutReplyForwardingService()
+        self.message_without_reply_forwarding_service = (
+            MessageWithoutReplyForwardingService()
+        )
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
         # now we need to load the relevant frameworks onto the node
@@ -155,6 +157,13 @@ class Node(AbstractNode, LocationAwareObject):
         conn_client = create_virtual_connection(node=self)
         route = SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
         return self.client_type(address=self.address, name=self.name, routes=[route])
+
+    def get_metadata_for_client(self):
+        metadata = {}
+        metadata['address'] = self.address
+        metadata['name'] = self.name
+        metadata['id'] = self.id
+        return metadata
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -169,7 +178,7 @@ class Node(AbstractNode, LocationAwareObject):
 
     @property
     def known_child_nodes(self) -> List:
-        if(self.child_type_client_type is not None):
+        if self.child_type_client_type is not None:
             return self.store.get_objects_of_type(obj_type=self.child_type_client_type)
         else:
             return []
@@ -179,11 +188,15 @@ class Node(AbstractNode, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def recv_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def recv_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
-                return self.immediate_msg_with_reply_router[type(msg)].process(node=self, msg=msg)
+                return self.immediate_msg_with_reply_router[type(msg)].process(
+                    node=self, msg=msg
+                )
             except KeyError as e:
                 if type(msg) not in self.immediate_msg_with_reply_router:
                     raise KeyError(
@@ -194,16 +207,22 @@ class Node(AbstractNode, LocationAwareObject):
                 self.ensure_services_have_been_registered_error_if_not()
         else:
             print("the old_message is not for me...")
-            return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
+            return self.message_with_reply_forwarding_service.process(
+                node=self, msg=msg
+            )
 
     @syft_decorator(typechecking=True)
-    def recv_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def recv_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
 
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
 
-                self.immediate_msg_without_reply_router[type(msg)].process(node=self, msg=msg)
+                self.immediate_msg_without_reply_router[type(msg)].process(
+                    node=self, msg=msg
+                )
 
             except KeyError as e:
 
@@ -221,15 +240,18 @@ class Node(AbstractNode, LocationAwareObject):
             print("the message is not for me...")
             self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
-
     @syft_decorator(typechecking=True)
-    def recv_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+    def recv_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
 
         if self.message_is_for_me(msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
 
-                self.eventual_msg_without_reply_router[type(msg)].process(node=self, msg=msg)
+                self.eventual_msg_without_reply_router[type(msg)].process(
+                    node=self, msg=msg
+                )
 
             except KeyError as e:
 
@@ -277,7 +299,9 @@ class Node(AbstractNode, LocationAwareObject):
                 # for all sub-classes of the explicitly supported type, add them
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.immediate_msg_with_reply_router[handler_type_subclass] = service_instance
+                    self.immediate_msg_with_reply_router[
+                        handler_type_subclass
+                    ] = service_instance
 
         for s in self.immediate_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding

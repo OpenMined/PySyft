@@ -1,7 +1,9 @@
 import random
 
 from ..nodes.common.action.get_object_action import GetObjectAction
-from ..nodes.common.action.garbage_collect_object_action import GarbageCollectObjectAction
+from ..nodes.common.action.garbage_collect_object_action import (
+    GarbageCollectObjectAction,
+)
 
 
 class Pointer:

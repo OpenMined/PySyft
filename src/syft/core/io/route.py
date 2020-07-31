@@ -92,6 +92,7 @@ from syft.core.message import EventualSyftMessageWithoutReply
 from .connection import ClientConnection
 from typing import List
 
+
 class RouteSchema(ObjectWithId):
     """An object which contains the IDs of the origin node and
     set of destination nodes. Multiple routes can subscribe
@@ -108,32 +109,37 @@ class RouteSchema(ObjectWithId):
 
 
 class Route(ObjectWithId):
-
     def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
         self.schema = schema
         self.stops = stops
 
-    def send_immediate_msg_without_reply(self, msg:SyftMessageWithoutReply) -> None:
+    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
 
 class BroadcastRoute(Route):
-
-    def send_immediate_msg_with_reply(self, msg:SyftMessageWithReply) -> Set[SyftMessageWithoutReply]:
+    def send_immediate_msg_with_reply(
+        self, msg: SyftMessageWithReply
+    ) -> Set[SyftMessageWithoutReply]:
         raise NotImplementedError
 
 
 class SoloRoute(Route):
-
-    def __init__(self, source: Location, destination: Location, connection: ClientConnection):
+    def __init__(
+        self, source: Location, destination: Location, connection: ClientConnection
+    ):
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
-    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
-    def send_immediate_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+    def send_immediate_msg_with_reply(
+        self, msg: SyftMessageWithReply
+    ) -> SyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)

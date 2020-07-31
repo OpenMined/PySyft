@@ -7,9 +7,10 @@ from ...io.address import Address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-from ..common.action.function_or_constructor_action import RunFunctionOrConstructorAction
 from ...io.route import Route
 from typing import List
+from ....lib import lib_ast
+
 
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -19,13 +20,22 @@ class Client(AbstractNodeClient, LocationAwareObject):
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
 
-
     @syft_decorator(typechecking=True)
     def __init__(self, address: Address, name: str, routes: List[Route]):
         LocationAwareObject.__init__(self, address=address)
 
         self.name = name
         self.routes = routes
+
+        self.install_supported_frameworks()
+
+    def install_supported_frameworks(self):
+
+        self.lib_ast = lib_ast.copy()
+        self.lib_ast.set_client(self)
+
+        for attr_name, attr in self.lib_ast.attrs.items():
+            setattr(self, attr_name, attr)
 
     def add_me_to_my_address(self):
         raise NotImplementedError
@@ -46,15 +56,21 @@ class Client(AbstractNodeClient, LocationAwareObject):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_with_reply(self, msg: ImmediateSyftMessageWithReply) -> ImmediateSyftMessageWithoutReply:
+    def send_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
         return self.routes[0].send_immediate_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_immediate_msg_without_reply(self, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def send_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
         return self.routes[0].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def send_eventual_msg_without_reply(self, msg: EventualSyftMessageWithoutReply) -> None:
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         return self.routes[0].send_eventual_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)

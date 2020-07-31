@@ -6,6 +6,7 @@ from .typecheck import type_hints
 # this flag is set in syft.__init__.py
 LONG_TYPECHECK_STACK_TRACES = None
 
+
 def syft_decorator(
     typechecking=False,
     enforce_policies=False,

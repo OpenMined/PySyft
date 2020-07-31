@@ -7,6 +7,7 @@ from ...io.connection import ClientConnection
 from ...io.route import Route
 from typing import List
 
+
 @final
 class NetworkClient(Client):
     @syft_decorator(typechecking=True)

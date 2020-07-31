@@ -12,13 +12,5 @@ import pickle
 device = Device(name="cpu1")
 
 
-@app.route("/")
-def get_client():
-
-    client = device.get_client()
-
-    return pickle.dumps(client).hex()
-
-
 def run():
     app.run()

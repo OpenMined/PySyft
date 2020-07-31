@@ -1,5 +1,4 @@
 from .. import ast
-from ..core import old_message as msg
 from ..core import pointer as ptr
 from ..core.nodes.common.action.save_object_action import SaveObjectAction
 from ..core.nodes.common.action.run_class_method_action import RunClassMethodAction
@@ -17,6 +16,10 @@ class Class(ast.callable.Callable):
 
     def __repr__(self):
         return f"<Class:{self.name}>"
+
+    @property
+    def pointer_type(self):
+        return getattr(self, self.pointer_name)
 
     def create_pointer_class(self):
         def run_class_method(attr, attr_path_and_name, __self, args, kwargs):
