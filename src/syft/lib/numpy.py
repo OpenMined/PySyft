@@ -6,11 +6,15 @@ whitelist.add("numpy.array")
 whitelist.add("numpy.ndarray")
 whitelist.add("numpy.ndarray.__add__")
 
-ast = Globals()
+def create_numpy_ast():
 
-for method in whitelist:
-    ast.add_path(path=method, framework_reference=np, return_type_name=None)
+    ast = Globals()
 
-for klass in ast.classes:
-    klass.create_pointer_class()
-    klass.create_send_method()
+    for method in whitelist:
+        ast.add_path(path=method, framework_reference=np, return_type_name=None)
+
+    for klass in ast.classes:
+        klass.create_pointer_class()
+        klass.create_send_method()
+
+    return ast
