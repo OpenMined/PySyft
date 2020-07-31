@@ -51,4 +51,4 @@ class DomainClient(Client):
         raise Exception("This client points to a device, you don't need a VM ID.")
 
     def __repr__(self):
-        return f"<DomainClient id:{self.id}>"
+        return f"<DomainClient id:{self.domain_id}>"

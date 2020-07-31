@@ -158,6 +158,13 @@ class Node(AbstractNode, LocationAwareObject):
         route = SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
         return self.client_type(address=self.address, name=self.name, routes=[route])
 
+    def get_metadata_for_client(self):
+        metadata = {}
+        metadata['address'] = self.address
+        metadata['name'] = self.name
+        metadata['id'] = self.id
+        return metadata
+
     @property
     def known_nodes(self) -> List[Client]:
         """This is a property which returns a list of all known nodes
