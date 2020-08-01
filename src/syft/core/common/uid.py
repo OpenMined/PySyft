@@ -117,7 +117,7 @@ class UID(AbstractUID):
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
-    def object2proto(self):
+    def _object2proto(self):
         """As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized. This method is
@@ -128,5 +128,5 @@ class UID(AbstractUID):
         return ProtoUID(obj_type=obj_type, value=self.value.bytes)
 
     @staticmethod
-    def proto2object(proto: ProtoUID) -> AbstractUID:
+    def _proto2object(proto: ProtoUID) -> AbstractUID:
         return UID(value=uuid.UUID(bytes=proto.value))
