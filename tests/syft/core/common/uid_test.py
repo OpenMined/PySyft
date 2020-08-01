@@ -78,6 +78,9 @@ def test_uid_hash():
     assert hash(uid) == 1705855162796767136
     assert hash(uid.value.int) == 1705855162796767136
 
+    fake_dict = {}
+    fake_dict[uid] = "Just testing we can use it as a key in a dictionary"
+
 
 def test_to_string():
     """Tests that UID generates an intuitive string."""
