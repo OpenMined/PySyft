@@ -1,5 +1,5 @@
-from .serializable import get_protobuf_classes, get_protobuf_wrappers
-from ..common.lazy_structures import LazyDict, LazySet
+from .util import get_protobuf_classes, get_protobuf_wrappers
+from ..lazy_structures import LazyDict, LazySet
 
 
 class SerializationStore:
@@ -36,21 +36,7 @@ class SerializationStore:
         It relies on the fact that new items might appear when traversing
         the tree-like structure of the mro of the Serializable interface.
         """
-        classes = get_protobuf_classes()
-        wrappers = get_protobuf_wrappers()
-        for proto_class in classes:
-            self.serde_types.add(proto_class)
-            self._type_to_schema[proto_class] = proto_class.get_protobuf_schema()
-            self._schema_to_type[proto_class.get_protobuf_schema()] = proto_class
 
-        for wrapper in wrappers:
-            self.serde_types.add(wrapper)
-            self._type_to_schema[
-                wrapper.get_protobuf_wrapper()
-            ] = wrapper.get_protobuf_schema()
-            self._schema_to_type[
-                wrapper.get_protobuf_schema()
-            ] = wrapper.get_protobuf_wrapper()
 
     def clear(self):
         self.serde_types.clear()
@@ -59,6 +45,3 @@ class SerializationStore:
 
     def __len__(self):
         return len(self.serde_types)
-
-
-serialization_store = SerializationStore()

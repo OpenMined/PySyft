@@ -78,7 +78,7 @@ class LazyDict:
         """
         contains = item in self._dict
         if not contains:
-            self._update_rule()
+            self._update_rule(self, item)
             contains = item in self._dict
         return contains
 
@@ -94,7 +94,7 @@ class LazyDict:
 
     def __getitem__(self, item):
         if item not in self._dict:
-            self._update_rule()
+            self._update_rule(self, item)
         return self._dict[item]
 
     def __str__(self):

@@ -1,6 +1,9 @@
 from typing import List
 from .decorators import type_hints
 
+# breaking convention here because index_globals needs
+# the full syft name to be present.
+import syft
 
 @type_hints
 def get_subclasses(obj_type: type) -> List:
@@ -9,3 +12,13 @@ def get_subclasses(obj_type: type) -> List:
         classes.append(sc)
         classes += get_subclasses(obj_type=sc)
     return classes
+
+def index_modules(a_dict, keys):
+    if len(keys) == 0:
+        return a_dict
+    return index_modules(a_dict.__dict__[keys[0]], keys[1:])
+
+def index_syft_by_module_name(fully_qualified_name):
+    attr_list = fully_qualified_name.split(".")
+    assert attr_list[0] == 'syft'
+    return index_modules(globals()['syft'], attr_list[1:])
