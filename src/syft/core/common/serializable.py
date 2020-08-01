@@ -51,7 +51,7 @@ class Serializable(object):
         else:
             return json_format.MessageToDict(message=self._object2proto())
 
-def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
+def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
     lazy and forgotten to add this object thus far.
@@ -104,7 +104,7 @@ def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     else:
         print(f"{fully_qualified_name} is not serializable")
 
-string2type = LazyDict(update_rule=is_string_a_serializable_class_name)
+string2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
 def serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
