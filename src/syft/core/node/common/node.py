@@ -37,7 +37,7 @@ from .location_aware_object import LocationAwareObject
 class Node(AbstractNode, LocationAwareObject):
 
     """
-    Basic class for a syft node behavior, explicit purpose nodes will
+    Basic class for a syft node behavior, explicit purpose node will
     inherit this class (e.g., Device, Domain, Network, and VirtualMachine).
 
 
@@ -113,7 +113,7 @@ class Node(AbstractNode, LocationAwareObject):
         # and will not generate a reply.
         self.eventual_msg_without_reply_router = {}
 
-        # This is the list of services which all nodes support.
+        # This is the list of services which all node support.
         # You can read more about them by reading their respective
         # class documentation.
 
@@ -167,7 +167,7 @@ class Node(AbstractNode, LocationAwareObject):
 
     @property
     def known_nodes(self) -> List[Client]:
-        """This is a property which returns a list of all known nodes
+        """This is a property which returns a list of all known node
         by returning the clients we used to interact with them from
         the object store."""
 

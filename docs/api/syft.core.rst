@@ -14,7 +14,7 @@ Subpackages
 
    syft.core.common
    syft.core.io
-   syft.core.nodes
+   syft.core.node
    syft.core.pointer
    syft.core.search
    syft.core.store

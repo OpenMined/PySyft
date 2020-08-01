@@ -50,6 +50,7 @@ def test_uid_raises_typeerror_if_int_id_attempted():
     with pytest.raises(TypeError) as e:
         uid = UID(value=123)
 
+
 ################ CLASS METHODS ############################
 
 

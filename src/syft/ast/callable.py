@@ -2,7 +2,7 @@ from .. import ast
 
 from .util import unsplit
 from .util import module_type
-from ..core.nodes.common.action.function_or_constructor_action import (
+from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
 

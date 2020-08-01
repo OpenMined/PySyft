@@ -63,7 +63,6 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-
     def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
         raise NotImplementedError
 

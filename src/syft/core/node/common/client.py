@@ -12,7 +12,6 @@ from typing import List
 from ....lib import lib_ast
 
 
-
 class Client(AbstractNodeClient, LocationAwareObject):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with

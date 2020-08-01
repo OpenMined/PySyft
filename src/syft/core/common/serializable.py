@@ -9,8 +9,9 @@ from syft.util import index_syft_by_module_name
 from syft.util import get_fully_qualified_name
 from syft.core.common.lazy_structures import LazyDict
 
+
 class Serializable(object):
-    def __init__(self, as_wrapper:bool):
+    def __init__(self, as_wrapper: bool):
         assert self.protobuf_type is not None
         self.as_wrapper = as_wrapper
 
@@ -51,12 +52,14 @@ class Serializable(object):
         else:
             return json_format.MessageToDict(message=self._object2proto())
 
+
 def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
+
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
     lazy and forgotten to add this object thus far.
 
-    In particular, this is the method for the LazyDict within the string2type
+    In particular, this is the method for the LazyDict within the fully_qualified_name2type
     dictionary - which is used to map fully qualified module names,
     (i.e., 'syft.core.common.UID') to their type object.
 
@@ -66,7 +69,6 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
 
     We determine whether we can serialize the object according to series of
     checks - as outlined below."""
-
 
     # lookup the type from the fully qualified name
     # i.e. "syft.core.common.UID" -> <type UID>
@@ -82,7 +84,7 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     # Serializable, have we created a wrapper around this object which does
     # subclass from serializable. Note that we can find out by seeing if we
     # monkeypatched a .serializable_wrapper attribute onto this non-syft class.
-    elif hasattr(obj_type, 'serializable_wrapper_type'):
+    elif hasattr(obj_type, "serializable_wrapper_type"):
 
         # this 'wrapper' object is a syft object which subclasses Serializable
         # so that we can put logic into it showing how to serialize and
@@ -102,7 +104,7 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
         lazy_dict[non_syft_object_fully_qualified_name] = wrapper_type
 
     else:
-        print(f"{fully_qualified_name} is not serializable")
+        raise Exception(f"{fully_qualified_name} is not serializable")
 
 string2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
@@ -119,7 +121,7 @@ def _deserialize(
     blob: (str, dict, bytes), from_json=True, from_binary=False, from_hex=False
 ) -> Serializable:
 
-    global string2type
+    global fully_qualified_name2type
 
     if from_hex:
         from_binary = True
@@ -132,11 +134,9 @@ def _deserialize(
     if from_json:
         blob = json.loads(s=blob)
 
-    obj_type = string2type[blob['objType']]
-
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = string2type[blob["objType"]]
+        obj_type = fully_qualified_name2type[blob["objType"]]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError as e:
@@ -154,4 +154,3 @@ def _deserialize(
     proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
     return obj_type._proto2object(proto_obj)
-
