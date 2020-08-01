@@ -97,6 +97,10 @@ class UID(AbstractUID):
         """This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects
         come with their own __eq__ function which we assume to be correct.
+
+        :param other: this is the other ID to be compared with
+        :type other: AbstractUID
+
     """
 
         if isinstance(other, UID):
