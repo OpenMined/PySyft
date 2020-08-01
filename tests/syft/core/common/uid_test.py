@@ -74,12 +74,23 @@ def test_uid_default_serialization():
     blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
     assert uid.serialize() == blob
 
+def test_uid_json_serialization():
+    """Tests that JSON UID serialization works as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    assert uid.json() == blob
+    assert uid.to_json() == blob
+    assert uid.serialize(to_json=True) == blob
+
 
 def test_uid_binary_serialization():
     """Tests that binary UID serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     blob = b'{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    assert uid.binary() == blob
+    assert uid.to_binary() == blob
     assert uid.serialize(to_binary=True) == blob
 
 
