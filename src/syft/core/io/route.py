@@ -83,7 +83,7 @@ would have instructions for how to forward to a binary tree of other
 nodes, propagating the model to all nodes which asked for it.
 """
 
-from ...interfaces.object import ObjectWithId
+from ..common.object import ObjectWithId
 from .location import Location
 from typing import Set
 from syft.core.common.message import SyftMessageWithReply
