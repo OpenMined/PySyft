@@ -9,6 +9,7 @@ LONG_TYPECHECK_STACK_TRACES = None
 
 def syft_decorator(
     typechecking=False,
+    prohibit_args=True,
     enforce_policies=False,
     syft_logger=False,
     other_decorators: list = None,
@@ -16,7 +17,8 @@ def syft_decorator(
     def decorator(function):
 
         if typechecking:
-            function = type_hints(function)
+
+            function = type_hints(function, prohibit_args=prohibit_args)
 
         def wrapper(*args, **kwargs):
 
