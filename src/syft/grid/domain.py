@@ -10,9 +10,8 @@ app = Flask(__name__)
 
 import binascii
 from syft.core.nodes.domain.domain import Domain
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithReply
-from syft.core.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 domain = Domain(name="ucsf")
 

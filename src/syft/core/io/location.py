@@ -1,4 +1,4 @@
-from syft.core.common.object import ObjectWithId
+from..common.object import ObjectWithId
 from typing import Set
 
 

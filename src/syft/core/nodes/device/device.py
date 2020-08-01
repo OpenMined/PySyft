@@ -8,7 +8,7 @@ from .device_type.unknown import unknown_device
 from ..vm.vm import VirtualMachine
 from ..vm.client import VirtualMachineClient
 from typing import Dict
-from syft.core.message import SyftMessage
+from syft.core.common.message import SyftMessage
 
 
 @final

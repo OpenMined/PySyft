@@ -12,7 +12,7 @@ from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
 from ....io.address import Address
 from syft.core.common.uid import UID
-from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from typing import List
 
 # TODO: change all old_message names in syft to have "WithReply" or "WithoutReply" at teh end of the name
@@ -42,6 +42,7 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         for node_client in node.known_child_nodes:
             msg.address = node_client.address
             node_client.send_immediate_msg_without_reply(msg=msg)
+
 
     @staticmethod
     @syft_decorator(typechecking=True)

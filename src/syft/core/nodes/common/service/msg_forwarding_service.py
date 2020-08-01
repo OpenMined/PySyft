@@ -4,8 +4,8 @@ from .....decorators import syft_decorator
 from .node_service import ImmediateNodeServiceWithoutReply
 from .node_service import ImmediateNodeServiceWithReply
 from ...abstract.node import AbstractNode
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
 from typing import List
 
 
@@ -25,6 +25,7 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
             )
 
         if pri_addr.device is not None and node.store.has_object(pri_addr.device):
+
             return node.store.get_object(
                 pri_addr.device
             ).send_immediate_msg_without_reply(msg=msg)

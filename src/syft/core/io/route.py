@@ -83,12 +83,12 @@ would have instructions for how to forward to a binary tree of other
 nodes, propagating the model to all nodes which asked for it.
 """
 
-from syft.core.common.object import ObjectWithId
+from ..common.object import ObjectWithId
 from .location import Location
 from typing import Set
-from syft.core.message import SyftMessageWithReply
-from syft.core.message import SyftMessageWithoutReply
-from syft.core.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import SyftMessageWithReply
+from syft.core.common.message import SyftMessageWithoutReply
+from syft.core.common.message import EventualSyftMessageWithoutReply
 from .connection import ClientConnection
 from typing import List
 

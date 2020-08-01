@@ -1,6 +1,6 @@
-from syft.core.message import ImmediateSyftMessageWithReply
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from syft.core.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import EventualSyftMessageWithoutReply
 from ...decorators import syft_decorator
 from typing import final
 
