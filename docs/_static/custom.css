@@ -307,22 +307,22 @@ div.important {
 
 div.note {
     background-color: rgb(28, 28, 33);;
-    border: 1px solid #CCC;
+    border: 1px solid #151515;
 }
 
 div.tip {
     background-color: rgb(28, 28, 33);;
-    border: 1px solid #CCC;
+    border: 1px solid #151515;
 }
 
 div.hint {
     background-color: rgb(28, 28, 33);;
-    border: 1px solid #CCC;
+    border: 1px solid #151515;
 }
 
 div.seealso {
     background-color: rgb(28, 28, 33);;
-    border: 1px solid #CCC;
+    border: 1px solid #151515;
 }
 
 div.topic {
