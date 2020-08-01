@@ -1,6 +1,6 @@
 from syft.core.serialization import serialization_store
-from syft.common.id import UID
-from syft.interfaces import Serializable
+from syft.core.common.uid import UID
+from syft.core.common.serializable import Serializable
 
 
 class TestClass(Serializable):
