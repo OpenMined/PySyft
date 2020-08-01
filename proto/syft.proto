@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 message ProtoUID {
   string obj_type = 1;
   bytes value = 2;
+  bool as_wrapper = 3;
 }
 
 message ProtoObjectWithId {
