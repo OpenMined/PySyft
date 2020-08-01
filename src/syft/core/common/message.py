@@ -1,8 +1,10 @@
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 
+
 class AbstractMessage:
     """"""
+
 
 class SyftMessage(AbstractMessage):
     def __init__(self, address: Address, msg_id: UID = None) -> None:

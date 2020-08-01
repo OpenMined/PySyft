@@ -11,7 +11,7 @@ from syft.core.common.lazy_structures import LazyDict
 
 
 class Serializable(object):
-    def __init__(self, as_wrapper:bool):
+    def __init__(self, as_wrapper: bool):
         assert self.protobuf_type is not None
         self.as_wrapper = as_wrapper
 
@@ -53,7 +53,7 @@ class Serializable(object):
             return json_format.MessageToDict(message=self._object2proto())
 
 
-def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
+def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
     lazy and forgotten to add this object thus far.
@@ -69,7 +69,6 @@ def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     We determine whether we can serialize the object according to series of
     checks - as outlined below."""
 
-
     # lookup the type from the fully qualified name
     # i.e. "syft.core.common.UID" -> <type UID>
     obj_type = index_syft_by_module_name(fully_qualified_name=fully_qualified_name)
@@ -84,7 +83,7 @@ def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     # Serializable, have we created a wrapper around this object which does
     # subclass from serializable. Note that we can find out by seeing if we
     # monkeypatched a .serializable_wrapper attribute onto this non-syft class.
-    elif hasattr(obj_type, 'serializable_wrapper_type'):
+    elif hasattr(obj_type, "serializable_wrapper_type"):
 
         # this 'wrapper' object is a syft object which subclasses Serializable
         # so that we can put logic into it showing how to serialize and
@@ -155,4 +154,3 @@ def deserialize(
     proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
     return obj_type._proto2object(proto_obj)
-

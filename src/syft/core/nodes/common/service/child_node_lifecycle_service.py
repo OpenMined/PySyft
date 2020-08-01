@@ -40,7 +40,6 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
 
         msg.child_node_client.send_immediate_msg_without_reply(msg=heritage_msg)
 
-
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:

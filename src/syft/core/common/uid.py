@@ -43,7 +43,7 @@ class UID(AbstractUID):
     wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None, as_wrapper:bool = False):
+    def __init__(self, value: uuid_type = None, as_wrapper: bool = False):
         """This initializes the object. Normal use for this object is
         to initialize the constructor with value==None because you
         want to initialize with a novel ID. The only major exception
@@ -133,7 +133,9 @@ class UID(AbstractUID):
 
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
-        return ProtoUID(obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper)
+        return ProtoUID(
+            obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper
+        )
 
     @staticmethod
     def _proto2object(proto: ProtoUID) -> AbstractUID:
@@ -148,5 +150,6 @@ class UID(AbstractUID):
         if proto.as_wrapper:
             return value
         return UID(value=value)
+
 
 uuid_type.serializable_wrapper_type = UID

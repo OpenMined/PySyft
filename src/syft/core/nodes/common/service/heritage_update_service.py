@@ -43,7 +43,6 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
             msg.address = node_client.address
             node_client.send_immediate_msg_without_reply(msg=msg)
 
-
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
