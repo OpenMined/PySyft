@@ -32,8 +32,27 @@ def test_uid_raises_typeerror_if_string_id_attempted():
     with pytest.raises(TypeError) as e:
         uid = UID(value="a string id")
 
+
 def test_uid_raises_typeerror_if_int_id_attempted():
     """Tests that the UID class will raise an error if you try to init with a string."""
 
     with pytest.raises(TypeError) as e:
         uid = UID(value=123)
+
+
+def test_uid_comparison():
+    """Tests that two UIDs can be compared and will correctly evaluate"""
+
+    uid1 = UID()
+    uid2 = UID()
+
+    # first do some basic checks
+    assert uid1 == uid1
+    assert uid1 != uid2
+
+    # since the comparison should be based on the underlying value
+    # let's make sure it's comparing based on the value instead of
+    # just based on some other attribute of the object.
+    uid2.value = uid1.value
+    assert uid1 == uid2
+

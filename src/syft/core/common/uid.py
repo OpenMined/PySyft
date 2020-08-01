@@ -88,7 +88,7 @@ class UID(AbstractUID):
 
         return self.value.int
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: AbstractUID) -> bool:
         """This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects

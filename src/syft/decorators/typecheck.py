@@ -6,7 +6,7 @@ from typeguard import typechecked
 SKIP_RETURN_TYPE_HINTS = {"__init__"}
 
 
-def type_hints(decorated: typing.Callable) -> typing.Callable:
+def type_hints(decorated: typing.Callable, prohibit_args=True) -> typing.Callable:
     """
     Decorator to enforce typechecking using the type hints of a function.
 
@@ -74,7 +74,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
             )
 
     def decorator(*args, **kwargs):
-        check_args(*args, **kwargs)
+        if(prohibit_args):
+            check_args(*args, **kwargs)
         return typechecked(decorated)(*args, **kwargs)
 
     decorator.__annotations__ = decorated.__annotations__
