@@ -104,7 +104,7 @@ def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
         lazy_dict[non_syft_object_fully_qualified_name] = wrapper_type
 
     else:
-        print(f"{fully_qualified_name} is not serializable")
+        raise Exception(f"{fully_qualified_name} is not serializable")
 
 
 fully_qualified_name2type = LazyDict(update_rule=is_string_a_serializable_class_name)
