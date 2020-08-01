@@ -4,7 +4,8 @@ package tutorial;
 import "google/protobuf/timestamp.proto";
 
 message ProtoUID {
-  bytes value = 1;
+  string obj_type = 1;
+  bytes value = 2;
 }
 
 message ProtoObjectWithId {
@@ -15,7 +16,7 @@ message Person {
   string name = 1;
   int32 id = 2;
   string email = 3;
-cc
+
   enum PhoneType {
     MOBILE = 0;
     HOME = 1;

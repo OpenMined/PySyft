@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="tutorial",
     syntax="proto3",
     serialized_options=None,
-    serialized_pb=b'\n\x10proto/syft.proto\x12\x08tutorial\x1a\x1fgoogle/protobuf/timestamp.proto"\x19\n\x08ProtoUID\x12\r\n\x05value\x18\x01 \x01(\x0c"3\n\x11ProtoObjectWithId\x12\x1e\n\x02id\x18\x01 \x01(\x0b\x32\x12.tutorial.ProtoUID"\x87\x02\n\x06Person\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12,\n\x06phones\x18\x04 \x03(\x0b\x32\x1c.tutorial.Person.PhoneNumber\x12\x30\n\x0clast_updated\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x1aG\n\x0bPhoneNumber\x12\x0e\n\x06number\x18\x01 \x01(\t\x12(\n\x04type\x18\x02 \x01(\x0e\x32\x1a.tutorial.Person.PhoneType"+\n\tPhoneType\x12\n\n\x06MOBILE\x10\x00\x12\x08\n\x04HOME\x10\x01\x12\x08\n\x04WORK\x10\x02"/\n\x0b\x41\x64\x64ressBook\x12 \n\x06people\x18\x01 \x03(\x0b\x32\x10.tutorial.Personb\x06proto3',
+    serialized_pb=b'\n\x10proto/syft.proto\x12\x08tutorial\x1a\x1fgoogle/protobuf/timestamp.proto"+\n\x08ProtoUID\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c"3\n\x11ProtoObjectWithId\x12\x1e\n\x02id\x18\x01 \x01(\x0b\x32\x12.tutorial.ProtoUID"\x87\x02\n\x06Person\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12,\n\x06phones\x18\x04 \x03(\x0b\x32\x1c.tutorial.Person.PhoneNumber\x12\x30\n\x0clast_updated\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x1aG\n\x0bPhoneNumber\x12\x0e\n\x06number\x18\x01 \x01(\t\x12(\n\x04type\x18\x02 \x01(\x0e\x32\x1a.tutorial.Person.PhoneType"+\n\tPhoneType\x12\n\n\x06MOBILE\x10\x00\x12\x08\n\x04HOME\x10\x01\x12\x08\n\x04WORK\x10\x02"/\n\x0b\x41\x64\x64ressBook\x12 \n\x06people\x18\x01 \x03(\x0b\x32\x10.tutorial.Personb\x06proto3',
     dependencies=[google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,],
 )
 
@@ -43,8 +43,8 @@ _PERSON_PHONETYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=364,
-    serialized_end=407,
+    serialized_start=382,
+    serialized_end=425,
 )
 _sym_db.RegisterEnumDescriptor(_PERSON_PHONETYPE)
 
@@ -57,10 +57,28 @@ _PROTOUID = _descriptor.Descriptor(
     containing_type=None,
     fields=[
         _descriptor.FieldDescriptor(
-            name="value",
-            full_name="tutorial.ProtoUID.value",
+            name="obj_type",
+            full_name="tutorial.ProtoUID.obj_type",
             index=0,
             number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
+        _descriptor.FieldDescriptor(
+            name="value",
+            full_name="tutorial.ProtoUID.value",
+            index=1,
+            number=2,
             type=12,
             cpp_type=9,
             label=1,
@@ -84,7 +102,7 @@ _PROTOUID = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=63,
-    serialized_end=88,
+    serialized_end=106,
 )
 
 
@@ -122,8 +140,8 @@ _PROTOOBJECTWITHID = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=90,
-    serialized_end=141,
+    serialized_start=108,
+    serialized_end=159,
 )
 
 
@@ -179,8 +197,8 @@ _PERSON_PHONENUMBER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=291,
-    serialized_end=362,
+    serialized_start=309,
+    serialized_end=380,
 )
 
 _PERSON = _descriptor.Descriptor(
@@ -289,8 +307,8 @@ _PERSON = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=144,
-    serialized_end=407,
+    serialized_start=162,
+    serialized_end=425,
 )
 
 
@@ -328,8 +346,8 @@ _ADDRESSBOOK = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=409,
-    serialized_end=456,
+    serialized_start=427,
+    serialized_end=474,
 )
 
 _PROTOOBJECTWITHID.fields_by_name["id"].message_type = _PROTOUID
