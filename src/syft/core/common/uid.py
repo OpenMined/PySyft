@@ -7,7 +7,7 @@ from google.protobuf.message import Message
 
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
-from .serializable import Serializable
+from .serializable.serializable import Serializable
 from ...proto import ProtoUID
 
 # resources
@@ -38,7 +38,9 @@ class UID(AbstractUID):
 
     """
 
-    proto_type = ProtoUID
+    protobuf_type = ProtoUID
+    is_wrapper = True
+    wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
     def __init__(self, value: uuid_type = None):
@@ -143,3 +145,6 @@ class UID(AbstractUID):
             if you wish to deserialize an object."""
 
         return UID(value=uuid.UUID(bytes=proto.value))
+
+uuid_type.is_wrapped_by_serializable = True
+uuid_type.wrapped_by = UID
