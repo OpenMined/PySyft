@@ -135,8 +135,6 @@ def deserialize(
     if from_json:
         blob = json.loads(s=blob)
 
-    obj_type = fully_qualified_name2type[blob['objType']]
-
     try:
         # lets try to lookup the type we are deserializing
         obj_type = fully_qualified_name2type[blob["objType"]]
