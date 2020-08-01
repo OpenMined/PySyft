@@ -7,6 +7,7 @@ import pytest
 import uuid
 
 # syft imports
+import syft as sy
 from syft.core.common import UID
 from syft.core.common.uid import uuid_type
 
@@ -66,7 +67,30 @@ def test_uid_hash():
     assert hash(uid) == 1705855162796767136
     assert hash(uid.value.int) == 1705855162796767136
 
+def test_uid_default_serialization():
+    """Tests that default UID serialization works as expected - to JSON"""
 
-def test_uid_serialization():
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    assert uid.serialize() == blob
+
+def test_uid_json_serialization():
+    """Tests that JSON UID serialization works as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    assert uid.json() == blob
+    assert uid.to_json() == blob
+    assert uid.serialize(to_json=True) == blob
+
+
+def test_uid_binary_serialization():
+    """Tests that binary UID serializes as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    blob = b'{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    assert uid.binary() == blob
+    assert uid.to_binary() == blob
+    assert uid.serialize(to_binary=True) == blob
 
 

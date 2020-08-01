@@ -109,8 +109,6 @@ class UID(AbstractUID):
         if isinstance(other, UID):
             return self.value == other.value
 
-        return False
-
     def __repr__(self):
         return f"<UID:{self.value}>"
 

@@ -18,6 +18,24 @@ class Serializable(object):
     def object2proto(self):
         raise NotImplementedError
 
+    def to_json(self) -> str:
+        return self.serialize(to_json=True)
+
+    def json(self) -> str:
+        return self.serialize(to_json=True)
+
+    def to_binary(self) -> bytes:
+        return self.serialize(to_binary=True)
+
+    def binary(self) -> bytes:
+        return self.serialize(to_binary=True)
+
+    def to_hex(self) -> str:
+        return self.serialize(to_hex=True)
+
+    def hex(self) -> str:
+        return self.serialize(to_hex=True)
+
     def serialize(self, to_json=True, to_binary=False, to_hex=False):
         """Serialize the object according to the parameters."""
 
