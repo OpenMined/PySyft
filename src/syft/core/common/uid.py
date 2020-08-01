@@ -16,6 +16,8 @@ uuid_type = type(uuid.uuid4())
 @final
 class AbstractUID(Serializable):
     """This exists to allow us to typecheck on the UID object
+    because we need a type which has already been initialized in
+    order to add it as a type hint on the UID object.
     """
 
 
@@ -46,7 +48,7 @@ class UID(AbstractUID):
         specific id value.
 
         :param value: if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
-        :type value: uuid.uuid4(), optional
+        :type value: uuid.uuid4, optional
         :return: returns the initialized object
         :rtype: UID
 
