@@ -3,14 +3,20 @@ from typing import Callable
 
 class LazyDict:
     """
-    Struct that simulates the behavior of a normal dictionary, but that a
-    fallback update method when an object is not found to update the
-    dictionary.
+    Sometimes pre-populating a dictionary with every item it needs to serve
+    to fulfill a piece of functionality is very expensive. A LazyDict lets
+    us only add objects to the dictionary (or decide *whether* add them)
+    when they are requested. After they have been requested the dictionary
+    continues to hold onto the object for later use. In this way, the
+    dictionary is really just a cache of objects. And if an object is never
+    requested, then we never expend any cycles adding it to the dictionary.s
 
     The overall behavior is:
-    * if the element if found, do nothing.
-    * else, update the elements of the dicts in a lazy manner.
-    * retry the search.
+    * if the element is found, return the element.
+    * else, update the elements of the dict in a lazy manner.
+    * retry the search
+        - if the element is still not found - return False
+        - if the element is found - return True
 
     Attributes:
          _dict: internal dict to store the elements of the lazy dict.
