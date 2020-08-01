@@ -419,7 +419,7 @@ dl {
 }
 
 dl.py.method {
-    padding-top: 20px;
+    padding-top: 30px;
     padding-bottom: 20px;
     background-color: #212121;
     padding-left: 30px;
@@ -428,9 +428,9 @@ dl.py.method {
 dl.py.class {
     padding-top: 20px;
     padding-bottom: 40px;
-    background-color: #212121;
-    padding-left: 30px;
-    padding-right: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: #222229;
 }
 
 dl dd {
