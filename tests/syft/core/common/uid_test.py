@@ -20,6 +20,7 @@ from syft.core.common.uid import uuid_type
 
 ############@@#### INITIALIZATION ######################
 
+
 def test_uid_creates_value_if_none_provided():
     """Tests that the UID class will create an ID if none is provided."""
 
@@ -48,6 +49,7 @@ def test_uid_raises_typeerror_if_int_id_attempted():
 
     with pytest.raises(TypeError) as e:
         uid = UID(value=123)
+
 
 ################ CLASS METHODS ############################
 
@@ -86,11 +88,12 @@ def test_to_string():
     """Tests that UID generates an intuitive string."""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    assert str(uid) == '<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>'
-    assert uid.__repr__() == '<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>'
+    assert str(uid) == "<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+    assert uid.__repr__() == "<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
 
 ######################## SERDE ################################
+
 
 def test_uid_default_serialization():
     """Tests that default UID serialization works as expected - to JSON"""
@@ -148,9 +151,11 @@ def test_uid_hex_serialization():
     """Tests that hex UID serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = '7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964' +\
-           '2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717' +\
-           '76f5646413d3d220a7d'
+    blob = (
+        "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964"
+        + "2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717"
+        + "76f5646413d3d220a7d"
+    )
     assert uid.hex() == blob
     assert uid.to_hex() == blob
     assert uid.serialize(to_hex=True) == blob
@@ -159,8 +164,10 @@ def test_uid_hex_serialization():
 def test_uid_hex_deserialization():
     """Test that hex deserialization works as expected"""
 
-    blob = '7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964' + \
-           '2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717' + \
-           '76f5646413d3d220a7d'
+    blob = (
+        "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964"
+        + "2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717"
+        + "76f5646413d3d220a7d"
+    )
     obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))

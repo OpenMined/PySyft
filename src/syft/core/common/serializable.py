@@ -72,12 +72,12 @@ def deserialize(
     global string2type
 
     if from_hex:
-        from_binary=True
+        from_binary = True
         blob = bytes.fromhex(blob)
 
     if from_binary:
         from_json = True
-        blob = str(blob, 'utf-8')
+        blob = str(blob, "utf-8")
 
     if from_json:
         blob = json.loads(s=blob)

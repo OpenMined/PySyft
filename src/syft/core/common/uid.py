@@ -110,7 +110,7 @@ class UID(AbstractUID):
             return self.value == other.value
 
     @syft_decorator(typechecking=True)
-    def __repr__(self)->str:
+    def __repr__(self) -> str:
         """Return a human-readable representation of the UID with brackets
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
