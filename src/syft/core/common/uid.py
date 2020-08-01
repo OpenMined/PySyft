@@ -3,6 +3,7 @@ import uuid
 
 # external class/method imports
 from typing import final
+from google.protobuf.message import Message
 
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
@@ -117,7 +118,7 @@ class UID(AbstractUID):
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self):
+    def _object2proto(self) -> Message:
         """As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized. This method is
