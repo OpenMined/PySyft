@@ -6,7 +6,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-from syft.core.nodes.network.network import Network
+from syft.core.node.network.network import Network
 
 network = Network(name="ucsf-net")
 

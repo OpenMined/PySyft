@@ -1,7 +1,7 @@
 import random
 
-from ..nodes.common.action.get_object_action import GetObjectAction
-from ..nodes.common.action.garbage_collect_object_action import (
+from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 

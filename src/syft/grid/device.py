@@ -6,7 +6,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-from syft.core.nodes.device.device import Device
+from syft.core.node.device.device import Device
 import pickle
 
 device = Device(name="cpu1")

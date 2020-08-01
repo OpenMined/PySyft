@@ -22,10 +22,10 @@ Subpackages
 Submodules
 ----------
 
-syft.core.message module
-------------------------
+syft.core.util module
+---------------------
 
-.. automodule:: syft.core.message
+.. automodule:: syft.core.util
    :members:
    :undoc-members:
    :show-inheritance:
