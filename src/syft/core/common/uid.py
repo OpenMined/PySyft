@@ -2,7 +2,9 @@ import uuid
 from typing import final
 from syft.proto import ProtoUID
 from syft.decorators.syft_decorator_impl import syft_decorator
+
 uuid_type = type(uuid.uuid4())
+
 
 @final
 class AbstractUID(object):
@@ -83,7 +85,6 @@ class UID(AbstractUID):
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
     """
-
 
         return self.value.int
 
