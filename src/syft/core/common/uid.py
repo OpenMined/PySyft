@@ -7,7 +7,7 @@ from google.protobuf.message import Message
 
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
-from .serializable.serializable import Serializable
+from syft.core.common.serializable import Serializable
 from ...proto import ProtoUID
 
 # resources
@@ -43,7 +43,7 @@ class UID(AbstractUID):
     wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None):
+    def __init__(self, value: uuid_type = None, as_wrapper:bool = False):
         """This initializes the object. Normal use for this object is
         to initialize the constructor with value==None because you
         want to initialize with a novel ID. The only major exception
@@ -66,7 +66,7 @@ class UID(AbstractUID):
             >>> 8d744978-327b-4126-a644-cb90bcadd35e
         """
         # checks to make sure you've set a proto_type
-        super().__init__()
+        super().__init__(as_wrapper=as_wrapper)
 
         # if value is not set - create a novel and unique ID.
         if value is None:
@@ -133,7 +133,7 @@ class UID(AbstractUID):
 
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
-        return ProtoUID(obj_type=obj_type, value=self.value.bytes)
+        return ProtoUID(obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper)
 
     @staticmethod
     def _proto2object(proto: ProtoUID) -> AbstractUID:
@@ -144,7 +144,10 @@ class UID(AbstractUID):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object."""
 
-        return UID(value=uuid.UUID(bytes=proto.value))
+        value = uuid.UUID(bytes=proto.value)
+        if proto.as_wrapper:
+            return value
+        return UID(value=value)
 
 uuid_type.is_wrapped_by_serializable = True
-uuid_type.wrapped_by = UID
+uuid_type.serializable_wrapper_type = UID

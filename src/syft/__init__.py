@@ -79,6 +79,8 @@ from syft.lib import lib_ast
 
 # Convenience Methods
 from syft.core.common.serializable import deserialize
+from syft.core.common.serializable import serialize
+
 
 # LIBRARY CONFIG
 
