@@ -18,15 +18,3 @@ Subpackages
    syft.core.pointer
    syft.core.search
    syft.core.store
-
-Submodules
-----------
-
-syft.core.message module
-------------------------
-
-.. automodule:: syft.core.message
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
