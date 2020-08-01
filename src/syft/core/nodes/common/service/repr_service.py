@@ -5,7 +5,7 @@ from typing import final
 
 from .node_service import ImmediateNodeServiceWithoutReply
 from ...abstract.node import AbstractNode
-from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from syft.core.common.uid import UID
 

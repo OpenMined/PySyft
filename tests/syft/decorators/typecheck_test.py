@@ -1,6 +1,10 @@
 import pytest
 from typing import List, Union, Optional, Dict
+<<<<<<< HEAD
 from syft.decorators.syft_decorator_impl import syft_decorator
+=======
+from syft.decorators import type_hints
+>>>>>>> 5b873b8432ad761286679c8eb2ab9fbafc605ef4
 
 
 def test_typecheck_basic_dtypes():

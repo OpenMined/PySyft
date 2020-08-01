@@ -1,8 +1,8 @@
 from __future__ import annotations
 from syft.decorators import syft_decorator
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from syft.core.message import EventualSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
 from ...abstract.node import AbstractNode
 from typing import List
 
@@ -51,6 +51,7 @@ class EventualNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply) -> None:
+
         raise NotImplementedError
 
     @staticmethod
@@ -62,6 +63,7 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
+
     def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
         raise NotImplementedError
 

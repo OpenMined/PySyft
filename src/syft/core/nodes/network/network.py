@@ -1,5 +1,5 @@
 from ..common.node import Node
-from syft.core.message import SyftMessage
+from syft.core.common.message import SyftMessage
 from ..domain.domain import Domain
 from ..domain.client import DomainClient
 from .client import NetworkClient

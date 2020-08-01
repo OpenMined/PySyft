@@ -10,13 +10,13 @@ from ..abstract.node import AbstractNode
 from ....decorators import syft_decorator
 from typing import List
 from ....util import get_subclasses
-from syft.core.message import SyftMessage
-from syft.core.message import ImmediateSyftMessageWithReply
-from syft.core.message import EventualSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 
 # CORE IMPORTS
-from ...store.store import ObjectStore
+from ...store import ObjectStore
 from .service.msg_forwarding_service import MessageWithoutReplyForwardingService
 from .service.msg_forwarding_service import MessageWithReplyForwardingService
 from .service.repr_service import ReprService

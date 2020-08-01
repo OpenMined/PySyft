@@ -1,6 +1,6 @@
 from .common import ImmediateActionWithReply
 from ...abstract.node import AbstractNode
-from ....message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):

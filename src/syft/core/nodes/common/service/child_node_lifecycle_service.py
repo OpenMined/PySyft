@@ -7,7 +7,7 @@ from typing import List
 
 from ....io.address import Address
 from syft.core.common.uid import UID
-from syft.core.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNodeClient
 
 from .heritage_update_service import HeritageUpdateMessage
@@ -37,7 +37,9 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         heritage_msg = HeritageUpdateMessage(
             new_ancestry_address=node.address, address=msg.child_node_client.address
         )
+
         msg.child_node_client.send_immediate_msg_without_reply(msg=heritage_msg)
+
 
     @staticmethod
     @syft_decorator(typechecking=True)
