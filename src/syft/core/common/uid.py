@@ -81,13 +81,6 @@ class UID(AbstractUID):
         be used in this way. We take the 128-bit int representation of the
         value.
 
-        :param value (uuid): if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
-        :param arg2: description
-        :type arg1: type description
-        :type arg1: type description
-        :return: return description
-        :rtype: the return type description
-
         .. note::
             Note that this probably gets further hashed into a shorter
             representation for most python data-structures.
