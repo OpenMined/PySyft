@@ -195,12 +195,27 @@ div.body h5,
 div.body h6 {
     font-family: Georgia, serif;
     font-weight: normal;
-    margin: 30px 0px 10px 0px;
-    padding: 0;
+    margin-top: 72px;
+    padding-bottom: 16px;
+    padding-top: 16px;
+    background-color: #131317;
+    padding-left: 20px;
 }
 
-div.body h1 { margin-top: 0; padding-top: 0; font-size: 240%; }
-div.body h2 { font-size: 180%; }
+div.body h1 {
+    padding: 0;
+    margin: 0;
+    background-color: #1c1c22;
+    font-size: 240%;
+}
+div.body h2 {
+    font-size: 180%;
+    padding-left: 0;
+    padding-top: 34px;
+    padding-bottom: 9px;
+    margin: 0;
+    background-color: #1c1c22;
+}
 div.body h3 { font-size: 150%; }
 div.body h4 { font-size: 130%; }
 div.body h5 { font-size: 100%; }

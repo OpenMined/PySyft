@@ -78,8 +78,8 @@ from syft.core.nodes.common.service.repr_service import ReprMessage
 from syft.lib import lib_ast
 
 # Convenience Methods
-from syft.core.common.serializable import deserialize
-from syft.core.common.serializable import serialize
+from syft.core.common.serializable import _deserialize as deserialize
+from syft.core.common.serializable import _serialize as serialize
 
 
 # LIBRARY CONFIG

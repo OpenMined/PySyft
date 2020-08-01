@@ -107,7 +107,7 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
 string2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
-def serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
+def _serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
@@ -115,7 +115,7 @@ def serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex
     return obj.serialize(to_json=to_json, to_binary=to_binary, to_hex=to_hex)
 
 
-def deserialize(
+def _deserialize(
     blob: (str, dict, bytes), from_json=True, from_binary=False, from_hex=False
 ) -> Serializable:
 
