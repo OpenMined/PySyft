@@ -108,10 +108,21 @@ class UID(AbstractUID):
         if isinstance(other, UID):
             return self.value == other.value
 
-    def __repr__(self):
+    @syft_decorator(typechecking=True)
+    def __repr__(self)->str:
+        """Return a human-readable representation of the UID with brackets
+        so that it can be easily spotted when nested inside of the human-
+        readable representations of other objects."""
+
         return f"<UID:{self.value}>"
 
+    @syft_decorator(typechecking=True)
     def object2proto(self):
+        """As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized. This method is
+        purely an internal method."""
+
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
         return ProtoUID(obj_type=obj_type, value=self.value.bytes)
