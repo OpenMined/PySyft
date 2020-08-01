@@ -9,7 +9,7 @@ import pickle
 app = Flask(__name__)
 
 import binascii
-from syft.core.nodes.domain.domain import Domain
+from syft.core.node.domain.domain import Domain
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.message import ImmediateSyftMessageWithReply
 

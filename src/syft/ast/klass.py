@@ -1,7 +1,7 @@
 from .. import ast
 from ..core import pointer as ptr
-from ..core.nodes.common.action.save_object_action import SaveObjectAction
-from ..core.nodes.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.save_object_action import SaveObjectAction
+from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 
 from forbiddenfruit import curse
 

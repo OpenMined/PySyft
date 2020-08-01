@@ -1,7 +1,7 @@
 """The purpose of this service is to inform lower level devices
 of changes in the hierarchy above them. For example, if a Domain
 registers within a new Network or if a Device registers within
-a new Domain, all the other child nodes will need to know this
+a new Domain, all the other child node will need to know this
 information to populate complete addresses into their clients."""
 
 
@@ -42,7 +42,6 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         for node_client in node.known_child_nodes:
             msg.address = node_client.address
             node_client.send_immediate_msg_without_reply(msg=msg)
-
 
     @staticmethod
     @syft_decorator(typechecking=True)

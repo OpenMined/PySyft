@@ -6,7 +6,7 @@ from ...io.address import address as create_address
 class LocationAwareObject:
     def __init__(self, address: Address = None):
 
-        # All nodes should have a representation of where they think
+        # All node should have a representation of where they think
         # they are currently held. Note that this is at risk of going
         # out of date and so we need to make sure we write good
         # logic to keep these addresses up to date. The main

@@ -13,7 +13,6 @@ from typing import List
 
 
 class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
-
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> None:
         msg.execute_action(node=node)
@@ -36,7 +35,6 @@ class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 
 
 class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
-
     @syft_decorator(typechecking=True)
     def process(
         self, node: AbstractNode, msg: ImmediateActionWithReply

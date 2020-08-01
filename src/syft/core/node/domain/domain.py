@@ -4,6 +4,7 @@ from .client import DomainClient
 from ..device import Device
 from ..device import DeviceClient
 
+
 class Domain(Node):
 
     client_type = DomainClient
