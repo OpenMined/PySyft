@@ -121,8 +121,13 @@ class UID(AbstractUID):
     def _object2proto(self) -> Message:
         """As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized. This method is
-        purely an internal method."""
+        Protobuf object so that it can be further serialized.
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
 
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
@@ -130,4 +135,11 @@ class UID(AbstractUID):
 
     @staticmethod
     def _proto2object(proto: ProtoUID) -> AbstractUID:
+        """As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object."""
+
         return UID(value=uuid.UUID(bytes=proto.value))
