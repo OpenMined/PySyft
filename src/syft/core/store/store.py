@@ -12,7 +12,9 @@ class ObjectStore:
         if id not in self._objects:
             self._objects[id] = obj
         else:
-            raise Exception("COLLISION: you tried to store an object which already exists!")
+            raise Exception(
+                "COLLISION: you tried to store an object which already exists!"
+            )
 
     def get_object(self, id):
         return self._objects[id]
