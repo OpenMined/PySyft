@@ -3,6 +3,7 @@ import uuid
 
 # external class/method imports
 from typing import final
+from google.protobuf.message import Message
 
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
@@ -16,6 +17,8 @@ uuid_type = type(uuid.uuid4())
 @final
 class AbstractUID(Serializable):
     """This exists to allow us to typecheck on the UID object
+    because we need a type which has already been initialized in
+    order to add it as a type hint on the UID object.
     """
 
 
@@ -46,7 +49,7 @@ class UID(AbstractUID):
         specific id value.
 
         :param value: if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
-        :type value: uuid.uuid4(), optional
+        :type value: uuid.uuid4, optional
         :return: returns the initialized object
         :rtype: UID
 
@@ -97,19 +100,46 @@ class UID(AbstractUID):
         """This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects
         come with their own __eq__ function which we assume to be correct.
+
+        :param other: this is the other ID to be compared with
+        :type other: AbstractUID
+
     """
 
         if isinstance(other, UID):
             return self.value == other.value
 
-    def __repr__(self):
+    @syft_decorator(typechecking=True)
+    def __repr__(self) -> str:
+        """Return a human-readable representation of the UID with brackets
+        so that it can be easily spotted when nested inside of the human-
+        readable representations of other objects."""
+
         return f"<UID:{self.value}>"
 
-    def object2proto(self):
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Message:
+        """As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
         return ProtoUID(obj_type=obj_type, value=self.value.bytes)
 
     @staticmethod
-    def proto2object(proto: ProtoUID) -> AbstractUID:
+    def _proto2object(proto: ProtoUID) -> AbstractUID:
+        """As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object."""
+
         return UID(value=uuid.UUID(bytes=proto.value))
