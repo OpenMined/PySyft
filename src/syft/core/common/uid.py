@@ -151,5 +151,6 @@ class UID(AbstractUID):
             return value
         return UID(value=value)
 
-
+# This flag is what allows the serializer to find this class
+# when it encounters an object of uuid_type.
 uuid_type.serializable_wrapper_type = UID
