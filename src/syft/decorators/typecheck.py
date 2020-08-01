@@ -74,7 +74,7 @@ def type_hints(decorated: typing.Callable, prohibit_args=True) -> typing.Callabl
             )
 
     def decorator(*args, **kwargs):
-        if(prohibit_args):
+        if prohibit_args:
             check_args(*args, **kwargs)
         return typechecked(decorated)(*args, **kwargs)
 

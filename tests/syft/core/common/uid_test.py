@@ -62,6 +62,11 @@ def test_uid_hash():
     means that the uuid.UUID library changed or we tried to swap it out
     for something else. Are you sure you want to do this?"""
 
-    uid = UID(uuid.UUID(int=333779996850170035686993356951732753684))
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     assert hash(uid) == 1705855162796767136
     assert hash(uid.value.int) == 1705855162796767136
+
+
+def test_uid_serialization():
+
+

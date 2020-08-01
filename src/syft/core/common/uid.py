@@ -1,13 +1,20 @@
+# external lib imports
 import uuid
-from typing import final
-from syft.proto import ProtoUID
-from syft.decorators.syft_decorator_impl import syft_decorator
 
+# external class/method imports
+from typing import final
+
+# syft imports
+from ...decorators.syft_decorator_impl import syft_decorator
+from .serializable import Serializable
+from ...proto import ProtoUID
+
+# resources
 uuid_type = type(uuid.uuid4())
 
 
 @final
-class AbstractUID(object):
+class AbstractUID(Serializable):
     """This exists to allow us to typecheck on the UID object
     """
 
@@ -27,6 +34,8 @@ class UID(AbstractUID):
     There is no other way in Syft to create an ID for any object.
 
     """
+
+    proto_type = ProtoUID
 
     @syft_decorator(typechecking=True)
     def __init__(self, value: uuid_type = None):
@@ -51,6 +60,8 @@ class UID(AbstractUID):
 
             >>> 8d744978-327b-4126-a644-cb90bcadd35e
         """
+        # checks to make sure you've set a proto_type
+        super().__init__()
 
         # if value is not set - create a novel and unique ID.
         if value is None:
@@ -103,9 +114,11 @@ class UID(AbstractUID):
     def __repr__(self):
         return f"<UID:{self.value}>"
 
-    def serialize(self):
-        return ProtoUID(value=self.value.bytes)
+    def object2proto(self):
+        self_type = type(self)
+        obj_type = self_type.__module__ + "." + self_type.__name__
+        return ProtoUID(obj_type=obj_type, value=self.value.bytes)
 
     @staticmethod
-    def deserialize(proto_uid: ProtoUID) -> AbstractUID:
-        return UID(value=uuid.UUID(bytes=proto_uid.value))
+    def proto2object(proto: ProtoUID) -> AbstractUID:
+        return UID(value=uuid.UUID(bytes=proto.value))
