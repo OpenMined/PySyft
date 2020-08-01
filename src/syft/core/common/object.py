@@ -41,7 +41,6 @@ class ObjectWithId(AbstractObjectWithID):
 
         """
 
-
         # while this class is never used as a simple wrapper,
         # it's possible that sub-classes of this class will be.
         super().__init__(as_wrapper=as_wrapper)

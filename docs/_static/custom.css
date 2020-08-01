@@ -421,10 +421,16 @@ dl {
 dl.py.method {
     padding-top: 20px;
     padding-bottom: 20px;
+    background-color: #212121;
+    padding-left: 30px;
+    padding-right: 30px;
 }
 dl.py.class {
     padding-top: 20px;
     padding-bottom: 40px;
+    background-color: #212121;
+    padding-left: 30px;
+    padding-right: 30px;
 }
 
 dl dd {
@@ -701,4 +707,8 @@ nav#breadcrumbs li+li:before {
     div.related {
         display: none;
     }
+}
+
+.search {
+    opacity: 0.1;
 }

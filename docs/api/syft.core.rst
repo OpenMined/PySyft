@@ -14,19 +14,7 @@ Subpackages
 
    syft.core.common
    syft.core.io
-   syft.core.nodes
+   syft.core.node
    syft.core.pointer
    syft.core.search
    syft.core.store
-
-Submodules
-----------
-
-syft.core.util module
----------------------
-
-.. automodule:: syft.core.util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
