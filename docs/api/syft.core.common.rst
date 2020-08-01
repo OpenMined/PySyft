@@ -25,6 +25,14 @@ syft.core.common.object module
    :undoc-members:
    :show-inheritance:
 
+syft.core.common.serializable module
+------------------------------------
+
+.. automodule:: syft.core.common.serializable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.common.uid module
 ---------------------------
 

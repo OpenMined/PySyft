@@ -88,6 +88,8 @@ def skip(app, what, name, obj, would_skip, options):
         return False
     if name == "__hash__":
         return False
+    if name == "__eq__":
+        return False
     return would_skip
 
 # To configure AutoStructify

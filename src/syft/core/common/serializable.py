@@ -12,10 +12,10 @@ class Serializable(object):
     def __init__(self):
         assert self.proto_type is not None
 
-    def proto2object(self, proto):
+    def _proto2object(self, proto):
         raise NotImplementedError
 
-    def object2proto(self):
+    def _object2proto(self):
         raise NotImplementedError
 
     def to_json(self) -> str:
@@ -40,14 +40,14 @@ class Serializable(object):
         """Serialize the object according to the parameters."""
 
         if to_json or to_binary or to_hex:
-            blob = json_format.MessageToJson(message=self.object2proto())
+            blob = json_format.MessageToJson(message=self._object2proto())
             if to_binary or to_hex:
                 blob = bytes(blob, "utf-8")
                 if to_hex:
                     blob = blob.hex()
             return blob
         else:
-            return json_format.MessageToDict(message=self.object2proto())
+            return json_format.MessageToDict(message=self._object2proto())
 
 
 def refresh_string2type():
@@ -72,12 +72,12 @@ def deserialize(
     global string2type
 
     if from_hex:
-        from_binary=True
+        from_binary = True
         blob = bytes.fromhex(blob)
 
     if from_binary:
         from_json = True
-        blob = str(blob, 'utf-8')
+        blob = str(blob, "utf-8")
 
     if from_json:
         blob = json.loads(s=blob)
@@ -114,4 +114,4 @@ def deserialize(
 
     proto_obj = json_format.ParseDict(js_dict=blob, message=proto_type())
 
-    return obj_type.proto2object(proto_obj)
+    return obj_type._proto2object(proto_obj)
