@@ -4,7 +4,7 @@ from typing import Optional, Final
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
 from ...decorators import syft_decorator
-from ...common.id import UID
+from ..common.uid import UID
 
 
 class DiskObjectStore(ObjectStore):

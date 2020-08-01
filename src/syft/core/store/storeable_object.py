@@ -5,8 +5,8 @@ from dataclasses import dataclass
 #     StorableObject as StorableObjectPB,
 # )
 
-from ...common.id import UID
-from ...interfaces import Serializable
+from ..common.uid import UID
+from ..common.serializable import Serializable
 
 
 @dataclass(frozen=True)
