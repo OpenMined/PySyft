@@ -1,5 +1,5 @@
 from .serializable import get_protobuf_classes, get_protobuf_wrappers
-from ...common import LazyDict, LazySet
+from ..common.lazy_structures import LazyDict, LazySet
 
 
 class SerializationStore:

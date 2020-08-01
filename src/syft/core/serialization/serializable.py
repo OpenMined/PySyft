@@ -1,7 +1,7 @@
 import inspect
 from typing import Callable
 
-from ...interfaces import Serializable
+from ..common.serializable import Serializable
 
 
 def get_from_inheritance_chain(condition: Callable, cls: type = Serializable) -> set:
