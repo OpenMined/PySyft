@@ -9,6 +9,7 @@ from syft.util import index_syft_by_module_name
 from syft.util import get_fully_qualified_name
 from syft.core.common.lazy_structures import LazyDict
 
+
 class Serializable(object):
     def __init__(self, as_wrapper:bool):
         assert self.protobuf_type is not None
@@ -51,12 +52,13 @@ class Serializable(object):
         else:
             return json_format.MessageToDict(message=self._object2proto())
 
+
 def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
     lazy and forgotten to add this object thus far.
 
-    In particular, this is the method for the LazyDict within the string2type
+    In particular, this is the method for the LazyDict within the fully_qualified_name2type
     dictionary - which is used to map fully qualified module names,
     (i.e., 'syft.core.common.UID') to their type object.
 
@@ -104,7 +106,8 @@ def is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     else:
         print(f"{fully_qualified_name} is not serializable")
 
-string2type = LazyDict(update_rule=is_string_a_serializable_class_name)
+
+fully_qualified_name2type = LazyDict(update_rule=is_string_a_serializable_class_name)
 
 
 def serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
@@ -119,7 +122,7 @@ def deserialize(
     blob: (str, dict, bytes), from_json=True, from_binary=False, from_hex=False
 ) -> Serializable:
 
-    global string2type
+    global fully_qualified_name2type
 
     if from_hex:
         from_binary = True
@@ -132,11 +135,11 @@ def deserialize(
     if from_json:
         blob = json.loads(s=blob)
 
-    obj_type = string2type[blob['objType']]
+    obj_type = fully_qualified_name2type[blob['objType']]
 
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = string2type[blob["objType"]]
+        obj_type = fully_qualified_name2type[blob["objType"]]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError as e:
