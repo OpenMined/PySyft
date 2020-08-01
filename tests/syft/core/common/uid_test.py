@@ -50,6 +50,8 @@ def test_uid_raises_typeerror_if_int_id_attempted():
     with pytest.raises(TypeError) as e:
         uid = UID(value=123)
 
+################ CLASS METHODS ############################
+
 
 ################ CLASS METHODS ############################
 
@@ -88,6 +90,7 @@ def test_to_string():
     """Tests that UID generates an intuitive string."""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
     assert str(uid) == "<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
     assert uid.__repr__() == "<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
