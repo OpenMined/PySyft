@@ -80,7 +80,7 @@ advertising a new Federated Learning job, instead of sending the
 model directly to 10,000 clients (lots of bandwidth costs on the
 cloud node), it could send it to one cellphone with WiFi which
 would have instructions for how to forward to a binary tree of other
-nodes, propagating the model to all nodes which asked for it.
+node, propagating the model to all node which asked for it.
 """
 
 from ..common.object import ObjectWithId
@@ -95,7 +95,7 @@ from typing import List
 
 class RouteSchema(ObjectWithId):
     """An object which contains the IDs of the origin node and
-    set of destination nodes. Multiple routes can subscribe
+    set of destination node. Multiple routes can subscribe
     to the same RouteSchema and routing logic is thus split into
     two groups of functionality:
 

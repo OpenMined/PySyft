@@ -36,7 +36,7 @@ supported Python libs.
     this can create future complications with lower level languages calling
     higher level ones.
 
-To begin your education in Syft, continue to the :py:mod:`syft.core.nodes.vm.vm` module...
+To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
 
@@ -63,13 +63,16 @@ finally:
     del get_distribution, DistributionNotFound
 
 # Convenience Constructors
-from syft.core.nodes.vm.vm import VirtualMachine
-from syft.core.nodes.domain.domain import Domain
-from syft.core.nodes.domain.domain import DomainClient
-from syft.core.nodes.network.network import Network
-from syft.core.nodes.network.network import NetworkClient
+from syft.core.node.vm.vm import VirtualMachine
+from syft.core.node.vm.vm import VirtualMachineClient
+from syft.core.node.device.device import Device
+from syft.core.node.device.device import DeviceClient
+from syft.core.node.domain.domain import Domain
+from syft.core.node.domain.domain import DomainClient
+from syft.core.node.network.network import Network
+from syft.core.node.network.network import NetworkClient
 
-from syft.core.nodes.common.service.repr_service import ReprMessage
+from syft.core.node.common.service.repr_service import ReprMessage
 
 # Convenience Objects
 from syft.lib import lib_ast

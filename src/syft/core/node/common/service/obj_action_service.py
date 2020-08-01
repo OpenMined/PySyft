@@ -12,7 +12,7 @@ from ..action.common import EventualActionWithoutReply
 from typing import List
 
 
-class ObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
+class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> None:
         msg.execute_action(node=node)
@@ -23,7 +23,18 @@ class ObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
         return [ImmediateActionWithoutReply]
 
 
-class ObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
+class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
+    @syft_decorator(typechecking=True)
+    def process(self, node: AbstractNode, msg: EventualActionWithoutReply) -> None:
+        msg.execute_action(node=node)
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[type]:
+        return [EventualActionWithoutReply]
+
+
+class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
     @syft_decorator(typechecking=True)
     def process(
         self, node: AbstractNode, msg: ImmediateActionWithReply
