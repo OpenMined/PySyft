@@ -149,5 +149,4 @@ class UID(AbstractUID):
             return value
         return UID(value=value)
 
-uuid_type.is_wrapped_by_serializable = True
 uuid_type.serializable_wrapper_type = UID
