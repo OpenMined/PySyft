@@ -1,8 +1,0 @@
-syntax = "proto3";
-package syft.core.common;
-
-message UID {
-  string obj_type = 1;
-  bytes value = 2;
-  bool as_wrapper = 3;
-}

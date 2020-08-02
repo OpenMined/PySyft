@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package syft.core.store;
+
+import "proto/core/common/common_object.proto";
+import "google/protobuf/any.proto";
+
+message StoreGenericObject {
+    StorableObject storable_object = 1;
+    StoreObject store_object = 2;
+}
+
+message StorableObject {
+    syft.core.common.UID key = 1;
+    //this can only be syft.SyftObject
+    google.protobuf.Any data = 2;
+    string description = 3;
+    repeated string tags = 4;
+}
+
+message StoreObject {
+    syft.core.store.Container container = 1;
+    syft.core.store.SearchEngine search_engine = 2;
+}
+
+message Container {
+
+}
+
+message SearchEngine {
+
+}
+
+message DictContainer {
+    //the values can be only syft.SyftObject
+    map<int64, google.protobuf.Any> dict_mapping = 1;
+}
+
+message SqlContainer {
+
+}
+
+message GridContainer {
+
+}
