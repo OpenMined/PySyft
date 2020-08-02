@@ -8,7 +8,7 @@ from google.protobuf.message import Message
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serializable import Serializable
-from ...proto.core.common.uid_pb2 import UID as ProtoUID
+from ...proto.core.common.uid_pb2 import UID as UID_PB
 
 # resources
 uuid_type = type(uuid.uuid4())
@@ -38,7 +38,7 @@ class UID(AbstractUID):
 
     """
 
-    protobuf_type = ProtoUID
+    protobuf_type = UID_PB
     is_wrapper = True
     wrapping_class = uuid_type
 
@@ -132,12 +132,12 @@ class UID(AbstractUID):
 
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
-        return ProtoUID(
+        return UID_PB(
             obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper
         )
 
     @staticmethod
-    def _proto2object(proto: ProtoUID) -> AbstractUID:
+    def _proto2object(proto: UID_PB) -> "UID":
         """As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 

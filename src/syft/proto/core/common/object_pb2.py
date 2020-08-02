@@ -19,22 +19,22 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='syft.core.common',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x1eproto/core/common/object.proto\x12\x10syft.core.common\x1a\x1bproto/core/common/uid.proto\"6\n\x11ProtoObjectWithId\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
+  serialized_pb=b'\n\x1eproto/core/common/object.proto\x12\x10syft.core.common\x1a\x1bproto/core/common/uid.proto\"1\n\x0cObjectWithID\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
   ,
   dependencies=[proto_dot_core_dot_common_dot_uid__pb2.DESCRIPTOR,])
 
 
 
 
-_PROTOOBJECTWITHID = _descriptor.Descriptor(
-  name='ProtoObjectWithId',
-  full_name='syft.core.common.ProtoObjectWithId',
+_OBJECTWITHID = _descriptor.Descriptor(
+  name='ObjectWithID',
+  full_name='syft.core.common.ObjectWithID',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='syft.core.common.ProtoObjectWithId.id', index=0,
+      name='id', full_name='syft.core.common.ObjectWithID.id', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -53,19 +53,19 @@ _PROTOOBJECTWITHID = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=81,
-  serialized_end=135,
+  serialized_end=130,
 )
 
-_PROTOOBJECTWITHID.fields_by_name['id'].message_type = proto_dot_core_dot_common_dot_uid__pb2._UID
-DESCRIPTOR.message_types_by_name['ProtoObjectWithId'] = _PROTOOBJECTWITHID
+_OBJECTWITHID.fields_by_name['id'].message_type = proto_dot_core_dot_common_dot_uid__pb2._UID
+DESCRIPTOR.message_types_by_name['ObjectWithID'] = _OBJECTWITHID
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-ProtoObjectWithId = _reflection.GeneratedProtocolMessageType('ProtoObjectWithId', (_message.Message,), {
-  'DESCRIPTOR' : _PROTOOBJECTWITHID,
+ObjectWithID = _reflection.GeneratedProtocolMessageType('ObjectWithID', (_message.Message,), {
+  'DESCRIPTOR' : _OBJECTWITHID,
   '__module__' : 'proto.core.common.object_pb2'
-  # @@protoc_insertion_point(class_scope:syft.core.common.ProtoObjectWithId)
+  # @@protoc_insertion_point(class_scope:syft.core.common.ObjectWithID)
   })
-_sym_db.RegisterMessage(ProtoObjectWithId)
+_sym_db.RegisterMessage(ObjectWithID)
 
 
 # @@protoc_insertion_point(module_scope)

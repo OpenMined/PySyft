@@ -2,6 +2,6 @@ syntax = "proto3";
 package syft.core.common;
 import "proto/core/common/uid.proto";
 
-message ProtoObjectWithId {
+message ObjectWithID {
   syft.core.common.UID id = 1;
 }
