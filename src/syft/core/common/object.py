@@ -3,7 +3,7 @@ from typing import final
 
 # syft imports
 from .serializable import Serializable
-from ...proto import ProtoObjectWithId
+from ...proto.core.common.object_pb2 import ProtoObjectWithId
 from .uid import UID
 
 

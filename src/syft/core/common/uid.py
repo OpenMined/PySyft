@@ -8,7 +8,7 @@ from google.protobuf.message import Message
 # syft imports
 from ...decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serializable import Serializable
-from ...proto import ProtoUID
+from ...proto.core.common.uid_pb2 import UID as ProtoUID
 
 # resources
 uuid_type = type(uuid.uuid4())
@@ -63,7 +63,6 @@ class UID(AbstractUID):
 
         .. code-block:: bash
 
-            >>> 8d744978-327b-4126-a644-cb90bcadd35e
         """
         # checks to make sure you've set a proto_type
         super().__init__(as_wrapper=as_wrapper)
