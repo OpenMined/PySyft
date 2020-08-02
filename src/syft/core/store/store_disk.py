@@ -9,7 +9,7 @@ from ..common.uid import UID
 
 class DiskObjectStore(ObjectStore):
     def __init__(self, db_path: Optional[str] = None):
-        super().__init__()
+        super().__init__(as_wrapper=False)
 
         if db_path is None:
             db_path = "/tmp/test.sqlite"

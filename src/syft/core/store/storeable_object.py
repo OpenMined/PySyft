@@ -1,10 +1,6 @@
 from typing import List, Optional
 from dataclasses import dataclass
 
-# from syft_proto.core.storable.storable_object_pb2 import (
-#     StorableObject as StorableObjectPB,
-# )
-
 from ..common.uid import UID
 from ..common.serializable import Serializable
 
