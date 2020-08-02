@@ -137,7 +137,7 @@ class UID(AbstractUID):
         )
 
     @staticmethod
-    def _proto2object(proto: UID_PB) -> "UID":
+    def _proto2object(proto):
         """As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
