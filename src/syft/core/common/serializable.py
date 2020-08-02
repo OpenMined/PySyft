@@ -15,7 +15,8 @@ class Serializable(object):
         assert self.protobuf_type is not None
         self.as_wrapper = as_wrapper
 
-    def _proto2object(self, proto):
+    @staticmethod
+    def _proto2object(proto):
         raise NotImplementedError
 
     def _object2proto(self):

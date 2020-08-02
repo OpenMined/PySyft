@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.core;
+
+import "proto/core/common/common_object.proto";
+
+message CoreObject {
+    syft.core.common.CommonObject common_object = 1;
+}

@@ -3,7 +3,7 @@ from typing import final
 
 # syft imports
 from .serializable import Serializable
-from ...proto.core.common.object_pb2 import ProtoObjectWithId
+from ...proto.core.common.object_pb2 import ObjectWithID as ObjectWithID_PB
 from .uid import UID
 
 
@@ -15,7 +15,7 @@ class AbstractObjectWithID(Serializable):
     """
 
 @final
-class ObjectWithId(AbstractObjectWithID):
+class ObjectWithID(AbstractObjectWithID):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
     using the process specified in the UID class.
@@ -51,8 +51,8 @@ class ObjectWithId(AbstractObjectWithID):
         self.id = id
 
     def serialize(self):
-        return ProtoObjectWithId(id=self.id.serialize())
+        return ObjectWithID_PB(id=self.id.serialize())
 
     @staticmethod
-    def deserialize(proto_obj: ProtoObjectWithId) -> AbstractObjectWithID:
-        return ObjectWithId(id=UID.deserialize(proto_obj.id))
+    def deserialize(proto_obj: ObjectWithID_PB) -> "ObjectWithID":
+        return ObjectWithID(id=UID.deserialize(proto_obj.id))

@@ -15,7 +15,8 @@ class MemoryStore(ObjectStore):
 
     __slots__ = ["_objects", "_search_engine"]
 
-    def __init__(self):
+    def __init__(self, as_wrapper: bool):
+        super().__init__(as_wrapper)
         _objects = {}
         _search_engine = None
 
@@ -62,3 +63,9 @@ class MemoryStore(ObjectStore):
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
         self._objects.clear()
+
+    def _object2proto(self):
+        pass
+
+    def _proto2object(self, proto):
+        pass

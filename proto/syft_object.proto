@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft;
+
+import "proto/core/core_object.proto";
+import "proto/ast/ast_object.proto";
+import "proto/lib/lib_object.proto";
+
+message SyftObject {
+    syft.core.CoreObject core_obj = 1;
+    syft.ast.AstObject ast_obj = 2;
+    syft.lib.LibObject lib_obj = 3;
+}
