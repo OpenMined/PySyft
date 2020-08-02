@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from dataclasses import dataclass
 
 from ..common.uid import UID
 from ..common.serializable import Serializable
-
+from ...proto.core.store.storable_object_pb2 import StorableObject as StorableObject_PB
+from ..common.serializable import deserialize
 
 @dataclass(frozen=True)
 class StorableObject(Serializable):
@@ -38,20 +39,17 @@ class StorableObject(Serializable):
     description: Optional[str]
     tags: Optional[List[str]]
 
-    @staticmethod
-    def to_protobuf(self):
-        schema = StorableObjectPB()
-
-        raise NotImplementedError
-
-    @staticmethod
-    def from_protobuf(proto):
-        raise NotImplementedError
+    def _object2proto(self) -> "StorableObject_PB":
+        key = self.key.serialize()
+        data = self.data.serialize()
+        return StorableObject_PB(key=key, data=data, description=self.description, tags=self.tags)
 
     @staticmethod
-    def get_protobuf_schema():
-        raise NotImplementedError
+    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+        key = deserialize(proto.key)
+        data = deserialize(proto.data)
+        tags = None
+        if proto.tags:
+            tags = list(proto.tags)
 
-    @staticmethod
-    def get_wrapped_type():
-        raise NotImplementedError
+        return StorableObject(key=key, data=data, description=proto.description, tags=tags)

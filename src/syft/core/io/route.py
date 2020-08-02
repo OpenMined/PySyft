@@ -83,7 +83,7 @@ would have instructions for how to forward to a binary tree of other
 node, propagating the model to all node which asked for it.
 """
 
-from ..common.object import ObjectWithId
+from ..common.object import ObjectWithID
 from .location import Location
 from typing import Set
 from syft.core.message import SyftMessageWithReply
@@ -93,7 +93,7 @@ from .connection import ClientConnection
 from typing import List
 
 
-class RouteSchema(ObjectWithId):
+class RouteSchema(ObjectWithID):
     """An object which contains the IDs of the origin node and
     set of destination node. Multiple routes can subscribe
     to the same RouteSchema and routing logic is thus split into
@@ -108,7 +108,7 @@ class RouteSchema(ObjectWithId):
         self.destination = destination
 
 
-class Route(ObjectWithId):
+class Route(ObjectWithID):
     def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
         self.schema = schema
         self.stops = stops
