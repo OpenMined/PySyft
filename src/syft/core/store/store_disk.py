@@ -8,6 +8,8 @@ from ..common.uid import UID
 
 
 class DiskObjectStore(ObjectStore):
+    protobuf_type = any
+
     def __init__(self, db_path: Optional[str] = None):
         super().__init__(as_wrapper=False)
 
