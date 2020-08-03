@@ -64,9 +64,11 @@ class Serializable(object):
         elif to_proto:
             return self._object2proto()
         else:
-            raise Exception("""You must specify at least one deserialization format using
+            raise Exception(
+                """You must specify at least one deserialization format using
                             one of the arguments of the serialize() method such as:
-                            to_proto, to_json, to_binary, or to_hex.""")
+                            to_proto, to_json, to_binary, or to_hex."""
+            )
 
 
 def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
@@ -127,22 +129,31 @@ fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class
 
 
 def _serialize(
-    obj: (Serializable, object), to_proto=True, to_json=False, to_binary=False, to_hex=False
+    obj: (Serializable, object),
+    to_proto=True,
+    to_json=False,
+    to_binary=False,
+    to_hex=False,
 ):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
 
-    return obj.serialize(to_proto=to_proto, to_json=to_json, to_binary=to_binary, to_hex=to_hex)
+    return obj.serialize(
+        to_proto=to_proto, to_json=to_json, to_binary=to_binary, to_hex=to_hex
+    )
 
 
 def _deserialize(
-    blob: (str, dict, bytes, Message), from_proto=True, from_json=False, from_binary=False, from_hex=False
+    blob: (str, dict, bytes, Message),
+    from_proto=True,
+    from_json=False,
+    from_binary=False,
+    from_hex=False,
 ) -> Serializable:
     """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
-
 
     if from_hex:
         from_binary = True
