@@ -686,11 +686,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def mod(self, shares: dict, modulus: int):
         assert isinstance(modulus, int)
 
-        moded_shares = {}
-        for location, pointer in shares.items():
-            moded_shares[location] = pointer % modulus
-
-        return moded_shares
+        return {location: pointer % modulus for location, pointer in shares.items()}
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
