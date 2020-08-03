@@ -71,3 +71,9 @@ def test_negative_result(workers):
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
     y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
     assert y.sub(x).reconstruct() == -4
+
+
+def test_workers_arrangement(workers):
+    me, bob, alice = (workers["me"], workers["bob"], workers["alice"])
+    x = torch.tensor(7).share(bob, alice, me, protocol="falcon")
+    assert x.get_players()[0] == me

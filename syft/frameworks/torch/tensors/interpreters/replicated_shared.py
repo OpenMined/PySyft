@@ -1,8 +1,8 @@
-import torch
-from syft.generic.abstract.tensor import AbstractTensor
 import random
-import syft
 from operator import add, sub
+import torch
+import syft
+from syft.generic.abstract.tensor import AbstractTensor
 
 
 class ReplicatedSharingTensor(AbstractTensor):
@@ -15,7 +15,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def share_secret(self, secret, workers):
         number_of_shares = len(workers)
-        workers = self.__arrange_workers(workers)
+        workers = self.__arrange_workers(list(workers))
         shares = self.generate_shares(secret, number_of_shares)
         shares_map = self.__distribute_shares(workers, shares)
         self.child = shares_map
@@ -25,7 +25,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
         if syft.hook.local_worker in workers:
-            workers.pop(syft.hook.local_worker)
+            workers.remove(syft.hook.local_worker)
             workers = [syft.hook.local_worker] + workers
         return workers
 
