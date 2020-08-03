@@ -121,13 +121,13 @@ fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class
 
 
 def _serialize(
-    obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False
+    obj: (Serializable, object), to_proto=True, to_json=False, to_binary=False, to_hex=False
 ):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
 
-    return obj.serialize(to_json=to_json, to_binary=to_binary, to_hex=to_hex)
+    return obj.serialize(to_proto=to_proto, to_json=to_json, to_binary=to_binary, to_hex=to_hex)
 
 
 def _deserialize(
