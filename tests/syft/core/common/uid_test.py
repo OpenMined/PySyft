@@ -55,9 +55,6 @@ def test_uid_raises_typeerror_if_int_id_attempted():
 ################ CLASS METHODS ############################
 
 
-################ CLASS METHODS ############################
-
-
 def test_uid_comparison():
     """Tests that two UIDs can be compared and will correctly evaluate"""
 
