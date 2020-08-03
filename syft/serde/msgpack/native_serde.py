@@ -12,8 +12,8 @@ import pydoc
 
 import numpy
 
-from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
+from syft.workers.abstract import AbstractWorker
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)

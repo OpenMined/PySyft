@@ -244,9 +244,10 @@ class PrimitiveStorage:
         """
 
         def build_separate_triples(n_party: int, n_instances: int, **kwargs):
-            assert (
-                n_party == 2
-            ), "Only 2 workers supported for the moment. Please fill an issue if you have an urgent need."
+            assert n_party == 2, (
+                "Only 2 workers supported for the moment. "
+                "Please fill an issue if you have an urgent need."
+            )
             shapes = kwargs["shapes"]
             if not isinstance(shapes, list):
                 assert len(shapes) == 2

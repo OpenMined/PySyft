@@ -6,7 +6,7 @@ from typing import Union
 from urllib.parse import urlparse
 
 # Syft imports
-from syft.serde import serialize
+from syft.serde.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG

@@ -14,7 +14,7 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB

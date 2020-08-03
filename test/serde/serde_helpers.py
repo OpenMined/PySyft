@@ -7,7 +7,7 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.execution.translation.threepio import PlanTranslatorTfjs
 
