@@ -3,6 +3,7 @@ import json
 
 # external class/method imports
 from google.protobuf import json_format
+from google.protobuf.message import Message
 
 from syft.core.common.lazy_structures import LazyDict
 
@@ -126,8 +127,9 @@ def _serialize(
 
 
 def _deserialize(
-    blob: (str, dict, bytes), from_json=True, from_binary=False, from_hex=False
+    blob: (str, dict, bytes, Message), from_json=False, from_binary=False, from_hex=False
 ) -> Serializable:
+    """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
 
