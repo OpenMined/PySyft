@@ -792,17 +792,12 @@ class AdditiveSharingTensor(AbstractTensor):
         module.unbind = unbind
 
         def share_combine(tensors_shares):
-            results = {}
             workers = tensors_shares[0].keys()
 
-            for worker in workers:
-                tensors_share = []
-                for tensor_shares in tensors_shares:
-                    tensor_share = tensor_shares[worker]
-                    tensors_share.append(tensor_share)
-                results[worker] = tensors_share
-
-            return results
+            return {
+                worker: [tensor_shares[worker] for tensor_shares in tensors_shares]
+                for worker in workers
+            }
 
         def make_worker_dict(op, tensors_shares, **kwargs):
             return {
