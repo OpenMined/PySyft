@@ -6,10 +6,12 @@ Table of Contents:
     - INITIALIZATION: tests for various ways ObjectWithID can/can't be initialized
     - CLASS METHODS: tests for the use of ObjectWithID's class methods
     - SERDE: test for serialization and deserialization of ObjectWithID.
+    - CHILDREN: test that subclasses of ObjectWithID fulfill standards
 
 """
 
 # external imports
+import uuid
 import pytest
 
 # syft imports
@@ -67,4 +69,14 @@ def test_compare():
     assert obj == obj2
 
 
+def test_to_string():
+    """Tests that UID generates an intuitive string."""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = ObjectWithID(id=uid)
+
+    assert str(obj) == "<ObjectWithId:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+    assert obj.__repr__() == "<ObjectWithId:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+
 ###################### SERDE ##########################
+###################### CHILDREN ##########################
