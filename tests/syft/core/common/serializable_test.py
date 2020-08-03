@@ -33,7 +33,7 @@ def test_uuid_wrapper_deserialization():
     assert sy.deserialize(blob) == uid
 
 
-def test_forgotten_protobuf_type_flag():
+def test_forgotten_protobuf_type_flag_error():
     """Test whether there is an appropriate warning when someone attempts
     to subclass from Serializable but forgets to put in the protobuf_type
     flag."""
