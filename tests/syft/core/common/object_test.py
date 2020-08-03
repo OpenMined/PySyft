@@ -27,16 +27,26 @@ def test_basic_init():
     obj = ObjectWithID()
     assert isinstance(obj.id, UID)
 
-#
-# def test_immutability_of_id():
-#     """We shouldn't allow people to modify the id of an
-#     ObjectWithID because this can create all sorts of errors.
-#
-#     Put the other way around - blocking people from modifying
-#     the ID of an object means we can build a codebase which more
-#     firmly relies on the id being truthful. It also will avoid
-#     people initialising objects in weird ways (setting ids later).
-#     """
+
+def test_immutability_of_id():
+    """We shouldn't allow people to modify the id of an
+    ObjectWithID because this can create all sorts of errors.
+
+    Put the other way around - blocking people from modifying
+    the ID of an object means we can build a codebase which more
+    firmly relies on the id being truthful. It also will avoid
+    people initialising objects in weird ways (setting ids later).
+    """
+    obj = ObjectWithID()
+
+    with pytest.raises(AttributeError) as e:
+
+        # TODO: filter on this error to only include errors
+        #  with string "Can't set attribute"
+        
+        obj.id = ""
+
+
 #
 #
 # def test_compare():
