@@ -77,9 +77,7 @@ class ObjectWithID(AbstractObjectWithID):
         """
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
-        return ObjectWithID_PB(
-            obj_type=obj_type, id=self.id.serialize()
-        )
+        return ObjectWithID_PB(obj_type=obj_type, id=self.id.serialize())
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> AbstractObjectWithID:
