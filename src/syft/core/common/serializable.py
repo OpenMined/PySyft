@@ -224,7 +224,7 @@ class Serializable(object):
         return self.serialize(to_hex=True)
 
     @syft_decorator(typechecking=True)
-    def serialize(self, to_proto: bool=True, to_json: bool=False, to_binary: bool=False, to_hex: bool=False):
+    def serialize(self, to_proto: bool=True, to_json: bool=False, to_binary: bool=False, to_hex: bool=False) -> (str, dict, bytes, Message):
         """Serialize the object according to the parameters."""
 
         if to_json or to_binary or to_hex:
@@ -247,8 +247,9 @@ class Serializable(object):
                             to_proto, to_json, to_binary, or to_hex."""
             )
 
-
-@syft_decorator(typechecking=True)
+# we allow args because LazyDict calls this method via [] and so we can't set
+# what the kwarg names are via that interface
+@syft_decorator(typechecking=True, prohibit_args=False)
 def _is_string_a_serializable_class_name(lazy_dict: LazyDict, fully_qualified_name: str) -> None:
 
     """This method exists to allow a LazyDict to determine whether an
@@ -313,7 +314,7 @@ def _serialize(
     to_json: bool=False,
     to_binary: bool=False,
     to_hex: bool=False,
-):
+) -> (str, dict, bytes, Message):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
@@ -330,7 +331,7 @@ def _deserialize(
     from_json: bool=False,
     from_binary: bool=False,
     from_hex: bool=False,
-) -> Serializable:
+) -> (Serializable, object):
     """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type

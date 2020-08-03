@@ -134,4 +134,4 @@ class ObjectWithID(AbstractObjectWithID):
             if you wish to deserialize an object.
         """
 
-        return ObjectWithID(id=_deserialize(proto.id))
+        return ObjectWithID(id=_deserialize(blob=proto.id))
