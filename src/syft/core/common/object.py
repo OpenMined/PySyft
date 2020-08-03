@@ -33,6 +33,8 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
+    __name__ = 'ObjectWithID'
+
     protobuf_type = ObjectWithID_PB
 
     @syft_decorator(typechecking=True)
@@ -85,6 +87,16 @@ class ObjectWithID(AbstractObjectWithID):
         """
 
         return self.id == other.id
+
+    @syft_decorator(typechecking=True)
+    def __repr__(self) -> str:
+        """Returns a human-readable version of the ObjectWithID
+
+        Return a human-readable representation of the ObjectWithID with brackets
+        so that it can be easily spotted when nested inside of the human-
+        readable representations of other objects."""
+
+        return f"<{self.__name__}:{self.id.value}>"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
