@@ -111,6 +111,7 @@ def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_na
     supposed to serialize.
     """
 
+    # TODO: write protobufs for these objects and remove them from this test.
     known_exceptions = {'Location', 'LocationGroup', 'SubscriptionBackedLocationGroup', 'RegistryBackedLocationGroup',
                         'AbstractNode', 'Node', 'VirtualMachine', 'Device', 'Domain', 'Network', 'RouteSchema', 'Route',
                         'BroadcastRoute', 'SoloRoute'}
@@ -118,7 +119,7 @@ def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_na
     subclasses = get_subclasses(obj_type=ObjectWithID)
 
     for sc in subclasses:
-        if(sc.__name__ not in known_exceptions):
+        if sc.__name__ not in known_exceptions:
 
             # Assert that each protobuf type's name is the same
             # as the object it is intended to serialize
