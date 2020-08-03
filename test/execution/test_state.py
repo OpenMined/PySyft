@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft as sy
-from itertools import starmap
 
 
 def test_stateful_plan_built_automatically(hook):
