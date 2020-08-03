@@ -50,6 +50,29 @@ class ObjectWithID(AbstractObjectWithID):
 
         self.id = id
 
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> ObjectWithID_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: ProtoUID
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        self_type = type(self)
+        obj_type = self_type.__module__ + "." + self_type.__name__
+        return ObjectWithID_PB(
+            obj_type=obj_type, id=self.id.serialize(), as_wrapper=self.as_wrapper
+        )
+
+
     def serialize(self):
         return ObjectWithID_PB(id=self.id.serialize())
 
