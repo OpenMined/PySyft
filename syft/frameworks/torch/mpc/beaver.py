@@ -1,11 +1,13 @@
 import torch as th
 from typing import Tuple
 
+import syft as sy
+
 
 def build_triple(
     op: str,
-    shape: Tuple[th.Size],
-    n_worker: int,
+    shape: Tuple[th.Size, th.Size],
+    n_workers: int,
     n_instances: int,
     torch_dtype: th.dtype,
     field: int,
@@ -15,7 +17,8 @@ def build_triple(
 
     Args:
         op (str): 'mul' or 'matmul': the op ° which ensures a ° b = c
-        shape (Tuple[th.Size]): the shapes of a and b
+        shape (Tuple[th.Size, th.Size]): the shapes of a and b
+        n_workers (int): number of workers
         n_instances (int): the number of tuples (works only for mul: there is a
             shape issue for matmul which could be addressed)
         torch_dtype (th.dtype): the type of the shares
@@ -49,12 +52,12 @@ def build_triple(
     else:
         c = cmd(a, b)
 
-    shares_worker = [[0, 0, 0] for _ in range(n_worker)]
+    helper = sy.AdditiveSharingTensor(field=field)
+
+    shares_worker = [[0, 0, 0] for _ in range(n_workers)]
     for i, tensor in enumerate([a, b, c]):
-        shares_worker[0][i] = tensor
-        for w_id in range(n_worker - 1):
-            mask = th.randint(low_bound, high_bound, tensor.shape, dtype=torch_dtype)
-            shares_worker[w_id][i] -= mask
-            shares_worker[w_id + 1][i] = mask
+        shares = helper.generate_shares(secret=tensor, n_workers=n_workers, random_type=torch_dtype)
+        for w_id in range(n_workers):
+            shares_worker[w_id][i] = shares[w_id]
 
     return shares_worker
