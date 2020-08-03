@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from ..common.serializable import Serializable, _deserialize
+from ..common.serializable import Serializable
+from ..common.serializable import _deserialize
 from ..common.uid import UID
 
 
@@ -39,7 +40,7 @@ class StorableObject(Serializable):
     description: Optional[str]
     tags: Optional[List[str]]
 
-    def _object2proto(self) -> "StorableObject_PB":
+    def _object2proto(self) -> StorableObject_PB:
         key = self.key.serialize()
         data = self.data.serialize()
         return StorableObject_PB(
@@ -47,7 +48,7 @@ class StorableObject(Serializable):
         )
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+    def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
         key = _deserialize(proto.key)
         data = _deserialize(proto.data)
         tags = None
