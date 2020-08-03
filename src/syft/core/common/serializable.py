@@ -54,7 +54,7 @@ class Serializable(object):
             return json_format.MessageToDict(message=self._object2proto())
 
 
-def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
+def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
 
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
@@ -107,10 +107,13 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     else:
         raise Exception(f"{fully_qualified_name} is not serializable")
 
+
 fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
-def _serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
+def _serialize(
+    obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False
+):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
