@@ -43,22 +43,28 @@ def test_immutability_of_id():
 
         # TODO: filter on this error to only include errors
         #  with string "Can't set attribute"
-        
+
         obj.id = ""
 
 
-#
-#
-# def test_compare():
-#
-#     obj = ObjectWithID()
-#     obj2 = ObjectWithID()
-#
-#     assert obj != obj2
-#
-#     obj.id = obj2.id
-#
-#     assert obj == obj2
-
 ################## CLASS METHODS #######################
+
+
+def test_compare():
+    """While uses of this feature should be quite rare, we
+    should be able to check whether two objects are the same
+    based on their IDs being the same by default. Note that
+    subclasses will undoubtedly modify this behavior with other
+    __eq__ methods."""
+
+    obj = ObjectWithID()
+    obj2 = ObjectWithID()
+
+    assert obj != obj2
+
+    obj._id = obj2.id
+
+    assert obj == obj2
+
+
 ###################### SERDE ##########################
