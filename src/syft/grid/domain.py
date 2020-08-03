@@ -29,7 +29,7 @@ def get_client():
 @app.route("/recv", methods=["POST"])
 def recv():
     hex_msg = request.get_json()["data"]
-    msg = pickle.loads(binascii.unhexlify(hex_msg))
+    msg = pickle.loads(binascii.unhexlify(hex_msg))  # nosec # TODO make less insecure
     reply = None
     print(str(msg))
     if isinstance(msg, ImmediateSyftMessageWithReply):

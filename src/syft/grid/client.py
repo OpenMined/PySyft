@@ -15,7 +15,8 @@ class GridHttpClientConnection(ClientConnection):
 
     def send_immediate_msg_with_reply(self, msg):
         reply = self.send_msg(msg)
-        return pickle.loads(binascii.unhexlify(json.loads(reply.text)["data"]))
+        binary = binascii.unhexlify(json.loads(reply.text)["data"])
+        return pickle.loads(binary)  # nosec # TODO make less insecure
 
     def send_immediate_msg_without_reply(self, msg):
         self.send_msg(msg)
@@ -30,8 +31,8 @@ class GridHttpClientConnection(ClientConnection):
 
 
 def connect(domain_url="http://localhost:5000/"):
-
-    client_metadata = pickle.loads(binascii.unhexlify(requests.get(domain_url).text))
+    binary = binascii.unhexlify(requests.get(domain_url).text)
+    client_metadata = pickle.loads(binary)  # nosec # TODO make less insecure
 
     conn = GridHttpClientConnection(base_url=domain_url)
     address = client_metadata["address"]
