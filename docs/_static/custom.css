@@ -217,9 +217,15 @@ div.body h2 {
     margin: 0;
     background-color: #1c1c22;
 }
-div.body h3 { font-size: 150%; }
+div.body h3 { font-size: 150%;
+    margin-top: 20px;
+    padding-top:30px;
+    padding-bottom:30px;
+}
 div.body h4 { font-size: 130%; }
-div.body h5 { font-size: 100%; }
+div.body h5 { font-size: 100%;
+    margin-top: 0px;
+}
 div.body h6 { font-size: 100%; }
 
 a.headerlink {
@@ -307,7 +313,7 @@ div.important {
 }
 
 div.note {
-    background-color: rgb(28, 28, 33);;
+    background-color: rgb(21, 21, 25);;
     border: 1px solid #151515;
 }
 
