@@ -115,8 +115,7 @@ class UID(AbstractUID):
         :rtype: bool
         """
 
-        if isinstance(other, UID):
-            return self.value == other.value
+        return self.value == other.value
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
