@@ -22,3 +22,6 @@ pyscaffold[all]
 black
 flask
 pyjwt
+flake8
+bandit
+isort
