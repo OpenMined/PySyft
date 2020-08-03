@@ -72,10 +72,6 @@ class ObjectWithID(AbstractObjectWithID):
             obj_type=obj_type, id=self.id.serialize(), as_wrapper=self.as_wrapper
         )
 
-
-    def serialize(self):
-        return ObjectWithID_PB(id=self.id.serialize())
-
     @staticmethod
     def deserialize(proto_obj: ObjectWithID_PB) -> "ObjectWithID":
         return ObjectWithID(id=UID.deserialize(proto_obj.id))
