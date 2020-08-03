@@ -1,15 +1,8 @@
 import syft as sy
 import torch as th
 from flask import Blueprint
-from sqlalchemy_mixins import AllFeaturesMixin
 
-from .. import db, executor
-
-
-class BaseModel(db.Model, AllFeaturesMixin):
-    __abstract__ = True
-    pass
-
+from .. import db, BaseModel, executor
 
 # Avoid Pytorch deadlock issues
 th.set_num_threads(1)
