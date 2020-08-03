@@ -37,9 +37,9 @@ Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
 work from the command line.
 
 ```bash
-conda create -n pysyft python=3.7
-conda activate pysyft # some older version of conda require "source activate pysyft" instead.
-conda install jupyter notebook==5.7.8 tornado==4.5.3
+$ conda create -n pysyft python=3.7
+$ conda activate pysyft # some older version of conda require "source activate pysyft" instead.
+$ conda install jupyter notebook==5.7.8 tornado==4.5.3
 ```
 **Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
@@ -48,7 +48,7 @@ environments for development purposes. We provide a direct install
 instructions in our makefile.
 
 ```bash
-make venv
+$ make venv
 ```
 
 ## Installation
@@ -56,7 +56,7 @@ make venv
 > PySyft supports Python >= 3.6 and PyTorch 1.4
 
 ```bash
-pip install 'syft[udacity]'
+$ pip install 'syft[udacity]'
 ```
 
 This will auto-install the PyTorch and TF Encrypted
@@ -81,7 +81,7 @@ Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](h
 All the examples can be played with by running the command
 
 ```bash
-make notebook
+$ make notebook
 ```
 
 This assumes you want to use a local virtual environment. It installs it
