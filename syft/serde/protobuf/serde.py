@@ -13,7 +13,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 from syft_proto.types.syft.v1.arg_pb2 import ArgList as ArgListPB
-from syft.serde.syft_serializable import (
+from syft.generic.abstract.syft_serializable import (
     SyftSerializable,
     get_protobuf_classes,
     get_protobuf_wrappers,
