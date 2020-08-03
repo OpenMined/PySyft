@@ -574,12 +574,11 @@ class AdditiveSharingTensor(AbstractTensor):
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
-            f = lambda o, w: o[w]
+            return {
+                worker: (self.modulo(cmd(share, other[worker]))) for worker, share in shares.items()
+            }
         else:
-            f = lambda o, _: o
-        return {
-            worker: (self.modulo(cmd(share, f(other, worker)))) for worker, share in shares.items()
-        }
+            return {worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()}
 
     def mul(self, other):
         """Multiplies two tensors together
