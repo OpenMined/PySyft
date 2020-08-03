@@ -11,12 +11,9 @@ from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ...io.address import Address
 from ...io.route import Route
+from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-
-
-class AbstractNodeClient:
-    """This exists to allow for type checking."""
 
 
 class Client(AbstractNodeClient, LocationAwareObject):
