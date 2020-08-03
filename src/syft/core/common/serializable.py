@@ -1,9 +1,9 @@
 # external lib imports
 import json
 
-# external class/method imports
-from google.protobuf import json_format
+# external class/method imports (sorted by length)
 from google.protobuf.message import Message
+from google.protobuf import json_format
 
 from syft.core.common.lazy_structures import LazyDict
 

@@ -9,7 +9,7 @@ body {
 
 
 div.document {
-    width: 1200px;
+    width: 90%;
     margin: 30px auto 0 auto;
 }
 
@@ -36,6 +36,7 @@ div.body {
     background-color: rgb(28, 28, 33);;
     color: rgb(191, 191, 191);;
     padding: 0 30px 0 30px;
+    max-width:100%;
 }
 
 div.body > .section {
@@ -43,7 +44,7 @@ div.body > .section {
 }
 
 div.footer {
-    width: 1200px;
+    width: 100%;
     margin: 20px auto 30px auto;
     font-size: 14px;
     color: #888;
@@ -434,11 +435,8 @@ dl {
 }
 
 dl.py.method {
-    padding-top: 30px;
-    padding-bottom: 20px;
-    background-color: #212121;
-    padding-left: 30px;
-    padding-right: 30px;
+    padding-top: 40px;
+    padding-bottom: 30px;
 }
 dl.py.class {
     padding-top: 20px;
@@ -528,7 +526,6 @@ a:hover tt, a:hover code {
 
     div.document {
        width: 100%;
-
     }
 
     div.documentwrapper {

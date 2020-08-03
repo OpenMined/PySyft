@@ -3,6 +3,7 @@ import pytest
 from syft.core.common.uid import UID
 from syft.core.common.serializable import Serializable
 import syft as sy
+from syft.util import get_subclasses
 
 
 def test_uuid_wrapper_serialization():
@@ -39,7 +40,6 @@ def test_forgotten_protobuf_type_flag_error():
     flag."""
 
     class CustomSerializable(Serializable):
-
         def _object2proto(self):
             raise NotImplementedError
 
