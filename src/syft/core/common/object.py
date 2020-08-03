@@ -88,4 +88,3 @@ class ObjectWithID(AbstractObjectWithID):
         """
 
         return ObjectWithID(id=UID.deserialize(proto.id))
-
