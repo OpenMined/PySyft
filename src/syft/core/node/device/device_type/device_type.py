@@ -1,8 +1,8 @@
-from .specs.provider import Provider
-from .specs.storage import Storage
 from .specs.cpu import CPU
 from .specs.gpu import GPU
 from .specs.network import Network
+from .specs.provider import Provider
+from .specs.storage import Storage
 
 
 class DeviceType:

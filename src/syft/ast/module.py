@@ -1,10 +1,5 @@
 from .. import ast
-
-from .util import unsplit
-from .util import module_type
-from .util import class_type
-from .util import func_type
-from .util import builtin_func_type
+from .util import builtin_func_type, class_type, func_type, module_type, unsplit
 
 
 class Module(ast.attribute.Attribute):

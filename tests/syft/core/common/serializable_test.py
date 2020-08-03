@@ -1,5 +1,6 @@
-import syft as sy
 import uuid
+
+import syft as sy
 
 
 def test_uuid_wrapper_serialization():

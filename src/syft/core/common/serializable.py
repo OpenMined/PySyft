@@ -4,10 +4,10 @@ import json
 # external class/method imports
 from google.protobuf import json_format
 
-# syft import
-from syft.util import index_syft_by_module_name
-from syft.util import get_fully_qualified_name
 from syft.core.common.lazy_structures import LazyDict
+
+# syft import
+from syft.util import get_fully_qualified_name, index_syft_by_module_name
 
 
 class Serializable(object):
@@ -140,7 +140,7 @@ def deserialize(
         obj_type = fully_qualified_name2type[blob["objType"]]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
-    except KeyError as e:
+    except KeyError:
 
         raise KeyError(
             """You tried to deserialize an unsupported type. This can be caused by

@@ -40,17 +40,34 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 """
 
 
+import sys
+from pathlib import Path
+
+from pkg_resources import DistributionNotFound, get_distribution  # noqa: F401
+
+import syft as sy
+
 # ASTRACT OBJECT IMPORTS
-from syft.core import common
+from syft.core import common  # noqa: F401
 
-# CONVENIENCE FUNCTIONS
-from .decorators import type_hints  # noqa: F401
+# Convenience Methods
+from syft.core.common.serializable import deserialize, serialize  # noqa: F401
+from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
+from syft.core.node.device.device import Device, DeviceClient  # noqa: F401
+from syft.core.node.domain.domain import Domain, DomainClient  # noqa: F401
+from syft.core.node.network.network import Network, NetworkClient  # noqa: F401
 
-from pkg_resources import get_distribution, DistributionNotFound  # noqa: F401
+# Convenience Constructors
+from syft.core.node.vm.vm import VirtualMachine, VirtualMachineClient  # noqa: F401
 
+# Convenience Objects
+from syft.lib import lib_ast  # noqa: F401
 
 # PACKAGE IMPORTS
 from . import lib  # noqa: F401
+
+# CONVENIENCE FUNCTIONS
+from .decorators import type_hints  # noqa: F401
 
 # VERSIONING
 try:
@@ -62,32 +79,11 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
-# Convenience Constructors
-from syft.core.node.vm.vm import VirtualMachine
-from syft.core.node.vm.vm import VirtualMachineClient
-from syft.core.node.device.device import Device
-from syft.core.node.device.device import DeviceClient
-from syft.core.node.domain.domain import Domain
-from syft.core.node.domain.domain import DomainClient
-from syft.core.node.network.network import Network
-from syft.core.node.network.network import NetworkClient
-
-from syft.core.node.common.service.repr_service import ReprMessage
-
-# Convenience Objects
-from syft.lib import lib_ast
-
-# Convenience Methods
-from syft.core.common.serializable import deserialize
-from syft.core.common.serializable import serialize
-
 
 # LIBRARY CONFIG
 
 # When you pass in an argument which is of the incorrect type,
 # do you want the long or abbreviated stack trace?
-
-import syft as sy
 
 
 def LONG_TYPECHECK_STACK_TRACES(setting=None):
@@ -98,7 +94,5 @@ def LONG_TYPECHECK_STACK_TRACES(setting=None):
 
 LONG_TYPECHECK_STACK_TRACES(True)
 
-import sys
-from pathlib import Path
 
 sys.path.append(str(Path(__file__)))

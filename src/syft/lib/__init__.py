@@ -1,6 +1,7 @@
-from .torch import create_torch_ast
-from .numpy import create_numpy_ast
 from ..ast.globals import Globals
+from .numpy import create_numpy_ast
+from .torch import create_torch_ast
+
 
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast():

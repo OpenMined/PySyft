@@ -1,6 +1,6 @@
+from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from ....pointer.pointer import Pointer
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):

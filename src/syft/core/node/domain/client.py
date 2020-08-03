@@ -1,7 +1,9 @@
-from ..common.client import Client
-from syft.core.common.uid import UID
-from ...io.route import Route
 from typing import List
+
+from syft.core.common.uid import UID
+
+from ...io.route import Route
+from ..common.client import Client
 
 
 class DomainClient(Client):

@@ -1,10 +1,9 @@
-from typing import List, Optional, Union
 from dataclasses import dataclass
+from typing import List, Optional
 
-from ..common.uid import UID
-from ..common.serializable import Serializable
 from ...proto.core.store.storable_object_pb2 import StorableObject as StorableObject_PB
-from ..common.serializable import deserialize
+from ..common.serializable import Serializable, deserialize
+from ..common.uid import UID
 
 
 @dataclass(frozen=True)

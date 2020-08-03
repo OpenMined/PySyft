@@ -1,1 +1,1 @@
-from .client import connect
+from .client import connect  # noqa: F401

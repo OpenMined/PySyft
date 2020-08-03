@@ -1,6 +1,8 @@
-from ...decorators import syft_decorator
-from syft.core.common.uid import UID
 from typing import final
+
+from syft.core.common.uid import UID
+
+from ...decorators import syft_decorator
 
 
 @final
@@ -46,7 +48,7 @@ class Address(object):
         out += f" Network:{self.pub_address.network},"  # OpenGrid
         out += f" Domain:{self.pub_address.domain}) "  # UCSF
         out += f" Device:{self.pri_address.device},"  # One of UCSF's Dell Servers
-        out += f" VM:{self.pri_address.vm})"  # 8GB of RAM set aside for Andrew Trask on UCSF-Server-5
+        out += f" VM:{self.pri_address.vm})"  # 8GB RAM set aside @Trask - UCSF-Server-5
         return out
 
 

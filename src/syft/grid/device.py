@@ -4,11 +4,9 @@ production (that's the *actual* grid's job)."""
 
 from flask import Flask
 
-app = Flask(__name__)
-
 from syft.core.node.device.device import Device
-import pickle
 
+app = Flask(__name__)
 device = Device(name="cpu1")
 
 

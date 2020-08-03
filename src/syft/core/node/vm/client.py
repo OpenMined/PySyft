@@ -1,9 +1,9 @@
-from ..common.client import Client
-from typing import final
+from typing import List, final
+
 from ....decorators import syft_decorator
 from ...io.address import Address
 from ...io.route import Route
-from typing import List
+from ..common.client import Client
 
 
 @final

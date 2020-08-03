@@ -1,8 +1,11 @@
+from syft.core.common.message import (
+    EventualSyftMessageWithoutReply,
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+    SyftMessage,
+)
+
 from ...abstract.node import AbstractNode
-from syft.core.common.message import SyftMessage
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
 
 
 class Action(SyftMessage):

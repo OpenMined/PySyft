@@ -1,10 +1,12 @@
-import requests
-from syft.core.io.connection import ClientConnection
-import syft as sy
-from syft.core.io.route import SoloRoute
 import binascii
-import pickle
 import json
+import pickle
+
+import requests
+
+import syft as sy
+from syft.core.io.connection import ClientConnection
+from syft.core.io.route import SoloRoute
 
 
 class GridHttpClientConnection(ClientConnection):

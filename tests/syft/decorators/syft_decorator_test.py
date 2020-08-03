@@ -1,4 +1,5 @@
 import inspect
+
 import pytest
 from syft.decorators import syft_decorator
 
