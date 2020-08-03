@@ -7,7 +7,8 @@ message CommonObject {
 }
 
 message ObjectWithID {
-  syft.core.common.UID id = 1;
+  string obj_type = 1;
+  syft.core.common.UID id = 2;
 }
 
 message UID {
