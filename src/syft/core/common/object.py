@@ -78,7 +78,7 @@ class ObjectWithID(AbstractObjectWithID):
         self_type = type(self)
         obj_type = self_type.__module__ + "." + self_type.__name__
         return ObjectWithID_PB(
-            obj_type=obj_type, id=self.id.serialize(), as_wrapper=self.as_wrapper
+            obj_type=obj_type, id=self.id.serialize()
         )
 
     @staticmethod
