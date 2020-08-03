@@ -17,7 +17,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.lib",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1aproto/lib/lib_object.proto\x12\x08syft.lib"\x0b\n\tLibObjectb\x06proto3',
 )
 
@@ -28,7 +27,6 @@ _LIBOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[],
     extensions=[],
     nested_types=[],

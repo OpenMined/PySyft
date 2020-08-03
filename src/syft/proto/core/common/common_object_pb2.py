@@ -17,8 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.common",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n%proto/core/common/common_object.proto\x12\x10syft.core.common"x\n\x0c\x43ommonObject\x12)\n\nuid_object\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12=\n\x15object_with_id_object\x18\x02 \x01(\x0b\x32\x1e.syft.core.common.ObjectWithID"1\n\x0cObjectWithID\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID":\n\x03UID\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12\x12\n\nas_wrapper\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n%proto/core/common/common_object.proto\x12\x10syft.core.common"x\n\x0c\x43ommonObject\x12)\n\nuid_object\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12=\n\x15object_with_id_object\x18\x02 \x01(\x0b\x32\x1e.syft.core.common.ObjectWithID"C\n\x0cObjectWithID\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID":\n\x03UID\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12\x12\n\nas_wrapper\x18\x03 \x01(\x08\x62\x06proto3',
 )
 
 
@@ -28,7 +27,6 @@ _COMMONOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="uid_object",
@@ -47,7 +45,6 @@ _COMMONOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="object_with_id_object",
@@ -66,7 +63,6 @@ _COMMONOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -88,13 +84,30 @@ _OBJECTWITHID = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
+        _descriptor.FieldDescriptor(
+            name="obj_type",
+            full_name="syft.core.common.ObjectWithID.obj_type",
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
         _descriptor.FieldDescriptor(
             name="id",
             full_name="syft.core.common.ObjectWithID.id",
-            index=0,
-            number=1,
+            index=1,
+            number=2,
             type=11,
             cpp_type=10,
             label=1,
@@ -107,7 +120,6 @@ _OBJECTWITHID = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -119,7 +131,7 @@ _OBJECTWITHID = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=181,
-    serialized_end=230,
+    serialized_end=248,
 )
 
 
@@ -129,7 +141,6 @@ _UID = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_type",
@@ -148,7 +159,6 @@ _UID = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="value",
@@ -167,7 +177,6 @@ _UID = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="as_wrapper",
@@ -186,7 +195,6 @@ _UID = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -197,8 +205,8 @@ _UID = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=232,
-    serialized_end=290,
+    serialized_start=250,
+    serialized_end=308,
 )
 
 _COMMONOBJECT.fields_by_name["uid_object"].message_type = _UID
