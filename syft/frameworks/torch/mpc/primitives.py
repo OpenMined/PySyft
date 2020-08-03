@@ -28,8 +28,8 @@ class PrimitiveStorage:
         """
         self.fss_eq: list = []
         self.fss_comp: list = []
-        self.mul: list = defaultdict(list)
-        self.matmul: list = defaultdict(list)
+        self.mul: dict = defaultdict(list)
+        self.matmul: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -243,13 +243,15 @@ class PrimitiveStorage:
         The builder to generate beaver triple for multiplication or matrix multiplication
         """
 
-        def build_separate_triples(n_party: int, n_instances: int, **kwargs):
+        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
             assert n_party == 2, (
                 "Only 2 workers supported for the moment. "
                 "Please fill an issue if you have an urgent need."
             )
-            shapes = kwargs["shapes"]
+            shapes = kwargs["shapes"]  # should be a list of pairs of shapes
             if not isinstance(shapes, list):
+                # if shapes was not given a list, we check that it is a pair of two shapes,
+                # the one of x and y
                 assert len(shapes) == 2
                 shapes = [shapes]
 

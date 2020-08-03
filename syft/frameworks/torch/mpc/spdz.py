@@ -19,7 +19,20 @@ def full_name(f):
 
 # share level
 @allow_command
-def spdz_mask(x, y, op, dtype, torch_dtype, field):
+def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+    """
+    Build the shares of delta and epsilon in the SPDZ protocol
+    Args:
+        x (Tensor): share of x, where the global computation is z = x ° y
+        y (Tensor): share of y
+        op (str): type of operation ('mul' or 'matmul')
+        dtype (str): type of sahres ('int' or 'long')
+        torch_dtype (th.dtype): corresponding torch dtype
+        field (int): the field of the corresponding AdditiveSharingTensor
+
+    Returns:
+        The shares of delta and epsilon
+    """
     a, b, c = x.owner.crypto_store.get_keys(
         op=op,
         shapes=(x.shape, y.shape),
@@ -32,23 +45,24 @@ def spdz_mask(x, y, op, dtype, torch_dtype, field):
     return x - a, y - b
 
 
-def slice(x, j, slice_size):
-    x_slice = x[j * slice_size : (j + 1) * slice_size]
-    x_slice.owner = x.owner
-    return x_slice
-
-
-def triple_mat_mul(core_id, delta, epsilon, a, b):
-    cmd = th.matmul
-    delta_b = cmd(delta, b)
-    a_epsilon = cmd(a, epsilon)
-    delta_epsilon = cmd(delta, epsilon)
-    return core_id, delta_b, a_epsilon, delta_epsilon
-
-
 # share level
 @allow_command
-def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
+def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+    """
+    Compute the mul or matmul part of the SPDZ protocol, once delta and epsilon
+    have been made public
+    Args:
+        j (int): the rank of the worker, from 0 to n_worker - 1
+        delta (Tensor): delta in the SPDZ protocol
+        epsilon (Tensor): epsilon in the SPDZ protocol
+        op (str): type of operation ('mul' or 'matmul')
+        dtype (str): type of sahres ('int' or 'long')
+        torch_dtype (th.dtype): corresponding torch dtype
+        field (int): the field of the corresponding AdditiveSharingTensor
+
+    Returns:
+        The shares of the result of the multiplication
+    """
     a, b, c = delta.owner.crypto_store.get_keys(
         op=op,
         shapes=(delta.shape, epsilon.shape),
@@ -60,6 +74,19 @@ def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
     )
 
     if op == "matmul":
+
+        def slice(x, j, slice_size):
+            x_slice = x[j * slice_size : (j + 1) * slice_size]
+            x_slice.owner = x.owner
+            return x_slice
+
+        def triple_mat_mul(core_id, delta, epsilon, a, b):
+            cmd = th.matmul
+            delta_b = cmd(delta, b)
+            a_epsilon = cmd(a, epsilon)
+            delta_epsilon = cmd(delta, epsilon)
+            return core_id, delta_b, a_epsilon, delta_epsilon
+
         batch_size = delta.shape[0]
 
         multiprocessing_args = []
@@ -146,7 +173,6 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
-        print("async spdz")
         shares = asyncio.run(
             sy.local_worker.async_dispatch(
                 workers=locations,
