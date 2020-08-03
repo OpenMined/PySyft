@@ -1,14 +1,12 @@
-# external class/method imports
+# external class/method imports (sorted by length)
+from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from typing import final
 
-from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
-
-# syft imports
+# syft imports (sorted by length)
 from .serializable import Serializable
 from .uid import UID
 
 
-@final
 class AbstractObjectWithID(Serializable):
     """This exists to allow us to typecheck on the ObjectWithId object
     because we need a type which has already been initialized in
