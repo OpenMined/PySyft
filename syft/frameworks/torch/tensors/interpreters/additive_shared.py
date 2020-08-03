@@ -463,6 +463,7 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     def _convert_to_share_tensor(self, other):
+        # TODO: Docstring
         if isinstance(other, int):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
