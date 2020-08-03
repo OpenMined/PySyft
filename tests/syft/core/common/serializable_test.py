@@ -40,7 +40,6 @@ def test_forgotten_protobuf_type_flag_error():
     flag."""
 
     class CustomSerializable(Serializable):
-
         def _object2proto(self):
             raise NotImplementedError
 

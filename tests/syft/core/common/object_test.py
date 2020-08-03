@@ -92,7 +92,7 @@ def test_subclasses_have_names():
     subclasses = get_subclasses(obj_type=ObjectWithID)
 
     for sc in subclasses:
-        assert hasattr(sc, '__name__')
+        assert hasattr(sc, "__name__")
 
 
 def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_names():
@@ -112,9 +112,22 @@ def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_na
     """
 
     # TODO: write protobufs for these objects and remove them from this test.
-    known_exceptions = {'Location', 'LocationGroup', 'SubscriptionBackedLocationGroup', 'RegistryBackedLocationGroup',
-                        'AbstractNode', 'Node', 'VirtualMachine', 'Device', 'Domain', 'Network', 'RouteSchema', 'Route',
-                        'BroadcastRoute', 'SoloRoute'}
+    known_exceptions = {
+        "Location",
+        "LocationGroup",
+        "SubscriptionBackedLocationGroup",
+        "RegistryBackedLocationGroup",
+        "AbstractNode",
+        "Node",
+        "VirtualMachine",
+        "Device",
+        "Domain",
+        "Network",
+        "RouteSchema",
+        "Route",
+        "BroadcastRoute",
+        "SoloRoute",
+    }
 
     subclasses = get_subclasses(obj_type=ObjectWithID)
 

@@ -33,7 +33,7 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
-    __name__ = 'ObjectWithID'
+    __name__ = "ObjectWithID"
 
     protobuf_type = ObjectWithID_PB
 
