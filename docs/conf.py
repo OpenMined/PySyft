@@ -90,6 +90,14 @@ def skip(app, what, name, obj, would_skip, options):
         return False
     if name == "__eq__":
         return False
+    if name == "_proto2object":
+        return False
+    if name == "_object2proto":
+        return False
+    if name == "_serialize":
+        return False
+    if name == "_deserialize":
+        return False
     return would_skip
 
 # To configure AutoStructify

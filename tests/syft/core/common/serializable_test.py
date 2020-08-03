@@ -1,9 +1,8 @@
 import uuid
 import pytest
 from syft.core.common.uid import UID
-from syft.core.common.serializable import Serializable
+from syft.core.common.serde.serializable import Serializable
 import syft as sy
-from syft.util import get_subclasses
 
 
 def test_uuid_wrapper_serialization():
