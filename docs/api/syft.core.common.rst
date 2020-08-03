@@ -6,6 +6,14 @@ syft.core.common package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   syft.core.common.serde
+
 Submodules
 ----------
 
@@ -29,14 +37,6 @@ syft.core.common.object module
 ------------------------------
 
 .. automodule:: syft.core.common.object
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.core.common.serializable module
-------------------------------------
-
-.. automodule:: syft.core.common.serializable
    :members:
    :undoc-members:
    :show-inheritance:

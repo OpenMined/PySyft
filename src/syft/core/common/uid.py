@@ -2,7 +2,7 @@
 import uuid
 
 # external class/method imports
-from syft.core.common.serializable import Serializable
+from syft.core.common.serde.serializable import Serializable
 from typing import final
 
 # syft imports
