@@ -171,16 +171,16 @@ def test_object_with_id_binary_serialization():
     assert obj.binary() == blob
     assert obj.to_binary() == blob
     assert obj.serialize(to_binary=True) == blob
-#
-#
-# def test_object_with_id_binary_deserialization():
-#     """Test that binary ObjectWithID deserialization works as expected"""
-#
-#     blob = b'{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
-#     obj = sy.deserialize(blob=blob, from_binary=True)
-#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-#
-#
+
+
+def test_object_with_id_binary_deserialization():
+    """Test that binary ObjectWithID deserialization works as expected"""
+
+    blob = b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id": {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    obj = sy.deserialize(blob=blob, from_binary=True)
+    assert obj == ObjectWithID(id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)))
+
+
 # def test_object_with_id_hex_serialization():
 #     """Tests that hex ObjectWithID serializes as expected"""
 #
