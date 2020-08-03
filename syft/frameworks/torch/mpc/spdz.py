@@ -87,7 +87,7 @@ def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
         a_epsilon = cmd(a, epsilon)
         delta_epsilon = cmd(delta, epsilon)
 
-    if j:
+    if j == 0:
         return delta_epsilon + delta_b + a_epsilon + c
     else:
         return delta_b + a_epsilon + c

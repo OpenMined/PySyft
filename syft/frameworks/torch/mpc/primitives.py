@@ -182,7 +182,7 @@ class PrimitiveStorage:
             assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
             current_primitives = getattr(self, op)
-            if op in ("mul", "matmul"):
+            if op in {"mul", "matmul"}:
                 for params, primitive_triple in primitives:
                     if params not in current_primitives or len(current_primitives[params]) == 0:
                         current_primitives[params] = primitive_triple
@@ -191,7 +191,7 @@ class PrimitiveStorage:
                             current_primitives[params][i] = th.cat(
                                 (current_primitives[params][i], primitive)
                             )
-            elif op in ("fss_eq", "fss_comp"):
+            elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0:
                     setattr(self, op, list(primitives))
                 else:
