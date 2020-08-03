@@ -59,7 +59,7 @@ class ObjectWithID(AbstractObjectWithID):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ProtoUID
+        :rtype: ObjectWithID_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -74,13 +74,13 @@ class ObjectWithID(AbstractObjectWithID):
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> AbstractObjectWithID:
-        """Creates a UID from a protobuf
+        """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of UID
-        :rtype: UID
+        :return: returns an instance of ObjectWithID
+        :rtype: ObjectWithID
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
