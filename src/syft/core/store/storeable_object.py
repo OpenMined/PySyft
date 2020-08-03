@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from ..common.serializable import Serializable, deserialize
+from ..common.serializable import Serializable, _deserialize
 from ..common.uid import UID
 
 
@@ -48,8 +48,8 @@ class StorableObject(Serializable):
 
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> "StorableObject":
-        key = deserialize(proto.key)
-        data = deserialize(proto.data)
+        key = _deserialize(proto.key)
+        data = _deserialize(proto.data)
         tags = None
         if proto.tags:
             tags = list(proto.tags)

@@ -38,12 +38,11 @@ supported Python libs.
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
-
-
 import sys
 from pathlib import Path
 
-from pkg_resources import DistributionNotFound, get_distribution  # noqa: F401
+from pkg_resources import DistributionNotFound  # noqa: F401
+from pkg_resources import get_distribution  # noqa: F401
 
 import syft as sy
 
@@ -51,22 +50,27 @@ import syft as sy
 from syft.core import common  # noqa: F401
 
 # Convenience Methods
-from syft.core.common.serializable import deserialize, serialize  # noqa: F401
+from syft.core.common.serializable import _deserialize as deserialize
+from syft.core.common.serializable import _serialize as serialize  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
-from syft.core.node.device.device import Device, DeviceClient  # noqa: F401
-from syft.core.node.domain.domain import Domain, DomainClient  # noqa: F401
-from syft.core.node.network.network import Network, NetworkClient  # noqa: F401
+from syft.core.node.device.device import Device# noqa: F401
+from syft.core.node.device.device import DeviceClient  # noqa: F401
+from syft.core.node.domain.domain import Domain  # noqa: F401
+from syft.core.node.domain.domain import DomainClient  # noqa: F401
+from syft.core.node.network.network import Network  # noqa: F401
+from syft.core.node.network.network import NetworkClient  # noqa: F401
 
 # Convenience Constructors
-from syft.core.node.vm.vm import VirtualMachine, VirtualMachineClient  # noqa: F401
+from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
+from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 
-# CONVENIENCE FUNCTIONS
+# Convenience Functions
 from syft.decorators import type_hints  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
 
-# PACKAGE IMPORTS
+# Package Imports
 from . import lib  # noqa: F401
 
 # VERSIONING
@@ -78,7 +82,6 @@ except DistributionNotFound:
     __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
-
 
 # LIBRARY CONFIG
 

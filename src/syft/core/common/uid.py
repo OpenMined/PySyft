@@ -27,7 +27,9 @@ class AbstractUID(Serializable):
 
 @final
 class UID(AbstractUID):
-    """This object creates a unique ID for every object in the Syft
+    """A unique ID for every Syft object.
+
+    This object creates a unique ID for every object in the Syft
     ecosystem. This ID is guaranteed to be unique for the node on
     which it is initialized and is very likely to be unique across
     the whole ecosystem (because it is long and randomly generated).
@@ -46,8 +48,10 @@ class UID(AbstractUID):
     wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None, as_wrapper: bool = False):
-        """This initializes the object. Normal use for this object is
+    def __init__(self, value: uuid_type = None, as_wrapper:bool = False):
+        """Initializes the internal id using the uuid package.
+
+        This initializes the object. Normal use for this object is
         to initialize the constructor with value==None because you
         want to initialize with a novel ID. The only major exception
         is deserialization, wherein a UID object is created with a
@@ -84,10 +88,15 @@ class UID(AbstractUID):
 
     @syft_decorator(typechecking=True)
     def __hash__(self) -> int:
-        """A very common use of UID objects is as a key in a dictionary
+        """Hashes the UID for use in dictionaries and sets
+
+        A very common use of UID objects is as a key in a dictionary
         or database. The object must be able to be hashed in order to
         be used in this way. We take the 128-bit int representation of the
         value.
+
+        :return: returns a hash of the object
+        :rtype: int
 
         .. note::
             Note that this probably gets further hashed into a shorter
@@ -96,18 +105,25 @@ class UID(AbstractUID):
         .. note::
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
+
+
     """
 
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: AbstractUID) -> bool:
-        """This checks to see whether this UID is equal to another UID by
+        """Checks to see if two UIDs are the same using the internal object
+
+        This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects
         come with their own __eq__ function which we assume to be correct.
 
         :param other: this is the other ID to be compared with
         :type other: AbstractUID
+        :return: returns True/False based on whether the objcts are the same
+        :rtype: bool
+
 
     """
 
@@ -116,17 +132,24 @@ class UID(AbstractUID):
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        """Return a human-readable representation of the UID with brackets
+        """Returns a human-readable version of the ID
+
+        Return a human-readable representation of the UID with brackets
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Message:
-        """As a requirement of all objects which inherit from Serializable,
+    def _object2proto(self) -> UID_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: ProtoUID
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -141,9 +164,14 @@ class UID(AbstractUID):
         )
 
     @staticmethod
-    def _proto2object(proto):
-        """As a requirement of all objects which inherit from Serializable,
+    def _proto2object(proto: UID_PB) -> AbstractUID:
+        """Creates a UID from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of UID
+        :rtype: UID
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
