@@ -63,10 +63,6 @@ class UID(AbstractUID):
 
             from syft.core.common.uid import UID
             my_id = UID()
-            print(my_id.value)
-
-        .. code-block:: bash
-
         """
         # checks to make sure you've set a proto_type
         super().__init__(as_wrapper=as_wrapper)
@@ -101,9 +97,7 @@ class UID(AbstractUID):
         .. note::
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
-
-
-    """
+        """
 
         return self.value.int
 
@@ -119,9 +113,7 @@ class UID(AbstractUID):
         :type other: AbstractUID
         :return: returns True/False based on whether the objcts are the same
         :rtype: bool
-
-
-    """
+        """
 
         if isinstance(other, UID):
             return self.value == other.value
@@ -171,7 +163,8 @@ class UID(AbstractUID):
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object."""
+            if you wish to deserialize an object.
+        """
 
         value = uuid.UUID(bytes=proto.value)
         if proto.as_wrapper:
