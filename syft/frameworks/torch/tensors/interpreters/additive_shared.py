@@ -466,28 +466,21 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, int):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
-        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-            # if someone passes a torch tensor, we share it and keep the dict
-            other = other.share(
+        def share(other):
+            return other.share(
                 *self.child.keys(),
                 field=self.field,
                 dtype=self.dtype,
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
+
+        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
+            # if someone passes a torch tensor, we share it and keep the dict
+            other = share(other)
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other = (
-                torch.tensor([other], dtype=self.torch_dtype)
-                .share(
-                    *self.child.keys(),
-                    field=self.field,
-                    dtype=self.dtype,
-                    crypto_provider=self.crypto_provider,
-                    **no_wrap,
-                )
-                .child
-            )
+            other = share(torch.tensor([other], dtype=self.torch_dtype))
 
         return other
 
