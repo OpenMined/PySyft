@@ -1060,10 +1060,8 @@ class AdditiveSharingTensor(AbstractTensor):
         argmax_result = self.argmax(dim=dim, keepdim=keepdim, one_hot=True)
         if dim is not None:
             max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
-            if keepdim:
-                max_result = (
-                    max_result.unsqueeze(dim) if max_result.dim() < self.dim() else max_result
-                )
+            if keepdim and (max_result.dim() < self.dim()):
+                max_result = max.result.unsqueeze(dim)
         else:
             max_result = (self * argmax_result).sum()
         return max_result
