@@ -154,10 +154,10 @@ import json
 from google.protobuf.message import Message
 from google.protobuf import json_format
 
-from syft.core.common.lazy_structures import LazyDict
-
 # syft import
 from syft.util import get_fully_qualified_name, index_syft_by_module_name
+from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.core.common.lazy_structures import LazyDict
 
 
 class Serializable(object):
@@ -184,37 +184,47 @@ class Serializable(object):
         self.as_wrapper = as_wrapper
 
     @staticmethod
-    def _proto2object(proto):
+    def _proto2object(proto: Message) -> "Serializable":
         raise NotImplementedError
 
-    def _object2proto(self):
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Message:
         raise NotImplementedError
 
+    @syft_decorator(typechecking=True)
     def to_proto(self) -> Message:
         return self.serialize(to_proto=True)
 
+    @syft_decorator(typechecking=True)
     def proto(self) -> Message:
         return self.serialize(to_proto=True)
 
+    @syft_decorator(typechecking=True)
     def to_json(self) -> str:
         return self.serialize(to_json=True)
 
+    @syft_decorator(typechecking=True)
     def json(self) -> str:
         return self.serialize(to_json=True)
 
+    @syft_decorator(typechecking=True)
     def to_binary(self) -> bytes:
         return self.serialize(to_binary=True)
 
+    @syft_decorator(typechecking=True)
     def binary(self) -> bytes:
         return self.serialize(to_binary=True)
 
+    @syft_decorator(typechecking=True)
     def to_hex(self) -> str:
         return self.serialize(to_hex=True)
 
+    @syft_decorator(typechecking=True)
     def hex(self) -> str:
         return self.serialize(to_hex=True)
 
-    def serialize(self, to_proto=True, to_json=False, to_binary=False, to_hex=False):
+    @syft_decorator(typechecking=True)
+    def serialize(self, to_proto: bool=True, to_json: bool=False, to_binary: bool=False, to_hex: bool=False):
         """Serialize the object according to the parameters."""
 
         if to_json or to_binary or to_hex:
@@ -238,7 +248,8 @@ class Serializable(object):
             )
 
 
-def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
+@syft_decorator(typechecking=True)
+def _is_string_a_serializable_class_name(lazy_dict: LazyDict, fully_qualified_name: str) -> None:
 
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
@@ -295,12 +306,13 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
 fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
+@syft_decorator(typechecking=True)
 def _serialize(
     obj: (Serializable, object),
-    to_proto=True,
-    to_json=False,
-    to_binary=False,
-    to_hex=False,
+    to_proto: bool=True,
+    to_json: bool=False,
+    to_binary: bool=False,
+    to_hex: bool=False,
 ):
 
     if not isinstance(obj, Serializable):
@@ -311,12 +323,13 @@ def _serialize(
     )
 
 
+@syft_decorator(typechecking=True)
 def _deserialize(
     blob: (str, dict, bytes, Message),
-    from_proto=True,
-    from_json=False,
-    from_binary=False,
-    from_hex=False,
+    from_proto: bool=True,
+    from_json: bool=False,
+    from_binary: bool=False,
+    from_hex: bool=False,
 ) -> Serializable:
     """We assume you're deserializing a protobuf object by default"""
 
