@@ -442,11 +442,7 @@ class AdditiveSharingTensor(AbstractTensor):
             an AdditiveSharingTensor
 
         """
-        selected_shares = {}
-        for worker, share in self_shares.items():
-            selected_shares[worker] = share[indices]
-
-        return selected_shares
+        return {worker: share[indices] for worker, share in self_shares.items()}
 
     def __getitem__(self, indices):
         if not isinstance(indices, (tuple, list)):
