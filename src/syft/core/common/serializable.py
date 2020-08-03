@@ -178,7 +178,6 @@ class Serializable(object):
     forget to add tests for your object!
     """
 
-
     def __init__(self, as_wrapper: bool):
         assert self.protobuf_type is not None
         self.as_wrapper = as_wrapper
@@ -224,7 +223,13 @@ class Serializable(object):
         return self.serialize(to_hex=True)
 
     @syft_decorator(typechecking=True)
-    def serialize(self, to_proto: bool=True, to_json: bool=False, to_binary: bool=False, to_hex: bool=False) -> (str, dict, bytes, Message):
+    def serialize(
+        self,
+        to_proto: bool = True,
+        to_json: bool = False,
+        to_binary: bool = False,
+        to_hex: bool = False,
+    ) -> (str, dict, bytes, Message):
         """Serialize the object according to the parameters."""
 
         if to_json or to_binary or to_hex:
@@ -247,10 +252,13 @@ class Serializable(object):
                             to_proto, to_json, to_binary, or to_hex."""
             )
 
+
 # we allow args because LazyDict calls this method via [] and so we can't set
 # what the kwarg names are via that interface
 @syft_decorator(typechecking=True, prohibit_args=False)
-def _is_string_a_serializable_class_name(lazy_dict: LazyDict, fully_qualified_name: str) -> None:
+def _is_string_a_serializable_class_name(
+    lazy_dict: LazyDict, fully_qualified_name: str
+) -> None:
 
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
@@ -310,10 +318,10 @@ fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class
 @syft_decorator(typechecking=True)
 def _serialize(
     obj: (Serializable, object),
-    to_proto: bool=True,
-    to_json: bool=False,
-    to_binary: bool=False,
-    to_hex: bool=False,
+    to_proto: bool = True,
+    to_json: bool = False,
+    to_binary: bool = False,
+    to_hex: bool = False,
 ) -> (str, dict, bytes, Message):
 
     if not isinstance(obj, Serializable):
@@ -327,10 +335,10 @@ def _serialize(
 @syft_decorator(typechecking=True)
 def _deserialize(
     blob: (str, dict, bytes, Message),
-    from_proto: bool=True,
-    from_json: bool=False,
-    from_binary: bool=False,
-    from_hex: bool=False,
+    from_proto: bool = True,
+    from_json: bool = False,
+    from_binary: bool = False,
+    from_hex: bool = False,
 ) -> (Serializable, object):
     """We assume you're deserializing a protobuf object by default"""
 
