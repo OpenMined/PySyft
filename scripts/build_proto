@@ -1,7 +1,9 @@
+#!/bin/bash
 CLEAN="src/syft/proto/*"
 PYTHON_OUT="src/syft"
 PROTO_IN="proto"
 
-rm -rf $CLEAN
-find $PROTO_IN  \( -iname '*.proto' \) -print0 | xargs -0 protoc --python_out=$PYTHON_OUT
-find src/syft/proto \( -iname '*_pb2.py' \) -print0 | xargs -0 sed -i -r 's/from (proto.*) import /from syft.\1 import /g'
+rm -rf "${CLEAN}"
+find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT}
+find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
+black src/syft/proto
