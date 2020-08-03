@@ -43,7 +43,7 @@ div.body > .section {
 }
 
 div.footer {
-    width: 1200px;
+    width: 100%;
     margin: 20px auto 30px auto;
     font-size: 14px;
     color: #888;
@@ -525,7 +525,6 @@ a:hover tt, a:hover code {
 
     div.document {
        width: 100%;
-
     }
 
     div.documentwrapper {
