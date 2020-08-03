@@ -92,5 +92,27 @@ def test_subclasses_have_names():
     subclasses = get_subclasses(obj_type=ObjectWithID)
 
     for sc in subclasses:
-        print(sc.protobuf_type)
         assert hasattr(sc, '__name__')
+
+
+def test_subclasses_of_obj_with_id_have_their_own_protobuf_types():
+    """Ensure that all known subclassses of ObjectWithID have
+    a custom protobuf_type parameter. This could be easy to
+    accidentally forget to add.
+
+    The reason this is useful is that since ObjectWithID has a type
+    all subclasses will inherit it even if they have more things
+    to serialize. This could results in annoying dev experiences
+    if people don't know to add this flag. So, we'll create a test
+    just to check!
+    """
+
+    known_exceptions = {'Location', 'LocationGroup', 'SubscriptionBackedLocationGroup', 'RegistryBackedLocationGroup',
+                        'AbstractNode', 'Node', 'VirtualMachine', 'Device', 'Domain', 'Network', 'RouteSchema', 'Route',
+                        'BroadcastRoute', 'SoloRoute'}
+
+    subclasses = get_subclasses(obj_type=ObjectWithID)
+
+    for sc in subclasses:
+        if(sc.__name__ not in known_exceptions):
+            assert sc.protobuf_type.__name__ != 'ObjectWithID'
