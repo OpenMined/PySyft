@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Iterable
 
 from ...decorators import syft_decorator
-from ..common.serializable import Serializable
+from syft.core.common.serde.serializable import Serializable
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
