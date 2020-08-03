@@ -373,9 +373,7 @@ class AdditiveSharingTensor(AbstractTensor):
         ptr_to_sh = self.copy().wrap().send(workers[0], **no_wrap)
         pointer = ptr_to_sh.remote_get()
 
-        pointers = [pointer]
-        for worker in workers[1:]:
-            pointers.append(pointer.copy().move(worker))
+        pointers = [pointer] + [pointer.copy().move(w) for w in workers[1:]]
 
         return sy.MultiPointerTensor(children=pointers)
 
