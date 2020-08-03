@@ -503,10 +503,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # matches each share which needs to be added according
         # to the location of the share
-        new_shares = {}
-        for k, v in shares.items():
-            new_shares[k] = self.modulo(other[k] + v)
-        return new_shares
+        return {k: self.modulo(other[k] + v) for k, v, in shares.items()}
 
     __add__ = add
     __radd__ = add
@@ -530,11 +527,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # matches each share which needs to be added according
         # to the location of the share
-        new_shares = {}
-        for k, v in shares.items():
-            new_shares[k] = self.modulo(v - other[k])
-
-        return new_shares
+        return {k: self.modulo(v - other[k]) for k, v in shares.items()}
 
     __sub__ = sub
 
