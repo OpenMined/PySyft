@@ -73,5 +73,19 @@ class ObjectWithID(AbstractObjectWithID):
         )
 
     @staticmethod
-    def deserialize(proto_obj: ObjectWithID_PB) -> "ObjectWithID":
-        return ObjectWithID(id=UID.deserialize(proto_obj.id))
+    def _proto2object(proto: ObjectWithID_PB) -> AbstractObjectWithID:
+        """Creates a UID from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of UID
+        :rtype: UID
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return ObjectWithID(id=UID.deserialize(proto.id))
+
