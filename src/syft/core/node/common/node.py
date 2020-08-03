@@ -21,11 +21,12 @@ from ...io.address import Address
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 
-# CORE IMPORTS
+# NON-CORE IMPORTS
 from ...store import ObjectStore
 
-# NON-CORE IMPORTS
-from ..abstract.node import AbstractNode
+# CORE IMPORTS
+
+from ...io.location import Location
 from .client import Client
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
@@ -40,6 +41,10 @@ from .service.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
 from .service.repr_service import ReprService
+
+
+class AbstractNode(Location):
+    """This exists to allow for type checking."""
 
 
 class Node(AbstractNode, LocationAwareObject):
