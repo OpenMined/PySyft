@@ -23,6 +23,12 @@ class Serializable(object):
     def _object2proto(self):
         raise NotImplementedError
 
+    def to_proto(self) -> Message:
+        return self.serialize(to_proto=True)
+
+    def proto(self) -> Message:
+        return self.serialize(to_proto=True)
+
     def to_json(self) -> str:
         return self.serialize(to_json=True)
 
