@@ -106,7 +106,7 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     else:
         raise Exception(f"{fully_qualified_name} is not serializable")
 
-string2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
+fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
 def _serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
