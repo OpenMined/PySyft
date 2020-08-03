@@ -204,16 +204,18 @@ def test_object_with_id_hex_serialization():
     assert obj.serialize(to_hex=True) == blob
 
 
-# def test_object_with_id_hex_deserialization():
-#     """Test that hex ObjectWithID deserialization works as expected"""
-#
-#     blob = (
-#         "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964"
-#         + "2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717"
-#         + "76f5646413d3d220a7d"
-#     )
-#     obj = sy.deserialize(blob=blob, from_hex=True)
-#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+def test_object_with_id_hex_deserialization():
+    """Test that hex ObjectWithID deserialization works as expected"""
+
+    blob = (
+            "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6"
+            + "e2e6f626a6563742e4f626a656374576974684944222c0a2020226964223a207"
+            + "b0a20202020226f626a54797065223a2022737966742e636f72652e636f6d6d6f"
+            + "6e2e7569642e554944222c0a202020202276616c7565223a20222b7875775a31753"
+            + "354456d2b7a75634171776f5646413d3d220a20207d0a7d"
+    )
+    obj = sy.deserialize(blob=blob, from_hex=True)
+    assert obj == ObjectWithID(id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)))
 
 
 ###################### CHILDREN ##########################
