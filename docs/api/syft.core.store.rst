@@ -9,14 +9,6 @@ syft.core.store package
 Submodules
 ----------
 
-syft.core.store.store module
-----------------------------
-
-.. automodule:: syft.core.store.store
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.store.store\_disk module
 ----------------------------------
 

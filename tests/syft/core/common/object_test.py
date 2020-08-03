@@ -160,7 +160,7 @@ def test_object_with_id_json_deserialization():
     blob = '{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id":' \
            ' {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+x' \
            'uwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
-    
+
     obj = sy.deserialize(blob=blob, from_json=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
