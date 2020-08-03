@@ -850,15 +850,16 @@ class AdditiveSharingTensor(AbstractTensor):
             original shape. shifts and dims can be tuples of same length to perform several
             rolls along different dimensions.
             """
+
             results = {}
             for worker, share in tensor_shares.items():
                 if isinstance(shifts, dict):
-                    results[worker] = torch.roll(share, shifts[worker], **kwargs)
+                    s = shifts[worker]
                 elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
-                    worker_shifts = [s[worker] for s in shifts]
-                    results[worker] = torch.roll(share, worker_shifts, **kwargs)
+                    s = [s[worker] for s in shifts]
                 else:
-                    results[worker] = torch.roll(share, shifts, **kwargs)
+                    s = shifts
+                results[worker] = torch.roll(share, s, **kwargs)
 
             return results
 
