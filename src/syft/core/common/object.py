@@ -57,7 +57,11 @@ class ObjectWithID(AbstractObjectWithID):
         if id is None:
             id = UID()
 
-        self.id = id
+        self._id = id
+
+    @property
+    def id(self):
+        return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: AbstractObjectWithID) -> bool:
