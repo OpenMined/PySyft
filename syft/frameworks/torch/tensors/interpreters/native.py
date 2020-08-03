@@ -936,7 +936,7 @@ class TorchTensor(AbstractTensor):
                     owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
-                .init_shares(*owners)
+                .share_secret(*owners)
             )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):

@@ -312,7 +312,7 @@ class AdditiveSharingTensor(AbstractTensor):
         result = self.modulo(sum(shares))
         return result
 
-    def init_shares(self, *owners):
+    def share_secret(self, *owners):
         """Initializes shares and distributes them amongst their respective owners
 
         Args:
