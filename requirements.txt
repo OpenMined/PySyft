@@ -20,4 +20,9 @@ torch>=1.5
 typeguard
 pyscaffold[all]
 black
+flask
 pyjwt
+flake8
+bandit
+isort
+sqlitedict

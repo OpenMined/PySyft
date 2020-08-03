@@ -1,9 +1,10 @@
 # external class/method imports
 from typing import final
 
+from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
+
 # syft imports
 from .serializable import Serializable
-from ...proto.core.common.object_pb2 import ObjectWithID as ObjectWithID_PB
 from .uid import UID
 
 
@@ -13,6 +14,7 @@ class AbstractObjectWithID(Serializable):
     because we need a type which has already been initialized in
     order to add it as a type hint on the ObjectWithId object.
     """
+
 
 @final
 class ObjectWithID(AbstractObjectWithID):
@@ -27,7 +29,7 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
-    def __init__(self, id: UID = None, as_wrapper:bool=False):
+    def __init__(self, id: UID = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.

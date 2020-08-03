@@ -9,9 +9,10 @@ Table of Contents:
 
 """
 
+import uuid
+
 # external imports
 import pytest
-import uuid
 
 # syft imports
 import syft as sy

@@ -1,5 +1,5 @@
-from .common import EventualActionWithoutReply
 from ...abstract.node import AbstractNode
+from .common import EventualActionWithoutReply
 
 
 class GarbageCollectObjectAction(EventualActionWithoutReply):

@@ -3,12 +3,15 @@ import uuid
 
 # external class/method imports
 from typing import final
+
 from google.protobuf.message import Message
 
-# syft imports
-from ...decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serializable import Serializable
-from ...proto.core.common.uid_pb2 import UID as UID_PB
+
+# syft imports
+from ...decorators import syft_decorator
+
+from ...proto.core.common.common_object_pb2 import UID as UID_PB
 
 # resources
 uuid_type = type(uuid.uuid4())
@@ -50,7 +53,8 @@ class UID(AbstractUID):
         is deserialization, wherein a UID object is created with a
         specific id value.
 
-        :param value: if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
+        :param value: if you want to initialize an object with a specific UID, pass it
+                      in here. This is normally only used during deserialization.
         :type value: uuid.uuid4, optional
         :return: returns the initialized object
         :rtype: UID
@@ -149,6 +153,7 @@ class UID(AbstractUID):
         if proto.as_wrapper:
             return value
         return UID(value=value)
+
 
 # This flag is what allows the serializer to find this class
 # when it encounters an object of uuid_type.

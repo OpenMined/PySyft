@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-from .....decorators import syft_decorator
-from .node_service import ImmediateNodeServiceWithoutReply
-from .node_service import ImmediateNodeServiceWithReply
-from ...abstract.node import AbstractNode
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithReply
 from typing import List
+
+from syft.core.common.message import (
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+)
+
+from .....decorators import syft_decorator
+from ...abstract.node import AbstractNode
+from .node_service import (
+    ImmediateNodeServiceWithoutReply,
+    ImmediateNodeServiceWithReply,
+)
 
 
 class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):

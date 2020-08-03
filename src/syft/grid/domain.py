@@ -2,16 +2,19 @@
 functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
-from flask import Flask
-from flask import request
+import binascii
 import pickle
+
+from flask import Flask, request
+
+from syft.core.common.message import (
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+)
+from syft.core.node.domain.domain import Domain
 
 app = Flask(__name__)
 
-import binascii
-from syft.core.node.domain.domain import Domain
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
 
 domain = Domain(name="ucsf")
 
@@ -26,7 +29,7 @@ def get_client():
 @app.route("/recv", methods=["POST"])
 def recv():
     hex_msg = request.get_json()["data"]
-    msg = pickle.loads(binascii.unhexlify(hex_msg))
+    msg = pickle.loads(binascii.unhexlify(hex_msg))  # nosec # TODO make less insecure
     reply = None
     print(str(msg))
     if isinstance(msg, ImmediateSyftMessageWithReply):

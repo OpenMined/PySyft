@@ -55,9 +55,9 @@ information both about hops we know about and about hops we don't
 know about.
 
 This abstraction is called a "Route" and each hop is called a "Hop"
-where any collection of hops within the route is called a 
-"RouteSegment". Note that a Route need only be initialized with 
-it's source and destination(s). 
+where any collection of hops within the route is called a
+"RouteSegment". Note that a Route need only be initialized with
+it's source and destination(s).
 
 When a route is used by a client, it is used to decide which route
 would be best to take for a particular old_message.
@@ -83,14 +83,17 @@ would have instructions for how to forward to a binary tree of other
 node, propagating the model to all node which asked for it.
 """
 
+from typing import List, Set
+
+from syft.core.common.message import (
+    EventualSyftMessageWithoutReply,
+    SyftMessageWithoutReply,
+    SyftMessageWithReply,
+)
+
 from ..common.object import ObjectWithID
-from .location import Location
-from typing import Set
-from syft.core.message import SyftMessageWithReply
-from syft.core.message import SyftMessageWithoutReply
-from syft.core.message import EventualSyftMessageWithoutReply
 from .connection import ClientConnection
-from typing import List
+from .location import Location
 
 
 class RouteSchema(ObjectWithID):

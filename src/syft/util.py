@@ -1,9 +1,10 @@
 from typing import List
-from .decorators import type_hints
 
 # breaking convention here because index_globals needs
 # the full syft name to be present.
-import syft
+import syft  # noqa: F401
+
+from .decorators import type_hints
 
 
 @type_hints
@@ -33,5 +34,5 @@ def get_fully_qualified_name(obj):
     try:
         fqn += "." + obj.__name__
     except Exception as e:
-        ""
+        print(f"Failed to get FQN: {e}")
     return fqn

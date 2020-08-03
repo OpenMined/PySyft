@@ -1,10 +1,8 @@
 from .. import ast
-
-from .util import unsplit
-from .util import module_type
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
+from .util import module_type, unsplit
 
 
 class Callable(ast.attribute.Attribute):
@@ -13,7 +11,7 @@ class Callable(ast.attribute.Attribute):
 
     def __call__(self, *args, return_callable=False, **kwargs):
 
-        if self.client is not None and return_callable == False:
+        if self.client is not None and return_callable is False:
             print(f"call {self.path_and_name} on client {self.client}")
 
             path_and_name = "torch.zeros"

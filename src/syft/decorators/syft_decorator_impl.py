@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+
 from .typecheck import type_hints
 
 # this flag is set in syft.__init__.py

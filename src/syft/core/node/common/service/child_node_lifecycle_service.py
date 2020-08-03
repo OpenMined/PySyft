@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from .....decorators import syft_decorator
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from ...abstract.node import AbstractNode
 from typing import List
 
-from ....io.address import Address
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
-from syft.core.message import ImmediateSyftMessageWithoutReply
-from ...abstract.node import AbstractNodeClient
 
+from .....decorators import syft_decorator
+from ....io.address import Address
+from ...abstract.node import AbstractNode, AbstractNodeClient
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .heritage_update_service import HeritageUpdateMessage
 
 
@@ -33,7 +32,8 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
             id=msg.child_node_client.address.target_id, obj=msg.child_node_client
         )
 
-        # Step 2: update the child node and its descendants with our node.id in their .address objects
+        # Step 2: update the child node and its descendants with our node.id in their
+        # .address objects
         heritage_msg = HeritageUpdateMessage(
             new_ancestry_address=node.address, address=msg.child_node_client.address
         )

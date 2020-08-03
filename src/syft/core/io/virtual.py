@@ -4,15 +4,17 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from ..node.abstract.node import AbstractNode
-from ...decorators import syft_decorator
 from typing import final
 
-from .connection import ServerConnection
-from .connection import ClientConnection
+from syft.core.common.message import (
+    EventualSyftMessageWithoutReply,
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+)
+
+from ...decorators import syft_decorator
+from ..node.abstract.node import AbstractNode
+from .connection import ClientConnection, ServerConnection
 
 known_objects = {}
 

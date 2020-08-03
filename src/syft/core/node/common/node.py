@@ -5,33 +5,41 @@ stuff
 
 from __future__ import annotations
 
-# NON-CORE IMPORTS
-from ..abstract.node import AbstractNode
-from ....decorators import syft_decorator
 from typing import List
+
+from syft.core.common.message import (
+    EventualSyftMessageWithoutReply,
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+    SyftMessage,
+)
+
+from ....decorators import syft_decorator
+from ....lib import lib_ast
 from ....util import get_subclasses
-from syft.core.message import SyftMessage
-from syft.core.message import ImmediateSyftMessageWithReply
-from syft.core.message import EventualSyftMessageWithoutReply
-from syft.core.message import ImmediateSyftMessageWithoutReply
+from ...io.address import Address
+from ...io.route import SoloRoute
+from ...io.virtual import create_virtual_connection
 
 # CORE IMPORTS
 from ...store import ObjectStore
-from .service.msg_forwarding_service import MessageWithoutReplyForwardingService
-from .service.msg_forwarding_service import MessageWithReplyForwardingService
-from .service.repr_service import ReprService
-from .service.child_node_lifecycle_service import ChildNodeLifecycleService
-from .client import Client
-from .service.heritage_update_service import HeritageUpdateService
-from .service.obj_action_service import ImmediateObjectActionServiceWithoutReply
-from .service.obj_action_service import EventualObjectActionServiceWithoutReply
-from .service.obj_action_service import ImmediateObjectActionServiceWithReply
-from ...io.address import Address
-from ...io.virtual import create_virtual_connection
-from ...io.route import SoloRoute
-from ....lib import lib_ast
 
+# NON-CORE IMPORTS
+from ..abstract.node import AbstractNode
+from .client import Client
 from .location_aware_object import LocationAwareObject
+from .service.child_node_lifecycle_service import ChildNodeLifecycleService
+from .service.heritage_update_service import HeritageUpdateService
+from .service.msg_forwarding_service import (
+    MessageWithoutReplyForwardingService,
+    MessageWithReplyForwardingService,
+)
+from .service.obj_action_service import (
+    EventualObjectActionServiceWithoutReply,
+    ImmediateObjectActionServiceWithoutReply,
+    ImmediateObjectActionServiceWithReply,
+)
+from .service.repr_service import ReprService
 
 
 class Node(AbstractNode, LocationAwareObject):
@@ -204,6 +212,7 @@ class Node(AbstractNode, LocationAwareObject):
                     raise KeyError(
                         f"The node {self.id} of type {type(self)} cannot process messages of type "
                         + f"{type(msg)} because there is no service running to process it."
+                        + f"{e}"
                     )
 
                 self.ensure_services_have_been_registered_error_if_not()

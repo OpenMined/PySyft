@@ -1,15 +1,15 @@
-from ..common.node import Node
-from typing import final
-from .client import DeviceClient
+from typing import Dict, final
+
+from syft.core.common.message import SyftMessage
+from syft.core.common.uid import UID
+
 from ....decorators import syft_decorator
-from ....common.id import UID
+from ..common.node import Node
+from ..vm.client import VirtualMachineClient
+from ..vm.vm import VirtualMachine
+from .client import DeviceClient
 from .device_type.device_type import DeviceType
 from .device_type.unknown import unknown_device
-from ..vm.vm import VirtualMachine
-from ..vm.client import VirtualMachineClient
-from typing import Dict
-from syft.core.message import SyftMessage
-
 
 
 @final

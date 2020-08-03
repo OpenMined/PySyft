@@ -1,8 +1,8 @@
+from syft.core.common.message import SyftMessage
+
 from ..common.node import Node
-from syft.core.message import SyftMessage
+from ..device import Device, DeviceClient
 from .client import DomainClient
-from ..device import Device
-from ..device import DeviceClient
 
 
 class Domain(Node):
