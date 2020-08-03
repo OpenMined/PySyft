@@ -59,6 +59,22 @@ class ObjectWithID(AbstractObjectWithID):
 
         self.id = id
 
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __eq__(self, other: AbstractObjectWithID) -> bool:
+        """Checks to see if two ObjectWithIDs are actually the same object.
+
+        This checks to see whether this ObjectWithIDs is equal to another by
+        comparing whether they have the same .id objects. These objects
+        come with their own __eq__ function which we assume to be correct.
+
+        :param other: this is the other ObjectWithIDs to be compared with
+        :type other: ObjectWithIDs
+        :return: returns True/False based on whether the objcts are the same
+        :rtype: bool
+        """
+
+        return self.id == other.id
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
         """Returns a protobuf serialization of self.
