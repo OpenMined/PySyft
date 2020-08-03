@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+import asyncio
 import logging
 import time
 from typing import List
@@ -480,6 +481,16 @@ class BaseWorker(AbstractWorker):
         if delay > max_delay or current_size > max_size:
             self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
             trash[location.id] = (time.time(), [])
+
+    async def async_dispatch(self, workers, commands, return_value=False):
+        """Asynchronously send commands to several workers"""
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command, return_value=return_value)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
 
     def send_command(
         self,

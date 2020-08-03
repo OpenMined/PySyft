@@ -581,12 +581,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         assert isinstance(other, AdditiveSharingTensor)
 
-        assert len(self.child) == len(other.child)
-
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
-        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
+        shares = spdz.spdz_mul(
+            equation, self, other, self.crypto_provider, self.dtype, self.torch_dtype, self.field
+        )
 
         return shares
 
@@ -1022,9 +1022,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def _one_hot_to_index(self, dim, keepdim):
         """
-        Converts a one-hot self output from an argmax or argmin function to a
-        tensor containing indices from the input self from which the result of the
-        argmax / argmin was obtained.
+        Convert a one-hot tensor (self) composed of 0 and 1 to a tensor containing
+        the indices where self was equal to 1.
+        This is used with argmax / argmin.
 
         This is inspired from CrypTen.
         """

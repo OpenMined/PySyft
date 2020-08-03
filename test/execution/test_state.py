@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft as sy
-from itertools import starmap
 
 
 def test_stateful_plan_built_automatically(hook):
@@ -279,7 +278,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
     if is_func2plan:
 
-        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
+        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0, 2.1]),))
         def plan(data, state):
             (bias,) = state.read()
             return data * bias
@@ -289,15 +288,15 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
         class Net(sy.Plan):
             def __init__(self):
                 super(Net, self).__init__()
-                self.fc1 = nn.Linear(1, 1)
+                self.fc1 = nn.Linear(2, 1)
 
             def forward(self, x):
                 return self.fc1(x)
 
         plan = Net()
-        plan.build(th.tensor([1.2]))
+        plan.build(th.rand(3, 2))
 
-    x = th.tensor([-1.0])
+    x = th.rand(3, 2)
     expected = plan(x)
 
     plan.fix_precision().share(alice, bob, crypto_provider=charlie)
@@ -307,7 +306,6 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     fetched_plan = plan.owner.fetch_plan(ptr_plan.id_at_location, james)
 
     # Execute the fetch plan
-    x = th.tensor([-1.0])
     x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
     decrypted = fetched_plan(x_sh).get().float_prec()
 
@@ -315,12 +313,8 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     assert th.all(decrypted - expected.detach() < 1e-2)
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
-    assert all(
-        starmap(
-            lambda fetched_tensor, tensor: (fetched_tensor == tensor).get(),
-            zip(fetched_plan.state.tensors(), plan.state.tensors()),
-        )
-    )
+    for fetched_tensor, tensor in zip(fetched_plan.state.tensors(), plan.state.tensors()):
+        assert ((fetched_tensor == tensor).get().float_prec() == 1).all()
 
     # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
