@@ -457,7 +457,6 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     def _convert_to_share_tensor(self, other):
-        # TODO: Docstring
         if isinstance(other, int):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
@@ -835,12 +834,12 @@ class AdditiveSharingTensor(AbstractTensor):
             results = {}
             for worker, share in tensor_shares.items():
                 if isinstance(shifts, dict):
-                    s = shifts[worker]
+                    shift = shifts[worker]
                 elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
-                    s = [s[worker] for s in shifts]
+                    shift = [s[worker] for s in shifts]
                 else:
-                    s = shifts
-                results[worker] = torch.roll(share, s, **kwargs)
+                    shift = shifts
+                results[worker] = torch.roll(share, shift, **kwargs)
 
             return results
 
