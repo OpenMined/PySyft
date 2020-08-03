@@ -24,6 +24,13 @@ class ObjectWithID(AbstractObjectWithID):
         of some kind is the Client class because it's job is to point to another
         object (which has an ID).
 
+    .. note::
+        Be aware of performance choices in this class because it is used so
+        heavily across the entire codebase. Assume every method is going to
+        be called thousands of times during the working day of an average
+        data scientist using syft (and millions of times in the context of a
+        machine learning job).
+
     """
 
     @syft_decorator(typechecking=True)
