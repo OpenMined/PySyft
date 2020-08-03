@@ -60,7 +60,14 @@ class ObjectWithID(AbstractObjectWithID):
         self._id = id
 
     @property
-    def id(self):
+    def id(self) -> UID:
+        """We reveal ObjectWithID.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
