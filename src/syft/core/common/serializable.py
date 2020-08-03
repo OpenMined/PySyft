@@ -44,8 +44,12 @@ class Serializable(object):
     def serialize(self, to_proto=True, to_json=False, to_binary=False, to_hex=False):
         """Serialize the object according to the parameters."""
 
-        if not to_json or to_binary or to_hex:
+        if to_json or to_binary or to_hex:
             blob = json_format.MessageToJson(message=self._object2proto())
+
+            if to_json:
+                return blob
+
             if to_binary or to_hex:
                 blob = bytes(blob, "utf-8")
                 if to_hex:
@@ -127,26 +131,33 @@ def _serialize(
 
 
 def _deserialize(
-    blob: (str, dict, bytes, Message), from_json=False, from_binary=False, from_hex=False
+    blob: (str, dict, bytes, Message), from_proto=True, from_json=False, from_binary=False, from_hex=False
 ) -> Serializable:
     """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
 
-    if from_hex:
-        from_binary = True
-        blob = bytes.fromhex(blob)
+    if from_proto:
 
-    if from_binary:
-        from_json = True
-        blob = str(blob, "utf-8")
+        obj_type_str = blob.obj_type
 
-    if from_json:
-        blob = json.loads(s=blob)
+    else:
+
+        if from_hex:
+            from_binary = True
+            blob = bytes.fromhex(blob)
+
+        if from_binary:
+            from_json = True
+            blob = str(blob, "utf-8")
+
+        if from_json:
+            blob = json.loads(s=blob)
+            obj_type_str = blob["objType"]
 
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = fully_qualified_name2type[blob["objType"]]
+        obj_type = fully_qualified_name2type[obj_type_str]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError:
@@ -161,6 +172,9 @@ def _deserialize(
 
     protobuf_type = obj_type.protobuf_type
 
-    proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
+    if from_proto:
+        proto_obj = blob
+    else:
+        proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
     return obj_type._proto2object(proto_obj)
