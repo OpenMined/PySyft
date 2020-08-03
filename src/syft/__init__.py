@@ -53,9 +53,12 @@ from syft.core import common  # noqa: F401
 # Convenience Methods
 from syft.core.common.serializable import deserialize, serialize  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
-from syft.core.node.device.device import Device, DeviceClient  # noqa: F401
-from syft.core.node.domain.domain import Domain, DomainClient  # noqa: F401
-from syft.core.node.network.network import Network, NetworkClient  # noqa: F401
+from syft.core.node.device.device import Device  # noqa: F401
+from syft.core.node.device.device import DeviceClient  # noqa: F401
+from syft.core.node.domain.domain import Domain  # noqa: F401
+from syft.core.node.domain.domain import DomainClient  # noqa: F401
+from syft.core.node.network.network import Network  # noqa: F401
+from syft.core.node.network.network import NetworkClient  # noqa: F401
 
 # Convenience Constructors
 from syft.core.node.vm.vm import VirtualMachine, VirtualMachineClient  # noqa: F401
