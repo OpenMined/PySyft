@@ -121,7 +121,7 @@ def test_uid_default_deserialization():
 
 
 def test_uid_proto_serialization():
-    """Tests that default UID serialization works as expected - to JSON"""
+    """Tests that proto UID serialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
@@ -135,7 +135,7 @@ def test_uid_proto_serialization():
 
 
 def test_uid_proto_deserialization():
-    """Tests that default UID deserialization works as expected - from JSON"""
+    """Tests that proto UID deserialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     self_type = type(uid)

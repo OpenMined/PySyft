@@ -108,21 +108,22 @@ def test_object_with_id_default_deserialization():
     obj2 = sy.deserialize(blob=blob)
     assert obj == obj2
 
-#
-# def test_uid_proto_serialization():
-#     """Tests that default UID serialization works as expected - to JSON"""
-#
-#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-#
-#     self_type = type(uid)
-#     obj_type = self_type.__module__ + "." + self_type.__name__
-#     blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
-#
-#     assert uid.proto() == blob
-#     assert uid.to_proto() == blob
-#     assert uid.serialize(to_proto=True) == blob
-#
-#
+
+def test_object_with_id_proto_serialization():
+    """Tests that default ObjectWithID serialization works as expected - to Protobuf"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = ObjectWithID(id=uid)
+
+    self_type = type(obj)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = ObjectWithID.protobuf_type(obj_type=obj_type, id=uid.serialize())
+
+    assert obj.proto() == blob
+    assert obj.to_proto() == blob
+    assert obj.serialize(to_proto=True) == blob
+
+
 # def test_uid_proto_deserialization():
 #     """Tests that default UID deserialization works as expected - from JSON"""
 #
