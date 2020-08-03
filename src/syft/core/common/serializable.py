@@ -137,23 +137,23 @@ def _deserialize(
 
     global fully_qualified_name2type
 
+
+    if from_hex:
+        from_binary = True
+        blob = bytes.fromhex(blob)
+
+    if from_binary:
+        from_json = True
+        blob = str(blob, "utf-8")
+
+    if from_json:
+        from_proto = False
+        blob = json.loads(s=blob)
+        obj_type_str = blob["objType"]
+
     if from_proto:
-
         obj_type_str = blob.obj_type
-
-    else:
-
-        if from_hex:
-            from_binary = True
-            blob = bytes.fromhex(blob)
-
-        if from_binary:
-            from_json = True
-            blob = str(blob, "utf-8")
-
-        if from_json:
-            blob = json.loads(s=blob)
-            obj_type_str = blob["objType"]
+        proto_obj = blob
 
     try:
         # lets try to lookup the type we are deserializing
@@ -172,9 +172,7 @@ def _deserialize(
 
     protobuf_type = obj_type.protobuf_type
 
-    if from_proto:
-        proto_obj = blob
-    else:
+    if not from_proto:
         proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
     return obj_type._proto2object(proto_obj)
