@@ -45,6 +45,20 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
     return x - a, y - b
 
 
+def slice(x, j, slice_size):
+    x_slice = x[j * slice_size : (j + 1) * slice_size]
+    x_slice.owner = x.owner
+    return x_slice
+
+
+def triple_mat_mul(core_id, delta, epsilon, a, b):
+    cmd = th.matmul
+    delta_b = cmd(delta, b)
+    a_epsilon = cmd(a, epsilon)
+    delta_epsilon = cmd(delta, epsilon)
+    return core_id, delta_b, a_epsilon, delta_epsilon
+
+
 # share level
 @allow_command
 def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dtype, field: int):
@@ -74,18 +88,6 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
     )
 
     if op == "matmul":
-
-        def slice(x, j, slice_size):
-            x_slice = x[j * slice_size : (j + 1) * slice_size]
-            x_slice.owner = x.owner
-            return x_slice
-
-        def triple_mat_mul(core_id, delta, epsilon, a, b):
-            cmd = th.matmul
-            delta_b = cmd(delta, b)
-            a_epsilon = cmd(a, epsilon)
-            delta_epsilon = cmd(delta, epsilon)
-            return core_id, delta_b, a_epsilon, delta_epsilon
 
         batch_size = delta.shape[0]
 
