@@ -2,16 +2,12 @@
 import uuid
 
 # external class/method imports
+from syft.core.common.serializable import Serializable
 from typing import final
 
-from google.protobuf.message import Message
-
-from syft.core.common.serializable import Serializable
-
 # syft imports
-from ...decorators import syft_decorator
-
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
+from ...decorators import syft_decorator
 
 # resources
 uuid_type = type(uuid.uuid4())
