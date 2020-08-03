@@ -16,8 +16,9 @@ import pytest
 
 # syft imports
 import syft as sy
-from syft.core.common import UID
 from syft.core.common import ObjectWithID
+from syft.util import get_subclasses
+from syft.core.common import UID
 
 ################## INITIALIZATION ######################
 
@@ -78,5 +79,18 @@ def test_to_string():
     assert str(obj) == "<ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
     assert obj.__repr__() == "<ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
+
 ###################### SERDE ##########################
 ###################### CHILDREN ##########################
+
+
+def test_subclasses_have_names():
+    """Ensure that all known subclassses of ObjectWithID have
+    a __name__ parameter. I'm not sure why but occasionally
+    I came across objects without them"""
+
+    subclasses = get_subclasses(obj_type=ObjectWithID)
+
+    for sc in subclasses:
+        print(sc.protobuf_type)
+        assert hasattr(sc, '__name__')
