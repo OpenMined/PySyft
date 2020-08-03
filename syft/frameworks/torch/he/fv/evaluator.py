@@ -1,9 +1,7 @@
 import copy
 from enum import Enum
 
-from syft.frameworks.torch.he.fv.util.operations import poly_add
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
-from syft.frameworks.torch.he.fv.util.operations import poly_mul
 from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
@@ -254,53 +252,91 @@ class Evaluator:
         """
         ct1, ct2 = ct1.data, ct2.data
 
-        if len(ct1) > 2:
+        if len(ct1) > 2 or len(ct2) > 2:
             # TODO: perform relinearization operation.
-            raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perform relinearization operation."
-            )
-        if len(ct2) > 2:
-            # TODO: perform relinearization operation.
-            raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perform relinearization operation."
-            )
+            raise Warning("Multiplying ciphertext of size >2 should be avoided.")
 
-        # Now the size of ciphertexts is 2.
-        # Multiplication operation of ciphertext:
-        #   result = [r1, r2, r3] where
-        #   r1 = ct1[0] * ct2[0]
-        #   r2 = ct1[0] * ct2[1] + ct1[1] * ct2[0]
-        #   r3 = ct1[1] * ct2[1]
-        #
-        # where ct1[i], ct2[i] are polynomials.
+        rns_tool = self.context.rns_tool
+        bsk_base_mod = rns_tool.base_Bsk.base
+        bsk_base_mod_count = len(bsk_base_mod)
+        dest_count = len(ct2) + len(ct1) - 1
 
-        ct10, ct11 = ct1
-        ct20, ct21 = ct2
+        # Step 0: fast base convert from q to Bsk U {m_tilde}
+        # Step 1: reduce q-overflows in Bsk
+        # Iterate over all the ciphertexts inside ct1
+        tmp_encrypted1_bsk = []
+        for i in range(len(ct1)):
+            tmp_encrypted1_bsk.append(rns_tool.sm_mrq(rns_tool.fastbconv_m_tilde(ct1[i])))
 
-        result = [
-            [0] * len(self.coeff_modulus),
-            [0] * len(self.coeff_modulus),
-            [0] * len(self.coeff_modulus),
+        # Similarly, itterate over all the ciphertexts inside ct2
+        tmp_encrypted2_bsk = []
+        for i in range(len(ct2)):
+            tmp_encrypted2_bsk.append(rns_tool.sm_mrq(rns_tool.fastbconv_m_tilde(ct2[i])))
+
+        tmp_des_coeff_base = [
+            [[0] for y in range(len(self.coeff_modulus))] for x in range(dest_count)
         ]
 
-        for i in range(len(self.coeff_modulus)):
-            result[0][i] = poly_mul(ct10[i], ct20[i], self.poly_modulus)
+        tmp_des_bsk_base = [[[0] for y in range(bsk_base_mod_count)] for x in range(dest_count)]
 
-            result[1][i] = poly_add(
-                poly_mul(ct11[i], ct20[i], self.poly_modulus),
-                poly_mul(ct10[i], ct21[i], self.poly_modulus),
-                self.poly_modulus,
-            )
+        for m in range(dest_count):
+            # Loop over encrypted1 components [i], seeing if a match exists with an encrypted2
+            # component [j] such that [i+j]=[m]
+            # Only need to check encrypted1 components up to and including [m],
+            # and strictly less than [encrypted_array.size()]
 
-            result[2][i] = poly_mul(ct11[i], ct21[i], self.poly_modulus)
+            current_encrypted1_limit = min(len(ct1), m + 1)
 
-        for i in range(len(result)):
+            for encrypted1_index in range(current_encrypted1_limit):
+                # check if a corresponding component in encrypted2 exists
+                if len(ct2) > m - encrypted1_index:
+                    encrypted2_index = m - encrypted1_index
+
+                    for i in range(len(self.coeff_modulus)):
+                        tmp_des_coeff_base[m][i] = poly_add_mod(
+                            poly_mul_mod(
+                                ct1[encrypted1_index][i],
+                                ct2[encrypted2_index][i],
+                                self.coeff_modulus[i],
+                                self.poly_modulus,
+                            ),
+                            tmp_des_coeff_base[m][i],
+                            self.coeff_modulus[i],
+                            self.poly_modulus,
+                        )
+
+                    for i in range(bsk_base_mod_count):
+                        tmp_des_bsk_base[m][i] = poly_add_mod(
+                            poly_mul_mod(
+                                tmp_encrypted1_bsk[encrypted1_index][i],
+                                tmp_encrypted2_bsk[encrypted2_index][i],
+                                bsk_base_mod[i],
+                                self.poly_modulus,
+                            ),
+                            tmp_des_bsk_base[m][i],
+                            bsk_base_mod[i],
+                            self.poly_modulus,
+                        )
+
+        # Now we multiply plain modulus to both results in base q and Bsk and
+        # allocate them together in one container as
+        # (te0)q(te'0)Bsk | ... |te count)q (te' count)Bsk to make it ready for
+        # fast_floor
+        result = []
+        for i in range(dest_count):
+            temp = []
             for j in range(len(self.coeff_modulus)):
-                result[i][j] = [
-                    round(((x * self.plain_modulus) / self.coeff_modulus[j]))
-                    % self.coeff_modulus[j]
-                    for x in result[i][j]
-                ]
+                temp.append(
+                    [
+                        (x * self.plain_modulus) % self.coeff_modulus[j]
+                        for x in tmp_des_coeff_base[i][j]
+                    ]
+                )
+            for j in range(bsk_base_mod_count):
+                temp.append(
+                    [(x * self.plain_modulus) % bsk_base_mod[j] for x in tmp_des_bsk_base[i][j]]
+                )
+            result.append(rns_tool.fastbconv_sk(rns_tool.fast_floor(temp)))
 
         return CipherText(result)
 
