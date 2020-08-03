@@ -227,6 +227,7 @@ def test_object_with_id_hex_deserialization():
         + "6e2e7569642e554944222c0a202020202276616c7565223a20222b7875775a31753"
         + "354456d2b7a75634171776f5646413d3d220a20207d0a7d"
     )
+
     obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
