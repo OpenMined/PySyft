@@ -14,8 +14,19 @@ import pytest
 
 # syft imports
 import syft as sy
+from syft.core.common import UID
 from syft.core.common import ObjectWithID
 
 ################## INITIALIZATION ######################
+
+
+def test_basic_init():
+    """Test that creating ObjectWithID() does in fact create
+    an object with an id."""
+
+    obj = ObjectWithID()
+    assert isinstance(obj.id, UID)
+
+
 ################## CLASS METHODS #######################
 ###################### SERDE ##########################
