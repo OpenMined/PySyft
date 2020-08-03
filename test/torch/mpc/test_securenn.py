@@ -285,9 +285,7 @@ def test_maxpool_deriv(workers):
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
 
 
-@pytest.mark.parametrize(
-    "kernel_size, stride", [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 3)]
-)
+@pytest.mark.parametrize("kernel_size, stride", [(1, 1), (2, 1), (1, 2), (2, 2)])
 def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 

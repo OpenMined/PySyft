@@ -483,6 +483,7 @@ class BaseWorker(AbstractWorker):
             trash[location.id] = (time.time(), [])
 
     async def async_dispatch(self, workers, commands, return_value=False):
+        """Asynchronously send commands to several workers"""
         results = await asyncio.gather(
             *[
                 worker.async_send_command(message=command, return_value=return_value)

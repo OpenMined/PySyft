@@ -581,8 +581,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         assert isinstance(other, AdditiveSharingTensor)
 
-        # assert len(self.child) == len(other.child)
-
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
@@ -1025,9 +1023,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def _one_hot_to_index(self, dim, keepdim):
         """
-        Converts a one-hot self output from an argmax or argmin function to a
-        tensor containing indices from the input self from which the result of the
-        argmax / argmin was obtained.
+        Convert a one-hot tensor (self) composed of 0 and 1 to a tensor containing
+        the indices where self was equal to 1.
+        This is used with argmax / argmin.
 
         This is inspired from CrypTen.
         """
@@ -1046,9 +1044,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def argmax(self, dim=None, keepdim=False, one_hot=False):
         """
         Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
-
         This is inspired from CrypTen.
-
         Args:
             dim: compute argmax over a specific dimension
             keepdim: when one_hot is true, keep all the dimensions of the tensor
@@ -1082,7 +1078,6 @@ class AdditiveSharingTensor(AbstractTensor):
     def max(self, dim=None, keepdim=False, algorithm="pairwise"):
         """
         Returns the maximum value of all elements in the input tensor, using argmax
-
         Args:
             dim: compute the max over a specific dimension
             keepdim: keep the dimension of the tensor when dim is not None
@@ -1346,7 +1341,6 @@ def helper_argmax_pairwise(self, dim=None):
 
     # Copy each row (length - 1) times to compare to each other row
     a = self.expand(row_length - 1, *self.size())
-    # print(a)
 
     # Generate cyclic permutations for each row
     b = torch.stack([self.roll(i + 1, dims=dim) for i in range(row_length - 1)])

@@ -9,7 +9,7 @@ lz4~=3.0.2
 msgpack~=1.0.0
 numpy~=1.18.1
 phe~=1.4.0
-Pillow~=6.2.2
+Pillow>=7.1.0
 psutil==5.7.0
 requests~=2.22.0
 RestrictedPython~=5.0

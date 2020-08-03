@@ -1,20 +1,18 @@
-from typing import Callable
-import math
-
-import torch as th
-import multiprocessing
-import syft as sy
 import asyncio
+import math
+import multiprocessing
+import torch as th
+
+import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
-from syft.workers.abstract import AbstractWorker
-from syft.workers.websocket_client import WebsocketClientWorker
+
+from syft.frameworks.torch.mpc.fss import N_CORES
 
 no_wrap = {"no_wrap": True}
 
 from syft.frameworks.torch.mpc.fss import N_CORES
-
 
 def full_name(f):
     return f"syft.frameworks.torch.mpc.spdz.{f.__name__}"
@@ -22,7 +20,20 @@ def full_name(f):
 
 # share level
 @allow_command
-def spdz_mask(x, y, op, dtype, torch_dtype, field):
+def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+    """
+    Build the shares of delta and epsilon in the SPDZ protocol
+    Args:
+        x (Tensor): share of x, where the global computation is z = x ° y
+        y (Tensor): share of y
+        op (str): type of operation ('mul' or 'matmul')
+        dtype (str): type of sahres ('int' or 'long')
+        torch_dtype (th.dtype): corresponding torch dtype
+        field (int): the field of the corresponding AdditiveSharingTensor
+
+    Returns:
+        The shares of delta and epsilon
+    """
     a, b, c = x.owner.crypto_store.get_keys(
         op=op,
         shapes=(x.shape, y.shape),
@@ -51,7 +62,22 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
 
 # share level
 @allow_command
-def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
+def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+    """
+    Compute the mul or matmul part of the SPDZ protocol, once delta and epsilon
+    have been made public
+    Args:
+        j (int): the rank of the worker, from 0 to n_worker - 1
+        delta (Tensor): delta in the SPDZ protocol
+        epsilon (Tensor): epsilon in the SPDZ protocol
+        op (str): type of operation ('mul' or 'matmul')
+        dtype (str): type of sahres ('int' or 'long')
+        torch_dtype (th.dtype): corresponding torch dtype
+        field (int): the field of the corresponding AdditiveSharingTensor
+
+    Returns:
+        The shares of the result of the multiplication
+    """
     a, b, c = delta.owner.crypto_store.get_keys(
         op=op,
         shapes=(delta.shape, epsilon.shape),
@@ -63,6 +89,7 @@ def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
     )
 
     if op == "matmul":
+
         batch_size = delta.shape[0]
 
         multiprocessing_args = []
@@ -90,7 +117,7 @@ def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
         a_epsilon = cmd(a, epsilon)
         delta_epsilon = cmd(delta, epsilon)
 
-    if j:
+    if j == 0:
         return delta_epsilon + delta_b + a_epsilon + c
     else:
         return delta_b + a_epsilon + c
@@ -106,7 +133,7 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
             to generate triples
         dtype (str): denotes the dtype of the shares, should be 'long' (default),
             'int' or 'custom'
-        torch_dtype (type): the real type of the shares, should be th.int64
+        torch_dtype (torch.dtype): the real type of the shares, should be th.int64
             (default) or th.int32
         field (int): an integer denoting the size of the field, default is 2**64
     Return:

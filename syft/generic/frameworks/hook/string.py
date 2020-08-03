@@ -61,18 +61,9 @@ class StringHook(ABC):
 
         """
 
-        new_args = []
-
-        for arg in args_:
-
-            # If 'arg' is an object of type String
-            # replace it by and 'str' object
-            if isinstance(arg, String):
-                new_args.append(arg.child)
-            else:
-                new_args.append(arg)
-
-        return new_args
+        # If 'arg' is an object of type String
+        # replace it by and 'str' object
+        return [arg.child if isinstance(arg, String) else arg for arg in args_]
 
     @classmethod
     def _wrap_str_return_value(cls, _self, attr: str, value: object):

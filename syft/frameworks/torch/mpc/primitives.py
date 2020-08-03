@@ -28,8 +28,8 @@ class PrimitiveStorage:
         """
         self.fss_eq: list = []
         self.fss_comp: list = []
-        self.mul: list = defaultdict(list)
-        self.matmul: list = defaultdict(list)
+        self.mul: dict = defaultdict(list)
+        self.matmul: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -182,7 +182,7 @@ class PrimitiveStorage:
             assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
             current_primitives = getattr(self, op)
-            if op in ("mul", "matmul"):
+            if op in {"mul", "matmul"}:
                 for params, primitive_triple in primitives:
                     if params not in current_primitives or len(current_primitives[params]) == 0:
                         current_primitives[params] = primitive_triple
@@ -191,7 +191,7 @@ class PrimitiveStorage:
                             current_primitives[params][i] = th.cat(
                                 (current_primitives[params][i], primitive)
                             )
-            elif op in ("fss_eq", "fss_comp"):
+            elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0:
                     setattr(self, op, list(primitives))
                 else:
@@ -243,10 +243,15 @@ class PrimitiveStorage:
         The builder to generate beaver triple for multiplication or matrix multiplication
         """
 
-        def build_separate_triples(n_party: int, n_instances: int, **kwargs):
-            assert n_party == 2, f"Only 2 workers supported for the moment"
-            shapes = kwargs["shapes"]
+        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
+            assert n_party == 2, (
+                "Only 2 workers supported for the moment. "
+                "Please fill an issue if you have an urgent need."
+            )
+            shapes = kwargs["shapes"]  # should be a list of pairs of shapes
             if not isinstance(shapes, list):
+                # if shapes was not given a list, we check that it is a pair of two shapes,
+                # the one of x and y
                 assert len(shapes) == 2
                 shapes = [shapes]
 
