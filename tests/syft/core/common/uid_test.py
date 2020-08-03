@@ -101,14 +101,22 @@ def test_uid_default_serialization():
     """Tests that default UID serialization works as expected - to JSON"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
     assert uid.serialize() == blob
 
 
 def test_uid_default_deserialization():
     """Tests that default UID deserialization works as expected - from JSON"""
 
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
     obj = sy.deserialize(blob=blob)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
