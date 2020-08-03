@@ -1,7 +1,6 @@
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 
-
 # syft imports (sorted by length)
 from .serializable import Serializable
 from .uid import UID
