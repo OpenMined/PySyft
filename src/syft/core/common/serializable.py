@@ -179,7 +179,19 @@ class Serializable(object):
     """
 
     def __init__(self, as_wrapper: bool):
+        """In the initializer for this class, we check that the protobuf_type was
+        properly set and save the as_wrapper parameter.
+
+        :param as_wrapper: if set to true, it means that this outer object is merely
+            serving to wrap an object which we couldn't subclass from Serializable
+            because it is not a native Syft object (such as a torch.Tensor).
+        :type as_warpper: bool
+        """
+
+        # check to make sure protobuf_type has been set on the class
         assert self.protobuf_type is not None
+
+        # set the as_wrapper flag
         self.as_wrapper = as_wrapper
 
     @staticmethod
