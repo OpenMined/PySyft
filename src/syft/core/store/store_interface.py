@@ -1,9 +1,10 @@
-from ...decorators import syft_decorator
-from ..common.uid import UID
-from ..common.serializable import Serializable
-from .storeable_object import StorableObject
-from typing import Iterable
 from abc import ABC
+from typing import Iterable
+
+from ...decorators import syft_decorator
+from ..common.serializable import Serializable
+from ..common.uid import UID
+from .storeable_object import StorableObject
 
 
 class ObjectStore(Serializable, ABC):
@@ -136,4 +137,3 @@ class ObjectStore(Serializable, ABC):
         Clears all storage owned by the store.
         """
         raise NotImplementedError
-

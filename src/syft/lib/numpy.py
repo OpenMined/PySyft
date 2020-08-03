@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..ast.globals import Globals
 
 whitelist = set()

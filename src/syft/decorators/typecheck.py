@@ -1,7 +1,7 @@
 import inspect
 import typing
-from typeguard import typechecked
 
+from typeguard import typechecked
 
 SKIP_RETURN_TYPE_HINTS = {"__init__"}
 

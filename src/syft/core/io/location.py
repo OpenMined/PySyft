@@ -1,5 +1,6 @@
-from ..common.object import ObjectWithID
 from typing import Set
+
+from ..common.object import ObjectWithID
 
 
 class Location(ObjectWithID):

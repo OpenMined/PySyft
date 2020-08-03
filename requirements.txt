@@ -20,8 +20,9 @@ torch>=1.5
 typeguard
 pyscaffold[all]
 black
-<<<<<<< HEAD
 flask
-=======
 pyjwt
->>>>>>> b4f274703d9e46e74d992b1c3c96480bd401c230
+flake8
+bandit
+isort
+sqlitedict

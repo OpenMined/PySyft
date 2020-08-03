@@ -1,6 +1,7 @@
+from typing import Dict, List, Optional, Union
+
 import pytest
-from typing import List, Union, Optional, Dict
-from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.decorators import syft_decorator
 
 
 def test_typecheck_basic_dtypes():

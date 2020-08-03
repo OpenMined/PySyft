@@ -1,10 +1,11 @@
-from sqlitedict import SqliteDict
-from typing import Optional, Final
+from typing import Final, Optional
 
-from .store_interface import ObjectStore
-from .storeable_object import StorableObject
+from sqlitedict import SqliteDict
+
 from ...decorators import syft_decorator
 from ..common.uid import UID
+from .store_interface import ObjectStore
+from .storeable_object import StorableObject
 
 
 class DiskObjectStore(ObjectStore):

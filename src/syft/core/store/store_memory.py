@@ -1,6 +1,6 @@
 from ...decorators import syft_decorator
 from ..common.uid import UID
-from . import StorableObject, ObjectStore
+from . import ObjectStore, StorableObject
 
 
 class MemoryStore(ObjectStore):
@@ -17,8 +17,8 @@ class MemoryStore(ObjectStore):
 
     def __init__(self, as_wrapper: bool):
         super().__init__(as_wrapper)
-        _objects = {}
-        _search_engine = None
+        self._objects = {}
+        self._search_engine = None
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:

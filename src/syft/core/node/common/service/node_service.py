@@ -1,10 +1,15 @@
 from __future__ import annotations
-from syft.decorators import syft_decorator
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from ...abstract.node import AbstractNode
+
 from typing import List
+
+from syft.core.common.message import (
+    EventualSyftMessageWithoutReply,
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+)
+from syft.decorators import syft_decorator
+
+from ...abstract.node import AbstractNode
 
 
 class NodeService:

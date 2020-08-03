@@ -4,10 +4,9 @@ production (that's the *actual* grid's job)."""
 
 from flask import Flask
 
-app = Flask(__name__)
-
 from syft.core.node.network.network import Network
 
+app = Flask(__name__)
 network = Network(name="ucsf-net")
 
 

@@ -7,15 +7,18 @@ information to populate complete addresses into their clients."""
 
 from __future__ import annotations
 
-from .....decorators import syft_decorator
-from .node_service import ImmediateNodeServiceWithoutReply
-from ...abstract.node import AbstractNode
-from ....io.address import Address
-from syft.core.common.uid import UID
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from typing import List
 
-# TODO: change all old_message names in syft to have "WithReply" or "WithoutReply" at teh end of the name
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.uid import UID
+
+from .....decorators import syft_decorator
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from .node_service import ImmediateNodeServiceWithoutReply
+
+# TODO: change all old_message names in syft to have "WithReply" or "WithoutReply"
+# at the end of the name
 
 
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):

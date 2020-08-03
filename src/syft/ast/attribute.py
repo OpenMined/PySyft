@@ -1,6 +1,6 @@
-from .. import ast
 from abc import ABC
-from copy import deepcopy
+
+from .. import ast
 
 
 class Attribute(ABC):
