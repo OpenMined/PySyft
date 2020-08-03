@@ -1139,20 +1139,21 @@ class AdditiveSharingTensor(AbstractTensor):
         Examples:
             data = simplify(tensor)
         """
+        _simplify = lambda x: sy.serde.msgpack.serde._simplify(worker, x)
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
+            chain = _simplify(tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
         tensor.set_garbage_collect_data(False)
 
         return (
-            sy.serde.msgpack.serde._simplify(worker, tensor.id),
-            sy.serde.msgpack.serde._simplify(worker, tensor.field),
+            _simplify(tensor.id),
+            _simplify(tensor.field),
             tensor.dtype.encode("utf-8"),
-            sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
+            _simplify(tensor.crypto_provider.id),
             chain,
             garbage_collect,
         )
@@ -1170,20 +1171,22 @@ class AdditiveSharingTensor(AbstractTensor):
         Examples:
             shared_tensor = detail(data)
         """
+        _detail = lambda x: sy.serde.msgpack.serde._detail(worker, x)
+
         tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
 
-        crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
+        crypto_provider = _detail(crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-            field=sy.serde.msgpack.serde._detail(worker, field),
+            id=_detail(tensor_id),
+            field=_detail(field),
             dtype=dtype.decode("utf-8"),
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
         if chain is not None:
-            chain = sy.serde.msgpack.serde._detail(worker, chain)
+            chain = _detail(chain)
             tensor.child = chain
 
         tensor.set_garbage_collect_data(garbage_collect)
