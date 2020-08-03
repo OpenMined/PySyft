@@ -97,7 +97,7 @@ def test_to_string():
 
 
 def test_uid_default_serialization():
-    """Tests that default UID serialization works as expected - to JSON"""
+    """Tests that default UID serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
@@ -109,7 +109,7 @@ def test_uid_default_serialization():
 
 
 def test_uid_default_deserialization():
-    """Tests that default UID deserialization works as expected - from JSON"""
+    """Tests that default UID deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     self_type = type(uid)

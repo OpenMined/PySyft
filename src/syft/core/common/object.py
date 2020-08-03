@@ -3,6 +3,7 @@ from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_
 
 # syft imports (sorted by length)
 from ...decorators.syft_decorator_impl import syft_decorator
+from .serializable import _deserialize
 from .serializable import Serializable
 from .uid import UID
 
@@ -133,4 +134,4 @@ class ObjectWithID(AbstractObjectWithID):
             if you wish to deserialize an object.
         """
 
-        return ObjectWithID(id=UID.deserialize(proto.id))
+        return ObjectWithID(id=_deserialize(proto.id))

@@ -81,6 +81,122 @@ def test_to_string():
 
 
 ###################### SERDE ##########################
+
+def test_object_with_id_default_serialization():
+    """Tests that default ObjectWithID serialization works as expected - to Protobuf"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = ObjectWithID(id=uid)
+
+    self_type = type(obj)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = ObjectWithID.protobuf_type(obj_type=obj_type, id=uid.serialize())
+
+    assert obj.serialize() == blob
+
+
+def test_object_with_id_default_deserialization():
+    """Tests that default ObjectWithID deserialization works as expected - from Protobuf"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = ObjectWithID(id=uid)
+
+    self_type = type(obj)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = ObjectWithID.protobuf_type(obj_type=obj_type, id=uid.serialize())
+
+    obj2 = sy.deserialize(blob=blob)
+    assert obj == obj2
+
+#
+# def test_uid_proto_serialization():
+#     """Tests that default UID serialization works as expected - to JSON"""
+#
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#
+#     self_type = type(uid)
+#     obj_type = self_type.__module__ + "." + self_type.__name__
+#     blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+#
+#     assert uid.proto() == blob
+#     assert uid.to_proto() == blob
+#     assert uid.serialize(to_proto=True) == blob
+#
+#
+# def test_uid_proto_deserialization():
+#     """Tests that default UID deserialization works as expected - from JSON"""
+#
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     self_type = type(uid)
+#     obj_type = self_type.__module__ + "." + self_type.__name__
+#     blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+#
+#     obj = sy.deserialize(blob=blob, from_proto=True)
+#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#
+#
+# def test_uid_json_serialization():
+#     """Tests that JSON UID serialization works as expected"""
+#
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+#     assert uid.json() == blob
+#     assert uid.to_json() == blob
+#     assert uid.serialize(to_json=True) == blob
+#
+#
+# def test_uid_json_deserialization():
+#     """Tests that JSON UID deserialization works as expected"""
+#
+#     blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+#     obj = sy.deserialize(blob=blob, from_json=True)
+#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#
+#
+# def test_uid_binary_serialization():
+#     """Tests that binary UID serializes as expected"""
+#
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     blob = b'{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+#     assert uid.binary() == blob
+#     assert uid.to_binary() == blob
+#     assert uid.serialize(to_binary=True) == blob
+#
+#
+# def test_uid_binary_deserialization():
+#     """Test that binary deserialization works as expected"""
+#
+#     blob = b'{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+#     obj = sy.deserialize(blob=blob, from_binary=True)
+#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#
+#
+# def test_uid_hex_serialization():
+#     """Tests that hex UID serializes as expected"""
+#
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     blob = (
+#         "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964"
+#         + "2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717"
+#         + "76f5646413d3d220a7d"
+#     )
+#     assert uid.hex() == blob
+#     assert uid.to_hex() == blob
+#     assert uid.serialize(to_hex=True) == blob
+#
+#
+# def test_uid_hex_deserialization():
+#     """Test that hex deserialization works as expected"""
+#
+#     blob = (
+#         "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e756964"
+#         + "2e554944222c0a20202276616c7565223a20222b7875775a31753354456d2b7a756341717"
+#         + "76f5646413d3d220a7d"
+#     )
+#     obj = sy.deserialize(blob=blob, from_hex=True)
+#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+
 ###################### CHILDREN ##########################
 
 
