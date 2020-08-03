@@ -33,6 +33,8 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
+    protobuf_type = ObjectWithID_PB
+
     @syft_decorator(typechecking=True)
     def __init__(self, id: UID = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
