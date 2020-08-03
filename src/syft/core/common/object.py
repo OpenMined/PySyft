@@ -14,7 +14,6 @@ class AbstractObjectWithID(Serializable):
     """
 
 
-@final
 class ObjectWithID(AbstractObjectWithID):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
