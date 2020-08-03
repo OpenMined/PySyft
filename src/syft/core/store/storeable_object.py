@@ -6,6 +6,7 @@ from ..common.serializable import Serializable
 from ...proto.core.store.storable_object_pb2 import StorableObject as StorableObject_PB
 from ..common.serializable import deserialize
 
+
 @dataclass(frozen=True)
 class StorableObject(Serializable):
     """
@@ -42,7 +43,9 @@ class StorableObject(Serializable):
     def _object2proto(self) -> "StorableObject_PB":
         key = self.key.serialize()
         data = self.data.serialize()
-        return StorableObject_PB(key=key, data=data, description=self.description, tags=self.tags)
+        return StorableObject_PB(
+            key=key, data=data, description=self.description, tags=self.tags
+        )
 
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> "StorableObject":
@@ -52,4 +55,6 @@ class StorableObject(Serializable):
         if proto.tags:
             tags = list(proto.tags)
 
-        return StorableObject(key=key, data=data, description=proto.description, tags=tags)
+        return StorableObject(
+            key=key, data=data, description=proto.description, tags=tags
+        )

@@ -100,4 +100,5 @@ LONG_TYPECHECK_STACK_TRACES(True)
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__)))

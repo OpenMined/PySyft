@@ -136,4 +136,3 @@ class ObjectStore(Serializable, ABC):
         Clears all storage owned by the store.
         """
         raise NotImplementedError
-

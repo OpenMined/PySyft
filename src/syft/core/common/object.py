@@ -14,6 +14,7 @@ class AbstractObjectWithID(Serializable):
     order to add it as a type hint on the ObjectWithId object.
     """
 
+
 @final
 class ObjectWithID(AbstractObjectWithID):
     """This object is the superclass for nearly all Syft objects. Subclassing
@@ -27,7 +28,7 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
-    def __init__(self, id: UID = None, as_wrapper:bool=False):
+    def __init__(self, id: UID = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.

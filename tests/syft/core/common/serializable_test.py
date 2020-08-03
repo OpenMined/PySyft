@@ -9,8 +9,10 @@ def test_uuid_wrapper_serialization():
     over uuid objects."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  '+\
-           '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
+    blob = (
+        '{\n  "objType": "syft.core.common.uid.UID",\n  '
+        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
+    )
     assert sy.serialize(uid) == blob
 
 
@@ -19,6 +21,8 @@ def test_uuid_wrapper_deserialization():
     using an object which was serialized using a syft-based wrapper."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  '+\
-           '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
+    blob = (
+        '{\n  "objType": "syft.core.common.uid.UID",\n  '
+        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
+    )
     assert sy.deserialize(blob) == uid
