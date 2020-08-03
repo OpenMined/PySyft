@@ -665,14 +665,10 @@ class AdditiveSharingTensor(AbstractTensor):
     @overloaded.method
     def _public_div(self, shares: dict, divisor):
         # TODO: how to correctly handle division in Zq?
-        divided_shares = {}
-        for i_worker, (location, pointer) in enumerate(shares.items()):
-            # Still no solution to perform a real division on a additive shared tensor
-            # without a heavy crypto protocol.
-            # For now, the solution works in most cases when the tensor is shared between 2 workers
-            divided_shares[location] = pointer / divisor
-
-        return divided_shares
+        # Still no solution to perform a real division on a additive shared tensor
+        # without a heavy crypto protocol.
+        # For now, the solution works in most cases when the tensor is shared between 2 workers
+        return {location: pointer / divisor for (location, pointer) in shares.items()}
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):
