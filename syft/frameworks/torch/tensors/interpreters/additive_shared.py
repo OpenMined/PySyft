@@ -818,21 +818,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
             return results
 
-        @overloaded.function
-        def stack(tensors_shares, **kwargs):
+        def make_worker_dict(op, tensors_shares, **kwargs):
             return {
-                worker: torch.stack(share, **kwargs)
+                worker: op(share, **kwargs)
                 for (worker, share) in share_combine(tensors_shares).items()
             }
+
+        @overloaded.function
+        def stack(tensors_shares, **kwargs):
+            return make_worker_dict(torch.stack, tensors_shares, **kwargs)
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            return {
-                worker: torch.cat(share, **kwargs)
-                for (worker, share) in share_combine(tensors_shares).items()
-            }
+            return make_worker_dict(torch.cat, tensors_shares, **kwargs)
 
         module.cat = cat
 
