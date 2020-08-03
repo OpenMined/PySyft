@@ -145,9 +145,11 @@ def test_object_with_id_json_serialization():
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = '{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id":' \
-           ' {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+x' \
-           'uwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    blob = (
+        '{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id":'
+        ' {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+x'
+        'uwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    )
 
     assert obj.json() == blob
     assert obj.to_json() == blob
@@ -157,9 +159,11 @@ def test_object_with_id_json_serialization():
 def test_object_with_id_json_deserialization():
     """Tests that JSON ObjectWithID deserialization works as expected"""
 
-    blob = '{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id":' \
-           ' {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+x' \
-           'uwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    blob = (
+        '{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id":'
+        ' {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+x'
+        'uwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    )
 
     obj = sy.deserialize(blob=blob, from_json=True)
     assert obj == ObjectWithID(
@@ -173,8 +177,10 @@ def test_object_with_id_binary_serialization():
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"' + \
-           b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    blob = (
+        b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"'
+        + b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    )
     assert obj.binary() == blob
     assert obj.to_binary() == blob
     assert obj.serialize(to_binary=True) == blob
@@ -183,8 +189,10 @@ def test_object_with_id_binary_serialization():
 def test_object_with_id_binary_deserialization():
     """Test that binary ObjectWithID deserialization works as expected"""
 
-    blob = b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"'+\
-           b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    blob = (
+        b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"'
+        + b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+    )
     obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -213,14 +221,16 @@ def test_object_with_id_hex_deserialization():
     """Test that hex ObjectWithID deserialization works as expected"""
 
     blob = (
-            "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6"
-            + "e2e6f626a6563742e4f626a656374576974684944222c0a2020226964223a207"
-            + "b0a20202020226f626a54797065223a2022737966742e636f72652e636f6d6d6f"
-            + "6e2e7569642e554944222c0a202020202276616c7565223a20222b7875775a31753"
-            + "354456d2b7a75634171776f5646413d3d220a20207d0a7d"
+        "7b0a2020226f626a54797065223a2022737966742e636f72652e636f6d6d6f6"
+        + "e2e6f626a6563742e4f626a656374576974684944222c0a2020226964223a207"
+        + "b0a20202020226f626a54797065223a2022737966742e636f72652e636f6d6d6f"
+        + "6e2e7569642e554944222c0a202020202276616c7565223a20222b7875775a31753"
+        + "354456d2b7a75634171776f5646413d3d220a20207d0a7d"
     )
     obj = sy.deserialize(blob=blob, from_hex=True)
-    assert obj == ObjectWithID(id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)))
+    assert obj == ObjectWithID(
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    )
 
 
 ###################### CHILDREN ##########################
