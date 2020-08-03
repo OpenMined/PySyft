@@ -1,4 +1,5 @@
 import uuid
+from syft.core.common.uid import UID
 
 import syft as sy
 
@@ -10,10 +11,11 @@ def test_uuid_wrapper_serialization():
     over uuid objects."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = (
-        '{\n  "objType": "syft.core.common.uid.UID",\n  '
-        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
-    )
+
+    _uid = UID(value=uid)
+    obj_type = UID.__module__ + "." + UID.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
+
     assert sy.serialize(uid) == blob
 
 
@@ -22,8 +24,9 @@ def test_uuid_wrapper_deserialization():
     using an object which was serialized using a syft-based wrapper."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = (
-        '{\n  "objType": "syft.core.common.uid.UID",\n  '
-        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
-    )
+
+    _uid = UID(value=uid)
+    obj_type = UID.__module__ + "." + UID.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
+
     assert sy.deserialize(blob) == uid
