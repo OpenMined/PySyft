@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, final
 
-from syft import type_hints
+from syft.decorators import type_hints
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 

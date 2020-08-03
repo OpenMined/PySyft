@@ -9,8 +9,9 @@ from google.protobuf.message import Message
 from syft.core.common.serializable import Serializable
 
 # syft imports
-from ...decorators.syft_decorator_impl import syft_decorator
-from ...proto.core.common.uid_pb2 import UID as UID_PB
+from ...decorators import syft_decorator
+
+from ...proto.core.common.common_object_pb2 import UID as UID_PB
 
 # resources
 uuid_type = type(uuid.uuid4())

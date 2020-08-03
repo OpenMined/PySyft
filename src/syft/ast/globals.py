@@ -1,8 +1,9 @@
-from .. import ast
+# from .. import ast # CAUSES Circular import errors
+from .module import Module
 from .util import unsplit
 
 
-class Globals(ast.module.Module):
+class Globals(Module):
 
     """The collection of frameworks held in a global namespace"""
 
@@ -20,7 +21,7 @@ class Globals(ast.module.Module):
 
         if framework_name not in self.attrs:
             if framework_reference is not None:
-                self.attrs[framework_name] = ast.module.Module(
+                self.attrs[framework_name] = Module(
                     name=framework_name,
                     path_and_name=unsplit(path),
                     ref=framework_reference,

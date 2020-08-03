@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from ...proto.core.store.storable_object_pb2 import StorableObject as StorableObject_PB
+from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ..common.serializable import Serializable, deserialize
 from ..common.uid import UID
 

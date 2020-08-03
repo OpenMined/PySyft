@@ -60,14 +60,14 @@ from syft.core.node.network.network import Network, NetworkClient  # noqa: F401
 # Convenience Constructors
 from syft.core.node.vm.vm import VirtualMachine, VirtualMachineClient  # noqa: F401
 
+# CONVENIENCE FUNCTIONS
+from syft.decorators import type_hints  # noqa: F401
+
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
 
 # PACKAGE IMPORTS
 from . import lib  # noqa: F401
-
-# CONVENIENCE FUNCTIONS
-from .decorators import type_hints  # noqa: F401
 
 # VERSIONING
 try:

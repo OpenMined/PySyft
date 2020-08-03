@@ -1,7 +1,7 @@
 # external class/method imports
 from typing import final
 
-from ...proto.core.common.object_pb2 import ObjectWithID as ObjectWithID_PB
+from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 
 # syft imports
 from .serializable import Serializable
