@@ -44,7 +44,7 @@ class UID(AbstractUID):
     wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None, as_wrapper:bool = False):
+    def __init__(self, value: uuid_type = None, as_wrapper: bool = False):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -115,8 +115,7 @@ class UID(AbstractUID):
         :rtype: bool
         """
 
-        if isinstance(other, UID):
-            return self.value == other.value
+        return self.value == other.value
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

@@ -53,7 +53,7 @@ from syft.core import common  # noqa: F401
 from syft.core.common.serializable import _deserialize as deserialize
 from syft.core.common.serializable import _serialize as serialize  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
-from syft.core.node.device.device import Device# noqa: F401
+from syft.core.node.device.device import Device  # noqa: F401
 from syft.core.node.device.device import DeviceClient  # noqa: F401
 from syft.core.node.domain.domain import Domain  # noqa: F401
 from syft.core.node.domain.domain import DomainClient  # noqa: F401

@@ -9,10 +9,9 @@ Table of Contents:
 
 """
 
-import uuid
-
 # external imports
 import pytest
+import uuid
 
 # syft imports
 import syft as sy
@@ -50,9 +49,6 @@ def test_uid_raises_typeerror_if_int_id_attempted():
 
     with pytest.raises(TypeError) as e:
         uid = UID(value=123)
-
-
-################ CLASS METHODS ############################
 
 
 ################ CLASS METHODS ############################
@@ -101,18 +97,52 @@ def test_to_string():
 
 
 def test_uid_default_serialization():
-    """Tests that default UID serialization works as expected - to JSON"""
+    """Tests that default UID serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
     assert uid.serialize() == blob
 
 
 def test_uid_default_deserialization():
-    """Tests that default UID deserialization works as expected - from JSON"""
+    """Tests that default UID deserialization works as expected - from Protobuf"""
 
-    blob = '{\n  "objType": "syft.core.common.uid.UID",\n  "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n}'
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
     obj = sy.deserialize(blob=blob)
+    assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+
+def test_uid_proto_serialization():
+    """Tests that proto UID serialization works as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
+    assert uid.proto() == blob
+    assert uid.to_proto() == blob
+    assert uid.serialize(to_proto=True) == blob
+
+
+def test_uid_proto_deserialization():
+    """Tests that proto UID deserialization works as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    self_type = type(uid)
+    obj_type = self_type.__module__ + "." + self_type.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=uid.value.bytes, as_wrapper=False)
+
+    obj = sy.deserialize(blob=blob, from_proto=True)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
 

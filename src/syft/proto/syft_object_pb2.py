@@ -7,13 +7,14 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
-from syft.proto.ast import ast_object_pb2 as proto_dot_ast_dot_ast__object__pb2
-from syft.proto.core import core_object_pb2 as proto_dot_core_dot_core__object__pb2
-from syft.proto.lib import lib_object_pb2 as proto_dot_lib_dot_lib__object__pb2
-
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
+
+
+from syft.proto.core import core_object_pb2 as proto_dot_core_dot_core__object__pb2
+from syft.proto.ast import ast_object_pb2 as proto_dot_ast_dot_ast__object__pb2
+from syft.proto.lib import lib_object_pb2 as proto_dot_lib_dot_lib__object__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -21,7 +22,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b"\n\x17proto/syft_object.proto\x12\x04syft\x1a\x1cproto/core/core_object.proto\x1a\x1aproto/ast/ast_object.proto\x1a\x1aproto/lib/lib_object.proto\"\x81\x01\n\nSyftObject\x12'\n\x08\x63ore_obj\x18\x01 \x01(\x0b\x32\x15.syft.core.CoreObject\x12$\n\x07\x61st_obj\x18\x02 \x01(\x0b\x32\x13.syft.ast.AstObject\x12$\n\x07lib_obj\x18\x03 \x01(\x0b\x32\x13.syft.lib.LibObjectb\x06proto3",
     dependencies=[
         proto_dot_core_dot_core__object__pb2.DESCRIPTOR,
@@ -37,7 +37,6 @@ _SYFTOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="core_obj",
@@ -56,7 +55,6 @@ _SYFTOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="ast_obj",
@@ -75,7 +73,6 @@ _SYFTOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="lib_obj",
@@ -94,7 +91,6 @@ _SYFTOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

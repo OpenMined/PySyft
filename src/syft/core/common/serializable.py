@@ -3,6 +3,7 @@ import json
 
 # external class/method imports
 from google.protobuf import json_format
+from google.protobuf.message import Message
 
 from syft.core.common.lazy_structures import LazyDict
 
@@ -22,6 +23,12 @@ class Serializable(object):
     def _object2proto(self):
         raise NotImplementedError
 
+    def to_proto(self) -> Message:
+        return self.serialize(to_proto=True)
+
+    def proto(self) -> Message:
+        return self.serialize(to_proto=True)
+
     def to_json(self) -> str:
         return self.serialize(to_json=True)
 
@@ -40,21 +47,31 @@ class Serializable(object):
     def hex(self) -> str:
         return self.serialize(to_hex=True)
 
-    def serialize(self, to_json=True, to_binary=False, to_hex=False):
+    def serialize(self, to_proto=True, to_json=False, to_binary=False, to_hex=False):
         """Serialize the object according to the parameters."""
 
         if to_json or to_binary or to_hex:
             blob = json_format.MessageToJson(message=self._object2proto())
+
+            if to_json:
+                return blob
+
             if to_binary or to_hex:
                 blob = bytes(blob, "utf-8")
                 if to_hex:
                     blob = blob.hex()
             return blob
+        elif to_proto:
+            return self._object2proto()
         else:
-            return json_format.MessageToDict(message=self._object2proto())
+            raise Exception(
+                """You must specify at least one deserialization format using
+                            one of the arguments of the serialize() method such as:
+                            to_proto, to_json, to_binary, or to_hex."""
+            )
 
 
-def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
+def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
 
     """This method exists to allow a LazyDict to determine whether an
     object should actually be in its store - aka has the LazyDict been
@@ -107,20 +124,34 @@ def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name:str):
     else:
         raise Exception(f"{fully_qualified_name} is not serializable")
 
+
 fully_qualified_name2type = LazyDict(update_rule=_is_string_a_serializable_class_name)
 
 
-def _serialize(obj: (Serializable, object), to_json=True, to_binary=False, to_hex=False):
+def _serialize(
+    obj: (Serializable, object),
+    to_proto=True,
+    to_json=False,
+    to_binary=False,
+    to_hex=False,
+):
 
     if not isinstance(obj, Serializable):
         obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
 
-    return obj.serialize(to_json=to_json, to_binary=to_binary, to_hex=to_hex)
+    return obj.serialize(
+        to_proto=to_proto, to_json=to_json, to_binary=to_binary, to_hex=to_hex
+    )
 
 
 def _deserialize(
-    blob: (str, dict, bytes), from_json=True, from_binary=False, from_hex=False
+    blob: (str, dict, bytes, Message),
+    from_proto=True,
+    from_json=False,
+    from_binary=False,
+    from_hex=False,
 ) -> Serializable:
+    """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
 
@@ -133,11 +164,17 @@ def _deserialize(
         blob = str(blob, "utf-8")
 
     if from_json:
+        from_proto = False
         blob = json.loads(s=blob)
+        obj_type_str = blob["objType"]
+
+    if from_proto:
+        obj_type_str = blob.obj_type
+        proto_obj = blob
 
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = fully_qualified_name2type[blob["objType"]]
+        obj_type = fully_qualified_name2type[obj_type_str]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError:
@@ -152,6 +189,7 @@ def _deserialize(
 
     protobuf_type = obj_type.protobuf_type
 
-    proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
+    if not from_proto:
+        proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
     return obj_type._proto2object(proto_obj)

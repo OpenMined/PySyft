@@ -1,6 +1,9 @@
 import uuid
-
+import pytest
+from syft.core.common.uid import UID
+from syft.core.common.serializable import Serializable
 import syft as sy
+from syft.util import get_subclasses
 
 
 def test_uuid_wrapper_serialization():
@@ -10,10 +13,11 @@ def test_uuid_wrapper_serialization():
     over uuid objects."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = (
-        '{\n  "objType": "syft.core.common.uid.UID",\n  '
-        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
-    )
+
+    _uid = UID(value=uid)
+    obj_type = UID.__module__ + "." + UID.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
+
     assert sy.serialize(uid) == blob
 
 
@@ -22,8 +26,33 @@ def test_uuid_wrapper_deserialization():
     using an object which was serialized using a syft-based wrapper."""
 
     uid = uuid.UUID(int=333779996850170035686993356951732753684)
-    blob = (
-        '{\n  "objType": "syft.core.common.uid.UID",\n  '
-        + '"value": "+xuwZ1u3TEm+zucAqwoVFA==",\n  "asWrapper": true\n}'
-    )
+
+    _uid = UID(value=uid)
+    obj_type = UID.__module__ + "." + UID.__name__
+    blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
+
     assert sy.deserialize(blob) == uid
+
+
+def test_forgotten_protobuf_type_flag_error():
+    """Test whether there is an appropriate warning when someone attempts
+    to subclass from Serializable but forgets to put in the protobuf_type
+    flag."""
+
+    class CustomSerializable(Serializable):
+        def _object2proto(self):
+            raise NotImplementedError
+
+        @staticmethod
+        def _proto2object(self):
+            raise NotImplementedError
+
+    with pytest.raises(TypeError) as e:
+        # TODO: tighten this filter to match on the string of the error
+        # assert str(e) == "__init__() missing 1 required positional argument: 'as_wrapper'"
+        s = CustomSerializable()
+
+    with pytest.raises(AttributeError) as e:
+        # TODO: tighten this filter to match on the string of the error
+        # assert str(e) == "'CustomSerializable' object has no attribute 'protobuf_type'"
+        s = CustomSerializable(as_wrapper=False)
