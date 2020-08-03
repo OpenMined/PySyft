@@ -40,18 +40,22 @@ class Serializable(object):
     def hex(self) -> str:
         return self.serialize(to_hex=True)
 
-    def serialize(self, to_json=True, to_binary=False, to_hex=False):
+    def serialize(self, to_proto=True, to_json=False, to_binary=False, to_hex=False):
         """Serialize the object according to the parameters."""
 
-        if to_json or to_binary or to_hex:
+        if not to_json or to_binary or to_hex:
             blob = json_format.MessageToJson(message=self._object2proto())
             if to_binary or to_hex:
                 blob = bytes(blob, "utf-8")
                 if to_hex:
                     blob = blob.hex()
             return blob
+        elif to_proto:
+            return self._object2proto()
         else:
-            return json_format.MessageToDict(message=self._object2proto())
+            raise Exception("""You must specify at least one deserialization format using
+                            one of the arguments of the serialize() method such as:
+                            to_proto, to_json, to_binary, or to_hex.""")
 
 
 def _is_string_a_serializable_class_name(lazy_dict, fully_qualified_name: str):
