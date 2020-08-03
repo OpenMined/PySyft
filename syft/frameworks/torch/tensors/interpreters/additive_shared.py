@@ -462,18 +462,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     ## SECTION SPDZ
 
-    @overloaded.method
-    def add(self, shares: dict, other):
-        """Adds operand to the self AST instance.
-
-        Args:
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other: the operand being added to self, can be:
-                - a dictionary <location_id -> PointerTensor) of shares
-                - a torch tensor
-                - a constant
-        """
+    def _convert_to_share_tensor(self, other):
         if isinstance(other, int):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
@@ -499,6 +488,23 @@ class AdditiveSharingTensor(AbstractTensor):
                 )
                 .child
             )
+
+        return other
+
+    @overloaded.method
+    def add(self, shares: dict, other):
+        """Adds operand to the self AST instance.
+
+        Args:
+            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+                self. Equivalent to calling self.child.
+            other: the operand being added to self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
+        """
+
+        other = self._convert_to_share_tensor(other)
 
         assert len(shares) == len(other)
 
@@ -525,31 +531,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        if isinstance(other, int):
-            other = torch.tensor([other], dtype=self.torch_dtype)
-
-        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-            # if someone passes a torch tensor, we share it and keep the dict
-            other = other.share(
-                *self.child.keys(),
-                field=self.field,
-                dtype=self.dtype,
-                crypto_provider=self.crypto_provider,
-                **no_wrap,
-            ).child
-        elif not isinstance(other, dict):
-            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other = (
-                torch.tensor([other], dtype=self.torch_dtype)
-                .share(
-                    *self.child.keys(),
-                    field=self.field,
-                    dtype=self.dtype,
-                    crypto_provider=self.crypto_provider,
-                    **no_wrap,
-                )
-                .child
-            )
+        other = self._convert_to_share_tensor(other)
 
         assert len(shares) == len(other)
 
