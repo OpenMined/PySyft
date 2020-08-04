@@ -321,7 +321,6 @@ def _deserialize(
     """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
-
     if from_hex:
         from_binary = True
         blob = bytes.fromhex(blob)
@@ -359,4 +358,4 @@ def _deserialize(
     if not from_proto:
         proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
 
-    return obj_type._proto2object(proto_obj)
+    return obj_type._proto2object(proto=proto_obj)

@@ -1,13 +1,14 @@
-from dataclasses import dataclass
-from typing import List, Optional
+from __future__ import annotations
 
+import pydoc
+from typing import List, Optional
+from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ..common.serializable import Serializable
 from ..common.serializable import _deserialize
 from ..common.uid import UID
 
 
-@dataclass(frozen=True)
 class StorableObject(Serializable):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
@@ -35,22 +36,41 @@ class StorableObject(Serializable):
 
     __slots__ = ["key", "data", "description", "tags"]
 
-    key: UID
-    data: Serializable
-    description: Optional[str]
-    tags: Optional[List[str]]
+    protobuf_type = StorableObject_PB
 
+    @syft_decorator(typechecking=True)
+    def __init__(self, key: UID, data: Serializable, description: Optional[str],
+                 tags: Optional[List[str]]):
+        super().__init__(as_wrapper=False)
+        self.key = key
+        self.data = data
+        self.description = description
+        self.tags = tags
+
+    @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
         key = self.key.serialize()
         data = self.data.serialize()
-        return StorableObject_PB(
-            key=key, data=data, description=self.description, tags=self.tags
-        )
+        proto = StorableObject_PB()
+        proto.key.CopyFrom(key)
+        proto.schematic_qualname = "syft." + type(data).__module__ + "." + type(data).__name__
+        proto.data.Pack(data)
+        proto.obj_type = type(self).__module__ + "." + type(self).__name__
+        proto.description=self.description
+        for tag in self.tags:
+            proto.tags.append(tag)
+        return proto
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
+    @syft_decorator(typechecking=True)
+    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
         key = _deserialize(proto.key)
-        data = _deserialize(proto.data)
+        schematic_type = pydoc.locate(proto.schematic_qualname)
+        target_type = pydoc.locate(proto.obj_type)
+        schematic = schematic_type()
+        if proto.data.Is(schematic_type.DESCRIPTOR):
+            proto.data.Unpack(schematic)
+        data = target_type._proto2object(proto=schematic)
         tags = None
         if proto.tags:
             tags = list(proto.tags)

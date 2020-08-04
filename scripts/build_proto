@@ -5,6 +5,6 @@ PROTO_IN="proto"
 
 rm -rf "${CLEAN}"
 find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT}
-find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
+find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 isort src/syft/proto/**/*.py
 black src/syft/proto
