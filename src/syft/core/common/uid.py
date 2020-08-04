@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 # external lib imports
 import uuid
 
 # external class/method imports
-from syft.core.common.serializable import Serializable
+from syft.core.common.serde.serializable import Serializable
 from typing import final
 
 # syft imports
@@ -14,15 +16,7 @@ uuid_type = type(uuid.uuid4())
 
 
 @final
-class AbstractUID(Serializable):
-    """This exists to allow us to typecheck on the UID object
-    because we need a type which has already been initialized in
-    order to add it as a type hint on the UID object.
-    """
-
-
-@final
-class UID(AbstractUID):
+class UID(Serializable):
     """A unique ID for every Syft object.
 
     This object creates a unique ID for every object in the Syft
@@ -39,12 +33,9 @@ class UID(AbstractUID):
 
     """
 
-    protobuf_type = UID_PB
-    is_wrapper = True
-    wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None, as_wrapper: bool = False):
+    def __init__(self, value: uuid_type = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -65,7 +56,7 @@ class UID(AbstractUID):
             my_id = UID()
         """
         # checks to make sure you've set a proto_type
-        super().__init__(as_wrapper=as_wrapper)
+        super().__init__()
 
         # if value is not set - create a novel and unique ID.
         if value is None:
@@ -102,7 +93,7 @@ class UID(AbstractUID):
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: AbstractUID) -> bool:
+    def __eq__(self, other: "UID") -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -144,14 +135,10 @@ class UID(AbstractUID):
             object.
         """
 
-        self_type = type(self)
-        obj_type = self_type.__module__ + "." + self_type.__name__
-        return UID_PB(
-            obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper
-        )
+        return UID_PB(value=self.value.bytes)
 
     @staticmethod
-    def _proto2object(proto: UID_PB) -> AbstractUID:
+    def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -164,13 +151,8 @@ class UID(AbstractUID):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        return UID(value=uuid.UUID(bytes=proto.value))
 
-        value = uuid.UUID(bytes=proto.value)
-        if proto.as_wrapper:
-            return value
-        return UID(value=value)
-
-
-# This flag is what allows the serializer to find this class
-# when it encounters an object of uuid_type.
-uuid_type.serializable_wrapper_type = UID
+    @staticmethod
+    def get_protobuf_schema():
+        return UID_PB

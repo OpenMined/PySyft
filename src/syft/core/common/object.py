@@ -1,21 +1,16 @@
+from __future__ import annotations
+
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 
 # syft imports (sorted by length)
 from ...decorators.syft_decorator_impl import syft_decorator
-from .serializable import _deserialize
-from .serializable import Serializable
+from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import Serializable
 from .uid import UID
 
 
-class AbstractObjectWithID(Serializable):
-    """This exists to allow us to typecheck on the ObjectWithId object
-    because we need a type which has already been initialized in
-    order to add it as a type hint on the ObjectWithId object.
-    """
-
-
-class ObjectWithID(AbstractObjectWithID):
+class ObjectWithID(Serializable):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
     using the process specified in the UID class.
@@ -74,7 +69,7 @@ class ObjectWithID(AbstractObjectWithID):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: AbstractObjectWithID) -> bool:
+    def __eq__(self, other: "ObjectWithID") -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
         This checks to see whether this ObjectWithIDs is equal to another by
@@ -120,7 +115,7 @@ class ObjectWithID(AbstractObjectWithID):
         return ObjectWithID_PB(obj_type=obj_type, id=self.id.serialize())
 
     @staticmethod
-    def _proto2object(proto: ObjectWithID_PB) -> AbstractObjectWithID:
+    def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -134,4 +129,4 @@ class ObjectWithID(AbstractObjectWithID):
             if you wish to deserialize an object.
         """
 
-        return ObjectWithID(id=_deserialize(proto.id))
+        return ObjectWithID(id=_deserialize(blob=proto.id))

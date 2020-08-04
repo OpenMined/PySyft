@@ -1,9 +1,8 @@
 import uuid
 import pytest
 from syft.core.common.uid import UID
-from syft.core.common.serializable import Serializable
+from syft.core.common.serde.serializable import Serializable
 import syft as sy
-from syft.util import get_subclasses
 
 
 def test_uuid_wrapper_serialization():
@@ -18,7 +17,7 @@ def test_uuid_wrapper_serialization():
     obj_type = UID.__module__ + "." + UID.__name__
     blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
 
-    assert sy.serialize(uid) == blob
+    assert sy.serialize(obj=uid) == blob
 
 
 def test_uuid_wrapper_deserialization():
@@ -31,7 +30,7 @@ def test_uuid_wrapper_deserialization():
     obj_type = UID.__module__ + "." + UID.__name__
     blob = UID.protobuf_type(obj_type=obj_type, value=_uid.value.bytes, as_wrapper=True)
 
-    assert sy.deserialize(blob) == uid
+    assert sy.deserialize(blob=blob) == uid
 
 
 def test_forgotten_protobuf_type_flag_error():
