@@ -6,7 +6,6 @@ from syft.core.common.message import (
     ImmediateSyftMessageWithReply,
 )
 from syft.core.common.uid import UID
-
 from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ...io.address import Address

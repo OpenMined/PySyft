@@ -355,10 +355,5 @@ class Node(AbstractNode, LocationAwareObject):
         print("got a broadcast message")
         return
 
-    @syft_decorator(typechecking=True)
-    def listen_on_route(self, route: Route, background: bool = True) -> None:
-        route.listen(background = background,
-            processor = self.recv_broadcast_msg)
-
     def __repr__(self):
         return f"{self.node_type}:{self.name}:{self.id}"

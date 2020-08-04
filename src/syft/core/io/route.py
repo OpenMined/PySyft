@@ -120,28 +120,9 @@ class Route(ObjectWithID):
         raise NotImplementedError
 
 
-class BroadcastRoute(Route):
-    def __init__(self, topic: str, connection: ClientConnection) -> None:
-        self.connection = connection
-        self.topic = topic
-
-    def send_msg_with_reply(self, msg):
-        self.connection.send_msg_with_reply(topic = self.topic, msg = msg)
-
-    def send_msg_without_reply(self, msg):
-        self.connection.send_msg_without_reply(topic = self.topic, msg = msg)
-
-    def listen(self, processor: Callable, background: bool = True) -> None:
-        self.connection.listen( topic = self.topic, background = background,
-            processor = processor)
-
-    def __repr__(self) -> str:
-        return self.topic
-
 class SoloRoute(Route):
-    def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
-    ):
+
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
@@ -157,3 +138,12 @@ class SoloRoute(Route):
         self, msg: SyftMessageWithReply
     ) -> SyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
+
+
+class BroadcastRoute(SoloRoute):
+    """
+    A route used for pub/sub type systems.
+    """
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
+        super().__init__(source = source, destination = destination, connection = connection)
+        self.connection.topic = destination.topic
