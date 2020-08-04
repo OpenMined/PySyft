@@ -28,3 +28,4 @@ torch>=1.5
 typeguard
 sqlitedict
 typing-extensions # backport to older python 3
+dataclasses # backport to python 3.6

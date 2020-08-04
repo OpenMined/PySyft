@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import inspect
 
 from .typecheck import type_hints
