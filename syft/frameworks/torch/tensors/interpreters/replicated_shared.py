@@ -143,9 +143,9 @@ class ReplicatedSharingTensor(AbstractTensor):
         elif isinstance(value, syft.ReplicatedSharingTensor):
             return private_function(value)
         else:
-            raise NotImplementedError(
-                "ReplicatedSharingTensor can only be added to"
-                " int, float, torch tensor, or ReplicatedSharingTensor"
+            raise ValueError(
+                "expected int, float, torch tensor, or ReplicatedSharingTensor"
+                "but got {}".format(type(value))
             )
 
     def verify_matching_players(self, *secrets):

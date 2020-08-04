@@ -1,5 +1,6 @@
 import syft
 import torch
+import pytest
 
 
 def test_sharing(workers):
@@ -90,3 +91,11 @@ def test_public_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     assert ((x * 2).reconstruct() == torch.Tensor([14, 8])).all()
+
+
+def test_private_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
+    with pytest.raises(NotImplementedError):
+        z = x * y
