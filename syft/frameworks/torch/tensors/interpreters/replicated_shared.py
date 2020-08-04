@@ -98,18 +98,6 @@ class ReplicatedSharingTensor(AbstractTensor):
     def private_sub(self, secret):
         return self.private_linear_operation(secret, sub)
 
-    @staticmethod
-    def __switch_public_private(value, public_function, private_function):
-        if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
-            return public_function(value)
-        elif isinstance(value, syft.ReplicatedSharingTensor):
-            return private_function(value)
-        else:
-            raise NotImplementedError(
-                "ReplicatedSharingTensor can only be added to"
-                " int, float, torch tensor, or ReplicatedSharingTensor"
-            )
-
     def private_linear_operation(self, secret, operator):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
@@ -127,7 +115,38 @@ class ReplicatedSharingTensor(AbstractTensor):
             operator(shares_map[players[0]][0], plain_text),
             shares_map[players[0]][1],
         )
-        return syft.ReplicatedSharingTensor(shares_map)
+        return ReplicatedSharingTensor(shares_map)
+
+    def mul(self, value):
+        return self.__switch_public_private(value, self.public_mul, self.private_mul)
+
+    __mul__ = mul
+
+    def public_mul(self, plain_text):
+        players = self.get_players()
+        plain_text_map = {player: torch.tensor(plain_text).send(player) for player in players}
+        shares_map = self.get_shares_map()
+        for player in players:
+            shares_map[player] = (
+                shares_map[player][0] * plain_text_map[player],
+                shares_map[player][1] * plain_text_map[player],
+            )
+        return ReplicatedSharingTensor(shares_map)
+
+    def private_mul(self, secret):
+        raise NotImplementedError()
+
+    @staticmethod
+    def __switch_public_private(value, public_function, private_function):
+        if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
+            return public_function(value)
+        elif isinstance(value, syft.ReplicatedSharingTensor):
+            return private_function(value)
+        else:
+            raise NotImplementedError(
+                "ReplicatedSharingTensor can only be added to"
+                " int, float, torch tensor, or ReplicatedSharingTensor"
+            )
 
     def verify_matching_players(self, *secrets):
         players_set_0 = self.get_players()

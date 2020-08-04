@@ -84,3 +84,9 @@ def test_add_with_operator(workers):
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = torch.Tensor([2, 5])
     assert ((x + y).reconstruct() == torch.Tensor([9, 9])).all()
+
+
+def test_public_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    assert ((x * 2).reconstruct() == torch.Tensor([14, 8])).all()
