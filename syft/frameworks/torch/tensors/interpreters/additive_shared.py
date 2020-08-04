@@ -456,7 +456,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     ## SECTION SPDZ
 
-    def _convert_to_share_tensor(self, other):
+    def _convert_to_shared_tensor(self, other):
         if isinstance(other, int):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
@@ -491,7 +491,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        other = self._convert_to_share_tensor(other)
+        other = self._convert_to_shared_tensor(other)
 
         assert len(shares) == len(other)
 
@@ -515,7 +515,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        other = self._convert_to_share_tensor(other)
+        other = self._convert_to_shared_tensor(other)
 
         assert len(shares) == len(other)
 
