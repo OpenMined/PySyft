@@ -16,7 +16,6 @@ from syft.exceptions import route_method_exception
 from syft.generic.frameworks.hook.pointers import PointerHook
 from syft.generic.frameworks.hook.string import StringHook
 from syft.generic.frameworks.hook.tensors import TensorHook
-from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
