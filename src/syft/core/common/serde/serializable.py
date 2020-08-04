@@ -1,14 +1,9 @@
-# external lib imports
-import json
-
 # external class/method imports (sorted by length)
 from google.protobuf.message import Message
 from google.protobuf import json_format
 
 # syft import
-from syft.util import get_fully_qualified_name, index_syft_by_module_name
 from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.core.common.lazy_structures import LazyDict
 
 
 class Serializable(object):
