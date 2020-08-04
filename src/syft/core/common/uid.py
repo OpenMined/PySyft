@@ -3,7 +3,7 @@ import uuid
 
 # external class/method imports
 from syft.core.common.serde.serializable import Serializable
-from typing import final
+from typing_extensions import final
 
 # syft imports
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
