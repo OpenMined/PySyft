@@ -1,6 +1,3 @@
-import sys
-from random import randint
-
 import pytest
 
 from src.users.role import Role

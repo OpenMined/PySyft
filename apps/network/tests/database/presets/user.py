@@ -1,0 +1,26 @@
+user_metrics = [
+    (
+        "awesome@mail.com",
+        "D2BC2F8D09990EBE87C809684FD78C66",
+        "S8S,wHH1+xuz.UYsVRxFn(AI(oO7Mc",
+        0,
+    ),
+    (
+        "gummy@bear.net",
+        "2B9337C6FA501704AB5D25A337329813",
+        "cV#E:#)u`%J<^p-PI9u/y%8En::JQI",
+        1,
+    ),
+    (
+        "tech@gibberish.com",
+        "BDEB6E8EE39B6C70835993486C9E65DC",
+        "]GBF[R>GX[9Cmk@DthFT!mhloUc%[f",
+        1,
+    ),
+    (
+        "mail@mail.mail",
+        "96B9C62C86F35C209C5B8C302BA34175",
+        "mnl6=(xUFM]R#bDeL='!(d-$%,4NcZ",
+        0,
+    ),
+]
