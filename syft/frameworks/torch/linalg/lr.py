@@ -327,6 +327,7 @@ class DASH:
             but will attempt to learn all possible information from legitimately
             received messages.
         precision_fractional: precision chosen for FixedPrecisionTensors
+        protocol: the crypto protocol used for private comparison
 
     Attributes:
         coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
@@ -337,12 +338,17 @@ class DASH:
     """
 
     def __init__(
-        self, crypto_provider: BaseWorker, hbc_worker: BaseWorker, precision_fractional: int = 6
+        self,
+        crypto_provider: BaseWorker,
+        hbc_worker: BaseWorker,
+        precision_fractional: int = 6,
+        protocol: str = "fss",
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
+        self.protocol = protocol
 
     def fit(
         self, X_ptrs: List[torch.Tensor], C_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]
