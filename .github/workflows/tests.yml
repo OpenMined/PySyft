@@ -22,7 +22,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8]
+        python-version: [3.8, 3.7, 3.6]
 
     steps:
     - uses: actions/checkout@v2
@@ -41,9 +41,7 @@ jobs:
 
     - name: Install lint, formatter, security checker
       run: |
-            pip3 install flake8
-            pip3 install black
-            pip3 install bandit
+            pip3 install flake8 black bandit
 
     - name: Lint and format
       run: |
