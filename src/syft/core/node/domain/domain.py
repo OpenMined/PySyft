@@ -3,6 +3,7 @@ from syft.core.common.message import SyftMessage
 from ..common.node import Node
 from ..device import Device, DeviceClient
 from .client import DomainClient
+from syft.core.io.address import All, Unspecified
 
 
 class Domain(Node):
@@ -27,6 +28,6 @@ class Domain(Node):
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
-            msg.address.pub_address.domain == self.id
-            and msg.address.pri_address.device is None
+            msg.address.pub_address.domain in (self.id, All())
+            and msg.address.pri_address.device is in (None, Unspecified())
         )
