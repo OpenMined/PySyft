@@ -720,6 +720,22 @@ class AdditiveSharingTensor(AbstractTensor):
         return result
 
     @staticmethod
+    def share_combine(tensors_shares):
+        workers = tensors_shares[0].keys()
+
+        return {
+            worker: [tensor_shares[worker] for tensor_shares in tensors_shares]
+            for worker in workers
+        }
+
+    @classmethod
+    def apply_to_share(cls, op, tensors_shares, **kwargs):
+        return {
+            worker: op(share, **kwargs)
+            for (worker, share) in cls.share_combine(tensors_shares).items()
+        }
+
+    @staticmethod
     @overloaded.module
     def torch(module):
         def add(self, other):
@@ -789,29 +805,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.unbind = unbind
 
-        def share_combine(tensors_shares):
-            workers = tensors_shares[0].keys()
-
-            return {
-                worker: [tensor_shares[worker] for tensor_shares in tensors_shares]
-                for worker in workers
-            }
-
-        def make_worker_dict(op, tensors_shares, **kwargs):
-            return {
-                worker: op(share, **kwargs)
-                for (worker, share) in share_combine(tensors_shares).items()
-            }
-
         @overloaded.function
         def stack(tensors_shares, **kwargs):
-            return make_worker_dict(torch.stack, tensors_shares, **kwargs)
+            return AdditiveSharingTensor.apply_to_share(torch.stack, tensors_shares, **kwargs)
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            return make_worker_dict(torch.cat, tensors_shares, **kwargs)
+            return AdditiveSharingTensor.apply_to_share(torch.cat, tensors_shares, **kwargs)
 
         module.cat = cat
 
