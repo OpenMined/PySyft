@@ -20,7 +20,7 @@ from syft.core.common import ObjectWithID
 from syft.util import get_subclasses
 from syft.core.common import UID
 
-################## INITIALIZATION ######################
+# --------------------- INITIALIZATION ---------------------
 
 
 def test_basic_init():
@@ -42,7 +42,7 @@ def test_immutability_of_id():
     """
     obj = ObjectWithID()
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(AttributeError):
 
         # TODO: filter on this error to only include errors
         #  with string "Can't set attribute"
@@ -50,7 +50,7 @@ def test_immutability_of_id():
         obj.id = ""
 
 
-################## CLASS METHODS #######################
+# --------------------- CLASS METHODS ---------------------
 
 
 def test_compare():
@@ -80,7 +80,7 @@ def test_to_string():
     assert obj.__repr__() == "<ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
 
-###################### SERDE ##########################
+# --------------------- SERDE ---------------------
 
 
 def test_object_with_id_default_serialization():
@@ -179,7 +179,8 @@ def test_object_with_id_binary_serialization():
 
     blob = (
         b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"'
-        + b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+        + b': {\n    "objType": "syft.core.common.uid.UID",'
+        + b'\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
     )
     assert obj.binary() == blob
     assert obj.to_binary() == blob
@@ -191,7 +192,8 @@ def test_object_with_id_binary_deserialization():
 
     blob = (
         b'{\n  "objType": "syft.core.common.object.ObjectWithID",\n  "id"'
-        + b': {\n    "objType": "syft.core.common.uid.UID",\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
+        + b': {\n    "objType": "syft.core.common.uid.UID",'
+        + b'\n    "value": "+xuwZ1u3TEm+zucAqwoVFA=="\n  }\n}'
     )
     obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == ObjectWithID(
@@ -234,7 +236,7 @@ def test_object_with_id_hex_deserialization():
     )
 
 
-###################### CHILDREN ##########################
+# ----------------------- CHILDREN -----------------------
 
 
 def test_subclasses_have_names():

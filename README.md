@@ -34,7 +34,7 @@ If you would like to become a user of PySyft, please progress to our User Docume
 
 ## Want to Develop PySyft?
 
-If you would like to become a developer of PySyft, please see our Contributor Documentation. This documentation will help you setup your development environment, give you a roadmap for learning the codebase, and help you find your first project to contribute.
+If you would like to become a developer of PySyft, please see our [Contributor Documentation](CONTRIBUTING.md). This documentation will help you setup your development environment, give you a roadmap for learning the codebase, and help you find your first project to contribute.
 
 ## Note
 

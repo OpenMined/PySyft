@@ -4,6 +4,7 @@ from ....decorators.syft_decorator_impl import syft_decorator
 from ....util import index_syft_by_module_name
 from ....util import get_fully_qualified_name
 
+
 # we allow args because LazyDict calls this method via [] and so we can't set
 # what the kwarg names are via that interface
 @syft_decorator(typechecking=True, prohibit_args=False)
