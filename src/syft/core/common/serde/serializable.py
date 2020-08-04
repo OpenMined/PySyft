@@ -24,7 +24,7 @@ class Serializable(object):
     forget to add tests for your object!
     """
 
-    def __init__(self, as_wrapper: bool):
+    def __init__(self, as_wrapper: bool = False):
         """In the initializer for this class, we check that the protobuf_type was
         properly set and save the as_wrapper parameter.
 

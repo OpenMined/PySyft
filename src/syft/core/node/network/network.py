@@ -24,5 +24,5 @@ class Network(Node):
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pub_address.network in (self.id, All())
-            and msg.address.pub_address.domain is in (None, Unspecified())
+            and msg.address.pub_address.domain in (None, Unspecified())
         )

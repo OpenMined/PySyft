@@ -29,5 +29,5 @@ class Domain(Node):
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pub_address.domain in (self.id, All())
-            and msg.address.pri_address.device is in (None, Unspecified())
+            and msg.address.pri_address.device in (None, Unspecified())
         )
