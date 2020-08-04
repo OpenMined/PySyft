@@ -1,4 +1,5 @@
-from typing import Final, Optional
+from typing import Optional
+from typing_extensions import Final
 
 from sqlitedict import SqliteDict
 

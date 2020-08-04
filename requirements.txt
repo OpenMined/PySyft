@@ -26,3 +26,5 @@ pyscaffold[all]
 sqlitedict
 torch>=1.5
 typeguard
+sqlitedict
+typing-extensions # backport to older python 3
