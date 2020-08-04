@@ -1,4 +1,5 @@
-from typing import List, final
+from typing import List
+from typing_extensions import final
 
 from syft.core.common.uid import UID
 

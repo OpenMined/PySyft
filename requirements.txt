@@ -17,6 +17,7 @@
 #
 bandit
 black
+dataclasses # backport to python 3.6
 flake8
 flask
 forbiddenfruit>=0.1.3
@@ -24,5 +25,7 @@ isort
 pyjwt
 pyscaffold[all]
 sqlitedict
+sqlitedict
 torch>=1.5
 typeguard
+typing-extensions # backport to older python 3

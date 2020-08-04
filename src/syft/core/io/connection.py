@@ -1,4 +1,4 @@
-from typing import final
+from typing_extensions import final
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,

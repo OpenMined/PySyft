@@ -3,8 +3,6 @@
 stuff
 """
 
-from __future__ import annotations
-
 from typing import List
 
 from syft.core.common.message import (
