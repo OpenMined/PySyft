@@ -1,6 +1,9 @@
 from typing import Optional
 from typing_extensions import Final
 
+import tempfile
+from pathlib import Path
+
 from sqlitedict import SqliteDict
 
 from ...decorators import syft_decorator
@@ -16,7 +19,7 @@ class DiskObjectStore(ObjectStore):
         super().__init__(as_wrapper=False)
 
         if db_path is None:
-            db_path = "/tmp/test.sqlite"
+            db_path = str(Path(f"{tempfile.gettempdir()}") / "test.sqlite")
 
         self.db: Final = SqliteDict(db_path)
         self.search_engine = None

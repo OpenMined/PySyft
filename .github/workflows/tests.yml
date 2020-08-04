@@ -54,4 +54,5 @@ jobs:
 
     - name: Run tests with coverage
       run: |
+            pip install typing-extensions dataclasses
             python setup.py test
