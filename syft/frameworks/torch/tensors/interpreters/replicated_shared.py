@@ -79,6 +79,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     def add(self, value):
         return self.__switch_public_private(value, self.public_add, self.private_add)
 
+    __add__ = add
+
     def public_add(self, plain_text):
         return self.public_linear_operation(plain_text, add)
 
@@ -87,6 +89,8 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def sub(self, value):
         return self.__switch_public_private(value, self.public_sub, self.private_sub)
+
+    __sub__ = sub
 
     def public_sub(self, plain_text):
         return self.public_linear_operation(plain_text, sub)

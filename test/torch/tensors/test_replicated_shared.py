@@ -77,3 +77,10 @@ def test_workers_arrangement(workers):
     me, bob, alice = (workers["me"], workers["bob"], workers["alice"])
     x = torch.tensor(7).share(bob, alice, me, protocol="falcon")
     assert x.get_players()[0] == me
+
+
+def test_add_with_operator(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = torch.Tensor([2, 5])
+    assert ((x + y).reconstruct() == torch.Tensor([9, 9])).all()
