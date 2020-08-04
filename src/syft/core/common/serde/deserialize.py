@@ -1,11 +1,13 @@
+from google.protobuf import json_format
+
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
 from google.protobuf import json_format
 from .serializable import serde_store
-import json
 
 from ....proto.util.json_message_pb2 import JsonMessage
+
 
 @syft_decorator(typechecking=True)
 def _deserialize(
@@ -26,11 +28,11 @@ def _deserialize(
         blob = str(blob, "utf-8")
 
     if from_json:
-        blob = json.loads(s=blob)
-        obj_type = serde_store.qual_name2type[blob["objType"]]
+        json_message = json_format.Parse(text=blob, message=JsonMessage())
+        obj_type = serde_store.qual_name2type[json_message.obj_type]
         protobuf_type = obj_type.get_protobuf_schema()
-        schema_data = blob["content"]
-        return json_format.Parse(text=schema_data, message=protobuf_type())
+        schema_data = json_message.content
+        blob = json_format.Parse(text=schema_data, message=protobuf_type())
 
     if from_proto:
         proto_obj = blob

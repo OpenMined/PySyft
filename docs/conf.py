@@ -100,6 +100,7 @@ def skip(app, what, name, obj, would_skip, options):
         return False
     return would_skip
 
+
 # To configure AutoStructify
 def setup(app):
     from recommonmark.transform import AutoStructify
@@ -190,9 +191,7 @@ html_theme = "alabaster"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px"
-}
+html_theme_options = {"sidebar_width": "300px"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ["_themes/"]
@@ -224,7 +223,7 @@ else:
 html_static_path = ["_static"]
 
 # sort methods by source order
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

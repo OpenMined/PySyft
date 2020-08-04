@@ -1,16 +1,17 @@
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
+from typing import Union
 
 
 @syft_decorator(typechecking=True)
 def _serialize(
-    obj: (Serializable, object),
+    obj: Serializable,
     to_proto: bool = True,
     to_json: bool = False,
     to_binary: bool = False,
     to_hex: bool = False,
-) -> (str, bytes, Message):
+) -> Union[str, bytes, Message]:
     """Serialize the object according to the parameters.
 
     This method can be called directly on the syft module::

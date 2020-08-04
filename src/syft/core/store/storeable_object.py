@@ -39,8 +39,13 @@ class StorableObject(Serializable):
     protobuf_type = StorableObject_PB
 
     @syft_decorator(typechecking=True)
-    def __init__(self, key: UID, data: Serializable, description: Optional[str],
-                 tags: Optional[List[str]]):
+    def __init__(
+        self,
+        key: UID,
+        data: Serializable,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ):
         super().__init__(as_wrapper=False)
         self.key = key
         self.data = data
@@ -53,10 +58,12 @@ class StorableObject(Serializable):
         data = self.data.serialize()
         proto = StorableObject_PB()
         proto.key.CopyFrom(key)
-        proto.schematic_qualname = "syft." + type(data).__module__ + "." + type(data).__name__
+        proto.schematic_qualname = (
+            "syft." + type(data).__module__ + "." + type(data).__name__
+        )
         proto.data.Pack(data)
         proto.obj_type = type(self).__module__ + "." + type(self).__name__
-        proto.description=self.description
+        proto.description = self.description
         for tag in self.tags:
             proto.tags.append(tag)
         return proto

@@ -29,10 +29,6 @@ class ObjectWithID(Serializable):
 
     """
 
-    __name__ = "ObjectWithID"
-
-    protobuf_type = ObjectWithID_PB
-
     @syft_decorator(typechecking=True)
     def __init__(self, id: UID = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
@@ -94,6 +90,7 @@ class ObjectWithID(Serializable):
 
         return f"<{self.__name__}:{self.id.value}>"
 
+    @staticmethod
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
         """Returns a protobuf serialization of self.
@@ -110,9 +107,7 @@ class ObjectWithID(Serializable):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        self_type = type(self)
-        obj_type = self_type.__module__ + "." + self_type.__name__
-        return ObjectWithID_PB(obj_type=obj_type, id=self.id.serialize())
+        return ObjectWithID_PB(id=self.id.serialize())
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":

@@ -33,7 +33,6 @@ class UID(Serializable):
 
     """
 
-
     @syft_decorator(typechecking=True)
     def __init__(self, value: uuid_type = None):
         """Initializes the internal id using the uuid package.
@@ -138,6 +137,7 @@ class UID(Serializable):
         return UID_PB(value=self.value.bytes)
 
     @staticmethod
+    @syft_decorator(typechecking=True)
     def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 

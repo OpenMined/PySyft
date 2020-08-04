@@ -150,4 +150,3 @@ the source code of :py:mod:`syft.core.common.object.ObjectWithID`.
 from .deserialize import _deserialize
 from .serializable import Serializable, serde_store
 from .serialize import _serialize
-
