@@ -350,10 +350,5 @@ class Node(AbstractNode, LocationAwareObject):
         # of a sub-class of Node.
         self.services_registered = True
 
-    @syft_decorator(typechecking=True)
-    def recv_broadcast_msg(self, msg: SyftBroadcastMessage) -> None:
-        print("got a broadcast message")
-        return
-
     def __repr__(self):
         return f"{self.node_type}:{self.name}:{self.id}"
