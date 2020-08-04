@@ -56,7 +56,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration -----------------------------------------------------
 
@@ -100,6 +100,7 @@ def skip(app, what, name, obj, would_skip, options):
         return False
     return would_skip
 
+
 # To configure AutoStructify
 def setup(app):
     from recommonmark.transform import AutoStructify
@@ -128,8 +129,8 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
-project = u"syft"
-copyright = u"2020, Andrew Trask"
+project = "syft"
+copyright = "2020, Andrew Trask"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -190,9 +191,7 @@ html_theme = "alabaster"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px"
-}
+html_theme_options = {"sidebar_width": "300px"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ["_themes/"]
@@ -224,7 +223,7 @@ else:
 html_static_path = ["_static"]
 
 # sort methods by source order
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -285,7 +284,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "user_guide.tex", u"syft Documentation", u"Andrew Trask", "manual"),
+    ("index", "user_guide.tex", "syft Documentation", "Andrew Trask", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

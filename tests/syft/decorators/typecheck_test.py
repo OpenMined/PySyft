@@ -42,7 +42,7 @@ def test_optional():
     func(x=0)
     func(x=None)
 
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(TypeError):
         func(x="test")
 
 

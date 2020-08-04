@@ -15,14 +15,14 @@
 # numpy==1.13.3
 # scipy==1.0
 #
+bandit
+black
+flake8
+flask
 forbiddenfruit>=0.1.3
+isort
+pyjwt
+pyscaffold[all]
+sqlitedict
 torch>=1.5
 typeguard
-pyscaffold[all]
-black
-flask
-pyjwt
-flake8
-bandit
-isort
-sqlitedict

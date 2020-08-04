@@ -18,7 +18,8 @@ import syft as sy
 from syft.core.common import UID
 from syft.core.common.uid import uuid_type
 
-############@@#### INITIALIZATION ######################
+
+# --------------------- INITIALIZATION ---------------------
 
 
 def test_uid_creates_value_if_none_provided():
@@ -40,18 +41,18 @@ def test_uid_creates_value_if_try_to_init_none():
 def test_uid_raises_typeerror_if_string_id_attempted():
     """Tests that the UID class will raise an error if you try to init with a string."""
 
-    with pytest.raises(TypeError) as e:
-        uid = UID(value="a string id")
+    with pytest.raises(TypeError):
+        _ = UID(value="a string id")
 
 
 def test_uid_raises_typeerror_if_int_id_attempted():
     """Tests that the UID class will raise an error if you try to init with a string."""
 
-    with pytest.raises(TypeError) as e:
-        uid = UID(value=123)
+    with pytest.raises(TypeError):
+        _ = UID(value=123)
 
 
-################ CLASS METHODS ############################
+# --------------------- CLASS METHODS ---------------------
 
 
 def test_uid_comparison():
@@ -93,7 +94,7 @@ def test_to_string():
     assert uid.__repr__() == "<UID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
 
-######################## SERDE ################################
+# --------------------- SERDE ---------------------
 
 
 def test_uid_default_serialization():
