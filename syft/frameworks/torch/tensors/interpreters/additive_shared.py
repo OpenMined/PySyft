@@ -385,9 +385,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if shape is None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
-        zero = torch.zeros(*shape, dtype=self.torch_dtype).share(
-            *self.locations, **self.get_class_attributes(), **no_wrap,
-        )
+        zero = torch.zeros(*shape, dtype=self.torch_dtype)
+        zero = self._to_shared_tensor(zero, *self.locations)
         return zero
 
     def refresh(self):
@@ -450,23 +449,25 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             return self._getitem_public(indices)
 
+    def _to_shared_tensor(self, value, *args):
+        return value.share(*args, **self.get_class_attributes(), **no_wrap)
+
     ## SECTION SPDZ
 
-    def _convert_to_shared_tensor(self, other):
-        if isinstance(other, int):
-            other = torch.tensor([other], dtype=self.torch_dtype)
+    def _basic_op(self, shares: dict, operand, op):
+        if isinstance(operand, int):
+            operand = torch.tensor([operand], dtype=self.torch_dtype)
 
-        def share(other):
-            return other.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap,).child
+        if isinstance(operand, (torch.LongTensor, torch.IntTensor)):
+            operand = self._to_shared_tensor(operand, *self.child.keys()).child
+        elif not isinstance(operand, dict):
+            operand = torch.tensor([operand], dtype=self.torch_dtype)
+            operand = self._to_shared_tensor(operand, *self.child.keys()).child
 
-        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-            # if someone passes a torch tensor, we share it and keep the dict
-            other = share(other)
-        elif not isinstance(other, dict):
-            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other = share(torch.tensor([other], dtype=self.torch_dtype))
-
-        return other
+        assert len(shares) == len(operand)
+        return {
+            worker: self.modulo(op(share, operand[worker])) for worker, share, in shares.items()
+        }
 
     @overloaded.method
     def add(self, shares: dict, other):
@@ -481,13 +482,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        other = self._convert_to_shared_tensor(other)
-
-        assert len(shares) == len(other)
-
-        # matches each share which needs to be added according
-        # to the location of the share
-        return {k: self.modulo(other[k] + v) for k, v, in shares.items()}
+        op = lambda lo, ro: lo + ro
+        return self._basic_op(shares, other, op)
 
     __add__ = add
     __radd__ = add
@@ -505,13 +501,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        other = self._convert_to_shared_tensor(other)
-
-        assert len(shares) == len(other)
-
-        # matches each share which needs to be added according
-        # to the location of the share
-        return {k: self.modulo(v - other[k]) for k, v in shares.items()}
+        op = lambda lo, ro: lo - ro
+        return self._basic_op(shares, other, op)
 
     __sub__ = sub
 
@@ -718,12 +709,16 @@ class AdditiveSharingTensor(AbstractTensor):
             for worker in workers
         }
 
-    @classmethod
-    def apply_to_share(cls, op, tensors_shares, **kwargs):
-        return {
-            worker: op(share, **kwargs)
-            for (worker, share) in cls.share_combine(tensors_shares).items()
-        }
+    # @classmethod
+    # def apply_to_share(cls, op, tensors_shares, **kwargs):
+    #     return {
+    #         worker: op(share, **kwargs)
+    #         for (worker, share) in cls.share_combine(tensors_shares).items()
+    #     }
+
+    @staticmethod
+    def apply_to_share(op, shares: dict):
+        return {worker: op(worker, share) for worker, share in shares}
 
     @staticmethod
     @overloaded.module
@@ -797,13 +792,17 @@ class AdditiveSharingTensor(AbstractTensor):
 
         @overloaded.function
         def stack(tensors_shares, **kwargs):
-            return AdditiveSharingTensor.apply_to_share(torch.stack, tensors_shares, **kwargs)
+            shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
+            op = lambda _, s: torch.stack(s, **kwargs)
+            return AdditiveSharingTensor.apply_to_share(op, shares)
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            return AdditiveSharingTensor.apply_to_share(torch.cat, tensors_shares, **kwargs)
+            shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
+            op = lambda _, s: torch.cat(s, **kwargs)
+            return AdditiveSharingTensor.apply_to_share(op, shares)
 
         module.cat = cat
 
@@ -821,18 +820,18 @@ class AdditiveSharingTensor(AbstractTensor):
             original shape. shifts and dims can be tuples of same length to perform several
             rolls along different dimensions.
             """
+            shares = tensor_shares.items()
 
-            results = {}
-            for worker, share in tensor_shares.items():
+            def op(worker, share):
                 if isinstance(shifts, dict):
                     shift = shifts[worker]
                 elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
                     shift = [s[worker] for s in shifts]
                 else:
                     shift = shifts
-                results[worker] = torch.roll(share, shift, **kwargs)
+                return torch.roll(share, shift, **kwargs)
 
-            return results
+            return AdditiveSharingTensor.apply_to_share(op, shares)
 
         module.roll = roll
 
