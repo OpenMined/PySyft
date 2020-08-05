@@ -244,7 +244,7 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     assert (b.grad.get() == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid"])
+@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid", "sum", "mean"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on unary methods on remote tensors using
