@@ -28,6 +28,7 @@ class ServerConnection(object):
         raise NotImplementedError
 
 
+# QUESTION: why is this final when VirtualClientConnection inherits from it?
 @final
 class ClientConnection(object):
     @syft_decorator(typechecking=True)

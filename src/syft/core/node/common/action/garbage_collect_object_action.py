@@ -9,4 +9,5 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
 
     def execute_action(self, node: AbstractNode) -> None:
         # TODO: make lazy
+        # QUESTION: Where is delete_object defined
         node.store.delete_object(id=self.obj_id)
