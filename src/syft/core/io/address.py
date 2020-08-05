@@ -20,7 +20,8 @@ class Unspecified(object):
 class PublicAddress(object):
     @syft_decorator(typechecking=True)
     def __init__(
-        self, network: Optional[Union[str, UID]], domain: Optional[Union[str, UID]]
+        self, network: Optional[Union[str, UID, Unspecified, All]],
+        domain: Optional[Union[str, UID, Unspecified, All]]
     ):
         self.network = network
         self.domain = domain
@@ -30,7 +31,8 @@ class PublicAddress(object):
 class PrivateAddress(object):
     @syft_decorator(typechecking=True)
     def __init__(
-        self, device: Optional[Union[str, UID]], vm: Optional[Union[str, UID]]
+        self, device: Optional[Union[str, UID, Unspecified, All]],
+        vm: Optional[Union[str, UID, Unspecified, All]]
     ):
         self.device = device
         self.vm = vm
@@ -71,10 +73,10 @@ class Address(object):
 
 @syft_decorator(typechecking=True)
 def address(
-    network: Optional[Union[str, UID]],
-    domain: Optional[Union[str, UID]],
-    device: Optional[Union[str, UID]],
-    vm: Optional[Union[str, UID]],
+    network: Optional[Union[str, UID, Unspecified, All]],
+    domain: Optional[Union[str, UID, Unspecified, All]],
+    device: Optional[Union[str, UID, Unspecified, All]],
+    vm: Optional[Union[str, UID, Unspecified, All]],
 ) -> Address:
     """A convenience method for creating routes"""
 
