@@ -82,9 +82,6 @@ class StorableObject(Serializable):
         # StoreableObject type
         target_type = pydoc.locate(proto.obj_type)
 
-        print("schematic type:" + str(schematic_type))
-        print("target type:" + str(target_type))
-
         # UID object
         schematic = schematic_type()
         if proto.data.Is(schematic_type.DESCRIPTOR):
