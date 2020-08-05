@@ -1,3 +1,5 @@
+from typing import Optional
+
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 
@@ -7,7 +9,7 @@ class AbstractMessage:
 
 
 class SyftMessage(AbstractMessage):
-    def __init__(self, address: Address, msg_id: UID = None) -> None:
+    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         self.msg_id = msg_id
         self.address = address
 
@@ -36,16 +38,18 @@ class SyftMessageWithoutReply(SyftMessage):
 
 
 class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: UID = None) -> None:
+    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
 
 
 class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: UID = None) -> None:
+    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
 
 
 class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
-    def __init__(self, reply_to: Address, address: Address, msg_id: UID = None) -> None:
+    def __init__(
+        self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
+    ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to

@@ -1,9 +1,20 @@
+from typing import Optional, Any, Union
+
 # external class/method imports (sorted by length)
 from google.protobuf.message import Message
 from google.protobuf import json_format
 
 # syft import
 from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.proto.core.common.common_object_pb2 import UID as UID_PB
+
+
+# QUESTION: This is to quiet the compiler serialize.py _serialize()
+# What is the group of "objects" that are not Serializable that also have a
+# serializable_wrapper_type?
+class NotSerializable(object):
+    protobuf_type: Any
+    serializable_wrapper_type: UID_PB
 
 
 class Serializable(object):
@@ -24,6 +35,9 @@ class Serializable(object):
     forget to add tests for your object!
     """
 
+    protobuf_type: Optional[Any] = None
+    serializable_wrapper_type: UID_PB
+
     def __init__(self, as_wrapper: bool = False):
         """In the initializer for this class, we check that the protobuf_type was
         properly set and save the as_wrapper parameter.
@@ -35,7 +49,8 @@ class Serializable(object):
         """
 
         # check to make sure protobuf_type has been set on the class
-        assert self.protobuf_type is not None
+        if self.protobuf_type is None:
+            raise AttributeError("protobuf_type should be set")
 
         # set the as_wrapper flag
         self.as_wrapper = as_wrapper
@@ -151,13 +166,13 @@ class Serializable(object):
         to_json: bool = False,
         to_binary: bool = False,
         to_hex: bool = False,
-    ) -> (str, bytes, Message):
+    ) -> Union[str, bytes, Message]:
         """Serialize the object according to the parameters.
 
         This is the primary serialization method, which processes the above
         flags in a particular order. In general, it is not expected that people
         will set multiple to_<type> flags to True at the same time. We don't
-        currently have logic which prevents this, becuase this may affect
+        currently have logic which prevents this, because this may affect
         runtime performance, but if several flags are True, then we will simply
         take return the type of latest supported flag from the following list:
 
@@ -177,26 +192,28 @@ class Serializable(object):
         :param to_hex: set this flag to TRUE if you want to return a hex string object
         :type to_hex: bool
         :return: a serialized form of the object on which serialize() is called.
-        :rtype: (str,bytes, Message)
+        :rtype: Union[str, bytes, Message]
 
         """
 
         if to_json or to_binary or to_hex:
-            blob = json_format.MessageToJson(message=self._object2proto())
+            json_str = json_format.MessageToJson(message=self._object2proto())
 
             if to_json:
-                return blob
+                return json_str
 
             if to_binary or to_hex:
-                blob = bytes(blob, "utf-8")
+                blob = bytes(json_str, "utf-8")
                 if to_hex:
-                    blob = blob.hex()
-            return blob
+                    return blob.hex()
+                else:
+                    return blob
         elif to_proto:
             return self._object2proto()
-        else:
-            raise Exception(
-                """You must specify at least one deserialization format using
-                            one of the arguments of the serialize() method such as:
-                            to_proto, to_json, to_binary, or to_hex."""
-            )
+
+        # by placing at the end we prevent empty fall through
+        raise Exception(
+            """You must specify at least one deserialization format using
+                        one of the arguments of the serialize() method such as:
+                        to_proto, to_json, to_binary, or to_hex."""
+        )

@@ -33,15 +33,14 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
         self.install_supported_frameworks()
 
-    def install_supported_frameworks(self):
-
+    def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
         self.lib_ast.set_client(self)
 
         for attr_name, attr in self.lib_ast.attrs.items():
             setattr(self, attr_name, attr)
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
@@ -79,7 +78,7 @@ class Client(AbstractNodeClient, LocationAwareObject):
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Client pointing to node with id:{self.node_id}>"
+        return f"<Client pointing to node with id:{self.target_node_id}>"
 
     @syft_decorator(typechecking=True)
     def register_route(self, route: Route) -> None:
@@ -88,3 +87,4 @@ class Client(AbstractNodeClient, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
+

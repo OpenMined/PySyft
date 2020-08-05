@@ -1,3 +1,4 @@
+from typing import Union, Optional
 from typing_extensions import final
 
 from syft.core.common.uid import UID
@@ -17,7 +18,9 @@ class Unspecified(object):
 @final
 class PublicAddress(object):
     @syft_decorator(typechecking=True)
-    def __init__(self, network: (str, UID), domain: (str, UID)):
+    def __init__(
+        self, network: Optional[Union[str, UID]], domain: Optional[Union[str, UID]]
+    ):
         self.network = network
         self.domain = domain
 
@@ -25,7 +28,9 @@ class PublicAddress(object):
 @final
 class PrivateAddress(object):
     @syft_decorator(typechecking=True)
-    def __init__(self, device: (str, UID), vm: (str, UID)):
+    def __init__(
+        self, device: Optional[Union[str, UID]], vm: Optional[Union[str, UID]]
+    ):
         self.device = device
         self.vm = vm
 
@@ -38,7 +43,7 @@ class Address(object):
         self.pri_address = pri_address
 
     @property
-    def target_id(self) -> UID:
+    def target_id(self) -> Union[str, UID]:
         """Return the address of the node which lives at this address.
 
         Note that this id is simply the most granular id available to the
@@ -49,10 +54,12 @@ class Address(object):
             return self.pri_address.device
         elif self.pub_address.domain is not None:
             return self.pub_address.domain
-        else:
+        elif self.pub_address.network is not None:
             return self.pub_address.network
 
-    def __repr__(self):
+        raise Exception("Address has no valid parts")
+
+    def __repr__(self) -> str:
         out = ""
         out += f" Network:{self.pub_address.network},"  # OpenGrid
         out += f" Domain:{self.pub_address.domain}) "  # UCSF
@@ -63,7 +70,10 @@ class Address(object):
 
 @syft_decorator(typechecking=True)
 def address(
-    network: (UID, None), domain: (UID, None), device: (UID, None), vm: (UID, None)
+    network: Optional[Union[str, UID]],
+    domain: Optional[Union[str, UID]],
+    device: Optional[Union[str, UID]],
+    vm: Optional[Union[str, UID]],
 ) -> Address:
     """A convenience method for creating routes"""
 

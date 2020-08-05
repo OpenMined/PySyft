@@ -22,7 +22,7 @@ class VirtualMachineClient(Client):
         # spinup time shouldn't be a huge constraint.
         assert self.vm_id is not None
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         assert self.vm_id is not None
 
     # @property

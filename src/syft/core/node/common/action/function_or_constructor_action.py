@@ -17,6 +17,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         resolved_args = list()
         for arg in self.args:
             if isinstance(arg, Pointer):
+                # QUESTION: Where is get_object definied?
                 r_arg = node.store.get_object(id=arg.id_at_location)
                 resolved_args.append(r_arg)
             else:
@@ -32,4 +33,5 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         result = method(*resolved_args, **resolved_kwargs)
 
+        # QUESTION: Where is store_object defined
         node.store.store_object(id=self.id_at_location, obj=result)

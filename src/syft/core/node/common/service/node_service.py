@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Type, Any
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -13,7 +13,7 @@ from ...abstract.node import AbstractNode
 class NodeService:
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
 
@@ -22,7 +22,7 @@ class ImmediateNodeService(NodeService):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
 
@@ -32,7 +32,7 @@ class EventualNodeService(NodeService):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
 
@@ -46,7 +46,7 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
 
@@ -59,7 +59,7 @@ class EventualNodeServiceWithoutReply(NodeService):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
 
@@ -71,5 +71,5 @@ class ImmediateNodeServiceWithoutReply(NodeService):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError

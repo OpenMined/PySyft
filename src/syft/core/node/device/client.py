@@ -45,7 +45,7 @@ class DeviceClient(Client):
     #     self.device_id = new_target_node_id
     #     return self.device_id
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         # I should already be added
         assert self.device_id is not None
 

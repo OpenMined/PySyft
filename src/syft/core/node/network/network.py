@@ -18,7 +18,7 @@ class Network(Node):
 
         self._register_services()
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         self.address.pub_address.network = self.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:

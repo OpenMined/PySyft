@@ -89,6 +89,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     SyftMessageWithoutReply,
     SyftMessageWithReply,
+    ImmediateSyftMessageWithoutReply,
 )
 
 from ..common.object import ObjectWithID
@@ -119,6 +120,16 @@ class Route(ObjectWithID):
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
+    def send_immediate_msg_with_reply(
+        self, msg: SyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
+        raise NotImplementedError
+
 
 class SoloRoute(Route):
 
@@ -134,6 +145,8 @@ class SoloRoute(Route):
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
+    # QUESTION: Why does this return SyftMessageWithReply instead of
+    # ImmediateSyftMessageWithoutReply?
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply
     ) -> SyftMessageWithoutReply:

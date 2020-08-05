@@ -39,11 +39,11 @@ def test_forgotten_protobuf_type_flag_error():
     flag."""
 
     class CustomSerializable(Serializable):
-        def _object2proto(self):
+        def _object2proto(self) -> None:
             raise NotImplementedError
 
         @staticmethod
-        def _proto2object(self):
+        def _proto2object() -> None:
             raise NotImplementedError
 
     with pytest.raises(TypeError):
