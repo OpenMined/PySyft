@@ -11,10 +11,8 @@ from typing import Union, Set
 
 # syft import
 from ..lazy_structures import LazySet, LazyDict
-from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.core.common.lazy_structures import LazyDict
+from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
-from syft.decorators.syft_decorator_impl import syft_decorator
 
 
 class Serializable:
@@ -255,7 +253,6 @@ class Serializable:
                             one of the arguments of the serialize() method such as:
                             to_proto, to_json, to_binary, or to_hex."""
             )
-
 
 def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
     """
