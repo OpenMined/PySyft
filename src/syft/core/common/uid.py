@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 from __future__ import annotations
-=======
 from typing import Optional
->>>>>>> syft_0.3.0
 
 # external lib imports
 import uuid
