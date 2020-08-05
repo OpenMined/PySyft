@@ -3,12 +3,13 @@ from typing import Union
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
+from typing import Union
 
 
 # QUESTION: Is runtime type checking the best idea here?
 @syft_decorator(typechecking=True)
 def _serialize(
-    obj: Union[Serializable, object],
+    obj: Serializable,
     to_proto: bool = True,
     to_json: bool = False,
     to_binary: bool = False,

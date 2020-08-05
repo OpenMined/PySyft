@@ -1,11 +1,13 @@
+from google.protobuf import json_format
 from typing import Union
 
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
 from google.protobuf import json_format
-from .util import fully_qualified_name2type  # noqa: F401
-import json
+from .serializable import serde_store
+
+from ....proto.util.json_message_pb2 import JsonMessage
 
 
 @syft_decorator(typechecking=True)
@@ -15,32 +17,32 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
-) -> Union[Serializable, object]:
+    schema_type: type = None,
+)-> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default"""
-
-    global fully_qualified_name2type
-
-    # QUESTION: Should this be refactored this looks pretty dangerous
     if from_hex:
-        from_binary = True
-        blob = bytes.fromhex(blob)
+        schematic = schema_type()
+        schematic.ParseFromString(bytes.fromhex(blob))
+        blob = schematic
 
     if from_binary:
-        from_json = True
-        blob = str(blob, "utf-8")
+        schematic = schema_type()
+        schematic.ParseFromString(blob)
+        blob = schematic
 
     if from_json:
-        from_proto = False
-        blob = json.loads(s=blob)
-        obj_type_str = blob["objType"]
+        json_message = json_format.Parse(text=blob, message=JsonMessage())
+        obj_type = serde_store.qual_name2type[json_message.obj_type]
+        protobuf_type = obj_type.get_protobuf_schema()
+        schema_data = json_message.content
+        blob = json_format.Parse(text=schema_data, message=protobuf_type())
 
     if from_proto:
-        obj_type_str = blob.obj_type
         proto_obj = blob
 
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = fully_qualified_name2type[obj_type_str]
+        obj_type = serde_store.schema2type[type(blob)]
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError:
@@ -53,9 +55,4 @@ def _deserialize(
             to deserialize is not supported in this version."""
         )
 
-    protobuf_type = obj_type.protobuf_type
-
-    if not from_proto:
-        proto_obj = json_format.ParseDict(js_dict=blob, message=protobuf_type())
-
-    return obj_type._proto2object(proto_obj)
+    return obj_type._proto2object(proto=proto_obj)
