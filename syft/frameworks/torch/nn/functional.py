@@ -41,6 +41,32 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
+results = {}
+
+
+def inverse(var):
+    """
+    Compute the inverse using Newton's method, with a caching mechanism
+    """
+    if var.id in results:
+        return results[var.id].copy()
+
+    x = None
+
+    C = 20
+
+    for i in range(80):
+        if x is not None:
+            y = C + 1 - var * (x * x)
+            x = y * x / C
+        else:
+            y = C + 1 - var
+            x = y / C
+
+    results[var.id] = x.copy()
+    return x
+
+
 def batch_norm(
     input, running_mean, running_var, weight, bias, training, exponential_average_factor, eps
 ):
@@ -63,17 +89,7 @@ def batch_norm(
         mean = running_mean
         var = running_var
 
-    x = None
-
-    C = 20
-
-    for i in range(80):
-        if x is not None:
-            y = C + 1 - var * (x * x)
-            x = y * x / C
-        else:
-            y = C + 1 - var
-            x = y / C
+    x = inverse(var)
 
     normalized = x * (input - mean)
     result = normalized * weight + bias
