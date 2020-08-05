@@ -53,7 +53,6 @@ class ObjectWithID(Serializable):
         # it's possible that sub-classes of this class will be.
         super().__init__()
 
-
     @property
     def id(self) -> UID:
         """We reveal ObjectWithID.id as a property to discourage users and

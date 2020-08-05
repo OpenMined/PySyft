@@ -72,24 +72,27 @@ class Class(ast.callable.Callable):
         curse(outer_self.ref, "send", send)
 
     def create_serialization_methods(outer_self):
-        def serialize(self,
-                      to_proto: bool = True,
-                      to_json: bool = False,
-                      to_binary: bool = False,
-                      to_hex: bool = False,
-                      ) -> Union[str, bytes, Message]:
-            return _serialize(obj=self,
-                              to_proto=to_proto,
-                              to_json=to_json,
-                              to_binary=to_binary,
-                              to_hex=to_hex)
+        def serialize(
+            self,
+            to_proto: bool = True,
+            to_json: bool = False,
+            to_binary: bool = False,
+            to_hex: bool = False,
+        ) -> Union[str, bytes, Message]:
+            return _serialize(
+                obj=self,
+                to_proto=to_proto,
+                to_json=to_json,
+                to_binary=to_binary,
+                to_hex=to_hex,
+            )
 
-        curse(outer_self.ref, 'serialize', serialize)
-        curse(outer_self.ref, 'to_proto', Serializable.to_proto)
-        curse(outer_self.ref, 'proto', Serializable.proto)
-        curse(outer_self.ref, 'to_json', Serializable.to_json)
-        curse(outer_self.ref, 'json', Serializable.json)
-        curse(outer_self.ref, 'to_binary', Serializable.to_binary)
-        curse(outer_self.ref, 'binary', Serializable.binary)
-        curse(outer_self.ref, 'to_hex', Serializable.to_hex)
-        curse(outer_self.ref, 'hex', Serializable.hex)
+        curse(outer_self.ref, "serialize", serialize)
+        curse(outer_self.ref, "to_proto", Serializable.to_proto)
+        curse(outer_self.ref, "proto", Serializable.proto)
+        curse(outer_self.ref, "to_json", Serializable.to_json)
+        curse(outer_self.ref, "json", Serializable.json)
+        curse(outer_self.ref, "to_binary", Serializable.to_binary)
+        curse(outer_self.ref, "binary", Serializable.binary)
+        curse(outer_self.ref, "to_hex", Serializable.to_hex)
+        curse(outer_self.ref, "hex", Serializable.hex)

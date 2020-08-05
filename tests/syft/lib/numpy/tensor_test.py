@@ -1,6 +1,7 @@
 import syft as sy
 import numpy as np
 
+
 def test_basic_numpy_array_serde():
     """Test that basic serialization and deserialization of numpy arrays works as expected"""
 

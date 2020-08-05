@@ -13,6 +13,7 @@ from ..lazy_structures import LazySet, LazyDict
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
 
+
 class Serializable:
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it

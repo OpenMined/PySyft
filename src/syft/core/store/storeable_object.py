@@ -82,7 +82,7 @@ class StorableObject(Serializable):
         print("schematic type:" + str(schematic_type))
         print("target type:" + str(target_type))
 
-        #UID object
+        # UID object
         schematic = schematic_type()
         if proto.data.Is(schematic_type.DESCRIPTOR):
             proto.data.Unpack(schematic)

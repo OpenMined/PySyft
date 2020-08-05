@@ -27,6 +27,6 @@ class NumpyTensorWrapper(Serializable):
     def get_wrapped_type() -> type:
         return np.array
 
-ndarray = type(np.array([1, 2, 3]))
-curse(ndarray, 'serializable_wrapper_type', NumpyTensorWrapper)
 
+ndarray = type(np.array([1, 2, 3]))
+curse(ndarray, "serializable_wrapper_type", NumpyTensorWrapper)

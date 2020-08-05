@@ -11,6 +11,7 @@ def test_create_storable_obj():
     tags = ["dummy", "test"]
     StorableObject(key=key, data=data, description=description, tags=tags)
 
+
 def test_serde_storable_obj():
     key = UID()
     data = UID()
