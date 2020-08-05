@@ -254,6 +254,7 @@ class Serializable:
                             to_proto, to_json, to_binary, or to_hex."""
             )
 
+
 def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
     """
         Function to retrieve all claases that implement the Serializable interface.
