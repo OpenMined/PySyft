@@ -3,8 +3,6 @@
 stuff
 """
 
-from __future__ import annotations
-
 from typing import List
 
 from syft.core.common.message import (
@@ -145,8 +143,8 @@ class Node(AbstractNode, LocationAwareObject):
         )
 
         # This is a special service which cannot be listed in any
-        # of the other services because it handles messages of all
-        # types. Thus, it does not live in a old_message router since
+        # of the other services because it handles messages of all types.
+        # Thus, it does not live in a old_message router since
         # routers only exist to decide which messages go to which
         # services, and they require that every old_message only correspond
         # to only one service type. If we have more messages like

@@ -29,6 +29,7 @@ class Serializable(object):
     forget to add tests for your object!
     """
 
+    @syft_decorator(typechecking=True)
     def __init__(self, as_wrapper: bool):
         """In the initializer for this class, we check that the protobuf_type was
         properly set and save the as_wrapper parameter.

@@ -4,9 +4,6 @@ registers within a new Network or if a Device registers within
 a new Domain, all the other child node will need to know this
 information to populate complete addresses into their clients."""
 
-
-from __future__ import annotations
-
 from typing import List
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply

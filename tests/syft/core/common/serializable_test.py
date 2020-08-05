@@ -46,12 +46,12 @@ def test_forgotten_protobuf_type_flag_error():
         def _proto2object(self):
             raise NotImplementedError
 
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(TypeError):
         # TODO: tighten this filter to match on the string of the error
         # assert str(e) == "__init__() missing 1 required positional argument: 'as_wrapper'"
-        s = CustomSerializable()
+        _ = CustomSerializable()
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(AttributeError):
         # TODO: tighten this filter to match on the string of the error
         # assert str(e) == "'CustomSerializable' object has no attribute 'protobuf_type'"
-        s = CustomSerializable(as_wrapper=False)
+        _ = CustomSerializable(as_wrapper=False)

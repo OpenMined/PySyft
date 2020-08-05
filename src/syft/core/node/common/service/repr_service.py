@@ -1,6 +1,5 @@
-from __future__ import annotations
-
-from typing import List, final
+from typing import List
+from typing_extensions import final
 
 from syft.decorators import type_hints
 from syft.core.common.message import ImmediateSyftMessageWithoutReply

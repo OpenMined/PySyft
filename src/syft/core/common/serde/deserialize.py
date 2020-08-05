@@ -2,7 +2,7 @@ from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
 from google.protobuf import json_format
-from .util import fully_qualified_name2type
+from .util import fully_qualified_name2type  # noqa: F401
 import json
 
 
