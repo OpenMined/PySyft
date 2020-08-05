@@ -18,11 +18,11 @@ class Network(Node):
 
         self._register_services()
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         self.address.pub_address.network = self.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
-            msg.address.pub_address.network == self.id
-            and msg.address.pub_address.domain is None
+            msg.address.pub_address.network in (self.id, All())
+            and msg.address.pub_address.domain in (None, Unspecified())
         )

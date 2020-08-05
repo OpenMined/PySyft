@@ -23,8 +23,7 @@ class VirtualMachine(Node):
         # then something went wrong with the fancy address system.
         assert self.vm_id is not None
 
-    def add_me_to_my_address(self):
-
+    def add_me_to_my_address(self) -> None:
         # This line implicitly adds it to the address as well
         self.vm_id = self.id
 
@@ -34,6 +33,7 @@ class VirtualMachine(Node):
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
 
+        # QUESTION: Does this exist?
         from ....lib import supported_frameworks
 
         for fw in supported_frameworks:

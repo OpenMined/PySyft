@@ -1,6 +1,9 @@
+from typing import Dict, KeysView, ValuesView
+
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore, StorableObject
+from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 
 
 class MemoryStore(ObjectStore):
@@ -17,7 +20,7 @@ class MemoryStore(ObjectStore):
 
     def __init__(self, as_wrapper: bool):
         super().__init__(as_wrapper)
-        self._objects = {}
+        self._objects: Dict[UID, StorableObject] = {}
         self._search_engine = None
 
     @syft_decorator(typechecking=True)
@@ -33,15 +36,15 @@ class MemoryStore(ObjectStore):
         return len(self._objects)
 
     @syft_decorator(typechecking=True)
-    def keys(self) -> [UID]:
+    def keys(self) -> KeysView[UID]:
         return self._objects.keys()
 
     @syft_decorator(typechecking=True)
-    def values(self) -> [StorableObject]:
+    def values(self) -> ValuesView[StorableObject]:
         return self._objects.values()
 
     @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject):
+    def store(self, obj: StorableObject) -> None:
         self._objects[obj.key] = obj
 
     @syft_decorator(typechecking=True)
@@ -64,8 +67,9 @@ class MemoryStore(ObjectStore):
     def clear(self) -> None:
         self._objects.clear()
 
-    def _object2proto(self):
+    def _object2proto(self) -> None:
         pass
 
-    def _proto2object(self, proto):
+    @staticmethod
+    def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
         pass

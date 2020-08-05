@@ -1,3 +1,5 @@
+from typing import Union
+
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
@@ -8,16 +10,17 @@ import json
 
 @syft_decorator(typechecking=True)
 def _deserialize(
-    blob: (str, dict, bytes, Message),
+    blob: Union[str, dict, bytes, Message],
     from_proto: bool = True,
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
-) -> (Serializable, object):
+) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default"""
 
     global fully_qualified_name2type
 
+    # QUESTION: Should this be refactored this looks pretty dangerous
     if from_hex:
         from_binary = True
         blob = bytes.fromhex(blob)

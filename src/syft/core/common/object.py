@@ -14,6 +14,10 @@ class AbstractObjectWithID(Serializable):
     order to add it as a type hint on the ObjectWithId object.
     """
 
+    @property
+    def id(self) -> UID:
+        raise NotImplementedError
+
 
 class ObjectWithID(AbstractObjectWithID):
     """This object is the superclass for nearly all Syft objects. Subclassing

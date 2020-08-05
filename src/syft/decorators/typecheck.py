@@ -85,6 +85,8 @@ def type_hints(decorated: typing.Callable, prohibit_args=True) -> typing.Callabl
     decorator.__module__ = decorated.__module__
 
     old_signature = inspect.signature(decorated)
-    decorator.__signature__ = old_signature
+
+    # https://github.com/python/mypy/issues/5958
+    decorator.__signature__ = old_signature  # type: ignore
 
     return decorator

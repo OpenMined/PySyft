@@ -89,6 +89,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     SyftMessageWithoutReply,
     SyftMessageWithReply,
+    ImmediateSyftMessageWithoutReply,
 )
 
 from ..common.object import ObjectWithID
@@ -119,18 +120,20 @@ class Route(ObjectWithID):
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
         raise NotImplementedError
 
-
-class BroadcastRoute(Route):
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply
-    ) -> Set[SyftMessageWithoutReply]:
+    ) -> ImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         raise NotImplementedError
 
 
 class SoloRoute(Route):
-    def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
-    ):
+
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
@@ -142,7 +145,18 @@ class SoloRoute(Route):
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
+    # QUESTION: Why does this return SyftMessageWithReply instead of
+    # ImmediateSyftMessageWithoutReply?
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply
     ) -> SyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
+
+
+class BroadcastRoute(SoloRoute):
+    """
+    A route used for pub/sub type systems.
+    """
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
+        super().__init__(source = source, destination = destination, connection = connection)
+        self.connection.topic = destination.topic
