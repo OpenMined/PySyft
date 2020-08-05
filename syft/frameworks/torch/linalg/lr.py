@@ -65,7 +65,7 @@ class EncryptedLinearRegression:
         hbc_worker: BaseWorker,
         precision_fractional: int = 6,
         fit_intercept: bool = True,
-        protocol: str = "fss",
+        protocol: str = "snn",
     ):
 
         self.crypto_provider = crypto_provider
@@ -342,7 +342,7 @@ class DASH:
         crypto_provider: BaseWorker,
         hbc_worker: BaseWorker,
         precision_fractional: int = 6,
-        protocol: str = "fss",
+        protocol: str = "snn",
     ):
 
         self.crypto_provider = crypto_provider
