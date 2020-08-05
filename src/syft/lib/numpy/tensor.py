@@ -21,7 +21,13 @@ class NumpyTensorWrapper(StorableObject):
 
     @staticmethod
     def _data_proto2object(proto) -> int:
-        return tensor_to_numpy_array(proto)
+
+        # proto -> original numpy type
+        data = tensor_to_numpy_array(proto)
+
+        # convert to numpy subclassed type (see ..generic.py)
+        data = (np.array(data.shape) * 0) + data
+        return data
 
     @staticmethod
     def get_protobuf_schema() -> type:
@@ -33,7 +39,6 @@ class NumpyTensorWrapper(StorableObject):
 
     @staticmethod
     def construct_new_object(id, data, tags, description):
-        data = (np.array(data.shape) * 0) + data
         data.id = id
         data.tags = tags
         data.description = description
