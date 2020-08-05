@@ -3,7 +3,7 @@
 stuff
 """
 
-from typing import List
+from typing import List, TypeVar, Dict, Union, Optional, Type, Any
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -21,6 +21,7 @@ from ...io.virtual import create_virtual_connection
 
 # CORE IMPORTS
 from ...store import ObjectStore
+from ...common.object import UID
 
 # NON-CORE IMPORTS
 from ..abstract.node import AbstractNode
@@ -38,6 +39,7 @@ from .service.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
 from .service.repr_service import ReprService
+from .service.node_service import EventualNodeServiceWithoutReply
 
 
 class Node(AbstractNode, LocationAwareObject):
@@ -46,15 +48,15 @@ class Node(AbstractNode, LocationAwareObject):
     Basic class for a syft node behavior, explicit purpose node will
     inherit this class (e.g., Device, Domain, Network, and VirtualMachine).
 
-
-
     Each node is identified by an id of type ID and a name of type string.
     """
 
-    client_type = Client
+    ClientT = TypeVar("ClientT", bound=Client)
+    client_type = ClientT
+    child_type_client_type = ClientT
 
-    child_type = None
-    child_type_client_type = None
+    ChildT = TypeVar("ChildT", bound="Node")
+    child_type = ChildT
 
     @syft_decorator(typechecking=True)
     def __init__(self, name: str = None, address: Address = None):
@@ -73,7 +75,8 @@ class Node(AbstractNode, LocationAwareObject):
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
-        self.store = ObjectStore()
+        # QUESTION: Is this as_wrapper True or False and should there be a default?
+        self.store = ObjectStore(as_wrapper=False)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -108,23 +111,31 @@ class Node(AbstractNode, LocationAwareObject):
         # for messages which need a reply, this uses the type
         # of the old_message to look up the service which
         # addresses that old_message.
-        self.immediate_msg_with_reply_router = {}
+        self.immediate_msg_with_reply_router: Dict[
+            Type[ImmediateSyftMessageWithReply], ImmediateObjectActionServiceWithReply
+        ] = {}
 
         # for messages which don't lead to a reply, this uses
         # the type of the old_message to look up the service
         # which addresses that old_message
-        self.immediate_msg_without_reply_router = {}
+        self.immediate_msg_without_reply_router: Dict[
+            Type[ImmediateSyftMessageWithoutReply], Any
+        ] = {}
 
         # for messages which don't need to be run right now
         # and will not generate a reply.
-        self.eventual_msg_without_reply_router = {}
+        self.eventual_msg_without_reply_router: Dict[
+            Type[EventualSyftMessageWithoutReply], EventualNodeServiceWithoutReply
+        ] = {}
 
         # This is the list of services which all node support.
         # You can read more about them by reading their respective
         # class documentation.
 
         # for services which run immediately and do not return a reply
-        self.immediate_services_without_reply = list()
+
+        # TODO: Support ImmediateNodeServiceWithoutReply Parent Class
+        self.immediate_services_without_reply: List[Any] = []
         self.immediate_services_without_reply.append(ReprService)
         self.immediate_services_without_reply.append(HeritageUpdateService)
         self.immediate_services_without_reply.append(ChildNodeLifecycleService)
@@ -163,11 +174,12 @@ class Node(AbstractNode, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def get_client(self) -> Client:
         conn_client = create_virtual_connection(node=self)
+        # QUESTION: self.vm_id is a UID but SoloRoute wants a Location
         route = SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
         return self.client_type(address=self.address, name=self.name, routes=[route])
 
-    def get_metadata_for_client(self):
-        metadata = {}
+    def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
+        metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
         metadata["address"] = self.address
         metadata["name"] = self.name
         metadata["id"] = self.id
@@ -179,9 +191,10 @@ class Node(AbstractNode, LocationAwareObject):
         by returning the clients we used to interact with them from
         the object store."""
 
+        # QUESTION: where is get_objects_of_type defined?
         return self.store.get_objects_of_type(obj_type=Client)
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         raise NotImplementedError
 
     @property
@@ -219,6 +232,10 @@ class Node(AbstractNode, LocationAwareObject):
             return self.message_with_reply_forwarding_service.process(
                 node=self, msg=msg
             )
+
+        # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
+        # return
+        raise Exception("Unable to dispatch message, not all exceptions were caught")
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
@@ -267,53 +284,53 @@ class Node(AbstractNode, LocationAwareObject):
         correspond to it, but each old_message type can only have one service (per node
         subclass) which corresponds to it."""
 
-        for s in self.immediate_services_with_reply:
+        for isr in self.immediate_services_with_reply:
             # Create a single instance of the service to cache in the router corresponding
             # to one or more old_message types.
-            service_instance = s()
-            for handler_type in s.message_handler_types():
+            isr_instance = isr()
+            for handler_type in isr.message_handler_types():
 
                 # for each explicitly supported type, add it to the router
-                self.immediate_msg_with_reply_router[handler_type] = service_instance
+                self.immediate_msg_with_reply_router[handler_type] = isr_instance
 
                 # for all sub-classes of the explicitly supported type, add them
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.immediate_msg_with_reply_router[
                         handler_type_subclass
-                    ] = service_instance
+                    ] = isr_instance
 
-        for s in self.immediate_services_without_reply:
+        for iswr in self.immediate_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
             # to one or more old_message types.
-            service_instance = s()
-            for handler_type in s.message_handler_types():
+            iswr_instance = iswr()
+            for handler_type in iswr.message_handler_types():
 
                 # for each explicitly supported type, add it to the router
-                self.immediate_msg_without_reply_router[handler_type] = service_instance
+                self.immediate_msg_without_reply_router[handler_type] = iswr_instance
 
                 # for all sub-classes of the explicitly supported type, add them
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.immediate_msg_without_reply_router[
                         handler_type_subclass
-                    ] = service_instance
+                    ] = iswr_instance
 
-        for s in self.eventual_services_without_reply:
+        for eswr in self.eventual_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
             # to one or more old_message types.
-            service_instance = s()
-            for handler_type in s.message_handler_types():
+            eswr_instance = eswr()
+            for handler_type in eswr.message_handler_types():
 
                 # for each explicitly supported type, add it to the router
-                self.eventual_msg_without_reply_router[handler_type] = service_instance
+                self.eventual_msg_without_reply_router[handler_type] = eswr_instance
 
                 # for all sub-classes of the explicitly supported type, add them
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.eventual_msg_without_reply_router[
                         handler_type_subclass
-                    ] = service_instance
+                    ] = eswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might
@@ -321,5 +338,5 @@ class Node(AbstractNode, LocationAwareObject):
         # of a sub-class of Node.
         self.services_registered = True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.node_type}:{self.name}:{self.id}"

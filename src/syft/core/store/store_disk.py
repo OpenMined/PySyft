@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any, List
 from typing_extensions import Final
 
 import tempfile
@@ -13,7 +13,9 @@ from .storeable_object import StorableObject
 
 
 class DiskObjectStore(ObjectStore):
-    protobuf_type = any
+
+    # QUESTION: is this correct?
+    protobuf_type = Any
 
     def __init__(self, db_path: Optional[str] = None):
         super().__init__(as_wrapper=False)
@@ -41,11 +43,11 @@ class DiskObjectStore(ObjectStore):
         return self.db.__len__()
 
     @syft_decorator(typechecking=True)
-    def keys(self) -> [UID]:
+    def keys(self) -> List[UID]:
         return self.db.keys()
 
     @syft_decorator(typechecking=True)
-    def values(self) -> [StorableObject]:
+    def values(self) -> List[StorableObject]:
         return self.db.values()
 
     @syft_decorator(typechecking=True)

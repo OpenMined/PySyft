@@ -1,3 +1,5 @@
+from typing import Optional
+
 # external lib imports
 import uuid
 
@@ -9,16 +11,21 @@ from typing_extensions import final
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ...decorators import syft_decorator
 
+
 # resources
-uuid_type = type(uuid.uuid4())
+
+# QUESTION: whats the goal here? These two are the same
+# uuid_type = type(uuid.uuid4())
+from uuid import UUID as uuid_type
 
 
-@final
 class AbstractUID(Serializable):
     """This exists to allow us to typecheck on the UID object
     because we need a type which has already been initialized in
     order to add it as a type hint on the UID object.
     """
+
+    value: uuid_type
 
 
 @final
@@ -44,7 +51,7 @@ class UID(AbstractUID):
     wrapping_class = uuid_type
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None, as_wrapper: bool = False):
+    def __init__(self, value: Optional[uuid_type] = None, as_wrapper: bool = False):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -151,7 +158,7 @@ class UID(AbstractUID):
         )
 
     @staticmethod
-    def _proto2object(proto: ProtoUID) -> AbstractUID:
+    def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -167,10 +174,14 @@ class UID(AbstractUID):
 
         value = uuid.UUID(bytes=proto.value)
         if proto.as_wrapper:
+            # QUESTION: How can we return a UID here, or is it really
+            # a Union[UID, UUID] ?
             return value
         return UID(value=value)
 
 
 # This flag is what allows the serializer to find this class
 # when it encounters an object of uuid_type.
+# QUESTION: Should this be created a separate sub class and implemented
+# properly instead of just mutating an existing imported class?
 uuid_type.serializable_wrapper_type = UID

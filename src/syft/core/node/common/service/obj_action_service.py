@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Type
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 
@@ -23,7 +23,7 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[ImmediateActionWithoutReply]]:
         return [ImmediateActionWithoutReply]
 
 
@@ -34,7 +34,7 @@ class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[EventualActionWithoutReply]]:
         return [EventualActionWithoutReply]
 
 
@@ -47,5 +47,5 @@ class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[ImmediateActionWithReply]]:
         return [ImmediateActionWithReply]

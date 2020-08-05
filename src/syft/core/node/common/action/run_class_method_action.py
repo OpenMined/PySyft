@@ -1,9 +1,21 @@
+from typing import Dict, Any
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
+from syft.core.io.address import Address
+
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
-    def __init__(self, path, _self, args, kwargs, id_at_location, address, msg_id=None):
+    def __init__(
+        self,
+        path: str,
+        _self: Any,
+        args,
+        kwargs: Dict[Any, Any],
+        id_at_location: int,
+        address: Address,
+        msg_id=None,
+    ):
         super().__init__(address=address, msg_id=msg_id)
         self.path = path
         self._self = _self

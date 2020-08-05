@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any, Dict, Set
 
 
 class LazyDict:
@@ -26,7 +26,7 @@ class LazyDict:
     __slots__ = ["_update_rule", "_dict"]
 
     def __init__(self, update_rule: Callable):
-        self._dict = {}
+        self._dict: Dict[Any, Any] = {}
         self._update_rule = update_rule
 
     def __sizeof__(self) -> int:
@@ -47,31 +47,31 @@ class LazyDict:
         """
         return len(self._dict)
 
-    def keys(self) -> any:
+    def keys(self) -> Any:
         """
         Method that returns the keys used in the wrapped dict.
 
         Returns:
-            any: the keys used for indexing.
+            Any: the keys used for indexing.
         """
         return self._dict.keys()
 
-    def values(self) -> any:
+    def values(self) -> Any:
         """
         Method that returns the values stored in the wrapped dict.
 
         Returns:
-            any: they values stored in the dict.
+            Any: they values stored in the dict.
         """
         return self._dict.values()
 
-    def __contains__(self, item: any) -> bool:
+    def __contains__(self, item: Any) -> bool:
         """
         Method that checks if an object is being used as a key in the wrapped
         dict.
 
         Args:
-            item (any): the key to be searched for.
+            item (Any): the key to be searched for.
 
         Returns:
             bool: if the object is present or not.
@@ -82,13 +82,13 @@ class LazyDict:
             contains = item in self._dict
         return contains
 
-    def __setitem__(self, key: any, value: any) -> None:
+    def __setitem__(self, key: Any, value: Any) -> None:
         """
         Method that sets an object at a given key in the wrapped dict.
 
         Args:
-              key (any): the key to be used in the dict.
-              value (any): the value to be used in the dict.
+              key (Any): the key to be used in the dict.
+              value (Any): the value to be used in the dict.
         """
         self._dict[key] = value
 
@@ -126,7 +126,7 @@ class LazySet:
     __slots__ = ["_update_rule", "_set"]
 
     def __init__(self, update_rule: Callable):
-        self._set = set()
+        self._set: Set[Any] = set()
         self._update_rule = update_rule
 
     def __sizeof__(self) -> int:
@@ -147,13 +147,13 @@ class LazySet:
         """
         return len(self._set)
 
-    def __contains__(self, item: any) -> bool:
+    def __contains__(self, item: Any) -> bool:
         """
         Method that checks if an object is being used as a key in the wrapped
         dict.
 
         Args:
-            item (any): the key to be searched for.
+            item (Any): the key to be searched for.
 
         Returns:
             bool: if the object is present or not.
