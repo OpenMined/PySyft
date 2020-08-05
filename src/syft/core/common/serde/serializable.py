@@ -1,6 +1,5 @@
 # external lib imports
 import inspect
-from typing import Optional, Any, Union
 
 # external class/method imports (sorted by length)
 from enum import Enum
@@ -10,13 +9,10 @@ from google.protobuf.message import Message
 from typing import Union, Set
 
 # syft import
-from ..lazy_structures import LazySet, LazyDict
-from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.core.common.lazy_structures import LazyDict
+from ..lazy_structures import LazySet
 from ....proto.util.json_message_pb2 import JsonMessage
 from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.proto.core.common.common_object_pb2 import UID as UID_PB
-
+from syft.core.common.lazy_structures import LazyDict
 
 
 class Serializable:

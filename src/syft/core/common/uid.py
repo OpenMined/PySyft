@@ -158,4 +158,3 @@ class UID(Serializable):
     @staticmethod
     def get_protobuf_schema():
         return UID_PB
-

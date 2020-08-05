@@ -1,6 +1,4 @@
-from google.protobuf import json_format
 from typing import Union
-
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
@@ -18,7 +16,7 @@ def _deserialize(
     from_binary: bool = False,
     from_hex: bool = False,
     schema_type: type = None,
-)-> Union[Serializable, object]:
+) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default"""
     if from_hex:
         schematic = schema_type()
