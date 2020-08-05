@@ -1,6 +1,5 @@
 # external lib imports
 import inspect
-from typing import Optional, Any, Union
 
 # external class/method imports (sorted by length)
 from enum import Enum
