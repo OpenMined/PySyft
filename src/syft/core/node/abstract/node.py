@@ -22,6 +22,9 @@ class AbstractNode(Location):
     device_id: Optional[Union[str, UID]]
     """"""
 
+    def __init__(self):
+        super().__init__()
+
     @property
     def known_child_nodes(self) -> List[Any]:
         raise NotImplementedError
