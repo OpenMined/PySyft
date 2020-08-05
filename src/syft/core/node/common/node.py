@@ -174,7 +174,9 @@ class Node(AbstractNode, LocationAwareObject):
     def get_client(self, routes: List[Route] = []) -> Client:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [SoloRoute(source=self, destination=self.vm_id, connection=conn_client)]
+            routes = [
+                SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
+            ]
         return self.client_type(address=self.address, name=self.name, routes=routes)
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:

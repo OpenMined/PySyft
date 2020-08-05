@@ -15,7 +15,6 @@ from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.lazy_structures import LazyDict
 
 
-
 class Serializable:
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it
