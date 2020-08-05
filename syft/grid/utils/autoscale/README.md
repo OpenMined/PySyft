@@ -49,7 +49,7 @@ You can find sample code in ```test.py```  and  ```test.ipynb```
 import syft.grid.autoscale.utils.gcloud_configurations as configs
 ```
 
-- Initialize using :
+- Initialize using:
 
 ```python
 
@@ -60,13 +60,13 @@ instance_name = gcloud.GoogleCloud(
 )
 ```
 
-- Reserve IP address using :
+- Reserve IP address using:
 
 ```python
 instance_name.reserve_ip("grid")
 ```
 
-- Create Instnaces using :
+- Create Instances using:
 
 ```python
 instance_name.compute_instance(
@@ -77,7 +77,7 @@ instance_name.compute_instance(
 )
 ```
 
-- Create PyGrid Netowork instance using :
+- Create PyGrid Network instance using:
 
 ```python
 instance_name.create_gridnetwork(
@@ -87,7 +87,7 @@ instance_name.create_gridnetwork(
 )
 ```
 
-- Create PyGrid Node instance using :
+- Create PyGrid Node instance using:
 
 ```python
 instance_name.create_gridnode(
@@ -98,7 +98,7 @@ instance_name.create_gridnode(
 )
 ```
 
-- Create Clusters using :
+- Create Clusters using:
 
 ```python
 c1 = instance_name.create_cluster(
@@ -111,13 +111,13 @@ c1 = instance_name.create_cluster(
 )
 ```
 
-- Run a parameter sweep to figure out the best parameters using :
+- Run a parameter sweep to figure out the best parameters using:
 
 ```python
 c1.sweep()
 ```
 
-- Destroy the created instances using :
+- Destroy the created instances using:
 
 ```python
 instance_name.destroy()

@@ -42,7 +42,7 @@ class GoogleCloud:
             ports: list of ports to be exposed, defaults to 80
             apply: to call terraform apply at the end
         """
-        if not ports:
+        if ports is not None:
             ports = [80]
 
         self.config += terrascript.resource.google_compute_firewall(
