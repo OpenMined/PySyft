@@ -1,9 +1,12 @@
+from typing import Union
+
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
 from typing import Union
 
 
+# QUESTION: Is runtime type checking the best idea here?
 @syft_decorator(typechecking=True)
 def _serialize(
     obj: Serializable,
@@ -22,7 +25,7 @@ def _serialize(
     This is the primary serialization method, which processes the above
     flags in a particular order. In general, it is not expected that people
     will set multiple to_<type> flags to True at the same time. We don't
-    currently have logic which prevents this, becuase this may affect
+    currently have logic which prevents this, because this may affect
     runtime performance, but if several flags are True, then we will simply
     take return the type of latest supported flag from the following list:
 
@@ -42,12 +45,18 @@ def _serialize(
     :param to_hex: set this flag to TRUE if you want to return a hex string object
     :type to_hex: bool
     :return: a serialized form of the object on which serialize() is called.
-    :rtype: (str,bytes, Message)
+    :rtype: Union[str, bytes, Message]
     """
 
+    is_serializable: Serializable
     if not isinstance(obj, Serializable):
-        obj = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
+        if hasattr(obj, "serializable_wrapper_type"):
+            is_serializable = obj.serializable_wrapper_type(value=obj, as_wrapper=True)
+        else:
+            raise Exception(f"Object {type(obj)} has no serializable_wrapper_type")
+    else:
+        is_serializable = obj
 
-    return obj.serialize(
+    return is_serializable.serialize(
         to_proto=to_proto, to_json=to_json, to_binary=to_binary, to_hex=to_hex
     )

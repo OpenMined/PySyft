@@ -10,7 +10,7 @@ class DomainClient(Client):
     def __init__(self, address, name, routes: List[Route]):
         super().__init__(address=address, name=name, routes=routes)
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         # I should already be added
         assert self.domain_id is not None
 

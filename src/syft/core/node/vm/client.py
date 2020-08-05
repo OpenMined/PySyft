@@ -1,4 +1,5 @@
-from typing import List, final
+from typing import List
+from typing_extensions import final
 
 from ....decorators import syft_decorator
 from ...io.address import Address
@@ -21,7 +22,7 @@ class VirtualMachineClient(Client):
         # spinup time shouldn't be a huge constraint.
         assert self.vm_id is not None
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         assert self.vm_id is not None
 
     # @property

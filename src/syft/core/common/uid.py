@@ -1,18 +1,23 @@
+<<<<<<< HEAD
 from __future__ import annotations
+=======
+from typing import Optional
+>>>>>>> syft_0.3.0
 
 # external lib imports
 import uuid
 
 # external class/method imports
 from syft.core.common.serde.serializable import Serializable
-from typing import final
+from typing_extensions import final
 
 # syft imports
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ...decorators import syft_decorator
 
+
 # resources
-uuid_type = type(uuid.uuid4())
+from uuid import UUID as uuid_type
 
 
 @final
@@ -34,7 +39,7 @@ class UID(Serializable):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None):
+    def __init__(self, value: Optional[uuid_type] = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -156,3 +161,4 @@ class UID(Serializable):
     @staticmethod
     def get_protobuf_schema():
         return UID_PB
+

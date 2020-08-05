@@ -56,7 +56,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration -----------------------------------------------------
 
@@ -129,8 +129,8 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
-project = u"syft"
-copyright = u"2020, Andrew Trask"
+project = "syft"
+copyright = "2020, Andrew Trask"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -284,7 +284,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "user_guide.tex", u"syft Documentation", u"Andrew Trask", "manual"),
+    ("index", "user_guide.tex", "syft Documentation", "Andrew Trask", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import inspect
 
 from .typecheck import type_hints
@@ -29,9 +27,8 @@ def syft_decorator(
             # except Exception as e:
             #     if LONG_TYPECHECK_STACK_TRACES:
             #         raise e
-            #     # Truncate stacktrace concerned with the
-            #     # type checking decorator so that the
-            #     # true problem is easier to see
+            #     # Truncate stacktrace concerned with the type checking decorator
+            #     # so that the true problem is easier to see
             #     raise Exception(str(e))
 
         if other_decorators:

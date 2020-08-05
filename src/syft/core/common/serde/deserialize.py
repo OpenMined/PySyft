@@ -1,4 +1,5 @@
 from google.protobuf import json_format
+from typing import Union
 
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -11,15 +12,14 @@ from ....proto.util.json_message_pb2 import JsonMessage
 
 @syft_decorator(typechecking=True)
 def _deserialize(
-    blob: (str, dict, bytes, Message),
+    blob: Union[str, dict, bytes, Message],
     from_proto: bool = True,
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
     schema_type: type = None,
-) -> (Serializable, object):
+)-> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default"""
-
     if from_hex:
         schematic = schema_type()
         schematic.ParseFromString(bytes.fromhex(blob))

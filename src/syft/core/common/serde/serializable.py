@@ -1,5 +1,6 @@
 # external lib imports
 import inspect
+from typing import Optional, Any, Union
 
 # external class/method imports (sorted by length)
 from enum import Enum
@@ -13,6 +14,9 @@ from ..lazy_structures import LazySet, LazyDict
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.lazy_structures import LazyDict
 from ....proto.util.json_message_pb2 import JsonMessage
+from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.proto.core.common.common_object_pb2 import UID as UID_PB
+
 
 
 class Serializable:
@@ -32,7 +36,6 @@ class Serializable:
     At this point, your class should be ready to serialize and deserialize! Don't
     forget to add tests for your object!
     """
-
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":
         """This method converts a protobuf object into a subclass of Serializable
@@ -174,7 +177,7 @@ class Serializable:
         This is the primary serialization method, which processes the above
         flags in a particular order. In general, it is not expected that people
         will set multiple to_<type> flags to True at the same time. We don't
-        currently have logic which prevents this, becuase this may affect
+        currently have logic which prevents this, because this may affect
         runtime performance, but if several flags are True, then we will simply
         take return the type of latest supported flag from the following list:
 
@@ -194,7 +197,7 @@ class Serializable:
         :param to_hex: set this flag to TRUE if you want to return a hex string object
         :type to_hex: bool
         :return: a serialized form of the object on which serialize() is called.
-        :rtype: (str,bytes, Message)
+        :rtype: Union[str, bytes, Message]
 
         """
 

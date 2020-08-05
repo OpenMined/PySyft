@@ -48,7 +48,7 @@ class LocationAwareObject:
         # make sure address includes my own ID
         self.add_me_to_my_address()
 
-    def add_me_to_my_address(self):
+    def add_me_to_my_address(self) -> None:
         raise NotImplementedError
 
     @property

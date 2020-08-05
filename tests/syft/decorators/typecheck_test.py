@@ -42,7 +42,7 @@ def test_optional():
     func(x=0)
     func(x=None)
 
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(TypeError):
         func(x="test")
 
 
@@ -69,8 +69,8 @@ def test_ret_type():
     with pytest.raises(TypeError) as e:
 
         @syft_decorator(typechecking=True)
-        def func() -> int:
-            return 1.0
+        def func() -> int:  # type: ignore
+            return 1.0  # type: ignore
 
         func()
 

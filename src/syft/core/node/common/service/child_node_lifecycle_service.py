@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import List
+from typing import List, Type
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
@@ -42,5 +40,5 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[RegisterChildNodeMessage]]:
         return [RegisterChildNodeMessage]

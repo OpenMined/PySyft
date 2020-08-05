@@ -1,3 +1,4 @@
+from typing import Optional
 from .specs.cpu import CPU
 from .specs.gpu import GPU
 from .specs.network import Network
@@ -15,8 +16,8 @@ class DeviceType:
         bare_metal: bool,
         storage: Storage,
         cpu: CPU,
-        gpu: GPU,
-        network: Network,
+        gpu: Optional[GPU],
+        network: Optional[Network],
         spot_mode_supported: bool = False,
         price_per_hour_spot: float = 0,
     ):

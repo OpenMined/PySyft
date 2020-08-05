@@ -4,7 +4,7 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from typing import final
+from typing_extensions import final
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -16,6 +16,7 @@ from ...decorators import syft_decorator
 from ..node.abstract.node import AbstractNode
 from .connection import ClientConnection, ServerConnection
 
+# QUESTION: is this used anywhere?
 known_objects = {}
 
 
