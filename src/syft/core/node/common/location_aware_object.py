@@ -1,10 +1,11 @@
 from syft.core.common.uid import UID
+from syft.core.common.object import ObjectWithID
 
 from ...io.address import Address
 from ...io.address import address as create_address
 
 
-class LocationAwareObject:
+class LocationAwareObject(ObjectWithID):
     def __init__(self, address: Address = None):
 
         # All node should have a representation of where they think
@@ -19,6 +20,7 @@ class LocationAwareObject:
         # the node. Fortunately, the creation of a client is (always?)
         # going to be initiated by the parent node itself, so we should
         # be able to check for it there. TODO: did we check for it?
+        super().__init__()
 
         if address is None:
             address = create_address(network=None, domain=None, device=None, vm=None)
