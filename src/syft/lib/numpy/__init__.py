@@ -1,6 +1,8 @@
+from .tensor import NumpyTensorWrapper
+
 import numpy as np
 
-from ..ast.globals import Globals
+from syft.ast.globals import Globals
 
 whitelist = set()
 whitelist.add("numpy.array")

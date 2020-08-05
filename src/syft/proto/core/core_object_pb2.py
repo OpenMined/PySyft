@@ -7,7 +7,7 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
-from proto.core.common import (
+from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 

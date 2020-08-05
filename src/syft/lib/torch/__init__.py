@@ -1,6 +1,6 @@
 import torch
 
-from ..ast.globals import Globals
+from syft.ast.globals import Globals
 
 whitelist = {}  # (path: str, return_type:type)
 whitelist["torch.tensor"] = "torch.Tensor"

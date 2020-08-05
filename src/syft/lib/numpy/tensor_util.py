@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from . import tensor_pb2
+from ...proto.lib.numpy import tensor_pb2
 
 
 def tensor_to_numpy_array(tensor):

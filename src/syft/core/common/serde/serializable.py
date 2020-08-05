@@ -36,9 +36,10 @@ class Serializable:
 
     Eg:
 
-    class WrapperInt:
-        def __init__(self, int_obj: int):
-            self.int_obj = int_obj
+    class WrapperInt(Serializable):
+        def __init__(self, value: int, as_wrapper:bool):
+            self.int_obj = value
+            self.as_wrapper = as_wrapper
 
         def _object2proto(self) -> WrapperIntPB:
             ...
