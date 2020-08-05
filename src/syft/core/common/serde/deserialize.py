@@ -1,6 +1,4 @@
-from google.protobuf import json_format
 from typing import Union
-
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
