@@ -5,6 +5,7 @@ from syft.core.common.uid import UID
 
 from ...decorators import syft_decorator
 
+
 # utility addresses
 class All(object):
     def __repr__(self):

@@ -147,6 +147,6 @@ If you'd like to see a simple example of a class which can be serialized, please
 the source code of :py:mod:`syft.core.common.object.ObjectWithID`.
 """
 
-from .deserialize import _deserialize
-from .serializable import Serializable, serde_store
-from .serialize import _serialize
+from .deserialize import _deserialize  # noqa: F401
+from .serializable import Serializable, serde_store  # noqa: F401
+from .serialize import _serialize  # noqa: F401
