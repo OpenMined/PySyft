@@ -409,20 +409,20 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             an AdditiveSharingTensor
         """
-        selected_shares = {}
-        for worker, share in self_shares.items():
-            indices = []
-            for index in indices_shares:
-                if isinstance(index, slice):
-                    indices.append(index)
-                elif isinstance(index, dict):
-                    indices.append(index[worker])
-                else:
-                    raise NotImplementedError("Index type", type(indices), "not supported")
-            selected_share = share[tuple(indices)]
-            selected_shares[worker] = selected_share
+        shares = self_shares.items()
 
-        return selected_shares
+        def op(worker, share):
+            idxs = []
+            for idx in indices_shares:
+                if isinstance(idx, slice):
+                    idxs.append(idx)
+                elif isinstance(idx, dict):
+                    idxs.append(idx[worker])
+                else:
+                    raise NotImplementedError("Index type", type(idxs), "not supported")
+            return share[tuple(idxs)]
+
+        return self.apply_to_share(op, shares)
 
     @overloaded.overload_method
     def _getitem_public(self, self_shares, indices):
@@ -437,7 +437,9 @@ class AdditiveSharingTensor(AbstractTensor):
             an AdditiveSharingTensor
 
         """
-        return {worker: share[indices] for worker, share in self_shares.items()}
+        # return {worker: share[indices] for worker, share in self_shares.items()}
+        getitem_operation = lambda _, share: share[indices]
+        return self.apply_to_share(getitem_operation, self_shares.items())
 
     def __getitem__(self, indices):
         if not isinstance(indices, (tuple, list)):
