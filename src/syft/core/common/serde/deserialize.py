@@ -16,7 +16,7 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
-    schema_type: type = None
+    schema_type: type = None,
 ) -> (Serializable, object):
     """We assume you're deserializing a protobuf object by default"""
 
