@@ -449,8 +449,8 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             return self._getitem_public(indices)
 
-    def _to_shared_tensor(self, value, *args):
-        return value.share(*args, **self.get_class_attributes(), **no_wrap)
+    def _to_shared_tensor(self, tensor, *args):
+        return tensor.share(*args, **self.get_class_attributes(), **no_wrap)
 
     ## SECTION SPDZ
 
