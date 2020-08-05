@@ -76,8 +76,7 @@ class Node(AbstractNode, LocationAwareObject):
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
-        # QUESTION: Is this as_wrapper True or False and should there be a default?
-        self.store = ObjectStore(as_wrapper=False)
+        self.store = ObjectStore()
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)

@@ -9,10 +9,9 @@ from google.protobuf.message import Message
 from typing import Union, Set
 
 # syft import
-from ..lazy_structures import LazySet
+from ..lazy_structures import LazySet, LazyDict
+from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
-from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.core.common.lazy_structures import LazyDict
 
 
 class Serializable:
@@ -25,12 +24,49 @@ class Serializable:
     - compile the protobuf file by running `bash scripts/build_proto`
     - find the generated python file in syft.proto
     - import the generated protobuf class into my custom class
-    - set <my class>.protobuf_type = <generated protobuf python class>
+    - implement get_protobuf_Schema
     - implement <my class>._object2proto() method to serialize the object to protobuf
     - implement <my class>._proto2object() to deserialize the protobuf object
 
     At this point, your class should be ready to serialize and deserialize! Don't
     forget to add tests for your object!
+
+    If you want to wrap an existing type (like a torch.tensor) to be used in our serialization
+    ecosystem, you should consider wrapping it. Wrapping means that we NEVER use the wrapper
+    further more into our ecosystem, we only need an easy interface to serialize wrappers.
+
+    Eg:
+
+    class WrapperInt:
+        def __init__(self, int_obj: int):
+            self.int_obj = int_obj
+
+        def _object2proto(self) -> WrapperIntPB:
+            ...
+
+        @staticmethod
+        def _proto2object(proto) -> int:
+            ...
+
+        @staticmethod
+        def get_protobuf_schema() -> type:
+            ...
+
+        @staticmethod
+        def get_wrapped_type() -> type:
+            return int
+
+
+    You must implement the following in order for the subclass to be properly implemented to be
+    seen as a wrapper:
+    - everything presented in the first tutorial of this docstring.
+    - implement get_wrapped_type to return the wrapped type.
+
+    Note: A wrapper should NEVER be used in the codebase, these are only for serialization purposes
+    on external objects.
+
+    After doing all of the above steps, you can call something like sy.serialize(5) and be
+    serialized using our messaging proto backbone.
     """
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":
@@ -219,18 +255,22 @@ class Serializable:
 
 def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
     """
-        Function to retrieve all wrappers that implement the protobuf methods
-        from the SyftSerializable class:
-        A type that wants to implement to wrap another type (eg. torch.Tensor)
-        for the protobuf interface and to use it with syft-proto has to inherit
-        SyftSerializable (directly or from the parent class) and to implement
-        (cannot inherit from parent class):
-            1. bufferize
-            2. unbufferize
+        Function to retrieve all claases that implement the Serializable interface.
+
+        These types can be either be a native type (that we implement and use in syft) or an
+        external type (that we want to use like an external type, like just use it) but serialize it
+        on our messaging backbone.
+
+        A type that wants to implement serialization using syft hast to implement from Serializable:
+            1. _object2proto
+            2. proto2object
             3. get_protobuf_schema
-            4. get_original_class
+
         If these methods are not implemented, the class won't be enrolled in the
-        types that are wrappers can't use syft-proto.
+        set of types that can be serialized using syft.
+
+        If you want to become a wrapper you have to implement as well:
+            4. get_wrapped_type
     """
 
     class SerdeTypes(Enum):
@@ -392,12 +432,19 @@ def update_serde_cache() -> None:
 
 @dataclass(frozen=True)
 class SerdeStore:
+    # set of all serializable types.
     available_types = LazySet(update_rule=update_serde_cache)
+    # set of all wrapped types.
     wrapped_types = LazySet(update_rule=update_serde_cache)
+    # mapping from the name of the type and actual type (will be removed)
     qual_name2type = LazyDict(update_rule=update_serde_cache)
+    # mapping from the type to the schema that serializes that type
     type2schema = LazyDict(update_rule=update_serde_cache)
+    # mapping from the schema to the type it serializes
     schema2type = LazyDict(update_rule=update_serde_cache)
+    # mapping from the wrapped type to its wrapper. Eg: WrapperTorchTensor -> TorchTensor
     wrapped2wrapper = LazyDict(update_rule=update_serde_cache)
+    # mapping from the wrapper type to its wrapped type. Eg: TorchTensor -> WrapperTorchTensor
     wrapper2wrapped = LazyDict(update_rule=update_serde_cache)
 
 
