@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 
@@ -8,18 +10,7 @@ from syft.core.common.serde.serializable import Serializable
 from .uid import UID
 
 
-class AbstractObjectWithID(Serializable):
-    """This exists to allow us to typecheck on the ObjectWithId object
-    because we need a type which has already been initialized in
-    order to add it as a type hint on the ObjectWithId object.
-    """
-
-    @property
-    def id(self) -> UID:
-        raise NotImplementedError
-
-
-class ObjectWithID(AbstractObjectWithID):
+class ObjectWithID(Serializable):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
     using the process specified in the UID class.
@@ -38,10 +29,6 @@ class ObjectWithID(AbstractObjectWithID):
 
     """
 
-    __name__ = "ObjectWithID"
-
-    protobuf_type = ObjectWithID_PB
-
     @syft_decorator(typechecking=True)
     def __init__(self, id: UID = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
@@ -59,7 +46,7 @@ class ObjectWithID(AbstractObjectWithID):
 
         # while this class is never used as a simple wrapper,
         # it's possible that sub-classes of this class will be.
-        super().__init__(as_wrapper=as_wrapper)
+        super().__init__()
 
         if id is None:
             id = UID()
@@ -78,7 +65,7 @@ class ObjectWithID(AbstractObjectWithID):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: AbstractObjectWithID) -> bool:
+    def __eq__(self, other: "ObjectWithID") -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
         This checks to see whether this ObjectWithIDs is equal to another by
@@ -101,7 +88,7 @@ class ObjectWithID(AbstractObjectWithID):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<{self.__name__}:{self.id.value}>"
+        return f"<{ObjectWithID.__name__}:{self.id.value}>"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
@@ -119,12 +106,10 @@ class ObjectWithID(AbstractObjectWithID):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        self_type = type(self)
-        obj_type = self_type.__module__ + "." + self_type.__name__
-        return ObjectWithID_PB(obj_type=obj_type, id=self.id.serialize())
+        return ObjectWithID_PB(id=self.id.serialize())
 
     @staticmethod
-    def _proto2object(proto: ObjectWithID_PB) -> AbstractObjectWithID:
+    def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -139,3 +124,7 @@ class ObjectWithID(AbstractObjectWithID):
         """
 
         return ObjectWithID(id=_deserialize(blob=proto.id))
+
+    @staticmethod
+    def get_protobuf_schema() -> type:
+        return ObjectWithID_PB

@@ -94,7 +94,7 @@ class LazyDict:
 
     def __getitem__(self, item):
         if item not in self._dict:
-            self._update_rule(self, item)
+            self._update_rule()
         return self._dict[item]
 
     def __str__(self):
