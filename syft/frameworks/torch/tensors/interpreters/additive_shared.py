@@ -454,7 +454,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     ## SECTION SPDZ
 
-    def _basic_arithmetic_op(self, shares: dict, operand, op):
+    def _basic_arithmetic_op(self, op, shares: dict, operand):
         if isinstance(operand, int):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
@@ -480,8 +480,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        op = lambda lo, ro: self.modulo(lo + ro)
-        return self._basic_arithmetic_op(shares, other, op)
+        add_operation = lambda left, right: self.modulo(left + right)
+        return self._basic_arithmetic_op(add_operation, shares, other)
 
     __add__ = add
     __radd__ = add
@@ -499,8 +499,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
 
-        op = lambda lo, ro: self.modulo(lo - ro)
-        return self._basic_arithmetic_op(shares, other, op)
+        sub_operation = lambda left, right: self.modulo(left - right)
+        return self._basic_arithmetic_op(sub_operation, shares, other)
 
     __sub__ = sub
 
