@@ -36,7 +36,8 @@ class StorableObject(Serializable):
 
     __slots__ = ["key", "data", "description", "tags"]
 
-    protobuf_type = StorableObject_PB
+    # TODO: remove this flag if commenting it out doesn't break anything
+    # protobuf_type = StorableObject_PB
 
     @syft_decorator(typechecking=True)
     def __init__(

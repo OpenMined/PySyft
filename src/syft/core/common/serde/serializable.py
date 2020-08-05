@@ -12,6 +12,7 @@ from typing import Union, Set
 from ..lazy_structures import LazySet, LazyDict
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
+from ....util import get_subclasses
 
 
 class Serializable:
@@ -359,7 +360,7 @@ def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
     wrapper_types = set()
 
     # get all subclasses of the current class, direct children.
-    for s in cls.__subclasses__():
+    for s in get_subclasses(obj_type=cls):
         # check what type of serde object we have
         serde_type = check_type(s)
 
@@ -375,7 +376,7 @@ def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
         # class or just isn't supposed to be serialized, the children could
         # be serializable, continue the tree search and add the results to the
         # native and wrapper sets.
-        for c in s.__subclasses__():
+        for c in get_subclasses(obj_type=s):
             sub_native_set, sub_wrapper_set = get_protobuf(c)
             native_types.union(sub_native_set)
             wrapper_types.union(sub_wrapper_set)

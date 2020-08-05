@@ -4,10 +4,10 @@ from syft.lib.numpy.tensor_util import numpy_array_to_tensor
 from syft.lib.numpy.tensor_util import tensor_to_numpy_array
 from forbiddenfruit import curse
 
-from syft.core.common.serde.serializable import Serializable
+from syft.core.store.storeable_object import StorableObject
 
 
-class NumpyTensorWrapper(Serializable):
+class NumpyTensorWrapper(StorableObject):
     def __init__(self, value, as_wrapper):
 
         self.numpy_array = value
