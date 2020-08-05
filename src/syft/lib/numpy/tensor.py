@@ -33,7 +33,7 @@ class NumpyTensorWrapper(StorableObject):
 
     @staticmethod
     def construct_new_object(id, data, tags, description):
-        data = np.array(data.shape) + data
+        data = (np.array(data.shape) * 0) + data
         data.id = id
         data.tags = tags
         data.description = description
