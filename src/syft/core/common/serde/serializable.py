@@ -15,7 +15,6 @@ from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.lazy_structures import LazyDict
 from ....proto.util.json_message_pb2 import JsonMessage
 from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.proto.core.common.common_object_pb2 import UID as UID_PB
 
 
 class Serializable:
@@ -28,12 +27,49 @@ class Serializable:
     - compile the protobuf file by running `bash scripts/build_proto`
     - find the generated python file in syft.proto
     - import the generated protobuf class into my custom class
-    - set <my class>.protobuf_type = <generated protobuf python class>
+    - implement get_protobuf_Schema
     - implement <my class>._object2proto() method to serialize the object to protobuf
     - implement <my class>._proto2object() to deserialize the protobuf object
 
     At this point, your class should be ready to serialize and deserialize! Don't
     forget to add tests for your object!
+
+    If you want to wrap an existing type (like a torch.tensor) to be used in our serialization
+    ecosystem, you should consider wrapping it. Wrapping means that we NEVER use the wrapper
+    further more into our ecosystem, we only need an easy interface to serialize wrappers.
+
+    Eg:
+
+    class WrapperInt:
+        def __init__(self, int_obj: int):
+            self.int_obj = int_obj
+
+        def _object2proto(self) -> WrapperIntPB:
+            ...
+
+        @staticmethod
+        def _proto2object(proto) -> int:
+            ...
+
+        @staticmethod
+        def get_protobuf_schema() -> type:
+            ...
+
+        @staticmethod
+        def get_wrapped_type() -> type:
+            return int
+
+
+    You must implement the following in order for the subclass to be properly implemented to be
+    seen as a wrapper:
+    - everything presented in the first tutorial of this docstring.
+    - implement get_wrapped_type to return the wrapped type.
+
+    Note: A wrapper should NEVER be used in the codebase, these are only for serialization purposes
+    on external objects.
+
+    After doing all of the above steps, you can call something like sy.serialize(5) and be
+    serialized using our messaging proto backbone.
     """
 
     @staticmethod
