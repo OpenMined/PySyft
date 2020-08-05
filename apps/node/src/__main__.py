@@ -6,6 +6,8 @@ and route grid workers remotely."""
 import argparse
 import os
 import sys
+import json
+import requests
 
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
@@ -27,6 +29,13 @@ parser.add_argument(
     type=str,
     help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_HOST','0.0.0.0').",
     default=os.environ.get("GRID_HOST", "0.0.0.0"),
+)
+
+parser.add_argument(
+    "--network",
+    type=str,
+    help="Grid Network address, e.g. --network=0.0.0.0:5000. Default is os.environ.get('NETWORK',None).",
+    default=os.environ.get("NETWORK", None),
 )
 
 parser.add_argument(
@@ -63,6 +72,16 @@ if __name__ == "__main__":
     else:
         app = create_app(node_id=args.id, debug=False, n_replica=args.num_replicas)
 
+    _network = args.network
+    _address = "http://{}:{}".format(args.host, args.port)
+    if _address and _network:
+        requests.post(
+            os.path.join(_network, "join"),
+            data=json.dumps(
+                {"node-id": args.id, "node-address": "{}".format(_address)}
+            ),
+        )
+
     server = pywsgi.WSGIServer(
         (args.host, args.port), app, handler_class=WebSocketHandler
     )
@@ -70,4 +89,14 @@ if __name__ == "__main__":
 else:
     node_id = os.environ.get("NODE_ID", None)
     num_replicas = os.environ.get("N_REPLICAS", None)
+    _address = os.environ.get("ADDRESS", None)
+    _network = os.environ.get("NETWORK", None)
+    if _address and _network:
+        requests.post(
+            os.path.join(_network, "join"),
+            data=json.dumps(
+                {"node-id": node_id, "node-address": "{}".format(_address)}
+            ),
+        )
+
     app = create_app(node_id=node_id, debug=False, n_replica=num_replicas)

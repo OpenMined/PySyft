@@ -16,6 +16,7 @@ services:
       - NODE_ID=Bob
       - ADDRESS=http://bob:3000/
       - PORT=3000
+      - NETWORK=http://network:5000
       - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
@@ -28,6 +29,7 @@ services:
       - NODE_ID=Alice
       - ADDRESS=http://alice:3001/
       - PORT=3001
+      - NETWORK=http://network:5000
       - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
@@ -40,6 +42,7 @@ services:
       - NODE_ID=Bill
       - ADDRESS=http://bill:3002/
       - PORT=3002
+      - NETWORK=http://network:5000
       - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
@@ -52,6 +55,7 @@ services:
       - NODE_ID=James
       - ADDRESS=http://james:3003/
       - PORT=3003
+      - NETWORK=http://network:5000
       - DATABASE_URL=sqlite:///databasenode.db
     depends_on:
       - 'network'
