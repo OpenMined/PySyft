@@ -386,11 +386,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if shape is None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
         zero = torch.zeros(*shape, dtype=self.torch_dtype).share(
-            *self.locations,
-            field=self.field,
-            dtype=self.dtype,
-            crypto_provider=self.crypto_provider,
-            **no_wrap,
+            *self.locations, **self.get_class_attributes(), **no_wrap,
         )
         return zero
 
@@ -461,13 +457,7 @@ class AdditiveSharingTensor(AbstractTensor):
             other = torch.tensor([other], dtype=self.torch_dtype)
 
         def share(other):
-            return other.share(
-                *self.child.keys(),
-                field=self.field,
-                dtype=self.dtype,
-                crypto_provider=self.crypto_provider,
-                **no_wrap,
-            ).child
+            return other.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap,).child
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
