@@ -131,7 +131,7 @@ class PlaceHolder(AbstractTensor):
 
         out = f"{type(self).__name__ }[Id:{self.id.value}]"
 
-        if hasattr(self, "child") and self.child is not None:
+        if self.has_child() and self.child is not None:
             out += f">{self.child}"
 
         return out

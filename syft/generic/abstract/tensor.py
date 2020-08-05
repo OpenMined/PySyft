@@ -89,7 +89,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         cloned_tensor.id = self.id
         cloned_tensor.owner = self.owner
 
-        if hasattr(self, "child") and self.child is not None:
+        if self.has_child() and self.child is not None:
             cloned_tensor.child = self.child.clone()
 
         return cloned_tensor
@@ -98,7 +98,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         """
         Forward to Additive Shared Tensor the call to refresh shares
         """
-        if hasattr(self, "child"):
+        if self.has_child():
             self.child = self.child.refresh()
             return self
         else:
@@ -111,7 +111,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
     def __len__(self) -> int:
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
-            if hasattr(self, "child") and not isinstance(self.child, dict):
+            if self.has_child() and not isinstance(self.child, dict):
                 return self.child.shape[0]
             else:
                 return self.shape[0]
