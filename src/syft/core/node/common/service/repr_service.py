@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Type, Optional
 from typing_extensions import final
 
 from syft.decorators import type_hints
@@ -12,7 +12,7 @@ from .node_service import ImmediateNodeServiceWithoutReply
 
 @final
 class ReprMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: (UID, None) = None):
+    def __init__(self, address: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
 
 
@@ -24,5 +24,5 @@ class ReprService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @type_hints
-    def message_handler_types() -> List[type]:
+    def message_handler_types() -> List[Type[ReprMessage]]:
         return [ReprMessage]
