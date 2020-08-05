@@ -709,13 +709,6 @@ class AdditiveSharingTensor(AbstractTensor):
             for worker in workers
         }
 
-    # @classmethod
-    # def apply_to_share(cls, op, tensors_shares, **kwargs):
-    #     return {
-    #         worker: op(share, **kwargs)
-    #         for (worker, share) in cls.share_combine(tensors_shares).items()
-    #     }
-
     @staticmethod
     def apply_to_share(op, shares: dict):
         return {worker: op(worker, share) for worker, share in shares}
