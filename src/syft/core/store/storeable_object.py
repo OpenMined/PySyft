@@ -7,6 +7,7 @@ from ...proto.core.store.store_object_pb2 import StorableObject as StorableObjec
 from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
+from google.protobuf.message import Message
 
 
 class StorableObject(Serializable):
@@ -97,9 +98,19 @@ class StorableObject(Serializable):
                                                 data=data,
                                                 tags=tags,
                                                 description=proto.description)
-        # return StorableObject(
-        #     key=key, data=data, description=proto.description, tags=tags
-        # )
+
+    def _data_object2proto(self) -> Message:
+        return self.data.serialize()
+
+    @staticmethod
+    def _data_proto2object(proto) -> int:
+        return _deserialize(blob=proto)
+
+    @staticmethod
+    def construct_new_object(id, data, tags, description):
+        return StorableObject(
+            key=id, data=data, description=description, tags=tags
+        )
 
     @staticmethod
     def get_protobuf_schema() -> type:
