@@ -117,6 +117,9 @@ docker build . --file ./apps/node/Dockerfile --tag openmined/grid-node:mybuildna
 
 #### Running a Node
 
+> ##### Installation
+> First install [`poetry`](https://python-poetry.org/docs/) and run `poetry install` in `apps/node`
+
 To start the PyGrid Node manually, run:
 
 ```

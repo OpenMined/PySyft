@@ -4,7 +4,9 @@ import json
 # External imports
 import syft as sy
 from flask_login import current_user
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
 
 # Local imports
 from ... import hook, local_worker
@@ -29,11 +31,14 @@ def forward_binary_message(message: bin) -> bin:
         # Process message
         decoded_response = current_user.worker._recv_msg(message)
 
-    except GetNotPermittedError as e:
-        message = sy.serde.deserialize(message, worker=current_user.worker)
-
+    except (
+        EmptyCryptoPrimitiveStoreError,
+        GetNotPermittedError,
+        ResponseSignatureError,
+    ) as e:
         # Register this request into tensor owner account.
         if hasattr(current_user, "save_tensor_request"):
+            message = sy.serde.deserialize(message, worker=current_user.worker)
             current_user.save_request(message._contents)
 
         decoded_response = sy.serde.serialize(e)
