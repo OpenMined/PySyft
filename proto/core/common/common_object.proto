@@ -7,12 +7,9 @@ message CommonObject {
 }
 
 message ObjectWithID {
-  string obj_type = 1;
   syft.core.common.UID id = 2;
 }
 
 message UID {
-  string obj_type = 1;
   bytes value = 2;
-  bool as_wrapper = 3;
 }

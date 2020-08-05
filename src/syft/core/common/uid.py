@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional
 
 # external lib imports
@@ -13,23 +14,11 @@ from ...decorators import syft_decorator
 
 
 # resources
-
-# QUESTION: whats the goal here? These two are the same
-# uuid_type = type(uuid.uuid4())
 from uuid import UUID as uuid_type
 
 
-class AbstractUID(Serializable):
-    """This exists to allow us to typecheck on the UID object
-    because we need a type which has already been initialized in
-    order to add it as a type hint on the UID object.
-    """
-
-    value: uuid_type
-
-
 @final
-class UID(AbstractUID):
+class UID(Serializable):
     """A unique ID for every Syft object.
 
     This object creates a unique ID for every object in the Syft
@@ -46,12 +35,8 @@ class UID(AbstractUID):
 
     """
 
-    protobuf_type = UID_PB
-    is_wrapper = True
-    wrapping_class = uuid_type
-
     @syft_decorator(typechecking=True)
-    def __init__(self, value: Optional[uuid_type] = None, as_wrapper: bool = False):
+    def __init__(self, value: Optional[uuid_type] = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -72,7 +57,7 @@ class UID(AbstractUID):
             my_id = UID()
         """
         # checks to make sure you've set a proto_type
-        super().__init__(as_wrapper=as_wrapper)
+        super().__init__()
 
         # if value is not set - create a novel and unique ID.
         if value is None:
@@ -109,7 +94,7 @@ class UID(AbstractUID):
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: AbstractUID) -> bool:
+    def __eq__(self, other: "UID") -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -151,13 +136,10 @@ class UID(AbstractUID):
             object.
         """
 
-        self_type = type(self)
-        obj_type = self_type.__module__ + "." + self_type.__name__
-        return UID_PB(
-            obj_type=obj_type, value=self.value.bytes, as_wrapper=self.as_wrapper
-        )
+        return UID_PB(value=self.value.bytes)
 
     @staticmethod
+    @syft_decorator(typechecking=True)
     def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 
@@ -171,17 +153,9 @@ class UID(AbstractUID):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        return UID(value=uuid.UUID(bytes=proto.value))
 
-        value = uuid.UUID(bytes=proto.value)
-        if proto.as_wrapper:
-            # QUESTION: How can we return a UID here, or is it really
-            # a Union[UID, UUID] ?
-            return value
-        return UID(value=value)
+    @staticmethod
+    def get_protobuf_schema():
+        return UID_PB
 
-
-# This flag is what allows the serializer to find this class
-# when it encounters an object of uuid_type.
-# QUESTION: Should this be created a separate sub class and implemented
-# properly instead of just mutating an existing imported class?
-uuid_type.serializable_wrapper_type = UID
