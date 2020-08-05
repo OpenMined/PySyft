@@ -42,7 +42,7 @@ class StorableObject(Serializable):
     def __init__(
         self,
         key: UID,
-        data: Serializable,
+        data: object,
         description: Optional[str],
         tags: Optional[List[str]],
     ):

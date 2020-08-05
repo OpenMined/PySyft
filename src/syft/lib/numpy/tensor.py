@@ -9,6 +9,7 @@ from syft.core.common.serde.serializable import Serializable
 
 class NumpyTensorWrapper(Serializable):
     def __init__(self, value, as_wrapper):
+
         self.numpy_array = value
 
     def _object2proto(self) -> TensorProto:
@@ -26,6 +27,6 @@ class NumpyTensorWrapper(Serializable):
     def get_wrapped_type() -> type:
         return np.array
 
-
 ndarray = type(np.array([1, 2, 3]))
 curse(ndarray, 'serializable_wrapper_type', NumpyTensorWrapper)
+
