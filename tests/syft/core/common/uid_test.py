@@ -20,7 +20,6 @@ from syft.core.common.uid import uuid_type
 from syft.core.common.serde import _serialize, _deserialize
 
 
-
 # --------------------- INITIALIZATION ---------------------
 
 

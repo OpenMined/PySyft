@@ -16,7 +16,7 @@ def _deserialize(
     from_binary: bool = False,
     from_hex: bool = False,
     schema_type: type = None,
-)-> Union[Serializable, object]:
+) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default"""
     if from_hex:
         schematic = schema_type()

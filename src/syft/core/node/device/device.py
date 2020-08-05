@@ -40,7 +40,7 @@ class Device(Node):
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return (
-            msg.address.pri_address.device in (self.id, All())
-            and msg.address.pri_address.vm in (None, Unspecified())
-        )
+        return msg.address.pri_address.device in (
+            self.id,
+            All(),
+        ) and msg.address.pri_address.vm in (None, Unspecified())

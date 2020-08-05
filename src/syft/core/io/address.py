@@ -8,11 +8,12 @@ from ...decorators import syft_decorator
 # utility addresses
 class All(object):
     def __repr__(self):
-        return 'All'
+        return "All"
+
 
 class Unspecified(object):
     def __repr__(self):
-        return 'Unspecified'
+        return "Unspecified"
 
 
 @final
