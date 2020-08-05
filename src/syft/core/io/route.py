@@ -131,19 +131,9 @@ class Route(ObjectWithID):
         raise NotImplementedError
 
 
-# QUESTION: Why does this return Set[SyftMessageWithoutReply] instead of
-# ImmediateSyftMessageWithoutReply?
-class BroadcastRoute(Route):
-    def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> Set[SyftMessageWithoutReply]:
-        raise NotImplementedError
-
-
 class SoloRoute(Route):
-    def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
-    ):
+
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
         self.schema = RouteSchema(source=source, destination=destination)
         self.connection = connection
 
@@ -161,3 +151,12 @@ class SoloRoute(Route):
         self, msg: SyftMessageWithReply
     ) -> SyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
+
+
+class BroadcastRoute(SoloRoute):
+    """
+    A route used for pub/sub type systems.
+    """
+    def __init__(self, source: Location, destination: Location, connection: ClientConnection) -> None:
+        super().__init__(source = source, destination = destination, connection = connection)
+        self.connection.topic = destination.topic

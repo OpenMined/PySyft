@@ -2,12 +2,11 @@ from abc import ABC
 from typing import Iterable
 
 from ...decorators import syft_decorator
-from syft.core.common.serde.serializable import Serializable
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
-class ObjectStore(Serializable, ABC):
+class ObjectStore(ABC):
     """
     ObjectStore is the common interface for all the stores that a Node can handle. This should
     provide a dict-like interface on handling data on a worker. Indexing should be always done

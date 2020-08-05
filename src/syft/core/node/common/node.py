@@ -16,8 +16,9 @@ from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....util import get_subclasses
 from ...io.address import Address
-from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
+from ...io.route import SoloRoute, Route
+
 
 # CORE IMPORTS
 from ...store import ObjectStore
@@ -170,11 +171,11 @@ class Node(AbstractNode, LocationAwareObject):
         self.lib_ast = lib_ast
 
     @syft_decorator(typechecking=True)
-    def get_client(self) -> Client:
-        conn_client = create_virtual_connection(node=self)
-        # QUESTION: self.vm_id is a UID but SoloRoute wants a Location
-        route = SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
-        return self.client_type(address=self.address, name=self.name, routes=[route])
+    def get_client(self, routes: List[Route] = []) -> Client:
+        if not len(routes):
+            conn_client = create_virtual_connection(node=self)
+            routes = [SoloRoute(source=self, destination=self.vm_id, connection=conn_client)]
+        return self.client_type(address=self.address, name=self.name, routes=routes)
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
         metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
