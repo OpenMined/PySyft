@@ -55,7 +55,8 @@ class StorableObject(Serializable):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
         key = self.key.serialize()
-        data = self.data.serialize()
+        print("Serialized Key:" + str(key))
+        data = self._data_object2proto()
         proto = StorableObject_PB()
         proto.key.CopyFrom(key)
         proto.schematic_qualname = (
@@ -70,7 +71,7 @@ class StorableObject(Serializable):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+    def _proto2object(proto: StorableObject_PB) -> object:
         # deserialize the ID
         key = _deserialize(blob=proto.key)
 
@@ -88,14 +89,17 @@ class StorableObject(Serializable):
         if proto.data.Is(schematic_type.DESCRIPTOR):
             proto.data.Unpack(schematic)
         # data = target_type._proto2object(proto=schematic)
-        data = _deserialize(blob=schematic)
+        data = target_type._data_proto2object(proto=schematic)
         tags = None
         if proto.tags:
             tags = list(proto.tags)
-
-        return StorableObject(
-            key=key, data=data, description=proto.description, tags=tags
-        )
+        return target_type.construct_new_object(id=key,
+                                                data=data,
+                                                tags=tags,
+                                                description=proto.description)
+        # return StorableObject(
+        #     key=key, data=data, description=proto.description, tags=tags
+        # )
 
     @staticmethod
     def get_protobuf_schema() -> type:

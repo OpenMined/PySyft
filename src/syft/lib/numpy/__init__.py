@@ -1,6 +1,7 @@
-from .tensor import NumpyTensorWrapper
-
 import numpy as np
+from .tensor import NumpyTensorWrapper
+from .array import ArrayConstructor
+from .ndarray import NdArrayConstructor
 
 from syft.ast.globals import Globals
 
