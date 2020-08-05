@@ -70,13 +70,24 @@ class StorableObject(Serializable):
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: StorableObject_PB) -> "StorableObject":
-        key = _deserialize(proto.key)
+        # deserialize the ID
+        key = _deserialize(blob=proto.key)
+
+        # UID type
         schematic_type = pydoc.locate(proto.schematic_qualname)
+
+        # StoreableObject type
         target_type = pydoc.locate(proto.obj_type)
+
+        print("schematic type:" + str(schematic_type))
+        print("target type:" + str(target_type))
+
+        #UID object
         schematic = schematic_type()
         if proto.data.Is(schematic_type.DESCRIPTOR):
             proto.data.Unpack(schematic)
-        data = target_type._proto2object(proto=schematic)
+        # data = target_type._proto2object(proto=schematic)
+        data = _deserialize(blob=schematic)
         tags = None
         if proto.tags:
             tags = list(proto.tags)
@@ -84,3 +95,7 @@ class StorableObject(Serializable):
         return StorableObject(
             key=key, data=data, description=proto.description, tags=tags
         )
+
+    @staticmethod
+    def get_protobuf_schema() -> type:
+        return StorableObject_PB
