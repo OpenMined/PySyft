@@ -256,18 +256,22 @@ class Serializable:
 
 def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
     """
-        Function to retrieve all wrappers that implement the protobuf methods
-        from the SyftSerializable class:
-        A type that wants to implement to wrap another type (eg. torch.Tensor)
-        for the protobuf interface and to use it with syft-proto has to inherit
-        SyftSerializable (directly or from the parent class) and to implement
-        (cannot inherit from parent class):
-            1. bufferize
-            2. unbufferize
+        Function to retrieve all claases that implement the Serializable interface.
+
+        These types can be either be a native type (that we implement and use in syft) or an
+        external type (that we want to use like an external type, like just use it) but serialize it
+        on our messaging backbone.
+
+        A type that wants to implement serialization using syft hast to implement from Serializable:
+            1. _object2proto
+            2. proto2object
             3. get_protobuf_schema
-            4. get_original_class
+
         If these methods are not implemented, the class won't be enrolled in the
-        types that are wrappers can't use syft-proto.
+        set of types that can be serialized using syft.
+
+        If you want to become a wrapper you have to implement as well:
+            4. get_wrapped_type
     """
 
     class SerdeTypes(Enum):
