@@ -16,16 +16,19 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
+    schema_type: type = None
 ) -> (Serializable, object):
     """We assume you're deserializing a protobuf object by default"""
 
     if from_hex:
-        from_binary = True
-        blob = bytes.fromhex(blob)
+        schematic = schema_type()
+        schematic.ParseFromString(bytes.fromhex(blob))
+        blob = schematic
 
     if from_binary:
-        from_json = True
-        blob = str(blob, "utf-8")
+        schematic = schema_type()
+        schematic.ParseFromString(blob)
+        blob = schematic
 
     if from_json:
         json_message = json_format.Parse(text=blob, message=JsonMessage())
@@ -52,4 +55,4 @@ def _deserialize(
             to deserialize is not supported in this version."""
         )
 
-    return obj_type._proto2object(proto_obj)
+    return obj_type._proto2object(proto=proto_obj)

@@ -198,19 +198,15 @@ class Serializable:
 
         """
 
-        if to_json or to_binary or to_hex:
+        if to_binary:
+            return self._object2proto().SerializeToString()
+        elif to_hex:
+            return self._object2proto().SerializeToString().hex()
+        elif to_json:
             blob = json_format.MessageToJson(message=self._object2proto())
-
-            if to_json:
-                blob = json_format.MessageToJson(
-                    message=JsonMessage(obj_type=type(self).__qualname__, content=blob)
-                )
-                return blob
-
-            if to_binary or to_hex:
-                blob = bytes(blob, "utf-8")
-                if to_hex:
-                    blob = blob.hex()
+            blob = json_format.MessageToJson(
+                message=JsonMessage(obj_type=type(self).__qualname__, content=blob)
+            )
             return blob
         elif to_proto:
             return type(self)._object2proto(self)

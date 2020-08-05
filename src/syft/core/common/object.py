@@ -46,7 +46,7 @@ class ObjectWithID(Serializable):
 
         # while this class is never used as a simple wrapper,
         # it's possible that sub-classes of this class will be.
-        super().__init__(as_wrapper=as_wrapper)
+        super().__init__()
 
         if id is None:
             id = UID()
@@ -88,9 +88,8 @@ class ObjectWithID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<{self.__name__}:{self.id.value}>"
+        return f"<{ObjectWithID.__name__}:{self.id.value}>"
 
-    @staticmethod
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
         """Returns a protobuf serialization of self.
@@ -125,3 +124,7 @@ class ObjectWithID(Serializable):
         """
 
         return ObjectWithID(id=_deserialize(blob=proto.id))
+
+    @staticmethod
+    def get_protobuf_schema() -> type:
+        return ObjectWithID_PB

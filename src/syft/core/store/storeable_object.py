@@ -46,7 +46,6 @@ class StorableObject(Serializable):
         description: Optional[str],
         tags: Optional[List[str]],
     ):
-        super().__init__(as_wrapper=False)
         self.key = key
         self.data = data
         self.description = description
