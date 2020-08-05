@@ -18,7 +18,6 @@ from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.proto.core.common.common_object_pb2 import UID as UID_PB
 
 
-
 class Serializable:
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it
@@ -36,6 +35,7 @@ class Serializable:
     At this point, your class should be ready to serialize and deserialize! Don't
     forget to add tests for your object!
     """
+
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":
         """This method converts a protobuf object into a subclass of Serializable
@@ -396,12 +396,19 @@ def update_serde_cache() -> None:
 
 @dataclass(frozen=True)
 class SerdeStore:
+    # set of all serializable types.
     available_types = LazySet(update_rule=update_serde_cache)
+    # set of all wrapped types.
     wrapped_types = LazySet(update_rule=update_serde_cache)
+    # mapping from the name of the type and actual type (will be removed)
     qual_name2type = LazyDict(update_rule=update_serde_cache)
+    # mapping from the type to the schema that serializes that type
     type2schema = LazyDict(update_rule=update_serde_cache)
+    # mapping from the schema to the type it serializes
     schema2type = LazyDict(update_rule=update_serde_cache)
+    # mapping from the wrapped type to its wrapper. Eg: WrapperTorchTensor -> TorchTensor
     wrapped2wrapper = LazyDict(update_rule=update_serde_cache)
+    # mapping from the wrapper type to its wrapped type. Eg: TorchTensor -> WrapperTorchTensor
     wrapper2wrapped = LazyDict(update_rule=update_serde_cache)
 
 
