@@ -99,7 +99,7 @@ installed) using [Docker](https://www.docker.com/). All you
 will have to do is start the container like this:
 
 ```bash
-$ docker container run openmined/pysyft-notebook
+docker container run openmined/pysyft-notebook
 ```
 
 You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
@@ -113,15 +113,15 @@ You can use the provided link to access the jupyter notebook (the link is only a
 You can also set the directory from which the server will serve notebooks (default is /workspace).
 
 ```bash
-$ docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
+docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
 ```
 
 You could also build the image on your own and run it locally:
 
 ```bash
-$ cd docker-images/pysyft-notebook/
-$ docker image build -t pysyft-notebook .
-$ docker container run pysyft-notebook
+cd docker-images/pysyft-notebook/
+docker image build -t pysyft-notebook .
+docker container run pysyft-notebook
 ```
 
 More information about how to use this image can be found [on docker hub](https://hub.docker.com/r/openmined/pysyft-notebook)
