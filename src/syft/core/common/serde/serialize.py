@@ -7,7 +7,7 @@ from typing import Union
 # QUESTION: Is runtime type checking the best idea here?
 @syft_decorator(typechecking=True)
 def _serialize(
-    obj: Serializable,
+    obj: object,
     to_proto: bool = True,
     to_json: bool = False,
     to_binary: bool = False,

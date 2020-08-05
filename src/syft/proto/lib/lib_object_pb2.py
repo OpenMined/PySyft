@@ -7,6 +7,8 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
+from proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -17,7 +19,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.lib",
     syntax="proto3",
     serialized_options=None,
-    serialized_pb=b'\n\x1aproto/lib/lib_object.proto\x12\x08syft.lib"\x0b\n\tLibObjectb\x06proto3',
+    serialized_pb=b'\n\x1aproto/lib/lib_object.proto\x12\x08syft.lib\x1a\x1cproto/lib/torch/tensor.proto">\n\tLibObject\x12\x31\n\x0ctorch_tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProtob\x06proto3',
+    dependencies=[proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,],
 )
 
 
@@ -27,7 +30,26 @@ _LIBOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    fields=[],
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="torch_tensor",
+            full_name="syft.lib.LibObject.torch_tensor",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
+    ],
     extensions=[],
     nested_types=[],
     enum_types=[],
@@ -36,10 +58,13 @@ _LIBOBJECT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=40,
-    serialized_end=51,
+    serialized_start=70,
+    serialized_end=132,
 )
 
+_LIBOBJECT.fields_by_name[
+    "torch_tensor"
+].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORPROTO
 DESCRIPTOR.message_types_by_name["LibObject"] = _LIBOBJECT
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

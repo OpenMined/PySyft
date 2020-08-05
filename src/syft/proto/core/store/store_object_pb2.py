@@ -11,8 +11,7 @@ from google.protobuf import symbol_database as _symbol_database
 
 _sym_db = _symbol_database.Default()
 
-
-from syft.proto.core.common import (
+from proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2

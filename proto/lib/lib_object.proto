@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package syft.lib;
 
-message LibObject {
+import "proto/lib/torch/tensor.proto";
 
+message LibObject {
+    syft.lib.torch.TensorProto torch_tensor = 1;
 }

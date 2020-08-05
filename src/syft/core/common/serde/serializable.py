@@ -23,7 +23,7 @@ class Serializable:
     - compile the protobuf file by running `bash scripts/build_proto`
     - find the generated python file in syft.proto
     - import the generated protobuf class into my custom class
-    - implement get_protobuf_Schema
+    - implement get_protobuf_schema
     - implement <my class>._object2proto() method to serialize the object to protobuf
     - implement <my class>._proto2object() to deserialize the protobuf object
 
@@ -58,6 +58,7 @@ class Serializable:
 
     You must implement the following in order for the subclass to be properly implemented to be
     seen as a wrapper:
+
     - everything presented in the first tutorial of this docstring.
     - implement get_wrapped_type to return the wrapped type.
 

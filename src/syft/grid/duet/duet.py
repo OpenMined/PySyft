@@ -63,6 +63,10 @@ class Duet(DomainClient):
 
         print(f'♫♫♫ > Connected!')
 
+    @property
+    def id(self):
+        return self.domain_id
+
     def get_client_params(self, domain_url):
 
         binary = binascii.unhexlify(requests.get(domain_url).text)
