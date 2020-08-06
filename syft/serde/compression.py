@@ -70,7 +70,7 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
         decompressed_input_bin: the binary
 
     Returns:
-        a tuple (the binary, LZ4)
+        a tuple (the binary, NO_COMPRESSION)
     """
 
     return decompressed_input_bin, NO_COMPRESSION
