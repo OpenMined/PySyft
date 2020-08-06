@@ -386,7 +386,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if shape is None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
         zero = torch.zeros(*shape, dtype=self.torch_dtype)
-        zero = self._to_shared_tensor(zero, *self.locations)
+        zero = zero.share(*self.locations, **self.get_class_attributes(), **no_wrap)
         return zero
 
     def refresh(self):
@@ -451,9 +451,6 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             return self._getitem_public(indices)
 
-    def _to_shared_tensor(self, tensor, *args):
-        return tensor.share(*args, **self.get_class_attributes(), **no_wrap)
-
     ## SECTION SPDZ
 
     def _basic_arithmetic_op(self, op, shares: dict, operand):
@@ -461,10 +458,10 @@ class AdditiveSharingTensor(AbstractTensor):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
         if isinstance(operand, (torch.LongTensor, torch.IntTensor)):
-            operand = self._to_shared_tensor(operand, *self.child.keys()).child
+            operand = operand.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap).child
         elif not isinstance(operand, dict):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
-            operand = self._to_shared_tensor(operand, *self.child.keys()).child
+            operand = operand.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap).child
 
         assert len(shares) == len(operand)
         return self.apply_to_share(lambda worker, share: op(share, operand[worker]), shares.items())
