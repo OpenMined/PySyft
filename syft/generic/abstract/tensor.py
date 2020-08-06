@@ -19,6 +19,9 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
+    def has_child(self):
+        return hasattr(self, "child")
+
     def wrap(self, register=True, type=None, **kwargs):
         """Wraps the class inside an empty object of class `type`.
 

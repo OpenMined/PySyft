@@ -41,19 +41,16 @@ class AbstractObject(ABC):
         self.child = child
 
     def __str__(self) -> str:
-        if self.has_child():
+        if hasattr(self, "child"):
             return type(self).__name__ + ">" + self.child.__str__()
         else:
             return type(self).__name__
 
     def __repr__(self) -> str:
-        if self.has_child():
+        if hasattr(self, "child"):
             return type(self).__name__ + ">" + self.child.__repr__()
         else:
             return type(self).__name__
-
-    def has_child(self):
-        return hasattr(self, "child")
 
     def describe(self, description: str) -> "AbstractObject":
         self.description = description
