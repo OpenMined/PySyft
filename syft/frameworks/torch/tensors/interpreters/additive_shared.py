@@ -423,7 +423,6 @@ class AdditiveSharingTensor(AbstractTensor):
             selected_shares[worker] = selected_share
 
         return selected_shares
-        
 
     @overloaded.overload_method
     def _getitem_public(self, self_shares, indices):
@@ -438,10 +437,7 @@ class AdditiveSharingTensor(AbstractTensor):
             an AdditiveSharingTensor
 
         """
-        return {
-            worker: share[indices]
-            for worker, share in self_shares.items()
-        }
+        return {worker: share[indices] for worker, share in self_shares.items()}
 
     def __getitem__(self, indices):
         if not isinstance(indices, (tuple, list)):
@@ -472,16 +468,17 @@ class AdditiveSharingTensor(AbstractTensor):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
         if isinstance(operand, (torch.LongTensor, torch.IntTensor)):
-            operand = operand.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap).child
+            operand = operand.share(
+                *self.child.keys(), **self.get_class_attributes(), **no_wrap
+            ).child
         elif not isinstance(operand, dict):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
-            operand = operand.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap).child
+            operand = operand.share(
+                *self.child.keys(), **self.get_class_attributes(), **no_wrap
+            ).child
 
         assert len(shares) == len(operand)
-        return {
-            worker: op(share, operand[worker])
-            for worker, share in shares.items()
-        }
+        return {worker: op(share, operand[worker]) for worker, share in shares.items()}
 
     @overloaded.method
     def add(self, shares: dict, other):
@@ -799,20 +796,14 @@ class AdditiveSharingTensor(AbstractTensor):
         @overloaded.function
         def stack(tensors_shares, **kwargs):
             shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
-            return {
-                worker: torch.stack(share, **kwargs)
-                for worker, share in shares
-            }
+            return {worker: torch.stack(share, **kwargs) for worker, share in shares}
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
             shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
-            return {
-                worker: torch.cat(share, **kwargs)
-                for worker, share in shares
-            }
+            return {worker: torch.cat(share, **kwargs) for worker, share in shares}
 
         module.cat = cat
 
