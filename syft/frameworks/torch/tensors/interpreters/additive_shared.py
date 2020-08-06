@@ -456,6 +456,18 @@ class AdditiveSharingTensor(AbstractTensor):
     ## SECTION SPDZ
 
     def _basic_arithmetic_op(self, op, shares: dict, operand):
+        """Do specific operation(op) operand to the self AST instace.
+
+        Agrs:
+            op: a function to be applied for self AST instance and operand.
+            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
+                self. Equivalent to calling self.child.
+            other: the operand being added to self, can be:
+                - a dictionary <location_id -> PointerTensor) of shares
+                - a torch tensor
+                - a constant
+
+        """
         if isinstance(operand, int):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
@@ -704,6 +716,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @staticmethod
     def share_combine(tensors_shares):
+        """
+        This method combines share in the same worker
+        """
         workers = tensors_shares[0].keys()
 
         return {
