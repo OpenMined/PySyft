@@ -1,4 +1,4 @@
-from __future__ import annotations
+from typing import Optional
 
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
@@ -30,7 +30,7 @@ class ObjectWithID(Serializable):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, id: UID = None, as_wrapper: bool = False):
+    def __init__(self, id: Optional[UID] = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.
@@ -126,5 +126,6 @@ class ObjectWithID(Serializable):
         return ObjectWithID(id=_deserialize(blob=proto.id))
 
     @staticmethod
+    # QUESTION: What type is this returning?
     def get_protobuf_schema() -> type:
         return ObjectWithID_PB

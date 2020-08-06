@@ -1,9 +1,8 @@
 from typing import Any, List, Optional, Union
 
 from ...io.location import Location
-from ...io.address import Address
+from ...io.address import Address, All, Unspecified
 from ...store import ObjectStore
-from ...common.uid import UID
 from ...common.message import (
     ImmediateSyftMessageWithoutReply,
     EventualSyftMessageWithoutReply,
@@ -14,12 +13,16 @@ from ...common.message import (
 class AbstractNode(Location):
     store: ObjectStore
     lib_ast: Any  # Cant import Globals (circular reference)
+
+    # QUESTION: How can this match the LocationAwareObject property?
+    # Definition of "address" in base class "AbstractNodeClient" is incompatible with
+    # definition in base class "LocationAwareObject"
     address: Address
 
     # QUESTION: These are incompatible with the LocationAwareObject properties
-    network_id: Optional[Union[str, UID]]
-    domain_id: Optional[Union[str, UID]]
-    device_id: Optional[Union[str, UID]]
+    network_id: Optional[Union[str, Any, Unspecified, All]]
+    domain_id: Optional[Union[str, Any, Unspecified, All]]
+    device_id: Optional[Union[str, Any, Unspecified, All]]
     """"""
 
     def __init__(self):
@@ -42,6 +45,18 @@ class AbstractNode(Location):
     def recv_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def get_object(self) -> None:
+        raise NotImplementedError
+
+    def has_object(self) -> None:
+        raise NotImplementedError
+
+    def store_object(self) -> None:
+        raise NotImplementedError
+
+    def delete_object(self) -> None:
         raise NotImplementedError
 
 

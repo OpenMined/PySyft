@@ -17,7 +17,7 @@ from ..node.abstract.node import AbstractNode
 from .connection import ClientConnection, ServerConnection
 
 # QUESTION: is this used anywhere?
-known_objects = {}
+# known_objects = {}
 
 
 @final

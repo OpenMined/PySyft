@@ -1,7 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Optional
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
+from syft.core.common.uid import UID
 from syft.core.io.address import Address
 
 
@@ -10,11 +11,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args,
+        args: Tuple[Any],
         kwargs: Dict[Any, Any],
         id_at_location: int,
         address: Address,
-        msg_id=None,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.path = path
@@ -23,7 +24,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-    def execute_action(self, node: AbstractNode):
+    def execute_action(self, node: AbstractNode) -> None:
         method = node.lib_ast(self.path)
 
         resolved_self = node.store.get_object(id=self._self.id_at_location)

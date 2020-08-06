@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pydoc
 from typing import List, Optional
 from ...decorators import syft_decorator
@@ -66,8 +64,9 @@ class StorableObject(Serializable):
         proto.data.Pack(data)
         proto.obj_type = type(self).__module__ + "." + type(self).__name__
         proto.description = self.description
-        for tag in self.tags:
-            proto.tags.append(tag)
+        if self.tags is not None:
+            for tag in self.tags:
+                proto.tags.append(tag)
         return proto
 
     @staticmethod
@@ -78,16 +77,15 @@ class StorableObject(Serializable):
 
         # UID type
         schematic_type = pydoc.locate(proto.schematic_qualname)
+        target_type: Serializable = pydoc.locate(proto.obj_type)
+        if callable(schematic_type):
+            schematic = schematic_type()
+            descriptor = getattr(schematic_type, "DESCRIPTOR", None)
+            if descriptor is not None and proto.data.Is(descriptor):
+                proto.data.Unpack(schematic)
+            if issubclass(type(target_type), Serializable):
+                data = target_type._proto2object(proto=schematic)
 
-        # StoreableObject type
-        target_type = pydoc.locate(proto.obj_type)
-
-        # UID object
-        schematic = schematic_type()
-        if proto.data.Is(schematic_type.DESCRIPTOR):
-            proto.data.Unpack(schematic)
-        # data = target_type._proto2object(proto=schematic)
-        data = target_type._data_proto2object(proto=schematic)
         tags = None
         if proto.tags:
             tags = list(proto.tags)

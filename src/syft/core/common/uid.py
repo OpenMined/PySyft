@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Optional
 
 # external lib imports
@@ -34,6 +33,8 @@ class UID(Serializable):
     There is no other way in Syft to create an ID for any object.
 
     """
+
+    value: uuid_type
 
     @syft_decorator(typechecking=True)
     def __init__(self, value: Optional[uuid_type] = None):
