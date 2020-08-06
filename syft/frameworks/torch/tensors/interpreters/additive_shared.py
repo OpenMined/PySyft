@@ -409,20 +409,21 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             an AdditiveSharingTensor
         """
-        shares = self_shares.items()
-
-        def op(worker, share):
-            idxs = []
-            for idx in indices_shares:
-                if isinstance(idx, slice):
-                    idxs.append(idx)
-                elif isinstance(idx, dict):
-                    idxs.append(idx[worker])
+        selected_shares = {}
+        for worker, share in self_shares.items():
+            indices = []
+            for index in indices_shares:
+                if isinstance(index, slice):
+                    indices.append(index)
+                elif isinstance(index, dict):
+                    indices.append(index[worker])
                 else:
-                    raise NotImplementedError("Index type", type(idxs), "not supported")
-            return share[tuple(idxs)]
+                    raise NotImplementedError("Index type", type(indices), "not supported")
+            selected_share = share[tuple(indices)]
+            selected_shares[worker] = selected_share
 
-        return self.apply_to_share(op, shares)
+        return selected_shares
+        
 
     @overloaded.overload_method
     def _getitem_public(self, self_shares, indices):
@@ -437,9 +438,10 @@ class AdditiveSharingTensor(AbstractTensor):
             an AdditiveSharingTensor
 
         """
-        # return {worker: share[indices] for worker, share in self_shares.items()}
-        getitem_operation = lambda _, share: share[indices]
-        return self.apply_to_share(getitem_operation, self_shares.items())
+        return {
+            worker: share[indices]
+            for worker, share in self_shares.items()
+        }
 
     def __getitem__(self, indices):
         if not isinstance(indices, (tuple, list)):
@@ -464,7 +466,10 @@ class AdditiveSharingTensor(AbstractTensor):
             operand = operand.share(*self.child.keys(), **self.get_class_attributes(), **no_wrap).child
 
         assert len(shares) == len(operand)
-        return self.apply_to_share(lambda worker, share: op(share, operand[worker]), shares.items())
+        return {
+            worker: op(share, operand[worker])
+            for worker, share in shares.items()
+        }
 
     @overloaded.method
     def add(self, shares: dict, other):
@@ -707,10 +712,6 @@ class AdditiveSharingTensor(AbstractTensor):
         }
 
     @staticmethod
-    def apply_to_share(op, shares: dict):
-        return {worker: op(worker, share) for worker, share in shares}
-
-    @staticmethod
     @overloaded.module
     def torch(module):
         def add(self, other):
@@ -783,16 +784,20 @@ class AdditiveSharingTensor(AbstractTensor):
         @overloaded.function
         def stack(tensors_shares, **kwargs):
             shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
-            op = lambda _, s: torch.stack(s, **kwargs)
-            return AdditiveSharingTensor.apply_to_share(op, shares)
+            return {
+                worker: torch.stack(share, **kwargs)
+                for worker, share in shares
+            }
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
             shares = AdditiveSharingTensor.share_combine(tensors_shares).items()
-            op = lambda _, s: torch.cat(s, **kwargs)
-            return AdditiveSharingTensor.apply_to_share(op, shares)
+            return {
+                worker: torch.cat(share, **kwargs)
+                for worker, share in shares
+            }
 
         module.cat = cat
 
@@ -810,18 +815,17 @@ class AdditiveSharingTensor(AbstractTensor):
             original shape. shifts and dims can be tuples of same length to perform several
             rolls along different dimensions.
             """
-            shares = tensor_shares.items()
-
-            def op(worker, share):
+            results = {}
+            for worker, share in tensor_shares.items():
                 if isinstance(shifts, dict):
                     shift = shifts[worker]
                 elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
                     shift = [s[worker] for s in shifts]
                 else:
                     shift = shifts
-                return torch.roll(share, shift, **kwargs)
+                results[worker] = torch.roll(share, shift, **kwargs)
 
-            return AdditiveSharingTensor.apply_to_share(op, shares)
+            return results
 
         module.roll = roll
 
