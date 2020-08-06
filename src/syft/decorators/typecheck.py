@@ -1,3 +1,9 @@
+try:
+    from typing import ForwardRef
+except ImportError:
+    # python 3.6
+    from typing import _ForwardRef as ForwardRef  # type: ignore
+
 import inspect
 import typing
 
@@ -6,7 +12,9 @@ from typeguard import typechecked
 SKIP_RETURN_TYPE_HINTS = {"__init__"}
 
 
-def type_hints(decorated: typing.Callable, prohibit_args=True) -> typing.Callable:
+def type_hints(
+    decorated: typing.Callable, prohibit_args: bool = True
+) -> typing.Callable:
     """
     Decorator to enforce typechecking using the type hints of a function.
 
@@ -24,7 +32,22 @@ def type_hints(decorated: typing.Callable, prohibit_args=True) -> typing.Callabl
     """
 
     literal_signature = inspect.signature(decorated)
-    solved_signature = typing.get_type_hints(decorated)
+
+    # Python 3.6 Forward References Self Fix
+    # This fixes the issue without using from __future__ import annotations
+    # We get the name of the class and make sure that a forward ref of the class name
+    # exists in the supplied globalns dict for these situations like this:
+    #
+    # class A:
+    #     @syft_decorator(typechecking=True)
+    #     def b(self) -> "A":
+    #
+    # The result is that get_type_hints doesn't raise
+    # E   NameError: name 'A' is not defined
+    class_name = decorated.__qualname__.split(".")[0]  # get the Class Name
+    solved_signature = typing.get_type_hints(
+        decorated, globalns={class_name: ForwardRef(class_name)}
+    )
 
     def check_args(*args, **kwargs):
         """In this method, we want to check to see if all arguments (except self) are passed in as

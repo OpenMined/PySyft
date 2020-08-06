@@ -43,7 +43,8 @@ from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
 
 
-class Node(AbstractNode, LocationAwareObject):
+# TODO: Fix AbstractNode and LocationAwareObject being incompatible
+class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
 
     """
     Basic class for a syft node behavior, explicit purpose node will
@@ -60,7 +61,7 @@ class Node(AbstractNode, LocationAwareObject):
     child_type = ChildT
 
     @syft_decorator(typechecking=True)
-    def __init__(self, name: str = None, address: Address = None):
+    def __init__(self, name: Optional[str] = None, address: Optional[Address] = None):
         AbstractNode.__init__(self)
         LocationAwareObject.__init__(self, address=address)
 

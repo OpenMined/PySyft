@@ -10,6 +10,8 @@ Table of Contents:
 
 """
 
+import json
+
 # external imports
 import uuid
 import pytest
@@ -136,7 +138,9 @@ def test_object_with_id_json_serialization():
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = '{\n  "objType": "ObjectWithID",\n  "content": "{\\n  \\"id\\": {\\n    \\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"\\n  }\\n}"\n}'
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
+    main = {"objType": "ObjectWithID", "content": json.dumps(content)}
+    blob = json.dumps(main)
 
     assert obj.json() == blob
     assert obj.to_json() == blob
@@ -146,9 +150,12 @@ def test_object_with_id_json_serialization():
 def test_object_with_id_json_deserialization():
     """Tests that JSON ObjectWithID deserialization works as expected"""
 
-    blob = '{\n  "objType": "ObjectWithID",\n  "content": "{\\n  \\"id\\": {\\n    \\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"\\n  }\\n}"\n}'
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
+    main = {"objType": "ObjectWithID", "content": json.dumps(content)}
+    blob = json.dumps(main)
 
     obj = sy.deserialize(blob=blob, from_json=True)
+
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
@@ -237,11 +244,16 @@ def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_na
 
     # TODO: write protobufs for these objects and remove them from this test.
     known_exceptions = {
+        "Client",
+        "DeviceClient",
+        "DomainClient",
         "Location",
+        "LocationAwareObject",
         "LocationGroup",
         "SubscriptionBackedLocationGroup",
         "RegistryBackedLocationGroup",
         "AbstractNode",
+        "NetworkClient",
         "Node",
         "VirtualMachine",
         "Device",
@@ -251,6 +263,7 @@ def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_na
         "Route",
         "BroadcastRoute",
         "SoloRoute",
+        "VirtualMachineClient",
     }
 
     subclasses = get_subclasses(obj_type=ObjectWithID)

@@ -6,7 +6,7 @@ from enum import Enum
 from dataclasses import dataclass
 from google.protobuf import json_format
 from google.protobuf.message import Message
-from typing import Union, Set
+from typing import Union, Set, Tuple, Type
 
 # syft import
 from ..lazy_structures import LazySet, LazyDict
@@ -69,6 +69,9 @@ class Serializable:
     serialized using our messaging proto backbone.
     """
 
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)
+
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":
         """This method converts a protobuf object into a subclass of Serializable
@@ -89,7 +92,7 @@ class Serializable:
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Message:
+    def _object2proto() -> Message:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
@@ -115,7 +118,7 @@ class Serializable:
         raise NotImplementedError
 
     @staticmethod
-    def get_wrapped_type():
+    def get_wrapped_type() -> None:
         """
             This static method returns the wrapped type, if the current class is
             a wrapper over an external object.
@@ -239,9 +242,14 @@ class Serializable:
         elif to_hex:
             return self._object2proto().SerializeToString().hex()
         elif to_json:
-            blob = json_format.MessageToJson(message=self._object2proto())
+            # indent=None means no white space or \n in the serialized version
+            # this is compatible with json.dumps(x, indent=None)
             blob = json_format.MessageToJson(
-                message=JsonMessage(obj_type=type(self).__qualname__, content=blob)
+                message=self._object2proto(), indent=None  # type: ignore # indent=None
+            )
+            blob = json_format.MessageToJson(
+                message=JsonMessage(obj_type=type(self).__qualname__, content=blob),
+                indent=None,  # type: ignore # indent=None
             )
             return blob
         elif to_proto:
@@ -254,7 +262,7 @@ class Serializable:
             )
 
 
-def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
+def get_protobuf(cls: type) -> Tuple[Set[Type[Serializable]], Set[Type[Serializable]]]:
     """
         Function to retrieve all claases that implement the Serializable interface.
 
@@ -289,7 +297,7 @@ def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
         SerdeNativeType = 1
         SerdeWrapperType = 2
 
-    def check_type(s) -> SerdeTypes:
+    def check_type(s: Type[Serializable]) -> SerdeTypes:
         """
             Check if a class has:
                 1. bufferize implemented.
@@ -351,32 +359,34 @@ def get_protobuf(cls: type) -> (Set[Serializable], Set[Serializable]):
         return SerdeTypes.SerdeNativeType
 
     # the types that we implement and we want to make them serializable
-    native_types = set()
+    native_types: Set[Type[Serializable]] = set()
 
     # the types that we import and we want to make them serializable
-    wrapper_types = set()
+    wrapper_types: Set[Type[Serializable]] = set()
 
     # get all subclasses of the current class, direct children.
     for s in cls.__subclasses__():
-        # check what type of serde object we have
-        serde_type = check_type(s)
+        if issubclass(s, Serializable):
+            # check what type of serde object we have
+            serde_type = check_type(s)
 
-        # check if the serde_type is a native type and add it if yes
-        if serde_type is SerdeTypes.SerdeNativeType:
-            native_types.add(s)
+            # check if the serde_type is a native type and add it if yes
+            if serde_type is SerdeTypes.SerdeNativeType:
+                native_types.add(s)
 
-        # check if the serde_type is a wrapper type and add it if yes
-        if serde_type is SerdeTypes.SerdeWrapperType:
-            wrapper_types.add(s)
+            # check if the serde_type is a wrapper type and add it if yes
+            if serde_type is SerdeTypes.SerdeWrapperType:
+                wrapper_types.add(s)
 
-        # even if the current class is not serializable (might be and abstract
-        # class or just isn't supposed to be serialized, the children could
-        # be serializable, continue the tree search and add the results to the
-        # native and wrapper sets.
-        for c in s.__subclasses__():
-            sub_native_set, sub_wrapper_set = get_protobuf(c)
-            native_types.union(sub_native_set)
-            wrapper_types.union(sub_wrapper_set)
+            # even if the current class is not serializable (might be and abstract
+            # class or just isn't supposed to be serialized, the children could
+            # be serializable, continue the tree search and add the results to the
+            # native and wrapper sets.
+            for c in s.__subclasses__():
+                sub_native_set, sub_wrapper_set = get_protobuf(c)
+
+                native_types.union(sub_native_set)
+                wrapper_types.union(sub_wrapper_set)
 
     return native_types, wrapper_types
 

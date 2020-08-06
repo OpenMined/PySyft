@@ -11,14 +11,14 @@ from ...abstract.node import AbstractNode
 class Action(SyftMessage):
     ""
 
-    def execute_action(self, node: AbstractNode):
+    def execute_action(self, node: AbstractNode) -> None:
         raise NotImplementedError
 
 
 class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
     ""
 
-    def execute_action(self, node: AbstractNode):
+    def execute_action(self, node: AbstractNode) -> None:
         raise NotImplementedError
 
 
