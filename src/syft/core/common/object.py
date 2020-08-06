@@ -1,4 +1,4 @@
-from __future__ import annotations
+from typing import TypeVar
 
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
@@ -8,6 +8,9 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import Serializable
 from .uid import UID
+
+
+ObjectWithIDT = TypeVar("ObjectWithID")
 
 
 class ObjectWithID(Serializable):
@@ -65,7 +68,7 @@ class ObjectWithID(Serializable):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "ObjectWithID") -> bool:
+    def __eq__(self, other: ObjectWithIDT) -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
         This checks to see whether this ObjectWithIDs is equal to another by
@@ -109,7 +112,7 @@ class ObjectWithID(Serializable):
         return ObjectWithID_PB(id=self.id.serialize())
 
     @staticmethod
-    def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
+    def _proto2object(proto: ObjectWithID_PB) -> ObjectWithIDT:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,

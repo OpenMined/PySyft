@@ -1,6 +1,5 @@
 from syft.core.store import StorableObject
 from syft.core.common import UID
-from syft.core.common.serde import _deserialize
 
 
 def test_create_obj():

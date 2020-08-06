@@ -1,12 +1,12 @@
-from __future__ import annotations
-
 import pydoc
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
+
+StorableObjectT = TypeVar("StorableObject")
 
 
 class StorableObject(Serializable):
@@ -69,7 +69,7 @@ class StorableObject(Serializable):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+    def _proto2object(proto: StorableObject_PB) -> StorableObjectT:
         key = _deserialize(proto.key)
         schematic_type = pydoc.locate(proto.schematic_qualname)
         target_type = pydoc.locate(proto.obj_type)

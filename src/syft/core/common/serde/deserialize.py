@@ -71,11 +71,12 @@ def _deserialize(
         schematic.ParseFromString(blob)
         blob = schematic
     elif from_json:
-        if schema_type is None:
-            raise ValueError(
-                "Schema type shouldn't be None when deserializing from json. Please"
-                "provide a schematic to be filled with the json data provided."
-            )
+        # QUESTION: Should this be here?
+        # if schema_type is None:
+        #     raise ValueError(
+        #         "Schema type shouldn't be None when deserializing from json. Please"
+        #         "provide a schematic to be filled with the json data provided."
+        #     )
         json_message = json_format.Parse(text=blob, message=JsonMessage())
         obj_type = serde_store.qual_name2type[json_message.obj_type]
         protobuf_type = obj_type.get_protobuf_schema()

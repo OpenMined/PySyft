@@ -239,9 +239,12 @@ class Serializable:
         elif to_hex:
             return self._object2proto().SerializeToString().hex()
         elif to_json:
-            blob = json_format.MessageToJson(message=self._object2proto())
+            # indent=None means no white space or \n in the serialized version
+            # this is compatible with json.dumps(x, indent=None)
+            blob = json_format.MessageToJson(message=self._object2proto(), indent=None)
             blob = json_format.MessageToJson(
-                message=JsonMessage(obj_type=type(self).__qualname__, content=blob)
+                message=JsonMessage(obj_type=type(self).__qualname__, content=blob),
+                indent=None,
             )
             return blob
         elif to_proto:
