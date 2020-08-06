@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar
+from typing import Optional
 
 # external lib imports
 import uuid
@@ -14,8 +14,6 @@ from ...decorators import syft_decorator
 
 # resources
 from uuid import UUID as uuid_type
-
-UIDT = TypeVar("UID")
 
 
 @final
@@ -35,6 +33,8 @@ class UID(Serializable):
     There is no other way in Syft to create an ID for any object.
 
     """
+
+    value: uuid_type
 
     @syft_decorator(typechecking=True)
     def __init__(self, value: Optional[uuid_type] = None):
@@ -95,7 +95,7 @@ class UID(Serializable):
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: UIDT) -> bool:
+    def __eq__(self, other: "UID") -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -141,7 +141,7 @@ class UID(Serializable):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: UID_PB) -> UIDT:
+    def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,

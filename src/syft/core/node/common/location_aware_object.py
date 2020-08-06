@@ -1,3 +1,4 @@
+from typing import Optional
 from syft.core.common.uid import UID
 from syft.core.common.object import ObjectWithID
 
@@ -6,7 +7,7 @@ from ...io.address import address as create_address
 
 
 class LocationAwareObject(ObjectWithID):
-    def __init__(self, address: Address = None):
+    def __init__(self, address: Optional[Address] = None):
 
         # All node should have a representation of where they think
         # they are currently held. Note that this is at risk of going

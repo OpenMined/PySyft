@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, cast, Type, Optional
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
@@ -15,7 +15,7 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
-    schema_type: type = None,
+    schema_type: Optional[Type] = None,
 ) -> Union[Serializable, object]:
     """
         This function deserializes from an encoding to a Python object. There are a few ways of
@@ -58,8 +58,9 @@ def _deserialize(
                 "provide a schematic to be filled with the hex data provided."
             )
         schematic = schema_type()
-        schematic.ParseFromString(bytes.fromhex(blob))
-        blob = schematic
+        if type(blob) == str:
+            schematic.ParseFromString(bytes.fromhex(cast(str, blob)))
+            blob = schematic
 
     elif from_binary:
         if schema_type is None:
@@ -77,11 +78,14 @@ def _deserialize(
         #         "Schema type shouldn't be None when deserializing from json. Please"
         #         "provide a schematic to be filled with the json data provided."
         #     )
-        json_message = json_format.Parse(text=blob, message=JsonMessage())
-        obj_type = serde_store.qual_name2type[json_message.obj_type]
-        protobuf_type = obj_type.get_protobuf_schema()
-        schema_data = json_message.content
-        blob = json_format.Parse(text=schema_data, message=protobuf_type())
+        if type(blob) == str:
+            json_message = json_format.Parse(
+                text=cast(str, blob), message=JsonMessage()
+            )
+            obj_type = serde_store.qual_name2type[json_message.obj_type]
+            protobuf_type = obj_type.get_protobuf_schema()
+            schema_data = json_message.content
+            blob = json_format.Parse(text=schema_data, message=protobuf_type())
     elif not from_proto:
         raise ValueError("Please pick the format of the data on the deserialization")
 

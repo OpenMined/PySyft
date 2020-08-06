@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import Optional
 
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
@@ -8,9 +8,6 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import Serializable
 from .uid import UID
-
-
-ObjectWithIDT = TypeVar("ObjectWithID")
 
 
 class ObjectWithID(Serializable):
@@ -33,7 +30,7 @@ class ObjectWithID(Serializable):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, id: UID = None, as_wrapper: bool = False):
+    def __init__(self, id: Optional[UID] = None, as_wrapper: bool = False):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.
@@ -68,7 +65,7 @@ class ObjectWithID(Serializable):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: ObjectWithIDT) -> bool:
+    def __eq__(self, other: "ObjectWithID") -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
         This checks to see whether this ObjectWithIDs is equal to another by
@@ -112,7 +109,7 @@ class ObjectWithID(Serializable):
         return ObjectWithID_PB(id=self.id.serialize())
 
     @staticmethod
-    def _proto2object(proto: ObjectWithID_PB) -> ObjectWithIDT:
+    def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -129,5 +126,6 @@ class ObjectWithID(Serializable):
         return ObjectWithID(id=_deserialize(blob=proto.id))
 
     @staticmethod
+    # QUESTION: What type is this returning?
     def get_protobuf_schema() -> type:
         return ObjectWithID_PB

@@ -15,7 +15,8 @@ from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 
 
-class Client(AbstractNodeClient, LocationAwareObject):
+# TODO: Fix AbstractNode and LocationAwareObject being incompatible
+class Client(AbstractNodeClient, LocationAwareObject):  # type: ignore # incompatible
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have

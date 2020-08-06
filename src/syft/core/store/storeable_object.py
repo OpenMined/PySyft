@@ -1,12 +1,10 @@
 import pydoc
-from typing import List, Optional, TypeVar
+from typing import List, Optional
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
-
-StorableObjectT = TypeVar("StorableObject")
 
 
 class StorableObject(Serializable):
@@ -63,20 +61,24 @@ class StorableObject(Serializable):
         proto.data.Pack(data)
         proto.obj_type = type(self).__module__ + "." + type(self).__name__
         proto.description = self.description
-        for tag in self.tags:
-            proto.tags.append(tag)
+        if self.tags is not None:
+            for tag in self.tags:
+                proto.tags.append(tag)
         return proto
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: StorableObject_PB) -> StorableObjectT:
+    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
         key = _deserialize(proto.key)
         schematic_type = pydoc.locate(proto.schematic_qualname)
-        target_type = pydoc.locate(proto.obj_type)
-        schematic = schematic_type()
-        if proto.data.Is(schematic_type.DESCRIPTOR):
-            proto.data.Unpack(schematic)
-        data = target_type._proto2object(proto=schematic)
+        target_type: Serializable = pydoc.locate(proto.obj_type)
+        if callable(schematic_type):
+            schematic = schematic_type()
+            descriptor = getattr(schematic_type, "DESCRIPTOR", None)
+            if descriptor is not None and proto.data.Is(descriptor):
+                proto.data.Unpack(schematic)
+            if issubclass(type(target_type), Serializable):
+                data = target_type._proto2object(proto=schematic)
         tags = None
         if proto.tags:
             tags = list(proto.tags)
