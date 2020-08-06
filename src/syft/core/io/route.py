@@ -163,4 +163,4 @@ class BroadcastRoute(SoloRoute):
         self, source: Location, destination: Location, connection: ClientConnection
     ) -> None:
         super().__init__(source=source, destination=destination, connection=connection)
-        self.connection.topic = destination.topic
+        # self.connection.topic = destination.topic

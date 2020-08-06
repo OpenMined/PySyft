@@ -32,14 +32,13 @@ class VirtualMachine(Node):
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
-
+        raise NotImplementedError
         # QUESTION: Does this exist?
-        from ....lib import supported_frameworks
-
-        for fw in supported_frameworks:
-            for name, ast in fw.ast.attrs.items():
-                if name in self.frameworks.attrs:
-                    raise KeyError(
-                        "Framework already imported. Why are you importing it twice?"
-                    )
-                self.frameworks.attrs[name] = ast
+        # from ....lib import supported_frameworks
+        # for fw in supported_frameworks:
+        #     for name, ast in fw.ast.attrs.items():
+        #         if name in self.frameworks.attrs:
+        #             raise KeyError(
+        #                 "Framework already imported. Why are you importing it twice?"
+        #             )
+        #         self.frameworks.attrs[name] = ast

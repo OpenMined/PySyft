@@ -1,4 +1,5 @@
 import inspect
+from typing import List, Optional, Callable, Any, Dict, Tuple
 
 from .typecheck import type_hints
 
@@ -7,19 +8,19 @@ LONG_TYPECHECK_STACK_TRACES = None
 
 
 def syft_decorator(
-    typechecking=False,
-    prohibit_args=True,
-    enforce_policies=False,
-    syft_logger=False,
-    other_decorators: list = None,
-):
-    def decorator(function):
+    typechecking: bool = False,
+    prohibit_args: bool = True,
+    enforce_policies: bool = False,
+    syft_logger: bool = False,
+    other_decorators: Optional[List] = None,
+) -> Callable:
+    def decorator(function: Callable) -> Callable:
 
         if typechecking:
 
             function = type_hints(function, prohibit_args=prohibit_args)
 
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Tuple[Any], **kwargs: Dict[Any, Any]) -> Callable:
 
             return function(*args, **kwargs)
             # try:
@@ -42,7 +43,7 @@ def syft_decorator(
         wrapper.__module__ = function.__module__
 
         old_signature = inspect.signature(function)
-        wrapper.__signature__ = old_signature
+        wrapper.__signature__ = old_signature  # type: ignore
 
         return wrapper
 

@@ -19,7 +19,9 @@ class MemoryStore(ObjectStore):
     __slots__ = ["_objects", "_search_engine"]
 
     def __init__(self, as_wrapper: bool):
-        super().__init__(as_wrapper)
+        # QUESTION: as_wrapper doesnt exist on the parent
+        # super().__init__(as_wrapper)
+        super().__init__()
         self._objects: Dict[UID, StorableObject] = {}
         self._search_engine = None
 

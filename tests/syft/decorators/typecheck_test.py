@@ -69,7 +69,7 @@ def test_ret_type():
     with pytest.raises(TypeError) as e:
 
         @syft_decorator(typechecking=True)
-        def func() -> int:  # type: ignore
+        def func() -> int:
             return 1.0  # type: ignore
 
         func()

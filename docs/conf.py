@@ -12,10 +12,11 @@ import inspect
 import os
 import shutil
 import sys
+from pathlib import Path
+from typing import Dict
 
-__location__ = os.path.join(
-    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
-)
+dir_name = inspect.getfile(inspect.currentframe())  # type: ignore
+__location__ = os.path.join(os.getcwd(), os.path.dirname(dir_name))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -137,7 +138,7 @@ copyright = "2020, Andrew Trask"
 # built documents.
 #
 # The short X.Y version.
-version = ""  # Is set by calling `setup.py docs`
+default_version = ""  # Is set by calling `setup.py docs`
 # The full version, including alpha/beta/rc tags.
 release = ""  # Is set by calling `setup.py docs`
 
@@ -203,7 +204,7 @@ try:
 except ImportError:
     pass
 else:
-    release = version
+    release = default_version
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
@@ -272,7 +273,7 @@ htmlhelp_basename = "syft-doc"
 
 # -- Options for LaTeX output --------------------------------------------------
 
-latex_elements = {
+latex_elements: Dict[str, str] = {
     # The paper size ('letterpaper' or 'a4paper').
     # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').

@@ -5,9 +5,11 @@ from syft.core.common.uid import UID
 from ...io.route import Route
 from ..common.client import Client
 
+from syft.core.io.address import Address
+
 
 class DomainClient(Client):
-    def __init__(self, address, name, routes: List[Route]):
+    def __init__(self, address: Address, name: str, routes: List[Route]):
         super().__init__(address=address, name=name, routes=routes)
 
     def add_me_to_my_address(self) -> None:
