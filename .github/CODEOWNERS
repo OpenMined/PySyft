@@ -46,14 +46,14 @@
 /syft/workers/ @OpenMined/syft-core
 
 # Crypto Team
-/syft/torch/he/ @OpenMined/cryptography
-/syft/torch/linalg/ @OpenMined/cryptography
-/syft/torch/mpc/ @OpenMined/cryptography
-/syft/torch/nn/ @OpenMined/cryptography
-/syft/torch/tensors/interpreters/additive_shared.py @OpenMined/cryptography
-/syft/torch/tensors/interpreters/autograd.py @OpenMined/cryptography
-/syft/torch/tensors/interpreters/paillier.py @OpenMined/cryptography
-/syft/torch/tensors/interpreters/precision.py @OpenMined/cryptography
+/syft/frameworks/torch/he/ @OpenMined/cryptography
+/syft/frameworks/torch/linalg/ @OpenMined/cryptography
+/syft/frameworks/torch/mpc/ @OpenMined/cryptography
+/syft/frameworks/torch/nn/ @OpenMined/cryptography
+/syft/frameworks/torch/tensors/interpreters/additive_shared.py @OpenMined/cryptography
+/syft/frameworks/torch/tensors/interpreters/autograd.py @OpenMined/cryptography
+/syft/frameworks/torch/tensors/interpreters/paillier.py @OpenMined/cryptography
+/syft/frameworks/torch/tensors/interpreters/precision.py @OpenMined/cryptography
 
 # Grid Tream
 /syft/grid/ @OpenMined/grid
