@@ -909,6 +909,11 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if protocol == "falcon":
+            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
+                self, owners
+            )
+            return shared_tensor
         if self.has_child():
             chain = self.child
 
