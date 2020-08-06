@@ -658,7 +658,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Still no solution to perform a real division on a additive shared tensor
         # without a heavy crypto protocol.
         # For now, the solution works in most cases when the tensor is shared between 2 workers
-        return {location: pointer / divisor for (location, pointer) in shares.items()}
+        return {worker: share / divisor for worker, share in shares.items()}
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):
@@ -672,7 +672,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def mod(self, shares: dict, modulus: int):
         assert isinstance(modulus, int)
 
-        return {location: pointer % modulus for location, pointer in shares.items()}
+        return {worker: share % modulus for worker, share in shares.items()}
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
