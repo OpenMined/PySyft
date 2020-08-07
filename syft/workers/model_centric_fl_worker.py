@@ -100,7 +100,7 @@ class ModelCentricFLWorker:
         params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
         ping = (
             timeit(
-                lambda: self._send_http_req("GET", "/model_centric/speed-test", params),
+                lambda: self._send_http_req("GET", "/model-centric/speed-test", params),
                 number=MAX_SPEED_TESTS,
             )
             * 1000
@@ -116,7 +116,7 @@ class ModelCentricFLWorker:
             params = {"worker_id": worker_id, "random": random_id}
             body = {"upload_data": data_sample}
             time_taken = timeit(
-                lambda: self._send_http_req("POST", "/model_centric/speed-test", params, body),
+                lambda: self._send_http_req("POST", "/model-centric/speed-test", params, body),
                 number=1,
             )
             if time_taken < 0.5:
@@ -135,7 +135,7 @@ class ModelCentricFLWorker:
     def _get_download_speed(self, worker_id, random_id):
         params = {"worker_id": worker_id, "random": random_id}
         speed_history = []
-        with requests.get(self.http_url + "/model_centric/speed-test", params, stream=True) as r:
+        with requests.get(self.http_url + "/model-centric/speed-test", params, stream=True) as r:
             r.raise_for_status()
             buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
@@ -179,7 +179,7 @@ class ModelCentricFLWorker:
 
     def authenticate(self, auth_token, model_name, model_version):
         message = {
-            "type": "model_centric/authenticate",
+            "type": "model-centric/authenticate",
             "data": {
                 "auth_token": auth_token,
                 "model_name": model_name,
@@ -191,7 +191,7 @@ class ModelCentricFLWorker:
 
     def cycle_request(self, worker_id, model_name, model_version, speed_info):
         message = {
-            "type": "model_centric/cycle-request",
+            "type": "model-centric/cycle-request",
             "data": {
                 "worker_id": worker_id,
                 "model": model_name,
@@ -207,7 +207,7 @@ class ModelCentricFLWorker:
             "request_key": request_key,
             "model_id": model_id,
         }
-        serialized_model = self._send_http_req("GET", "/model_centric/get-model", params)
+        serialized_model = self._send_http_req("GET", "/model-centric/get-model", params)
         return self._unserialize(serialized_model, StatePB)
 
     def get_plan(self, worker_id, request_key, plan_id, receive_operations_as):
@@ -217,7 +217,7 @@ class ModelCentricFLWorker:
             "plan_id": plan_id,
             "receive_operations_as": receive_operations_as,
         }
-        serialized_plan = self._send_http_req("GET", "/model_centric/get-plan", params)
+        serialized_plan = self._send_http_req("GET", "/model-centric/get-plan", params)
         return self._unserialize(serialized_plan, PlanPB)
 
     def get_protocol(self, worker_id, request_key, protocol_id):
@@ -226,14 +226,14 @@ class ModelCentricFLWorker:
             "request_key": request_key,
             "plan_id": protocol_id,
         }
-        serialized_protocol = self._send_http_req("GET", "/model_centric/get-protocol", params)
+        serialized_protocol = self._send_http_req("GET", "/model-centric/get-protocol", params)
         return self._unserialize(serialized_protocol, ProtocolPB)
 
     def report(self, worker_id: str, request_key: str, diff: State):
         diff_serialized = self._serialize(diff)
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
-            "type": "model_centric/report",
+            "type": "model-centric/report",
             "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
         }
         return self._send_msg(params)
