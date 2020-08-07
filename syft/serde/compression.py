@@ -19,6 +19,7 @@ scheme_to_bytes = {
     LZ4: LZ4.to_bytes(1, byteorder="big"),
     ZLIB: ZLIB.to_bytes(1, byteorder="big"),
 }
+default_compress_scheme = LZ4
 
 ## SECTION: chosen Compression Algorithm
 
@@ -31,7 +32,7 @@ def _apply_compress_scheme(decompressed_input_bin) -> tuple:
     Args:
         decompressed_input_bin: the binary to be compressed
     """
-    return apply_lz4_compression(decompressed_input_bin)
+    return scheme_to_compression[default_compress_scheme](decompressed_input_bin)
 
 
 def apply_zlib_compression(uncompressed_input_bin) -> tuple:
@@ -69,10 +70,17 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
         decompressed_input_bin: the binary
 
     Returns:
-        a tuple (the binary, LZ4)
+        a tuple (the binary, NO_COMPRESSION)
     """
 
     return decompressed_input_bin, NO_COMPRESSION
+
+
+scheme_to_compression = {
+    NO_COMPRESSION: apply_no_compression,
+    LZ4: apply_lz4_compression,
+    ZLIB: apply_zlib_compression,
+}
 
 
 def _compress(decompressed_input_bin: bin) -> bin:
