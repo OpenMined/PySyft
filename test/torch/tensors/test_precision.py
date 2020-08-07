@@ -37,6 +37,16 @@ def test_fix_prec_registration(hook):
         assert hook.local_worker.get_obj(x.id) == x
 
 
+def test_fixed_precision_mod_operation():
+    x = torch.tensor([1, 2, 3]).fix_prec()
+    y = x % 3
+    y = y.float_prec()
+    z = torch.tensor([1.0, 2.0, 0.0])
+    print(z)
+    print(y)
+    assert (x == z).all()
+
+
 def test_inplace_encode_decode(workers):
 
     x = torch.tensor([0.1, 0.2, 0.3])
