@@ -1,6 +1,7 @@
 import logging
 import os
 
+from .util import mask_payload_fast
 from flask import Flask
 from flask_cors import CORS
 from flask_executor import Executor
@@ -9,6 +10,12 @@ from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_mixins import AllFeaturesMixin
 from sqlalchemy_utils.functions import database_exists
+from geventwebsocket.websocket import Header
+
+# Monkey patch geventwebsocket.websocket.Header.mask_payload() and
+# geventwebsocket.websocket.Header.unmask_payload(), for efficiency
+Header.mask_payload = mask_payload_fast
+Header.unmask_payload = mask_payload_fast
 
 from .version import __version__
 

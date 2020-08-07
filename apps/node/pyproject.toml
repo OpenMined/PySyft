@@ -26,6 +26,8 @@ requests-toolbelt = "^0.9.1"
 syft = "^0.2.8"
 redis = "^3.5.3"
 sqlalchemy_utils = "^0.36.8"
+numpy = "^1.18.5"
+wsaccel = "^0.6.2"
 
 [tool.poetry.dev-dependencies]
 aiounittest = "^1.4.0"
