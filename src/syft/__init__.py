@@ -41,9 +41,10 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 import sys
 from pathlib import Path
 
-import syft as sy
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
+
+import syft as sy
 
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401

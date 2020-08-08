@@ -2,8 +2,6 @@ from flask import Flask
 from ...core.node.domain import Domain
 from ...core.node.domain import DomainClient
 from flask import request
-import binascii
-import pickle
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from .server import ServerThread
@@ -15,7 +13,6 @@ import pickle
 
 import requests
 
-import syft as sy
 from syft.core.io.connection import ClientConnection
 from syft.core.io.route import SoloRoute
 import time
@@ -44,15 +41,18 @@ class GridHttpClientConnection(ClientConnection):
 
 class Duet(DomainClient):
     def __init__(self, host="127.0.0.1", port=5000):
-        self.start_server(host=host, port=port)
+        pub, pri = self.start_server(host=host, port=port)
+
+        self.private_key = pri
+        self.public_key = pub
 
         domain_url = "http://" + host + ":" + str(port) + "/"
 
-        print(f"♫♫♫ > URL:{domain_url}")
+        print("♫♫♫ > URL:{domain_url}")
 
         time.sleep(0.5)
 
-        print(f"♫♫♫ > Connecting...")
+        print("♫♫♫ > Connecting...")
 
         time.sleep(0.5)
 
@@ -60,7 +60,7 @@ class Duet(DomainClient):
 
         super().__init__(address=address, name=name, routes=[route])
 
-        print(f"♫♫♫ > Connected!")
+        print("♫♫♫ > Connected!")
 
     @property
     def id(self):
@@ -82,11 +82,12 @@ class Duet(DomainClient):
 
         app = Flask(__name__)
 
-        domain = Domain(name="duet")
+        pub, pri = Domain.keygen()
+
+        domain = Domain(name="duet", root_public_key=pub)
 
         @app.route("/")
         def get_client():
-
             client_metadata = domain.get_metadata_for_client()
             return pickle.dumps(client_metadata).hex()
 
@@ -116,16 +117,17 @@ class Duet(DomainClient):
             "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
             ":"
             + "\033[1m"
-            + " Duet is an experimental feature currently \n♫♫♫ > in alpha. Do not use this to protect real-world data.\n"
+            + " Duet is an experimental feature currently \n♫♫♫ > "
+            + "in alpha. Do not use this to protect real-world data.\n"
             + "\033[0m"
         )
-        print(f"♫♫♫ >")
+        print("♫♫♫ >")
         print(f"♫♫♫ > ID:{domain.id.value}")
 
     def stop(self):
         self.__del__()
 
     def __del__(self):
-        print(f"♫♫♫ > Ending duet...")
+        print("♫♫♫ > Ending duet...")
         self.server.shutdown()
-        print(f"♫♫♫ > Ended!")
+        print("♫♫♫ > Ended!")
