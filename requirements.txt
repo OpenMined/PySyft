@@ -25,6 +25,7 @@ isort
 protobuf
 pyjwt
 pyscaffold[all]
+requests
 sqlitedict
 torch>=1.5
 typeguard
