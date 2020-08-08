@@ -25,7 +25,7 @@ def create_torch_ast():
         )
 
     for klass in ast.classes:
-        print(klass)
+
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_serialization_methods()
