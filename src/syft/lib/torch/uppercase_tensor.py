@@ -20,6 +20,8 @@ class UppercaseTensorConstructor(ObjectConstructor):
     # self.install_inside_library()
     constructor_location = th
 
+    original_type = th.Tensor
+
 
 # Step 3: create constructor and install it in the library
 UppercaseTensorConstructor().install_inside_library()

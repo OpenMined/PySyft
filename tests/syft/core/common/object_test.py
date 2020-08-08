@@ -139,7 +139,10 @@ def test_object_with_id_json_serialization():
     obj = ObjectWithID(id=uid)
 
     content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
-    main = {"objType": "ObjectWithID", "content": json.dumps(content)}
+    main = {
+        "objType": "syft.core.common.object.ObjectWithID",
+        "content": json.dumps(content),
+    }
     blob = json.dumps(main)
 
     assert obj.json() == blob
@@ -151,7 +154,10 @@ def test_object_with_id_json_deserialization():
     """Tests that JSON ObjectWithID deserialization works as expected"""
 
     content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
-    main = {"objType": "ObjectWithID", "content": json.dumps(content)}
+    main = {
+        "objType": "syft.core.common.object.ObjectWithID",
+        "content": json.dumps(content),
+    }
     blob = json.dumps(main)
 
     obj = sy.deserialize(blob=blob, from_json=True)

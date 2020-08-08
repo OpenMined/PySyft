@@ -18,6 +18,13 @@ class Module(ast.attribute.Attribute):
             path=path, index=index + 1, return_callable=return_callable
         )
 
+    def __repr__(self):
+        out = "Module:\n"
+        for name, module in self.attrs.items():
+            out += "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
+
+        return out
+
     def add_path(self, path, index, return_type_name):
 
         if path[index] not in self.attrs:
@@ -50,10 +57,11 @@ class Module(ast.attribute.Attribute):
                     attr=ast.klass.Class(
                         name=path[index],
                         path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref.original_constructor,
+                        ref=attr_ref.original_type,
                         return_type_name=return_type_name,
                     ),
                 )
+
             elif isinstance(attr_ref, func_type):
                 self.add_attr(
                     attr_name=path[index],

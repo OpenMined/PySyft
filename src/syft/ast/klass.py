@@ -69,6 +69,7 @@ class Class(ast.callable.Callable):
             # STep 4: return pointer
             return ptr
 
+        print(outer_self.ref)
         # using curse because Numpy tries to lock down custom attributes
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
 

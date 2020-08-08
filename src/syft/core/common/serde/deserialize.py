@@ -3,7 +3,7 @@ from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
 from google.protobuf import json_format
-from .serializable import serde_store
+from ....util import index_syft_by_module_name
 
 from ....proto.util.json_message_pb2 import JsonMessage
 
@@ -83,7 +83,10 @@ def _deserialize(
             json_message = json_format.Parse(
                 text=cast(str, blob), message=JsonMessage()
             )
-            obj_type = serde_store.qual_name2type[json_message.obj_type]
+
+            obj_type = index_syft_by_module_name(
+                fully_qualified_name=json_message.obj_type
+            )
             protobuf_type = obj_type.get_protobuf_schema()
             schema_data = json_message.content
             blob = json_format.Parse(text=schema_data, message=protobuf_type())
@@ -92,7 +95,9 @@ def _deserialize(
 
     try:
         # lets try to lookup the type we are deserializing
-        obj_type = serde_store.schema2type[type(blob)]
+        print(type(blob))
+        # obj_type = serde_store.schema2type[type(blob)]
+        obj_type = type(blob).schema2type  # type: ignore
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except KeyError:
