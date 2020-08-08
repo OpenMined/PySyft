@@ -9,7 +9,18 @@ from ....proto.util.json_message_pb2 import JsonMessage
 from ....util import get_fully_qualified_name
 
 
-class Serializable:
+class MetaSerializable(type):
+    def __new__(cls, name, bases, dct):
+        x = super().__new__(cls, name, bases, dct)
+        try:
+            protobuf_schema = dct["get_protobuf_schema"].__get__("")()
+            protobuf_schema.schema2type = x
+        except (KeyError, NotImplementedError):
+            ""
+        return x
+
+
+class Serializable(metaclass=MetaSerializable):
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it
     subclass from this class. You must then do the following in order for the

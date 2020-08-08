@@ -142,6 +142,3 @@ class StorableObject(Serializable):
     @staticmethod
     def get_protobuf_schema() -> type:
         return StorableObject_PB
-
-
-StorableObject_PB.schema2type = StorableObject

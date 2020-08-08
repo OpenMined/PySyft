@@ -73,12 +73,7 @@ def _deserialize(
         schematic.ParseFromString(blob)
         blob = schematic
     elif from_json:
-        # QUESTION: Should this be here?
-        # if schema_type is None:
-        #     raise ValueError(
-        #         "Schema type shouldn't be None when deserializing from json. Please"
-        #         "provide a schematic to be filled with the json data provided."
-        #     )
+
         if type(blob) == str:
             json_message = json_format.Parse(
                 text=cast(str, blob), message=JsonMessage()
@@ -95,8 +90,6 @@ def _deserialize(
 
     try:
         # lets try to lookup the type we are deserializing
-        print(type(blob))
-        # obj_type = serde_store.schema2type[type(blob)]
         obj_type = type(blob).schema2type  # type: ignore
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.

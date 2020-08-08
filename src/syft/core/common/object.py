@@ -129,6 +129,3 @@ class ObjectWithID(Serializable):
     # QUESTION: What type is this returning?
     def get_protobuf_schema() -> type:
         return ObjectWithID_PB
-
-
-ObjectWithID_PB.schema2type = ObjectWithID
