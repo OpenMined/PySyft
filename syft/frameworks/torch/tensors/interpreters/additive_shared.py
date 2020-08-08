@@ -1121,7 +1121,7 @@ class AdditiveSharingTensor(AbstractTensor):
             keepdim: keep the dimension of the tensor when dim is not None
             algorithm: method to compute the minimum
         Returns:
-            the max of the tensor self
+            the min of the tensor self
         """
         return -(-self).max(dim=dim, keepdim=keepdim, algorithm=algorithm)
 
