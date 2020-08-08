@@ -907,6 +907,8 @@ class AdditiveSharingTensor(AbstractTensor):
         def argmin(tensor, **kwargs):
             return tensor.argmin(**kwargs)
 
+        module.argmin = argmin
+
         @overloaded.module
         def functional(module):
             @overloaded.function
