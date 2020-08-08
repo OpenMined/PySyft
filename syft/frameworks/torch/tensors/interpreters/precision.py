@@ -9,6 +9,7 @@ from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from typing import Union
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.precision_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensorPB,
@@ -73,13 +74,18 @@ class FixedPrecisionTensor(AbstractTensor):
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
 
-    def __mod__(self, divisor):
+    def __mod__(self, divisor: Union[int, torch.Tensor]) -> torch.Tensor:
         """
         Define the modulo operation over object instances.
         """
         result = self.copy()
-        scaled_divisor = divisor * (self.base ** self.precision_fractional)
-        result.child = result.child % scaled_divisor
+        if isinstance(divisor, int):
+            scaled_divisor = divisor * (self.base ** self.precision_fractional)
+            result.child = result.child % scaled_divisor
+        elif isinstance(divisor, FixedPrecisionTensor):
+            result.child = result.child % divisor.child
+        else:
+            raise TypeError("Unsupported type for modulo operation")
         return result
 
     def get_class_attributes(self):
