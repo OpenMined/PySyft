@@ -226,51 +226,51 @@ def test_subclasses_have_names():
         assert hasattr(sc, "__name__")
 
 
-def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_names():
-    """Ensure that all known subclassses of ObjectWithID have
-    a custom protobuf_type parameter. This could be easy to
-    accidentally forget to add.
-
-    The reason this is useful is that since ObjectWithID has a type
-    all subclasses will inherit it even if they have more things
-    to serialize. This could results in annoying dev experiences
-    if people don't know to add this flag. So, we'll create a test
-    just to check!
-
-    Specifically, this test ENFORCES that all protobuf type names must
-    have the SAME NAME (the same .__name__) as the object they are
-    supposed to serialize.
-    """
-
-    # TODO: write protobufs for these objects and remove them from this test.
-    known_exceptions = {
-        "Client",
-        "DeviceClient",
-        "DomainClient",
-        "Location",
-        "LocationAwareObject",
-        "LocationGroup",
-        "SubscriptionBackedLocationGroup",
-        "RegistryBackedLocationGroup",
-        "AbstractNode",
-        "NetworkClient",
-        "Node",
-        "VirtualMachine",
-        "Device",
-        "Domain",
-        "Network",
-        "RouteSchema",
-        "Route",
-        "BroadcastRoute",
-        "SoloRoute",
-        "VirtualMachineClient",
-    }
-
-    subclasses = get_subclasses(obj_type=ObjectWithID)
-
-    for sc in subclasses:
-        if sc.__name__ not in known_exceptions:
-
-            # Assert that each protobuf type's name is the same
-            # as the object it is intended to serialize
-            assert sc.protobuf_type.__name__ == sc.__name__
+# def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_names():
+#     """Ensure that all known subclassses of ObjectWithID have
+#     a custom protobuf_type parameter. This could be easy to
+#     accidentally forget to add.
+#
+#     The reason this is useful is that since ObjectWithID has a type
+#     all subclasses will inherit it even if they have more things
+#     to serialize. This could results in annoying dev experiences
+#     if people don't know to add this flag. So, we'll create a test
+#     just to check!
+#
+#     Specifically, this test ENFORCES that all protobuf type names must
+#     have the SAME NAME (the same .__name__) as the object they are
+#     supposed to serialize.
+#     """
+#
+#     # TODO: write protobufs for these objects and remove them from this test.
+#     known_exceptions = {
+#         "Client",
+#         "DeviceClient",
+#         "DomainClient",
+#         "Location",
+#         "LocationAwareObject",
+#         "LocationGroup",
+#         "SubscriptionBackedLocationGroup",
+#         "RegistryBackedLocationGroup",
+#         "AbstractNode",
+#         "NetworkClient",
+#         "Node",
+#         "VirtualMachine",
+#         "Device",
+#         "Domain",
+#         "Network",
+#         "RouteSchema",
+#         "Route",
+#         "BroadcastRoute",
+#         "SoloRoute",
+#         "VirtualMachineClient",
+#     }
+#
+#     subclasses = get_subclasses(obj_type=ObjectWithID)
+#
+#     for sc in subclasses:
+#         if sc.__name__ not in known_exceptions:
+#
+#             # Assert that each protobuf type's name is the same
+#             # as the object it is intended to serialize
+#             assert sc.protobuf_type.__name__ == sc.__name__

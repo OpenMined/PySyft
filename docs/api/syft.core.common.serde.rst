@@ -33,11 +33,3 @@ syft.core.common.serde.serialize module
    :undoc-members:
    :show-inheritance:
 
-syft.core.common.serde.util module
-----------------------------------
-
-.. automodule:: syft.core.common.serde.util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-

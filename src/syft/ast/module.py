@@ -1,5 +1,6 @@
 from .. import ast
 from .util import builtin_func_type, class_type, func_type, module_type, unsplit
+from ..lib.generic import ObjectConstructor
 
 
 class Module(ast.attribute.Attribute):
@@ -40,6 +41,16 @@ class Module(ast.attribute.Attribute):
                         name=path[index],
                         path_and_name=unsplit(path[: index + 1]),
                         ref=attr_ref,
+                        return_type_name=return_type_name,
+                    ),
+                )
+            elif isinstance(attr_ref, ObjectConstructor):
+                self.add_attr(
+                    attr_name=path[index],
+                    attr=ast.klass.Class(
+                        name=path[index],
+                        path_and_name=unsplit(path[: index + 1]),
+                        ref=attr_ref.original_constructor,
                         return_type_name=return_type_name,
                     ),
                 )

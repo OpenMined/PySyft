@@ -44,14 +44,14 @@ class ObjectWithID(Serializable):
 
         """
 
-        # while this class is never used as a simple wrapper,
-        # it's possible that sub-classes of this class will be.
-        super().__init__()
-
         if id is None:
             id = UID()
 
         self._id = id
+
+        # while this class is never used as a simple wrapper,
+        # it's possible that sub-classes of this class will be.
+        super().__init__()
 
     @property
     def id(self) -> UID:
