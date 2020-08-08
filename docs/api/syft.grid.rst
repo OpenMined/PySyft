@@ -6,6 +6,13 @@ syft.grid package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+   syft.grid.duet
+
 Submodules
 ----------
 

@@ -103,7 +103,7 @@ class UID(Serializable):
         come with their own __eq__ function which we assume to be correct.
 
         :param other: this is the other ID to be compared with
-        :type other: AbstractUID
+        :type other: UID
         :return: returns True/False based on whether the objcts are the same
         :rtype: bool
         """

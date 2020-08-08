@@ -10,13 +10,13 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
 
    syft.ast
    syft.core
    syft.decorators
    syft.grid
    syft.lib
+   syft.proto
 
 Submodules
 ----------

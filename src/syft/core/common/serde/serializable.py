@@ -12,6 +12,7 @@ from typing import Union, Set, Tuple, Type
 from ..lazy_structures import LazySet, LazyDict
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
+from ....util import get_subclasses
 
 
 class Serializable:
@@ -24,7 +25,7 @@ class Serializable:
     - compile the protobuf file by running `bash scripts/build_proto`
     - find the generated python file in syft.proto
     - import the generated protobuf class into my custom class
-    - implement get_protobuf_Schema
+    - implement get_protobuf_schema
     - implement <my class>._object2proto() method to serialize the object to protobuf
     - implement <my class>._proto2object() to deserialize the protobuf object
 
@@ -37,9 +38,10 @@ class Serializable:
 
     Eg:
 
-    class WrapperInt:
-        def __init__(self, int_obj: int):
-            self.int_obj = int_obj
+    class WrapperInt(Serializable):
+        def __init__(self, value: int, as_wrapper:bool):
+            self.int_obj = value
+            self.as_wrapper = as_wrapper
 
         def _object2proto(self) -> WrapperIntPB:
             ...
@@ -59,6 +61,7 @@ class Serializable:
 
     You must implement the following in order for the subclass to be properly implemented to be
     seen as a wrapper:
+
     - everything presented in the first tutorial of this docstring.
     - implement get_wrapped_type to return the wrapped type.
 
@@ -365,7 +368,7 @@ def get_protobuf(cls: type) -> Tuple[Set[Type[Serializable]], Set[Type[Serializa
     wrapper_types: Set[Type[Serializable]] = set()
 
     # get all subclasses of the current class, direct children.
-    for s in cls.__subclasses__():
+    for s in get_subclasses(obj_type=cls):
         if issubclass(s, Serializable):
             # check what type of serde object we have
             serde_type = check_type(s)
@@ -382,7 +385,7 @@ def get_protobuf(cls: type) -> Tuple[Set[Type[Serializable]], Set[Type[Serializa
             # class or just isn't supposed to be serialized, the children could
             # be serializable, continue the tree search and add the results to the
             # native and wrapper sets.
-            for c in s.__subclasses__():
+            for c in get_subclasses(obj_type=s):
                 sub_native_set, sub_wrapper_set = get_protobuf(c)
 
                 native_types.union(sub_native_set)

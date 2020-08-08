@@ -1,9 +1,13 @@
 import torch
+from .lowercase_tensor import LowercaseTensorConstructor
+from .uppercase_tensor import UppercaseTensorConstructor
 
-from ..ast.globals import Globals
+__all__ = ["LowercaseTensorConstructor", "UppercaseTensorConstructor"]
+
+from syft.ast.globals import Globals
 
 whitelist = {}  # (path: str, return_type:type)
-whitelist["torch.tensor"] = "torch.Tensor"
+# whitelist["torch.tensor"] = "torch.Tensor"
 whitelist["torch.Tensor"] = "torch.Tensor"
 whitelist["torch.Tensor.__add__"] = "torch.Tensor"
 whitelist["torch.zeros"] = "torch.Tensor"

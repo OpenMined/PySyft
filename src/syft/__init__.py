@@ -66,6 +66,7 @@ from syft.core.node.vm.vm import VirtualMachine, VirtualMachineClient  # noqa: F
 
 # CONVENIENCE FUNCTIONS
 from syft.decorators import type_hints  # noqa: F401
+from syft.grid.duet.duet import Duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401

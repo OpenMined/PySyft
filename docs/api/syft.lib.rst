@@ -6,13 +6,21 @@ syft.lib package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+   syft.lib.numpy
+   syft.lib.torch
+
 Submodules
 ----------
 
-syft.lib.numpy module
----------------------
+syft.lib.generic module
+-----------------------
 
-.. automodule:: syft.lib.numpy
+.. automodule:: syft.lib.generic
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,10 +33,10 @@ syft.lib.tensorflow module
    :undoc-members:
    :show-inheritance:
 
-syft.lib.torch module
----------------------
+syft.lib.util module
+--------------------
 
-.. automodule:: syft.lib.torch
+.. automodule:: syft.lib.util
    :members:
    :undoc-members:
    :show-inheritance:
