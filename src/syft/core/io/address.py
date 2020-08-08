@@ -7,6 +7,17 @@ from ...decorators import syft_decorator
 from .location import Location
 
 
+# utility addresses
+class All(object):
+    def __repr__(self):
+        return "All"
+
+
+class Unspecified(object):
+    def __repr__(self):
+        return "Unspecified"
+
+
 @final
 class PublicAddress(object):
     @syft_decorator(typechecking=True)
