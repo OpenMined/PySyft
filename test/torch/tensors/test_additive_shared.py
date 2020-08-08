@@ -902,7 +902,6 @@ def test_argmin(workers, protocol):
 
     t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(*args, **kwargs)
-    print(x.argmin)
     idx = x.argmin().get().float_prec()
     assert idx == torch.tensor([1.0])
 
