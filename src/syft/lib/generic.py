@@ -138,7 +138,7 @@ class ObjectConstructor(object):
             # then it's a special class of which Python cannot subtype
             # for more on this, see discussion:
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
-            except TypeError as e:
+            except TypeError:
 
                 @property
                 def id(self):
@@ -211,7 +211,8 @@ class ObjectConstructor(object):
             - initialize memory / re-use pre-initialized memory
             - interact with global parameters
 
-        If you need to create metadata needed for init or post_init, store such information within kwargs.
+        If you need to create metadata needed for init or post_init, store such information within
+        kwargs.
 
         Args:
             *args (list): the arguments being used to initialize the object (including data)
@@ -241,9 +242,12 @@ class ObjectConstructor(object):
     def post_init(self, obj: object, *args: list, **kwargs: dict) -> object:
         """Execute functionality after object has been created.
 
-        This method executes functionality which can only be run after an object has been initailized. It is
-        particularly useful for logic which registers the created object into an appropriate registry. It is
-        also useful for adding arbitrary attributes to the object after initialization.
+        This method executes functionality which can only be
+        run after an object has been initailized.
+        It is particularly useful for logic which registers
+        the created object into an appropriate
+        registry. It is also useful for adding arbitrary
+        attributes to the object after initialization.
 
         Args:
             *args (tuple): the arguments being used to initialize the object
@@ -262,31 +266,37 @@ class ObjectConstructor(object):
 
     @property
     def original_constructor(self):
-        """Return the original constructor for this method (i.e., the constructor the library had by default which this
-        custom constructor overloaded.
+        """Return the original constructor for this method (i.e., the constructor the library had by
+        default which this custom constructor overloaded.
 
         Note: I'm using try/except in this method instead of if/else because it's faster at runtime.
         """
 
         try:
             return getattr(self.constructor_location, self.original_constructor_name)
-        except AttributeError as _:
+        except AttributeError:
             raise AttributeError(
-                f"Syft's custom object constructor {type(self)} cannot find the original constructor"
-                f"to initialize '{self.constructor_name}'' objects, which should have been stored at "
-                f"'{self.original_constructor_name}'. Either you're doing active development and forgot to cache"
-                f"the original constructor in the right place before installing Syft's custom"
-                f"constructor or something is very broken and you should file a Github Issue. See"
-                f"the documentation for ObjectConstructor for more information on this functionality."
+                f"Syft's custom object constructor {type(self)} "
+                f"cannot find the original constructor"
+                f"to initialize '{self.constructor_name}'' "
+                f"objects, which should have been stored at "
+                f"'{self.original_constructor_name}'. Either "
+                f"you're doing active development and forgot"
+                f" to cache the original constructor in the "
+                f"right place before installing Syft's custom"
+                f"constructor or something is very broken and "
+                f"you should file a Github Issue. See"
+                f"the documentation for ObjectConstructor for "
+                f"more information on this functionality."
             )
 
     @classmethod
     def __instancecheck__(cls, instance):
         """Allow constructor to represent type it constructs
 
-        Since we replace framework constructors (i.e., torch.Tensor) with instances of this constructor
-        we also need this constructor to represent the type that it replaces, so that methods such as
-        isinstance(my_tensor, th.Tensor) work correctly.
+        Since we replace framework constructors (i.e., torch.Tensor) with instances of this
+        constructor we also need this constructor to represent the type that it replaces,
+        so that methods such as isinstance(my_tensor, th.Tensor) work correctly.
 
         Args:
             instance (object): an object of which we want to check the type against cls.
