@@ -41,10 +41,7 @@ def test_fixed_precision_mod_operation():
     x = torch.tensor([1, 2, 3]).fix_prec()
     y = x % 3
     y = y.float_prec()
-    z = torch.tensor([1.0, 2.0, 0.0])
-    print(z)
-    print(y)
-    assert (x == z).all()
+    assert (y == torch.tensor([1.0, 2.0, 0.0])).all()
 
 
 def test_inplace_encode_decode(workers):

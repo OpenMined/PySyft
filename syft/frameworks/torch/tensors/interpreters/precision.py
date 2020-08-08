@@ -73,6 +73,15 @@ class FixedPrecisionTensor(AbstractTensor):
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
 
+    def __mod__(self, other):
+        """
+        Define the module operation over object instances.
+        """
+        result = self.copy()
+        scaled_divisor = other * (self.base ** self.precision_fractional)
+        result.child = result.child % scaled_divisor
+        return result
+
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response,
