@@ -50,7 +50,7 @@ def _serialize(
     if not isinstance(obj, Serializable):
         if hasattr(obj, "serializable_wrapper_type"):
             is_serializable = obj.serializable_wrapper_type(  # type: ignore
-                value=obj, as_wrapper=True
+                value=obj
             )
         else:
             raise Exception(f"Object {type(obj)} has no serializable_wrapper_type")

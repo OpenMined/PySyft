@@ -8,6 +8,7 @@ from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from google.protobuf.message import Message
 from typing import Union
+from ..util import aggressive_set_attr
 
 
 class Class(ast.callable.Callable):
@@ -69,7 +70,7 @@ class Class(ast.callable.Callable):
             return ptr
 
         # using curse because Numpy tries to lock down custom attributes
-        curse(outer_self.ref, "send", send)
+        aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
 
     def create_serialization_methods(outer_self):
         def serialize(  # type: ignore

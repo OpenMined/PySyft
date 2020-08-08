@@ -1,5 +1,7 @@
 from typing import List
 
+from forbiddenfruit import curse
+
 # breaking convention here because index_globals needs
 # the full syft name to be present.
 import syft  # noqa: F401
@@ -100,3 +102,13 @@ def get_fully_qualified_name(obj: object) -> str:
     except Exception as e:
         print(f"Failed to get FQN: {e}")
     return fqn
+
+
+@syft_decorator(typechecking=True)
+def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
+    """Different objects prefer different types of monkeypatching - try them all"""
+
+    try:
+        setattr(obj, name, attr)
+    except Exception:
+        curse(obj, name, attr)
