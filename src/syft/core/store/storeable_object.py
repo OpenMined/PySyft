@@ -103,14 +103,15 @@ class StorableObject(Serializable):
         schematic_type = obj_type.get_data_protobuf_schema()
 
         # Step 4: Deserialize data from protobuf
-        if callable(schematic_type):
+        if schematic_type is not None and callable(schematic_type):
             data = schematic_type()
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
             # if issubclass(type(target_type), Serializable):
             data = target_type._data_proto2object(proto=data)
-
+        else:
+            data = None
         # Step 5: get the description from proto
         description = proto.description
 
@@ -131,8 +132,8 @@ class StorableObject(Serializable):
         return _deserialize(blob=proto)
 
     @staticmethod
-    def get_data_protobuf_schema() -> type:
-        raise NotImplementedError
+    def get_data_protobuf_schema() -> None:
+        return None
 
     @staticmethod
     def construct_new_object(id, data, tags, description):
