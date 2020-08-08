@@ -4,26 +4,14 @@ from typing_extensions import final
 from syft.core.common.uid import UID
 
 from ...decorators import syft_decorator
-
-
-# utility addresses
-class All(object):
-    def __repr__(self):
-        return "All"
-
-
-class Unspecified(object):
-    def __repr__(self):
-        return "Unspecified"
+from .location import Location
 
 
 @final
 class PublicAddress(object):
     @syft_decorator(typechecking=True)
     def __init__(
-        self,
-        network: Optional[Union[str, UID, Unspecified, All]],
-        domain: Optional[Union[str, UID, Unspecified, All]],
+        self, network: Optional[Location], domain: Optional[Location],
     ):
         self.network = network
         self.domain = domain
@@ -33,9 +21,7 @@ class PublicAddress(object):
 class PrivateAddress(object):
     @syft_decorator(typechecking=True)
     def __init__(
-        self,
-        device: Optional[Union[str, UID, Unspecified, All]],
-        vm: Optional[Union[str, UID, Unspecified, All]],
+        self, device: Optional[Location], vm: Optional[Location],
     ):
         self.device = device
         self.vm = vm
@@ -76,10 +62,10 @@ class Address(object):
 
 @syft_decorator(typechecking=True)
 def address(
-    network: Optional[Union[str, UID, Unspecified, All]],
-    domain: Optional[Union[str, UID, Unspecified, All]],
-    device: Optional[Union[str, UID, Unspecified, All]],
-    vm: Optional[Union[str, UID, Unspecified, All]],
+    network: Optional[Location],
+    domain: Optional[Location],
+    device: Optional[Location],
+    vm: Optional[Location],
 ) -> Address:
     """A convenience method for creating routes"""
 
