@@ -19,7 +19,7 @@ class IntegerEncoder:
     """
 
     def __init__(self, context):
-        self.plain_modulus = context.param.plain_modulus
+        self.plain_modulus = context.context_data_map[context.first_param_id].param.plain_modulus
 
         if self.plain_modulus <= 1:
             raise ValueError("plain_modulus must be at least 2")

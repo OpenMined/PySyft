@@ -39,9 +39,9 @@ def _typecheck(op1, op2):
 class Evaluator:
     def __init__(self, context):
         self.context = context
-        self.poly_modulus = context.param.poly_modulus
-        self.coeff_modulus = context.param.coeff_modulus
-        self.plain_modulus = context.param.plain_modulus
+        param = context.context_data_map[context.key_param_id].param
+        self.plain_modulus = param.plain_modulus
+        self.poly_modulus = param.poly_modulus
 
     def add(self, op1, op2):
         """Add two operands using FV scheme.
@@ -109,14 +109,16 @@ class Evaluator:
         Returns:
             A Ciphertext object with value equivalent to result of -(ct_value).
         """
+        context_data = self.context.context_data_map[ct.param_id]
+        coeff_modulus = context_data.param.coeff_modulus
         result = copy.deepcopy(ct.data)
 
         for i in range(len(result)):
-            for j in range(len(result[i])):
+            for j in range(len(coeff_modulus)):
                 for k in range(len(result[i][j])):
-                    result[i][j][k] = negate_mod(ct.data[i][j][k], self.coeff_modulus[j])
+                    result[i][j][k] = negate_mod(result[i][j][k], coeff_modulus[j])
 
-        return CipherText(result)
+        return CipherText(result, ct.param_id)
 
     def mul(self, op1, op2):
         """Multiply two operands using FV scheme.
@@ -159,16 +161,20 @@ class Evaluator:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
         """
+        param_id = ct1.param_id
+        context_data = self.context.context_data_map[param_id]
+        coeff_modulus = context_data.param.coeff_modulus
+
         ct1, ct2 = copy.deepcopy(ct1.data), copy.deepcopy(ct2.data)
         result = ct2 if len(ct2) > len(ct1) else ct1
 
         for i in range(min(len(ct1), len(ct2))):
-            for j in range(len(self.coeff_modulus)):
+            for j in range(len(coeff_modulus)):
                 result[i][j] = poly_add_mod(
-                    ct1[i][j], ct2[i][j], self.coeff_modulus[j], self.poly_modulus
+                    ct1[i][j], ct2[i][j], coeff_modulus[j], self.poly_modulus
                 )
 
-        return CipherText(result)
+        return CipherText(result, param_id)
 
     def _add_cipher_plain(self, ct, pt):
         """Add a plaintext into a ciphertext.
@@ -182,7 +188,7 @@ class Evaluator:
                 arguments.
         """
         ct = copy.deepcopy(ct)
-        return multiply_add_plain_with_delta(ct, pt, self.context)
+        return multiply_add_plain_with_delta(ct, pt, self.context.context_data_map[ct.param_id])
 
     def _add_plain_plain(self, pt1, pt2):
         """Adds two plaintexts object.
@@ -210,7 +216,7 @@ class Evaluator:
                 arguments.
         """
         ct = copy.deepcopy(ct)
-        return multiply_sub_plain_with_delta(ct, pt, self.context)
+        return multiply_sub_plain_with_delta(ct, pt, self.context.context_data_map[ct.param_id])
 
     def _sub_cipher_cipher(self, ct1, ct2):
         """Subtract two ciphertexts.
@@ -223,21 +229,24 @@ class Evaluator:
             A Ciphertext object with value equivalent to result of subtraction of two provided
                 arguments.
         """
+        param_id = ct1.param_id
+        context_data = self.context.context_data_map[ct1.param_id]
+        coeff_modulus = context_data.param.coeff_modulus
         ct1, ct2 = copy.deepcopy(ct1.data), copy.deepcopy(ct2.data)
         result = ct2 if len(ct2) > len(ct1) else ct1
         min_size, max_size = min(len(ct1), len(ct2)), max(len(ct1), len(ct2))
 
         for i in range(min_size):
-            for j in range(len(self.coeff_modulus)):
+            for j in range(len(coeff_modulus)):
                 result[i][j] = poly_sub_mod(
-                    ct1[i][j], ct2[i][j], self.coeff_modulus[j], self.poly_modulus
+                    ct1[i][j], ct2[i][j], coeff_modulus[j], self.poly_modulus
                 )
 
         for i in range(min_size + 1, max_size):
-            for j in range(len(self.coeff_modulus)):
-                result[i][j] = poly_negate_mod(result[i][j], self.coeff_modulus[j])
+            for j in range(len(coeff_modulus)):
+                result[i][j] = poly_negate_mod(result[i][j], coeff_modulus[j])
 
-        return CipherText(result)
+        return CipherText(result, param_id)
 
     def _mul_cipher_cipher(self, ct1, ct2):
         """Multiply two operands using FV scheme.
@@ -250,13 +259,16 @@ class Evaluator:
             A Ciphertext object with a value equivalent to the result of the product of two
                 operands.
         """
+        param_id = ct1.param_id
+        context_data = self.context.context_data_map[param_id]
+        coeff_modulus = context_data.param.coeff_modulus
         ct1, ct2 = ct1.data, ct2.data
 
         if len(ct1) > 2 or len(ct2) > 2:
             # TODO: perform relinearization operation.
             raise Warning("Multiplying ciphertext of size >2 should be avoided.")
 
-        rns_tool = self.context.rns_tool
+        rns_tool = context_data.rns_tool
         bsk_base_mod = rns_tool.base_Bsk.base
         bsk_base_mod_count = len(bsk_base_mod)
         dest_count = len(ct2) + len(ct1) - 1
@@ -273,9 +285,7 @@ class Evaluator:
         for i in range(len(ct2)):
             tmp_encrypted2_bsk.append(rns_tool.sm_mrq(rns_tool.fastbconv_m_tilde(ct2[i])))
 
-        tmp_des_coeff_base = [
-            [[0] for y in range(len(self.coeff_modulus))] for x in range(dest_count)
-        ]
+        tmp_des_coeff_base = [[[0] for y in range(len(coeff_modulus))] for x in range(dest_count)]
 
         tmp_des_bsk_base = [[[0] for y in range(bsk_base_mod_count)] for x in range(dest_count)]
 
@@ -292,16 +302,16 @@ class Evaluator:
                 if len(ct2) > m - encrypted1_index:
                     encrypted2_index = m - encrypted1_index
 
-                    for i in range(len(self.coeff_modulus)):
+                    for i in range(len(coeff_modulus)):
                         tmp_des_coeff_base[m][i] = poly_add_mod(
                             poly_mul_mod(
                                 ct1[encrypted1_index][i],
                                 ct2[encrypted2_index][i],
-                                self.coeff_modulus[i],
+                                coeff_modulus[i],
                                 self.poly_modulus,
                             ),
                             tmp_des_coeff_base[m][i],
-                            self.coeff_modulus[i],
+                            coeff_modulus[i],
                             self.poly_modulus,
                         )
 
@@ -325,12 +335,9 @@ class Evaluator:
         result = []
         for i in range(dest_count):
             temp = []
-            for j in range(len(self.coeff_modulus)):
+            for j in range(len(coeff_modulus)):
                 temp.append(
-                    [
-                        (x * self.plain_modulus) % self.coeff_modulus[j]
-                        for x in tmp_des_coeff_base[i][j]
-                    ]
+                    [(x * self.plain_modulus) % coeff_modulus[j] for x in tmp_des_coeff_base[i][j]]
                 )
             for j in range(bsk_base_mod_count):
                 temp.append(
@@ -338,27 +345,28 @@ class Evaluator:
                 )
             result.append(rns_tool.fastbconv_sk(rns_tool.fast_floor(temp)))
 
-        return CipherText(result)
+        return CipherText(result, param_id)
 
     def _mul_cipher_plain(self, ct, pt):
         """Multiply two operands using FV scheme.
-
         Args:
             op1 (Ciphertext): First polynomial argument (Multiplicand).
             op2 (Plaintext): Second polynomial argument (Multiplier).
-
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
                 operands.
         """
+        param_id = ct.param_id
+        context_data = self.context.context_data_map[param_id]
+        coeff_modulus = context_data.param.coeff_modulus
         ct, pt = ct.data, pt.data
         result = copy.deepcopy(ct)
 
         for i in range(len(result)):
-            for j in range(len(self.coeff_modulus)):
-                result[i][j] = poly_mul_mod(ct[i][0], pt, self.coeff_modulus[j], self.poly_modulus)
+            for j in range(len(coeff_modulus)):
+                result[i][j] = poly_mul_mod(ct[i][0], pt, coeff_modulus[j], self.poly_modulus)
 
-        return CipherText(result)
+        return CipherText(result, param_id)
 
     def _mul_plain_plain(self, pt1, pt2):
         """Multiply two operands using FV scheme.
