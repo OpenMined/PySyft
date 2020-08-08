@@ -8,7 +8,7 @@ from syft.core.store.storeable_object import StorableObject
 
 
 class NumpyTensorWrapper(StorableObject):
-    def __init__(self, value, as_wrapper):
+    def __init__(self, value):
         super().__init__(
             data=value,
             key=value.id,
@@ -32,7 +32,7 @@ class NumpyTensorWrapper(StorableObject):
         return data
 
     @staticmethod
-    def get_protobuf_schema() -> type:
+    def get_data_protobuf_schema() -> type:
         return TensorProto
 
     @staticmethod
