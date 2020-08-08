@@ -819,6 +819,33 @@ def test_max(workers, protocol):
     max_value = x.max(dim=0).get().float_prec()
     assert (max_value == t.max(dim=0)[0]).all()
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_min(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    t = torch.tensor([3, 1.0, -2])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min().get().float_prec()
+    assert min_value == torch.tensor([-2.0])
+
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min().get().float_prec()
+    assert min_value == torch.tensor([1.0])
+
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min(dim=0).get().float_prec()
+    assert (min_value == t.min(dim=0)[0]).all()
+
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_argmax(workers, protocol):
@@ -858,6 +885,46 @@ def test_argmax(workers, protocol):
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_argmin(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(*args, **kwargs)
+    print(x.argmin)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([1.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(*args, **kwargs)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([0.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(*args, **kwargs)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([3.0])
+
+    # no dim
+    t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin().get().float_prec()
+    assert ids.long() == torch.argmin(t)
+
+    # dim=1
+    t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin(dim=1).get().float_prec()
+    assert (ids.long() == torch.argmin(t, dim=1)).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
