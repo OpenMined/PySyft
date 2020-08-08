@@ -1,9 +1,10 @@
 from typing import List
-from .decorators.syft_decorator_impl import syft_decorator
 
 # breaking convention here because index_globals needs
 # the full syft name to be present.
 import syft  # noqa: F401
+
+from .decorators.syft_decorator_impl import syft_decorator
 
 
 @syft_decorator(typechecking=True)

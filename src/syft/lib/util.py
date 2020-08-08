@@ -1,7 +1,9 @@
 import inspect
+from ..decorators.syft_decorator_impl import syft_decorator
 
 
-def is_static_method(klass: type, attr: str):
+@syft_decorator(typechecking=True)
+def is_static_method(klass: type, attr: str) -> bool:
     """Test if a value of a class is static method.
 
     Example:
@@ -38,7 +40,8 @@ def is_static_method(klass: type, attr: str):
     return False
 
 
-def copy_static_methods(from_class: type, to_class: type):
+@syft_decorator(typechecking=True)
+def copy_static_methods(from_class: type, to_class: type) -> None:
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
@@ -58,7 +61,8 @@ def copy_static_methods(from_class: type, to_class: type):
             setattr(to_class, attr, getattr(from_class, attr))
 
 
-def get_original_constructor_name(object_name: str):
+@syft_decorator(typechecking=True)
+def get_original_constructor_name(object_name: str) -> str:
     """Generate name for original constructor
 
     For each custom constructor, we move the original constructor to a consistent location relative to
