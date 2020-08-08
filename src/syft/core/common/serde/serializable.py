@@ -10,6 +10,7 @@ from ....util import get_fully_qualified_name
 
 
 class MetaSerializable(type):
+
     """When we go to deserialize a JSON protobuf object, the JSON protobuf
     wrapper will return a python protobuf object corresponding to a subclass
     of Serializable. However, in order to be able to take the next step, we need
