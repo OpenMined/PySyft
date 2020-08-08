@@ -10,6 +10,18 @@ from ....util import get_fully_qualified_name
 
 
 class MetaSerializable(type):
+
+    """When we go to deserialize a JSON protobuf object, the JSON protobuf
+    wrapper will return a python protobuf object corresponding to a subclass
+    of Serializable. However, in order to be able to take the next step, we need
+    an instance of the Serializable subclass. In order to create this instance,
+    we cache/monkeypatch it onto the protobuf class it corresponds to.
+
+    Since this could be a dangerous thing to do (because developers of new objects
+    in Syft could forget to add the schema2type attribute) we do it automatically
+    for all subclasses of Serializable via this metaclass. This way, nobody has
+    to worry about remembering to implement this flag."""
+
     def __new__(cls, name, bases, dct):
         x = super().__new__(cls, name, bases, dct)
         try:
@@ -245,11 +257,8 @@ class Serializable(metaclass=MetaSerializable):
 
         """
 
-        if to_binary:
-            return self._object2proto().SerializeToString()
-        elif to_hex:
-            return self._object2proto().SerializeToString().hex()
-        elif to_json:
+        if to_json or to_binary or to_hex:
+
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
             blob = json_format.MessageToJson(
@@ -261,7 +270,15 @@ class Serializable(metaclass=MetaSerializable):
                 ),
                 indent=None,  # type: ignore # indent=None
             )
-            return blob
+
+            if to_json:
+                return blob
+            if to_binary:
+                return bytes(blob, "utf-8")
+
+            # then to_hex was true
+            return bytes(blob, "utf-8").hex()
+
         elif to_proto:
             return type(self)._object2proto(self)
         else:

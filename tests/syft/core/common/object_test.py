@@ -173,7 +173,10 @@ def test_object_with_id_binary_serialization():
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = b"\x12\x12\x12\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+    blob = (
+        b'{"objType": "syft.core.common.object.ObjectWithID", "content":'
+        b' "{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
+    )
 
     assert obj.binary() == blob
     assert obj.to_binary() == blob
@@ -183,10 +186,11 @@ def test_object_with_id_binary_serialization():
 def test_object_with_id_binary_deserialization():
     """Test that binary ObjectWithID deserialization works as expected"""
 
-    blob = b"\x12\x12\x12\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-    obj = sy.deserialize(
-        blob=blob, from_binary=True, schema_type=ObjectWithID.get_protobuf_schema()
+    blob = (
+        b'{"objType": "syft.core.common.object.ObjectWithID", "content": '
+        b'"{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
     )
+    obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
@@ -199,7 +203,12 @@ def test_object_with_id_hex_serialization():
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
 
-    blob = "12121210fb1bb0675bb74c49becee700ab0a1514"
+    blob = (
+        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e6f"
+        "626a6563742e4f626a656374576974684944222c2022636f6e74656e74223a20"
+        "227b5c2269645c223a207b5c2276616c75655c223a205c222b7875775a3175335"
+        "4456d2b7a75634171776f5646413d3d5c227d7d227d"
+    )
     assert obj.hex() == blob
     assert obj.to_hex() == blob
     assert obj.serialize(to_hex=True) == blob
@@ -208,11 +217,14 @@ def test_object_with_id_hex_serialization():
 def test_object_with_id_hex_deserialization():
     """Test that hex ObjectWithID deserialization works as expected"""
 
-    blob = "12121210fb1bb0675bb74c49becee700ab0a1514"
-
-    obj = sy.deserialize(
-        blob=blob, from_hex=True, schema_type=ObjectWithID.get_protobuf_schema()
+    blob = (
+        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e6f"
+        "626a6563742e4f626a656374576974684944222c2022636f6e74656e74223a20"
+        "227b5c2269645c223a207b5c2276616c75655c223a205c222b7875775a3175335"
+        "4456d2b7a75634171776f5646413d3d5c227d7d227d"
     )
+
+    obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
@@ -230,53 +242,3 @@ def test_subclasses_have_names():
 
     for sc in subclasses:
         assert hasattr(sc, "__name__")
-
-
-# def test_subclasses_of_obj_with_id_have_their_own_protobuf_types_with_correct_names():
-#     """Ensure that all known subclassses of ObjectWithID have
-#     a custom protobuf_type parameter. This could be easy to
-#     accidentally forget to add.
-#
-#     The reason this is useful is that since ObjectWithID has a type
-#     all subclasses will inherit it even if they have more things
-#     to serialize. This could results in annoying dev experiences
-#     if people don't know to add this flag. So, we'll create a test
-#     just to check!
-#
-#     Specifically, this test ENFORCES that all protobuf type names must
-#     have the SAME NAME (the same .__name__) as the object they are
-#     supposed to serialize.
-#     """
-#
-#     # TODO: write protobufs for these objects and remove them from this test.
-#     known_exceptions = {
-#         "Client",
-#         "DeviceClient",
-#         "DomainClient",
-#         "Location",
-#         "LocationAwareObject",
-#         "LocationGroup",
-#         "SubscriptionBackedLocationGroup",
-#         "RegistryBackedLocationGroup",
-#         "AbstractNode",
-#         "NetworkClient",
-#         "Node",
-#         "VirtualMachine",
-#         "Device",
-#         "Domain",
-#         "Network",
-#         "RouteSchema",
-#         "Route",
-#         "BroadcastRoute",
-#         "SoloRoute",
-#         "VirtualMachineClient",
-#     }
-#
-#     subclasses = get_subclasses(obj_type=ObjectWithID)
-#
-#     for sc in subclasses:
-#         if sc.__name__ not in known_exceptions:
-#
-#             # Assert that each protobuf type's name is the same
-#             # as the object it is intended to serialize
-#             assert sc.protobuf_type.__name__ == sc.__name__
