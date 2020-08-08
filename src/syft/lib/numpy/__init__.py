@@ -19,7 +19,9 @@ def create_numpy_ast():
         ast.add_path(path=method, framework_reference=np, return_type_name=None)
 
     for klass in ast.classes:
+        # create syft classes
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_serialization_methods()
+
     return ast
