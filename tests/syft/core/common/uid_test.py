@@ -186,9 +186,7 @@ def test_uid_binary_deserialization():
         b'"content": "{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
     )
 
-    obj = sy.deserialize(
-        blob=blob, from_binary=True, schema_type=UID.get_protobuf_schema()
-    )
+    obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
 
@@ -214,7 +212,5 @@ def test_uid_hex_deserialization():
         "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
         "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
     )
-    obj = sy.deserialize(
-        blob=blob, from_hex=True, schema_type=UID.get_protobuf_schema()
-    )
+    obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))

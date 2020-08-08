@@ -1,4 +1,4 @@
-from typing import Union, cast, Type, Optional
+from typing import Union, cast
 from .serializable import Serializable
 from ....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.message import Message
@@ -15,7 +15,6 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
-    schema_type: Optional[Type] = None,
 ) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default
 
@@ -53,35 +52,22 @@ def _deserialize(
     """
 
     if from_hex:
-        if schema_type is None:
-            raise ValueError(
-                "Schema type shouldn't be None when deserializing from hex. Please "
-                "provide a schematic to be filled with the hex data provided."
-            )
-        if type(blob) == str:
-            blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
+
+        blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
 
     elif from_binary:
-        if schema_type is None:
-            raise ValueError(
-                "Schema type shouldn't be None when deserializing from binary. Please"
-                "provide a schematic to be filled with the bin data provided."
-            )
+
         blob = str(blob, "utf-8")  # type: ignore
 
     if from_json or from_binary or from_hex:
 
-        if type(blob) == str:
-            json_message = json_format.Parse(
-                text=cast(str, blob), message=JsonMessage()
-            )
+        json_message = json_format.Parse(text=cast(str, blob), message=JsonMessage())
 
-            obj_type = index_syft_by_module_name(
-                fully_qualified_name=json_message.obj_type
-            )
-            protobuf_type = obj_type.get_protobuf_schema()
-            schema_data = json_message.content
-            blob = json_format.Parse(text=schema_data, message=protobuf_type())
+        obj_type = index_syft_by_module_name(fully_qualified_name=json_message.obj_type)
+        protobuf_type = obj_type.get_protobuf_schema()
+        schema_data = json_message.content
+        blob = json_format.Parse(text=schema_data, message=protobuf_type())
+
     elif not from_proto:
         raise ValueError("Please pick the format of the data on the deserialization")
 

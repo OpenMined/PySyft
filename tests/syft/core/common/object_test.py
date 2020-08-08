@@ -190,9 +190,7 @@ def test_object_with_id_binary_deserialization():
         b'{"objType": "syft.core.common.object.ObjectWithID", "content": '
         b'"{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
     )
-    obj = sy.deserialize(
-        blob=blob, from_binary=True, schema_type=ObjectWithID.get_protobuf_schema()
-    )
+    obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
@@ -226,9 +224,7 @@ def test_object_with_id_hex_deserialization():
         "4456d2b7a75634171776f5646413d3d5c227d7d227d"
     )
 
-    obj = sy.deserialize(
-        blob=blob, from_hex=True, schema_type=ObjectWithID.get_protobuf_schema()
-    )
+    obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )
