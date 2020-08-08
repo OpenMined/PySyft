@@ -168,7 +168,10 @@ def test_uid_binary_serialization():
     """Tests that binary UID serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = b"\x12\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+    blob = (
+        b'{"objType": "syft.core.common.uid.UID", "content": '
+        b'"{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
+    )
 
     assert uid.binary() == blob
     assert uid.to_binary() == blob
@@ -178,7 +181,10 @@ def test_uid_binary_serialization():
 def test_uid_binary_deserialization():
     """Test that binary deserialization works as expected"""
 
-    blob = b"\x12\x10\xfb\x1b\xb0\x67\x5b\xb7\x4c\x49\xbe\xce\xe7\x00\xab\x0a\x15\x14"
+    blob = (
+        b'{"objType": "syft.core.common.uid.UID", '
+        b'"content": "{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
+    )
 
     obj = sy.deserialize(
         blob=blob, from_binary=True, schema_type=UID.get_protobuf_schema()
@@ -190,7 +196,11 @@ def test_uid_hex_serialization():
     """Tests that hex UID serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = "1210fb1bb0675bb74c49becee700ab0a1514"
+    blob = (
+        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e7569"
+        "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
+        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
+    )
     assert uid.hex() == blob
     assert uid.to_hex() == blob
     assert uid.serialize(to_hex=True) == blob
@@ -199,7 +209,11 @@ def test_uid_hex_serialization():
 def test_uid_hex_deserialization():
     """Test that hex deserialization works as expected"""
 
-    blob = "1210fb1bb0675bb74c49becee700ab0a1514"
+    blob = (
+        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e7569"
+        "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
+        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
+    )
     obj = sy.deserialize(
         blob=blob, from_hex=True, schema_type=UID.get_protobuf_schema()
     )

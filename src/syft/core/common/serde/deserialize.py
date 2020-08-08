@@ -58,10 +58,8 @@ def _deserialize(
                 "Schema type shouldn't be None when deserializing from hex. Please "
                 "provide a schematic to be filled with the hex data provided."
             )
-        schematic = schema_type()
         if type(blob) == str:
-            schematic.ParseFromString(bytes.fromhex(cast(str, blob)))
-            blob = schematic
+            blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
 
     elif from_binary:
         if schema_type is None:
@@ -69,10 +67,9 @@ def _deserialize(
                 "Schema type shouldn't be None when deserializing from binary. Please"
                 "provide a schematic to be filled with the bin data provided."
             )
-        schematic = schema_type()
-        schematic.ParseFromString(blob)
-        blob = schematic
-    elif from_json:
+        blob = str(blob, "utf-8")  # type: ignore
+
+    if from_json or from_binary or from_hex:
 
         if type(blob) == str:
             json_message = json_format.Parse(

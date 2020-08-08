@@ -256,11 +256,8 @@ class Serializable(metaclass=MetaSerializable):
 
         """
 
-        if to_binary:
-            return self._object2proto().SerializeToString()
-        elif to_hex:
-            return self._object2proto().SerializeToString().hex()
-        elif to_json:
+        if to_json or to_binary or to_hex:
+
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
             blob = json_format.MessageToJson(
@@ -272,7 +269,15 @@ class Serializable(metaclass=MetaSerializable):
                 ),
                 indent=None,  # type: ignore # indent=None
             )
-            return blob
+
+            if to_json:
+                return blob
+            if to_binary:
+                return bytes(blob, "utf-8")
+
+            # then to_hex was true
+            return bytes(blob, "utf-8").hex()
+
         elif to_proto:
             return type(self)._object2proto(self)
         else:
