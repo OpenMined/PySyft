@@ -73,12 +73,12 @@ class FixedPrecisionTensor(AbstractTensor):
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
 
-    def __mod__(self, other):
+    def __mod__(self, divisor):
         """
         Define the modulo operation over object instances.
         """
         result = self.copy()
-        scaled_divisor = other * (self.base ** self.precision_fractional)
+        scaled_divisor = divisor * (self.base ** self.precision_fractional)
         result.child = result.child % scaled_divisor
         return result
 
