@@ -887,6 +887,18 @@ def test_argmax(workers, protocol):
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
 
+    # one_hot=True
+    t = torch.tensor([[3, 4.2, 6.0, 1.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    one_hot = x.argmax(one_hot=True).get().float_prec()
+    assert (one_hot == torch.tensor([0.0, 0.0, 1.0, 0.0])).all()
+
+    # keepdim=True
+    t = torch.tensor([[4.1, 3, 2.1], [2.1, 4.1, 0.9]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmax(dim=1, keepdim=True).get().float_prec()
+    assert (ids.long() == torch.argmax(t, dim=1, keepdim=True)).all()
+
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_argmin(workers, protocol):
@@ -926,6 +938,18 @@ def test_argmin(workers, protocol):
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmin(dim=1).get().float_prec()
     assert (ids.long() == torch.argmin(t, dim=1)).all()
+
+    # one_hot=True
+    t = torch.tensor([3, 4.2, 6.0, 1.0])
+    x = t.fix_prec().share(*args, **kwargs)
+    one_hot = x.argmin(one_hot=True).get().float_prec()
+    assert (one_hot == torch.tensor([0.0, 0.0, 0, 1.0])).all()
+
+    # keepdim=True
+    t = torch.tensor([[4.1, 3, 2.1], [2.1, 4.1, 0.9]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin(dim=1, keepdim=True).get().float_prec()
+    assert (ids.long() == torch.argmin(t, dim=1, keepdim=True)).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
