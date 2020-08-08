@@ -1,5 +1,3 @@
-from forbiddenfruit import curse
-
 from .. import ast
 from ..core import pointer as ptr
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
@@ -88,12 +86,18 @@ class Class(ast.callable.Callable):
                 to_hex=to_hex,
             )
 
-        curse(outer_self.ref, "serialize", serialize)
-        curse(outer_self.ref, "to_proto", Serializable.to_proto)
-        curse(outer_self.ref, "proto", Serializable.proto)
-        curse(outer_self.ref, "to_json", Serializable.to_json)
-        curse(outer_self.ref, "json", Serializable.json)
-        curse(outer_self.ref, "to_binary", Serializable.to_binary)
-        curse(outer_self.ref, "binary", Serializable.binary)
-        curse(outer_self.ref, "to_hex", Serializable.to_hex)
-        curse(outer_self.ref, "hex", Serializable.hex)
+        aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_json", attr=Serializable.to_json
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="json", attr=Serializable.json)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
+        aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
+        aggressive_set_attr(obj=outer_self.ref, name="hex", attr=Serializable.hex)
