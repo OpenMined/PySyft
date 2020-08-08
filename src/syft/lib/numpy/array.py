@@ -15,6 +15,8 @@ class ArrayConstructor(ObjectConstructor):
 
     constructor_produces_type = np.ndarray
 
+    original_type = np.ndarray
+
 
 # Step 3: create constructor and install it in the library
 ArrayConstructor().install_inside_library()

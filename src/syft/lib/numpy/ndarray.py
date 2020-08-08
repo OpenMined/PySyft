@@ -13,6 +13,8 @@ class NdArrayConstructor(ObjectConstructor):
     # self.install_inside_library()
     constructor_location = np
 
+    original_type = np.ndarray
+
 
 # Step 3: create constructor and install it in the library
 NdArrayConstructor().install_inside_library()

@@ -145,7 +145,7 @@ def test_uid_json_serialization():
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     content = {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}
-    main = {"objType": "UID", "content": json.dumps(content)}
+    main = {"objType": "syft.core.common.uid.UID", "content": json.dumps(content)}
     blob = json.dumps(main)
 
     assert uid.json() == blob
@@ -157,7 +157,7 @@ def test_uid_json_deserialization():
     """Tests that JSON UID deserialization works as expected"""
 
     content = {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}
-    main = {"objType": "UID", "content": json.dumps(content)}
+    main = {"objType": "syft.core.common.uid.UID", "content": json.dumps(content)}
 
     blob = json.dumps(main)
     obj = sy.deserialize(blob=blob, from_json=True)

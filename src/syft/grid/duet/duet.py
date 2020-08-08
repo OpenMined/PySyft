@@ -10,16 +10,14 @@ from ...core.node.domain import DomainClient
 #
 # import binascii
 # import json
-#
+# import pickle
 #
 # import requests
 #
 # from syft.core.io.connection import ClientConnection
 # from syft.core.io.route import SoloRoute
-import time
+# import time
 
-# import pickle
-#
 #
 # class GridHttpClientConnection(ClientConnection):
 #     def __init__(self, base_url):
@@ -44,27 +42,26 @@ import time
 
 class Duet(DomainClient):
     def __init__(self, host="127.0.0.1", port=5000):
-        pub, pri = self.start_server(host=host, port=port)
-
-        self.private_key = pri
-        self.public_key = pub
 
         domain_url = "http://" + host + ":" + str(port) + "/"
+        print(domain_url)
 
-        print("♫♫♫ > URL:{domain_url}")
-
-        time.sleep(0.5)
-
-        print("♫♫♫ > Connecting...")
-
-        time.sleep(0.5)
-
-        address, name, route = self.get_client_params(domain_url=domain_url)
-
-        super().__init__(address=address, name=name, routes=[route])
-
-        print("♫♫♫ > Connected!")
-
+    #
+    #     self.start_server(host=host, port=port)
+    #
+    #     print(f"♫♫♫ > URL:{domain_url}")
+    #
+    #     time.sleep(0.5)
+    #
+    #     print("♫♫♫ > Connecting...")
+    #
+    #     time.sleep(0.5)
+    #
+    #     address, name, route = self.get_client_params(domain_url=domain_url)
+    #
+    #     super().__init__(address=address, name=name, routes=[route])
+    #
+    #     print("♫♫♫ > Connected!")
     #
     # @property
     # def id(self):
@@ -86,9 +83,7 @@ class Duet(DomainClient):
     #
     #     app = Flask(__name__)
     #
-    #     pub, pri = Domain.keygen()
-    #
-    #     domain = Domain(name="duet", root_public_key=pub)
+    #     domain = Domain(name="duet")
     #
     #     @app.route("/")
     #     def get_client():

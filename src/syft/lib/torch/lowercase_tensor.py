@@ -13,6 +13,8 @@ class LowercaseTensorConstructor(ObjectConstructor):
     # self.install_inside_library()
     constructor_location = th
 
+    original_type = th.tensor
+
 
 # Step 3: create constructor and install it in the library
 LowercaseTensorConstructor().install_inside_library()

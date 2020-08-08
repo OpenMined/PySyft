@@ -54,7 +54,7 @@ def index_modules(a_dict: object, keys: List[str]) -> object:
 
     if len(keys) == 0:
         return a_dict
-    return index_modules(a_dict.__dict__[keys[0]], keys[1:])
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
 
 
 @syft_decorator(typechecking=True)
@@ -76,8 +76,8 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     attr_list = fully_qualified_name.split(".")
     assert attr_list[0] == "syft"
-    assert attr_list[1] == "core"
-    return index_modules(globals()["syft"], attr_list[1:])
+    assert attr_list[1] == "core" or attr_list[1] == "lib"
+    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
 @syft_decorator(typechecking=True)
