@@ -38,10 +38,17 @@ def test_fix_prec_registration(hook):
 
 
 def test_fixed_precision_mod_operation():
+    # Test mod operation with scalar
     x = torch.tensor([1, 2, 3]).fix_prec()
     y = x % 3
     y = y.float_prec()
     assert (y == torch.tensor([1.0, 2.0, 0.0])).all()
+
+    # Test mod operation with another FPT
+    x = torch.tensor([1, 2, 3]).fix_prec()
+    y = torch.tensor([3]).fix_prec()
+    z = (x % y).float_prec()
+    assert (z == torch.tensor([1.0, 2.0, 0.0])).all()
 
 
 def test_inplace_encode_decode(workers):
