@@ -10,6 +10,17 @@ from ....util import get_fully_qualified_name
 
 
 class MetaSerializable(type):
+    """When we go to deserialize a JSON protobuf object, the JSON protobuf
+    wrapper will return a python protobuf object corresponding to a subclass
+    of Serializable. However, in order to be able to take the next step, we need
+    an instance of the Serializable subclass. In order to create this instance,
+    we cache/monkeypatch it onto the protobuf class it corresponds to.
+
+    Since this could be a dangerous thing to do (because developers of new objects
+    in Syft could forget to add the schema2type attribute) we do it automatically
+    for all subclasses of Serializable via this metaclass. This way, nobody has
+    to worry about remembering to implement this flag."""
+
     def __new__(cls, name, bases, dct):
         x = super().__new__(cls, name, bases, dct)
         try:
