@@ -72,7 +72,7 @@ class Class(ast.callable.Callable):
         curse(outer_self.ref, "send", send)
 
     def create_serialization_methods(outer_self):
-        def serialize(
+        def serialize(  # type: ignore
             self,
             to_proto: bool = True,
             to_json: bool = False,

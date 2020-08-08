@@ -3,7 +3,7 @@ from syft.proto.lib.numpy.tensor_pb2 import TensorProto
 from syft.lib.numpy.tensor_util import numpy_array_to_tensor
 from syft.lib.numpy.tensor_util import tensor_to_numpy_array
 from forbiddenfruit import curse
-from ...core.common.uid import UID
+from google.protobuf.message import Message
 from syft.core.store.storeable_object import StorableObject
 
 
@@ -22,7 +22,7 @@ class NumpyTensorWrapper(StorableObject):
         return numpy_array_to_tensor(self.value)
 
     @staticmethod
-    def _data_proto2object(proto) -> int:
+    def _data_proto2object(proto: Message) -> int:
 
         # proto -> original numpy type
         data = tensor_to_numpy_array(proto)

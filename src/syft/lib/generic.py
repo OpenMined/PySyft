@@ -238,7 +238,7 @@ class ObjectConstructor(object):
         """
         return self.original_constructor(*args, **kwargs)
 
-    def post_init(self, obj: object, *args, **kwargs):
+    def post_init(self, obj: object, *args: list, **kwargs: dict) -> object:
         """Execute functionality after object has been created.
 
         This method executes functionality which can only be run after an object has been initailized. It is
@@ -255,9 +255,9 @@ class ObjectConstructor(object):
 
         return obj
 
-    def assign_id(self, obj: object):
-        obj.id = UID()
-        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))
+    def assign_id(self, obj: object) -> object:
+        obj.id = UID()  # type: ignore
+        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))  # type: ignore
         return obj
 
     @property

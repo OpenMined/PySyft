@@ -94,10 +94,10 @@ class StorableObject(Serializable):
         )
 
     def _data_object2proto(self) -> Message:
-        return self.data.serialize()
+        return self.data.serialize()  # type: ignore
 
     @staticmethod
-    def _data_proto2object(proto) -> int:
+    def _data_proto2object(proto: Message) -> int:
         return _deserialize(blob=proto)
 
     @staticmethod
