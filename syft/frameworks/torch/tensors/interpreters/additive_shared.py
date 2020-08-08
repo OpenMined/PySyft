@@ -1085,9 +1085,8 @@ class AdditiveSharingTensor(AbstractTensor):
             dim: compute argmin over a specific dimension
             keepdim: when one_hot is true, keep all the dimensions of the tensor
             one_hot: return the argmin as a one hot vector
-        """ 
+        """
         return (-self).argmax(dim=dim, keepdim=keepdim, one_hot=one_hot)
-        
 
     def max(self, dim=None, keepdim=False, algorithm="pairwise"):
         """
@@ -1123,8 +1122,6 @@ class AdditiveSharingTensor(AbstractTensor):
             the max of the tensor self
         """
         return -(-self).max(dim=dim, keepdim=keepdim, algorithm=algorithm)
-
-
 
     ## STANDARD
 

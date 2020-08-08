@@ -819,6 +819,7 @@ def test_max(workers, protocol):
     max_value = x.max(dim=0).get().float_prec()
     assert (max_value == t.max(dim=0)[0]).all()
 
+
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_min(workers, protocol):
     me, alice, bob, crypto_provider = (
@@ -885,6 +886,7 @@ def test_argmax(workers, protocol):
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
+
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_argmin(workers, protocol):
