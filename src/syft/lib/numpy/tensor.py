@@ -9,10 +9,12 @@ from syft.core.store.storeable_object import StorableObject
 
 class NumpyTensorWrapper(StorableObject):
     def __init__(self, value, as_wrapper):
-        super().__init__(data=value,
-                         key=value.id,
-                         tags=value.tags if hasattr(value, 'tags') else [],
-                         description=value.description if hasattr(value, 'description') else "")
+        super().__init__(
+            data=value,
+            key=value.id,
+            tags=value.tags if hasattr(value, "tags") else [],
+            description=value.description if hasattr(value, "description") else "",
+        )
         print("Wrapped tensor with id:" + str(value.id))
         self.value = value
 

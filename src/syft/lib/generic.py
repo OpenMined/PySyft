@@ -4,6 +4,7 @@ from ..core.common.uid import UID
 
 import inspect
 
+
 class ObjectConstructor(object):
     """Syft allows for the extension and remote execution of a range of python libraries. As such,
     a common need is the ability to modify library-specific constructors of objects.
@@ -106,7 +107,10 @@ class ObjectConstructor(object):
 
     def install_id_attribute(self, original_constructor):
 
-        if (inspect.isclass(original_constructor) or self.constructor_produces_type is not None):
+        if (
+            inspect.isclass(original_constructor)
+            or self.constructor_produces_type is not None
+        ):
 
             if self.constructor_produces_type is not None:
                 type_to_subclass = self.constructor_produces_type

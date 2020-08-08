@@ -15,6 +15,7 @@ from ...decorators import syft_decorator
 # resources
 from uuid import UUID as uuid_type
 
+
 @final
 class UID(Serializable):
     """A unique ID for every Syft object.

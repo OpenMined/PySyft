@@ -89,10 +89,9 @@ class StorableObject(Serializable):
         tags = None
         if proto.tags:
             tags = list(proto.tags)
-        return target_type.construct_new_object(id=key,
-                                                data=data,
-                                                tags=tags,
-                                                description=proto.description)
+        return target_type.construct_new_object(
+            id=key, data=data, tags=tags, description=proto.description
+        )
 
     def _data_object2proto(self) -> Message:
         return self.data.serialize()
@@ -103,9 +102,7 @@ class StorableObject(Serializable):
 
     @staticmethod
     def construct_new_object(id, data, tags, description):
-        return StorableObject(
-            key=id, data=data, description=description, tags=tags
-        )
+        return StorableObject(key=id, data=data, description=description, tags=tags)
 
     @staticmethod
     def get_protobuf_schema() -> type:

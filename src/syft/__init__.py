@@ -41,10 +41,9 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 import sys
 from pathlib import Path
 
+import syft as sy
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
-
-import syft as sy
 
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
@@ -52,10 +51,6 @@ from syft.core import common  # noqa: F401
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
-
-# Convenience Constructors
-from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
-from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
 from syft.core.node.device.device import Device  # noqa: F401
 from syft.core.node.device.device import DeviceClient  # noqa: F401
@@ -63,10 +58,14 @@ from syft.core.node.domain.domain import Domain  # noqa: F401
 from syft.core.node.domain.domain import DomainClient  # noqa: F401
 from syft.core.node.network.network import Network  # noqa: F401
 from syft.core.node.network.network import NetworkClient  # noqa: F401
-from syft.grid.duet.duet import Duet
+
+# Convenience Constructors
+from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
+from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 
 # Convenience Functions
 from syft.decorators import type_hints  # noqa: F401
+from syft.grid.duet.duet import Duet
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401

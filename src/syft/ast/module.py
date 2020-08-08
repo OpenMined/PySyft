@@ -2,6 +2,7 @@ from .. import ast
 from .util import builtin_func_type, class_type, func_type, module_type, unsplit
 from ..lib.generic import ObjectConstructor
 
+
 class Module(ast.attribute.Attribute):
 
     """A module which contains other modules or callables."""
