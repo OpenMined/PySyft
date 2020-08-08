@@ -75,7 +75,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def __mod__(self, other):
         """
-        Define the module operation over object instances.
+        Define the modulo operation over object instances.
         """
         result = self.copy()
         scaled_divisor = other * (self.base ** self.precision_fractional)
