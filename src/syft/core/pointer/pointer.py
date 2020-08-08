@@ -1,15 +1,14 @@
-import random
-
 from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..common.uid import UID
 
 
 class Pointer:
     def __init__(self, location, id_at_location=None):
         if id_at_location is None:
-            id_at_location = random.randint(0, 1000)
+            id_at_location = UID()
 
         self.location = location
         self.id_at_location = id_at_location

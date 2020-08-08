@@ -8,7 +8,6 @@ from .server import ServerThread
 import sys
 
 import binascii
-import json
 import pickle
 
 import requests
@@ -23,9 +22,7 @@ class GridHttpClientConnection(ClientConnection):
         self.base_url = base_url
 
     def send_immediate_msg_with_reply(self, msg):
-        reply = self.send_msg(msg)
-        binary = binascii.unhexlify(json.loads(reply.text)["data"])
-        return pickle.loads(binary)  # nosec # TODO make less insecure
+        return self.send_msg(msg)
 
     def send_immediate_msg_without_reply(self, msg):
         self.send_msg(msg)
@@ -34,8 +31,8 @@ class GridHttpClientConnection(ClientConnection):
         self.send_msg(msg)
 
     def send_msg(self, msg):
-        data = pickle.dumps(msg).hex()
-        r = requests.post(url=self.base_url + "recv", json={"data": data})
+        json_msg = msg.json()
+        r = requests.post(url=self.base_url + "recv", json=json_msg)
         return r
 
 
