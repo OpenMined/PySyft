@@ -30,6 +30,7 @@ class PrimitiveStorage:
         self.fss_comp: list = []
         self.mul: dict = defaultdict(list)
         self.matmul: dict = defaultdict(list)
+        self.generators = {}
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -264,3 +265,34 @@ class PrimitiveStorage:
             return primitives_worker
 
         return build_separate_triples
+
+    def __get_next_elem(self, generator, shape=(1,), size=2 ** 32):
+        tensor = th.empty(shape, dtype=th.long)
+        worker = tensor.owner
+
+        return tensor.random_(-size // 2, (size - 1) // 2, generator=generator)
+
+    def generate_alpha_3of3(self):
+        assert (
+            "przs" in self.generators
+        ), "You must call setup_przs because the seeds where not shared between workers"
+
+        generators = self.generators["przs"]
+        cur_gen = generators["cur"]
+        prev_gen = generators["prev"]
+
+        share = self.__get_next_elem(cur_gen) - self.__get_next_elem(prev_gen)
+        return share
+
+    def generate_alpha_2of3(self):
+        assert (
+            "przs" in self.generators
+        ), "You must call setup_przs because the seeds where not shared between workers"
+
+        generators = self.generators["przs"]
+        cur_gen = generators["cur"]
+        prev_gen = generators["prev"]
+
+        share_cur, share_prev = (self.__get_next_elem(cur_gen), self.__get_next_elem(prev_gen))
+        print(share_cur, share_prev)
+        return share_cur, share_prev
