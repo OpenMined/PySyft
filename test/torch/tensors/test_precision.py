@@ -37,8 +37,7 @@ def test_fix_prec_registration(hook):
         assert hook.local_worker.get_obj(x.id) == x
 
 
-def test_fixed_precision_mod_operation(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+def test_fixed_precision_mod_operation():
 
     # Test mod operation with scalar (method syntax)
     x = torch.tensor([1, 2, 3]).fix_prec()
