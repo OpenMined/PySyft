@@ -48,7 +48,7 @@ from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
-from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
+from syft.generic.abstract.syft_serializable import SyftSerializable, get_msgpack_subclasses
 from syft.serde.msgpack.proto import proto_type_info
 
 if dependency_check.torch_available:
