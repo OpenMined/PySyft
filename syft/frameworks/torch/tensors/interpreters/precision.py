@@ -9,7 +9,6 @@ from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
-from typing import Union
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.precision_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensorPB,
@@ -73,20 +72,6 @@ class FixedPrecisionTensor(AbstractTensor):
                 raise ValueError(
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
-
-    def __mod__(self, divisor: Union[int, torch.Tensor]) -> torch.Tensor:
-        """
-        Define the modulo operation over object instances.
-        """
-        result = FixedPrecisionTensor()
-        if isinstance(divisor, int):
-            scaled_divisor = divisor * (self.base ** self.precision_fractional)
-            result.child = self.child % scaled_divisor
-        elif isinstance(divisor, FixedPrecisionTensor):
-            result.child = self.child % divisor.child
-        else:
-            raise TypeError("Unsupported type for modulo operation")
-        return result
 
     def get_class_attributes(self):
         """
@@ -173,6 +158,21 @@ class FixedPrecisionTensor(AbstractTensor):
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
+
+    @overloaded.method
+    def mod(self, _self, divisor):
+        """
+        Define the modulo operation over object instances.
+        """
+        if isinstance(divisor, (int, float)):
+            scaled_divisor = int(divisor * self.base ** self.precision_fractional)
+            return getattr(_self, "fmod")(scaled_divisor)
+
+        response = getattr(_self, "fmod")(divisor)
+
+        return response
+
+    __mod__ = mod
 
     @overloaded.method
     def add(self, _self, other):
@@ -724,6 +724,11 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def fmod(self, other):
+            return self.__mod__(other)
+
+        module.fmod = fmod
+
         def add(self, other):
             return self.__add__(other)
 
