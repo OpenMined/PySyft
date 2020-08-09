@@ -81,9 +81,9 @@ class FixedPrecisionTensor(AbstractTensor):
         result = self.copy()
         if isinstance(divisor, int):
             scaled_divisor = divisor * (self.base ** self.precision_fractional)
-            result.child = result.child % scaled_divisor
+            result.child %= scaled_divisor
         elif isinstance(divisor, FixedPrecisionTensor):
-            result.child = result.child % divisor.child
+            result.child %= divisor.child
         else:
             raise TypeError("Unsupported type for modulo operation")
         return result
