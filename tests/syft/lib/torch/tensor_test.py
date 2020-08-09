@@ -25,7 +25,7 @@ def test_torch_vm_remote_operation():
 
 
 def test_torch_serde():
-    
+
     x = th.tensor([1, 2, 3, 4])
 
     blob = x.serialize()
