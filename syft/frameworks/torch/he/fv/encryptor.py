@@ -48,6 +48,7 @@ class Encryptor:
 
         Args:
             message (Plaintext): An Plaintext object which has to be encrypted.
+            param_id: Parameter id for accessing the correct parameters from the context chain.
             is_asymmetric (bool): Based on the key provided for encryption select
                 the mode of encryption.
 

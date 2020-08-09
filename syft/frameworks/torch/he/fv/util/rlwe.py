@@ -116,6 +116,7 @@ def encrypt_asymmetric(context, param_id, public_key):
     Args:
         context (Context): A valid context required for extracting the encryption
             parameters.
+        param_id: Parameter id for accessing the correct parameters from the context chain.
         public_key (PublicKey): A public key generated with same encryption parameters.
 
     Returns:
@@ -156,6 +157,7 @@ def encrypt_symmetric(context, param_id, secret_key):
 
     Args:
         context (Context): A valid context required for extracting the encryption parameters.
+        param_id: Parameter id for accessing the correct parameters from the context chain.
         secret_key (SecretKey): A secret key generated with same encryption parameters.
 
     Returns:

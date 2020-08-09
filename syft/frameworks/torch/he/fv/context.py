@@ -61,23 +61,22 @@ class Context:
 
 
 class ContextData:
-    """A class used to hold parameters and perform parameters validation.
-
-    Args:
-        param: An EncryptionParams object with polynomial modulus, coefficient modulus and
-        plain modulus set.
-        prev_context_id: Id of the previous ContextData object in context chain.
-        next_context_id: Id of the next ContextData object in context chain.
-
-    Attributes:
-        prev_context_id: Id of the previous ContextData object in context chain.
-        next_context_id: Id of the next ContextData object in context chain.
-        coeff_div_plain_modulus: A list of float values equal to (q[i]/t),
-            In research papers denoted by delta.
-        rns_tool: A RNSTool class instance.
-    """
-
     def __init__(self, param, prev_context_id=None, next_context_id=None):
+        """A class used to hold parameters and perform parameters validation.
+
+        Args:
+            param: An EncryptionParams object with polynomial modulus, coefficient modulus and
+            plain modulus set.
+            prev_context_id: Id of the previous ContextData object in context chain.
+            next_context_id: Id of the next ContextData object in context chain.
+
+        Attributes:
+            prev_context_id: Id of the previous ContextData object in context chain.
+            next_context_id: Id of the next ContextData object in context chain.
+            coeff_div_plain_modulus: A list of float values equal to (q[i]/t),
+                In research papers denoted by delta.
+            rns_tool: A RNSTool class instance.
+        """
         self.validate(param)
         self.param = param
         self.prev_context_id = prev_context_id
