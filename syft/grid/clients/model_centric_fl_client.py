@@ -48,7 +48,12 @@ class ModelCentricFLClient:
         self.ws.send(json.dumps(message))
         json_response = json.loads(self.ws.recv())
 
-        error = json_response["data"].get("error", None)
+        # Look for error in root and under "data"
+        error = None
+        if "data" in json_response:
+            error = json_response["data"].get("error", None)
+        elif "error" in json_response:
+            error = json_response["error"]
         if error is not None:
             raise GridError(error, None)
 
@@ -105,9 +110,9 @@ class ModelCentricFLClient:
         serialized_protocols = self._serialize_object(client_protocols)
         serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
 
-        # "model_centric/host-training" request body
+        # "model-centric/host-training" request body
         message = {
-            "type": "model_centric/host-training",
+            "type": "model-centric/host-training",
             "data": {
                 "model": serialized_model,
                 "plans": serialized_plans,
@@ -126,5 +131,5 @@ class ModelCentricFLClient:
             "version": version,
             "checkpoint": checkpoint,
         }
-        serialized_model = self._send_http_req("GET", "/model_centric/retrieve-model", params)
+        serialized_model = self._send_http_req("GET", "/model-centric/retrieve-model", params)
         return self._unserialize(serialized_model, StatePB)

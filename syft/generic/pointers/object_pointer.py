@@ -18,7 +18,6 @@ from syft.exceptions import RemoteObjectFoundError
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers.abstract import AbstractWorker
     from syft.workers.base import BaseWorker
 
 

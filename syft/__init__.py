@@ -70,6 +70,9 @@ from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor  # no
 from syft.frameworks.torch.tensors.interpreters.additive_shared import (  # noqa: E402,F401
     AdditiveSharingTensor,
 )
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import (  # noqa: E402,F401
+    ReplicatedSharingTensor,
+)
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor  # noqa: E402,F401
 from syft.frameworks.torch.tensors.interpreters.precision import (  # noqa: E402,F401
     FixedPrecisionTensor,
@@ -118,6 +121,7 @@ __all__.extend(
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
+        "ReplicatedSharingTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
         "PointerTensor",

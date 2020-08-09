@@ -44,10 +44,11 @@ from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
 
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
-from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
+from syft.generic.abstract.syft_serializable import SyftSerializable, get_msgpack_subclasses
 from syft.serde.msgpack.proto import proto_type_info
 
 if dependency_check.torch_available:
@@ -159,7 +160,11 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
         )
 
         self._OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
-        self._EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+        self._EXCEPTION_SIMPLIFIER_AND_DETAILERS = [
+            GetNotPermittedError,
+            ResponseSignatureError,
+            EmptyCryptoPrimitiveStoreError,
+        ]
 
         self.stale_state = False
 

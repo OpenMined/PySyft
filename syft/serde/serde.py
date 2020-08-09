@@ -7,6 +7,9 @@ the function apply_compress_scheme.
 
 from typing import Callable
 
+from syft.serde.msgpack import serialize as msgpack_serialize
+from syft.serde.msgpack import deserialize as msgpack_deserialize
+
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
@@ -38,9 +41,8 @@ def serialize(
         binary: the serialized form of the object.
     """
     if strategy is None:
-        from syft.serde.msgpack import serialize
 
-        strategy = serialize
+        strategy = msgpack_serialize
 
     return strategy(obj, worker, simplified, force_full_simplification)
 
@@ -66,8 +68,7 @@ def deserialize(binary: bin, worker=None, strategy: Callable[[bin], object] = No
     """
 
     if strategy is None:
-        from syft.serde.msgpack import deserialize
 
-        strategy = deserialize
+        strategy = msgpack_deserialize
 
     return strategy(binary, worker)

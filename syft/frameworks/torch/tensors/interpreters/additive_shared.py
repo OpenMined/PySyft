@@ -904,6 +904,11 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.argmax = argmax
 
+        def argmin(tensor, **kwargs):
+            return tensor.argmin(**kwargs)
+
+        module.argmin = argmin
+
         @overloaded.module
         def functional(module):
             @overloaded.function
@@ -1074,6 +1079,17 @@ class AdditiveSharingTensor(AbstractTensor):
             result = result._one_hot_to_index(dim, keepdim)
         return result
 
+    def argmin(self, dim=None, keepdim=False, one_hot=False):
+        """
+        Compute argmin using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
+        This is inspired from CrypTen.
+        Args:
+            dim: compute argmin over a specific dimension
+            keepdim: when one_hot is true, keep all the dimensions of the tensor
+            one_hot: return the argmin as a one hot vector
+        """
+        return (-self).argmax(dim=dim, keepdim=keepdim, one_hot=one_hot)
+
     def max(self, dim=None, keepdim=False, algorithm="pairwise"):
         """
         Returns the maximum value of all elements in the input tensor, using argmax
@@ -1096,6 +1112,18 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             max_result = (self * argmax_result).sum()
         return max_result
+
+    def min(self, dim=None, keepdim=False, algorithm="pairwise"):
+        """
+        Returns the minimun value of all elements in the input tensor, using argmin
+        Args:
+            dim: compute the min over a specific dimension
+            keepdim: keep the dimension of the tensor when dim is not None
+            algorithm: method to compute the minimum
+        Returns:
+            the min of the tensor self
+        """
+        return -(-self).max(dim=dim, keepdim=keepdim, algorithm=algorithm)
 
     ## STANDARD
 

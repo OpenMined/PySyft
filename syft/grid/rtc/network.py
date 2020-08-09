@@ -175,7 +175,7 @@ class Network(threading.Thread):
 
     def __repr__(self):
         """Default String representation"""
-        repr_str = (
+        return (
             f"< Peer ID: {self.id}, "
             f"hosted datasets: {list(self._worker.object_store._tag_to_object_ids.keys())}, "
             f"hosted_models: {list(self._worker.models.keys())}, "

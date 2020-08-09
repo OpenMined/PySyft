@@ -1,4 +1,4 @@
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.generic.abstract.object import AbstractObject
 
 

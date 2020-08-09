@@ -58,9 +58,6 @@ class TorchTensor(AbstractTensor):
     origin = None
     id_at_origin = None
 
-    def has_child(self):
-        return hasattr(self, "child")
-
     def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
         """
         This hook is triggered when a tensor which was received from a sender has
@@ -480,7 +477,7 @@ class TorchTensor(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            if self.has_child() and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
@@ -617,7 +614,7 @@ class TorchTensor(AbstractTensor):
 
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.mid_get()
@@ -628,7 +625,7 @@ class TorchTensor(AbstractTensor):
 
         TODO: make this kind of message forwarding generic?
         """
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.remote_get()
@@ -909,6 +906,11 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if protocol == "falcon":
+            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
+                self, owners
+            )
+            return shared_tensor
         if self.has_child():
             chain = self.child
 
