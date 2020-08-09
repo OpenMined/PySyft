@@ -6,6 +6,7 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from ....store.storeable_object import StorableObject
 
+
 class RunClassMethodAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -30,7 +31,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         print(self.args)
         print(self.kwargs)
         print(self.id_at_location)
-
 
         method = node.lib_ast(self.path)
 

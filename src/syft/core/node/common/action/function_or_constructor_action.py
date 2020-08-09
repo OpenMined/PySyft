@@ -8,6 +8,7 @@ from syft.core.io.address import Address
 
 from ....store.storeable_object import StorableObject
 
+
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -50,8 +51,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         result = method(*resolved_args, **resolved_kwargs)
 
         if not isinstance(result, StorableObject):
-            result = StorableObject(id=self.id_at_location,
-                                    data=result)
+            result = StorableObject(id=self.id_at_location, data=result)
 
         # QUESTION: Where is store_object defined
         node.store.store(obj=result)

@@ -60,17 +60,16 @@ class Node(AbstractNode):  # type: ignore # incompatible
     child_type = ChildT
 
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: Optional[str] = None,
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[Location] = None):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
 
-        super().__init__(network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+        super().__init__(network=network, domain=domain, device=device, vm=vm)
 
         # This is the name of the node - it exists purely to help the
         # end user have some idea about what this node is in a human
@@ -181,15 +180,15 @@ class Node(AbstractNode):  # type: ignore # incompatible
     def get_client(self, routes: List[Route] = []) -> Client:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [
-                SoloRoute(destination=self.id, connection=conn_client)
-            ]
-        return self.client_type(name=self.name,
-                                routes=routes,
-                                network=self.network,
-                                domain=self.domain,
-                                device=self.device,
-                                vm=self.vm)
+            routes = [SoloRoute(destination=self.id, connection=conn_client)]
+        return self.client_type(
+            name=self.name,
+            routes=routes,
+            network=self.network,
+            domain=self.domain,
+            device=self.device,
+            vm=self.vm,
+        )
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
         metadata: Dict[str, Union[Address, Optional[str], UID]] = {}

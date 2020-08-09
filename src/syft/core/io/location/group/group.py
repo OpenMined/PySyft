@@ -1,6 +1,7 @@
 from typing import Set
 from ..location import Location
 
+
 class LocationGroup(Location):
 
     """This represents a group of multiple locations. There

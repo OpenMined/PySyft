@@ -12,6 +12,7 @@ from .....proto.core.node.common.action.save_object_pb2 import (
 from ....common.serde.deserialize import _deserialize
 from ....store.storeable_object import StorableObject
 
+
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
     @syft_decorator(typechecking=True)
     def __init__(

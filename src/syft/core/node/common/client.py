@@ -26,17 +26,16 @@ class Client(AbstractNodeClient):  # type: ignore # incompatible
     have permissions - clients should not store private keys)."""
 
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: str,
-                 routes: List[Route],
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[Location] = None):
-        super().__init__(network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(network=network, domain=domain, device=device, vm=vm)
 
         self.name = name
         self.routes = routes

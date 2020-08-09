@@ -17,6 +17,7 @@ from typing import Optional
 from ...io.location import Location
 from ...io.location import SpecificLocation
 
+
 @final
 class Device(Node):
 
@@ -26,20 +27,19 @@ class Device(Node):
     child_type_client_type = VirtualMachineClient
 
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: str,
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[SpecificLocation] = SpecificLocation(),
-                 vm: Optional[Location] = None,
-                 device_type: DeviceType = unknown_device,
-                 vms: Dict[UID, VirtualMachine] = {}
-                 ):
-        super().__init__(name=name,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[SpecificLocation] = SpecificLocation(),
+        vm: Optional[Location] = None,
+        device_type: DeviceType = unknown_device,
+        vms: Dict[UID, VirtualMachine] = {},
+    ):
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         self.device_type = device_type
 
@@ -51,7 +51,4 @@ class Device(Node):
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.device.id in (
-            self.id,
-            All(),
-        ) and msg.address.vm is None
+        return msg.address.device.id in (self.id, All(),) and msg.address.vm is None

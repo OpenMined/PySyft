@@ -9,20 +9,25 @@ from syft.core.io.address import Address
 from ...io.location import Location
 from typing import Optional
 
+
 class DomainClient(Client):
-    def __init__(self,
-                 name: str,
-                 routes: List[Route],
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[Location] = None):
-        super().__init__(name=name,
-                         routes=routes,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(
+            name=name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
 
         assert self.domain is not None
 

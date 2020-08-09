@@ -10,6 +10,7 @@ from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .heritage_update_service import HeritageUpdateMessage
 from ....store.storeable_object import StorableObject
 
+
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -25,9 +26,10 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 
-
         # Step 1: Store the client to the child in our object store.
-        node.store.store(obj=StorableObject(id=msg.child_node_client.id, data=msg.child_node_client))
+        node.store.store(
+            obj=StorableObject(id=msg.child_node_client.id, data=msg.child_node_client)
+        )
 
         # Step 2: update the child node and its descendants with our node.id in their
         # .address objects

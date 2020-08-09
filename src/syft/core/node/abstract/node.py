@@ -13,6 +13,7 @@ class AbstractNode(Address):
     store: ObjectStore
     lib_ast: Any  # Cant import Globals (circular reference)
     """"""
+
     @property
     def known_child_nodes(self) -> List[Any]:
         raise NotImplementedError

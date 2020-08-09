@@ -45,8 +45,8 @@ class StorableObject(AbstractStorableObject):
         self,
         id: UID,
         data: object,
-        description: Optional[str]="",
-        tags: Optional[List[str]]=[],
+        description: Optional[str] = "",
+        tags: Optional[List[str]] = [],
     ):
         self.id = id
         self.data = data
@@ -145,4 +145,8 @@ class StorableObject(AbstractStorableObject):
         return StorableObject_PB
 
     def __repr__(self):
-        return "<Storable:" + self.data.__repr__().replace("\n","").replace("  "," ") + ">"
+        return (
+            "<Storable:"
+            + self.data.__repr__().replace("\n", "").replace("  ", " ")
+            + ">"
+        )

@@ -9,23 +9,24 @@ from .client import VirtualMachineClient
 from ...io.location import Location
 from ...io.location import SpecificLocation
 
+
 @final
 class VirtualMachine(Node):
 
     client_type = VirtualMachineClient
 
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name:str,
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[SpecificLocation] = SpecificLocation()):
-        super().__init__(name=name,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[SpecificLocation] = SpecificLocation(),
+    ):
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         # All node subclasses have to call this at the end of their __init__
         self._register_services()

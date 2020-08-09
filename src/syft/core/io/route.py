@@ -131,9 +131,7 @@ class Route(ObjectWithID):
 
 
 class SoloRoute(Route):
-    def __init__(
-        self, destination: Location, connection: ClientConnection
-    ) -> None:
+    def __init__(self, destination: Location, connection: ClientConnection) -> None:
         self.schema = RouteSchema(destination=destination)
         self.connection = connection
 
@@ -158,8 +156,6 @@ class BroadcastRoute(SoloRoute):
     A route used for pub/sub type systems.
     """
 
-    def __init__(
-        self, destination: Location, connection: ClientConnection
-    ) -> None:
+    def __init__(self, destination: Location, connection: ClientConnection) -> None:
         super().__init__(destination=destination, connection=connection)
         # self.connection.topic = destination.topic

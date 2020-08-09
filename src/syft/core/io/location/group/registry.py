@@ -2,6 +2,7 @@ from ..location import Location
 from .group import LocationGroup
 from typing import Set
 
+
 class RegistryBackedLocationGroup(LocationGroup):
 
     """This is a location group where membership of the group is

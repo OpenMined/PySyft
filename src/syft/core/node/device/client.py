@@ -13,24 +13,30 @@ from typing import Optional
 
 from ....decorators.syft_decorator_impl import syft_decorator
 
+
 @final
 class DeviceClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: str,
-                 routes: List[Route],
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[SpecificLocation] = None,
-                 vm: Optional[Location] = None):
-        super().__init__(name=name,
-                         routes=routes,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[SpecificLocation] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(
+            name=name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
 
         assert self.device is not None
+
     # def create_vm(self, name:str):
     #
     #     # Step 1: create a old_message which will request for a VM to be created.

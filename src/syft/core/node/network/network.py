@@ -11,6 +11,7 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ....decorators.syft_decorator_impl import syft_decorator
 
+
 class Network(Node):
 
     client_type = NetworkClient
@@ -19,17 +20,17 @@ class Network(Node):
     child_type_client_type = DomainClient
 
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: str,
-                 network: Optional[SpecificLocation] = SpecificLocation(),
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[Location] = None):
-        super().__init__(name=name,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        network: Optional[SpecificLocation] = SpecificLocation(),
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         self._register_services()
 
@@ -38,7 +39,6 @@ class Network(Node):
         return self.network.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.network.id in (
-            self.id,
-            All(),
-        ) and msg.address.domain is None
+        return (
+            msg.address.network.id in (self.id, All(),) and msg.address.domain is None
+        )

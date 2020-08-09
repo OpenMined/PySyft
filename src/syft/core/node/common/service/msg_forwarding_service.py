@@ -28,13 +28,19 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
 
         if addr.device is not None and addr.device.id in node.store:
 
-            return node.store[addr.device.id].data.send_immediate_msg_without_reply(msg=msg)
+            return node.store[addr.device.id].data.send_immediate_msg_without_reply(
+                msg=msg
+            )
 
         if addr.domain is not None and addr.domain.id in node.store:
-            return node.store[addr.domain.id].data.send_immediate_msg_without_reply(msg=msg)
+            return node.store[addr.domain.id].data.send_immediate_msg_without_reply(
+                msg=msg
+            )
 
         if addr.network is not None and addr.network.id in node.store:
-            return node.store[addr.network.id].data.send_immediate_msg_without_reply(msg=msg)
+            return node.store[addr.network.id].data.send_immediate_msg_without_reply(
+                msg=msg
+            )
 
         raise Exception(
             "Address unknown - cannot forward old_message. Throwing it away."

@@ -11,22 +11,27 @@ from ..common.client import Client
 from ...io.location import Location
 from typing import Optional
 
+
 @final
 class NetworkClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self,
-                 name: str,
-                 routes: List[Route],
-                 network: Optional[Location] = None,
-                 domain: Optional[Location] = None,
-                 device: Optional[Location] = None,
-                 vm: Optional[Location] = None):
-        super().__init__(name=name,
-                         routes=routes,
-                         network=network,
-                         domain=domain,
-                         device=device,
-                         vm=vm)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(
+            name=name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
 
         assert self.network is not None
 
