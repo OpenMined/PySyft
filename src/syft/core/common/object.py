@@ -9,6 +9,8 @@ from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import Serializable
 from .uid import UID
 
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 
 class ObjectWithID(Serializable):
     """This object is the superclass for nearly all Syft objects. Subclassing
@@ -126,6 +128,5 @@ class ObjectWithID(Serializable):
         return ObjectWithID(id=_deserialize(blob=proto.id))
 
     @staticmethod
-    # QUESTION: What type is this returning?
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return ObjectWithID_PB

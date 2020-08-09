@@ -20,26 +20,25 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
     ) -> None:
 
         addr = msg.address
-        pri_addr = addr.pri_address
-        pub_addr = addr.pub_address
+        print(addr.vm.id)
+        if addr.vm is not None and addr.vm.id in node.store:
+            # TODO: don't return .data - instead have storableObject's parameters actually
+            #  be on the object.
+            return node.store[addr.vm.id].data.send_immediate_msg_without_reply(msg=msg)
 
-        if pri_addr.vm is not None and node.store.has_object(pri_addr.vm):
-            return node.store.get_object(pri_addr.vm).send_immediate_msg_without_reply(
+        if addr.device is not None and addr.device.id in node.store:
+
+            return node.store[addr.device.id].data.send_immediate_msg_without_reply(
                 msg=msg
             )
 
-        if pri_addr.device is not None and node.store.has_object(pri_addr.device):
-            return node.store.get_object(pri_addr.device).send_msg_without_reply(
+        if addr.domain is not None and addr.domain.id in node.store:
+            return node.store[addr.domain.id].data.send_immediate_msg_without_reply(
                 msg=msg
             )
 
-        if pub_addr.domain is not None and node.store.has_object(pub_addr.domain):
-            return node.store.get_object(pub_addr.domain).send_msg_without_reply(
-                msg=msg
-            )
-
-        if pub_addr.network is not None and node.store.has_object(pub_addr.network):
-            return node.store.get_object(pub_addr.network).send_msg_without_reply(
+        if addr.network is not None and addr.network.id in node.store:
+            return node.store[addr.network.id].data.send_immediate_msg_without_reply(
                 msg=msg
             )
 

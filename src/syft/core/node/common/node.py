@@ -16,18 +16,17 @@ from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....util import get_subclasses
 from ...io.address import Address
+from ...io.location import Location
 from ...io.virtual import create_virtual_connection
 from ...io.route import SoloRoute, Route
 
-
 # CORE IMPORTS
-from ...store import ObjectStore
+from ...store import MemoryStore
 from ...common.object import UID
 
 # NON-CORE IMPORTS
 from ..abstract.node import AbstractNode
 from .client import Client
-from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import (
@@ -44,7 +43,7 @@ from .service.node_service import EventualNodeServiceWithoutReply
 
 
 # TODO: Fix AbstractNode and LocationAwareObject being incompatible
-class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
+class Node(AbstractNode):
 
     """
     Basic class for a syft node behavior, explicit purpose node will
@@ -61,9 +60,16 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
     child_type = ChildT
 
     @syft_decorator(typechecking=True)
-    def __init__(self, name: Optional[str] = None, address: Optional[Address] = None):
-        AbstractNode.__init__(self)
-        LocationAwareObject.__init__(self, address=address)
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+
+        super().__init__(network=network, domain=domain, device=device, vm=vm)
 
         # This is the name of the node - it exists purely to help the
         # end user have some idea about what this node is in a human
@@ -77,7 +83,7 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
-        self.store = ObjectStore()
+        self.store = MemoryStore()
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -176,14 +182,19 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
     def get_client(self, routes: List[Route] = []) -> Client:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [
-                SoloRoute(source=self, destination=self.vm_id, connection=conn_client)
-            ]
-        return self.client_type(address=self.address, name=self.name, routes=routes)
+            routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
+        return self.client_type(
+            name=self.name,
+            routes=routes,
+            network=self.network,
+            domain=self.domain,
+            device=self.device,
+            vm=self.vm,
+        )
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
         metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
-        metadata["address"] = self.address
+        metadata["address"] = self.target_id
         metadata["name"] = self.name
         metadata["id"] = self.id
         return metadata
@@ -197,8 +208,9 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
         # QUESTION: where is get_objects_of_type defined?
         return self.store.get_objects_of_type(obj_type=Client)
 
-    def add_me_to_my_address(self) -> None:
-        raise NotImplementedError
+    @property
+    def id(self) -> None:
+        NotImplementedError
 
     @property
     def known_child_nodes(self) -> List:
@@ -215,7 +227,7 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
     def recv_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
-        if self.message_is_for_me(msg):
+        if self.message_is_for_me(msg=msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
                 return self.immediate_msg_with_reply_router[type(msg)].process(
@@ -241,11 +253,40 @@ class Node(AbstractNode, LocationAwareObject):  # type: ignore # incompatible
         raise Exception("Unable to dispatch message, not all exceptions were caught")
 
     @syft_decorator(typechecking=True)
+    def recv_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
+
+        if self.message_is_for_me(msg=msg):
+            print("the message is for me!!!")
+            try:  # we use try/except here because it's marginally faster in Python
+
+                self.immediate_msg_without_reply_router[type(msg)].process(
+                    node=self, msg=msg
+                )
+
+            except KeyError as e:
+
+                if type(msg) not in self.immediate_msg_without_reply_router:
+                    raise KeyError(
+                        f"The node {self.id} of type {type(self)} cannot process messages of type "
+                        + f"{type(msg)} because there is no service running to process it."
+                    )
+
+                self.ensure_services_have_been_registered_error_if_not()
+
+                raise e
+
+        else:
+            print("the message is not for me...")
+            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
+
+    @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply
     ) -> None:
 
-        if self.message_is_for_me(msg):
+        if self.message_is_for_me(msg=msg):
             print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
 

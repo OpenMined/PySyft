@@ -4,20 +4,39 @@ from typing_extensions import final
 from syft.core.common.uid import UID
 
 from ....decorators import syft_decorator
-from ...io.address import Address
 from ...io.route import Route
 from ..common.client import Client
+
+from ...io.location import Location
+from typing import Optional
 
 
 @final
 class NetworkClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self, address: Address, name: str, routes: List[Route]):
-        super().__init__(address=address, name=name, routes=routes)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(
+            name=name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
 
-    def add_me_to_my_address(self) -> None:
-        # I should already be added
-        assert self.network_id is not None
+        assert self.network is not None
+
+    @property
+    def id(self):
+        return self.network.id
 
     @property
     def domain_id(self) -> UID:
@@ -74,17 +93,6 @@ class NetworkClient(Client):
         target. That address object will include this information if it is available"""
 
         raise Exception("This client points to a network, you don't need a VM ID.")
-
-    # @property
-    # def target_node_id(self) -> UID:
-    #     """This client points to a vm, this returns the id of that vm."""
-    #     return self.network_id
-    #
-    # @target_node_id.setter
-    # def target_node_id(self, new_target_node_id: UID) -> UID:
-    #     """This client points to a vm, this saves the id of that vm"""
-    #     self.network_id = new_target_node_id
-    #     return self.network_id
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

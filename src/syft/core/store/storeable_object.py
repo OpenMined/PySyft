@@ -2,14 +2,15 @@ import pydoc
 from typing import List, Optional
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...util import get_fully_qualified_name
+from ..common.storeable_object import AbstractStorableObject
 
 
-class StorableObject(Serializable):
+class StorableObject(AbstractStorableObject):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
     ObjectStore. The Serializable objects that we want to store have to be backed up in syft-proto
@@ -19,14 +20,14 @@ class StorableObject(Serializable):
     This object is frozen, you cannot change one in place.
 
     Arguments:
-        key (UID): the key at which to store the data.
+        id (UID): the id at which to store the data.
         data (Serializable): A serializable object.
         description (Optional[str]): An optional string that describes what you are storing. Useful
         when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     Attributes:
-        key (UID): the key at which to store the data.
+        id (UID): the id at which to store the data.
         data (Serializable): A serializable object.
         description (Optional[str]): An optional string that describes what you are storing. Useful
         when searching.
@@ -34,7 +35,7 @@ class StorableObject(Serializable):
 
     """
 
-    __slots__ = ["key", "data", "description", "tags"]
+    __slots__ = ["id", "data", "description", "tags"]
 
     # TODO: remove this flag if commenting it out doesn't break anything
     # protobuf_type = StorableObject_PB
@@ -42,12 +43,12 @@ class StorableObject(Serializable):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        key: UID,
+        id: UID,
         data: object,
-        description: Optional[str],
-        tags: Optional[List[str]],
+        description: Optional[str] = "",
+        tags: Optional[List[str]] = [],
     ):
-        self.key = key
+        self.id = id
         self.data = data
         self.description = description
         self.tags = tags
@@ -57,9 +58,9 @@ class StorableObject(Serializable):
 
         proto = StorableObject_PB()
 
-        # Step 1: Serialize the key to protobuf and copy into protobuf
-        key = self.key.serialize()
-        proto.key.CopyFrom(key)
+        # Step 1: Serialize the id to protobuf and copy into protobuf
+        id = self.id.serialize()
+        proto.id.CopyFrom(id)
         #
         # # Step 2: save the type of object we're about to serialize
         # proto.schematic_qualname = get_fully_qualified_name(obj=self.data)
@@ -87,7 +88,7 @@ class StorableObject(Serializable):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: StorableObject_PB) -> object:
         # Step 1: deserialize the ID
-        key = _deserialize(blob=proto.key)
+        id = _deserialize(blob=proto.id)
 
         # Step 2: get the type of object we're about to serialize
         # data_type = pydoc.locate(proto.schematic_qualname)
@@ -121,7 +122,7 @@ class StorableObject(Serializable):
             tags = list(proto.tags)
 
         return target_type.construct_new_object(
-            id=key, data=data, tags=tags, description=description
+            id=id, data=data, tags=tags, description=description
         )
 
     def _data_object2proto(self) -> Message:
@@ -137,8 +138,15 @@ class StorableObject(Serializable):
 
     @staticmethod
     def construct_new_object(id, data, tags, description):
-        return StorableObject(key=id, data=data, description=description, tags=tags)
+        return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return StorableObject_PB
+
+    def __repr__(self):
+        return (
+            "<Storable:"
+            + self.data.__repr__().replace("\n", "").replace("  ", " ")
+            + ">"
+        )

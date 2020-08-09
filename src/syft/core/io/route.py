@@ -107,13 +107,13 @@ class RouteSchema(ObjectWithID):
     2) Comparing known routes to find the best one for a old_message
     """
 
-    def __init__(self, source: Location, destination: Location):
-        self.source = source
+    def __init__(self, destination: Location):
         self.destination = destination
 
 
 class Route(ObjectWithID):
     def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
+        super().__init__()
         self.schema = schema
         self.stops = stops
 
@@ -132,10 +132,8 @@ class Route(ObjectWithID):
 
 
 class SoloRoute(Route):
-    def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
-    ) -> None:
-        self.schema = RouteSchema(source=source, destination=destination)
+    def __init__(self, destination: Location, connection: ClientConnection) -> None:
+        super().__init__(schema=RouteSchema(destination=destination))
         self.connection = connection
 
     def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
@@ -146,7 +144,7 @@ class SoloRoute(Route):
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
-    # QUESTION: Why does this return SyftMessageWithReply instead of
+    # QUESTION: Why does this return SyftMessageWithoutReply instead of
     # ImmediateSyftMessageWithoutReply?
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply
@@ -159,8 +157,6 @@ class BroadcastRoute(SoloRoute):
     A route used for pub/sub type systems.
     """
 
-    def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
-    ) -> None:
-        super().__init__(source=source, destination=destination, connection=connection)
+    def __init__(self, destination: Location, connection: ClientConnection) -> None:
+        super().__init__(destination=destination, connection=connection)
         # self.connection.topic = destination.topic

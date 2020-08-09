@@ -35,7 +35,7 @@ class Class(ast.callable.Callable):
                 args=args,
                 kwargs=kwargs,
                 id_at_location=result.id_at_location,
-                address=__self.location.address,
+                address=__self.location,  # TODO: these uses of the word "location" shoudl change to "address"
             )
             __self.location.send_immediate_msg_without_reply(msg=cmd)
 
@@ -54,11 +54,13 @@ class Class(ast.callable.Callable):
     def create_send_method(outer_self):
         def send(self, location):
             # Step 1: create pointer which will point to result
-            ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
+            ptr = getattr(outer_self, outer_self.pointer_name)(
+                location=location, id_at_location=self.id
+            )
 
             # Step 2: create old_message which contains object to send
             obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location, obj=self, address=location.address
+                obj_id=ptr.id_at_location, obj=self, address=location
             )
 
             # Step 3: send old_message

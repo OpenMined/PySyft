@@ -1,6 +1,7 @@
 # external class/method imports (sorted by length)
 from google.protobuf import json_format
 from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing import Union
 
 # syft imports
@@ -68,7 +69,7 @@ class Serializable(metaclass=MetaSerializable):
             ...
 
         @staticmethod
-        def get_protobuf_schema() -> type:
+        def get_protobuf_schema() -> GeneratedProtocolMessageType:
             ...
 
         @staticmethod
@@ -126,7 +127,7 @@ class Serializable(metaclass=MetaSerializable):
         raise NotImplementedError
 
     @staticmethod
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """
             This static method returns the schema used when serializing this
             class.
