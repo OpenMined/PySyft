@@ -8,15 +8,16 @@ from syft.core.common.message import (
 from syft.core.common.uid import UID
 from ....decorators import syft_decorator
 from ....lib import lib_ast
-from ...io.address import Address
 from ...io.route import Route
 from ..abstract.node import AbstractNodeClient
-from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+
+from ...io.location import Location
+from typing import Optional
 
 
 # TODO: Fix AbstractNode and LocationAwareObject being incompatible
-class Client(AbstractNodeClient, LocationAwareObject):  # type: ignore # incompatible
+class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -25,8 +26,16 @@ class Client(AbstractNodeClient, LocationAwareObject):  # type: ignore # incompa
     have permissions - clients should not store private keys)."""
 
     @syft_decorator(typechecking=True)
-    def __init__(self, address: Address, name: str, routes: List[Route]):
-        LocationAwareObject.__init__(self, address=address)
+    def __init__(
+        self,
+        name: str,
+        routes: List[Route],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(network=network, domain=domain, device=device, vm=vm)
 
         self.name = name
         self.routes = routes
@@ -46,17 +55,18 @@ class Client(AbstractNodeClient, LocationAwareObject):  # type: ignore # incompa
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        msg = RegisterChildNodeMessage(child_node_client=client, address=self.address)
+        msg = RegisterChildNodeMessage(child_node_client=client, address=self)
+
+        client.network = self.network if self.network is not None else client.network
+        client.domain = self.domain if self.domain is not None else client.domain
+        client.device = self.device if self.device is not None else client.device
+        client.vm = self.vm if self.vm is not None else client.vm
+
         self.send_immediate_msg_without_reply(msg=msg)
 
     @property
-    def target_node_id(self) -> UID:
+    def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
-
-    @target_node_id.setter
-    def target_node_id(self, new_target_node_id: UID) -> UID:
-        """This client points to an node, this saves the id of that node"""
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
@@ -82,7 +92,7 @@ class Client(AbstractNodeClient, LocationAwareObject):  # type: ignore # incompa
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Client pointing to node with id:{self.target_node_id}>"
+        return f"<Client pointing to node with id:{self.id}>"
 
     @syft_decorator(typechecking=True)
     def register_route(self, route: Route) -> None:

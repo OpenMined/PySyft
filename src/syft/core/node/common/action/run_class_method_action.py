@@ -4,6 +4,7 @@ from .common import ImmediateActionWithoutReply
 
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
+from ....store.storeable_object import StorableObject
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
@@ -25,20 +26,28 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.id_at_location = id_at_location
 
     def execute_action(self, node: AbstractNode) -> None:
+        print(self.path)
+        print(self._self)
+        print(self.args)
+        print(self.kwargs)
+        print(self.id_at_location)
+
         method = node.lib_ast(self.path)
 
-        resolved_self = node.store.get_object(id=self._self.id_at_location)
+        resolved_self = node.store[self._self.id_at_location].data
 
         resolved_args = list()
         for arg in self.args:
-            r_arg = node.store.get_object(id=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location].data
             resolved_args.append(r_arg)
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get_object(id=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location].data
             resolved_kwargs[arg_name] = r_arg
 
         result = method(resolved_self, *resolved_args, **resolved_kwargs)
 
-        node.store.store_object(id=self.id_at_location, obj=result)
+        if not isinstance(result, StorableObject):
+            result = StorableObject(id=self.id_at_location, data=result)
+        node.store.store(obj=result)

@@ -1,7 +1,7 @@
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
-from ...io.location import Location
-from ...io.address import Address, All, Unspecified
+from ...common.uid import UID
+from ...io.address import Address
 from ...store import ObjectStore
 from ...common.message import (
     ImmediateSyftMessageWithoutReply,
@@ -10,23 +10,11 @@ from ...common.message import (
 )
 
 
-class AbstractNode(Location):
+class AbstractNode(Address):
+    name: Optional[str]
     store: ObjectStore
     lib_ast: Any  # Cant import Globals (circular reference)
-
-    # QUESTION: How can this match the LocationAwareObject property?
-    # Definition of "address" in base class "AbstractNodeClient" is incompatible with
-    # definition in base class "LocationAwareObject"
-    address: Address
-
-    # QUESTION: These are incompatible with the LocationAwareObject properties
-    network_id: Optional[Union[str, Any, Unspecified, All]]
-    domain_id: Optional[Union[str, Any, Unspecified, All]]
-    device_id: Optional[Union[str, Any, Unspecified, All]]
     """"""
-
-    def __init__(self):
-        super().__init__()
 
     @property
     def known_child_nodes(self) -> List[Any]:
@@ -60,10 +48,15 @@ class AbstractNode(Location):
         raise NotImplementedError
 
 
-class AbstractNodeClient:
+class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)
     address: Address
     """"""
+
+    @property
+    def id(self) -> UID:
+        """This client points to an node, this returns the id of that node."""
+        raise NotImplementedError
 
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply

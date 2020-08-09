@@ -9,7 +9,6 @@ from ...core.node.domain import DomainClient
 # import sys
 #
 # import binascii
-# import json
 # import pickle
 #
 # import requests
@@ -17,16 +16,14 @@ from ...core.node.domain import DomainClient
 # from syft.core.io.connection import ClientConnection
 # from syft.core.io.route import SoloRoute
 # import time
-
+#
 #
 # class GridHttpClientConnection(ClientConnection):
 #     def __init__(self, base_url):
 #         self.base_url = base_url
 #
 #     def send_immediate_msg_with_reply(self, msg):
-#         reply = self.send_msg(msg)
-#         binary = binascii.unhexlify(json.loads(reply.text)["data"])
-#         return pickle.loads(binary)  # nosec # TODO make less insecure
+#         return self.send_msg(msg)
 #
 #     def send_immediate_msg_without_reply(self, msg):
 #         self.send_msg(msg)
@@ -35,8 +32,8 @@ from ...core.node.domain import DomainClient
 #         self.send_msg(msg)
 #
 #     def send_msg(self, msg):
-#         data = pickle.dumps(msg).hex()
-#         r = requests.post(url=self.base_url + "recv", json={"data": data})
+#         json_msg = msg.json()
+#         r = requests.post(url=self.base_url + "recv", json=json_msg)
 #         return r
 
 
@@ -44,7 +41,7 @@ class Duet(DomainClient):
     def __init__(self, host="127.0.0.1", port=5000):
 
         domain_url = "http://" + host + ":" + str(port) + "/"
-        print(domain_url)
+        domain_url += ""
 
     #
     #     self.start_server(host=host, port=port)

@@ -1,10 +1,13 @@
 from typing_extensions import final
+from typing import Optional
 
 from syft.core.common.message import SyftMessage
 
 from ....decorators import syft_decorator
 from ..common.node import Node
 from .client import VirtualMachineClient
+from ...io.location import Location
+from ...io.location import SpecificLocation
 
 
 @final
@@ -13,22 +16,31 @@ class VirtualMachine(Node):
     client_type = VirtualMachineClient
 
     @syft_decorator(typechecking=True)
-    def __init__(self, *args: list, **kwargs: str):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        name: str,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[SpecificLocation] = SpecificLocation(),
+    ):
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
 
         # if this VM doesn't even know the id of itself at this point
         # then something went wrong with the fancy address system.
-        assert self.vm_id is not None
+        assert self.vm is not None
 
-    def add_me_to_my_address(self) -> None:
-        # This line implicitly adds it to the address as well
-        self.vm_id = self.id
+    @property
+    def id(self):
+        return self.vm.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.pri_address.vm == self.id
+        return msg.address.vm.id == self.id
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:

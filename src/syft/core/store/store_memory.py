@@ -1,8 +1,11 @@
-from typing import Dict, KeysView, ValuesView
-
+from typing import Dict
+from typing import KeysView
+from typing import ValuesView
+from typing import List
 from ...decorators import syft_decorator
 from ..common.uid import UID
-from . import ObjectStore, StorableObject
+from . import ObjectStore
+from ..common.storeable_object import AbstractStorableObject
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 
 
@@ -18,12 +21,20 @@ class MemoryStore(ObjectStore):
 
     __slots__ = ["_objects", "_search_engine"]
 
-    def __init__(self, as_wrapper: bool):
+    def __init__(self):
         # QUESTION: as_wrapper doesnt exist on the parent
         # super().__init__(as_wrapper)
         super().__init__()
-        self._objects: Dict[UID, StorableObject] = {}
+        self._objects: Dict[UID, AbstractStorableObject] = {}
         self._search_engine = None
+
+    def get_objects_of_type(self, obj_type: type) -> List[AbstractStorableObject]:
+        results = list()
+        for key, obj in self._objects.items():
+            if isinstance(obj.data, obj_type):
+                results.append(obj)
+
+        return results
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
@@ -42,26 +53,28 @@ class MemoryStore(ObjectStore):
         return self._objects.keys()
 
     @syft_decorator(typechecking=True)
-    def values(self) -> ValuesView[StorableObject]:
+    def values(self) -> ValuesView[AbstractStorableObject]:
         return self._objects.values()
 
     @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject) -> None:
-        self._objects[obj.key] = obj
+    def store(self, obj: AbstractStorableObject) -> None:
+        # TODO: obj should be just "object" and the attributes
+        #  of StoreableObject should be put in the metadatastore
+        self._objects[obj.id] = obj
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, key: UID) -> bool:
-        return key in self._objects.values()
+        return key in self._objects.keys()
 
-    @syft_decorator(typechecking=True)
-    def __getitem__(self, key: UID) -> StorableObject:
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, key: UID) -> AbstractStorableObject:
         return self._objects[key]
 
-    @syft_decorator(typechecking=True)
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __setitem__(self, key: UID, value: AbstractStorableObject) -> None:
         self._objects[key] = value
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, key: UID) -> None:
         del self._objects[key]
 
@@ -75,3 +88,6 @@ class MemoryStore(ObjectStore):
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
         pass
+
+    def __repr__(self):
+        return self._objects.__repr__()

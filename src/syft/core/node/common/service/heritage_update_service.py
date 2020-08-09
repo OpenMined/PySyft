@@ -31,17 +31,20 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
         print(f"Updating to {msg.new_ancestry_address} on note {node}")
         addr = msg.new_ancestry_address
-        if addr.pub_address.network is not None:
-            node.network_id = addr.pub_address.network
-        if addr.pub_address.domain is not None:
-            node.domain_id = addr.pub_address.domain
-        if addr.pri_address.device is not None:
-            node.device_id = addr.pri_address.device
+        if addr.network is not None:
+            node.network = addr.network
+        if addr.domain is not None:
+            node.domain = addr.domain
+        if addr.device is not None:
+            node.device = addr.device
 
         # TODO: solve this with node group address?
+        print("child nodes of:" + str(node.name))
         for node_client in node.known_child_nodes:
-            msg.address = node_client.address
-            node_client.send_immediate_msg_without_reply(msg=msg)
+            print("\t" + str(node_client.data.name))
+            # TODO: Client (and possibly Node) should subclass from StorableObject
+            msg.address = node_client.data
+            node_client.data.send_immediate_msg_without_reply(msg=msg)
 
     @staticmethod
     @syft_decorator(typechecking=True)
