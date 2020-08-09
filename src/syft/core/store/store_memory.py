@@ -29,7 +29,7 @@ class MemoryStore(ObjectStore):
     def get_objects_of_type(self, obj_type: type):
         results = list()
         for key, obj in self._objects.items():
-            if isinstance(obj, obj_type):
+            if isinstance(obj.data, obj_type):
                 results.append(obj)
 
         return results

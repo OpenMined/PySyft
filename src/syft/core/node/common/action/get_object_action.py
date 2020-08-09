@@ -16,10 +16,10 @@ class GetObjectAction(ImmediateActionWithReply):
         self.obj_id = obj_id
 
     def execute_action(self, node: AbstractNode) -> ImmediateSyftMessageWithoutReply:
-        obj = node.store.get_object(id=self.obj_id)
+        obj = node.store[self.obj_id]
         msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
         # TODO: send EventualActionWithoutReply to delete the object at the node's
         # convenience instead of definitely having to delete it now
-        node.store.delete_object(id=self.obj_id)
+        del node.store[self.obj_id]
         return msg

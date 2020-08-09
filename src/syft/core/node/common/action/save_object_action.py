@@ -10,7 +10,7 @@ from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
-
+from ....store.storeable_object import StorableObject
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
     @syft_decorator(typechecking=True)
@@ -23,7 +23,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def execute_action(self, node: AbstractNode) -> None:
         # save the object to the store
-        node.store.store_object(id=self.obj_id, obj=self.obj)
+        node.store.store(obj=StorableObject(id=self.obj.id, data=self.obj))
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:

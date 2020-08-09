@@ -39,9 +39,12 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
             node.device = addr.device
 
         # TODO: solve this with node group address?
+        print("child nodes of:" + str(node.name))
         for node_client in node.known_child_nodes:
-            msg.address = node_client.address
-            node_client.send_immediate_msg_without_reply(msg=msg)
+            print("\t" + str(node_client.data.name))
+            # TODO: Client (and possibly Node) should subclass from StorableObject
+            msg.address = node_client.data
+            node_client.data.send_immediate_msg_without_reply(msg=msg)
 
     @staticmethod
     @syft_decorator(typechecking=True)

@@ -21,7 +21,7 @@ class Network(Node):
     @syft_decorator(typechecking=True)
     def __init__(self,
                  name: str,
-                 network: Optional[SpecificLocation] = SpecificLocation,
+                 network: Optional[SpecificLocation] = SpecificLocation(),
                  domain: Optional[Location] = None,
                  device: Optional[Location] = None,
                  vm: Optional[Location] = None):
@@ -38,7 +38,7 @@ class Network(Node):
         return self.network.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.pub_address.network.id in (
+        return msg.address.network.id in (
             self.id,
             All(),
-        ) and msg.address.pub_address.domain in (None, Unspecified())
+        ) and msg.address.domain is None
