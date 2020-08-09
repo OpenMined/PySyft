@@ -78,12 +78,12 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         Define the modulo operation over object instances.
         """
-        result = self.copy()
+        result = FixedPrecisionTensor()
         if isinstance(divisor, int):
             scaled_divisor = divisor * (self.base ** self.precision_fractional)
-            result.child %= scaled_divisor
+            result.child = self.child % scaled_divisor
         elif isinstance(divisor, FixedPrecisionTensor):
-            result.child %= divisor.child
+            result.child = self.child % divisor.child
         else:
             raise TypeError("Unsupported type for modulo operation")
         return result
