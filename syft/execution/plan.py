@@ -86,6 +86,9 @@ class Plan(AbstractSendable):
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
 
+    Specifically, a Plan contains only ComputationAction and does not concern itself with
+    operations covered by CommunicationAction. Use Protocol to cover both types of actions.
+
     All arguments are optional.
 
     Args:
