@@ -1,7 +1,7 @@
 import syft as sy
 import numpy as np
 
-from syft.core.store import StorableObject
+from syft.core.store.storeable_object import StorableObject
 from syft.core.common import UID
 
 
