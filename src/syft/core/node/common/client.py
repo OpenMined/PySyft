@@ -8,7 +8,6 @@ from syft.core.common.message import (
 from syft.core.common.uid import UID
 from ....decorators import syft_decorator
 from ....lib import lib_ast
-from ...io.address import Address
 from ...io.route import Route
 from ..abstract.node import AbstractNodeClient
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
@@ -16,8 +15,9 @@ from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ...io.location import Location
 from typing import Optional
 
+
 # TODO: Fix AbstractNode and LocationAwareObject being incompatible
-class Client(AbstractNodeClient):  # type: ignore # incompatible
+class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -92,7 +92,7 @@ class Client(AbstractNodeClient):  # type: ignore # incompatible
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Client pointing to node with id:{self.target_node_id}>"
+        return f"<Client pointing to node with id:{self.id}>"
 
     @syft_decorator(typechecking=True)
     def register_route(self, route: Route) -> None:

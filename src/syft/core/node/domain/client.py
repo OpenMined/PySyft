@@ -5,7 +5,6 @@ from syft.core.common.uid import UID
 from ...io.route import Route
 from ..common.client import Client
 
-from syft.core.io.address import Address
 from ...io.location import Location
 from typing import Optional
 

@@ -2,7 +2,6 @@ from typing import List
 from typing_extensions import final
 
 from syft.core.common.uid import UID
-from syft.core.io.address import Address
 
 from ...io.route import Route
 from ..common.client import Client
@@ -63,10 +62,6 @@ class DeviceClient(Client):
     def id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
         return self.device.id
-
-    def add_me_to_my_address(self) -> None:
-        # I should already be added
-        assert self.device_id is not None
 
     @property
     def vm_id(self) -> UID:

@@ -17,8 +17,6 @@ def test_send_message_from_device_client_to_device():
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
 
-    msg = sy.ReprMessage(address=bob_phone_client)
-
     bob_phone_client.send_immediate_msg_without_reply(
         msg=sy.ReprMessage(address=bob_phone_client)
     )

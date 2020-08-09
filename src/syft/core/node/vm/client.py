@@ -2,7 +2,6 @@ from typing import List
 from typing_extensions import final
 
 from ....decorators import syft_decorator
-from ...io.address import Address
 from ...io.route import Route
 from ..common.client import Client
 

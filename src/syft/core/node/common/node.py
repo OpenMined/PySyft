@@ -43,7 +43,7 @@ from .service.node_service import EventualNodeServiceWithoutReply
 
 
 # TODO: Fix AbstractNode and LocationAwareObject being incompatible
-class Node(AbstractNode):  # type: ignore # incompatible
+class Node(AbstractNode):
 
     """
     Basic class for a syft node behavior, explicit purpose node will
@@ -192,7 +192,7 @@ class Node(AbstractNode):  # type: ignore # incompatible
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
         metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
-        metadata["address"] = self.address
+        metadata["address"] = self
         metadata["name"] = self.name
         metadata["id"] = self.id
         return metadata

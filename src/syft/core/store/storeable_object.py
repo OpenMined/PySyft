@@ -2,7 +2,6 @@ import pydoc
 from typing import List, Optional
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from google.protobuf.message import Message

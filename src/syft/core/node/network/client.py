@@ -4,7 +4,6 @@ from typing_extensions import final
 from syft.core.common.uid import UID
 
 from ....decorators import syft_decorator
-from ...io.address import Address
 from ...io.route import Route
 from ..common.client import Client
 

@@ -1,5 +1,4 @@
-from typing import Union, Optional
-from typing_extensions import final
+from typing import Optional
 
 from syft.core.common.uid import UID
 

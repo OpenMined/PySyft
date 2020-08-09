@@ -3,7 +3,7 @@ from syft.core.common.message import SyftMessage
 from ..common.node import Node
 from ..device import Device, DeviceClient
 from .client import DomainClient
-from syft.core.io.address import All, Unspecified
+from syft.core.io.address import All
 
 from typing import Optional
 from ...io.location import Location

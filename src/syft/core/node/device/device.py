@@ -3,7 +3,7 @@ from typing_extensions import final
 
 from syft.core.common.message import SyftMessage
 from syft.core.common.uid import UID
-from syft.core.io.address import All, Unspecified
+from syft.core.io.address import All
 
 from ....decorators import syft_decorator
 from ..common.node import Node

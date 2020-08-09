@@ -1,5 +1,6 @@
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
+from ...common.uid import UID
 from ...io.address import Address
 from ...store import ObjectStore
 from ...common.message import (
@@ -10,6 +11,7 @@ from ...common.message import (
 
 
 class AbstractNode(Address):
+    name: Optional[str]
     store: ObjectStore
     lib_ast: Any  # Cant import Globals (circular reference)
     """"""
@@ -50,6 +52,11 @@ class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)
     address: Address
     """"""
+
+    @property
+    def id(self) -> UID:
+        """This client points to an node, this returns the id of that node."""
+        raise NotImplementedError
 
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply

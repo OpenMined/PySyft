@@ -1,5 +1,5 @@
 from syft.core.common.message import SyftMessage
-from syft.core.io.address import All, Unspecified
+from syft.core.io.address import All
 
 from ..common.node import Node
 from ..domain.client import DomainClient
