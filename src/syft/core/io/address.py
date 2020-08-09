@@ -18,7 +18,6 @@ class Unspecified(object):
         return "Unspecified"
 
 
-@final
 class Address(object):
     @syft_decorator(typechecking=True)
     def __init__(

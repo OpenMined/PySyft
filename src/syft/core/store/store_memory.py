@@ -1,10 +1,14 @@
-from typing import Dict, KeysView, ValuesView
 
+from typing import Dict
+from typing import KeysView
+from typing import ValuesView
+from typing import List
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore
 from ..common.storeable_object import AbstractStorableObject
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
+from .storeable_object import StorableObject
 
 
 class MemoryStore(ObjectStore):
@@ -26,7 +30,7 @@ class MemoryStore(ObjectStore):
         self._objects: Dict[UID, AbstractStorableObject] = {}
         self._search_engine = None
 
-    def get_objects_of_type(self, obj_type: type):
+    def get_objects_of_type(self, obj_type: type) -> List[StorableObject]:
         results = list()
         for key, obj in self._objects.items():
             if isinstance(obj.data, obj_type):
