@@ -31,12 +31,12 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
         print(f"Updating to {msg.new_ancestry_address} on note {node}")
         addr = msg.new_ancestry_address
-        if addr.pub_address.network is not None:
-            node.network_id = addr.pub_address.network
-        if addr.pub_address.domain is not None:
-            node.domain_id = addr.pub_address.domain
-        if addr.pri_address.device is not None:
-            node.device_id = addr.pri_address.device
+        if addr.network is not None:
+            node.network = addr.network
+        if addr.domain is not None:
+            node.domain = addr.domain
+        if addr.device is not None:
+            node.device = addr.device
 
         # TODO: solve this with node group address?
         for node_client in node.known_child_nodes:

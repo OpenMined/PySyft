@@ -6,6 +6,7 @@ from .common import ImmediateActionWithoutReply
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 
+from ....store.storeable_object import StorableObject
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(
@@ -21,6 +22,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         self.path = path
         self.args = args
         self.kwargs = kwargs
+
+        # TODO: eliminate this explicit parameter and just set the object
+        #  id on the object directly.
         self.id_at_location = id_at_location
 
     def execute_action(self, node: AbstractNode) -> None:
@@ -45,5 +49,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         result = method(*resolved_args, **resolved_kwargs)
 
+        if not isinstance(result, StorableObject):
+            result = StorableObject(id=self.id_at_location,
+                                    data=result)
+
         # QUESTION: Where is store_object defined
-        node.store.store_object(id=self.id_at_location, obj=result)
+        node.store.store(obj=result)

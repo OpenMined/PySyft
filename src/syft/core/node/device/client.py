@@ -7,12 +7,30 @@ from syft.core.io.address import Address
 from ...io.route import Route
 from ..common.client import Client
 
+from ...io.location import Location
+from ...io.location import SpecificLocation
+from typing import Optional
+
+from ....decorators.syft_decorator_impl import syft_decorator
 
 @final
 class DeviceClient(Client):
-    def __init__(self, address: Address, name: str, routes: List[Route]):
-        super().__init__(address=address, name=name, routes=routes)
+    @syft_decorator(typechecking=True)
+    def __init__(self,
+                 name: str,
+                 routes: List[Route],
+                 network: Optional[Location] = None,
+                 domain: Optional[Location] = None,
+                 device: Optional[SpecificLocation] = None,
+                 vm: Optional[Location] = None):
+        super().__init__(name=name,
+                         routes=routes,
+                         network=network,
+                         domain=domain,
+                         device=device,
+                         vm=vm)
 
+        assert self.device is not None
     # def create_vm(self, name:str):
     #
     #     # Step 1: create a old_message which will request for a VM to be created.
@@ -35,16 +53,10 @@ class DeviceClient(Client):
     #     # the appropriate VM.
     #     return vm_client
 
-    # @property
-    # def target_node_id(self) -> UID:
-    #     """This client points to a vm, this returns the id of that vm."""
-    #     return self.device_id
-    #
-    # @target_node_id.setter
-    # def target_node_id(self, new_target_node_id: UID) -> UID:
-    #     """This client points to a vm, this saves the id of that vm"""
-    #     self.device_id = new_target_node_id
-    #     return self.device_id
+    @property
+    def id(self) -> UID:
+        """This client points to a vm, this returns the id of that vm."""
+        return self.device.id
 
     def add_me_to_my_address(self) -> None:
         # I should already be added

@@ -13,22 +13,17 @@ class Callable(ast.attribute.Attribute):
 
         if self.client is not None and return_callable is False:
             print(f"call {self.path_and_name} on client {self.client}")
-
-            path_and_name = "torch.zeros"
-            args = [2, 3]
-            kwargs = {}
-
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
             ptr = return_tensor_type_pointer_type(location=self.client)
 
             msg = RunFunctionOrConstructorAction(
-                path=path_and_name,
+                path=self.path_and_name,
                 args=args,
                 kwargs=kwargs,
                 id_at_location=ptr.id_at_location,
-                address=self.client.address,
+                address=self.client,
             )
 
             self.client.send_immediate_msg_without_reply(msg=msg)
@@ -43,7 +38,7 @@ class Callable(ast.attribute.Attribute):
             return self.ref
         else:
             return self.attrs[path[index]](
-                path, index + 1, return_callable=return_callable
+                path=path, index=index + 1, return_callable=return_callable
             )
 
     def add_path(self, path, index, return_type_name=None):

@@ -15,14 +15,14 @@ class Pointer:
 
     def get(self):
         obj_msg = GetObjectAction(
-            obj_id=self.id_at_location, address=self.location.address, reply_to=None
+            obj_id=self.id_at_location, address=self.location, reply_to=None
         )
         return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
 
     def __del__(self):
         print("Deleted:" + str(self))
         obj_msg = GarbageCollectObjectAction(
-            obj_id=self.id_at_location, address=self.location.address
+            obj_id=self.id_at_location, address=self.location
         )
 
         self.location.send_eventual_msg_without_reply(msg=obj_msg)

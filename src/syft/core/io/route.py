@@ -107,8 +107,7 @@ class RouteSchema(ObjectWithID):
     2) Comparing known routes to find the best one for a old_message
     """
 
-    def __init__(self, source: Location, destination: Location):
-        self.source = source
+    def __init__(self, destination: Location):
         self.destination = destination
 
 
@@ -133,9 +132,9 @@ class Route(ObjectWithID):
 
 class SoloRoute(Route):
     def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
+        self, destination: Location, connection: ClientConnection
     ) -> None:
-        self.schema = RouteSchema(source=source, destination=destination)
+        self.schema = RouteSchema(destination=destination)
         self.connection = connection
 
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
@@ -160,7 +159,7 @@ class BroadcastRoute(SoloRoute):
     """
 
     def __init__(
-        self, source: Location, destination: Location, connection: ClientConnection
+        self, destination: Location, connection: ClientConnection
     ) -> None:
-        super().__init__(source=source, destination=destination, connection=connection)
+        super().__init__(destination=destination, connection=connection)
         # self.connection.topic = destination.topic

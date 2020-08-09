@@ -6,15 +6,29 @@ from ...io.route import Route
 from ..common.client import Client
 
 from syft.core.io.address import Address
-
+from ...io.location import Location
+from typing import Optional
 
 class DomainClient(Client):
-    def __init__(self, address: Address, name: str, routes: List[Route]):
-        super().__init__(address=address, name=name, routes=routes)
+    def __init__(self,
+                 name: str,
+                 routes: List[Route],
+                 network: Optional[Location] = None,
+                 domain: Optional[Location] = None,
+                 device: Optional[Location] = None,
+                 vm: Optional[Location] = None):
+        super().__init__(name=name,
+                         routes=routes,
+                         network=network,
+                         domain=domain,
+                         device=device,
+                         vm=vm)
 
-    def add_me_to_my_address(self) -> None:
-        # I should already be added
-        assert self.domain_id is not None
+        assert self.domain is not None
+
+    @property
+    def id(self):
+        return self.domain.id
 
     @property
     def device_id(self) -> UID:
