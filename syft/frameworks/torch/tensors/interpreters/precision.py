@@ -166,7 +166,10 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         if isinstance(divisor, (int, float)):
             scaled_divisor = int(divisor * self.base ** self.precision_fractional)
-            return getattr(_self, "fmod")(scaled_divisor)
+            if isinstance(_self, AdditiveSharingTensor):
+                return getattr(_self, "mod")(scaled_divisor)
+            else:
+                return getattr(_self, "fmod")(scaled_divisor)
 
         response = getattr(_self, "fmod")(divisor)
 
