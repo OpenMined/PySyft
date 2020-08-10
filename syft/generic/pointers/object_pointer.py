@@ -15,15 +15,13 @@ from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
-from syft.serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers.abstract import AbstractWorker
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractSendable, SyftSerializable):
+class ObjectPointer(AbstractSendable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects

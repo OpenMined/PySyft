@@ -1,6 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 
 
 class AbstractWorker(ABC, SyftSerializable):

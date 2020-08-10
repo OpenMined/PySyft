@@ -33,7 +33,15 @@ class CryptenAttributes(FrameworkAttributes):
         # Stash the hook here for global access elsewhere
         self.hook = hook
 
-        self.inplace_methods = {"encrypt", "decrypt", "eval"}
+        self.inplace_methods = {
+            "encrypt",
+            "decrypt",
+            "eval",
+            "train",
+            "zero_grad",
+            "backward",
+            "update_parameters",
+        }
         self.global_state_change_methods = {}
 
     def is_inplace_method(self, method_name):

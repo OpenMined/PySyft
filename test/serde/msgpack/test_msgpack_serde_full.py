@@ -44,6 +44,7 @@ samples[torch.Size] = make_torch_size
 # PySyft
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
+samples[syft.exceptions.EmptyCryptoPrimitiveStoreError] = make_emptycryptoprimitivestoreerror
 
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.computation.ComputationAction] = make_computation_action

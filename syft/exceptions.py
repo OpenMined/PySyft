@@ -348,10 +348,9 @@ class EmptyCryptoPrimitiveStoreError(Exception):
             message = (
                 f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
                 f"but its crypto_store doesn't have enough primitives left for the type "
-                f"'{kwargs.get('op')} {kwargs.get('shapes')}' ({kwargs.get('n_instances')} were requested"
-                f" while only {available_instances}"
-                f" are available). Use your crypto_provider to `provide_primitives` to your "
-                f"worker."
+                f"'{kwargs.get('op')} {kwargs.get('shapes')}' ({kwargs.get('n_instances')}"
+                f" were requested while only {available_instances} are available). Use "
+                f"your crypto_provider to `provide_primitives` to your worker."
             )
             super().__init__(message)
         self.kwargs_ = kwargs

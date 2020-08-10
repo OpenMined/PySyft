@@ -7,7 +7,7 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.execution.translation.threepio import PlanTranslatorTfjs
 
@@ -2038,6 +2038,44 @@ def make_responsesignatureerror(**kwargs):
                     ),  # (str) traceback
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], err.get_attributes()
+                    ),  # (dict) attributes
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.exceptions.EmptyCryptoPrimitiveStoreError
+def make_emptycryptoprimitivestoreerror(**kwargs):
+    try:
+        raise syft.exceptions.EmptyCryptoPrimitiveStoreError()
+    except syft.exceptions.EmptyCryptoPrimitiveStoreError as e:
+        err = e
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.exceptions.EmptyCryptoPrimitiveStoreError
+        assert (
+            traceback.format_tb(detailed.__traceback__)[-1]
+            == traceback.format_tb(original.__traceback__)[-1]
+        )
+        assert detailed.kwargs_ == original.kwargs_
+        return True
+
+    return [
+        {
+            "value": err,
+            "simplified": (
+                CODE[syft.exceptions.EmptyCryptoPrimitiveStoreError],
+                (
+                    (CODE[str], (b"EmptyCryptoPrimitiveStoreError",)),  # (str) __name__
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"],
+                        "Traceback (most recent call last):\n"
+                        + "".join(traceback.format_tb(err.__traceback__)),
+                    ),  # (str) traceback
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], {"kwargs_": err.kwargs_}
                     ),  # (dict) attributes
                 ),
             ),

@@ -262,7 +262,6 @@ def perform_analysis(
     # Print the first one's scale
 
     ss_eps = 2.0 * beta * math.log(1 / delta)
-    ss_scale = 2.0 / ss_eps
 
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
@@ -503,7 +502,6 @@ def perform_analysis_torch(
 
     eps_list_nm = (total_log_mgf_nm - math.log(delta)) / l_list
     ss_eps = 2.0 * beta * math.log(1 / delta)
-    ss_scale = 2.0 / ss_eps
 
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
