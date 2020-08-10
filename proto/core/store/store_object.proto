@@ -25,7 +25,9 @@ message StoreObject {
 }
 
 message Container {
-
+    syft.core.store.DictContainer dict_container = 1;
+    syft.core.store.SqlContainer sql_container = 2;
+    syft.core.store.GridContainer grid_container = 3;
 }
 
 message SearchEngine {
