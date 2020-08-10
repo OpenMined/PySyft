@@ -121,6 +121,16 @@ class UID(Serializable):
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
+    def repr_short(self) -> str:
+        """Returns a SHORT human-readable version of the ID
+
+        Return a SHORT human-readable version of the ID which
+        makes it print nicer when embedded (often alongside other
+        UID objects) within other object __repr__ methods."""
+
+        return f"..{str(self.value)[-5:]}"
+
+    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UID_PB:
         """Returns a protobuf serialization of self.
 

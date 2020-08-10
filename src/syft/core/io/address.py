@@ -156,9 +156,15 @@ class Address(object):
         raise Exception("Address has no valid parts")
 
     def __repr__(self) -> str:
-        out = f"<{type(self).__name__}"
-        out += f" Network:{self.network},"  # OpenGrid
-        out += f" Domain:{self.domain} "  # UCSF
-        out += f" Device:{self.device},"  # One of UCSF's Dell Servers
-        out += f" VM:{self.vm}>"  # 8GB RAM set aside @Trask - UCSF-Server-5
-        return out
+        out = f"<{type(self).__name__} -"
+        if self.network is not None:
+            out += f" Network:{self.network.repr_short()},"  # OpenGrid
+        if self.domain is not None:
+            out += f" Domain:{self.domain.repr_short()} "  # UCSF
+        if self.device is not None:
+            out += f" Device:{self.device.repr_short()},"  # One of UCSF's Dell Servers
+        if self.vm is not None:
+            out += f" VM:{self.vm.repr_short()}"  # 8GB RAM set aside @Trask - UCSF-Server-5
+
+        # remove extraneous comma and add a close carrot
+        return out[:-1] + ">"

@@ -93,6 +93,16 @@ class ObjectWithID(Serializable):
         return f"<{type(self).__name__}:{self.id.value}>"
 
     @syft_decorator(typechecking=True)
+    def repr_short(self) -> str:
+        """Returns a SHORT human-readable version of SpecificLocation
+
+        Return a SHORT human-readable version of the ID which
+        makes it print nicer when embedded (often alongside other
+        UID objects) within other object __repr__ methods."""
+
+        return f"<{type(self).__name__}:{self.id.repr_short()}>"
+
+    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
         """Returns a protobuf serialization of self.
 

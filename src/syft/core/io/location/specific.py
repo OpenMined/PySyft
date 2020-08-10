@@ -1,7 +1,9 @@
 # external class imports
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing import Optional
 
 # syft imports (sorted by length)
+from ...common.uid import UID
 from .location import Location
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
@@ -14,7 +16,7 @@ class SpecificLocation(Location, ObjectWithID):
     represented by a single UID. It may not have any functionality
     beyond Location but there is logic which interprets it differently."""
 
-    def __init__(self, id=None):
+    def __init__(self, id: Optional[UID] = None):
         ObjectWithID.__init__(self, id=id)
 
     @syft_decorator(typechecking=True)
