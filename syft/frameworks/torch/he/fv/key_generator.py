@@ -3,6 +3,7 @@ from syft.frameworks.torch.he.fv.util.rlwe import sample_poly_ternary
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_symmetric
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
 from syft.frameworks.torch.he.fv.public_key import PublicKey
+from syft.frameworks.torch.he.fv.relin_keys import RelinKeys
 
 
 class KeyGenerator:
@@ -16,11 +17,12 @@ class KeyGenerator:
 
     def __init__(self, context):
         if not isinstance(context, Context):
-            raise ValueError("invalid context")
+            raise RuntimeError("invalid context")
 
         self.public_key = None
         self.secret_key = None
         self.context = context
+        self.relin_key_generator = None
 
     def keygen(self):
         """Generate the secret key and public key.
@@ -44,3 +46,18 @@ class KeyGenerator:
             self.context, self.context.key_param_id, self.secret_key.data
         )
         self.public_key = PublicKey(public_key.data)
+
+    def get_relin_keys(self):
+        """Generate a relinearization key.
+
+        Returns:
+            A relinearization key.
+        """
+        if self.relin_key_generator is None:
+            if self.secret_key is None:
+                raise RuntimeError("cannot generate relinearization key for unspecified secret key")
+
+            self.relin_key_generator = RelinKeys(self.context, self.secret_key)
+
+        # generate keys.
+        return self.relin_key_generator._generate_relin_key()

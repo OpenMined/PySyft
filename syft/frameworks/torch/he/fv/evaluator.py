@@ -11,6 +11,7 @@ from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_
 from syft.frameworks.torch.he.fv.util.operations import multiply_sub_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.plaintext import PlainText
+from syft.frameworks.torch.he.fv.relin_keys import RelinKey
 
 
 class ParamTypes(Enum):
@@ -381,3 +382,103 @@ class Evaluator:
         """
         pt1, pt2 = pt1.data, pt2.data
         return PlainText(poly_mul_mod(pt1, pt2, self.plain_modulus, self.poly_modulus))
+
+    def relin(self, ct, key):
+        """Relinearize the provided ciphertext and decrease its size by one.
+        (cannot apply on size 2 ciphetext)
+
+        Args:
+            ct (CipherText): ciphertext of size 3 to relinearize.
+            key (Relin Key): relinearization key generated with keygenerator.
+
+        Returns:
+            Ciphertext of Size 2 with same encrypted value.
+        """
+        if len(ct.data) == 2:
+            raise Warning("Ciphertext of size 2 does not need to relinearize.")
+        if len(ct.data) > 3:
+            raise Warning(f"Ciphertext of size {len(ct.data)} cannot be relinearized.")
+
+        return self._switch_key_inplace(copy.deepcopy(ct), key)
+
+    def _switch_key_inplace(self, ct, key):
+
+        if not isinstance(key, RelinKey):
+            raise RuntimeError("Relinearization key is invalid")
+
+        param_id = ct.param_id
+        ct = ct.data
+        key_vector = key.data
+        context_data = self.context.context_data_map[param_id]
+        key_context = self.context.context_data_map[self.context.key_param_id]
+
+        coeff_modulus = context_data.param.coeff_modulus
+        decomp_mod_count = len(coeff_modulus)
+        key_mod = key_context.param.coeff_modulus
+        key_mod_count = len(key_mod)
+        rns_mod_count = decomp_mod_count + 1
+
+        target = ct[-1]  # Last component of ciphertext
+
+        modswitch_factors = key_context.rns_tool.inv_q_last_mod_q
+
+        for i in range(decomp_mod_count):
+
+            local_small_poly_0 = copy.deepcopy(target[i])
+
+            temp_poly = [[[0] for x in range(rns_mod_count)], [[0] for x in range(rns_mod_count)]]
+
+            for j in range(rns_mod_count):
+                index = key_mod_count - 1 if j == decomp_mod_count else j
+
+                if key_mod[i] <= key_mod[index]:
+                    local_small_poly_1 = copy.deepcopy(local_small_poly_0)
+                else:
+                    local_small_poly_1 = [x % key_mod[index] for x in local_small_poly_0]
+
+                for k in range(2):
+                    local_small_poly_2 = poly_mul_mod(
+                        local_small_poly_1,
+                        key_vector[i][k][index],
+                        key_mod[index],
+                        self.poly_modulus,
+                    )
+                    temp_poly[k][j] = poly_add_mod(
+                        local_small_poly_2, temp_poly[k][j], key_mod[index], self.poly_modulus
+                    )
+
+        # Results are now stored in temp_poly[k]
+        # Modulus switching should be performed
+        for k in range(2):
+            temp_poly_ptr = temp_poly[k][decomp_mod_count]
+            temp_last_poly_ptr = temp_poly[k][decomp_mod_count]
+
+            temp_poly_ptr = [x % key_mod[-1] for x in temp_poly_ptr]
+
+            # Add (p-1)/2 to change from flooring to rounding.
+            half = key_mod[-1] >> 1
+            temp_last_poly_ptr = [(x + half) % key_mod[-1] for x in temp_last_poly_ptr]
+
+            encrypted_ptr = ct[k]
+            for j in range(decomp_mod_count):
+                temp_poly_ptr = temp_poly[k][j]
+
+                temp_poly_ptr = [x % key_mod[j] for x in temp_poly_ptr]
+                local_small_poly = [x % key_mod[j] for x in temp_last_poly_ptr]
+                half_mod = half % key_mod[j]
+
+                local_small_poly = [(x - half_mod) % key_mod[j] for x in local_small_poly]
+
+                # ((ct mod qi) - (ct mod qk)) mod qi
+                temp_poly_ptr = poly_sub_mod(
+                    temp_poly_ptr, local_small_poly, key_mod[j], self.poly_modulus
+                )
+
+                # qk^(-1) * ((ct mod qi) - (ct mod qk)) mod qi
+                temp_poly_ptr = [(x * modswitch_factors[j]) % key_mod[j] for x in temp_poly_ptr]
+
+                encrypted_ptr[j] = poly_add_mod(
+                    temp_poly_ptr, encrypted_ptr[j], key_mod[j], self.poly_modulus
+                )
+
+        return CipherText(ct[:-1], param_id)
