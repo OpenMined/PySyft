@@ -802,7 +802,6 @@ def test_max(workers, protocol):
     )
 
     args = (alice, bob)
-
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([3, 1.0, -2])

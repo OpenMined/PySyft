@@ -309,7 +309,7 @@ class BaseWorker(AbstractWorker):
             location.
         """
         if self.verbose:
-            print(f"{self.id}->{location.id} sending {message} ")
+            print(f"worker {self} sending {message} to {location}")
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message, worker=self)

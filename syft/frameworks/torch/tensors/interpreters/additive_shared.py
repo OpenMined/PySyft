@@ -7,14 +7,14 @@ from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import allow_command
+from syft.generic.utils import memorize
+from syft.generic.utils import remote
 
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.utils import allow_command
-from syft.generic.utils import memorize
-from syft.generic.utils import remote
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
@@ -654,7 +654,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def _public_div(self, shares: dict, divisor):
-        shares = self.child
         # TODO: how to correctly handle division in Zq?
         # Still no solution to perform a real division on a additive shared tensor
         # without a heavy crypto protocol.
@@ -1039,7 +1038,6 @@ class AdditiveSharingTensor(AbstractTensor):
             dim: compute the max over a specific dimension
             keepdim: keep the dimension of the tensor when dim is not None
             algorithm: method to compute the maximum
-
         Returns:
             the max of the tensor self
         """

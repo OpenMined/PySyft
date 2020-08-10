@@ -8,11 +8,11 @@ from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
-from syft.frameworks.torch.mpc.fss import N_CORES
 
 no_wrap = {"no_wrap": True}
 
 from syft.frameworks.torch.mpc.fss import N_CORES
+
 
 def full_name(f):
     return f"syft.frameworks.torch.mpc.spdz.{f.__name__}"
@@ -176,7 +176,6 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
-        print("async spdz")
         shares = asyncio.run(
             sy.local_worker.async_dispatch(
                 workers=locations,
