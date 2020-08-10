@@ -83,7 +83,7 @@ class MemoryStore(ObjectStore):
         pass
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
+    def _proto2object(proto):
         pass
 
     def __repr__(self):
