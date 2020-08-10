@@ -5,6 +5,7 @@ from ...proto.core.store.store_object_pb2 import StorableObject as StorableObjec
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
 
@@ -140,7 +141,7 @@ class StorableObject(AbstractStorableObject):
         return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return StorableObject_PB
 
     def __repr__(self):

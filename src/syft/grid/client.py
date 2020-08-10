@@ -38,6 +38,6 @@ def connect(domain_url="http://localhost:5000/"):
     address = client_metadata["address"]
     name = client_metadata["name"]
     id = client_metadata["id"]
-    route = SoloRoute(source=None, destination=id, connection=conn)
+    route = SoloRoute(destination=id, connection=conn)
     client = sy.DomainClient(address=address, name=name, routes=[route])
     return client

@@ -10,6 +10,8 @@ from syft.core.common.serde.serializable import Serializable
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ...decorators import syft_decorator
 
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 
 # resources
 from uuid import UUID as uuid_type
@@ -155,5 +157,5 @@ class UID(Serializable):
         return UID(value=uuid.UUID(bytes=proto.value))
 
     @staticmethod
-    def get_protobuf_schema():
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return UID_PB

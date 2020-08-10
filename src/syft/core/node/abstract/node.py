@@ -2,6 +2,8 @@ from typing import Any, List, Optional
 
 from ...common.uid import UID
 from ...io.address import Address
+from syft.core.io.location import Location
+from syft.decorators import syft_decorator
 from ...store import ObjectStore
 from ...common.message import (
     ImmediateSyftMessageWithoutReply,
@@ -11,6 +13,16 @@ from ...common.message import (
 
 
 class AbstractNode(Address):
+    @syft_decorator(typechecking=True)
+    def __init__(
+        self,
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
+    ):
+        super().__init__(network=network, domain=domain, device=device, vm=vm)
+
     name: Optional[str]
     store: ObjectStore
     lib_ast: Any  # Cant import Globals (circular reference)

@@ -31,7 +31,7 @@ class DomainClient(Client):
         assert self.domain is not None
 
     @property
-    def id(self):
+    def id(self) -> UID:
         return self.domain.id
 
     @property
@@ -71,5 +71,5 @@ class DomainClient(Client):
 
         raise Exception("This client points to a device, you don't need a VM ID.")
 
-    def __repr__(self):
-        return f"<DomainClient id:{self.domain_id}>"
+    def __repr__(self) -> str:
+        return f"<DomainClient id:{self.id}>"

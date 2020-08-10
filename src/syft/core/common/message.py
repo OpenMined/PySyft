@@ -1,10 +1,11 @@
 from typing import Optional
 
 from syft.core.common.uid import UID
+from syft.core.common.object import ObjectWithID
 from syft.core.io.address import Address
 
 
-class AbstractMessage:
+class AbstractMessage(ObjectWithID):
     """"""
 
 
@@ -12,6 +13,7 @@ class SyftMessage(AbstractMessage):
     def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         self.msg_id = msg_id
         self.address = address
+        super().__init__()
 
 
 # TODO: I think this is really cool but we don't have the notion of a signature yet.

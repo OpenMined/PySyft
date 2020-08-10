@@ -1,6 +1,7 @@
 from typing import Optional
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ....common.uid import UID
 from ....io.address import Address
@@ -44,5 +45,5 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         return SaveObjectAction(obj_id=id, obj=obj)
 
     @staticmethod
-    def get_protobuf_schema():
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return SaveObjectAction_PB

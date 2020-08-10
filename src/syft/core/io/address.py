@@ -21,10 +21,10 @@ class Address(object):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        network: Optional[Location],
-        domain: Optional[Location],
-        device: Optional[Location],
-        vm: Optional[Location],
+        network: Optional[Location] = None,
+        domain: Optional[Location] = None,
+        device: Optional[Location] = None,
+        vm: Optional[Location] = None,
     ):
 
         # All node should have a representation of where they think
