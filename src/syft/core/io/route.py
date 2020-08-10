@@ -113,6 +113,7 @@ class RouteSchema(ObjectWithID):
 
 class Route(ObjectWithID):
     def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
+        super().__init__()
         self.schema = schema
         self.stops = stops
 
@@ -132,7 +133,7 @@ class Route(ObjectWithID):
 
 class SoloRoute(Route):
     def __init__(self, destination: Location, connection: ClientConnection) -> None:
-        self.schema = RouteSchema(destination=destination)
+        super().__init__(schema=RouteSchema(destination=destination))
         self.connection = connection
 
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
@@ -143,7 +144,7 @@ class SoloRoute(Route):
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
-    # QUESTION: Why does this return SyftMessageWithReply instead of
+    # QUESTION: Why does this return SyftMessageWithoutReply instead of
     # ImmediateSyftMessageWithoutReply?
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply

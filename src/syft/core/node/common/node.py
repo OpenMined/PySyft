@@ -180,7 +180,7 @@ class Node(AbstractNode):
     def get_client(self, routes: List[Route] = []) -> Client:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [SoloRoute(destination=self.id, connection=conn_client)]
+            routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
         return self.client_type(
             name=self.name,
             routes=routes,
@@ -192,7 +192,7 @@ class Node(AbstractNode):
 
     def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
         metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
-        metadata["address"] = self
+        metadata["address"] = self.target_id
         metadata["name"] = self.name
         metadata["id"] = self.id
         return metadata
@@ -207,7 +207,7 @@ class Node(AbstractNode):
         return self.store.get_objects_of_type(obj_type=Client)
 
     @property
-    def id(self):
+    def id(self) -> None:
         NotImplementedError
 
     @property

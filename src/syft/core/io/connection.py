@@ -7,8 +7,6 @@ from syft.core.common.message import (
 from ...decorators import syft_decorator
 
 
-# QUESTION: Cant be final if its used as a parent class
-# @final
 class ServerConnection(object):
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
@@ -27,8 +25,6 @@ class ServerConnection(object):
         raise NotImplementedError
 
 
-# QUESTION: why is this final when VirtualClientConnection inherits from it?
-# @final
 class ClientConnection(object):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(

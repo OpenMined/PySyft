@@ -3,5 +3,5 @@ class Location(object):
     location-relevant metadata (such as how long it takes
     for us to communicate with this location, etc.)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
