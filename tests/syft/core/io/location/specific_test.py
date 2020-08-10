@@ -39,4 +39,32 @@ def test_specific_location_init_with_specific_id():
 
 
 # --------------------- CLASS METHODS ---------------------
+
+
+def test_compare():
+    """While uses of this feature should be quite rare, we
+    should be able to check whether two objects are the same
+    based on their IDs being the same by default. Note that
+    subclasses will undoubtedly modify this behavior with other
+    __eq__ methods."""
+
+    obj = SpecificLocation()
+    obj2 = SpecificLocation()
+
+    assert obj != obj2
+
+    obj._id = obj2.id
+
+    assert obj == obj2
+
+
+def test_to_string():
+    """Tests that SpecificLocation generates an intuitive string."""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = SpecificLocation(id=uid)
+    assert str(obj) == "<SpecificLocation:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+    assert obj.__repr__() == "<SpecificLocation:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+
+
 # --------------------- SERDE ---------------------
