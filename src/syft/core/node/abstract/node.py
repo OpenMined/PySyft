@@ -52,6 +52,11 @@ class AbstractNode(Address):
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
+    @property
+    def id(self) -> Optional[UID]:
+        """This client points to an node, this returns the id of that node."""
+        raise NotImplementedError
+
 
 class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)
@@ -59,7 +64,7 @@ class AbstractNodeClient(Address):
     """"""
 
     @property
-    def id(self) -> UID:
+    def id(self) -> Optional[UID]:
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 

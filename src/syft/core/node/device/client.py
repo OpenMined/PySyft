@@ -61,7 +61,7 @@ class DeviceClient(Client):
     @property
     def id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
-        return self.device.id
+        return self.device.id if self.device is not None else None
 
     @property
     def vm(self) -> Optional[Location]:

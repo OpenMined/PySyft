@@ -33,8 +33,8 @@ class DomainClient(Client):
         )
 
     @property
-    def id(self) -> UID:
-        return self.domain.id
+    def id(self) -> Optional[UID]:
+        return self.domain.id if self.domain is not None else None
 
     @property
     def device(self) -> Optional[Location]:

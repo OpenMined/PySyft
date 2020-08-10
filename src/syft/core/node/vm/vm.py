@@ -33,6 +33,8 @@ class VirtualMachine(Node):
             name=name, network=network, domain=domain, device=device, vm=vm
         )
 
+        self.vm: SpecificLocation  # redefine the type of self.vm to not be optional
+
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
 
