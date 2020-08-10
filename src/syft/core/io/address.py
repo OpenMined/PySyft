@@ -228,6 +228,23 @@ class Address(Serializable):
 
         raise Exception("Address has no valid parts")
 
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __eq__(self, other: "Address") -> bool:
+        """Returns whether two Address objects refer to the same set of locations
+
+        :param other: the other object to compare with self
+        :param type: Address
+        :returns: whether the two objects are the same
+        :rtype: bool
+        """
+
+        a = self.network == other.network
+        b = self.domain == other.domain
+        c = self.device == other.device
+        d = self.vm == other.vm
+
+        return a and b and c and d
+
     def __repr__(self) -> str:
         out = f"<{type(self).__name__} -"
         if self.network is not None:

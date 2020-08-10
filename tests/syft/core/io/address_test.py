@@ -1,11 +1,11 @@
-"""In this test suite, we evaluate the SpecificLocation class. For more info
-on the SpecificLocation class and its purpose, please see the documentation
+"""In this test suite, we evaluate the Address class. For more info
+on the Address class and its purpose, please see the documentation
 in the class itself.
 
 Table of Contents:
-    - INITIALIZATION: tests for various ways SpecificLocation can/can't be initialized
-    - CLASS METHODS: tests for the use of SpecificLocation's class methods
-    - SERDE: test for serialization and deserialization of SpecificLocation.
+    - INITIALIZATION: tests for various ways Address can/can't be initialized
+    - CLASS METHODS: tests for the use of Address's class methods
+    - SERDE: test for serialization and deserialization of Address.
 
 """
 
@@ -13,52 +13,127 @@ Table of Contents:
 # external imports
 import uuid
 import json
+import pytest
 
 # syft imports
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.common.uid import UID
+from syft.core.io.address import Address
 import syft as sy
 
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_specific_location_init_without_arguments():
-    """Test that SpecificLocation will self-create an ID object if none is given"""
+def test_init_without_arguments():
+    """Test that Address have all attributes as None if none are given"""
 
     # init works without arguments
-    loc = SpecificLocation()
+    addr = Address()
 
-    assert isinstance(loc.id, UID)
+    assert addr.network is None
+    assert addr.domain is None
+    assert addr.device is None
+    assert addr.vm is None
+
+    with pytest.raises(Exception):
+        assert addr.target_id is None
 
 
-def test_specific_location_init_with_specific_id():
-    """Test that SpecificLocation will use the ID you pass into the constructor"""
+def test_init_with_specific_id():
+    """Test that Address will use the SpecificLocation you pass into the constructor"""
 
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    # init works with arguments
+    addr = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
 
-    loc = SpecificLocation(id=uid)
+    assert addr.network is not None
+    assert addr.domain is not None
+    assert addr.device is not None
+    assert addr.vm is not None
 
-    assert loc.id == uid
+    # init works without arguments
+    addr = Address(  # network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+
+    assert addr.network is None
+    assert addr.domain is not None
+    assert addr.device is not None
+    assert addr.vm is not None
+
+    # init works without arguments
+    addr = Address(
+        network=SpecificLocation(id=UID()),
+        # domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+
+    assert addr.network is not None
+    assert addr.domain is None
+    assert addr.device is not None
+    assert addr.vm is not None
+
+    # init works without arguments
+    addr = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        # device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+
+    assert addr.network is not None
+    assert addr.domain is not None
+    assert addr.device is None
+    assert addr.vm is not None
+
+    # init works without arguments
+    addr = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        # vm=SpecificLocation(id=UID())
+    )
+
+    assert addr.network is not None
+    assert addr.domain is not None
+    assert addr.device is not None
+    assert addr.vm is None
 
 
 # --------------------- CLASS METHODS ---------------------
 
 
 def test_compare():
-    """While uses of this feature should be quite rare, we
-    should be able to check whether two objects are the same
-    based on their IDs being the same by default. Note that
-    subclasses will undoubtedly modify this behavior with other
-    __eq__ methods."""
+    """Tests whether two address objects are the same. This functionality
+    is likely to get used a lot when nodes are determining whether a message
+    is for them or not."""
 
-    obj = SpecificLocation()
-    obj2 = SpecificLocation()
+    x = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
 
-    assert obj != obj2
+    y = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
 
-    obj._id = obj2.id
+    z = Address(network=x.network, domain=x.domain, device=x.device, vm=x.vm)
 
-    assert obj == obj2
+    assert x != y
+    assert x == z
+    assert y != z
 
 
 def test_to_string():
