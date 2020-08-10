@@ -12,6 +12,10 @@ from .server import ServerThread
 import sys
 
 import binascii
+
+# TODO: remove this
+# TODO: when removed - make sure it's added back ot the list of security
+#  vulnerabilities so that it doesn't sneak back in in the future.
 import pickle
 
 import requests
