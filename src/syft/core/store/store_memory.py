@@ -6,7 +6,6 @@ from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore
 from ..common.storeable_object import AbstractStorableObject
-from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 
 
 class MemoryStore(ObjectStore):
@@ -22,8 +21,6 @@ class MemoryStore(ObjectStore):
     __slots__ = ["_objects", "_search_engine"]
 
     def __init__(self):
-        # QUESTION: as_wrapper doesnt exist on the parent
-        # super().__init__(as_wrapper)
         super().__init__()
         self._objects: Dict[UID, AbstractStorableObject] = {}
         self._search_engine = None
@@ -86,7 +83,7 @@ class MemoryStore(ObjectStore):
         pass
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
+    def _proto2object(proto):
         pass
 
     def __repr__(self):

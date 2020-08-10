@@ -37,9 +37,6 @@ class StorableObject(AbstractStorableObject):
 
     __slots__ = ["id", "data", "description", "tags"]
 
-    # TODO: remove this flag if commenting it out doesn't break anything
-    # protobuf_type = StorableObject_PB
-
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -61,14 +58,13 @@ class StorableObject(AbstractStorableObject):
         # Step 1: Serialize the id to protobuf and copy into protobuf
         id = self.id.serialize()
         proto.id.CopyFrom(id)
-        #
+
         # # Step 2: save the type of object we're about to serialize
         # proto.schematic_qualname = get_fully_qualified_name(obj=self.data)
         # print("Underlying Object Type:" + str(proto.schematic_qualname))
 
         # Step 3: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
-        print("Underlying Wrapper Type:" + str(proto.obj_type))
 
         # Step 4: Serialize data to protobuf and pack into proto
         data = self._data_object2proto()
