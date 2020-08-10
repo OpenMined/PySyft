@@ -4,8 +4,15 @@ package syft.core.io;
 import "proto/core/io/location.proto";
 
 message Address {
-  syft.core.io.SpecificLocation network = 1;
-  syft.core.io.SpecificLocation domain = 2;
-  syft.core.io.SpecificLocation device = 3;
-  syft.core.io.SpecificLocation vm = 4;
+    bool has_network = 1;
+    syft.core.io.SpecificLocation network = 2;
+
+    bool has_domain = 3;
+    syft.core.io.SpecificLocation domain = 4;
+
+    bool has_device = 5;
+    syft.core.io.SpecificLocation device = 6;
+
+    bool has_vm = 7;
+    syft.core.io.SpecificLocation vm = 8;
 }

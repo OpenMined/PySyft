@@ -81,9 +81,13 @@ class Address(Serializable):
             object.
         """
         return Address_PB(
+            has_network=self.network is not None,
             network=self.network.serialize() if self.network is not None else None,
+            has_domain=self.network is not None,
             domain=self.domain.serialize() if self.domain is not None else None,
+            has_device=self.device is not None,
             device=self.device.serialize() if self.device is not None else None,
+            has_vm=self.vm is not None,
             vm=self.vm.serialize() if self.vm is not None else None,
         )
 
@@ -103,10 +107,10 @@ class Address(Serializable):
         """
 
         return Address(
-            network=_deserialize(blob=proto.network),
-            domain=_deserialize(blob=proto.domain),
-            device=_deserialize(blob=proto.device),
-            vm=_deserialize(blob=proto.vm),
+            network=_deserialize(blob=proto.network) if proto.has_network else None,
+            domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
+            device=_deserialize(blob=proto.device) if proto.has_device else None,
+            vm=_deserialize(blob=proto.vm) if proto.has_vm else None,
         )
 
     @staticmethod
