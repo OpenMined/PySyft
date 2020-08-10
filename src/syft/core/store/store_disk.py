@@ -13,6 +13,7 @@ from .storeable_object import StorableObject
 
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.
 
+
 class DiskObjectStore(ObjectStore):
     def __init__(self, db_path: Optional[str] = None):
         super().__init__()

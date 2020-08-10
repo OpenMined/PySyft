@@ -6,7 +6,6 @@ from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore
 from ..common.storeable_object import AbstractStorableObject
-from ...proto.core.store.store_object_pb2 import DictContainer as DictContainer_PB
 
 
 class MemoryStore(ObjectStore):
