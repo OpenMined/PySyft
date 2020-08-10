@@ -11,11 +11,10 @@ from ..common.uid import UID
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
 
+# NOTE: This should not be used yet, this API will be done after the pygrid integration.
 
 class DiskObjectStore(ObjectStore):
     def __init__(self, db_path: Optional[str] = None):
-        # QUESTION: ObjectStore has no as_wrapper
-        # super().__init__(as_wrapper=False)
         super().__init__()
 
         if db_path is None:
