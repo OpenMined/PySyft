@@ -1,0 +1,6 @@
+syntax = "proto3";
+package syft.core.io;
+
+message SpecificLocation {
+  syft.core.common.UID uid_object = 1;
+}
