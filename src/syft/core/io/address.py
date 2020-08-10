@@ -1,9 +1,10 @@
+# external class imports
 from typing import Optional
 
-from syft.core.common.uid import UID
-
-from syft.decorators import syft_decorator
-from syft.core.io.location import Location
+# syft imports (sorted by length)
+from ..io.location import Location
+from ..common.serde.serializable import Serializable
+from ...decorators.syft_decorator_impl import syft_decorator
 
 
 # utility addresses
@@ -17,7 +18,7 @@ class Unspecified(object):
         return "Unspecified"
 
 
-class Address(object):
+class Address(Serializable):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -61,7 +62,7 @@ class Address(object):
         self._vm = vm
 
     @property
-    def network(self) -> UID:
+    def network(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a network
         or is a network itself, this property will return the ID of that network
         if it is known by the client."""
@@ -69,18 +70,18 @@ class Address(object):
         return self._network
 
     @network.setter
-    def network(self, new_network_id: UID) -> UID:
+    def network(self, new_network: Location) -> Optional[Location]:
         """This client points to a node, if that node lives within a network
         or is a network itself and we learn the id of that network, this setter
         allows us to save the id of that network for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
         to efficiently save an address object for use when sending messages. That
         address object will include this information if it is available"""
-        self._network = new_network_id
+        self._network = new_network
         return self._network
 
     @property
-    def domain(self) -> UID:
+    def domain(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a domain
         or is a domain itself, this property will return the ID of that domain
         if it is known by the client."""
@@ -88,7 +89,7 @@ class Address(object):
         return self._domain
 
     @domain.setter
-    def domain(self, new_domain_id: UID) -> UID:
+    def domain(self, new_domain: Location) -> Optional[Location]:
         """This client points to a node, if that node lives within a domain
         or is a domain itself and we learn the id of that domain, this setter
         allows us to save the id of that domain for use later. We use a getter
@@ -96,18 +97,18 @@ class Address(object):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        self._domain = new_domain_id
+        self._domain = new_domain
         return self._domain
 
     @property
-    def device(self) -> UID:
+    def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
         or is a device itself, this property will return the ID of that device
         if it is known by the client."""
         return self._device
 
     @device.setter
-    def device(self, new_device_id: UID) -> UID:
+    def device(self, new_device: Location) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
         or is a device itself and we learn the id of that device, this setter
         allows us to save the id of that device for use later. We use a getter
@@ -115,11 +116,11 @@ class Address(object):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        self._device = new_device_id
+        self._device = new_device
         return self._device
 
     @property
-    def vm(self) -> UID:
+    def vm(self) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
         or is a vm itself, this property will return the ID of that vm
         if it is known by the client."""
@@ -127,7 +128,7 @@ class Address(object):
         return self._vm
 
     @vm.setter
-    def vm(self, new_vm_id: UID) -> UID:
+    def vm(self, new_vm: Location) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter
@@ -135,11 +136,11 @@ class Address(object):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        self._vm = new_vm_id
+        self._vm = new_vm
         return self._vm
 
     @property
-    def target_id(self) -> UID:
+    def target_id(self) -> Location:
         """Return the address of the node which lives at this address.
 
         Note that this id is simply the most granular id available to the
