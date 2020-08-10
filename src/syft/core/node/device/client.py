@@ -1,16 +1,15 @@
-from typing import List
+# external class imports
 from typing_extensions import final
-
-from syft.core.common.uid import UID
-
-from ...io.route import Route
-from ..common.client import Client
-
-from ...io.location import Location
-from ...io.location import SpecificLocation
 from typing import Optional
+from typing import List
 
-from ....decorators.syft_decorator_impl import syft_decorator
+# syft imports
+from ...io.location import SpecificLocation
+from ....decorators import syft_decorator
+from syft.core.common.uid import UID
+from ...io.location import Location
+from ..common.client import Client
+from ...io.route import Route
 
 
 @final
@@ -20,9 +19,9 @@ class DeviceClient(Client):
         self,
         name: str,
         routes: List[Route],
+        device: SpecificLocation,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
-        device: Optional[SpecificLocation] = None,
         vm: Optional[Location] = None,
     ):
         super().__init__(
@@ -33,8 +32,6 @@ class DeviceClient(Client):
             device=device,
             vm=vm,
         )
-
-        assert self.device is not None
 
     # def create_vm(self, name:str):
     #
@@ -61,27 +58,27 @@ class DeviceClient(Client):
     @property
     def id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
-        return self.device.id
+        return self.device.id if self.device is not None else None
 
     @property
-    def vm_id(self) -> UID:
+    def vm(self) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
-        or is a vm itself, this property will return the ID of that vm
+        or is a vm itself, this property will return the Location of that vm
         if it is known by the client."""
 
-        raise Exception("This client points to a device, you don't have a VM ID.")
+        return super().vm
 
-    @vm_id.setter
-    def vm_id(self, new_vm_id: UID) -> UID:
+    @vm.setter
+    def vm(self, new_vm: Location) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
-        or is a vm itself and we learn the id of that vm, this setter
-        allows us to save the id of that vm for use later. We use a getter
+        or is a vm itself and we learn the Location of that vm, this setter
+        allows us to save the Location of that vm for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a Device, you don't need a VM ID.")
+        raise Exception("This client points to a Device, you don't need a VM Location.")
 
     def __repr__(self):
-        out = f"<DeviceClient id:{self.device_id}>"
+        out = f"<DeviceClient:{self.device}>"
         return out

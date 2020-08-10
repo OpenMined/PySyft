@@ -1,11 +1,12 @@
+# external class imports
 from typing import List
 
-from syft.core.common.uid import UID
-
-from ...io.route import Route
-from ..common.client import Client
-
+# syft imports
+from ...io.location import SpecificLocation
 from ...io.location import Location
+from ..common.client import Client
+from ...io.route import Route
+from ...common.uid import UID
 from typing import Optional
 
 
@@ -14,8 +15,8 @@ class DomainClient(Client):
         self,
         name: str,
         routes: List[Route],
+        domain: SpecificLocation,
         network: Optional[Location] = None,
-        domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
     ):
@@ -28,24 +29,23 @@ class DomainClient(Client):
             vm=vm,
         )
 
-        assert self.domain is not None
+    @property
+    def id(self) -> Optional[UID]:
+        return self.domain.id if self.domain is not None else None
 
     @property
-    def id(self) -> UID:
-        return self.domain.id
-
-    @property
-    def device_id(self) -> UID:
+    def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
-        or is a device itself, this property will return the ID of that device
+        or is a device itself, this property will return the Location of that device
         if it is known by the client."""
-        raise Exception("This client points to a domain, you don't have a Device ID.")
 
-    @device_id.setter
-    def device_id(self, new_device_id: UID) -> UID:
+        return super().device
+
+    @device.setter
+    def device(self, new_device: Location) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
-        or is a device itself and we learn the id of that device, this setter
-        allows us to save the id of that device for use later. We use a getter
+        or is a device itself and we learn the Location of that device, this setter
+        allows us to save the Location of that device for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
@@ -53,23 +53,23 @@ class DomainClient(Client):
         raise Exception("This client points to a domain, you don't need a Device ID.")
 
     @property
-    def vm_id(self) -> UID:
+    def vm(self) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
-        or is a vm itself, this property will return the ID of that vm
+        or is a vm itself, this property will return the Location of that vm
         if it is known by the client."""
 
-        raise Exception("This client points to a network, you don't have a VM ID.")
+        return super().vm
 
-    @vm_id.setter
-    def vm_id(self, new_vm_id: UID) -> UID:
+    @vm.setter
+    def vm(self, new_vm: Location) -> Optional[Location]:
         """This client points to an node, if that node lives within a vm
-        or is a vm itself and we learn the id of that vm, this setter
-        allows us to save the id of that vm for use later. We use a getter
+        or is a vm itself and we learn the Location of that vm, this setter
+        allows us to save the Location of that vm for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a device, you don't need a VM ID.")
+        raise Exception("This client points to a device, you don't need a VM Location.")
 
     def __repr__(self) -> str:
-        return f"<DomainClient id:{self.id}>"
+        return f"<DomainClient:{self.id}>"

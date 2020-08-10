@@ -57,10 +57,19 @@ class Client(AbstractNodeClient):
     def register(self, client: AbstractNodeClient) -> None:
         msg = RegisterChildNodeMessage(child_node_client=client, address=self)
 
-        client.network = self.network if self.network is not None else client.network
-        client.domain = self.domain if self.domain is not None else client.domain
-        client.device = self.device if self.device is not None else client.device
-        client.vm = self.vm if self.vm is not None else client.vm
+        if self.network is not None:
+            client.network = (
+                self.network if self.network is not None else client.network
+            )
+
+        if self.domain is not None:
+            client.domain = self.domain if self.domain is not None else client.domain
+
+        if self.device is not None:
+            client.device = self.device if self.device is not None else client.device
+
+        if self.vm is not None:
+            client.vm = self.vm
 
         self.send_immediate_msg_without_reply(msg=msg)
 

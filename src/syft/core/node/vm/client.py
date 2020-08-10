@@ -1,12 +1,15 @@
+# external class imports
 from typing import List
+from typing import Optional
 from typing_extensions import final
 
+# syft imports
+from ...io.location.specific import SpecificLocation
 from ....decorators import syft_decorator
-from ...io.route import Route
-from ..common.client import Client
-
 from ...io.location import Location
-from typing import Optional
+from ..common.client import Client
+from ...io.route import Route
+from ...common.uid import UID
 
 
 @final
@@ -16,10 +19,10 @@ class VirtualMachineClient(Client):
         self,
         name: str,
         routes: List[Route],
+        vm: SpecificLocation,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
-        vm: Optional[Location] = None,
     ):
         super().__init__(
             name=name,
@@ -30,18 +33,11 @@ class VirtualMachineClient(Client):
             vm=vm,
         )
 
-        # if this client doesn't know the ID of the VM it's supposed to point to
-        # then something went wrong. The addressing system is a little fancy to
-        # try to make sure that self.address is always up to date AND to work
-        # with only one addressing system which is generic to all clients, so
-        # I thought I'd add this here just as an extra check. It seems like an
-        # ok thing to do since VMs shouldn't be spun up that often. Aka, VM
-        # spinup time shouldn't be a huge constraint.
-        assert self.vm is not None
+        self.vm: SpecificLocation  # redefine the type of self.vm to not be optional
 
     @property
-    def id(self):
-        return self.vm.id
+    def id(self) -> UID:
+        return self.vm.id if self.vm is not None else None
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

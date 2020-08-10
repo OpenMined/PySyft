@@ -32,7 +32,7 @@ class ObjectWithID(Serializable):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, id: Optional[UID] = None, as_wrapper: bool = False):
+    def __init__(self, id: Optional[UID] = None):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.
@@ -40,16 +40,13 @@ class ObjectWithID(Serializable):
         :param id: an override which can be used to set an ID for this object
             manually. This is probably only used for deserialization.
         :type id: UID
-        :param as_wrapper: this flag determines whether the subclass can also
-            be used as a wrapper class around a non-syft object. For details on
-            why, see :py:mod:`syft.core.common.serializable.Serializable`.
 
         """
 
         if id is None:
             id = UID()
 
-        self._id = id
+        self._id: UID = id
 
         # while this class is never used as a simple wrapper,
         # it's possible that sub-classes of this class will be.

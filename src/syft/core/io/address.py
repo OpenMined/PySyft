@@ -3,8 +3,11 @@ from typing import Optional
 
 # syft imports (sorted by length)
 from ..io.location import Location
+from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.core.io.address_pb2 import Address as Address_PB
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 
 # utility addresses
@@ -60,6 +63,71 @@ class Address(Serializable):
         # or is a vm itself, this property will store the ID of that vm if it
         # is known
         self._vm = vm
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Address_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: ObjectWithID_PB
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return Address_PB(
+            network=self.network.serialize() if self.network is not None else None,
+            domain=self.domain.serialize() if self.domain is not None else None,
+            device=self.device.serialize() if self.device is not None else None,
+            vm=self.vm.serialize() if self.vm is not None else None,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Address_PB) -> "Address":
+        """Creates a ObjectWithID from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of ObjectWithID
+        :rtype: ObjectWithID
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return Address(
+            network=_deserialize(blob=proto.network),
+            domain=_deserialize(blob=proto.domain),
+            device=_deserialize(blob=proto.device),
+            vm=_deserialize(blob=proto.vm),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """ Return the type of protobuf object which stores a class of this type
+
+        As a part of serializatoin and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return Address_PB
 
     @property
     def network(self) -> Optional[Location]:

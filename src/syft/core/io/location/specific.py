@@ -11,7 +11,7 @@ from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
 
 
-class SpecificLocation(Location, ObjectWithID):
+class SpecificLocation(ObjectWithID, Location):
     """This represents the location of a single Node object
     represented by a single UID. It may not have any functionality
     beyond Location but there is logic which interprets it differently."""
