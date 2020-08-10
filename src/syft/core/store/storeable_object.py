@@ -154,7 +154,7 @@ class StorableObject(AbstractStorableObject):
         with the type of this class attached to it. See the MetaSerializable class for details.
 
         :return: the type of protobuf object which corresponds to this class.
-        :rtype: type
+        :rtype: GeneratedProtocolMessageType
 
         """
         return StorableObject_PB

@@ -141,7 +141,7 @@ class ObjectWithID(Serializable):
         with the type of this class attached to it. See the MetaSerializable class for details.
 
         :return: the type of protobuf object which corresponds to this class.
-        :rtype: type
+        :rtype: GeneratedProtocolMessageType
 
         """
 

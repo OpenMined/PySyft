@@ -128,14 +128,21 @@ class Serializable(metaclass=MetaSerializable):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """
-            This static method returns the schema used when serializing this
-            class.
+        """ Return the type of protobuf object which stores a class of this type
 
-            :return: a protobuf type message
-            :rtype: type
+        As a part of serializatoin and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
 
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
         """
+
         raise NotImplementedError
 
     @staticmethod
