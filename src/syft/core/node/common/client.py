@@ -16,7 +16,6 @@ from ...io.location import Location
 from typing import Optional
 
 
-# TODO: Fix AbstractNode and LocationAwareObject being incompatible
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with

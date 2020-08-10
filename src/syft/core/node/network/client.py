@@ -14,6 +14,9 @@ from ...io.route import Route
 
 @final
 class NetworkClient(Client):
+
+    network: SpecificLocation  # redefine the type of self.vm to not be optional
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -33,11 +36,9 @@ class NetworkClient(Client):
             vm=vm,
         )
 
-        self.network: SpecificLocation  # redefine the type of self.vm to not be optional
-
     @property
-    def id(self) -> Optional[UID]:
-        return self.network.id if self.network is not None else None
+    def id(self) -> UID:
+        return self.network.id
 
     @property
     def domain(self) -> Optional[Location]:

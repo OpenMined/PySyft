@@ -11,6 +11,9 @@ from typing import Optional
 
 
 class DomainClient(Client):
+
+    domain: SpecificLocation
+
     def __init__(
         self,
         name: str,
@@ -30,8 +33,8 @@ class DomainClient(Client):
         )
 
     @property
-    def id(self) -> Optional[UID]:
-        return self.domain.id if self.domain is not None else None
+    def id(self) -> UID:
+        return self.domain.id
 
     @property
     def device(self) -> Optional[Location]:

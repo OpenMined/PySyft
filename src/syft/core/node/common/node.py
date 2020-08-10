@@ -209,7 +209,7 @@ class Node(AbstractNode):
         return self.store.get_objects_of_type(obj_type=Client)
 
     @property
-    def id(self) -> Optional[UID]:
+    def id(self) -> UID:
         raise NotImplementedError
 
     @property

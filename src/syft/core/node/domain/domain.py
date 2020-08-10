@@ -15,6 +15,8 @@ from ...io.address import All
 
 class Domain(Node):
 
+    domain: SpecificLocation
+
     child_type = Device
     client_type = DomainClient
     child_type_client_type = DeviceClient
@@ -41,8 +43,8 @@ class Domain(Node):
         self._register_services()
 
     @property
-    def id(self) -> Optional[UID]:
-        return self.domain.id if self.domain is not None else None
+    def id(self) -> UID:
+        return self.domain.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None

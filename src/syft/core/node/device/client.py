@@ -14,6 +14,9 @@ from ...io.route import Route
 
 @final
 class DeviceClient(Client):
+
+    device: SpecificLocation  # redefine the type of self.device to not be optional
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -58,7 +61,7 @@ class DeviceClient(Client):
     @property
     def id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
-        return self.device.id if self.device is not None else None
+        return self.device.id
 
     @property
     def vm(self) -> Optional[Location]:
@@ -79,6 +82,5 @@ class DeviceClient(Client):
 
         raise Exception("This client points to a Device, you don't need a VM Location.")
 
-    def __repr__(self):
-        out = f"<DeviceClient:{self.device}>"
-        return out
+    def __repr__(self) -> str:
+        return f"<DeviceClient:{self.device}>"

@@ -60,7 +60,7 @@ class AbstractNode(Address):
         raise NotImplementedError
 
     @property
-    def id(self) -> Optional[UID]:
+    def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
@@ -71,7 +71,7 @@ class AbstractNodeClient(Address):
     """"""
 
     @property
-    def id(self) -> Optional[UID]:
+    def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 

@@ -89,5 +89,5 @@ class MemoryStore(ObjectStore):
     def _proto2object(proto: StorableObject_PB) -> StorableObject_PB:
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._objects.__repr__()

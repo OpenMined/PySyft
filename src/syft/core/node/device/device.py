@@ -21,6 +21,8 @@ from ..common.node import Node
 @final
 class Device(Node):
 
+    device: SpecificLocation
+
     client_type = DeviceClient
     child_type = VirtualMachine
     child_type_client_type = VirtualMachineClient
@@ -46,7 +48,7 @@ class Device(Node):
 
     @property
     def id(self) -> UID:
-        return self.device.id if self.device is not None else None
+        return self.device.id
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:

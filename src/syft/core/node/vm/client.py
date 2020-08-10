@@ -14,6 +14,9 @@ from ...common.uid import UID
 
 @final
 class VirtualMachineClient(Client):
+
+    vm: SpecificLocation  # redefine the type of self.vm to not be optional
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -33,11 +36,9 @@ class VirtualMachineClient(Client):
             vm=vm,
         )
 
-        self.vm: SpecificLocation  # redefine the type of self.vm to not be optional
-
     @property
     def id(self) -> UID:
-        return self.vm.id if self.vm is not None else None
+        return self.vm.id
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

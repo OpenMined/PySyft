@@ -16,6 +16,8 @@ from ...common.uid import UID
 
 class Network(Node):
 
+    network: SpecificLocation
+
     child_type = Domain
     client_type = NetworkClient
     child_type_client_type = DomainClient
@@ -36,8 +38,8 @@ class Network(Node):
         self._register_services()
 
     @property
-    def id(self) -> Optional[UID]:
-        return self.network.id if self.network is not None else None
+    def id(self) -> UID:
+        return self.network.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (

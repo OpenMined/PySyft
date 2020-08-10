@@ -18,6 +18,7 @@ from ...common.uid import UID
 class VirtualMachine(Node):
 
     client_type = VirtualMachineClient
+    vm: SpecificLocation  # redefine the type of self.vm to not be optional
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -32,14 +33,12 @@ class VirtualMachine(Node):
             name=name, network=network, domain=domain, device=device, vm=vm
         )
 
-        self.vm: SpecificLocation  # redefine the type of self.vm to not be optional
-
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
 
     @property
     def id(self) -> UID:
-        return self.vm.id if self.vm is not None else None
+        return self.vm.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return msg.address.vm.id == self.id
