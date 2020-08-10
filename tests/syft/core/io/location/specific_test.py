@@ -9,6 +9,9 @@ Table of Contents:
 
 """
 
+# external imports
+import uuid
+
 # syft imports
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.common.uid import UID
@@ -17,11 +20,22 @@ from syft.core.common.uid import UID
 
 
 def test_specific_location_init_without_arguments():
+    """Test that SpecificLocation will self-create an ID object if none is given"""
 
     # init works without arguments
     loc = SpecificLocation()
 
     assert isinstance(loc.id, UID)
+
+
+def test_specific_location_init_with_specific_id():
+    """Test that SpecificLocation will use the ID you pass into the constructor"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+    loc = SpecificLocation(id=uid)
+
+    assert loc.id == uid
 
 
 # --------------------- CLASS METHODS ---------------------
