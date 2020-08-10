@@ -1,6 +1,7 @@
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import invert_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
 from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
 from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 from syft.frameworks.torch.he.fv.util.numth import get_primes
@@ -120,6 +121,36 @@ class RNSTool:
                 self.neg_inv_q_mod_t_gamma[i] = negate_mod(
                     self.neg_inv_q_mod_t_gamma[i], self.base_t_gamma.base[i]
                 )
+
+        # Compute q[last]^(-1) mod q[i] for i = 0..last-1
+        # This is used by modulus switching and rescaling
+        self.inv_q_last_mod_q = [0] * (base_q_size - 1)
+        for i in range(base_q_size - 1):
+            self.inv_q_last_mod_q[i] = invert_mod(self.q[-1], self.q[i])
+
+    def divide_and_round_q_last_inplace(self, input):
+        base_q_size = self.base_q.size
+        last_ptr = input[base_q_size - 1]
+
+        # Add (qi-1)/2 to change from flooring to rounding
+        last_modulus = self.base_q.base[-1]
+        half = last_modulus >> 1
+
+        last_ptr = [(x + half) % last_modulus for x in last_ptr]
+
+        temp_ptr = []
+        for i in range(base_q_size - 1):
+            temp_ptr = [x % self.base_q.base[i] for x in last_ptr]
+            half_mod = half % self.base_q.base[i]
+
+            temp_ptr = [(x - half_mod) % self.base_q.base[i] for x in temp_ptr]
+
+            input[i] = poly_sub_mod(input[i], temp_ptr, self.base_q.base[i], self.coeff_count)
+
+            # qk^(-1) * ((ct mod qi) - (ct mod qk)) mod qi
+            input[i] = [(x * self.inv_q_last_mod_q[i]) % self.base_q.base[i] for x in input[i]]
+
+        return input
 
     def decrypt_scale_and_round(self, input):
         """Perform the remaining procedure of decryptions process after getting the result of

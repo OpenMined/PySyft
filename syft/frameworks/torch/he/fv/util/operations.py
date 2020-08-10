@@ -219,7 +219,7 @@ def xgcd(x, y):
     return [x, prev_a, prev_b]
 
 
-def multiply_add_plain_with_delta(ct, pt, context):
+def multiply_add_plain_with_delta(ct, pt, context_data):
     """Add message into phase.
 
     Args:
@@ -230,10 +230,11 @@ def multiply_add_plain_with_delta(ct, pt, context):
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
-    coeff_modulus = context.param.coeff_modulus
+    ct_param_id = ct.param_id
+    coeff_modulus = context_data.param.coeff_modulus
     pt = pt.data
     plain_coeff_count = len(pt)
-    delta = context.coeff_div_plain_modulus
+    delta = context_data.coeff_div_plain_modulus
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
@@ -243,10 +244,10 @@ def multiply_add_plain_with_delta(ct, pt, context):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]
             ct0[j][i] = (ct0[j][i] + temp) % coeff_modulus[j]
 
-    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e + delta * pt
+    return CipherText([ct0, ct1], ct_param_id)  # ct0 = pk0 * u * e + delta * pt
 
 
-def multiply_sub_plain_with_delta(ct, pt, context):
+def multiply_sub_plain_with_delta(ct, pt, context_data):
     """Subtract plaintext from ciphertext.
 
     Args:
@@ -257,10 +258,11 @@ def multiply_sub_plain_with_delta(ct, pt, context):
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
-    coeff_modulus = context.param.coeff_modulus
+    ct_param_id = ct.param_id
+    coeff_modulus = context_data.param.coeff_modulus
     pt = pt.data
     plain_coeff_count = len(pt)
-    delta = context.coeff_div_plain_modulus
+    delta = context_data.coeff_div_plain_modulus
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
@@ -270,4 +272,4 @@ def multiply_sub_plain_with_delta(ct, pt, context):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]
             ct0[j][i] = (ct0[j][i] - temp) % coeff_modulus[j]
 
-    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e - delta * pt
+    return CipherText([ct0, ct1], ct_param_id)  # ct0 = pk0 * u * e - delta * pt

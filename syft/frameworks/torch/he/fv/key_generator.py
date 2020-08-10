@@ -18,9 +18,9 @@ class KeyGenerator:
         if not isinstance(context, Context):
             raise ValueError("invalid context")
 
-        self._public_key = None
-        self._secret_key = None
-        self._context = context
+        self.public_key = None
+        self.secret_key = None
+        self.context = context
 
     def keygen(self):
         """Generate the secret key and public key.
@@ -30,17 +30,17 @@ class KeyGenerator:
         """
         self._generate_sk()
         self._generate_pk()
-        return [self._secret_key, self._public_key]
+        return [self.secret_key, self.public_key]
 
-    def _generate_sk(self, is_initialized=False):
-        param = self._context.param
-
-        if not is_initialized:
-            self._secret_key = SecretKey(sample_poly_ternary(param))
+    def _generate_sk(self):
+        param = self.context.context_data_map[self.context.key_param_id].param
+        self.secret_key = SecretKey(sample_poly_ternary(param))
 
     def _generate_pk(self):
-        if self._secret_key is None:
+        if self.secret_key is None:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 
-        public_key = encrypt_symmetric(self._context, self._secret_key.data)
-        self._public_key = PublicKey(public_key.data)
+        public_key = encrypt_symmetric(
+            self.context, self.context.key_param_id, self.secret_key.data
+        )
+        self.public_key = PublicKey(public_key.data)
