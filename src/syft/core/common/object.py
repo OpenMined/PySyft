@@ -90,7 +90,7 @@ class ObjectWithID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<{ObjectWithID.__name__}:{self.id.value}>"
+        return f"<{type(self).__name__}:{self.id.value}>"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
