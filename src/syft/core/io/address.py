@@ -83,7 +83,7 @@ class Address(Serializable):
         return Address_PB(
             has_network=self.network is not None,
             network=self.network.serialize() if self.network is not None else None,
-            has_domain=self.network is not None,
+            has_domain=self.domain is not None,
             domain=self.domain.serialize() if self.domain is not None else None,
             has_device=self.device is not None,
             device=self.device.serialize() if self.device is not None else None,
