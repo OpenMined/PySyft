@@ -5,10 +5,9 @@ import syft as sy
 from syft.generic.abstract.object import _apply_args  # noqa: F401
 from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.abstract.object import initialize_object
-from syft.generic.abstract.syft_serializable import SyftSerializable
 
 
-class AbstractTensor(AbstractSendable, SyftSerializable):
+class AbstractTensor(AbstractSendable):
     def __init__(
         self,
         id: int = None,
