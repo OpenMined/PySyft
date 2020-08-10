@@ -156,9 +156,9 @@ class Address(object):
         raise Exception("Address has no valid parts")
 
     def __repr__(self) -> str:
-        out = ""
+        out = f"<{type(self).__name__}"
         out += f" Network:{self.network},"  # OpenGrid
-        out += f" Domain:{self.domain}) "  # UCSF
+        out += f" Domain:{self.domain} "  # UCSF
         out += f" Device:{self.device},"  # One of UCSF's Dell Servers
-        out += f" VM:{self.vm})"  # 8GB RAM set aside @Trask - UCSF-Server-5
+        out += f" VM:{self.vm}>"  # 8GB RAM set aside @Trask - UCSF-Server-5
         return out
