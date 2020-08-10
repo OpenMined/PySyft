@@ -57,9 +57,8 @@ class Serializable(metaclass=MetaSerializable):
     Eg:
 
     class WrapperInt(Serializable):
-        def __init__(self, value: int, as_wrapper:bool):
+        def __init__(self, value: int):
             self.int_obj = value
-            self.as_wrapper = as_wrapper
 
         def _object2proto(self) -> WrapperIntPB:
             ...
