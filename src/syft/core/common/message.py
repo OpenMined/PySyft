@@ -11,9 +11,8 @@ class AbstractMessage(ObjectWithID):
 
 class SyftMessage(AbstractMessage):
     def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
-        self.msg_id = msg_id
         self.address = address
-        super().__init__()
+        super().__init__(id=msg_id)
 
 
 # TODO: I think this is really cool but we don't have the notion of a signature yet.

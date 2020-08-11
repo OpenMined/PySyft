@@ -10,6 +10,7 @@ message GetObjectAction {
     syft.core.common.UID obj_id = 1;
     syft.core.common.UID msg_id = 2;
     syft.core.io.Address address = 3;
+    syft.core.io.Address reply_to = 4;
 }
 
 message GetObjectResponseMessage {
