@@ -41,7 +41,7 @@ COMP = 1
 
 # number of processes
 N_CORES = 8
-MULTI_LIMIT = 10_000
+MULTI_LIMIT = 50_000
 
 
 def keygen(n_values, op):
