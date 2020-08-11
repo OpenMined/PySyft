@@ -1,3 +1,5 @@
+from typing import Optional, Type
+
 import numpy as np
 from syft.proto.lib.numpy.tensor_pb2 import TensorProto
 from syft.lib.numpy.tensor_util import numpy_array_to_tensor
@@ -32,7 +34,7 @@ class NumpyTensorWrapper(StorableObject):
         return data
 
     @staticmethod
-    def get_data_protobuf_schema() -> type:
+    def get_data_protobuf_schema() -> Optional[Type]:
         return TensorProto
 
     @staticmethod

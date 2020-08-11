@@ -47,18 +47,6 @@ class AbstractNode(Address):
     ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
-    def get_object(self) -> None:
-        raise NotImplementedError
-
-    def has_object(self) -> None:
-        raise NotImplementedError
-
-    def store_object(self) -> None:
-        raise NotImplementedError
-
-    def delete_object(self) -> None:
-        raise NotImplementedError
-
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
