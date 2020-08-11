@@ -1,5 +1,6 @@
-# external classs imports
+# external class imports
 from typing import Optional
+from nacl.signing import VerifyKey
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -16,6 +17,7 @@ from ...io.address import All
 class Domain(Node):
 
     domain: SpecificLocation
+    root_key: Optional[VerifyKey]
 
     child_type = Device
     client_type = DomainClient
@@ -29,10 +31,13 @@ class Domain(Node):
         domain: SpecificLocation = SpecificLocation(),
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        root_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
+
+        self.root_key = root_key
 
         # available_device_types = set()
         # TODO: add available compute types
