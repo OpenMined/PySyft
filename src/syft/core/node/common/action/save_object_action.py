@@ -32,8 +32,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
         id_pb = self.obj_id.serialize()
         obj_ob = self.obj.serialize()  # type: ignore
+        addr = self.address.serialize()
 
-        return SaveObjectAction(obj_id=id_pb, obj=obj_ob)
+        return SaveObjectAction_PB(obj_id=id_pb, obj=obj_ob, address=addr)
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -41,8 +42,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
         id = _deserialize(blob=proto.obj_id)
         obj = _deserialize(blob=proto.obj)
+        addr = _deserialize(blob=proto.address)
 
-        return SaveObjectAction(obj_id=id, obj=obj)
+        return SaveObjectAction(obj_id=id, obj=obj, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
