@@ -19,7 +19,7 @@ scheme_to_bytes = {
     LZ4: LZ4.to_bytes(1, byteorder="big"),
     ZLIB: ZLIB.to_bytes(1, byteorder="big"),
 }
-default_compress_scheme = LZ4
+default_compress_scheme = NO_COMPRESSION
 
 ## SECTION: chosen Compression Algorithm
 
