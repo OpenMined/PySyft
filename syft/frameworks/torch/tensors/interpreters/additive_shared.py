@@ -606,6 +606,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         if power < 0:
             raise RuntimeError("Integers to negative integer powers are not allowed.")
+
         base = self
 
         result = 1
