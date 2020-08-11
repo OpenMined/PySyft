@@ -1,5 +1,4 @@
 from typing import Tuple
-import json
 from flask import Flask
 from ...core.node.domain import Domain
 from ...core.node.domain import DomainClient
@@ -35,7 +34,11 @@ class GridHttpClientConnection(ClientConnection):
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> requests.Response:
-        return self.send_msg(msg)
+        blob = self.send_msg(msg).text
+        print(blob)
+        response = sy.deserialize(blob=blob, from_json=True)
+        print(response.obj)
+        return response
 
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply
@@ -96,7 +99,7 @@ class Duet(DomainClient):
 
             if isinstance(msg, ImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
-                return json.dumps({"data": reply.json()})
+                return reply.json()
             elif isinstance(msg, ImmediateSyftMessageWithoutReply):
                 domain.recv_immediate_msg_without_reply(msg=msg)
             else:
