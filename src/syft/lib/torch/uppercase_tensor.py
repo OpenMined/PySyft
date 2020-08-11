@@ -3,8 +3,6 @@ from typing import Optional, Type
 from ..generic import ObjectConstructor
 from syft.proto.lib.torch.tensor_pb2 import TensorProto
 from syft.core.store.storeable_object import StorableObject
-from syft.lib.numpy.tensor_util import numpy_array_to_tensor
-from syft.lib.numpy.tensor_util import tensor_to_numpy_array
 from ...util import aggressive_set_attr
 
 import torch as th

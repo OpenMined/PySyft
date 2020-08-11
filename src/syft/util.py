@@ -1,9 +1,10 @@
 from typing import List
 
+from forbiddenfruit import curse
+
 # breaking convention here because index_globals needs
 # the full syft name to be present.
 import syft  # noqa: F401
-from forbiddenfruit import curse
 
 from .decorators.syft_decorator_impl import syft_decorator
 
