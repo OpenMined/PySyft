@@ -49,7 +49,6 @@ def test_request_response_serde():
 
     assert obj.status == new_obj.status
     assert obj.request_id == new_obj.request_id
-    assert "SpecificLocation" in f"{obj_id}"
 
 
 def test_duet_send():

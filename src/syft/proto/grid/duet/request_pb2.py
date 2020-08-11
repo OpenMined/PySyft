@@ -22,6 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.grid.duet",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1dproto/grid/duet/request.proto\x12\x0esyft.grid.duet\x1a%proto/core/common/common_object.proto"n\n\x0eRequestMessage\x12)\n\nrequest_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0crequest_name\x18\x03 \x01(\t\x12\x1b\n\x13request_description\x18\x04 \x01(\t"L\n\x0fRequestResponse\x12\x0e\n\x06status\x18\x01 \x01(\x05\x12)\n\nrequest_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
@@ -33,6 +34,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="request_id",
@@ -51,6 +53,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="request_name",
@@ -69,6 +72,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="request_description",
@@ -87,6 +91,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -108,6 +113,7 @@ _REQUESTRESPONSE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="status",
@@ -126,6 +132,7 @@ _REQUESTRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="request_id",
@@ -144,6 +151,7 @@ _REQUESTRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
