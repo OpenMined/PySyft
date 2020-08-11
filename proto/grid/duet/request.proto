@@ -14,6 +14,5 @@ message RequestMessage {
 message RequestResponse {
     int32 status = 1;
     syft.core.common.UID request_id = 2;
-
 }
 

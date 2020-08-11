@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.grid.duet",
     syntax="proto3",
     serialized_options=None,
-    serialized_pb=b'\n\x1dproto/grid/duet/request.proto\x12\x0esyft.grid.duet\x1a%proto/core/common/common_object.proto"\x98\x01\n\x0eRequestMessage\x12)\n\nrequest_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12(\n\ttensor_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0crequest_name\x18\x03 \x01(\t\x12\x1b\n\x13request_description\x18\x04 \x01(\t"\x11\n\x0fRequestResponseb\x06proto3',
+    serialized_pb=b'\n\x1dproto/grid/duet/request.proto\x12\x0esyft.grid.duet\x1a%proto/core/common/common_object.proto"n\n\x0eRequestMessage\x12)\n\nrequest_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0crequest_name\x18\x03 \x01(\t\x12\x1b\n\x13request_description\x18\x04 \x01(\t"L\n\x0fRequestResponse\x12\x0e\n\x06status\x18\x01 \x01(\x05\x12)\n\nrequest_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
 
@@ -53,27 +53,9 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
             file=DESCRIPTOR,
         ),
         _descriptor.FieldDescriptor(
-            name="tensor_id",
-            full_name="syft.grid.duet.RequestMessage.tensor_id",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-        ),
-        _descriptor.FieldDescriptor(
             name="request_name",
             full_name="syft.grid.duet.RequestMessage.request_name",
-            index=2,
+            index=1,
             number=3,
             type=9,
             cpp_type=9,
@@ -91,7 +73,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="request_description",
             full_name="syft.grid.duet.RequestMessage.request_description",
-            index=3,
+            index=2,
             number=4,
             type=9,
             cpp_type=9,
@@ -115,8 +97,8 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=89,
-    serialized_end=241,
+    serialized_start=88,
+    serialized_end=198,
 )
 
 
@@ -126,7 +108,44 @@ _REQUESTRESPONSE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    fields=[],
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="status",
+            full_name="syft.grid.duet.RequestResponse.status",
+            index=0,
+            number=1,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
+        _descriptor.FieldDescriptor(
+            name="request_id",
+            full_name="syft.grid.duet.RequestResponse.request_id",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
+    ],
     extensions=[],
     nested_types=[],
     enum_types=[],
@@ -135,15 +154,15 @@ _REQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=243,
-    serialized_end=260,
+    serialized_start=200,
+    serialized_end=276,
 )
 
 _REQUESTMESSAGE.fields_by_name[
     "request_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_REQUESTMESSAGE.fields_by_name[
-    "tensor_id"
+_REQUESTRESPONSE.fields_by_name[
+    "request_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 DESCRIPTOR.message_types_by_name["RequestMessage"] = _REQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["RequestResponse"] = _REQUESTRESPONSE
