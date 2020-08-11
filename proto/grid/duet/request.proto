@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.grid.duet;
+
+import "proto/core/common/common_object.proto";
+
+message RequestMessage {
+    syft.core.common.UID request_id = 1;
+
+    string request_name = 3;
+    string request_description = 4;
+}
+
+message RequestResponse {
+    int32 status = 1;
+    syft.core.common.UID request_id = 2;
+
+}
+

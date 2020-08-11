@@ -61,6 +61,7 @@ class GridHttpClientConnection(ClientConnection):
         return r
 
 
+
 class Duet(DomainClient):
     def __init__(self, host: str = "127.0.0.1", port: int = 5000) -> None:
         domain_url = "http://" + host + ":" + str(port) + "/"
