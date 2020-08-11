@@ -1,5 +1,4 @@
 from typing import Tuple
-import json
 from flask import Flask
 from ...core.node.domain import Domain
 from ...core.node.domain import DomainClient
@@ -10,13 +9,6 @@ from syft.core.io.address import Address
 from syft.core.io.route import Route
 from .server import ServerThread
 import sys
-
-import binascii
-
-# TODO: remove this
-# TODO: when removed - make sure it's added back ot the list of security
-#  vulnerabilities so that it doesn't sneak back in in the future.
-import pickle
 
 import requests
 
@@ -42,7 +34,11 @@ class GridHttpClientConnection(ClientConnection):
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> requests.Response:
-        return self.send_msg(msg)
+        blob = self.send_msg(msg).text
+        print(blob)
+        response = sy.deserialize(blob=blob, from_json=True)
+        print(response.obj)
+        return response
 
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply
@@ -81,11 +77,9 @@ class Duet(DomainClient):
 
     def get_client_params(self, domain_url: str) -> Tuple[Address, str, Route]:
         text = requests.get(domain_url).text
-        binary = binascii.unhexlify(text)
-        client_metadata = pickle.loads(binary)  # nosec # TODO make less insecure
-        address = client_metadata["address"]
-        name = client_metadata["name"]
-        client_id = client_metadata["id"]
+        address, name, client_id = DomainClient.deserialize_client_metadata_from_node(
+            metadata=text
+        )
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
         route = SoloRoute(destination=client_id, connection=conn)
         return address, name, route
@@ -96,17 +90,16 @@ class Duet(DomainClient):
 
         @app.route("/")
         def get_client() -> str:  # pylint: disable=unused-variable
-            client_metadata = domain.get_metadata_for_client()
-            return pickle.dumps(client_metadata).hex()
+            return domain.get_metadata_for_client()
 
         @app.route("/" + str(domain.id.value), methods=["POST"])
         def recv() -> str:  # pylint: disable=unused-variable
             json_msg = request.get_json()
             msg = sy.deserialize(blob=json_msg, from_json=True)
-            reply = None
+
             if isinstance(msg, ImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
-                return json.dumps({"data": pickle.dumps(reply).hex()})
+                return reply.json()
             elif isinstance(msg, ImmediateSyftMessageWithoutReply):
                 domain.recv_immediate_msg_without_reply(msg=msg)
             else:

@@ -1,29 +1,32 @@
-from syft.core.common.message import SyftMessage
-from syft.core.io.address import All
+# external class imports
+from typing import Optional
 
-from ..common.node import Node
+# syft imports (sorted by length)
+from ....decorators.syft_decorator_impl import syft_decorator
+from ...io.location import SpecificLocation
+from ...common.message import SyftMessage
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
-from .client import NetworkClient
-
-from typing import Optional
 from ...io.location import Location
-from ...io.location import SpecificLocation
-from ....decorators.syft_decorator_impl import syft_decorator
+from .client import NetworkClient
+from ..common.node import Node
+from ...io.address import All
+from ...common.uid import UID
 
 
 class Network(Node):
 
-    client_type = NetworkClient
+    network: SpecificLocation
 
     child_type = Domain
+    client_type = NetworkClient
     child_type_client_type = DomainClient
 
     @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: str,
-        network: Optional[SpecificLocation] = SpecificLocation(),
+        network: SpecificLocation = SpecificLocation(),
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -35,7 +38,7 @@ class Network(Node):
         self._register_services()
 
     @property
-    def id(self):
+    def id(self) -> UID:
         return self.network.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:

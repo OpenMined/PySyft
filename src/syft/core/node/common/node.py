@@ -4,7 +4,7 @@ stuff
 """
 
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
-
+import json
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
@@ -22,7 +22,7 @@ from ...io.route import SoloRoute, Route
 
 # CORE IMPORTS
 from ...store import MemoryStore
-from ...common.object import UID
+from ...common.uid import UID
 
 # NON-CORE IMPORTS
 from ..abstract.node import AbstractNode
@@ -192,12 +192,15 @@ class Node(AbstractNode):
             vm=self.vm,
         )
 
-    def get_metadata_for_client(self) -> Dict[str, Union[Address, Optional[str], UID]]:
-        metadata: Dict[str, Union[Address, Optional[str], UID]] = {}
-        metadata["address"] = self.target_id
+    def get_metadata_for_client(self) -> str:
+
+        metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
+
+        metadata["address"] = self.target_id.json()
         metadata["name"] = self.name
-        metadata["id"] = self.id
-        return metadata
+        metadata["id"] = self.id.json()
+
+        return json.dumps(metadata)
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -209,8 +212,8 @@ class Node(AbstractNode):
         return self.store.get_objects_of_type(obj_type=Client)
 
     @property
-    def id(self) -> None:
-        NotImplementedError
+    def id(self) -> UID:
+        raise NotImplementedError
 
     @property
     def known_child_nodes(self) -> List:

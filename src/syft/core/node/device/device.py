@@ -1,28 +1,29 @@
+# external class imports
 from typing import Dict
+from typing import Optional
 from typing_extensions import final
 
-from syft.core.common.message import SyftMessage
-from syft.core.common.uid import UID
-from syft.core.io.address import All
-
-from ....decorators import syft_decorator
-from ..common.node import Node
-from ..vm.client import VirtualMachineClient
-from ..vm.vm import VirtualMachine
-from .client import DeviceClient
+# syft imports
 from .device_type.device_type import DeviceType
 from .device_type.unknown import unknown_device
-
-from typing import Optional
-from ...io.location import Location
+from ..vm.client import VirtualMachineClient
 from ...io.location import SpecificLocation
+from ...common.message import SyftMessage
+from ....decorators import syft_decorator
+from syft.core.common.uid import UID
+from syft.core.io.address import All
+from ...io.location import Location
+from ..vm.vm import VirtualMachine
+from .client import DeviceClient
+from ..common.node import Node
 
 
 @final
 class Device(Node):
 
-    client_type = DeviceClient
+    device: SpecificLocation
 
+    client_type = DeviceClient
     child_type = VirtualMachine
     child_type_client_type = VirtualMachineClient
 
@@ -32,7 +33,7 @@ class Device(Node):
         name: str,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
-        device: Optional[SpecificLocation] = SpecificLocation(),
+        device: SpecificLocation = SpecificLocation(),
         vm: Optional[Location] = None,
         device_type: DeviceType = unknown_device,
         vms: Dict[UID, VirtualMachine] = {},
@@ -46,7 +47,7 @@ class Device(Node):
         self._register_services()
 
     @property
-    def id(self):
+    def id(self) -> UID:
         return self.device.id
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:

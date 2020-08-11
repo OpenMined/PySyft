@@ -18,6 +18,7 @@ from syft.proto.core.common import (
 from syft.proto.core.store import (
     store_object_pb2 as proto_dot_core_dot_store_dot_store__object__pb2,
 )
+from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -25,10 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.node.common.action",
     syntax="proto3",
     serialized_options=None,
-    serialized_pb=b'\n/proto/core/node/common/action/save_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto"g\n\x10SaveObjectAction\x12%\n\x06obj_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x03obj\x18\x02 \x01(\x0b\x32\x1f.syft.core.store.StorableObjectb\x06proto3',
+    serialized_pb=b'\n/proto/core/node/common/action/save_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a\x1bproto/core/io/address.proto"\x8f\x01\n\x10SaveObjectAction\x12%\n\x06obj_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x03obj\x18\x02 \x01(\x0b\x32\x1f.syft.core.store.StorableObject\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
 )
 
@@ -76,6 +78,24 @@ _SAVEOBJECTACTION = _descriptor.Descriptor(
             serialized_options=None,
             file=DESCRIPTOR,
         ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.core.node.common.action.SaveObjectAction.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -85,8 +105,8 @@ _SAVEOBJECTACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=157,
-    serialized_end=260,
+    serialized_start=187,
+    serialized_end=330,
 )
 
 _SAVEOBJECTACTION.fields_by_name[
@@ -95,6 +115,9 @@ _SAVEOBJECTACTION.fields_by_name[
 _SAVEOBJECTACTION.fields_by_name[
     "obj"
 ].message_type = proto_dot_core_dot_store_dot_store__object__pb2._STORABLEOBJECT
+_SAVEOBJECTACTION.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["SaveObjectAction"] = _SAVEOBJECTACTION
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

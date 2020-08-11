@@ -121,7 +121,17 @@ class UID(Serializable):
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Message:
+    def repr_short(self) -> str:
+        """Returns a SHORT human-readable version of the ID
+
+        Return a SHORT human-readable version of the ID which
+        makes it print nicer when embedded (often alongside other
+        UID objects) within other object __repr__ methods."""
+
+        return f"..{str(self.value)[-5:]}"
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> UID_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -158,4 +168,19 @@ class UID(Serializable):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """ Return the type of protobuf object which stores a class of this type
+
+        As a part of serializatoin and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
         return UID_PB
