@@ -17,7 +17,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.crypt",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n%proto/core/crypt/signed_message.proto\x12\x0fsyft.core.crypt"B\n\rSignedMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x11\n\tsignature\x18\x02 \x01(\x0c\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x62\x06proto3',
 )
 
@@ -28,7 +27,6 @@ _SIGNEDMESSAGE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_type",
@@ -47,7 +45,6 @@ _SIGNEDMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="signature",
@@ -66,7 +63,6 @@ _SIGNEDMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="data",
@@ -85,7 +81,6 @@ _SIGNEDMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
