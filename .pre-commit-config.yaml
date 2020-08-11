@@ -32,10 +32,10 @@ repos:
             "--warn-unused-ignores",
             "--warn-redundant-casts",
             "--strict-equality",
-            # "--warn-unreachable",
-            # "--disallow-untyped-decorators",
+            "--warn-unreachable",
             # "--disallow-untyped-calls",
-            # "--disallow-untyped-defs"
+            # "--disallow-untyped-decorators",
+            # "--disallow-untyped-defs",
         ]
 -   repo: local
     hooks:

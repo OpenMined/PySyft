@@ -1,9 +1,10 @@
 from abc import ABC
-from typing import Iterable
+from typing import Iterable, List, Type
 
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from .storeable_object import StorableObject
+from ..common.storeable_object import AbstractStorableObject
 
 
 class ObjectStore(ABC):
@@ -135,4 +136,24 @@ class ObjectStore(ABC):
         """
         Clears all storage owned by the store.
         """
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def get_object(self) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def has_object(self) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def store_object(self) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def delete_object(self) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def get_objects_of_type(self, obj_type: Type) -> List[AbstractStorableObject]:
         raise NotImplementedError

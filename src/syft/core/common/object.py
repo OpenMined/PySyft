@@ -32,7 +32,7 @@ class ObjectWithID(Serializable):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, id: Optional[UID] = None, as_wrapper: bool = False):
+    def __init__(self, id: Optional[UID] = None):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.
@@ -40,16 +40,13 @@ class ObjectWithID(Serializable):
         :param id: an override which can be used to set an ID for this object
             manually. This is probably only used for deserialization.
         :type id: UID
-        :param as_wrapper: this flag determines whether the subclass can also
-            be used as a wrapper class around a non-syft object. For details on
-            why, see :py:mod:`syft.core.common.serializable.Serializable`.
 
         """
 
         if id is None:
             id = UID()
 
-        self._id = id
+        self._id: UID = id
 
         # while this class is never used as a simple wrapper,
         # it's possible that sub-classes of this class will be.
@@ -90,7 +87,17 @@ class ObjectWithID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<{ObjectWithID.__name__}:{self.id.value}>"
+        return f"<{type(self).__name__}:{self.id.value}>"
+
+    @syft_decorator(typechecking=True)
+    def repr_short(self) -> str:
+        """Returns a SHORT human-readable version of SpecificLocation
+
+        Return a SHORT human-readable version of the ID which
+        makes it print nicer when embedded (often alongside other
+        UID objects) within other object __repr__ methods."""
+
+        return f"<{type(self).__name__}:{self.id.repr_short()}>"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
@@ -129,4 +136,20 @@ class ObjectWithID(Serializable):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """ Return the type of protobuf object which stores a class of this type
+
+        As a part of serializatoin and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
         return ObjectWithID_PB

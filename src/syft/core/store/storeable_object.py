@@ -1,5 +1,5 @@
 import pydoc
-from typing import List, Optional
+from typing import List, Optional, Type
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.deserialize import _deserialize
@@ -129,7 +129,7 @@ class StorableObject(AbstractStorableObject):
         return _deserialize(blob=proto)
 
     @staticmethod
-    def get_data_protobuf_schema() -> None:
+    def get_data_protobuf_schema() -> Optional[Type]:
         return None
 
     @staticmethod
@@ -138,6 +138,21 @@ class StorableObject(AbstractStorableObject):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """ Return the type of protobuf object which stores a class of this type
+
+        As a part of serializatoin and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
         return StorableObject_PB
 
     def __repr__(self):

@@ -1,4 +1,5 @@
 from typing import List
+from typing import Tuple
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -11,12 +12,12 @@ from ....lib import lib_ast
 from ...io.route import Route
 from ..abstract.node import AbstractNodeClient
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-
+from ...common.serde.deserialize import _deserialize
 from ...io.location import Location
 from typing import Optional
+import json
 
 
-# TODO: Fix AbstractNode and LocationAwareObject being incompatible
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -43,6 +44,18 @@ class Client(AbstractNodeClient):
 
         self.install_supported_frameworks()
 
+    @staticmethod
+    def deserialize_client_metadata_from_node(
+        metadata: str,
+    ) -> Tuple[Location, str, Location]:
+
+        m_dict = json.loads(metadata)
+        target_id = _deserialize(blob=m_dict["address"], from_json=True)
+        name = m_dict["name"]
+        id = _deserialize(blob=m_dict["id"], from_json=True)
+
+        return target_id, name, id
+
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
         self.lib_ast.set_client(self)
@@ -57,10 +70,37 @@ class Client(AbstractNodeClient):
     def register(self, client: AbstractNodeClient) -> None:
         msg = RegisterChildNodeMessage(child_node_client=client, address=self)
 
-        client.network = self.network if self.network is not None else client.network
-        client.domain = self.domain if self.domain is not None else client.domain
-        client.device = self.device if self.device is not None else client.device
-        client.vm = self.vm if self.vm is not None else client.vm
+        if self.network is not None:
+            client.network = (
+                self.network
+                if self.network is not None  # type: ignore # nested "is not None"
+                else client.network
+            )
+
+        # QUESTION
+        # if the client is a network and the domain is not none this will set it
+        # on the network causing an exception
+        # but we can't check if the client is a NetworkClient here because
+        # this is a superclass of NetworkClient
+        # Remove: if self.domain is not None:
+        # then see the test line node_test.py:
+        # bob_network_client.register(client=bob_domain_client)
+        if self.domain is not None:
+            client.domain = (
+                self.domain
+                if self.domain is not None  # type: ignore # nested "is not None"
+                else client.domain
+            )
+
+        if self.device is not None:
+            client.device = (
+                self.device
+                if self.device is not None  # type: ignore # nested "is not None"
+                else client.device
+            )
+
+        if self.vm is not None:
+            client.vm = self.vm
 
         self.send_immediate_msg_without_reply(msg=msg)
 

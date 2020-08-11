@@ -15,7 +15,7 @@ class Pointer:
 
     def get(self):
         obj_msg = GetObjectAction(
-            obj_id=self.id_at_location, address=self.location, reply_to=None
+            obj_id=self.id_at_location, address=self.location, reply_to=self.location
         )
         return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
 

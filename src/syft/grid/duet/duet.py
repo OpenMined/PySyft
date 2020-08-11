@@ -1,22 +1,18 @@
-from typing import Tuple
-import json
+from typing import Tuple, Optional
 from flask import Flask
+
+from nacl.signing import SigningKey, VerifyKey
+
 from ...core.node.domain import Domain
 from ...core.node.domain import DomainClient
 
 from flask import request
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
+from syft.core.io.location import SpecificLocation
 from syft.core.io.route import Route
 from .server import ServerThread
 import sys
-
-import binascii
-
-# TODO: remove this
-# TODO: when removed - make sure it's added back ot the list of security
-#  vulnerabilities so that it doesn't sneak back in in the future.
-import pickle
 
 import requests
 
@@ -42,7 +38,11 @@ class GridHttpClientConnection(ClientConnection):
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> requests.Response:
-        return self.send_msg(msg)
+        blob = self.send_msg(msg).text
+        print(blob)
+        response = sy.deserialize(blob=blob, from_json=True)
+        print(response.obj)
+        return response
 
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply
@@ -62,18 +62,37 @@ class GridHttpClientConnection(ClientConnection):
 
 
 class Duet(DomainClient):
-    def __init__(self, host: str = "127.0.0.1", port: int = 5000) -> None:
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 5000, id: Optional[str] = None
+    ) -> None:
         domain_url = "http://" + host + ":" + str(port) + "/"
-        self.start_server(host=host, port=port)
-        print(f"♫♫♫ > URL:{domain_url}")
 
-        time.sleep(0.5)
-        print("♫♫♫ > Connecting...")
+        # generate a signing key
+        self.signing_key = SigningKey.generate()
+        self.verify_key = self.signing_key.verify_key
 
-        time.sleep(0.5)
+        # start a node on host and port
+        if id is None:
+            # set the pub_key as the root_key of the server so this user will be root
+            self.start_server(host=host, port=port, root_key=self.verify_key)
+            print(f"♫♫♫ > URL:{domain_url}")
+
+            time.sleep(0.5)
+            print("♫♫♫ > Connecting...")
+
+            time.sleep(0.5)
+
         address, name, route = self.get_client_params(domain_url=domain_url)
+
+        # dont start a node but connect to it instead
+        if id is not None:
+            address = SpecificLocation(id=UID.from_string(value=id))
+
         super().__init__(domain=address, name=name, routes=[route])
         print("♫♫♫ > Connected!")
+
+    def send_signed(self) -> None:
+        self.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=self.domain))
 
     @property
     def id(self) -> UID:
@@ -81,32 +100,30 @@ class Duet(DomainClient):
 
     def get_client_params(self, domain_url: str) -> Tuple[Address, str, Route]:
         text = requests.get(domain_url).text
-        binary = binascii.unhexlify(text)
-        client_metadata = pickle.loads(binary)  # nosec # TODO make less insecure
-        address = client_metadata["address"]
-        name = client_metadata["name"]
-        client_id = client_metadata["id"]
+        address, name, client_id = DomainClient.deserialize_client_metadata_from_node(
+            metadata=text
+        )
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
         route = SoloRoute(destination=client_id, connection=conn)
         return address, name, route
 
-    def start_server(self, host: str, port: int) -> None:
+    def start_server(self, host: str, port: int, root_key: VerifyKey) -> None:
         app = Flask(__name__)
-        domain = Domain(name="duet")
+        domain = Domain(name="duet", root_key=root_key)
+        print(f"Domain with Root Key: {domain.root_key}")
 
         @app.route("/")
         def get_client() -> str:  # pylint: disable=unused-variable
-            client_metadata = domain.get_metadata_for_client()
-            return pickle.dumps(client_metadata).hex()
+            return domain.get_metadata_for_client()
 
         @app.route("/" + str(domain.id.value), methods=["POST"])
         def recv() -> str:  # pylint: disable=unused-variable
             json_msg = request.get_json()
             msg = sy.deserialize(blob=json_msg, from_json=True)
-            reply = None
+
             if isinstance(msg, ImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
-                return json.dumps({"data": pickle.dumps(reply).hex()})
+                return reply.json()
             elif isinstance(msg, ImmediateSyftMessageWithoutReply):
                 domain.recv_immediate_msg_without_reply(msg=msg)
             else:

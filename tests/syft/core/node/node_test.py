@@ -1,7 +1,7 @@
 import syft as sy
 
 
-def test_send_message_from_vm_client_to_vm():
+def test_send_message_from_vm_client_to_vm() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
@@ -13,7 +13,7 @@ def test_send_message_from_vm_client_to_vm():
     )
 
 
-def test_send_message_from_device_client_to_device():
+def test_send_message_from_device_client_to_device() -> None:
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
 
@@ -22,7 +22,7 @@ def test_send_message_from_device_client_to_device():
     )
 
 
-def test_register_vm_on_device():
+def test_register_vm_on_device() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
@@ -37,7 +37,7 @@ def test_register_vm_on_device():
     assert bob_vm_client.device is not None
 
 
-def test_send_message_from_device_client_to_vm():
+def test_send_message_from_device_client_to_vm() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
 
@@ -55,7 +55,7 @@ def test_send_message_from_device_client_to_vm():
     )
 
 
-def test_send_message_from_domain_client_to_vm():
+def test_send_message_from_domain_client_to_vm() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
@@ -74,7 +74,7 @@ def test_send_message_from_domain_client_to_vm():
     )
 
 
-def test_send_message_from_network_client_to_vm():
+def test_send_message_from_network_client_to_vm() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
