@@ -1,3 +1,5 @@
+from typing import Optional, Type
+
 from ..generic import ObjectConstructor
 from syft.proto.lib.numpy.tensor_pb2 import TensorProto
 from syft.core.store.storeable_object import StorableObject
@@ -52,7 +54,7 @@ class TorchTensorWrapper(StorableObject):
         return th.tensor(data)
 
     @staticmethod
-    def get_data_protobuf_schema() -> type:
+    def get_data_protobuf_schema() -> Optional[Type]:
         return TensorProto
 
     @staticmethod
