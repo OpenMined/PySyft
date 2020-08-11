@@ -36,7 +36,9 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.proto(), address=self.address.proto(), obj=self.obj.proto()
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            obj=self.obj.serialize(),
         )
 
     @staticmethod
@@ -87,7 +89,7 @@ class GetObjectAction(ImmediateActionWithReply):
         self.obj_id = obj_id
 
     def execute_action(self, node: AbstractNode) -> ImmediateSyftMessageWithoutReply:
-        obj = node.store[self.obj_id]
+        obj = node.store[self.obj_id].data
         msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
         # TODO: send EventualActionWithoutReply to delete the object at the node's
