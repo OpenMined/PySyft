@@ -45,7 +45,9 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
     @staticmethod
-    def init_client_from_metadata(metadata: str) -> Tuple[Location, str, Location]:
+    def deserialize_client_metadata_from_node(
+        metadata: str,
+    ) -> Tuple[Location, str, Location]:
 
         m_dict = json.loads(metadata)
         target_id = _deserialize(blob=m_dict["address"], from_json=True)

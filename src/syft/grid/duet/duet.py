@@ -11,11 +11,6 @@ from syft.core.io.route import Route
 from .server import ServerThread
 import sys
 
-# TODO: remove this
-# TODO: when removed - make sure it's added back ot the list of security
-#  vulnerabilities so that it doesn't sneak back in in the future.
-import pickle
-
 import requests
 
 from syft.core.io.connection import ClientConnection
@@ -79,7 +74,9 @@ class Duet(DomainClient):
 
     def get_client_params(self, domain_url: str) -> Tuple[Address, str, Route]:
         text = requests.get(domain_url).text
-        address, name, client_id = DomainClient.init_client_from_metadata(metadata=text)
+        address, name, client_id = DomainClient.deserialize_client_metadata_from_node(
+            metadata=text
+        )
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
         route = SoloRoute(destination=client_id, connection=conn)
         return address, name, route
@@ -96,10 +93,10 @@ class Duet(DomainClient):
         def recv() -> str:  # pylint: disable=unused-variable
             json_msg = request.get_json()
             msg = sy.deserialize(blob=json_msg, from_json=True)
-            reply = None
+
             if isinstance(msg, ImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
-                return json.dumps({"data": pickle.dumps(reply).hex()})
+                return json.dumps({"data": reply.json()})
             elif isinstance(msg, ImmediateSyftMessageWithoutReply):
                 domain.recv_immediate_msg_without_reply(msg=msg)
             else:
