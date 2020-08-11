@@ -160,6 +160,24 @@ class FixedPrecisionTensor(AbstractTensor):
             return self
 
     @overloaded.method
+    def mod(self, _self, divisor):
+        """
+        Define the modulo operation over object instances.
+        """
+        if isinstance(divisor, (int, float)):
+            scaled_divisor = int(divisor * self.base ** self.precision_fractional)
+            if isinstance(_self, AdditiveSharingTensor):
+                return getattr(_self, "mod")(scaled_divisor)
+            else:
+                return getattr(_self, "fmod")(scaled_divisor)
+
+        response = getattr(_self, "fmod")(divisor)
+
+        return response
+
+    __mod__ = mod
+
+    @overloaded.method
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
@@ -714,6 +732,11 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def fmod(self, other):
+            return self.__mod__(other)
+
+        module.fmod = fmod
+
         def add(self, other):
             return self.__add__(other)
 
