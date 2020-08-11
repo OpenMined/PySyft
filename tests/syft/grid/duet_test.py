@@ -10,20 +10,27 @@ def test_duet():
     duet.stop()
     assert "ObjectWithID" in f"{obj_id}"
 
+
 def test_request_message_creation():
-    obj = RequestMessage(request_name="request", request_description="request description")
+    obj = RequestMessage(
+        request_name="request", request_description="request description"
+    )
 
     assert obj.request_name == "request"
     assert obj.request_description == "request description"
 
+
 def test_request_message_serde():
-    obj = RequestMessage(request_name="request", request_description="request description")
+    obj = RequestMessage(
+        request_name="request", request_description="request description"
+    )
     serialized_request = sy.serialize(obj=obj)
     new_obj = sy.deserialize(blob=serialized_request)
 
     assert obj.request_name == new_obj.request_name
     assert obj.request_description == new_obj.request_description
     assert obj.request_id == new_obj.request_id
+
 
 def test_request_response():
     id = UID()
@@ -32,6 +39,7 @@ def test_request_response():
 
     assert obj.status == status
     assert obj.request_id == id
+
 
 def test_request_response_serde():
     obj = RequestResponse(status=RequestStatus.Pending, request_id=UID())

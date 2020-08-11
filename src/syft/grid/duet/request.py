@@ -69,7 +69,7 @@ class RequestResponse(Serializable):
     def _proto2object(proto: RequestResponse_PB) -> "RequestResponse":
         request_response = RequestResponse(
             status=RequestStatus(proto.status),
-            request_id= deserialize(blob=proto.request_id)
+            request_id=deserialize(blob=proto.request_id),
         )
         return request_response
 
@@ -87,7 +87,9 @@ class RequestService:
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: Union[RequestMessage, RequestResponse]) -> None:
+    def process(
+        node: AbstractNode, msg: Union[RequestMessage, RequestResponse]
+    ) -> None:
         if isinstance(node, RequestMessage):
             pass
 
