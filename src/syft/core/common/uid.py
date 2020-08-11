@@ -64,12 +64,21 @@ class UID(Serializable):
         if value is None:
 
             # for more info on how this UUID is generated:
-            # https://docs.python.org/2/library/uuid.html
+            # https://docs.python.org/3/library/uuid.html
             value = uuid.uuid4()
 
         # save the ID's value. Note that this saves the uuid value
         # itself instead of saving the
         self.value = value
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def from_string(value: str) -> "UID":
+        try:
+            return UID(value=uuid.UUID(value))
+        except Exception as e:
+            print(f"Unable to convert {value} to UUID. {e}")
+            raise e
 
     @syft_decorator(typechecking=True)
     def __hash__(self) -> int:
