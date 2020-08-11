@@ -11,8 +11,6 @@ from syft.core.io.route import Route
 from .server import ServerThread
 import sys
 
-import binascii
-
 # TODO: remove this
 # TODO: when removed - make sure it's added back ot the list of security
 #  vulnerabilities so that it doesn't sneak back in in the future.
@@ -81,11 +79,7 @@ class Duet(DomainClient):
 
     def get_client_params(self, domain_url: str) -> Tuple[Address, str, Route]:
         text = requests.get(domain_url).text
-        binary = binascii.unhexlify(text)
-        client_metadata = pickle.loads(binary)  # nosec # TODO make less insecure
-        address = client_metadata["address"]
-        name = client_metadata["name"]
-        client_id = client_metadata["id"]
+        address, name, client_id = DomainClient.init_client_from_metadata(metadata=text)
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
         route = SoloRoute(destination=client_id, connection=conn)
         return address, name, route
@@ -96,8 +90,7 @@ class Duet(DomainClient):
 
         @app.route("/")
         def get_client() -> str:  # pylint: disable=unused-variable
-            client_metadata = domain.get_metadata_for_client()
-            return pickle.dumps(client_metadata).hex()
+            return domain.get_metadata_for_client()
 
         @app.route("/" + str(domain.id.value), methods=["POST"])
         def recv() -> str:  # pylint: disable=unused-variable

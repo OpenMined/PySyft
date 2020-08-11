@@ -4,7 +4,7 @@ stuff
 """
 
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
-
+import json
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
@@ -190,14 +190,15 @@ class Node(AbstractNode):
             vm=self.vm,
         )
 
-    def get_metadata_for_client(
-        self,
-    ) -> Dict[str, Union[Address, Optional[str], Location]]:
+    def get_metadata_for_client(self) -> str:
+
         metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
-        metadata["address"] = self.target_id
+
+        metadata["address"] = self.target_id.json()
         metadata["name"] = self.name
-        metadata["id"] = self.id
-        return metadata
+        metadata["id"] = self.id.json()
+
+        return json.dumps(metadata)
 
     @property
     def known_nodes(self) -> List[Client]:

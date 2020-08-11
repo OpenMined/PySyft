@@ -1,4 +1,5 @@
 from typing import List
+from typing import Tuple
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -11,9 +12,10 @@ from ....lib import lib_ast
 from ...io.route import Route
 from ..abstract.node import AbstractNodeClient
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-
+from ...common.serde.deserialize import _deserialize
 from ...io.location import Location
 from typing import Optional
+import json
 
 
 class Client(AbstractNodeClient):
@@ -41,6 +43,16 @@ class Client(AbstractNodeClient):
         self.default_route_index = 0
 
         self.install_supported_frameworks()
+
+    @staticmethod
+    def init_client_from_metadata(metadata: str) -> Tuple[Location, str, Location]:
+
+        m_dict = json.loads(metadata)
+        target_id = _deserialize(blob=m_dict["address"], from_json=True)
+        name = m_dict["name"]
+        id = _deserialize(blob=m_dict["id"], from_json=True)
+
+        return target_id, name, id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
