@@ -1,2 +1,2 @@
-from .duet import Duet
-from .request import RequestService, RequestResponse, RequestMessage
+from .duet import Duet # noqa: F401
+from .request import RequestService, RequestResponse, RequestMessage # noqa: F401
