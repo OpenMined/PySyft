@@ -1,5 +1,5 @@
 import pydoc
-from typing import List, Optional
+from typing import List, Optional, Type
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.deserialize import _deserialize
@@ -129,7 +129,7 @@ class StorableObject(AbstractStorableObject):
         return _deserialize(blob=proto)
 
     @staticmethod
-    def get_data_protobuf_schema() -> None:
+    def get_data_protobuf_schema() -> Optional[Type]:
         return None
 
     @staticmethod
