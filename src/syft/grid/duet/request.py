@@ -4,6 +4,7 @@ from ...proto.grid.duet.request_pb2 import RequestMessage as RequestMessage_PB
 from ...proto.grid.duet.request_pb2 import RequestResponse as RequestResponse_PB
 from typing import List
 
+
 class RequestMessage(Serializable):
     def __init__(self, request_name: str, request_description: str):
         self.status = None
@@ -32,7 +33,7 @@ class RequestMessage(Serializable):
 
 class RequestResponse(Serializable):
     def __init__(self, status, request_id, data):
-        self.status =status
+        self.status = status
         self.data = data
         self.request_id = request_id
 
@@ -45,9 +46,7 @@ class RequestResponse(Serializable):
     @staticmethod
     def _proto2object(proto) -> "RequestResponse":
         return RequestResponse(
-            status=proto.status,
-            request_id=proto.request_id,
-            data=proto.status
+            status=proto.status, request_id=proto.request_id, data=proto.status
         )
 
     @staticmethod
@@ -67,4 +66,3 @@ class RequestService:
 
         if isinstance(node, RequestResponse):
             pass
-
