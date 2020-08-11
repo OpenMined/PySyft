@@ -604,6 +604,8 @@ class AdditiveSharingTensor(AbstractTensor):
          - Divide power by 2 and multiply base to itself (if the power is even)
          - Decrement power by 1 to make it even and then follow the first step
         """
+        if power < 0:
+            raise RuntimeError("Integers to negative integer powers are not allowed.")
         base = self
 
         result = 1

@@ -381,6 +381,8 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             power (int): the exponent supposed to be an integer > 0
         """
+        if power < 0:
+            raise RuntimeError("Integers to negative integer powers are not allowed.")
         base = self
 
         result = None
