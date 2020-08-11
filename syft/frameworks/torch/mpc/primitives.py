@@ -218,12 +218,6 @@ class PrimitiveStorage:
         """
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
-        if op == "eq":
-            fss_class = sy.frameworks.torch.mpc.fss.DPF
-        elif op == "comp":
-            fss_class = sy.frameworks.torch.mpc.fss.DIF
-        else:
-            raise ValueError(f"type_op {op} not valid")
 
         n = sy.frameworks.torch.mpc.fss.n
 
@@ -231,7 +225,7 @@ class PrimitiveStorage:
             assert (
                 n_party == 2
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
-            alpha, s_00, s_01, *CW = fss_class.keygen(n_values=n_instances)
+            alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.fss.keygen(n_values=n_instances, op=op)
             # simulate sharing TODO clean this
             mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
