@@ -1,13 +1,19 @@
-from typing import Dict, Any, Tuple, Optional
-from ...abstract.node import AbstractNode
+# external class imports
+from typing import Any
+from typing import Dict
+from typing import Tuple
+from typing import Optional
+from nacl.signing import VerifyKey
 from .common import ImmediateActionWithoutReply
-
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from ....common.serde.deserialize import _deserialize
-from ....store.storeable_object import StorableObject
-from .....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft imports
+from ....common.uid import UID
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from ....store.storeable_object import StorableObject
+from ....common.serde.deserialize import _deserialize
+from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -33,7 +39,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         print("id at location:" + str(self.id_at_location))
 
-    def execute_action(self, node: AbstractNode) -> None:
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # print(self.path)
         # print(self._self)
         # print(self.args)
