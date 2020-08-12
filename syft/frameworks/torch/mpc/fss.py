@@ -56,7 +56,6 @@ def keygen(n_values, op):
         return DPF.keygen(n_values=n_values)
     elif op == "comp":
         if n_values > MULTI_LIMIT:
-            # print('MULTI EVAL', numel, x_masked.owner)
             multiprocessing_args = []
             slice_size = math.ceil(n_values / N_CORES)
             for j in range(N_CORES):
