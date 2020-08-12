@@ -1,10 +1,10 @@
 # external class imports
-from typing import Optional
+from typing import Optional, Union
 
 # syft imports (sorted by length)
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.location import SpecificLocation
-from ...common.message import SyftMessage
+from ...common.message import SyftMessage, SignedMessage
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from ...io.location import Location
@@ -41,7 +41,7 @@ class Network(Node):
     def id(self) -> UID:
         return self.network.id
 
-    def message_is_for_me(self, msg: SyftMessage) -> bool:
+    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return (
             msg.address.network.id in (self.id, All(),) and msg.address.domain is None
         )

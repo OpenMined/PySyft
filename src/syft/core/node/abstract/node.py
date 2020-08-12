@@ -8,7 +8,7 @@ from ...store import ObjectStore
 from ...common.message import (
     ImmediateSyftMessageWithoutReply,
     EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
+    SignedMessage,
 )
 
 
@@ -42,9 +42,10 @@ class AbstractNode(Address):
     ) -> None:
         raise NotImplementedError
 
-    def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
+    def recv_immediate_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        raise NotImplementedError
+
+    def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError
 
     @property

@@ -52,7 +52,9 @@ def test_duet_send_and_get():
 
     assert xp.id_at_location == x.id
 
-    y = xp.get()
-    assert (x == y).all()
+    yp = xp + xp
+
+    y = yp.get()
+    assert ((x + x) == y).all()
 
     duet.stop()

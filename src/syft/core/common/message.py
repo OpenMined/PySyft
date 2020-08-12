@@ -14,7 +14,7 @@ from syft.core.io.address import Address
 import syft as sy
 
 from ...util import get_fully_qualified_name
-from ...proto.core.crypt.signed_message_pb2 import SignedMessage as SignedMessage_PB
+from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from syft.decorators.syft_decorator_impl import syft_decorator
 
 
@@ -22,38 +22,64 @@ class SignedMessage(Serializable):
 
     obj_type: str
     signature: bytes
+    verify_key: bytes
     message: bytes
 
+    """
+    valid = msg.is_valid()
+            inner_msg = self.inner_message(allow_invalid=True)
+    """
+
     @syft_decorator(typechecking=True)
-    def verified_message(self, verify_key: VerifyKey) -> Optional[Serializable]:
+    def is_valid(self) -> bool:
+        valid = False
         try:
-            verified_data = verify_key.verify(self.data, self.signature)
+            verify_key: VerifyKey = VerifyKey(self.verify_key)
+            _ = verify_key.verify(self.data, self.signature)
 
-            # QUESTION: Is there a better way to do this?
-            module_parts = self.obj_type.split(".")
-            klass = module_parts.pop()
-            obj_type = getattr(sys.modules[".".join(module_parts)], klass)
+            valid = True
+        except Exception:
+            # not valid
+            pass
 
-            # get verified data payload
-            obj = sy.deserialize(blob=verified_data, from_binary=True)
+        return valid
 
-            # QUESTION: This is probably not needed!?
+    @syft_decorator(typechecking=True)
+    def inner_message(self, allow_invalid: bool = False) -> Optional[Serializable]:
+        data = self.data
+
+        # only use the data if the verification passes first
+        if allow_invalid is False:
+            try:
+                verify_key: VerifyKey = VerifyKey(self.verify_key)
+                data = verify_key.verify(self.data, self.signature)
+
+                # QUESTION: Is there a better way to do this?
+                module_parts = self.obj_type.split(".")
+                klass = module_parts.pop()
+                obj_type = getattr(sys.modules[".".join(module_parts)], klass)
+            except BadSignatureError as e:
+                err = f"SignedMessage failed to verify signature with key: {verify_key}. {e}"
+                raise BadSignatureError(err)
+
+        # get verified data payload
+        obj = sy.deserialize(blob=data, from_binary=True)
+
+        if allow_invalid is False:
             if type(obj) != obj_type:
                 raise TypeError(
                     f"Expected type inside SignedMessage: {obj_type}. Got {type(obj)}"
                 )
 
-            return obj
-        except BadSignatureError as e:
-            err = (
-                f"SignedMessage failed to verify signature with key: {verify_key}. {e}"
-            )
-            raise BadSignatureError(err)
+        return obj
 
-    def __init__(self, obj_type: str, signature: bytes, message: bytes) -> None:
+    def __init__(
+        self, obj_type: str, signature: bytes, verify_key: bytes, message: bytes
+    ) -> None:
         super().__init__()
         self.obj_type = obj_type
         self.signature = signature
+        self.verify_key = verify_key
         self.data = message
 
     @syft_decorator(typechecking=True)
@@ -62,6 +88,7 @@ class SignedMessage(Serializable):
         proto = SignedMessage_PB()
         proto.obj_type = self.obj_type
         proto.signature = self.signature
+        proto.verify_key = self.verify_key
         proto.data = self.data
 
         return proto
@@ -70,7 +97,10 @@ class SignedMessage(Serializable):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: SignedMessage_PB) -> "SignedMessage":
         return SignedMessage(
-            obj_type=proto.obj_type, signature=proto.signature, message=proto.data,
+            obj_type=proto.obj_type,
+            signature=proto.signature,
+            verify_key=proto.verify_key,
+            message=proto.data,
         )
 
     @staticmethod
@@ -88,10 +118,11 @@ class SyftMessage(AbstractMessage):
         super().__init__(id=msg_id)
 
     def sign_message(self, signing_key: SigningKey) -> SignedMessage:
-        signed_message = signing_key.sign(self.serialize())
+        signed_message = signing_key.sign(self.serialize(to_binary=True))
         return SignedMessage(
             obj_type=get_fully_qualified_name(obj=self),
             signature=signed_message.signature,
+            verify_key=bytes(signing_key.verify_key),
             message=signed_message.message,
         )
 

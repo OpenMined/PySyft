@@ -1,11 +1,11 @@
 # external class imports
-from typing import Optional
+from typing import Optional, Union
 from nacl.signing import VerifyKey
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.location import SpecificLocation
-from ...common.message import SyftMessage
+from ...common.message import SyftMessage, SignedMessage
 from ..device import Device, DeviceClient
 from ...io.location import Location
 from .client import DomainClient
@@ -51,5 +51,5 @@ class Domain(Node):
     def id(self) -> UID:
         return self.domain.id
 
-    def message_is_for_me(self, msg: SyftMessage) -> bool:
+    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
