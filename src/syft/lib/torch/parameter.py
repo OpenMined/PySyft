@@ -4,7 +4,6 @@ from syft.proto.lib.torch.parameter_pb2 import ParameterProto
 from syft.lib.torch.tensor_util import protobuf_tensor_serializer
 from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
 from forbiddenfruit import curse
-from google.protobuf.message import Message
 from syft.core.store.storeable_object import StorableObject
 
 import torch as th
