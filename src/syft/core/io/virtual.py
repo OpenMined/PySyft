@@ -5,19 +5,18 @@ Replacing this object with an actual network connection object
 execute the exact same functionality but do so over a network"""
 
 from typing_extensions import final
+from typing import Union
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
+    SignedMessage,
 )
 
 from ...decorators import syft_decorator
 from ..node.abstract.node import AbstractNode
 from .connection import ClientConnection, ServerConnection
-
-# QUESTION: is this used anywhere?
-# known_objects = {}
 
 
 @final
@@ -28,7 +27,7 @@ class VirtualServerConnection(ServerConnection):
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
+        self, msg: Union[ImmediateSyftMessageWithReply, SignedMessage]
     ) -> ImmediateSyftMessageWithoutReply:
         return self.node.recv_immediate_msg_with_reply(msg=msg)
 
@@ -43,6 +42,9 @@ class VirtualServerConnection(ServerConnection):
         self, msg: EventualSyftMessageWithoutReply
     ) -> None:
         self.node.recv_eventual_msg_without_reply(msg=msg)
+
+    def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        return self.node.recv_signed_msg_with_reply(msg=msg)
 
 
 @final
@@ -67,6 +69,10 @@ class VirtualClientConnection(ClientConnection):
         self, msg: EventualSyftMessageWithoutReply
     ) -> None:
         return self.server.recv_eventual_msg_without_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        return self.server.recv_signed_msg_with_reply(msg=msg)
 
 
 @syft_decorator(typechecking=True)

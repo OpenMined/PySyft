@@ -1,6 +1,5 @@
 # external class imports
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional, Union
 from typing_extensions import final
 
 # syft imports
@@ -9,6 +8,7 @@ from .device_type.unknown import unknown_device
 from ..vm.client import VirtualMachineClient
 from ...io.location import SpecificLocation
 from ...common.message import SyftMessage
+from ...common.message import SignedMessage
 from ....decorators import syft_decorator
 from syft.core.common.uid import UID
 from syft.core.io.address import All
@@ -51,5 +51,5 @@ class Device(Node):
         return self.device.id
 
     @syft_decorator(typechecking=True)
-    def message_is_for_me(self, msg: SyftMessage) -> bool:
+    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return msg.address.device.id in (self.id, All(),) and msg.address.vm is None

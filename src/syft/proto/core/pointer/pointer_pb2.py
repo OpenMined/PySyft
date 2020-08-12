@@ -23,6 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.pointer",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n proto/core/pointer/pointer.proto\x12\x11syft.core.pointer\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9b\x01\n\x07Pointer\x12"\n\x1apoints_to_object_with_path\x18\x01 \x01(\t\x12\x14\n\x0cpointer_name\x18\x02 \x01(\t\x12-\n\x0eid_at_location\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UID\x12\'\n\x08location\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
@@ -37,6 +38,7 @@ _POINTER = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="points_to_object_with_path",
@@ -55,6 +57,7 @@ _POINTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="pointer_name",
@@ -73,6 +76,7 @@ _POINTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="id_at_location",
@@ -91,6 +95,7 @@ _POINTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="location",
@@ -109,6 +114,7 @@ _POINTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
