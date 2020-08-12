@@ -135,7 +135,12 @@ class Client(AbstractNodeClient):
 
         signed_msg = msg.sign(signing_key=self.signing_key)
 
-        return self.routes[route_index].send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.routes[route_index].send_immediate_msg_with_reply(msg=signed_msg)
+
+        if response.is_valid:
+            return response.message
+
+        raise Exception("Response was signed by a fake key or was corrupted in transit.")
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
@@ -145,7 +150,7 @@ class Client(AbstractNodeClient):
 
         signed_msg = msg.sign(signing_key=self.signing_key)
 
-        return self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
+        self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -155,14 +160,7 @@ class Client(AbstractNodeClient):
 
         signed_msg = msg.sign(signing_key=self.signing_key)
 
-        return self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
-
-    @syft_decorator(typechecking=True)
-    def send_signed_msg_with_reply(
-        self, msg: SignedMessage, route_index: int = 0
-    ) -> SignedMessage:
-        route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_signed_msg_with_reply(msg=msg)
+        self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

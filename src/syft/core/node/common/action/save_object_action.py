@@ -28,7 +28,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
-        node.store.store(obj=StorableObject(id=self.obj.id, data=self.obj))  # type: ignore
+        node.store.store(obj=StorableObject(id=self.obj.id,
+                                            data=self.obj,
+                                            read_permissions=set([verify_key, node.verify_key])))  # type: ignore
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:

@@ -26,7 +26,9 @@ class Pointer(Serializable):
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location, address=self.location, reply_to=self.location
         )
-        return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
+        response = self.location.send_immediate_msg_with_reply(msg=obj_msg)
+
+        return response.obj
 
     # def __del__(self):
     #     print("Deleted:" + str(self))

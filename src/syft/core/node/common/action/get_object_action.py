@@ -93,7 +93,13 @@ class GetObjectAction(ImmediateActionWithReply):
         self.obj_id = obj_id
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> ImmediateSyftMessageWithoutReply:
-        obj = node.store[self.obj_id].data
+
+        storeable_object = node.store[self.obj_id]
+
+        if verify_key not in storeable_object.read_permissions:
+            raise Exception("You do not have permission to .get() this tensor. Please submit a request.")
+
+        obj = storeable_object.data
         msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
         # TODO: send EventualActionWithoutReply to delete the object at the node's

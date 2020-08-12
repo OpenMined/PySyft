@@ -1,5 +1,6 @@
 import pydoc
 from typing import List, Optional, Type
+from typing import Set
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.deserialize import _deserialize
@@ -8,7 +9,7 @@ from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
-
+from nacl.signing import VerifyKey
 
 class StorableObject(AbstractStorableObject):
     """
@@ -44,11 +45,16 @@ class StorableObject(AbstractStorableObject):
         data: object,
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
+        read_permissions: Optional[Set[VerifyKey]] = set()
     ):
         self.id = id
         self.data = data
         self.description = description
         self.tags = tags
+
+        # the set of "verify key" objects corresponding to people
+        # who are allowed to call .get() and download this object.
+        self.read_permissions = read_permissions
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
