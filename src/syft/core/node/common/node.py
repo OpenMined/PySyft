@@ -53,11 +53,6 @@ from .service.obj_action_service import (
 )
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
-from .service.authorized_service import (
-    HelloRootServiceWithReply,
-    ImmediateAuthorizedServiceWithReply,
-    ImmediateAuthorizedMessageWithReply,
-)
 from .service.node_service import ImmediateNodeServiceWithReply
 
 
@@ -193,18 +188,10 @@ class Node(AbstractNode):
         )
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
-        # Authorized Services
-        self.authorized_msg_with_reply_router: Dict[
-            Type[ImmediateAuthorizedMessageWithReply],
-            ImmediateAuthorizedServiceWithReply,
-        ] = {}
-
         self.signed_message_with_reply_forwarding_service = (
             SignedMessageWithReplyForwardingService()
         )
 
-        self.authorized_services_with_reply: List[Any] = []
-        self.authorized_services_with_reply.append(HelloRootServiceWithReply)
 
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
@@ -223,6 +210,10 @@ class Node(AbstractNode):
         else:
             self.verify_key = verify_key
 
+        # PERMISSION REGISTRY:
+        self.root_verify_key = None
+        self.guest_verify_key_registry = set()
+
     @syft_decorator(typechecking=True)
     def get_client(self, routes: List[Route] = []) -> Client:
         if not len(routes):
@@ -236,6 +227,12 @@ class Node(AbstractNode):
             device=self.device,
             vm=self.vm,
         )
+
+    @syft_decorator(typechecking=True)
+    def get_root_client(self, routes: List[Route] = []) -> Client:
+        client = self.get_client(routes=routes)
+        self.root_verify_key = client.verify_key
+        return client
 
     def get_metadata_for_client(self) -> str:
         metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
@@ -298,24 +295,27 @@ class Node(AbstractNode):
 
         if self.message_is_for_me(msg=msg):
 
-            inner_msg = msg.message
+            if not msg.is_valid:
+                raise Exception("Message is not valid.")
 
             try:  # we use try/except here because it's marginally faster in Python
-                return router[type(inner_msg)].process(node=self, msg=inner_msg)
+
+                service = router[type(msg.message)]
+
             except KeyError as e:
-                if type(msg) not in router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                        + f"{e}"
-                    )
 
                 self.ensure_services_have_been_registered_error_if_not()
 
-                raise Exception(
-                    "Unable to dispatch message, not all exceptions were caught"
+                raise KeyError(
+                    f"The node {self.id} of type {type(self)} cannot process messages of type "
+                    + f"{type(msg.message)} because there is no service running to process it."
+                    + f"{e}"
                 )
+
+            return service.process(node=self, msg=msg.message, verify_key=msg.verify_key)
+
         else:
+
             print("the old_message is not for me...")
             return self.message_with_reply_forwarding_service.process(
                 node=self, msg=msg
@@ -385,22 +385,6 @@ class Node(AbstractNode):
                     self.eventual_msg_without_reply_router[
                         handler_type_subclass
                     ] = eswr_instance
-
-        for aswr in self.authorized_services_with_reply:
-            # Create a single instance of the service to cache in the router corresponding
-            # to one or more old_message types.
-            aswr_instance = aswr()
-            for handler_type in aswr.message_handler_types():
-
-                # for each explicitly supported type, add it to the router
-                self.authorized_msg_with_reply_router[handler_type] = aswr_instance
-
-                # for all sub-classes of the explicitly supported type, add them
-                # to the router as well.
-                for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.authorized_msg_with_reply_router[
-                        handler_type_subclass
-                    ] = aswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

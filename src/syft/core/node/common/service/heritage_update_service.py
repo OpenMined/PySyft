@@ -4,13 +4,16 @@ registers within a new Network or if a Device registers within
 a new Domain, all the other child node will need to know this
 information to populate complete addresses into their clients."""
 
+# external class imports
+from nacl.signing import VerifyKey
 from typing import List
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 
-from .....decorators import syft_decorator
+from .auth import service_auth
 from ....io.address import Address
+from .....decorators import syft_decorator
 from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithoutReply
 
@@ -27,8 +30,9 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 
 
 class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
+    @service_auth(root_only=True)
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
+    def process(self, node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey) -> None:
         print(f"Updating to {msg.new_ancestry_address} on node {node}")
         addr = msg.new_ancestry_address
         if addr.network is not None:

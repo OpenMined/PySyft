@@ -1,4 +1,8 @@
-from typing import List, Type, Any
+# external class imports
+from nacl.signing import VerifyKey
+from typing import List
+from typing import Type
+from typing import Any
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -41,7 +45,7 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithReply
+        node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey
     ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
@@ -54,7 +58,7 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
 class EventualNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply) -> None:
+    def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -66,7 +70,7 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -78,7 +82,7 @@ class ImmediateNodeServiceWithoutReply(NodeService):
 class SignedNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SignedMessage) -> SignedMessage:
+    def process(node: AbstractNode, msg: SignedMessage, verify_key: VerifyKey) -> SignedMessage:
         raise NotImplementedError
 
     @staticmethod

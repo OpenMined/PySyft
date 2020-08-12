@@ -8,6 +8,7 @@
 from typing import List
 from typing import Type
 from typing import Optional
+from nacl.signing import VerifyKey
 from typing_extensions import final
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -22,6 +23,7 @@ from ....common.serde.deserialize import _deserialize
 from ...abstract.node import AbstractNode
 from ....io.address import Address
 from ....common.uid import UID
+from .auth import service_auth
 
 
 @final
@@ -89,8 +91,10 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
 
 
 class ReprService(ImmediateNodeServiceWithoutReply):
+
     @staticmethod
-    def process(node: AbstractNode, msg: ReprMessage) -> None:
+    @service_auth(root_only=True)
+    def process(node: AbstractNode, msg: ReprMessage, verify_key: VerifyKey) -> None:
         print(node.__repr__())
 
     @staticmethod

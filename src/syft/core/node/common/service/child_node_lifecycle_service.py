@@ -1,14 +1,18 @@
-from typing import List, Type
+# external class imports
+from nacl.signing import VerifyKey
+from typing import List
+from typing import Type
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 
-from .....decorators import syft_decorator
+from .auth import service_auth
 from ....io.address import Address
+from .....decorators import syft_decorator
+from ....store.storeable_object import StorableObject
+from .heritage_update_service import HeritageUpdateMessage
 from ...abstract.node import AbstractNode, AbstractNodeClient
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .heritage_update_service import HeritageUpdateMessage
-from ....store.storeable_object import StorableObject
 
 
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
@@ -23,8 +27,9 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
 
 
 class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
+    @service_auth(root_only=True)
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
+    def process(self, node: AbstractNode, msg: RegisterChildNodeMessage, verify_key: VerifyKey) -> None:
 
         # Step 1: Store the client to the child in our object store.
         node.store.store(

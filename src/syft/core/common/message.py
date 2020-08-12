@@ -4,7 +4,7 @@ from typing import Optional
 
 from nacl.signing import SigningKey, VerifyKey
 
-# from nacl.exceptions import BadSignatureError
+from nacl.exceptions import BadSignatureError
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from syft.core.common.uid import UID
@@ -61,31 +61,28 @@ class SignedMessage(SyftMessage):
         self.obj_type = obj_type
         self.signature = signature
         self.verify_key = verify_key
-        self._message = message
+        self.serialized_message = message
         self.cached_deseralized_message = None
 
     @property
     def message(self):
         if self.cached_deseralized_message is None:
             self.cached_deseralized_message = _deserialize(
-                blob=self._message, from_binary=True
+                blob=self.serialized_message, from_binary=True
             )
         return self.cached_deseralized_message
 
-    #
-    # @syft_decorator(typechecking=True)
-    # def is_valid(self) -> bool:
-    #     valid = False
-    #     try:
-    #         verify_key: VerifyKey = VerifyKey(self.verify_key)
-    #         _ = verify_key.verify(self.message, self.signature)
-    #
-    #         valid = True
-    #     except Exception:
-    #         # not valid
-    #         pass
-    #
-    #     return valid
+
+    @property
+    def is_valid(self) -> bool:
+
+        try:
+            verify_key: VerifyKey = self.verify_key
+            _ = verify_key.verify(self.serialized_message, self.signature)
+        except BadSignatureError:
+            return False
+
+        return True
 
     #
     # @syft_decorator(typechecking=True)
