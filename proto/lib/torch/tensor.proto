@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package syft.lib.torch;
 
-message TensorProto {
+message TensorData {
     repeated int64 shape = 1;
     string dtype = 2;
 
@@ -45,4 +45,9 @@ message TensorProto {
     // repeated float contents_complex32 = 29;
     // repeated float contents_complex64 = 30;
     // repeated double contents_complex128 = 31;
+}
+
+message TensorProto {
+    TensorData tensor = 1;
+    TensorData grad = 2;
 }
