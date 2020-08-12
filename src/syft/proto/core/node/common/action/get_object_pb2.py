@@ -26,6 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.node.common.action",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n.proto/core/node/common/action/get_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a\x1bproto/core/io/address.proto"\xb0\x01\n\x0fGetObjectAction\x12%\n\x06obj_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x01\n\x18GetObjectResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x03obj\x18\x02 \x01(\x0b\x32\x1f.syft.core.store.StorableObject\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
@@ -41,6 +42,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_id",
@@ -59,6 +61,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="msg_id",
@@ -77,6 +80,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="address",
@@ -95,6 +99,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
@@ -113,6 +118,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -134,6 +140,7 @@ _GETOBJECTRESPONSEMESSAGE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
@@ -152,6 +159,7 @@ _GETOBJECTRESPONSEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="obj",
@@ -170,6 +178,7 @@ _GETOBJECTRESPONSEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="address",
@@ -188,6 +197,7 @@ _GETOBJECTRESPONSEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
