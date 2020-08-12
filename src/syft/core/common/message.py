@@ -14,7 +14,7 @@ from syft.core.io.address import Address
 from ...util import get_fully_qualified_name
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from syft.decorators.syft_decorator_impl import syft_decorator
-
+from ..common.serde.deserialize import _deserialize
 
 class AbstractMessage(ObjectWithID):
     """"""
@@ -28,15 +28,15 @@ class SyftMessage(AbstractMessage):
         self.address = address
         super().__init__(id=msg_id)
 
-    def sign_message(self, signing_key: SigningKey) -> "SignedMessage":
+    def sign(self, signing_key: SigningKey) -> "SignedMessage":
+
         signed_message = signing_key.sign(self.serialize(to_binary=True))
-        print(self.signed_type)
-        print(signed_message)
+
         return self.signed_type(
             address=self.address,
             obj_type=get_fully_qualified_name(obj=self),
             signature=signed_message.signature,
-            verify_key=bytes(signing_key.verify_key),
+            verify_key=signing_key.verify_key,
             message=signed_message.message,
         )
 
@@ -47,11 +47,6 @@ class SignedMessage(SyftMessage):
     signature: bytes
     verify_key: bytes
     message: bytes
-
-    """
-    valid = msg.is_valid()
-            inner_msg = self.inner_message(allow_invalid=True)
-    """
 
     def __init__(
         self,
@@ -65,21 +60,29 @@ class SignedMessage(SyftMessage):
         self.obj_type = obj_type
         self.signature = signature
         self.verify_key = verify_key
-        self.message = message
+        self._message = message
+        self.cached_deseralized_message = None
 
-    @syft_decorator(typechecking=True)
-    def is_valid(self) -> bool:
-        valid = False
-        try:
-            verify_key: VerifyKey = VerifyKey(self.verify_key)
-            _ = verify_key.verify(self.message, self.signature)
+    @property
+    def message(self):
+        if self.cached_deseralized_message is None:
+            self.cached_deseralized_message = _deserialize(blob=self._message, from_binary=True)
+        return self.cached_deseralized_message
 
-            valid = True
-        except Exception:
-            # not valid
-            pass
-
-        return valid
+    #
+    # @syft_decorator(typechecking=True)
+    # def is_valid(self) -> bool:
+    #     valid = False
+    #     try:
+    #         verify_key: VerifyKey = VerifyKey(self.verify_key)
+    #         _ = verify_key.verify(self.message, self.signature)
+    #
+    #         valid = True
+    #     except Exception:
+    #         # not valid
+    #         pass
+    #
+    #     return valid
 
     #
     # @syft_decorator(typechecking=True)
@@ -118,7 +121,7 @@ class SignedMessage(SyftMessage):
         proto.obj_type = self.obj_type
         proto.signature = self.signature
         proto.verify_key = self.verify_key
-        proto.data = self.message
+        proto.message = self.message
 
         return proto
 

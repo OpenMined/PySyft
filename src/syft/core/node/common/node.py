@@ -274,127 +274,47 @@ class Node(AbstractNode):
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
 
-        if self.message_is_for_me(msg=msg):
-
-            inner_msg = msg.inner_message()
-
-            try:  # we use try/except here because it's marginally faster in Python
-                return_msg = self.immediate_msg_with_reply_router[
-                    type(inner_msg)
-                ].process(node=self, msg=inner_msg)
-
-                return return_msg.sign_message(self.signing_key)
-
-            except KeyError as e:
-                if type(inner_msg) not in self.immediate_msg_with_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(inner_msg)} because there is no service running to process it."
-                        + f"{e}"
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-        else:
-            print("the old_message is not for me...")
-            return_message = self.message_with_reply_forwarding_service.process(
-                node=self, msg=msg
-            )
-
-            return return_message.sign_message(signing_key=self.signing_key)
-
-        # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
-        # return
-        raise Exception("Unable to dispatch message, not all exceptions were caught")
+        response = self.process_message(msg=msg, router=self.immediate_msg_with_reply_router)
+        return response.sign(signing_key=self.signing_key)
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
 
-        if self.message_is_for_me(msg=msg):
-            print("the message is for me!!!")
-            try:  # we use try/except here because it's marginally faster in Python
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
 
-                self.immediate_msg_without_reply_router[type(msg)].process(
-                    node=self, msg=msg
-                )
 
-            except KeyError as e:
-
-                if type(msg) not in self.immediate_msg_without_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise e
-
-        else:
-            print(f"the message is not for me... {self.id}")
-            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
+        self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
+
+    def process_message(self, msg: SignedMessage, router:dict) -> Union[SyftMessage, None]:
 
         if self.message_is_for_me(msg=msg):
-            print("the old_message is for me!!!")
+
+            inner_msg = msg.message
+
             try:  # we use try/except here because it's marginally faster in Python
-
-                self.eventual_msg_without_reply_router[type(msg)].process(
-                    node=self, msg=msg
-                )
-
+                return router[type(inner_msg)].process(node=self, msg=inner_msg)
             except KeyError as e:
-
-                if type(msg) not in self.eventual_msg_without_reply_router:
+                if type(msg) not in router:
                     raise KeyError(
                         f"The node {self.id} of type {type(self)} cannot process messages of type "
                         + f"{type(msg)} because there is no service running to process it."
+                        + f"{e}"
                     )
 
                 self.ensure_services_have_been_registered_error_if_not()
 
-                raise e
-
+                raise Exception("Unable to dispatch message, not all exceptions were caught")
         else:
             print("the old_message is not for me...")
-            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
+            return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
 
-    # @syft_decorator(typechecking=True)
-    # def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
-    #     if self.message_is_for_me(msg=msg):
-    #         valid = msg.is_valid()
-    #         inner_msg = msg.inner_message(allow_invalid=True)
-    #         try:  # we use try/except here because it's marginally faster in Python
-    #             response = self.authorized_msg_with_reply_router[
-    #                 type(inner_msg)
-    #             ].process(node=self, msg=inner_msg, valid=valid)
-    #
-    #             signing_key = SigningKey.generate()
-    #             sig_response = response.sign_message(signing_key=signing_key)
-    #             return sig_response
-    #         except KeyError as e:
-    #             if type(msg) not in self.authorized_msg_with_reply_router:
-    #                 raise KeyError(
-    #                     f"The node {self.id} of type {type(self)} cannot process messages of type "
-    #                     + f"{type(msg)} because there is no service running to process it."
-    #                     + f"{e}"
-    #                 )
-    #
-    #             self.ensure_services_have_been_registered_error_if_not()
-    #     else:
-    #         print("the old_message is not for me...")
-    #         return self.signed_message_with_reply_forwarding_service.process(
-    #             node=self, msg=msg
-    #         )
-    #
-    #     # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
-    #     # return
-    #     raise Exception("Unable to dispatch message, not all exceptions were caught")
 
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:

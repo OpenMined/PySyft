@@ -133,7 +133,7 @@ class Client(AbstractNodeClient):
     ) -> ImmediateSyftMessageWithoutReply:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign_message(signing_key=self.signing_key)
+        signed_msg = msg.sign(signing_key=self.signing_key)
 
         return self.routes[route_index].send_immediate_msg_with_reply(msg=signed_msg)
 
@@ -143,7 +143,7 @@ class Client(AbstractNodeClient):
     ) -> None:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign_message(signing_key=self.signing_key)
+        signed_msg = msg.sign(signing_key=self.signing_key)
 
         return self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
 
@@ -153,7 +153,7 @@ class Client(AbstractNodeClient):
     ) -> None:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign_message(signing_key=self.signing_key)
+        signed_msg = msg.sign(signing_key=self.signing_key)
 
         return self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
