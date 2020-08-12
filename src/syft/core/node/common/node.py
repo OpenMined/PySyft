@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-stuff
+CODING GUIDELINES:
+
+Do NOT (without talking to trask):
+- add another high level method for sending or receiving messages (like recv_eventual_msg_without_reply)
+- add a service to the list of services below unless you're SURE all nodes will need it!
+- serialize anything with pickle
 """
 
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
