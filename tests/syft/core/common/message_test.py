@@ -28,6 +28,7 @@ def get_signed_message_bytes() -> bytes:
             "SwyOFhFnAdqFMWDO8XDUGgsclW3wjMi52nOhz8HvfQ4jE+dz2hqrx04TT6o/oSny3JER8EBabM"
             + "dqT8j9aUamDA=="
         ),
+        "verifyKey": "gf/M/DfEVS6KKh8iPTAQxO+IyDAB8H0zC9SXrS9Qjw8=",
         "data": (
             "eyJvYmpUeXBlIjogInN5ZnQuY29yZS5jb21tb24ub2JqZWN0Lk9iamVjdFdpdGhJRCIsICJjb2"
             + "50ZW50IjogIntcImlkXCI6IHtcInZhbHVlXCI6IFwiK3h1d1oxdTNURW0renVjQXF3b1ZGQT"
@@ -65,6 +66,7 @@ def test_create_signed_message() -> None:
     sig_msg = SignedMessage(
         obj_type=get_fully_qualified_name(obj=obj),
         signature=signed_message.signature,
+        verify_key=bytes(signing_key.verify_key),
         message=signed_message.message,
     )
 
@@ -73,6 +75,7 @@ def test_create_signed_message() -> None:
     assert type(sig_msg.signature) == bytes
     assert type(sig_msg.data) == bytes
     assert sig_msg.signature == signed_message.signature
+    assert sig_msg.verify_key == bytes(get_verify_key())
     assert sig_msg.data == signed_message.message
 
     assert get_signed_message_bytes() == sig_msg.serialize(to_binary=True)
@@ -90,14 +93,17 @@ def test_deserialize_signed_message() -> None:
     sig_msg_comp = SignedMessage(
         obj_type=get_fully_qualified_name(obj=obj),
         signature=signed_message.signature,
+        verify_key=bytes(get_verify_key()),
         message=signed_message.message,
     )
 
     assert sig_msg.obj_type == sig_msg_comp.obj_type
     assert str(sig_msg.obj_type) == "syft.core.common.object.ObjectWithID"
     assert type(sig_msg.signature) == bytes
+    assert type(sig_msg.verify_key) == bytes
     assert type(sig_msg.data) == bytes
     assert sig_msg.signature == sig_msg_comp.signature
+    assert sig_msg.verify_key == bytes(get_verify_key())
     assert sig_msg.data == sig_msg_comp.data
 
     assert sig_msg.serialize(to_binary=True) == sig_msg_comp.serialize(to_binary=True)
@@ -109,8 +115,7 @@ def test_verify_message() -> None:
     blob = get_signed_message_bytes()
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
-    verify_key = get_verify_key()
-    veri_msg = sig_msg.verified_message(verify_key=verify_key)
+    veri_msg = sig_msg.inner_message()
     obj = get_uid()
 
     assert veri_msg == obj
@@ -123,9 +128,9 @@ def test_verify_message_fails_key() -> None:
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
     signing_key = SigningKey.generate()
-    verify_key = signing_key.verify_key
+    sig_msg.verify_key = bytes(signing_key.verify_key)
     with pytest.raises(BadSignatureError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
 
 
 def test_verify_message_fails_sig() -> None:
@@ -135,9 +140,8 @@ def test_verify_message_fails_sig() -> None:
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
     sig_msg.signature += b"a"
-    verify_key = get_verify_key()
     with pytest.raises(BadSignatureError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
 
 
 def test_verify_message_fails_message() -> None:
@@ -147,9 +151,8 @@ def test_verify_message_fails_message() -> None:
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
     sig_msg.data += b"a"
-    verify_key = get_verify_key()
     with pytest.raises(BadSignatureError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
 
 
 def test_verify_message_fails_empty() -> None:
@@ -159,9 +162,8 @@ def test_verify_message_fails_empty() -> None:
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
     sig_msg.signature = b""
-    verify_key = VerifyKey(b"DEADBEEFDEADBEEFDEADBEEFDEADBEEF")
     with pytest.raises(BadSignatureError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
 
 
 def test_decode_message() -> None:
@@ -176,18 +178,52 @@ def test_decode_message() -> None:
     assert nonveri_msg == obj
 
 
+def test_get_inner_message() -> None:
+    """Tests that SignedMessage verification can be ignored"""
+
+    blob = get_signed_message_bytes()
+    sig_msg = sy.deserialize(blob=blob, from_binary=True)
+
+    sig_msg.signature += b"a"
+    nonveri_msg = sig_msg.inner_message(allow_invalid=True)
+    obj = get_uid()
+
+    assert nonveri_msg == obj
+
+
 def test_verify_message_fails_type() -> None:
     """Tests that SignedMessage cant be verified with the wrong storage type"""
 
     blob = get_signed_message_bytes()
     sig_msg = sy.deserialize(blob=blob, from_binary=True)
 
-    verify_key = get_verify_key()
-
     sig_msg.obj_type = "BadClass"
     with pytest.raises(KeyError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
 
     sig_msg.obj_type = "syft.core.common.message.SyftMessage"
     with pytest.raises(TypeError):
-        _ = sig_msg.verified_message(verify_key=verify_key)
+        _ = sig_msg.inner_message()
+
+
+def test_verify_message_is_not_valid() -> None:
+    """Tests that SignedMessage is_valid returns False on invalid messages"""
+
+    blob = get_signed_message_bytes()
+    sig_msg = sy.deserialize(blob=blob, from_binary=True)
+
+    sig_msg.signature = b""
+    with pytest.raises(BadSignatureError):
+        _ = sig_msg.inner_message()
+
+    assert False is sig_msg.is_valid()
+
+
+def test_verify_message_is_valid() -> None:
+    """Tests that SignedMessage is_valid returns True on a valid messages"""
+
+    blob = get_signed_message_bytes()
+    sig_msg = sy.deserialize(blob=blob, from_binary=True)
+
+    _ = sig_msg.inner_message()
+    assert True is sig_msg.is_valid()

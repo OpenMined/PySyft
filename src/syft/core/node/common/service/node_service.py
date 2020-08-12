@@ -4,6 +4,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
+    SignedMessage,
 )
 from syft.decorators import syft_decorator
 
@@ -54,7 +55,6 @@ class EventualNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply) -> None:
-
         raise NotImplementedError
 
     @staticmethod
@@ -67,6 +67,18 @@ class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[Type[Any]]:
+        raise NotImplementedError
+
+
+class SignedNodeServiceWithReply(ImmediateNodeService):
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def process(node: AbstractNode, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError
 
     @staticmethod

@@ -91,6 +91,7 @@ from syft.core.common.message import (
     SyftMessageWithReply,
     ImmediateSyftMessageWithoutReply,
 )
+from syft.core.common.message import SignedMessage
 
 from ..common.object import ObjectWithID
 from .connection import ClientConnection
@@ -130,6 +131,9 @@ class Route(ObjectWithID):
     ) -> None:
         raise NotImplementedError
 
+    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        raise NotImplementedError
+
 
 class SoloRoute(Route):
     def __init__(self, destination: Location, connection: ClientConnection) -> None:
@@ -144,12 +148,13 @@ class SoloRoute(Route):
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
-    # QUESTION: Why does this return SyftMessageWithoutReply instead of
-    # ImmediateSyftMessageWithoutReply?
     def send_immediate_msg_with_reply(
         self, msg: SyftMessageWithReply
     ) -> SyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
+
+    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        return self.connection.send_signed_msg_with_reply(msg=msg)
 
 
 class BroadcastRoute(SoloRoute):
