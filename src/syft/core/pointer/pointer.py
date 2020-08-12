@@ -7,6 +7,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from .request import RequestMessage
 
 
 class Pointer(Serializable):
@@ -28,13 +29,11 @@ class Pointer(Serializable):
         )
         return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
 
-    # def __del__(self):
-    #     print("Deleted:" + str(self))
-    #     obj_msg = GarbageCollectObjectAction(
-    #         obj_id=self.id_at_location, address=self.location
-    #     )
-    #
-    #     self.location.send_eventual_msg_without_reply(msg=obj_msg)
+    def request_access(self, request_name: str = "", request_description: str = ""):
+        obj_msg = RequestMessage(
+            request_name=request_name, request_description=request_description
+        )
+        self.location.send_immediate_msg_without_reply(msg=obj_msg)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:

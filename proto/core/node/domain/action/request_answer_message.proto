@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+
+message RequestAnswerMessage {
+    syft.core.common.UID request_id = 1;
+}
