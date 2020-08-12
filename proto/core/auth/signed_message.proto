@@ -1,8 +1,9 @@
 syntax = "proto3";
-package syft.core.crypt;
+package syft.core.auth;
 
 message SignedMessage {
   string obj_type = 1;
   bytes signature = 2;
-  bytes data = 3;
+  bytes verify_key = 3;
+  bytes data = 4;
 }

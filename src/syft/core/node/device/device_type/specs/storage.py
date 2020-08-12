@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
@@ -7,24 +8,24 @@ class DriveType(Enum):
     SSD = 1
 
 
+@dataclass
 class Drive:
-    def __init__(self, name: str, storage: int, drive_type: DriveType = DriveType.SSD):
-        self.name = name
-        self.storage = storage
-        self.drive_type = drive_type
+    name: str
+    storage: int
+    drive_type: DriveType = DriveType.SSD
 
 
+@dataclass
 class Storage:
-    def __init__(self, drives: List[Drive]):
-        self.drives = drives
+    drives: List[Drive]
 
     @property
-    def storage_total(self):
+    def storage_total(self) -> int:
         total = 0
         for d in self.drives:
             total += d.storage
         return total
 
     @property
-    def num_drives(self):
+    def num_drives(self) -> int:
         return len(self.drives)

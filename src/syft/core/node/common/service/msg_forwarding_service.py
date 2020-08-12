@@ -3,6 +3,7 @@ from typing import List
 from syft.core.common.message import (
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
+    SignedMessage,
 )
 
 from .....decorators import syft_decorator
@@ -10,6 +11,7 @@ from ...abstract.node import AbstractNode
 from .node_service import (
     ImmediateNodeServiceWithoutReply,
     ImmediateNodeServiceWithReply,
+    SignedNodeServiceWithReply,
 )
 
 
@@ -18,7 +20,6 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
     def process(
         self, node: AbstractNode, msg: ImmediateSyftMessageWithoutReply
     ) -> None:
-
         addr = msg.address
         print(addr.vm.id)
         if addr.vm is not None and addr.vm.id in node.store:
@@ -81,6 +82,39 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
             return node.store.get_object(
                 pub_addr.network
             ).send_immediate_msg_with_reply(msg=msg)
+
+        raise Exception(
+            "Address unknown - cannot forward old_message. Throwing it away."
+        )
+
+
+class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
+    @syft_decorator(typechecking=True)
+    def process(self, node: AbstractNode, msg: SignedMessage) -> SignedMessage:
+
+        addr = msg.address
+        pri_addr = addr.pri_address
+        pub_addr = addr.pub_address
+
+        if pri_addr.vm is not None and node.store.has_object(pri_addr.vm):
+            return node.store.get_object(pri_addr.vm).send_signed_msg_with_reply(
+                msg=msg
+            )
+
+        if pri_addr.device is not None and node.store.has_object(pri_addr.device):
+            return node.store.get_object(pri_addr.device).send_signed_msg_with_reply(
+                msg=msg
+            )
+
+        if pub_addr.domain is not None and node.store.has_object(pub_addr.domain):
+            return node.store.get_object(pub_addr.domain).send_signed_msg_with_reply(
+                msg=msg
+            )
+
+        if pub_addr.network is not None and node.store.has_object(pub_addr.network):
+            return node.store.get_object(pub_addr.network).send_signed_msg_with_reply(
+                msg=msg
+            )
 
         raise Exception(
             "Address unknown - cannot forward old_message. Throwing it away."

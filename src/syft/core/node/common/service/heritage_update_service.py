@@ -29,7 +29,7 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
-        print(f"Updating to {msg.new_ancestry_address} on note {node}")
+        print(f"Updating to {msg.new_ancestry_address} on node {node}")
         addr = msg.new_ancestry_address
         if addr.network is not None:
             node.network = addr.network
