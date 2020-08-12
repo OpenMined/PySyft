@@ -997,9 +997,18 @@ class TorchTensor(AbstractTensor):
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
+            protocol (str): Currently supports the following crypto protocols:
+                - 'snn' for SecureNN
+                - 'fss' for Function Secret Sharing (see AriaNN paper)
+                - 'mpc' (Multi Party Computation) defaults to most standard protocol,
+                    currently 'snn'
+                - 'paillier' for Paillier Homomorphic Encryption
+
             **kwargs:
+                With respect to Fixed Precision accepts:
+                    precision_fractional (int)
+                    dtype (str)
+
                 With Respect to MPC accepts:
                     workers (list): Parties involved in the sharing of the Tensor
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
@@ -1020,11 +1029,16 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if protocol.lower() == "mpc":
+        if protocol.lower() in ("mpc", "snn", "fss"):
+            if protocol.lower() == "mpc":
+                protocol = "snn"
+            else:
+                protocol = protocol.lower()
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
             requires_grad = kwargs.pop("requires_grad", False)
             no_wrap = kwargs.pop("no_wrap", False)
+            dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
 
             x_shared = self.fix_prec(**kwargs_fix_prec).share(
@@ -1032,6 +1046,8 @@ class TorchTensor(AbstractTensor):
                 crypto_provider=crypto_provider,
                 requires_grad=requires_grad,
                 no_wrap=no_wrap,
+                protocol=protocol,
+                dtype=dtype,
             )
             return x_shared
 
