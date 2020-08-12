@@ -86,12 +86,11 @@ node, propagating the model to all node which asked for it.
 from typing import List
 
 from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
+    SignedEventualSyftMessageWithoutReply,
     SyftMessageWithoutReply,
-    SyftMessageWithReply,
-    ImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
 )
-from syft.core.common.message import SignedMessage
 
 from ..common.object import ObjectWithID
 from .connection import ClientConnection
@@ -118,20 +117,19 @@ class Route(ObjectWithID):
         self.schema = schema
         self.stops = stops
 
-    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        raise NotImplementedError
-
-    def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
-
-    def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+    def send_immediate_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+    def send_immediate_msg_with_reply(
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def send_eventual_msg_without_reply(
+        self, msg: SignedEventualSyftMessageWithoutReply
+    ) -> None:
         raise NotImplementedError
 
 
@@ -144,17 +142,14 @@ class SoloRoute(Route):
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
     def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> SyftMessageWithoutReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
-
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
-        return self.connection.send_signed_msg_with_reply(msg=msg)
 
 
 class BroadcastRoute(SoloRoute):

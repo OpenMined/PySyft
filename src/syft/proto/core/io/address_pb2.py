@@ -20,7 +20,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.io",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1bproto/core/io/address.proto\x12\x0csyft.core.io\x1a\x1cproto/core/io/location.proto"\x93\x02\n\x07\x41\x64\x64ress\x12\x13\n\x0bhas_network\x18\x01 \x01(\x08\x12/\n\x07network\x18\x02 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_domain\x18\x03 \x01(\x08\x12.\n\x06\x64omain\x18\x04 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_device\x18\x05 \x01(\x08\x12.\n\x06\x64\x65vice\x18\x06 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x0e\n\x06has_vm\x18\x07 \x01(\x08\x12*\n\x02vm\x18\x08 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationb\x06proto3',
     dependencies=[proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,],
 )
@@ -32,7 +31,6 @@ _ADDRESS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="has_network",
@@ -51,7 +49,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="network",
@@ -70,7 +67,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_domain",
@@ -89,7 +85,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="domain",
@@ -108,7 +103,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_device",
@@ -127,7 +121,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="device",
@@ -146,7 +139,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_vm",
@@ -165,7 +157,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="vm",
@@ -184,7 +175,6 @@ _ADDRESS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

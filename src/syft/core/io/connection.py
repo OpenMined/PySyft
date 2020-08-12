@@ -1,8 +1,7 @@
 from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-    SignedMessage,
+    SignedEventualSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
 )
 
 from ...decorators import syft_decorator
@@ -11,43 +10,36 @@ from ...decorators import syft_decorator
 class ServerConnection(object):
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     def recv_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
-
-    def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError
 
 
 class ClientConnection(object):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
-
-    @syft_decorator(typechecking=True)
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError

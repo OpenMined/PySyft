@@ -14,7 +14,13 @@ from ...io.location import Location
 from ...common.uid import UID
 from ...io.route import Route
 from ....lib import lib_ast
+
+# external class imports
 from typing import Optional
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
+# external lib imports
 import json
 
 
@@ -35,12 +41,24 @@ class Client(AbstractNodeClient):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(network=network, domain=domain, device=device, vm=vm)
 
         self.name = name
         self.routes = routes
         self.default_route_index = 0
+
+        # create a signing key if one isn't provided
+        if signing_key is None:
+            self.signing_key = SigningKey.generate()
+
+        # if verify key isn't provided, get verify key from signing key
+        if verify_key is None:
+            self.verify_key = self.signing_key.verify_key
+        else:
+            self.verify_key = verify_key
 
         self.install_supported_frameworks()
 
@@ -114,21 +132,30 @@ class Client(AbstractNodeClient):
         self, msg: ImmediateSyftMessageWithReply, route_index: int = 0
     ) -> ImmediateSyftMessageWithoutReply:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
+
+        signed_msg = msg.sign_message(signing_key=self.signing_key)
+
+        return self.routes[route_index].send_immediate_msg_with_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
         self, msg: ImmediateSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
+
+        signed_msg = msg.sign_message(signing_key=self.signing_key)
+
+        return self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_eventual_msg_without_reply(msg=msg)
+
+        signed_msg = msg.sign_message(signing_key=self.signing_key)
+
+        return self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def send_signed_msg_with_reply(
