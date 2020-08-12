@@ -16,6 +16,7 @@ from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage
 from syft.decorators.syft_decorator_impl import syft_decorator
 from ..common.serde.deserialize import _deserialize
 
+
 class AbstractMessage(ObjectWithID):
     """"""
 
@@ -66,7 +67,9 @@ class SignedMessage(SyftMessage):
     @property
     def message(self):
         if self.cached_deseralized_message is None:
-            self.cached_deseralized_message = _deserialize(blob=self._message, from_binary=True)
+            self.cached_deseralized_message = _deserialize(
+                blob=self._message, from_binary=True
+            )
         return self.cached_deseralized_message
 
     #

@@ -274,7 +274,9 @@ class Node(AbstractNode):
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
 
-        response = self.process_message(msg=msg, router=self.immediate_msg_with_reply_router)
+        response = self.process_message(
+            msg=msg, router=self.immediate_msg_with_reply_router
+        )
         return response.sign(signing_key=self.signing_key)
 
     @syft_decorator(typechecking=True)
@@ -284,15 +286,15 @@ class Node(AbstractNode):
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
 
-
-
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
-    def process_message(self, msg: SignedMessage, router:dict) -> Union[SyftMessage, None]:
+    def process_message(
+        self, msg: SignedMessage, router: dict
+    ) -> Union[SyftMessage, None]:
 
         if self.message_is_for_me(msg=msg):
 
@@ -310,11 +312,14 @@ class Node(AbstractNode):
 
                 self.ensure_services_have_been_registered_error_if_not()
 
-                raise Exception("Unable to dispatch message, not all exceptions were caught")
+                raise Exception(
+                    "Unable to dispatch message, not all exceptions were caught"
+                )
         else:
             print("the old_message is not for me...")
-            return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
-
+            return self.message_with_reply_forwarding_service.process(
+                node=self, msg=msg
+            )
 
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
