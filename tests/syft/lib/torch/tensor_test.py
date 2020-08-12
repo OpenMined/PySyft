@@ -41,10 +41,3 @@ def test_torch_serde():
 
     assert (x == x2).all()
     assert (x.grad == x2.grad).all()
-
-
-def test_linear_output():
-    # Problem: F.linear doesn't construct from wrapper
-    linear = th.nn.Linear(5, 1)
-    out = linear(th.randn(1, 5))
-    assert hasattr(out, "id")
