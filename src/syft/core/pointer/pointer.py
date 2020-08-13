@@ -7,8 +7,6 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from ..node.domain import DomainClient
-from ..node.domain.service import RequestMessage, RequestAnswerMessage
 
 
 class Pointer(Serializable):
@@ -98,20 +96,22 @@ class Pointer(Serializable):
 
     def request_access(
         self,
-        node: DomainClient,
+        node,
         request_access: str = "",
         request_description: str = "",
     ):
+        from ..node.domain.service import RequestMessage
         msg = RequestMessage(
             request_name=request_access,
             request_description=request_description,
             address=self.location,
-            owner_address=node.address,
+            owner_address=node.domain,
             object_id=self.id_at_location,
         )
-        self.location.send_immediate_msg_without_reply(msg)
+        self.location.send_immediate_msg_without_reply(msg=msg)
 
-    def check_access(self, node: DomainClient, request_id):
+    def check_access(self, node, request_id):
+        from ..node.domain.service import RequestAnswerMessage
         msg = RequestAnswerMessage(
             request_id=request_id,
             address=self.location,

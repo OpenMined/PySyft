@@ -1,6 +1,5 @@
 from typing import List
 
-from ..domain import Domain
 from ..... import serialize, deserialize
 from ....io.address import Address
 from .....decorators import syft_decorator
@@ -9,7 +8,7 @@ from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .....proto.core.node.domain.service.request_answer_response_pb2 import (
     RequestAnswerResponse as RequestAnswerResponse_PB,
 )
-from . import RequestStatus
+from .request_message import RequestStatus
 
 
 class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
@@ -50,6 +49,6 @@ class RequestAnswerResponseService(ImmediateNodeServiceWithoutReply):
         return [RequestAnswerResponseService]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def process(node: Domain, msg: RequestAnswerResponse) -> None:
+    # @syft_decorator(typechecking=True)
+    def process(node, msg: RequestAnswerResponse) -> None:
         node.requests_responses[msg.request_id] = msg.status

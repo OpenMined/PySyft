@@ -1,4 +1,5 @@
 from typing import List
+from enum import Enum
 
 from ..... import serialize, deserialize
 from ....common import UID
@@ -8,10 +9,13 @@ from .....proto.core.node.domain.service.request_message_pb2 import (
 from ....io.address import Address
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from ..domain import Domain
 from .....decorators import syft_decorator
-from .request_answer_response import RequestAnswerResponse, RequestStatus
 
+
+class RequestStatus(Enum):
+    Pending = 1
+    Rejected = 2
+    Accepted = 3
 
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
@@ -69,8 +73,8 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         return [RequestMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def process(node: Domain, msg: RequestMessage) -> None:
+    # @syft_decorator(typechecking=True)
+    def process(node, msg: RequestMessage) -> None:
         node.requests[msg.request_id] = {
             "message": msg,
             "status": RequestStatus.Pending,

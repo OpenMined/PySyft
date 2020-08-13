@@ -1,6 +1,5 @@
 from typing import List
 
-from ..domain import Domain
 from .request_answer_response import RequestAnswerResponse
 from ..... import serialize, deserialize
 from ....common import UID
@@ -29,7 +28,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         return msg
 
     @staticmethod
-    @syft_decorator(typechecking=True)
+    # @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestAnswerMessage_PB) -> "RequestAnswerMessage":
         return RequestAnswerMessage(
             request_id=deserialize(proto.request_id),
@@ -49,10 +48,10 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
         return [RequestAnswerMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def process(node: Domain, msg: RequestAnswerMessage) -> RequestAnswerResponse:
+    # @syft_decorator(typechecking=True)
+    def process(node, msg: RequestAnswerMessage) -> RequestAnswerResponse:
         status = node.requests[msg.request_id]["response"]
-        address = msg.reply_to  # How should I know the address?
+        address = msg.reply_to
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status
         )
