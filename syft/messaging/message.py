@@ -1015,7 +1015,7 @@ class WorkerCommandMessage(Message):
     #     return WorkerCommandMessagePB
 
 
-class CryptenInitPlan(Message):
+class CryptenInit:
     """Initialize a Crypten party using this message.
 
     Crypten uses processes as parties, those processes need to be initialized with information
@@ -1023,63 +1023,7 @@ class CryptenInitPlan(Message):
     allows the exchange of information such as the ip and port of the master party to connect to,
     as well as the rank of the party to run and the number of parties involved."""
 
-    def __init__(self, crypten_context, model=None):
-        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
-        self.crypten_context = crypten_context
-        self.model = model
-
-    def __str__(self):
-        """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.crypten_context})"
-
-    @staticmethod
-    def simplify(worker: AbstractWorker, message: "CryptenInitPlan") -> tuple:
-        """
-        This function takes the attributes of a CryptenInitPlan and saves them in a tuple
-
-        Args:
-            worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (CryptenInitPlan): a Message
-
-        Returns:
-            tuple: a tuple holding the unique attributes of the message
-        """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, (*message.crypten_context, message.model)),
-        )
-
-    @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitPlan":
-        """
-        This function takes the simplified tuple version of this message and converts
-        it into a CryptenInitPlan. The simplify() method runs the inverse of this method.
-
-        Args:
-            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
-                syft/serde/serde.py for more information on why this is necessary.
-            msg_tuple (Tuple): the raw information being detailed.
-
-        Returns:
-            CryptenInitPlan message.
-
-        Examples:
-            message = detail(sy.local_worker, msg_tuple)
-        """
-        msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
-        *context, model = msg_tuple
-        return CryptenInitPlan(tuple(context), model)
-
-
-class CryptenInitJail(Message):
-    """Initialize a Crypten party using this message.
-
-    Crypten uses processes as parties, those processes need to be initialized with information
-    so they can communicate and exchange tensors and shares while doing computation. This message
-    allows the exchange of information such as the ip and port of the master party to connect to,
-    as well as the rank of the party to run and the number of parties involved. Compared to
-    CryptenInitPlan, this message also sends two extra fields, a JailRunner and a Crypten model."""
-
-    def __init__(self, crypten_context, jail_runner, model=None):
+    def __init__(self, crypten_context, jail_runner=None, model=None):
         # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
         self.crypten_context = crypten_context
         self.jail_runner = jail_runner
@@ -1090,13 +1034,13 @@ class CryptenInitJail(Message):
         return f"({type(self).__name__} {self.crypten_context}, {self.jail_runner})"
 
     @staticmethod
-    def simplify(worker: AbstractWorker, message: "CryptenInitJail") -> tuple:
+    def simplify(worker: AbstractWorker, message: "CryptenInit") -> tuple:
         """
-        This function takes the attributes of a CryptenInitJail and saves them in a tuple
+        This function takes the attributes of a CryptenInit and saves them in a tuple
 
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (CryptenInitJail): a Message
+            ptr (CryptenInit): a Message
 
         Returns:
             tuple: a tuple holding the unique attributes of the message
@@ -1108,10 +1052,10 @@ class CryptenInitJail(Message):
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitJail":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInit":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a CryptenInitJail. The simplify() method runs the inverse of this method.
+        it into a CryptenInit. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -1119,11 +1063,31 @@ class CryptenInitJail(Message):
             msg_tuple (Tuple): the raw information being detailed.
 
         Returns:
-            CryptenInitJail message.
+            CryptenInit message.
 
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
         msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
         *context, jail_runner, model = msg_tuple
-        return CryptenInitJail(tuple(context), jail_runner, model)
+        return CryptenInit(tuple(context), jail_runner, model)
+
+
+class CryptenInitPlan(CryptenInit, Message):
+    """
+    Similar to CryptenInit, but doesn't have an associated jail_runner attribute.
+    """
+
+    def __init__(self, crypten_context, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
+        super().__init__(crypten_context, None, model)
+
+
+class CryptenInitJail(CryptenInit, Message):
+    """
+    Compared to CryptenInitPlan, this message also sends a JailRunner.
+    """
+
+    def __init__(self, crypten_context, jail_runner, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
+        super().__init__(crypten_context, jail_runner, model)
