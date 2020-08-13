@@ -24,7 +24,7 @@ class Pointer(Serializable):
 
     def get(self):
         obj_msg = GetObjectAction(
-            obj_id=self.id_at_location, address=self.location, reply_to=self.location
+            obj_id=self.id_at_location, address=self.location.address, reply_to=self.location.address
         )
         response = self.location.send_immediate_msg_with_reply(msg=obj_msg)
 
@@ -58,7 +58,7 @@ class Pointer(Serializable):
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
             id_at_location=self.id_at_location.serialize(),
-            location=self.location.serialize(),
+            location=self.location.address.serialize(),
         )
 
     @staticmethod

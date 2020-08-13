@@ -17,17 +17,18 @@ from syft.core.common.message import (
     ImmediateSyftMessageWithReply,
 )
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ...common.serde.deserialize import _deserialize
 from ..abstract.node import AbstractNodeClient
+from ....util import get_fully_qualified_name
+from ...io.location import SpecificLocation
 from ....decorators import syft_decorator
 from ...io.location import Location
-from ...io.location import SpecificLocation
+from ...io.route import SoloRoute
+from ...io.route import Route
 from ...common.uid import UID
-from ....proto.core.node.common.client_pb2 import Client as Client_PB
-from ...io.route import Route, SoloRoute
 from ....lib import lib_ast
-from ....util import get_fully_qualified_name
-
+from ...io.address import Address
 
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -68,6 +69,13 @@ class Client(AbstractNodeClient):
             self.verify_key = verify_key
 
         self.install_supported_frameworks()
+
+    @property
+    def address(self):
+        return Address(network=self.network,
+                       domain=self.domain,
+                       device=self.device,
+                       vm=self.vm)
 
     @staticmethod
     def deserialize_client_metadata_from_node(
@@ -221,6 +229,7 @@ class Client(AbstractNodeClient):
             has_vm=self.vm is not None,
             vm=vm,
         )
+
         return client_pb
 
     @staticmethod

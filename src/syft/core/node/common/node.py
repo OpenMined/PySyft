@@ -227,6 +227,7 @@ class Node(AbstractNode):
             conn_client = create_virtual_connection(node=self)
             routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
 
+
         return self.client_type(
             name=self.name,
             routes=routes,
@@ -234,8 +235,8 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
-            signing_key=self.signing_key,
-            verify_key=self.verify_key,
+            signing_key= None, # DO NOT PASS IN A SIGNING KEY!!! The client should generate one.
+            verify_key= None, # DO NOT PASS IN A VERIFY KEY!!! The client should generate one
         )
 
     @syft_decorator(typechecking=True)

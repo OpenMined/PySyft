@@ -48,26 +48,33 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         method = node.lib_ast(self.path)
 
-        resolved_self = node.store[self._self.id_at_location].data
+        resolved_self = node.store[self._self.id_at_location]
+
+        result_read_permissions = resolved_self.read_permissions
 
         resolved_args = list()
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location].data
-            resolved_args.append(r_arg)
+            r_arg = node.store[arg.id_at_location]
+
+            result_read_permissions = result_read_permissions.intersection(r_arg.read_permissions)
+
+            resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location].data
-            resolved_kwargs[arg_name] = r_arg
+            r_arg = node.store[arg.id_at_location]
+            result_read_permissions = result_read_permissions.intersection(r_arg.read_permissions)
+            resolved_kwargs[arg_name] = r_arg.data
 
-        result = method(resolved_self, *resolved_args, **resolved_kwargs)
+        result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
         # ensure that result has the right id
         # TODO: overload all methods to incorporate this automatically
         result.id = self.id_at_location
 
         if not isinstance(result, StorableObject):
-            result = StorableObject(id=self.id_at_location, data=result)
+            result = StorableObject(id=self.id_at_location, data=result,
+                                    read_permissions=result_read_permissions)
 
         node.store.store(obj=result)
 
