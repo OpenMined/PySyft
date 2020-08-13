@@ -1,8 +1,13 @@
 import torch
 from .lowercase_tensor import LowercaseTensorConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
+from .parameter import ParameterConstructor
 
-__all__ = ["LowercaseTensorConstructor", "UppercaseTensorConstructor"]
+__all__ = [
+    "LowercaseTensorConstructor",
+    "UppercaseTensorConstructor",
+    "ParameterConstructor",
+]
 
 from syft.ast.globals import Globals
 
@@ -14,6 +19,7 @@ whitelist["torch.zeros"] = "torch.Tensor"
 whitelist["torch.ones"] = "torch.Tensor"
 whitelist["torch.nn.Linear"] = "torch.nn.Linear"
 # whitelist.add("torch.nn.Linear.parameters")
+whitelist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
 
 
 def create_torch_ast():

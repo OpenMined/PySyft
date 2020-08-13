@@ -157,7 +157,7 @@ class ObjectConstructor(object):
 
         Since all instances of ObjectConstructor are overloading an existing constructor within a library, we
         must first copy th original constructor (called the the "original" constructor) to a consistent location,
-        as determined by the 'gete_original_constructor_name' utility method.
+        as determined by the 'get_original_constructor_name' utility method.
         """
 
         # get the name of the place you want to move the original constructor to
