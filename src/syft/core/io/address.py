@@ -73,7 +73,7 @@ class Address(Serializable):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ObjectWithID_PB
+        :rtype: Address_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of

@@ -8,7 +8,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
-    SignedMessage,
+    SignedMessageT,
 )
 from syft.decorators import syft_decorator
 
@@ -58,7 +58,9 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
 class EventualNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey
+    ) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -70,7 +72,9 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey
+    ) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -82,7 +86,9 @@ class ImmediateNodeServiceWithoutReply(NodeService):
 class SignedNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SignedMessage, verify_key: VerifyKey) -> SignedMessage:
+    def process(
+        node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
+    ) -> SignedMessageT:
         raise NotImplementedError
 
     @staticmethod

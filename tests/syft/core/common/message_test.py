@@ -249,4 +249,3 @@ def test_get_message() -> None:
     obj = get_repr_message()
 
     assert nonveri_msg == obj
-

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/node/common/client.proto";
+
+message RegisterChildNodeMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.node.common.Client address = 2;
+  syft.core.node.common.Client child_node_client = 3;
+}

@@ -56,6 +56,10 @@ from .service.node_service import EventualNodeServiceWithoutReply
 from .service.node_service import ImmediateNodeServiceWithReply
 
 
+# this generic type for Client bound by Client
+ClientT = TypeVar("ClientT", bound=Client)
+
+
 class Node(AbstractNode):
 
     """
@@ -65,12 +69,14 @@ class Node(AbstractNode):
     Each node is identified by an id of type ID and a name of type string.
     """
 
-    ClientT = TypeVar("ClientT", bound=Client)
     client_type = ClientT
     child_type_client_type = ClientT
 
     ChildT = TypeVar("ChildT", bound="Node")
     child_type = ChildT
+
+    signing_key: Optional[SigningKey]
+    verify_key: Optional[VerifyKey]
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -192,7 +198,6 @@ class Node(AbstractNode):
             SignedMessageWithReplyForwardingService()
         )
 
-
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
 
@@ -203,6 +208,8 @@ class Node(AbstractNode):
         # create a signing key if one isn't provided
         if signing_key is None:
             self.signing_key = SigningKey.generate()
+        else:
+            self.signing_key = signing_key
 
         # if verify key isn't provided, get verify key from signing key
         if verify_key is None:
@@ -211,14 +218,15 @@ class Node(AbstractNode):
             self.verify_key = verify_key
 
         # PERMISSION REGISTRY:
-        self.root_verify_key = None
+        self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
 
     @syft_decorator(typechecking=True)
-    def get_client(self, routes: List[Route] = []) -> Client:
+    def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
             routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
+
         return self.client_type(
             name=self.name,
             routes=routes,
@@ -226,10 +234,12 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
+            signing_key=self.signing_key,
+            verify_key=self.verify_key,
         )
 
     @syft_decorator(typechecking=True)
-    def get_root_client(self, routes: List[Route] = []) -> Client:
+    def get_root_client(self, routes: List[Route] = []) -> ClientT:
         client = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
@@ -280,7 +290,6 @@ class Node(AbstractNode):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
 
     @syft_decorator(typechecking=True)
@@ -299,11 +308,9 @@ class Node(AbstractNode):
                 raise Exception("Message is not valid.")
 
             try:  # we use try/except here because it's marginally faster in Python
-
                 service = router[type(msg.message)]
 
             except KeyError as e:
-
                 self.ensure_services_have_been_registered_error_if_not()
 
                 raise KeyError(
@@ -312,7 +319,9 @@ class Node(AbstractNode):
                     + f"{e}"
                 )
 
-            return service.process(node=self, msg=msg.message, verify_key=msg.verify_key)
+            return service.process(
+                node=self, msg=msg.message, verify_key=msg.verify_key
+            )
 
         else:
 

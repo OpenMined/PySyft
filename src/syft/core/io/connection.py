@@ -1,3 +1,5 @@
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 from syft.core.common.message import (
     SignedEventualSyftMessageWithoutReply,
     SignedImmediateSyftMessageWithoutReply,
@@ -24,6 +26,18 @@ class ServerConnection(object):
     ) -> None:
         raise NotImplementedError
 
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    def _proto2object() -> "ServerConnection":
+        raise NotImplementedError
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        raise NotImplementedError
+
 
 class ClientConnection(object):
     @syft_decorator(typechecking=True)
@@ -42,4 +56,16 @@ class ClientConnection(object):
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    def _proto2object() -> "ClientConnection":
+        raise NotImplementedError
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         raise NotImplementedError
