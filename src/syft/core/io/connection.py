@@ -31,7 +31,7 @@ class BidirectionalConnection(object):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
+    ) -> ImmediateSyftMessageWithReply:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
