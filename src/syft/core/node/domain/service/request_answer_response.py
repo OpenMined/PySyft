@@ -1,22 +1,22 @@
 from typing import List
 
-from .....decorators import syft_decorator
-from ..action import RequestAnswerResponse
 from ..domain import Domain
 from ..... import serialize, deserialize
-from ....common.serde import Serializable
 from .....decorators import syft_decorator
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .....proto.core.node.domain.action.request_answer_response_pb2 import (
     RequestAnswerResponse as RequestAnswerResponse_PB,
 )
 from . import RequestStatus
 
 
-class RequestAnswerResponse(Serializable):
+class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["status", "request_id"]
 
-    def __init__(self, status, request_id):
+    def __init__(self, status, request_id, address: Address):
+        super().__init__(address)
         self.status = status
         self.request_id = request_id
 
@@ -42,7 +42,7 @@ class RequestAnswerResponse(Serializable):
         return RequestAnswerResponse_PB
 
 
-class RequestAnswerResponseService:
+class RequestAnswerResponseService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
@@ -51,4 +51,4 @@ class RequestAnswerResponseService:
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: Domain, msg: RequestAnswerResponse) -> None:
-        pass
+        node.requests_responses[msg.request_id] = msg.status

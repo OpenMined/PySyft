@@ -38,7 +38,8 @@ class Domain(Node):
         )
 
         self.root_key = root_key
-        self.request_queue = {}
+        self.requests = {}
+        self.requests_responses = {}
 
         # available_device_types = set()
         # TODO: add available compute types
@@ -56,4 +57,4 @@ class Domain(Node):
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
 
     def set_status_request(self, request_id, status):
-        self.request_queue[request_id]["response"].status = status
+        self.requests[request_id]["response"].status = status

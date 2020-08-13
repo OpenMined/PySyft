@@ -7,7 +7,7 @@ from ....common import UID
 from ....io.address import Address
 from .....decorators import syft_decorator
 from ....common.message import ImmediateSyftMessageWithReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from ...common.service.node_service import ImmediateNodeServiceWithReply
 from .....proto.core.node.domain.action.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
 )
@@ -36,7 +36,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         return RequestAnswerMessage_PB
 
 
-class RequestAnswerMessageService(ImmediateNodeServiceWithoutReply):
+class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
@@ -45,4 +45,4 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: Domain, msg: RequestAnswerMessage) -> RequestAnswerResponse:
-        pass
+        return node.requests[msg.request_id]["response"]

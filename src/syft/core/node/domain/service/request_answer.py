@@ -1,23 +1,24 @@
 from typing import List
 
 from ..... import serialize, deserialize
-from ....common.serde import Serializable
 from ....common import UID
-from .....decorators import syft_decorator
 from .....proto.core.node.domain.action.request_message_pb2 import (
     RequestMessage as RequestMessage_PB,
 )
-
+from ....io.address import Address
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ..domain import Domain
-from ..action import RequestMessage, RequestAnswerResponse, RequestStatus
 from .....decorators import syft_decorator
+from .request_answer_response import RequestAnswerResponse, RequestStatus
 
 
-class RequestMessage(Serializable):
+class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["request_name", "request_description", "request_id"]
 
-    def __init__(self, request_name: str, request_description: str):
+    def __init__(self, request_name: str, request_description: str, address: Address):
+        super().__init__(address)
         self.request_name = request_name
         self.request_description = request_description
         self.request_id = UID()
@@ -46,7 +47,7 @@ class RequestMessage(Serializable):
         return RequestMessage_PB
 
 
-class RequestService:
+class RequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
@@ -55,7 +56,7 @@ class RequestService:
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: Domain, msg: RequestMessage) -> None:
-        node.request_queue[msg.request_id] = {
+        node.requests[msg.request_id] = {
             "message": msg,
             "response": RequestAnswerResponse(
                 status=RequestStatus.Pending, request_id=msg.request_id
