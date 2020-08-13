@@ -1,4 +1,5 @@
 from typing import Any, List, Optional
+from typing import Set
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -9,9 +10,9 @@ from syft.core.io.location import Location
 from syft.decorators import syft_decorator
 from ...store import ObjectStore
 from ...common.message import (
-    ImmediateSyftMessageWithoutReply,
-    EventualSyftMessageWithoutReply,
-    SignedMessageT,
+    SignedImmediateSyftMessageWithoutReply,
+    SignedEventualSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
 )
 
 
@@ -19,6 +20,8 @@ class AbstractNode(Address):
 
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
+    root_verify_key: VerifyKey
+    guest_verify_key_registry: Set[VerifyKey]
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -40,19 +43,18 @@ class AbstractNode(Address):
         raise NotImplementedError
 
     def recv_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
-    def recv_immediate_msg_with_reply(self, msg: SignedMessageT) -> SignedMessageT:
-        raise NotImplementedError
-
-    def recv_signed_msg_with_reply(self, msg: SignedMessageT) -> SignedMessageT:
+    def recv_immediate_msg_with_reply(
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     @property
@@ -69,4 +71,9 @@ class AbstractNodeClient(Address):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
+        raise NotImplementedError
+
+    def send_immediate_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithoutReply
+    ) -> None:
         raise NotImplementedError

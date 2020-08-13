@@ -1,7 +1,5 @@
 # external class imports
 from typing import Optional, Union
-from nacl.signing import VerifyKey
-
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 

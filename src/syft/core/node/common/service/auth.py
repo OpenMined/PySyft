@@ -19,7 +19,9 @@ def service_auth(
     register_new_guests=False,
 ):
     def decorator(func: Callable) -> Callable:
-        def process(node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey):
+        def process(
+            node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
+        ) -> SyftMessage:
             if root_only:
                 if verify_key != node.root_verify_key:
                     raise AuthorizationException(

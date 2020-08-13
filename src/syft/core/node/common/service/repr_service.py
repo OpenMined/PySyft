@@ -91,7 +91,6 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
 
 
 class ReprService(ImmediateNodeServiceWithoutReply):
-
     @staticmethod
     @service_auth(root_only=True)
     def process(node: AbstractNode, msg: ReprMessage, verify_key: VerifyKey) -> None:

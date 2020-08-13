@@ -100,7 +100,6 @@ from .location import Location
 from .location import SpecificLocation
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ...decorators import syft_decorator
-from ..common.serde.deserialize import _deserialize
 
 
 class RouteSchema(ObjectWithID):

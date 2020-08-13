@@ -6,9 +6,6 @@ import sys
 from typing import Optional
 from typing import List
 from typing import Tuple
-from typing import Generic
-from typing import TypeVar
-from typing import Type
 
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
@@ -26,18 +23,13 @@ from ....decorators import syft_decorator
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...common.uid import UID
-from ...common.object import ObjectWithID
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ...io.route import Route, SoloRoute
 from ....lib import lib_ast
 from ....util import get_fully_qualified_name
 
 
-# this generic type for Client
-ClientT = TypeVar("ClientT")
-
-
-class Client(AbstractNodeClient, Generic[ClientT]):
+class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -232,7 +224,7 @@ class Client(AbstractNodeClient, Generic[ClientT]):
         return client_pb
 
     @staticmethod
-    def _proto2object(proto: Client_PB) -> ClientT:
+    def _proto2object(proto: Client_PB) -> "Client":
         module_parts = proto.obj_type.split(".")
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)

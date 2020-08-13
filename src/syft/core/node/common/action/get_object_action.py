@@ -92,12 +92,16 @@ class GetObjectAction(ImmediateActionWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.obj_id = obj_id
 
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> ImmediateSyftMessageWithoutReply:
+    def execute_action(
+        self, node: AbstractNode, verify_key: VerifyKey
+    ) -> ImmediateSyftMessageWithoutReply:
 
         storeable_object = node.store[self.obj_id]
 
         if verify_key not in storeable_object.read_permissions:
-            raise Exception("You do not have permission to .get() this tensor. Please submit a request.")
+            raise Exception(
+                "You do not have permission to .get() this tensor. Please submit a request."
+            )
 
         obj = storeable_object.data
         msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)

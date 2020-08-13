@@ -11,6 +11,7 @@ from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
 from nacl.signing import VerifyKey
 
+
 class StorableObject(AbstractStorableObject):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
@@ -45,7 +46,7 @@ class StorableObject(AbstractStorableObject):
         data: object,
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
-        read_permissions: Optional[Set[VerifyKey]] = set()
+        read_permissions: Optional[Set[VerifyKey]] = set(),
     ):
         self.id = id
         self.data = data

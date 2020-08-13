@@ -50,4 +50,3 @@ class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<VirtualMachineClient id:{self.name}>"
-

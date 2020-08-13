@@ -1,21 +1,12 @@
 # external imports
 import json
-import uuid
-import pytest
 from nacl.signing import SigningKey, VerifyKey
-from nacl.exceptions import BadSignatureError
 
 
 # syft imports
 import syft as sy
-from syft.core.common.message import (
-    SignedMessage,
-    SignedImmediateSyftMessageWithoutReply,
-)
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft import ReprMessage
-from syft.core.common import ObjectWithID
-from syft.core.common import UID
-from syft.core.io.address import Address
 from syft.util import get_fully_qualified_name
 
 

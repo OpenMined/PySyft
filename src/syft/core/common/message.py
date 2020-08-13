@@ -78,7 +78,7 @@ class SignedMessage(SyftMessage):
             self.cached_deseralized_message = _deserialize(
                 blob=self.serialized_message, from_binary=True
             )
-        return self.cached_deseralized_message
+        return self.cached_deseralized_message  # type: ignore
 
     @property
     def is_valid(self) -> bool:

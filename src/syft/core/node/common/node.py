@@ -284,7 +284,9 @@ class Node(AbstractNode):
         response = self.process_message(
             msg=msg, router=self.immediate_msg_with_reply_router
         )
-        return response.sign(signing_key=self.signing_key)
+        # maybe I shouldn't have created process_message because it screws up
+        # all the type inferrence.
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(

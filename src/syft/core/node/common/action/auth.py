@@ -1,6 +1,5 @@
-from typing import Callable
-
 # external class imports
+from typing import Callable
 from nacl.signing import VerifyKey
 
 # syft imports
@@ -15,7 +14,9 @@ def service_auth(
     register_new_guests=False,
 ):
     def decorator(func: Callable) -> Callable:
-        def process(node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey):
+        def process(
+            node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
+        ) -> SyftMessage:
 
             if root_only:
                 assert verify_key == node.root_verify_key

@@ -28,9 +28,19 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
-        node.store.store(obj=StorableObject(id=self.obj.id,
-                                            data=self.obj,
-                                            read_permissions=set([verify_key, node.verify_key])))  # type: ignore
+        node.store.store(
+            obj=StorableObject(
+                # ignoring this - the fundamental problem is that we can't force the classes
+                # we want to use to subclass from something without creating wrappers for
+                # everything which are mandatory for all operations. It's plausible that we
+                # will have to do this - but for now we aren't so we need to simply assume
+                # that we're adding ids to things. I don't like it though - wish there was a
+                # better way. But we want to support other frameworks so - gotta do it.
+                id=self.obj.id,  # type: ignore
+                data=self.obj,
+                read_permissions=set([verify_key, node.verify_key]),
+            )
+        )
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:

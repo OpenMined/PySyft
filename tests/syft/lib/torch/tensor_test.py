@@ -2,6 +2,7 @@ import syft as sy
 import torch as th
 import pytest
 
+
 def test_torch_vm_remote_operation():
 
     alice = sy.VirtualMachine(name="alice")
@@ -44,6 +45,7 @@ def test_torch_permissions():
     guest_bob = bob.get_client()
 
     import torch as th
+
     x = th.tensor([1, 2, 3, 4])
 
     # root user of Bob's machine sends a tensor

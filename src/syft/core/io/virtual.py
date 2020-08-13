@@ -55,7 +55,7 @@ class VirtualServerConnection(ServerConnection):
         return VirtualServerConnection_PB(node=self.node._object2proto())
 
     @staticmethod
-    def _proto2object(proto: VirtualServerConnection_PB) -> "VirtualServerConnection":
+    def _proto2object(proto: VirtualServerConnection_PB) -> "VirtualServerConnection":  # type: ignore
         node = _deserialize(blob=proto.node, from_proto=True)
         return VirtualServerConnection(node=node,)
 
@@ -92,7 +92,7 @@ class VirtualClientConnection(ClientConnection):
         return VirtualClientConnection_PB(server=self.server._object2proto())
 
     @staticmethod
-    def _proto2object(proto: VirtualClientConnection_PB) -> "VirtualClientConnection":
+    def _proto2object(proto: VirtualClientConnection_PB) -> "VirtualClientConnection":  # type: ignore
         return VirtualClientConnection(
             server=VirtualServerConnection._proto2object(proto.server),
         )
