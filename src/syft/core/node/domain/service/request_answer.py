@@ -17,11 +17,20 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["request_name", "request_description", "request_id"]
 
-    def __init__(self, request_name: str, request_description: str, address: Address):
+    def __init__(
+        self,
+        object_id: UID,
+        address: Address,
+        owner_address,
+        request_name: str = "",
+        request_description: str = "",
+    ):
         super().__init__(address)
         self.request_name = request_name
         self.request_description = request_description
         self.request_id = UID()
+        self.object_id = object_id
+        self.owner_address = owner_address
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestMessage_PB:
@@ -29,7 +38,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         msg.request_name = self.request_name
         msg.request_description = self.request_description
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
-        msg.address.CopyFrom(serialize(self.address))
+        msg.target_address.CopyFrom(serialize(self.address))
+        msg.object_id.CopyFrom(serialize(self.object_id))
+        msg.owner_address.CopyFrom(serialize(self.owner_address))
         return msg
 
     @staticmethod
@@ -38,7 +49,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         request_msg = RequestMessage(
             request_name=proto.request_name,
             request_description=proto.request_description,
-            address=deserialize(proto.address),
+            target_address=deserialize(proto.address),
+            object_id=deserialize(proto.owner_address),
+            owner_address=deserialize(proto.owner_address),
         )
         request_msg.request_id = deserialize(blob=proto.request_id)
         return request_msg
@@ -60,5 +73,5 @@ class RequestService(ImmediateNodeServiceWithoutReply):
     def process(node: Domain, msg: RequestMessage) -> None:
         node.requests[msg.request_id] = {
             "message": msg,
-            "status": RequestStatus.Pending
+            "status": RequestStatus.Pending,
         }

@@ -10,6 +10,7 @@ message RequestMessage {
     syft.core.common.UID object_id = 2;
     string request_name = 3;
     string request_description = 4;
-    syft.core.io.Address address = 5;
+    syft.core.io.Address target_address = 5;
+    syft.core.io.Address owner_address = 6;
 
 }

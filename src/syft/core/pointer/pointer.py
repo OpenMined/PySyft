@@ -7,7 +7,8 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from .request import RequestMessage
+from ..node.domain import DomainClient
+from ..node.domain.service import RequestMessage, RequestAnswerMessage
 
 
 class Pointer(Serializable):
@@ -28,12 +29,6 @@ class Pointer(Serializable):
             obj_id=self.id_at_location, address=self.location, reply_to=self.location
         )
         return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
-
-    def request_access(self, request_name: str = "", request_description: str = ""):
-        obj_msg = RequestMessage(
-            request_name=request_name, request_description=request_description
-        )
-        self.location.send_immediate_msg_without_reply(msg=obj_msg)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:
@@ -100,3 +95,27 @@ class Pointer(Serializable):
         """
 
         return Pointer_PB
+
+    def request_access(
+        self,
+        node: DomainClient,
+        request_access: str = "",
+        request_description: str = "",
+    ):
+        msg = RequestMessage(
+            request_name=request_access,
+            request_description=request_description,
+            address=self.location,
+            owner_address=node.address,
+            object_id=self.id_at_location,
+        )
+        self.location.send_immediate_msg_without_reply(msg)
+
+    def check_access(self, node: DomainClient, request_id):
+        msg = RequestAnswerMessage(
+            request_id=request_id,
+            address=self.location,
+            reply_to=node.address
+        )
+        response = self.location.send_immediate_msg_with_reply(msg)
+        return response.status

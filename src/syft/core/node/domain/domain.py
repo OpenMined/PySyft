@@ -12,6 +12,11 @@ from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
 from ...io.address import All
+from .service import (
+    RequestAnswerMessageService,
+    RequestAnswerResponseService,
+    RequestService,
+)
 
 
 class Domain(Node):
@@ -40,6 +45,11 @@ class Domain(Node):
         self.root_key = root_key
         self.requests = {}
         self.requests_responses = {}
+
+        self.immediate_services_without_reply.append(RequestService)
+        self.immediate_services_without_reply.append(RequestAnswerResponseService)
+
+        self.immediate_services_with_reply.append(RequestAnswerMessageService)
 
         # available_device_types = set()
         # TODO: add available compute types

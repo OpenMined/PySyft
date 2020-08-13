@@ -52,9 +52,7 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @syft_decorator(typechecking=True)
     def process(node: Domain, msg: RequestAnswerMessage) -> RequestAnswerResponse:
         status = node.requests[msg.request_id]["response"]
-        address = None # How should I know the address?
+        address = msg.reply_to  # How should I know the address?
         return RequestAnswerResponse(
-            request_id=msg.request_id,
-            address=address,
-            status=status
+            request_id=msg.request_id, address=address, status=status
         )
