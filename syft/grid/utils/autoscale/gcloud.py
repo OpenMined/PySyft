@@ -46,7 +46,10 @@ class GoogleCloud:
             ports = [80]
 
         self.config += terrascript.resource.google_compute_firewall(
-            name, name=name, network="default", allow={"protocol": "tcp", "ports": ports},
+            name,
+            name=name,
+            network="default",
+            allow={"protocol": "tcp", "ports": ports},
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -63,7 +66,9 @@ class GoogleCloud:
             name: name of the reversed ip
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
+        pygrid_network_ip = terrascript.resource.google_compute_address(
+            name, name=name,
+        )
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
@@ -86,7 +91,9 @@ class GoogleCloud:
             zone: zone of your GCP project
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
+        pygrid_network_ip = terrascript.resource.google_compute_address(
+            name, name=name,
+        )
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
@@ -96,9 +103,7 @@ class GoogleCloud:
         self.expose_port(name="pygrid", apply=False)
 
         image = terrascript.data.google_compute_image(
-            name + "pytorch",
-            family="pytorch-latest-gpu-debian-10",
-            project="deeplearning-platform-release",
+            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
         )
         self.config += image
 
@@ -114,11 +119,12 @@ class GoogleCloud:
             },
             metadata_startup_script="""
                 #!/bin/bash
-                apt-get update
-                apt-get -y upgrade
-                sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNetwork.git'
-                sudo -i bash -c 'echo Starting PyGridNetwork & \
-                python -m gridnetwork --port=80 --start_local_db'""",
+                sleep 30;
+                docker pull openmined/grid-network:production;
+                docker run \
+                -e PORT=80 \
+                -e DATABASE_URL=sqlite:///databasenode.db \
+                --name gridnetwork -p 80:80 -d openmined/grid-network:production;""",
         )
         self.config += node
 
@@ -131,7 +137,9 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-    def create_gridnode(self, name, machine_type, zone, gridnetwork_name=None, apply=True):
+    def create_gridnode(
+            self, name, machine_type, zone, gridnetwork_name=None, apply=True
+    ):
         """
         args:
             name: name of the compute instance
@@ -147,12 +155,10 @@ class GoogleCloud:
             outputs = json.load(out)["outputs"]
 
         gridnetwork_ip = outputs[gridnetwork_name + "-ip"]["value"]
-        pygrid_network_address = "--gateway_url=http://" + gridnetwork_ip if gridnetwork_ip else ""
+        pygrid_network_address = "=http://" + gridnetwork_ip if gridnetwork_ip else ""
 
         image = terrascript.data.google_compute_image(
-            name + "pytorch",
-            family="pytorch-latest-gpu-debian-10",
-            project="deeplearning-platform-release",
+            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
         )
         self.config += image
 
@@ -165,13 +171,14 @@ class GoogleCloud:
             network_interface={"network": "default", "access_config": {}},
             metadata_startup_script=f"""
                 #!/bin/bash
-                apt-get update
-                apt-get -y upgrade
-                sudo -i bash -c 'pip install notebook==5.7.8'
-                sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNode.git'
-                sudo -i bash -c 'echo Starting Node {name} \
-                joined with PyGridNetwork at {gridnetwork_ip} & \
-                python -m gridnode --id={name} --port=80 {pygrid_network_address}'""",
+                sleep 30;
+                docker pull openmined/grid-node:production;
+                docker run \
+                -e NODE_ID={name} \
+                -e PORT=80 \
+                -e NETWORK={pygrid_network_address} \
+                -e DATABASE_URL=sqlite:///databasenode.db \
+                --name gridnode -p 80:80 -d openmined/grid-node:production;""",
         )
         self.config += node
         with open("main.tf.json", "w") as main_config:
@@ -184,14 +191,14 @@ class GoogleCloud:
                 terraform_script.apply()
 
     def create_cluster(
-        self,
-        name,
-        machine_type,
-        zone,
-        reserve_ip_name,
-        target_size,
-        eviction_policy=None,
-        apply=True,
+            self,
+            name,
+            machine_type,
+            zone,
+            reserve_ip_name,
+            target_size,
+            eviction_policy=None,
+            apply=True,
     ):
         """
         args:
@@ -210,9 +217,7 @@ class GoogleCloud:
         gridnetwork_ip = outputs[reserve_ip_name + "-ip"]["value"]
 
         image = terrascript.data.google_compute_image(
-            name + "pytorch",
-            family="pytorch-latest-gpu-debian-10",
-            project="deeplearning-platform-release",
+            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
         )
         self.config += image
 
@@ -222,14 +227,18 @@ class GoogleCloud:
             machine_type=machine_type,
             zone=zone,
             boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={"network": "default", "access_config": {"nat_ip": gridnetwork_ip}},
+            network_interface={
+                "network": "default",
+                "access_config": {"nat_ip": gridnetwork_ip},
+            },
             metadata_startup_script="""
                 #!/bin/bash
-                apt-get update
-                apt-get -y upgrade
-                sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNetwork.git'
-                sudo -i bash -c 'echo Starting PyGridNetwork & \
-                python -m gridnetwork --port=80 --start_local_db'""",
+                sleep 30;
+                docker pull openmined/grid-network:production;
+                docker run \
+                -e PORT=80 \
+                -e DATABASE_URL=sqlite:///databasenode.db \
+                --name gridnetwork -p 80:80 -d openmined/grid-network:production;""",
         )
 
         pygrid_network_address = "http://" + gridnetwork_ip
@@ -241,14 +250,14 @@ class GoogleCloud:
             network_interface={"network": "default", "access_config": {}},
             metadata_startup_script=f"""
                 #!/bin/bash
-                apt-get update
-                apt-get -y upgrade
-                sudo -i bash -c 'pip install notebook==5.7.8'
-                sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNode.git'
-                sudo -i bash -c 'echo Starting Node {name} \
-                joined with PyGridNetwork at {pygrid_network_address} & \
-                python -m gridnode --id={name} --port=80 \
-                --gateway_url={pygrid_network_address}'""",
+                sleep 30;
+                docker pull openmined/grid-node:production;
+                docker run \
+                -e NODE_ID={name} \
+                -e PORT=80 \
+                -e NETWORK={pygrid_network_address} \
+                -e DATABASE_URL=sqlite:///databasenode.db \
+                --name gridnode -p 80:80 -d openmined/grid-node:production;""",
             lifecycle={"create_before_destroy": True},
         )
         self.config += instance_template
@@ -270,7 +279,9 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-        return Cluster(name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy)
+        return Cluster(
+            name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy
+        )
 
     def compute_instance(self, name, machine_type, zone, image_family, apply=True):
         """
