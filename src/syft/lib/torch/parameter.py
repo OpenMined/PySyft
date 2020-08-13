@@ -3,11 +3,29 @@ from typing import Optional, Type
 from syft.proto.lib.torch.parameter_pb2 import ParameterProto
 from syft.lib.torch.tensor_util import protobuf_tensor_serializer
 from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
-from forbiddenfruit import curse
 from syft.core.store.storeable_object import StorableObject
+from ...util import aggressive_set_attr
+from ..generic import ObjectConstructor
 
 import torch as th
 from torch.nn import Parameter
+
+
+class ParameterConstructor(ObjectConstructor):
+
+    # Step 1: Store the attribute name that this constructor is replacing
+    constructor_name = "Parameter"
+
+    # Step 2: Store a reference to the location on which this constructor currently lives.
+    # This is also the location that this custom constructor will live once installed using
+    # self.install_inside_library()
+    constructor_location = th.nn.parameter
+
+    original_type = th.nn.parameter.Parameter
+
+
+# Step 3: create constructor and install it in the library
+ParameterConstructor().install_inside_library()
 
 
 class PyTorchParameterWrapper(StorableObject):
@@ -18,15 +36,15 @@ class PyTorchParameterWrapper(StorableObject):
             tags=value.tags if hasattr(value, "tags") else [],
             description=value.description if hasattr(value, "description") else "",
         )
-        print("Wrapped nn.Parameter with id:" + str(value.id))
+        print("Wrapped torch.nn.parameter.Parameter with id:" + str(value.id))
         self.value = value
 
     def _data_object2proto(self) -> ParameterProto:
         proto = ParameterProto()
-        proto.tensor.CopyFrom(protobuf_tensor_serializer(self.data))
-        proto.requires_grad = self.requires_grad
-        if self.grad is not None:
-            proto.grad.CopyFrom(protobuf_tensor_serializer(self.grad))
+        proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value.data))
+        proto.requires_grad = self.value.requires_grad
+        if self.value.grad is not None:
+            proto.grad.CopyFrom(protobuf_tensor_serializer(self.value.grad))
         return proto
 
     @staticmethod
@@ -53,5 +71,7 @@ class PyTorchParameterWrapper(StorableObject):
         return data
 
 
-param = type(Parameter(th.tensor([1, 2, 3])))
-curse(param, "serializable_wrapper_type", PyTorchParameterWrapper)
+param_type = type(Parameter(th.tensor([1.0, 2, 3])))
+aggressive_set_attr(
+    obj=param_type, name="serializable_wrapper_type", attr=PyTorchParameterWrapper
+)
