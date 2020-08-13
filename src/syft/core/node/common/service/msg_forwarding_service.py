@@ -5,7 +5,7 @@ from typing import List
 from syft.core.common.message import (
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
-    SignedMessage,
+    SignedMessageT,
 )
 
 from .....decorators import syft_decorator
@@ -20,10 +20,13 @@ from .auth import service_auth
 
 
 class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
+    @staticmethod
     @service_auth(existing_users_only=True)
     @syft_decorator(typechecking=True)
     def process(
-        self, node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ImmediateSyftMessageWithoutReply,
+        verify_key: VerifyKey,
     ) -> None:
         addr = msg.address
         print(addr.vm.id)
@@ -59,9 +62,10 @@ class MessageWithoutReplyForwardingService(ImmediateNodeServiceWithoutReply):
 
 
 class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
+    @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        self, node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey
+        node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey,
     ) -> ImmediateSyftMessageWithoutReply:
 
         addr = msg.address
@@ -94,8 +98,11 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
 
 
 class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
+    @staticmethod
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: SignedMessage, verify_key: VerifyKey) -> SignedMessage:
+    def process(
+        node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
+    ) -> SignedMessageT:
 
         addr = msg.address
         pri_addr = addr.pri_address

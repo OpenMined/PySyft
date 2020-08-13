@@ -1,4 +1,18 @@
-from typing import List, Tuple
+# external lib imports
+import json
+import sys
+
+# external class imports
+from typing import Optional
+from typing import List
+from typing import Tuple
+from typing import Generic
+from typing import TypeVar
+from typing import Type
+
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -7,24 +21,23 @@ from syft.core.common.message import (
 )
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ...common.serde.deserialize import _deserialize
-from syft.core.common.message import SignedMessage
 from ..abstract.node import AbstractNodeClient
 from ....decorators import syft_decorator
 from ...io.location import Location
+from ...io.location import SpecificLocation
 from ...common.uid import UID
-from ...io.route import Route
+from ...common.object import ObjectWithID
+from ....proto.core.node.common.client_pb2 import Client as Client_PB
+from ...io.route import Route, SoloRoute
 from ....lib import lib_ast
-
-# external class imports
-from typing import Optional
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
-
-# external lib imports
-import json
+from ....util import get_fully_qualified_name
 
 
-class Client(AbstractNodeClient):
+# this generic type for Client
+ClientT = TypeVar("ClientT")
+
+
+class Client(AbstractNodeClient, Generic[ClientT]):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -53,6 +66,8 @@ class Client(AbstractNodeClient):
         # create a signing key if one isn't provided
         if signing_key is None:
             self.signing_key = SigningKey.generate()
+        else:
+            self.signing_key = signing_key
 
         # if verify key isn't provided, get verify key from signing key
         if verify_key is None:
@@ -135,12 +150,16 @@ class Client(AbstractNodeClient):
 
         signed_msg = msg.sign(signing_key=self.signing_key)
 
-        response = self.routes[route_index].send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.routes[route_index].send_immediate_msg_with_reply(
+            msg=signed_msg
+        )
 
         if response.is_valid:
             return response.message
 
-        raise Exception("Response was signed by a fake key or was corrupted in transit.")
+        raise Exception(
+            "Response was signed by a fake key or was corrupted in transit."
+        )
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
@@ -173,3 +192,79 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Client_PB:
+        obj_type = get_fully_qualified_name(obj=self)
+
+        routes = [route.serialize() for route in self.routes]
+
+        network = self.network._object2proto() if self.network is not None else None
+
+        domain = self.domain._object2proto() if self.domain is not None else None
+
+        device = self.device._object2proto() if self.device is not None else None
+
+        vm = self.vm._object2proto() if self.vm is not None else None
+
+        print(
+            "trying to make a client pb what tpyes",
+            type(network),
+            type(domain),
+            type(device),
+            type(vm),
+        )
+
+        client_pb = Client_PB(
+            obj_type=obj_type,
+            id=self.id.serialize(),
+            name=self.name,
+            routes=routes,
+            has_network=self.network is not None,
+            network=network,
+            has_domain=self.domain is not None,
+            domain=domain,
+            has_device=self.device is not None,
+            device=device,
+            has_vm=self.vm is not None,
+            vm=vm,
+        )
+        return client_pb
+
+    @staticmethod
+    def _proto2object(proto: Client_PB) -> ClientT:
+        module_parts = proto.obj_type.split(".")
+        klass = module_parts.pop()
+        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
+
+        network = (
+            SpecificLocation._proto2object(proto.network) if proto.has_network else None
+        )
+        domain = (
+            SpecificLocation._proto2object(proto.domain) if proto.has_domain else None
+        )
+        device = (
+            SpecificLocation._proto2object(proto.device) if proto.has_device else None
+        )
+        vm = SpecificLocation._proto2object(proto.vm) if proto.has_vm else None
+        routes = [SoloRoute._proto2object(route) for route in proto.routes]
+
+        obj = obj_type(
+            name=proto.name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
+
+        if type(obj) != obj_type:
+            raise TypeError(
+                f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
+            )
+
+        return obj
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Client_PB

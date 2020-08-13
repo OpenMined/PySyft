@@ -1,5 +1,8 @@
 from typing import Any, List, Optional
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 from ...common.uid import UID
 from ...io.address import Address
 from syft.core.io.location import Location
@@ -8,11 +11,15 @@ from ...store import ObjectStore
 from ...common.message import (
     ImmediateSyftMessageWithoutReply,
     EventualSyftMessageWithoutReply,
-    SignedMessage,
+    SignedMessageT,
 )
 
 
 class AbstractNode(Address):
+
+    signing_key: Optional[SigningKey]
+    verify_key: Optional[VerifyKey]
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
@@ -42,10 +49,10 @@ class AbstractNode(Address):
     ) -> None:
         raise NotImplementedError
 
-    def recv_immediate_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+    def recv_immediate_msg_with_reply(self, msg: SignedMessageT) -> SignedMessageT:
         raise NotImplementedError
 
-    def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+    def recv_signed_msg_with_reply(self, msg: SignedMessageT) -> SignedMessageT:
         raise NotImplementedError
 
     @property
@@ -62,9 +69,4 @@ class AbstractNodeClient(Address):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
-
-    def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
-    ) -> None:
         raise NotImplementedError

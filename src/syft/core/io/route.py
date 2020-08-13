@@ -25,7 +25,7 @@ This is because, for permissions reasons, the domain represents
 an intentional information bottleneck.
 
 This might beg the question, what is the point of Route if
-the right combination of Clients and Connnections can always
+the right combination of Clients and Connections can always
 get a old_message to where it needs to go?
 
 The answer is that neither a Connection, Client, or Node are
@@ -73,7 +73,7 @@ a route.
 
 While in theory this data-structure could allow for very sophisticated
 network analysis, in the beginning it will mostly exist to choose
-between Pub-sub, Request-Reponse, and Streaming options. In the
+between Pub-sub, Request-Response, and Streaming options. In the
 long run it will allow us to design routes which explicitly
 avoid the most costly network bottlenecks. For example, if Grid is
 advertising a new Federated Learning job, instead of sending the
@@ -84,6 +84,7 @@ node, propagating the model to all node which asked for it.
 """
 
 from typing import List
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from syft.core.common.message import (
     SignedEventualSyftMessageWithoutReply,
@@ -94,7 +95,12 @@ from syft.core.common.message import (
 
 from ..common.object import ObjectWithID
 from .connection import ClientConnection
+from .virtual import VirtualClientConnection
 from .location import Location
+from .location import SpecificLocation
+from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
+from ...decorators import syft_decorator
+from ..common.serde.deserialize import _deserialize
 
 
 class RouteSchema(ObjectWithID):
@@ -150,6 +156,27 @@ class SoloRoute(Route):
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> SoloRoute_PB:
+        print("trying to proto", type(self), self.schema.destination)
+        return SoloRoute_PB(
+            destination=self.schema.destination._object2proto(),
+            connection=self.connection._object2proto(),
+        )
+
+    @staticmethod
+    def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":
+        connection = VirtualClientConnection._proto2object(proto.connection)
+        # connection = _deserialize(blob=proto.connection, from_proto=True)
+        return SoloRoute(
+            destination=SpecificLocation._proto2object(proto.destination),
+            connection=connection,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SoloRoute_PB
 
 
 class BroadcastRoute(SoloRoute):

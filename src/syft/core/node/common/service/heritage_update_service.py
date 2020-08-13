@@ -30,9 +30,12 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 
 
 class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
+    @staticmethod
     @service_auth(root_only=True)
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey
+    ) -> None:
         print(f"Updating to {msg.new_ancestry_address} on node {node}")
         addr = msg.new_ancestry_address
         if addr.network is not None:

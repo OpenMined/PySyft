@@ -2,6 +2,9 @@
 from typing import Optional, Union
 from nacl.signing import VerifyKey
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.location import SpecificLocation
@@ -31,10 +34,18 @@ class Domain(Node):
         domain: SpecificLocation = SpecificLocation(),
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
-            name=name, network=network, domain=domain, device=device, vm=vm
+            name=name,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
         self.root_key = root_key

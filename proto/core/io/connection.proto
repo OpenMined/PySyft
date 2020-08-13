@@ -1,0 +1,8 @@
+syntax = "proto3";
+package syft.core.io;
+
+import "proto/core/io/address.proto";
+
+message VirtualServerConnection { syft.core.io.Address node = 1; }
+
+message VirtualClientConnection { VirtualServerConnection server = 1; }

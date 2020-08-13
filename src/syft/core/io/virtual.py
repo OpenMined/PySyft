@@ -5,6 +5,7 @@ Replacing this object with an actual network connection object
 execute the exact same functionality but do so over a network"""
 
 from typing_extensions import final
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from syft.core.common.message import (
     SignedEventualSyftMessageWithoutReply,
@@ -15,6 +16,14 @@ from syft.core.common.message import (
 from ...decorators import syft_decorator
 from ..node.abstract.node import AbstractNode
 from .connection import ClientConnection, ServerConnection
+
+from ...proto.core.io.connection_pb2 import (
+    VirtualClientConnection as VirtualClientConnection_PB,
+)
+from ...proto.core.io.connection_pb2 import (
+    VirtualServerConnection as VirtualServerConnection_PB,
+)
+from ..common.serde.deserialize import _deserialize
 
 
 @final
@@ -41,6 +50,19 @@ class VirtualServerConnection(ServerConnection):
     ) -> None:
         self.node.recv_eventual_msg_without_reply(msg=msg)
 
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> VirtualServerConnection_PB:
+        return VirtualServerConnection_PB(node=self.node._object2proto())
+
+    @staticmethod
+    def _proto2object(proto: VirtualServerConnection_PB) -> "VirtualServerConnection":
+        node = _deserialize(blob=proto.node, from_proto=True)
+        return VirtualServerConnection(node=node,)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return VirtualServerConnection_PB
+
 
 @final
 class VirtualClientConnection(ClientConnection):
@@ -64,6 +86,20 @@ class VirtualClientConnection(ClientConnection):
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         return self.server.recv_eventual_msg_without_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> VirtualClientConnection_PB:
+        return VirtualClientConnection_PB(server=self.server._object2proto())
+
+    @staticmethod
+    def _proto2object(proto: VirtualClientConnection_PB) -> "VirtualClientConnection":
+        return VirtualClientConnection(
+            server=VirtualServerConnection._proto2object(proto.server),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return VirtualClientConnection_PB
 
 
 @syft_decorator(typechecking=True)

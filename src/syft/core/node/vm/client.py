@@ -3,6 +3,9 @@ from typing import List
 from typing import Optional
 from typing_extensions import final
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from ...io.location.specific import SpecificLocation
 from ....decorators import syft_decorator
@@ -26,6 +29,8 @@ class VirtualMachineClient(Client):
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
             name=name,
@@ -34,6 +39,8 @@ class VirtualMachineClient(Client):
             domain=domain,
             device=device,
             vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
     @property
@@ -42,5 +49,5 @@ class VirtualMachineClient(Client):
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        out = f"<VirtualMachineClient id:{self.name}>"
-        return out
+        return f"<VirtualMachineClient id:{self.name}>"
+

@@ -1,3 +1,5 @@
+from typing import Callable
+
 # external class imports
 from nacl.signing import VerifyKey
 
@@ -5,8 +7,14 @@ from nacl.signing import VerifyKey
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
 
-def service_auth(root_only=False, existing_users_only=False, guests_welcome=False, register_new_guests=False):
-    def decorator(func):
+
+def service_auth(
+    root_only=False,
+    existing_users_only=False,
+    guests_welcome=False,
+    register_new_guests=False,
+):
+    def decorator(func: Callable) -> Callable:
         def process(node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey):
 
             if root_only:
@@ -24,4 +32,5 @@ def service_auth(root_only=False, existing_users_only=False, guests_welcome=Fals
             return func(node=node, msg=msg, verify_key=verify_key)
 
         return process
+
     return decorator

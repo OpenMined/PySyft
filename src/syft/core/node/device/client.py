@@ -3,6 +3,9 @@ from typing_extensions import final
 from typing import Optional
 from typing import List
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from ...io.location import SpecificLocation
 from ....decorators import syft_decorator
@@ -26,6 +29,8 @@ class DeviceClient(Client):
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
             name=name,
@@ -34,6 +39,8 @@ class DeviceClient(Client):
             domain=domain,
             device=device,
             vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
     # def create_vm(self, name:str):

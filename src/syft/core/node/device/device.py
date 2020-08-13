@@ -2,6 +2,9 @@
 from typing import Dict, Optional, Union
 from typing_extensions import final
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from .device_type.device_type import DeviceType
 from .device_type.unknown import unknown_device
@@ -37,9 +40,17 @@ class Device(Node):
         vm: Optional[Location] = None,
         device_type: DeviceType = unknown_device,
         vms: Dict[UID, VirtualMachine] = {},
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
-            name=name, network=network, domain=domain, device=device, vm=vm
+            name=name,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
         self.device_type = device_type

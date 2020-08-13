@@ -3,6 +3,9 @@ from typing import List
 from typing import Optional
 from typing_extensions import final
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from ...io.location import SpecificLocation
 from ....decorators import syft_decorator
@@ -26,6 +29,8 @@ class NetworkClient(Client):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
             name=name,
@@ -34,6 +39,8 @@ class NetworkClient(Client):
             domain=domain,
             device=device,
             vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
     @property
@@ -105,5 +112,4 @@ class NetworkClient(Client):
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        out = f"<Network:{self.name}>"
-        return out
+        return f"<Network:{self.name}>"
