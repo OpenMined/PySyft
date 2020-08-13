@@ -676,3 +676,47 @@ def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
     rns_tool = RNSTool(enc_param)
     result = rns_tool.fastbconv_sk(input)
     assert result == output
+
+
+@pytest.mark.parametrize(
+    "val1, val2", [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
+)
+def test_fv_relin(val1, val2):
+    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(val1))
+    op2 = encryptor.encrypt(encoder.encode(val2))
+    temp_prod = evaluator.mul(op1, op2)
+    relin_prod = evaluator.relin(temp_prod, relin_key)
+    assert len(temp_prod.data) - 1 == len(relin_prod.data)
+    assert val1 * val2 == encoder.decode(decryptor.decrypt(relin_prod))
+
+
+@pytest.mark.parametrize(
+    "val1, val2", [(-1, 1)],
+)
+def test_fv_relin_exceptions(val1, val2):
+    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(val1))
+    op2 = encryptor.encrypt(encoder.encode(val2))
+    temp_prod = evaluator.mul(op1, op2)
+
+    with pytest.raises(Warning):
+        evaluator.relin(op1, relin_key)  # Ciphertext size 2
+
+    with pytest.raises(Exception):
+        evaluator.relin(evaluator.mul(temp_prod, val1), relin_key)  # Ciphertext size 4
