@@ -899,6 +899,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 dtype == self.dtype
             ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
+        kwargs.pop("no_wrap", None)
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 

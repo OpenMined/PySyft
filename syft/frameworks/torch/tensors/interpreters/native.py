@@ -668,7 +668,7 @@ class TorchTensor(AbstractTensor):
                 return tensor
 
         if inplace:
-            self.set_(tensor)
+            self.set_(tensor.native_type(self.dtype))
             if hasattr(tensor, "child"):
                 self.child = tensor.child
             else:
@@ -991,7 +991,7 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, protocol="mpc", **kwargs):
+    def encrypt(self, protocol="mpc", inplace=False, **kwargs):
         """
         This method will encrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
@@ -1003,6 +1003,8 @@ class TorchTensor(AbstractTensor):
                 - 'mpc' (Multi Party Computation) defaults to most standard protocol,
                     currently 'snn'
                 - 'paillier' for Paillier Homomorphic Encryption
+
+            inplace (bool): compute the operation inplace (default is False)
 
             **kwargs:
                 With respect to Fixed Precision accepts:
@@ -1040,16 +1042,20 @@ class TorchTensor(AbstractTensor):
             no_wrap = kwargs.pop("no_wrap", False)
             dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
-
-            x_shared = self.fix_prec(**kwargs_fix_prec).share(
-                *workers,
+            kwargs_share = dict(
                 crypto_provider=crypto_provider,
                 requires_grad=requires_grad,
                 no_wrap=no_wrap,
                 protocol=protocol,
                 dtype=dtype,
             )
-            return x_shared
+
+            if not inplace:
+                x_shared = self.fix_prec(**kwargs_fix_prec).share(*workers, **kwargs_share)
+                return x_shared
+            else:
+                self.fix_prec_(**kwargs_fix_prec).share_(*workers, **kwargs_share)
+                return self
 
         elif protocol.lower() == "paillier":
             public_key = kwargs.get("public_key")
@@ -1066,12 +1072,13 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation, but {protocol} was given"
             )
 
-    def decrypt(self, **kwargs):
+    def decrypt(self, inplace=False, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
+            inplace (bool): compute the operation inplace (default is False)
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1092,9 +1099,13 @@ class TorchTensor(AbstractTensor):
             warnings.warn("protocol should no longer be used in decrypt")
 
         if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
-            x_encrypted = self.copy()
-            x_decrypted = x_encrypted.get().float_prec()
-            return x_decrypted
+            if not inplace:
+                x_encrypted = self.copy()
+                x_decrypted = x_encrypted.get().float_prec()
+                return x_decrypted
+            else:
+                self.get_().float_prec_()
+                return self
 
         elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
