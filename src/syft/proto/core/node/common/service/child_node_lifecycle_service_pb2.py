@@ -18,6 +18,7 @@ from syft.proto.core.common import (
 from syft.proto.core.node.common import (
     client_pb2 as proto_dot_core_dot_node_dot_common_dot_client__pb2,
 )
+from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -25,11 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.node.common.service",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\nAproto/core/node/common/service/child_node_lifecycle_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a#proto/core/node/common/client.proto"\xab\x01\n\x18RegisterChildNodeMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12.\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x1d.syft.core.node.common.Client\x12\x38\n\x11\x63hild_node_client\x18\x03 \x01(\x0b\x32\x1d.syft.core.node.common.Clientb\x06proto3',
+    serialized_pb=b'\nAproto/core/node/common/service/child_node_lifecycle_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a#proto/core/node/common/client.proto\x1a\x1bproto/core/io/address.proto"\xa3\x01\n\x18RegisterChildNodeMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x38\n\x11\x63hild_node_client\x18\x03 \x01(\x0b\x32\x1d.syft.core.node.common.Clientb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_node_dot_common_dot_client__pb2.DESCRIPTOR,
+        proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
 )
 
@@ -40,7 +41,6 @@ _REGISTERCHILDNODEMESSAGE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
@@ -59,7 +59,6 @@ _REGISTERCHILDNODEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="address",
@@ -78,7 +77,6 @@ _REGISTERCHILDNODEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="child_node_client",
@@ -97,7 +95,6 @@ _REGISTERCHILDNODEMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -108,8 +105,8 @@ _REGISTERCHILDNODEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=177,
-    serialized_end=348,
+    serialized_start=206,
+    serialized_end=369,
 )
 
 _REGISTERCHILDNODEMESSAGE.fields_by_name[
@@ -117,7 +114,7 @@ _REGISTERCHILDNODEMESSAGE.fields_by_name[
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _REGISTERCHILDNODEMESSAGE.fields_by_name[
     "address"
-].message_type = proto_dot_core_dot_node_dot_common_dot_client__pb2._CLIENT
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _REGISTERCHILDNODEMESSAGE.fields_by_name[
     "child_node_client"
 ].message_type = proto_dot_core_dot_node_dot_common_dot_client__pb2._CLIENT
