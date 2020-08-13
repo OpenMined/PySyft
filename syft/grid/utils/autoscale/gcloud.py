@@ -46,10 +46,7 @@ class GoogleCloud:
             ports = [80]
 
         self.config += terrascript.resource.google_compute_firewall(
-            name,
-            name=name,
-            network="default",
-            allow={"protocol": "tcp", "ports": ports},
+            name, name=name, network="default", allow={"protocol": "tcp", "ports": ports},
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -66,9 +63,7 @@ class GoogleCloud:
             name: name of the reversed ip
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(
-            name, name=name,
-        )
+        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
@@ -91,9 +86,7 @@ class GoogleCloud:
             zone: zone of your GCP project
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(
-            name, name=name,
-        )
+        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
@@ -137,9 +130,7 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-    def create_gridnode(
-            self, name, machine_type, zone, gridnetwork_name=None, apply=True
-    ):
+    def create_gridnode(self, name, machine_type, zone, gridnetwork_name=None, apply=True):
         """
         args:
             name: name of the compute instance
@@ -191,14 +182,14 @@ class GoogleCloud:
                 terraform_script.apply()
 
     def create_cluster(
-            self,
-            name,
-            machine_type,
-            zone,
-            reserve_ip_name,
-            target_size,
-            eviction_policy=None,
-            apply=True,
+        self,
+        name,
+        machine_type,
+        zone,
+        reserve_ip_name,
+        target_size,
+        eviction_policy=None,
+        apply=True,
     ):
         """
         args:
@@ -227,10 +218,7 @@ class GoogleCloud:
             machine_type=machine_type,
             zone=zone,
             boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={
-                "network": "default",
-                "access_config": {"nat_ip": gridnetwork_ip},
-            },
+            network_interface={"network": "default", "access_config": {"nat_ip": gridnetwork_ip},},
             metadata_startup_script="""
                 #!/bin/bash
                 sleep 30;
@@ -279,9 +267,7 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-        return Cluster(
-            name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy
-        )
+        return Cluster(name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy)
 
     def compute_instance(self, name, machine_type, zone, image_family, apply=True):
         """
