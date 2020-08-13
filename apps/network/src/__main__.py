@@ -17,16 +17,15 @@ required.add_argument(
     "--port",
     "-p",
     type=int,
-    help="Port number of the socket.io server, e.g. --port=8777. Default is os.environ.get('GRIDNETWORK_WS_PORT', None).",
-    default=os.environ.get("GRIDNETWORK_WS_PORT", None),
-    required=True,
+    help="Port number of the socket.io server, e.g. --port=7000. Default is os.environ.get('GRID_NETWORK_PORT', 7000).",
+    default=os.environ.get("GRID_NETWORK_PORT", 7000),
 )
 
 optional.add_argument(
     "--host",
     type=str,
-    help="GridNerwork host, e.g. --host=0.0.0.0. Default is os.environ.get('GRIDNETWORK_WS_HOST','http://0.0.0.0').",
-    default=os.environ.get("GRIDNETWORK_WS_HOST", "0.0.0.0"),
+    help="GridNerwork host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_NETWORK_HOST','http://0.0.0.0').",
+    default=os.environ.get("GRID_NETWORK_HOST", "0.0.0.0"),
 )
 
 optional.add_argument(
