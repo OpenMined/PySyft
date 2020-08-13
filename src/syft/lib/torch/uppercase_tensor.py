@@ -1,10 +1,10 @@
 from typing import Optional, Type
 
 from ..generic import ObjectConstructor
-from syft.proto.lib.numpy.tensor_pb2 import TensorProto
+from syft.proto.lib.torch.tensor_pb2 import TensorProto
+from syft.lib.torch.tensor_util import protobuf_tensor_serializer
+from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
 from syft.core.store.storeable_object import StorableObject
-from syft.lib.numpy.tensor_util import numpy_array_to_tensor
-from syft.lib.numpy.tensor_util import tensor_to_numpy_array
 from ...util import aggressive_set_attr
 
 import torch as th
@@ -43,15 +43,20 @@ class TorchTensorWrapper(StorableObject):
         self.value = value
 
     def _data_object2proto(self) -> TensorProto:
-        return numpy_array_to_tensor(self.value.numpy())
+        proto = TensorProto()
+        proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value))
+        if self.value.grad is not None:
+            proto.grad.CopyFrom(protobuf_tensor_serializer(self.value.grad))
+
+        return proto
 
     @staticmethod
-    def _data_proto2object(proto: TensorProto) -> int:
+    def _data_proto2object(proto: TensorProto) -> th.Tensor:
+        tensor = protobuf_tensor_deserializer(proto.tensor)
+        if proto.HasField("grad"):
+            tensor.grad = protobuf_tensor_deserializer(proto.grad)
 
-        # proto -> original numpy type
-        data = tensor_to_numpy_array(proto)
-
-        return th.tensor(data)
+        return tensor
 
     @staticmethod
     def get_data_protobuf_schema() -> Optional[Type]:
