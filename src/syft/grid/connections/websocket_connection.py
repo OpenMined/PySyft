@@ -8,11 +8,10 @@ from syft.core.common.serde import Serializable
 from syft.decorators.syft_decorator_impl import syft_decorator
 
 
-from syft.grid.duet.request import RequestResponse, RequestMessage, RequestService
+from syft.grid.duet.request import RequestResponse, RequestService
 
 
 from syft.core.common.message import (
-    SyftMessage,
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
@@ -58,9 +57,8 @@ class WebsocketConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=False)
     async def handler(self, websocket) -> None:
-        """ Websocket Handler   
-            Used to start,monitor and finish producer/consumer tasks.
-        """
+        """ Websocket Handler."""
+        # Start,monitor and finish producer/consumer tasks.
         # Adds producer and cosumer tasks into
         # the eventloop queue to be executed
         # concurrently.
@@ -79,10 +77,10 @@ class WebsocketConnection(BidirectionalConnection):
     @syft_decorator(typechecking=False)
     async def producer_handler(self, websocket) -> None:
         """ Producer Handler Task"""
-        
+
         # Async task to retreive ImmediateSyftMessages
         # from producer_pool queue and send them to target.
-        
+
         while True:
             # If producer pool is empty (any immediate message to send), wait here.
             message = await self.producer_pool.get()
@@ -91,13 +89,13 @@ class WebsocketConnection(BidirectionalConnection):
     @syft_decorator(typechecking=False)
     async def consumer_handler(self, websocket) -> None:
         """ Consumer Handler Task"""
-            
+
         # Async task to receive and process messages (any type)
         # sent by the target.
 
         # PS: The consumer method will be responsible for routing
         # the messages properly according to its types.
-        
+
         # If consumer pool is empty (any message to receive), wait here.
         async for message in websocket:
             await self.route(message)
@@ -105,10 +103,10 @@ class WebsocketConnection(BidirectionalConnection):
     @syft_decorator(typechecking=True)
     def consumer(self, request: Serializable) -> None:
         """ Routes received requests properly."""
-            
+
         # We expect to receive different request types:
         # 1 - RequestService: Made by the other peer spontaneously.
-        # 2 - RequestResponse: Just a response from a request made 
+        # 2 - RequestResponse: Just a response from a request made
         # by this peer previously.
 
         # Besides that, the RequestService can store different Message types:
@@ -180,11 +178,10 @@ class WebsocketConnection(BidirectionalConnection):
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithReply:
         """ Sends high priority messages and wait for their responses.
-            
             :return: returns an instance of ImmediateSyftMessageWithReply.
         """
 
-        # To ensure the sequence of sending / receiving messages 
+        # To ensure the sequence of sending / receiving messages
         # it's necessary to keep only a unique reference for reading
         # inputs (producer) and outputs (consumer).
 
@@ -216,7 +213,6 @@ class WebsocketConnection(BidirectionalConnection):
     @syft_decorator(typechecking=True)
     def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
         """" Sends signed messages waiting for their reply.
-
             :return: returns an instance of ImmediateSyftMessageWithReply.
         """
 
