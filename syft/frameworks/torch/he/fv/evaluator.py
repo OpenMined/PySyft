@@ -481,4 +481,4 @@ class Evaluator:
                     temp_poly_ptr, encrypted_ptr[j], key_mod[j], self.poly_modulus
                 )
 
-        return CipherText(ct[:-1], param_id)
+        return CipherText(ct[0:2], param_id)
