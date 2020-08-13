@@ -1,12 +1,12 @@
 # external classs imports
-from typing import Optional
+from typing import Optional, Union
 
 # external decorators
 from typing_extensions import final
 
 # syft imports
 from ...io.location import SpecificLocation
-from ...common.message import SyftMessage
+from ...common.message import SyftMessage, SignedMessage
 from ....decorators import syft_decorator
 from .client import VirtualMachineClient
 from ...io.location import Location
@@ -40,7 +40,7 @@ class VirtualMachine(Node):
     def id(self) -> UID:
         return self.vm.id
 
-    def message_is_for_me(self, msg: SyftMessage) -> bool:
+    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return msg.address.vm.id == self.id
 
     @syft_decorator(typechecking=True)

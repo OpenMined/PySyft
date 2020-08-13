@@ -4,13 +4,6 @@ from syft.core.common import UID
 import torch as th
 
 
-def test_duet():
-    duet = sy.Duet(host="127.0.0.1", port=5000)
-    obj_id = duet.id
-    duet.stop()
-    # assert "ObjectWithID" in f"{obj_id}"
-
-
 def test_request_message_creation():
     obj = RequestMessage(
         request_name="request", request_description="request description"
@@ -51,12 +44,17 @@ def test_request_response_serde():
     assert obj.request_id == new_obj.request_id
 
 
-def test_duet_send():
+def test_duet_send_and_get():
     duet = sy.Duet(host="127.0.0.1", port=5001)
 
     x = th.tensor([1, 2, 3])
     xp = x.send(duet)
 
     assert xp.id_at_location == x.id
+
+    yp = xp + xp
+
+    y = yp.get()
+    assert ((x + x) == y).all()
 
     duet.stop()

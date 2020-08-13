@@ -2,6 +2,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
+    SignedMessage,
 )
 
 from ...decorators import syft_decorator
@@ -24,6 +25,9 @@ class ServerConnection(object):
     ) -> None:
         raise NotImplementedError
 
+    def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
+        raise NotImplementedError
+
 
 class ClientConnection(object):
     @syft_decorator(typechecking=True)
@@ -42,4 +46,8 @@ class ClientConnection(object):
     def send_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply
     ) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError

@@ -5,11 +5,14 @@ stuff
 
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
 import json
+from nacl.signing import SigningKey
+
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
     SyftMessage,
+    SignedMessage,
 )
 
 from ....decorators import syft_decorator
@@ -32,6 +35,7 @@ from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import (
     MessageWithoutReplyForwardingService,
     MessageWithReplyForwardingService,
+    SignedMessageWithReplyForwardingService,
 )
 from .service.obj_action_service import (
     EventualObjectActionServiceWithoutReply,
@@ -40,9 +44,14 @@ from .service.obj_action_service import (
 )
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
+from .service.authorized_service import (
+    HelloRootServiceWithReply,
+    ImmediateAuthorizedServiceWithReply,
+    ImmediateAuthorizedMessageWithReply,
+)
+from .service.node_service import ImmediateNodeServiceWithReply
 
 
-# TODO: Fix AbstractNode and LocationAwareObject being incompatible
 class Node(AbstractNode):
 
     """
@@ -119,7 +128,7 @@ class Node(AbstractNode):
         # of the old_message to look up the service which
         # addresses that old_message.
         self.immediate_msg_with_reply_router: Dict[
-            Type[ImmediateSyftMessageWithReply], ImmediateObjectActionServiceWithReply
+            Type[ImmediateSyftMessageWithReply], ImmediateNodeServiceWithReply
         ] = {}
 
         # for messages which don't lead to a reply, this uses
@@ -139,9 +148,8 @@ class Node(AbstractNode):
         # You can read more about them by reading their respective
         # class documentation.
 
-        # for services which run immediately and do not return a reply
-
         # TODO: Support ImmediateNodeServiceWithoutReply Parent Class
+        # for services which run immediately and do not return a reply
         self.immediate_services_without_reply: List[Any] = []
         self.immediate_services_without_reply.append(ReprService)
         self.immediate_services_without_reply.append(HeritageUpdateService)
@@ -150,8 +158,9 @@ class Node(AbstractNode):
             ImmediateObjectActionServiceWithoutReply
         )
 
+        # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
-        self.immediate_services_with_reply = list()
+        self.immediate_services_with_reply: List[Any] = []
         self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
 
         # for services which can run at a later time and do not return a reply
@@ -173,6 +182,19 @@ class Node(AbstractNode):
         )
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
+        # Authorized Services
+        self.authorized_msg_with_reply_router: Dict[
+            Type[ImmediateAuthorizedMessageWithReply],
+            ImmediateAuthorizedServiceWithReply,
+        ] = {}
+
+        self.signed_message_with_reply_forwarding_service = (
+            SignedMessageWithReplyForwardingService()
+        )
+
+        self.authorized_services_with_reply: List[Any] = []
+        self.authorized_services_with_reply.append(HelloRootServiceWithReply)
+
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
 
@@ -191,7 +213,6 @@ class Node(AbstractNode):
         )
 
     def get_metadata_for_client(self) -> str:
-
         metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
 
         metadata["address"] = self.target_id.json()
@@ -206,7 +227,6 @@ class Node(AbstractNode):
         by returning the clients we used to interact with them from
         the object store."""
 
-        # QUESTION: where is get_objects_of_type defined?
         return self.store.get_objects_of_type(obj_type=Client)
 
     @property
@@ -221,7 +241,7 @@ class Node(AbstractNode):
             return []
 
     @syft_decorator(typechecking=True)
-    def message_is_for_me(self, msg: SyftMessage) -> bool:
+    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
@@ -229,7 +249,6 @@ class Node(AbstractNode):
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
         if self.message_is_for_me(msg=msg):
-            print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
                 return self.immediate_msg_with_reply_router[type(msg)].process(
                     node=self, msg=msg
@@ -279,7 +298,7 @@ class Node(AbstractNode):
                 raise e
 
         else:
-            print("the message is not for me...")
+            print(f"the message is not for me... {self.id}")
             self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -312,6 +331,38 @@ class Node(AbstractNode):
             self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
+    def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        if self.message_is_for_me(msg=msg):
+            valid = msg.is_valid()
+            inner_msg = msg.inner_message(allow_invalid=True)
+            try:  # we use try/except here because it's marginally faster in Python
+                response = self.authorized_msg_with_reply_router[
+                    type(inner_msg)
+                ].process(node=self, msg=inner_msg, valid=valid)
+
+                signing_key = SigningKey.generate()
+                sig_response = response.sign_message(signing_key=signing_key)
+                return sig_response
+            except KeyError as e:
+                if type(msg) not in self.authorized_msg_with_reply_router:
+                    raise KeyError(
+                        f"The node {self.id} of type {type(self)} cannot process messages of type "
+                        + f"{type(msg)} because there is no service running to process it."
+                        + f"{e}"
+                    )
+
+                self.ensure_services_have_been_registered_error_if_not()
+        else:
+            print("the old_message is not for me...")
+            return self.signed_message_with_reply_forwarding_service.process(
+                node=self, msg=msg
+            )
+
+        # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
+        # return
+        raise Exception("Unable to dispatch message, not all exceptions were caught")
+
+    @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
             raise Exception(
@@ -334,7 +385,6 @@ class Node(AbstractNode):
             # to one or more old_message types.
             isr_instance = isr()
             for handler_type in isr.message_handler_types():
-
                 # for each explicitly supported type, add it to the router
                 self.immediate_msg_with_reply_router[handler_type] = isr_instance
 
@@ -376,6 +426,22 @@ class Node(AbstractNode):
                     self.eventual_msg_without_reply_router[
                         handler_type_subclass
                     ] = eswr_instance
+
+        for aswr in self.authorized_services_with_reply:
+            # Create a single instance of the service to cache in the router corresponding
+            # to one or more old_message types.
+            aswr_instance = aswr()
+            for handler_type in aswr.message_handler_types():
+
+                # for each explicitly supported type, add it to the router
+                self.authorized_msg_with_reply_router[handler_type] = aswr_instance
+
+                # for all sub-classes of the explicitly supported type, add them
+                # to the router as well.
+                for handler_type_subclass in get_subclasses(obj_type=handler_type):
+                    self.authorized_msg_with_reply_router[
+                        handler_type_subclass
+                    ] = aswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

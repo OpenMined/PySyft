@@ -1,11 +1,11 @@
-from typing import List
-from typing import Tuple
+from typing import List, Tuple
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
 )
+from syft.core.common.message import SignedMessage
 from syft.core.common.uid import UID
 from ....decorators import syft_decorator
 from ....lib import lib_ast
@@ -129,6 +129,13 @@ class Client(AbstractNodeClient):
     ) -> None:
         route_index = route_index or self.default_route_index
         return self.routes[route_index].send_eventual_msg_without_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def send_signed_msg_with_reply(
+        self, msg: SignedMessage, route_index: int = 0
+    ) -> SignedMessage:
+        route_index = route_index or self.default_route_index
+        return self.routes[route_index].send_signed_msg_with_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

@@ -1,5 +1,5 @@
 #!/bin/bash
-CLEAN="src/syft/proto/**/*"
+CLEAN="src/syft/proto"
 PYTHON_OUT="src/syft"
 PROTO_IN="proto"
 

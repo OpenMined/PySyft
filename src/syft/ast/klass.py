@@ -15,7 +15,7 @@ class Class(ast.callable.Callable):
 
     def __init__(self, name, path_and_name, ref, return_type_name):
         super().__init__(name, path_and_name, ref, return_type_name=return_type_name)
-        self.pointer_name = self.path_and_name + "Pointer"
+        self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
     def __repr__(self):
         return f"<Class:{self.name}>"
@@ -49,6 +49,9 @@ class Class(ast.callable.Callable):
 
         klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
 
+        klass_pointer.path_and_name = self.path_and_name
+
+        print("setting attr:" + str(self.pointer_name))
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self):
