@@ -235,8 +235,8 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
-            signing_key= None, # DO NOT PASS IN A SIGNING KEY!!! The client should generate one.
-            verify_key= None, # DO NOT PASS IN A VERIFY KEY!!! The client should generate one
+            signing_key= None, # DO NOT PASS IN A SIGNING KEY!!! The client generates one.
+            verify_key= None, # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
     @syft_decorator(typechecking=True)
