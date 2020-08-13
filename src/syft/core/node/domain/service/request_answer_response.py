@@ -2,10 +2,11 @@ from typing import List
 
 from ..domain import Domain
 from ..... import serialize, deserialize
+from ....io.address import Address
 from .....decorators import syft_decorator
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....proto.core.node.domain.action.request_answer_response_pb2 import (
+from .....proto.core.node.domain.service.request_answer_response_pb2 import (
     RequestAnswerResponse as RequestAnswerResponse_PB,
 )
 from . import RequestStatus

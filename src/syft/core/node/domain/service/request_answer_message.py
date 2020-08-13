@@ -8,7 +8,7 @@ from ....io.address import Address
 from .....decorators import syft_decorator
 from ....common.message import ImmediateSyftMessageWithReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply
-from .....proto.core.node.domain.action.request_answer_message_pb2 import (
+from .....proto.core.node.domain.service.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
 )
 
@@ -24,12 +24,18 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     def _object2proto(self) -> RequestAnswerMessage_PB:
         msg = RequestAnswerMessage_PB()
         msg.request_id.CopyFrom(serialize(self.request_id))
+        msg.address.CopyFrom(serialize(self.address))
+        msg.reply_to.CopyFrom(serialize(self.reply_to))
         return msg
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestAnswerMessage_PB) -> "RequestAnswerMessage":
-        return RequestAnswerMessage(request_id=deserialize(proto.request_id))
+        return RequestAnswerMessage(
+            request_id=deserialize(proto.request_id),
+            address=deserialize(proto.address),
+            reply_to=deserialize(proto.reply_to),
+        )
 
     @staticmethod
     def get_protobuf_schema() -> type:
@@ -45,4 +51,10 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: Domain, msg: RequestAnswerMessage) -> RequestAnswerResponse:
-        return node.requests[msg.request_id]["response"]
+        status = node.requests[msg.request_id]["response"]
+        address = None # How should I know the address?
+        return RequestAnswerResponse(
+            request_id=msg.request_id,
+            address=address,
+            status=status
+        )
