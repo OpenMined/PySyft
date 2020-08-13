@@ -9,7 +9,7 @@ from syft.core.common.message import (
 from ...decorators import syft_decorator
 
 
-class ServerConnection(object):
+class BidirectionalConnection(object):
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -38,8 +38,6 @@ class ServerConnection(object):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         raise NotImplementedError
 
-
-class ClientConnection(object):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -69,3 +67,11 @@ class ClientConnection(object):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         raise NotImplementedError
+
+
+class ServerConnection(BidirectionalConnection):
+    pass
+
+
+class ClientConnection(BidirectionalConnection):
+    pass
