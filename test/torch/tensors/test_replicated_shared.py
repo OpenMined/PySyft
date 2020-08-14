@@ -1,6 +1,5 @@
 import syft
 import torch
-import pytest
 
 
 def test_sharing(workers):
