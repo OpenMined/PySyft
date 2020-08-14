@@ -1,4 +1,3 @@
-import random
 from operator import add, sub
 import torch
 import syft
@@ -46,13 +45,13 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     def reconstruct(self):
-        shares_map = self.get_shares_map()
-        shares = self.retrieve_shares(shares_map)
+        shares = self.retrieve_shares()
         plain_text_mod = self.__sum_shares(shares)
         plain_text = self.__map_modular_to_real(plain_text_mod)
         return plain_text
 
-    def retrieve_shares(self, shares_map):
+    def retrieve_shares(self):
+        shares_map = self.get_shares_map()
         pointers = self.__retrieve_pointers(shares_map)
         shares = []
         for pointer in pointers:
