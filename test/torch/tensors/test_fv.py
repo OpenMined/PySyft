@@ -289,29 +289,25 @@ def test_fast_convert_list(ibase, obase, input, output):
     "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
     [
         (64, 64, [40], 0x12345678),
-        (4096, 64, [40], 0),
+        (256, 64, [40], 0),
         (1024, 64, [40], 1),
         (64, 64, [40], 2),
-        (64, 64, [40], 0x7FFFFFFFFFFFFFFD),
-        (4096, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (4096, 64, [40], 0x7FFFFFFFFFFFFFFD),
+        (256, 64, [40], 0x7FFFFFFFFFFFFFFE),
         (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
-        (4096, 64, [40], 314159265),
         (128, 128, [40, 40], 0x12345678),
-        (2048, 128, [40, 40], 0),
-        (1024, 128, [40, 40], 1),
-        (2048, 128, [40, 40], 2),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
-        (4096, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (1024, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
         (128, 128, [40, 40], 314159265),
         (256, 256, [40, 40, 40], 0x12345678),
         (1024, 256, [40, 40, 40], 0),
         (256, 256, [40, 40, 40], 1),
         (256, 256, [40, 40, 40], 2),
-        (4096, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (2048, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
         (1024, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
         (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
-        (4096, 256, [40, 40, 40], 314159265),
+        (2048, 256, [40, 40, 40], 314159265),
     ],
 )
 def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
@@ -331,28 +327,25 @@ def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_b
     "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
     [
         (64, 64, [40], 0x12345678),
-        (4096, 64, [40], 0),
+        (256, 64, [40], 0),
         (1024, 64, [40], 1),
         (64, 64, [40], 2),
-        (1024, 64, [40], 0x7FFFFFFFFFFFFFFD),
-        (4096, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (4096, 64, [40], 0x7FFFFFFFFFFFFFFD),
+        (256, 64, [40], 0x7FFFFFFFFFFFFFFE),
         (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
-        (4096, 64, [40], 314159265),
-        (1024, 128, [40, 40], 0x12345678),
-        (2048, 128, [40, 40], 0),
-        (1024, 128, [40, 40], 1),
-        (2048, 128, [40, 40], 2),
-        (1024, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
+        (128, 128, [40, 40], 0x12345678),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
-        (4096, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (1024, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
         (128, 128, [40, 40], 314159265),
-        (4096, 256, [40, 40, 40], 0x12345678),
+        (256, 256, [40, 40, 40], 0x12345678),
         (1024, 256, [40, 40, 40], 0),
         (256, 256, [40, 40, 40], 1),
         (256, 256, [40, 40, 40], 2),
-        (4096, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (2048, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
         (1024, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
-        (4096, 256, [40, 40, 40], 314159265),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
+        (2048, 256, [40, 40, 40], 314159265),
     ],
 )
 def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
@@ -371,15 +364,15 @@ def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bi
 @pytest.mark.parametrize(
     "poly_modulus, plain_modulus, seq_level, integer",
     [
-        (1024, 1024, SeqLevelType.TC128, 0x12345678),
-        (4096, 1024, SeqLevelType.TC192, 0),
-        (4096, 1024, SeqLevelType.TC256, 1),
-        (1024, 1024, SeqLevelType.TC128, 2),
-        (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFD),
-        (2048, 1024, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
-        (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
+        (1024, 128, SeqLevelType.TC128, 0x12345678),
+        (1024, 128, SeqLevelType.TC192, 0),
+        (2048, 128, SeqLevelType.TC256, 1),
+        (1024, 128, SeqLevelType.TC128, 2),
+        (1024, 128, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFD),
+        (2048, 128, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
+        (1024, 128, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
         (1024, 512, SeqLevelType.TC128, 314159265),
-        (2048, 2048, SeqLevelType.TC256, 0x12345678),
+        (2048, 128, SeqLevelType.TC256, 0x12345678),
     ],
 )
 def test_fv_encryption_decrption_standard_seq_level(
@@ -398,7 +391,7 @@ def test_fv_encryption_decrption_standard_seq_level(
 
 
 def test_fv_encryption_decrption_without_changing_parameters():
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -418,7 +411,7 @@ def test_fv_encryption_decrption_without_changing_parameters():
     "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
 )
 def test_fv_add_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -439,7 +432,7 @@ def test_fv_add_cipher_cipher(int1, int2):
     "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
 )
 def test_fv_add_cipher_plain(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -461,7 +454,7 @@ def test_fv_add_cipher_plain(int1, int2):
     "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
 )
 def test_fv_add_plain_plain(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     encoder = IntegerEncoder(ctx)
     evaluator = Evaluator(ctx)
     op1 = encoder.encode(int1)
@@ -476,7 +469,7 @@ def test_fv_add_plain_plain(int1, int2):
 
 @pytest.mark.parametrize("val", [(0), (-1), (100), (-1000), (-123), (99), (0xFFF), (0xFFFFFF)])
 def test_fv_negate_cipher(val):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     evaluator = Evaluator(ctx)
@@ -490,7 +483,7 @@ def test_fv_negate_cipher(val):
     "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
 )
 def test_fv_sub_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -511,7 +504,7 @@ def test_fv_sub_cipher_cipher(int1, int2):
     "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
 )
 def test_fv_sub_cipher_plain(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -543,7 +536,7 @@ def test_fv_sub_cipher_plain(int1, int2):
     ],
 )
 def test_fv_mul_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40, 40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -574,7 +567,7 @@ def test_fv_mul_cipher_cipher(int1, int2):
     ],
 )
 def test_fv_mul_cipher_plain(int1, int2):
-    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -605,7 +598,7 @@ def test_fv_mul_cipher_plain(int1, int2):
     ],
 )
 def test_fv_mul_plain_plain(int1, int2):
-    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     encoder = IntegerEncoder(ctx)
     evaluator = Evaluator(ctx)
 
@@ -682,7 +675,7 @@ def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
     "val1, val2", [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
 )
 def test_fv_relin(val1, val2):
-    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keygenerator = KeyGenerator(ctx)
     keys = keygenerator.keygen()
     relin_key = keygenerator.get_relin_keys()
@@ -703,7 +696,7 @@ def test_fv_relin(val1, val2):
     "val1, val2", [(-1, 1)],
 )
 def test_fv_relin_exceptions(val1, val2):
-    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keygenerator = KeyGenerator(ctx)
     keys = keygenerator.keygen()
     relin_key = keygenerator.get_relin_keys()
