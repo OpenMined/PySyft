@@ -69,9 +69,52 @@ class BidirectionalConnection(object):
         raise NotImplementedError
 
 
-class ServerConnection(BidirectionalConnection):
-    pass
+class ServerConnection(object):
+    def __init__(self):
+        self.opt_bidirectional_conn = BidirectionalConnection()
+
+    @syft_decorator(typechecking=True)
+    def recv_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def recv_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
+        raise NotImplementedError
+
+    def recv_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
+        raise NotImplementedError
+
+    def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
+        raise NotImplementedError
 
 
-class ClientConnection(BidirectionalConnection):
-    pass
+class ClientConnection(object):
+    def __init__(self):
+        self.opt_bidirectional_conn = BidirectionalConnection()
+
+    @syft_decorator(typechecking=True)
+    def send_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithReply:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def send_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True)
+    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+        raise NotImplementedError
