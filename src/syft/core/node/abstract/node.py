@@ -65,7 +65,6 @@ class AbstractNode(Address):
 
 class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)
-    address: Address
     """"""
 
     @property

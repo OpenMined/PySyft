@@ -24,9 +24,8 @@ import syft as sy
 
 from syft.core.common.message import (
     SyftMessage,
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
 )
 
 
@@ -36,21 +35,21 @@ class GridHttpClientConnection(ClientConnection):
         self.domain_id = domain_id
 
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply
     ) -> requests.Response:
         blob = self.send_msg(msg).text
         print(blob)
         response = sy.deserialize(blob=blob, from_json=True)
-        print(response.obj)
+        # print(response.obj)
         return response
 
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithReply
     ) -> requests.Response:
         return self.send_msg(msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithReply
     ) -> requests.Response:
         return self.send_msg(msg)
 
@@ -121,10 +120,10 @@ class Duet(DomainClient):
             json_msg = request.get_json()
             msg = sy.deserialize(blob=json_msg, from_json=True)
 
-            if isinstance(msg, ImmediateSyftMessageWithReply):
+            if isinstance(msg, SignedImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
                 return reply.json()
-            elif isinstance(msg, ImmediateSyftMessageWithoutReply):
+            elif isinstance(msg, SignedImmediateSyftMessageWithoutReply):
                 domain.recv_immediate_msg_without_reply(msg=msg)
             else:
                 domain.recv_eventual_msg_without_reply(msg=msg)

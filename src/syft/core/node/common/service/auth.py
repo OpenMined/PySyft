@@ -27,6 +27,7 @@ def service_auth(
                     raise AuthorizationException(
                         "You are not Authorized to access this service"
                     )
+
             elif existing_users_only:
                 assert verify_key in node.guest_verify_key_registry
             elif guests_welcome:
@@ -37,7 +38,6 @@ def service_auth(
             else:
                 raise Exception("You must configure services auth with a flag.")
 
-            print("are we here at the end?", func, type(func))
             return func(node=node, msg=msg, verify_key=verify_key)
 
         return process

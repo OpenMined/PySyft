@@ -13,7 +13,6 @@ from ..domain.domain import Domain
 from ...io.location import Location
 from .client import NetworkClient
 from ..common.node import Node
-from ...io.address import All
 from ...common.uid import UID
 
 
@@ -53,6 +52,4 @@ class Network(Node):
         return self.network.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return (
-            msg.address.network.id in (self.id, All(),) and msg.address.domain is None
-        )
+        return msg.address.network_id in (self.id,) and msg.address.domain is None

@@ -14,7 +14,6 @@ from ...common.message import SyftMessage
 from ...common.message import SignedMessage
 from ....decorators import syft_decorator
 from syft.core.common.uid import UID
-from syft.core.io.address import All
 from ...io.location import Location
 from ..vm.vm import VirtualMachine
 from .client import DeviceClient
@@ -63,4 +62,4 @@ class Device(Node):
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.device.id in (self.id, All(),) and msg.address.vm is None
+        return msg.address.device_id in (self.id,) and msg.address.vm is None

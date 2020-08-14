@@ -28,7 +28,7 @@ from ...io.route import SoloRoute
 from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
-from ...io.address import Address
+
 
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -70,13 +70,6 @@ class Client(AbstractNodeClient):
 
         self.install_supported_frameworks()
 
-    @property
-    def address(self):
-        return Address(network=self.network,
-                       domain=self.domain,
-                       device=self.device,
-                       vm=self.vm)
-
     @staticmethod
     def deserialize_client_metadata_from_node(
         metadata: str,
@@ -101,7 +94,9 @@ class Client(AbstractNodeClient):
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        msg = RegisterChildNodeMessage(child_node_client=client, address=self)
+        msg = RegisterChildNodeMessage(
+            child_node_client_address=client.address, address=self.address
+        )
 
         if self.network is not None:
             client.network = (
@@ -131,6 +126,8 @@ class Client(AbstractNodeClient):
                 if self.device is not None  # type: ignore # nested "is not None"
                 else client.device
             )
+
+            assert self.device == client.device
 
         if self.vm is not None:
             client.vm = self.vm
@@ -207,14 +204,6 @@ class Client(AbstractNodeClient):
 
         vm = self.vm._object2proto() if self.vm is not None else None
 
-        print(
-            "trying to make a client pb what tpyes",
-            type(network),
-            type(domain),
-            type(device),
-            type(vm),
-        )
-
         client_pb = Client_PB(
             obj_type=obj_type,
             id=self.id.serialize(),
@@ -269,3 +258,27 @@ class Client(AbstractNodeClient):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Client_PB
+
+    @property
+    def device(self) -> Optional[Location]:
+        # WARNING TEMP HACK to get around HeritageUpdateMessage issues
+        try:
+            # get reference to the node
+            _ = self.routes[0].connection.server.node
+        except Exception as e:
+            print(f"cant traverse to own node {e}")
+
+        return self._device
+
+    @device.setter
+    def device(self, new_device: Location) -> Optional[Location]:
+        self._device = new_device
+        if issubclass(type(self), AbstractNodeClient):
+            try:
+                # get reference to the node
+                node = self.routes[0].connection.server.node
+                node.device = new_device
+                print("BYPASS node device updated", node.device)
+            except Exception as e:
+                print(f"cant traverse to own node {e}")
+        return self._device

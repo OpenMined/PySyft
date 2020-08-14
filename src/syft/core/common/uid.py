@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Any
 
 # external lib imports
 import uuid
@@ -104,7 +105,7 @@ class UID(Serializable):
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "UID") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -112,12 +113,15 @@ class UID(Serializable):
         come with their own __eq__ function which we assume to be correct.
 
         :param other: this is the other ID to be compared with
-        :type other: UID
+        :type other: Any (note this must be Any or __eq__ fails on other types)
         :return: returns True/False based on whether the objcts are the same
         :rtype: bool
         """
 
-        return self.value == other.value
+        try:
+            return self.value == other.value
+        except Exception:
+            return False
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

@@ -225,8 +225,9 @@ class Node(AbstractNode):
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
-
+            # QUESTION: this was destination=self.id and then destination=self.target_id
+            # reverting back but unsure what is correct
+            routes = [SoloRoute(destination=self.id, connection=conn_client)]
 
         return self.client_type(
             name=self.name,
@@ -235,8 +236,8 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
-            signing_key= None, # DO NOT PASS IN A SIGNING KEY!!! The client generates one.
-            verify_key= None, # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
+            signing_key=None,  # DO NOT PASS IN A SIGNING KEY!!! The client generates one.
+            verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
     @syft_decorator(typechecking=True)
@@ -306,7 +307,7 @@ class Node(AbstractNode):
     ) -> Union[SyftMessage, None]:
 
         if self.message_is_for_me(msg=msg):
-
+            # Process Message here
             if not msg.is_valid:
                 raise Exception("Message is not valid.")
 
@@ -327,10 +328,9 @@ class Node(AbstractNode):
             )
 
         else:
-
-            print("the old_message is not for me...")
-            return self.message_with_reply_forwarding_service.process(
-                node=self, msg=msg
+            # Forward message onwards
+            return self.signed_message_with_reply_forwarding_service.process(
+                node=self, msg=msg,
             )
 
     @syft_decorator(typechecking=True)

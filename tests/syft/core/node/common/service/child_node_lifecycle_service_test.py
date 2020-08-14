@@ -15,7 +15,8 @@ def test_child_node_lifecycle_message_serde():
     # bob_phone_client.register(client=bob_vm_client)
     # generates this message
     msg = RegisterChildNodeMessage(
-        child_node_client=bob_vm_client, address=bob_phone_client
+        child_node_client_address=bob_vm_client.address,
+        address=bob_phone_client.address,
     )
 
     blob = msg.serialize()
@@ -23,5 +24,5 @@ def test_child_node_lifecycle_message_serde():
 
     assert msg.id == msg2.id
     assert msg.address == msg2.address
-    assert msg.child_node_client == msg2.child_node_client
+    assert msg.child_node_client_address == msg2.child_node_client_address
     assert msg == msg2

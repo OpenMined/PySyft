@@ -65,8 +65,11 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey,
+        node: AbstractNode, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithoutReply:
+        # def process(
+        #     node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey,
+        # ) -> ImmediateSyftMessageWithoutReply:
 
         addr = msg.address
         pri_addr = addr.pri_address
@@ -100,33 +103,28 @@ class MessageWithReplyForwardingService(ImmediateNodeServiceWithReply):
 class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(
-        node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
-    ) -> SignedMessageT:
-
+    def process(node: AbstractNode, msg: SignedMessageT) -> SignedMessageT:
+        # def process(
+        #     node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
+        # ) -> SignedMessageT:
+        # TODO: Add verify_key?
         addr = msg.address
-        pri_addr = addr.pri_address
-        pub_addr = addr.pub_address
+        # pri_addr = addr.pri_address
+        # pub_addr = addr.pub_address
 
-        if pri_addr.vm is not None and node.store.has_object(pri_addr.vm):
-            return node.store.get_object(pri_addr.vm).send_signed_msg_with_reply(
-                msg=msg
-            )
+        # WARNING: This has no where to go
+        # ---------------------------------
+        # These retrieved objects were serialized so they are no longer a client
+        # with a connection to their server / node
 
-        if pri_addr.device is not None and node.store.has_object(pri_addr.device):
-            return node.store.get_object(pri_addr.device).send_signed_msg_with_reply(
-                msg=msg
-            )
-
-        if pub_addr.domain is not None and node.store.has_object(pub_addr.domain):
-            return node.store.get_object(pub_addr.domain).send_signed_msg_with_reply(
-                msg=msg
-            )
-
-        if pub_addr.network is not None and node.store.has_object(pub_addr.network):
-            return node.store.get_object(pub_addr.network).send_signed_msg_with_reply(
-                msg=msg
-            )
+        # order is important, vm, device, domain, network
+        for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
+            if scope_id is not None and scope_id in node.store:
+                obj = node.store[scope_id]
+                try:
+                    return obj.send_signed_msg_with_reply(msg=msg)
+                except Exception as e:
+                    raise e
 
         raise Exception(
             "Address unknown - cannot forward old_message. Throwing it away."
