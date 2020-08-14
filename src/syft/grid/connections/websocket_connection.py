@@ -6,6 +6,7 @@ import asyncio
 
 from syft.core.common.serde import Serializable
 from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.core.node.abstract.node import AbstractNode
 from typing import Set
 
 from syft.grid.duet.request import RequestResponse, RequestService
@@ -20,7 +21,7 @@ from syft.core.common.message import (
 
 
 class WebsocketConnection(BidirectionalConnection):
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, node: AbstractNode) -> None:
         # Websocket Connection representation
 
         # This class aims to implement a generic and
@@ -41,6 +42,10 @@ class WebsocketConnection(BidirectionalConnection):
         # Uniform Resource Location
         # Domain Address that we want to be connected.
         self.url = url
+
+        # Node obj instance (Domain, Worker, ...)
+        # used to process requests made by other peers.
+        self.node = node
 
         # EventLoop that manages async tasks (producer/consumer)
         # This structure is global and needs to be
@@ -82,7 +87,7 @@ class WebsocketConnection(BidirectionalConnection):
 
         # Async task to retreive ImmediateSyftMessages
         # from producer_pool queue and send them to target.
-        while True:
+        while self.connected:
             # If producer pool is empty (any immediate message to send), wait here.
             message = await self.producer_pool.get()
             await websocket.send(message)
@@ -141,6 +146,7 @@ class WebsocketConnection(BidirectionalConnection):
     @syft_decorator(typechecking=True)
     async def connect(self) -> None:
         async with websockets.connect(self.url) as websocket:
+            self.connected = True
             await self.handler(websocket)
 
     @syft_decorator(typechecking=True)
@@ -152,8 +158,8 @@ class WebsocketConnection(BidirectionalConnection):
             :return: returns an instance of ImmediateSyftMessageWithReply
             :rtype: ImmediateSyftMessageWithReply
         """
-        # Execute domain services now
-        reply = "Domain.recv_immediate_msg_with_reply(msg)"
+        # Execute node services now
+        reply = self.node.recv_immediate_msg_with_reply(msg)
         return reply
 
     @syft_decorator(typechecking=True)
@@ -161,14 +167,14 @@ class WebsocketConnection(BidirectionalConnection):
         self, msg: ImmediateSyftMessageWithoutReply
     ) -> None:
         """ Executes requests instantly. """
-        print("Domain.recv_immediate_msg_without_reply(msg)")
+        self.node.recv_immediate_msg_without_reply(msg)
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply
     ) -> None:
         """ Executes requests eventually. """
-        print("Domain.recv_eventual_msg_without_reply(msg)")
+        self.node.recv_eventual_msg_without_reply(msg)
 
     @syft_decorator(typechecking=True)
     def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
