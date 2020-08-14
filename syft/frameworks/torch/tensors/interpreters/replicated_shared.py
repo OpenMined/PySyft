@@ -131,7 +131,28 @@ class ReplicatedSharingTensor(AbstractTensor):
         return ReplicatedSharingTensor(shares_map)
 
     def private_mul(self, secret):
-        raise NotImplementedError()
+        x, y = self.get_shares_map(), secret.get_shares_map()
+        players = self.get_players()
+        z = [
+            (x[player][0] * y[player][0])
+            + (x[player][1] * y[player][0])
+            + (x[player][0] * y[player][1])
+            for player in players
+        ]
+        z = self.__reshare(z, players)
+        return ReplicatedSharingTensor(z)
+
+    @staticmethod
+    def __reshare(shares, workers):
+        """convert 3-out-of-3 secret sharing: {player i : share i}
+          to 2-out-of-3 sharing: {player i : (share i, share i+1)}  """
+        shares_map = {}
+        for i in range(len(shares)):
+            pointer = shares[(i + 1) % len(shares)].copy().move(workers[i])
+            shares_map[workers[i]] = (shares[i], pointer)
+        return shares_map
+        # works but not secure till correlated randomness is added
+        # TODO add correlated randomness
 
     __mul__ = mul
 

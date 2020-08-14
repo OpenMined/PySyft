@@ -95,7 +95,6 @@ def test_public_mul(workers):
 
 def test_private_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
-    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
-    with pytest.raises(NotImplementedError):
-        z = x * y
+    x = torch.tensor([3, 5]).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor([5, 2]).share(bob, alice, james, protocol="falcon")
+    assert ((x * y).reconstruct() == torch.tensor([15, 10])).all()
