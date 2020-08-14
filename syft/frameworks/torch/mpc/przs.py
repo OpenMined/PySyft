@@ -96,7 +96,7 @@ def gen_alpha_3of3(worker):
 def gen_alpha_2of3(worker):
     func = None
     if worker == syft.local_worker:
-        func = _generate_alpha_3of3
+        func = _generate_alpha_2of3
     else:
         func = remote(_generate_alpha_2of3, location=worker)
 
