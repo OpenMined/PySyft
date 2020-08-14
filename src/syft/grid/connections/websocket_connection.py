@@ -6,7 +6,7 @@ import asyncio
 
 from syft.core.common.serde import Serializable
 from syft.decorators.syft_decorator_impl import syft_decorator
-
+from typing import Set
 
 from syft.grid.duet.request import RequestResponse, RequestService
 
@@ -55,6 +55,8 @@ class WebsocketConnection(BidirectionalConnection):
         )  # Request Messages / Request Responses
         self.consumer_pool = asyncio.Queue(loop=self.loop)  # Request Responses
 
+        asyncio.ensure_future(self.connect())
+
     @syft_decorator(typechecking=False)
     async def handler(self, websocket) -> None:
         """ Websocket Handler."""
@@ -80,7 +82,6 @@ class WebsocketConnection(BidirectionalConnection):
 
         # Async task to retreive ImmediateSyftMessages
         # from producer_pool queue and send them to target.
-
         while True:
             # If producer pool is empty (any immediate message to send), wait here.
             message = await self.producer_pool.get()
@@ -173,28 +174,14 @@ class WebsocketConnection(BidirectionalConnection):
     def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
         raise NotImplementedError
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=False)
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithReply:
         """ Sends high priority messages and wait for their responses.
             :return: returns an instance of ImmediateSyftMessageWithReply.
         """
-
-        # To ensure the sequence of sending / receiving messages
-        # it's necessary to keep only a unique reference for reading
-        # inputs (producer) and outputs (consumer).
-
-        # To be able to perform this method synchronously (waiting for the reply)
-        # without blocking async methods, we need to use queues.
-
-        # Enqueue the message to be sent to the target.
-        self.producer_pool.put(msg)
-
-        # Wait for the response checking the consumer queue.
-        response = asyncio.run(self.consumer_pool.get())
-
-        return response
+        return asyncio.run(self.send_sync_message(msg=msg))
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
@@ -215,6 +202,12 @@ class WebsocketConnection(BidirectionalConnection):
         """" Sends signed messages waiting for their reply.
             :return: returns an instance of ImmediateSyftMessageWithReply.
         """
+        return asyncio.run(self.send_sync_message(msg=msg))
+
+    async def send_sync_message(
+        self, msg: Set[SignedMessage, ImmediateSyftMessageWithReply]
+    ) -> Set[SignedMessage, ImmediateSyftMessageWithReply]:
+        """ Send sync messages generically. """
 
         # To ensure the sequence of sending / receiving messages
         # it's necessary to keep only a unique reference for reading
@@ -224,8 +217,9 @@ class WebsocketConnection(BidirectionalConnection):
         # without blocking async methods, we need to use queues.
 
         # Enqueue the message to be sent to the target.
-        self.producer_pool.put(msg)
+        await self.producer_pool.put(msg)
 
         # Wait for the response checking the consumer queue.
-        response = asyncio.run(self.consumer_pool.get())
+        response = await self.consumer_pool.get()
+
         return response
