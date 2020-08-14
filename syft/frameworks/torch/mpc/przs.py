@@ -10,7 +10,8 @@ RING_SIZE = 2 ** 64
 
 def przs_setup(workers):
     seed_max = 2 ** 32
-    cycle_workers = zip(workers, [*workers[1:], workers[0]])
+    shifted_workers = [workers.pop()]+[workers]
+    cycle_workers = zip(workers, shifted_workers)
 
     workers_ptr = defaultdict(dict)
 
