@@ -11,6 +11,7 @@ def test_get_random_number(workers):
     workers = [alice, bob, james]
 
     PRZS.setup(workers)
+
     paired_workers = list(zip(workers, workers[1:]))
     paired_workers.append((workers[-1], workers[0]))
 
