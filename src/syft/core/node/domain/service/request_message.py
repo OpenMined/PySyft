@@ -75,7 +75,4 @@ class RequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     # @syft_decorator(typechecking=True)
     def process(node, msg: RequestMessage) -> None:
-        node.requests[msg.request_id] = {
-            "message": msg,
-            "status": RequestStatus.Pending,
-        }
+        node.requests.register_request(msg)

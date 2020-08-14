@@ -109,16 +109,19 @@ class Pointer(Serializable):
             object_id=self.id_at_location,
         )
         self.location.send_immediate_msg_without_reply(msg=msg)
-
-        node.object2request[self.id_at_location] = msg.request_id
+        node.requests.register_mapping(self.id_at_location, msg.request_id)
 
 
     def check_access(self, node, request_id):
-        from ..node.domain.service import RequestAnswerMessage
+        from ..node.domain.service import RequestAnswerMessage, RequestAnswerResponseService
         msg = RequestAnswerMessage(
             request_id=request_id,
             address=self.location,
-            reply_to=node.address
+            reply_to=node.domain
         )
-        response = self.location.send_immediate_msg_with_reply(msg)
+        response = self.location.send_immediate_msg_with_reply(msg=msg)
+
+        #this should be handled by the service by default, should be patched after 0.3.0
+        RequestAnswerResponseService.process(node, response)
+
         return response.status

@@ -50,7 +50,7 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
     # @syft_decorator(typechecking=True)
     def process(node, msg: RequestAnswerMessage) -> RequestAnswerResponse:
-        status = node.requests[msg.request_id]["response"]
+        status = node.requests.get_status(msg.request_id)
         address = msg.reply_to
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status

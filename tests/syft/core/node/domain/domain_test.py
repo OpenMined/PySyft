@@ -76,13 +76,14 @@ def test_domain_request_access():
 
 
     domain_2 = Domain(name='my domain"')
-    domain_2_client = domain_2.get_client()
 
     data_ptr_domain_1.request_access(domain_2)
 
     requested_object = data_ptr_domain_1.id_at_location
-    message_request_id = domain_2.object2request[requested_object]
+    message_request_id = domain_2.requests.get_request_id_from_object_id(requested_object)
 
-    assert len(domain_1.requests) == 1
-    domain_2.set_request_status(message_request_id, RequestStatus.Accepted)
+    domain_1.set_request_status(message_request_id, RequestStatus.Accepted)
+
+    response = data_ptr_domain_1.check_access(domain_2, message_request_id)
+    print(response)
 

@@ -48,9 +48,9 @@ class RequestAnswerResponseService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
-        return [RequestAnswerResponseService]
+        return [RequestAnswerResponse]
 
     @staticmethod
     # @syft_decorator(typechecking=True)
     def process(node, msg: RequestAnswerResponse) -> None:
-        node.requests_responses[msg.request_id] = msg.status
+        node.requests.register_response(msg)

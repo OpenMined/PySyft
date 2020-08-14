@@ -1,6 +1,7 @@
 # external class imports
 from typing import Optional, Union
 from nacl.signing import VerifyKey
+from dataclasses import dataclass
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -16,11 +17,40 @@ from .service import (
     RequestAnswerMessageService,
     RequestAnswerResponseService,
     RequestService,
+    RequestMessage,
+    RequestAnswerResponse,
+    RequestStatus
 )
+
+@dataclass(frozen=True)
+class Requests:
+    _requests = {}
+    _object2request = {}
+    _responses = {}
+
+    def register_request(self, msg: RequestMessage):
+        self._requests[msg.request_id] = {
+            "message": msg,
+            "status": RequestStatus.Pending,
+        }
+
+    def register_response(self, msg: RequestAnswerResponse):
+        self._responses[msg.request_id] = msg.status
+
+    def get_status(self, request_id):
+        return self._requests[request_id]["status"]
+
+    def register_mapping(self, object_id, request_id):
+        self._object2request[object_id] = request_id
+
+    def get_request_id_from_object_id(self, object_id):
+        return self._object2request[object_id]
+
+    def set_request_status(self, request_id, status):
+        self._requests[request_id]["status"] = status
 
 
 class Domain(Node):
-
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
 
@@ -43,14 +73,12 @@ class Domain(Node):
         )
 
         self.root_key = root_key
-        self.requests = {}
-        self.object2request = {}
 
         self.immediate_services_without_reply.append(RequestService)
         self.immediate_services_without_reply.append(RequestAnswerResponseService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
-
+        self.requests = Requests()
         # available_device_types = set()
         # TODO: add available compute types
 
@@ -67,4 +95,4 @@ class Domain(Node):
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
 
     def set_request_status(self, request_id, status):
-        self.requests[request_id]["response"].status = status
+        self.requests.set_request_status(request_id, status)
