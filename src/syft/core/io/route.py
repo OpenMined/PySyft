@@ -158,7 +158,6 @@ class SoloRoute(Route):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SoloRoute_PB:
-        print("trying to proto", type(self), self.schema.destination)
         return SoloRoute_PB(
             destination=self.schema.destination._object2proto(),
             connection=self.connection._object2proto(),

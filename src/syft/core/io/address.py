@@ -1,5 +1,6 @@
 # external class imports
 from typing import Optional
+from typing import Any
 
 # syft imports (sorted by length)
 from ..io.location import Location
@@ -11,9 +12,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 
 # utility addresses
-class All(object):
-    def __repr__(self):
-        return "All"
+# QUESTION: what is this? It breaks the __eq__ when checking
+# def message_is_for_me
+# return msg.address.device.id in (self.id, All(),) and msg.address.vm is None
+# in this case All is not an Address so the dunder throws an error due to the type
+# def __eq__(self, other: "Address") -> bool:
+# class All(object):
+#     def __repr__(self):
+#         return "All"
 
 
 class Unspecified(object):
@@ -63,6 +69,13 @@ class Address(Serializable):
         # or is a vm itself, this property will store the ID of that vm if it
         # is known
         self._vm = vm
+
+    @property
+    def address(self) -> "Address":
+        # QUESTION what happens if we have none of these?
+        return Address(
+            network=self.network, domain=self.domain, device=self.device, vm=self.vm
+        )
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Address_PB:
@@ -153,6 +166,13 @@ class Address(Serializable):
         return self._network
 
     @property
+    def network_id(self) -> Optional[Location]:
+        network = self.network
+        if network is not None:
+            return network.id
+        return None
+
+    @property
     def domain(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a domain
         or is a domain itself, this property will return the ID of that domain
@@ -173,6 +193,13 @@ class Address(Serializable):
         return self._domain
 
     @property
+    def domain_id(self) -> Optional[Location]:
+        domain = self.domain
+        if domain is not None:
+            return domain.id
+        return None
+
+    @property
     def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
         or is a device itself, this property will return the ID of that device
@@ -190,6 +217,13 @@ class Address(Serializable):
 
         self._device = new_device
         return self._device
+
+    @property
+    def device_id(self) -> Optional[Location]:
+        device = self.device
+        if device is not None:
+            return device.id
+        return None
 
     @property
     def vm(self) -> Optional[Location]:
@@ -212,6 +246,13 @@ class Address(Serializable):
         return self._vm
 
     @property
+    def vm_id(self) -> Optional[Location]:
+        vm = self.vm
+        if vm is not None:
+            return vm.id
+        return None
+
+    @property
     def target_id(self) -> Location:
         """Return the address of the node which lives at this address.
 
@@ -229,21 +270,24 @@ class Address(Serializable):
         raise Exception("Address has no valid parts")
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "Address") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Returns whether two Address objects refer to the same set of locations
 
         :param other: the other object to compare with self
-        :param type: Address
+        :type other: Any (note this must be Any or __eq__ fails on other types)
         :returns: whether the two objects are the same
         :rtype: bool
         """
 
-        a = self.network == other.network
-        b = self.domain == other.domain
-        c = self.device == other.device
-        d = self.vm == other.vm
+        try:
+            a = self.network == other.network
+            b = self.domain == other.domain
+            c = self.device == other.device
+            d = self.vm == other.vm
 
-        return a and b and c and d
+            return a and b and c and d
+        except Exception:
+            return False
 
     def __repr__(self) -> str:
         out = f"<{type(self).__name__} -"

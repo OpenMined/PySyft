@@ -36,7 +36,6 @@ class VirtualMachine(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        print("creating VirtualMachine with signingkey", signing_key)
         super().__init__(
             name=name,
             network=network,
@@ -55,7 +54,7 @@ class VirtualMachine(Node):
         return self.vm.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.vm.id == self.id
+        return msg.address.vm_id == self.id
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:

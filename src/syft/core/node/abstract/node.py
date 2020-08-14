@@ -1,5 +1,6 @@
 from typing import Any, List, Optional
 from typing import Set
+from typing import Dict
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -22,6 +23,9 @@ class AbstractNode(Address):
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
     guest_verify_key_registry: Set[VerifyKey]
+
+    # TODO: remove hacky in_memory_client_registry
+    in_memory_client_registry: Dict[Any, Any]
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -65,7 +69,8 @@ class AbstractNode(Address):
 
 class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)
-    address: Address
+    # TODO: remove hacky in_memory_client_registry
+    in_memory_client_registry: Dict[Any, Any]
     """"""
 
     @property

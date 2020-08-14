@@ -4,7 +4,7 @@ from syft.core.common import UID
 import torch as th
 
 
-def test_request_message_creation():
+def test_request_message_creation() -> None:
     obj = RequestMessage(
         request_name="request", request_description="request description"
     )
@@ -13,7 +13,7 @@ def test_request_message_creation():
     assert obj.request_description == "request description"
 
 
-def test_request_message_serde():
+def test_request_message_serde() -> None:
     obj = RequestMessage(
         request_name="request", request_description="request description"
     )
@@ -25,7 +25,7 @@ def test_request_message_serde():
     assert obj.request_id == new_obj.request_id
 
 
-def test_request_response():
+def test_request_response() -> None:
     id = UID()
     status = RequestStatus.Pending
     obj = RequestResponse(status=status, request_id=id)
@@ -34,7 +34,7 @@ def test_request_response():
     assert obj.request_id == id
 
 
-def test_request_response_serde():
+def test_request_response_serde() -> None:
     obj = RequestResponse(status=RequestStatus.Pending, request_id=UID())
 
     serialized_obj = sy.serialize(obj=obj)
@@ -44,7 +44,7 @@ def test_request_response_serde():
     assert obj.request_id == new_obj.request_id
 
 
-def test_duet_send_and_get():
+def test_duet_send_and_get() -> None:
     duet = sy.Duet(host="127.0.0.1", port=5001)
 
     x = th.tensor([1, 2, 3])

@@ -12,9 +12,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 from syft.core.common.message import (
+    SyftMessage,
     EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
 )
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
@@ -28,7 +28,7 @@ from ...io.route import SoloRoute
 from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
-from ...io.address import Address
+
 
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -70,13 +70,6 @@ class Client(AbstractNodeClient):
 
         self.install_supported_frameworks()
 
-    @property
-    def address(self):
-        return Address(network=self.network,
-                       domain=self.domain,
-                       device=self.device,
-                       vm=self.vm)
-
     @staticmethod
     def deserialize_client_metadata_from_node(
         metadata: str,
@@ -100,8 +93,19 @@ class Client(AbstractNodeClient):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
+    def register_in_memory_client(self, client: AbstractNodeClient) -> None:
+        # WARNING: Gross hack
+        route_index = self.default_route_index
+        self.routes[route_index].connection.server.node.in_memory_client_registry[
+            client.address.target_id.id
+        ] = client
+
+    @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        msg = RegisterChildNodeMessage(child_node_client=client, address=self)
+        self.register_in_memory_client(client=client)
+        msg = RegisterChildNodeMessage(
+            child_node_client_address=client.address, address=self.address
+        )
 
         if self.network is not None:
             client.network = (
@@ -132,6 +136,8 @@ class Client(AbstractNodeClient):
                 else client.device
             )
 
+            assert self.device == client.device
+
         if self.vm is not None:
             client.vm = self.vm
 
@@ -142,17 +148,17 @@ class Client(AbstractNodeClient):
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply, route_index: int = 0
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SyftMessage, route_index: int = 0,
+    ) -> SyftMessage:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign(signing_key=self.signing_key)
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            msg = msg.sign(signing_key=self.signing_key)
 
-        response = self.routes[route_index].send_immediate_msg_with_reply(
-            msg=signed_msg
-        )
+        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
 
         if response.is_valid:
             return response.message
@@ -161,15 +167,19 @@ class Client(AbstractNodeClient):
             "Response was signed by a fake key or was corrupted in transit."
         )
 
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply, route_index: int = 0
+        self, msg: SyftMessage, route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign(signing_key=self.signing_key)
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            print("are we signing this message?", type(msg))
+            msg = msg.sign(signing_key=self.signing_key)
+            print("signed?", type(msg))
 
-        self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
+        self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -206,14 +216,6 @@ class Client(AbstractNodeClient):
         device = self.device._object2proto() if self.device is not None else None
 
         vm = self.vm._object2proto() if self.vm is not None else None
-
-        print(
-            "trying to make a client pb what tpyes",
-            type(network),
-            type(domain),
-            type(device),
-            type(vm),
-        )
 
         client_pb = Client_PB(
             obj_type=obj_type,

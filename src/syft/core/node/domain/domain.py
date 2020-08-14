@@ -12,7 +12,6 @@ from ...io.location import Location
 from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
-from ...io.address import All
 
 
 class Domain(Node):
@@ -61,4 +60,4 @@ class Domain(Node):
         return self.domain.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
+        return msg.address.domain_id in (self.id,) and msg.address.device is None

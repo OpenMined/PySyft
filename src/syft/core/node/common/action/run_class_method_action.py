@@ -56,14 +56,18 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
 
-            result_read_permissions = result_read_permissions.intersection(r_arg.read_permissions)
+            result_read_permissions = result_read_permissions.intersection(
+                r_arg.read_permissions
+            )
 
             resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
-            result_read_permissions = result_read_permissions.intersection(r_arg.read_permissions)
+            result_read_permissions = result_read_permissions.intersection(
+                r_arg.read_permissions
+            )
             resolved_kwargs[arg_name] = r_arg.data
 
         result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
@@ -73,8 +77,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         result.id = self.id_at_location
 
         if not isinstance(result, StorableObject):
-            result = StorableObject(id=self.id_at_location, data=result,
-                                    read_permissions=result_read_permissions)
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=result_read_permissions,
+            )
 
         node.store.store(obj=result)
 
