@@ -42,7 +42,7 @@ def test_torch_serde():
 
     assert (x == x2).all()
 
-    
+
 def test_torch_permissions():
 
     bob = sy.VirtualMachine(name="bob")
@@ -73,4 +73,4 @@ def test_torch_permissions():
 
     assert (x == x2).all()
 
-    assert (x.grad == x2.grad).all()
+    assert (x.grad == x2.grad)
