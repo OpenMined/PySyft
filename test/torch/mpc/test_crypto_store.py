@@ -1,7 +1,7 @@
 import pytest
 
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
-from syft.frameworks.torch.mpc.przs import przs_setup, RING_SIZE
+from syft.frameworks.torch.mpc.przs import RING_SIZE, PRZS
 
 
 def test_primitives_usage(workers):
@@ -33,10 +33,10 @@ def test_przs_alpha_3of3(workers):
     )
 
     workers_vals = [alice, bob, james]
-    przs_setup(workers_vals)
+    PRZS.setup(workers_vals)
 
     """Carefull! This works because we have virtual workers"""
-    values = [worker.crypto_store.generate_alpha_3of3() for worker in workers_vals]
+    values = [worker.crypto_store.przs.generate_alpha_3of3() for worker in workers_vals]
 
     sum_values = sum(values)
 
@@ -51,9 +51,9 @@ def test_przs_alpha_2of3(workers):
     )
 
     workers_vals = [alice, bob, james]
-    przs_setup(workers_vals)
+    PRZS.setup(workers_vals)
 
-    values = [worker.crypto_store.generate_alpha_2of3() for worker in workers_vals]
+    values = [worker.crypto_store.przs.generate_alpha_2of3() for worker in workers_vals]
 
     """Worker i holds (alpha_i, and alpha_i-1)
         Here we do:
