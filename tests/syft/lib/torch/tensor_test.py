@@ -29,7 +29,12 @@ def test_torch_vm_remote_operation():
 
 def test_torch_serde():
 
-    x = th.tensor([1, 2, 3, 4])
+    x = th.tensor([1.0, 2, 3, 4], requires_grad=True)
+
+    # This is not working currently:
+    # (x * 2).sum().backward()
+    # But pretend we have .grad
+    x.grad = th.randn_like(x)
 
     blob = x.serialize()
 
@@ -37,7 +42,7 @@ def test_torch_serde():
 
     assert (x == x2).all()
 
-
+    
 def test_torch_permissions():
 
     bob = sy.VirtualMachine(name="bob")
@@ -67,3 +72,5 @@ def test_torch_permissions():
     x2 = ptr.get()
 
     assert (x == x2).all()
+
+    assert (x.grad == x2.grad).all()
