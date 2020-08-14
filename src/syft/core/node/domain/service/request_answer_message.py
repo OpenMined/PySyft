@@ -22,18 +22,18 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestAnswerMessage_PB:
         msg = RequestAnswerMessage_PB()
-        msg.request_id.CopyFrom(serialize(self.request_id))
-        msg.address.CopyFrom(serialize(self.address))
-        msg.reply_to.CopyFrom(serialize(self.reply_to))
+        msg.request_id.CopyFrom(serialize(obj=self.request_id))
+        msg.address.CopyFrom(serialize(obj=self.address))
+        msg.reply_to.CopyFrom(serialize(obj=self.reply_to))
         return msg
 
     @staticmethod
     # @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestAnswerMessage_PB) -> "RequestAnswerMessage":
         return RequestAnswerMessage(
-            request_id=deserialize(proto.request_id),
-            address=deserialize(proto.address),
-            reply_to=deserialize(proto.reply_to),
+            request_id=deserialize(blob=proto.request_id),
+            address=deserialize(blob=proto.address),
+            reply_to=deserialize(blob=proto.reply_to),
         )
 
     @staticmethod

@@ -1,7 +1,62 @@
 import torch as th
-import syft as sy
-from syft.core.node.domain import Domain, DomainClient
+from syft.core.common import UID
+from syft.core.node.domain import Domain
+from syft.core.node.domain.service import RequestStatus, RequestMessage, RequestAnswerResponse, \
+    RequestAnswerMessage
+from syft.core.io.address import Address
 from syft import serialize, deserialize
+
+def test_request_message():
+    addr = Address()
+    msg = RequestMessage(
+        request_name="test request",
+        request_description="test description",
+        address=addr,
+        owner_address=addr,
+        object_id=UID(),
+    )
+
+    deserialized_obj = serialize(obj=msg)
+    new_obj = deserialize(blob=deserialized_obj)
+
+    assert msg.request_name == new_obj.request_name
+    assert msg.request_description == new_obj.request_description
+    assert msg.address == new_obj.address
+    assert msg.owner_address == new_obj.owner_address
+    assert msg.object_id == new_obj.object_id
+
+def test_request_answer_message():
+    addr = Address()
+
+    msg = RequestAnswerMessage(
+        request_id=UID(),
+        address=addr,
+        reply_to=addr
+    )
+
+    serialized = serialize(obj=msg)
+    new_msg = deserialize(blob=serialized)
+
+    assert msg.request_id == new_msg.request_id
+    assert msg.address == new_msg.address
+    assert msg.reply_to == new_msg.reply_to
+
+
+def test_request_answer_response():
+    addr = Address()
+
+    msg = RequestAnswerResponse(
+        request_id=UID(),
+        address=addr,
+        status=RequestStatus.Pending
+    )
+
+    serialized = serialize(obj=msg)
+    new_msg = deserialize(blob=serialized)
+
+    assert msg.request_id == new_msg.request_id
+    assert msg.address == new_msg.address
+    assert msg.status == new_msg.status
 
 def test_domain_creation():
     domain = Domain(name="test domain")
@@ -23,5 +78,11 @@ def test_domain_request_access():
     domain_2 = Domain(name='my domain"')
     domain_2_client = domain_2.get_client()
 
-    data_ptr_domain_1.request_access(domain_2_client)
+    data_ptr_domain_1.request_access(domain_2)
+
+    requested_object = data_ptr_domain_1.id_at_location
+    message_request_id = domain_2.object2request[requested_object]
+
+    assert len(domain_1.requests) == 1
+    domain_2.set_request_status(message_request_id, RequestStatus.Accepted)
 

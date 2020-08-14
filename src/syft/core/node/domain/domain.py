@@ -44,7 +44,7 @@ class Domain(Node):
 
         self.root_key = root_key
         self.requests = {}
-        self.requests_responses = {}
+        self.object2request = {}
 
         self.immediate_services_without_reply.append(RequestService)
         self.immediate_services_without_reply.append(RequestAnswerResponseService)
@@ -66,5 +66,5 @@ class Domain(Node):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
 
-    def set_status_request(self, request_id, status):
+    def set_request_status(self, request_id, status):
         self.requests[request_id]["response"].status = status

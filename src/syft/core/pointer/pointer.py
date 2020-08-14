@@ -110,6 +110,9 @@ class Pointer(Serializable):
         )
         self.location.send_immediate_msg_without_reply(msg=msg)
 
+        node.object2request[self.id_at_location] = msg.request_id
+
+
     def check_access(self, node, request_id):
         from ..node.domain.service import RequestAnswerMessage
         msg = RequestAnswerMessage(

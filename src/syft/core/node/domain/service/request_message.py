@@ -42,9 +42,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         msg.request_name = self.request_name
         msg.request_description = self.request_description
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
-        msg.target_address.CopyFrom(serialize(self.address))
-        msg.object_id.CopyFrom(serialize(self.object_id))
-        msg.owner_address.CopyFrom(serialize(self.owner_address))
+        msg.target_address.CopyFrom(serialize(obj=self.address))
+        msg.object_id.CopyFrom(serialize(obj=self.object_id))
+        msg.owner_address.CopyFrom(serialize(obj=self.owner_address))
         return msg
 
     @staticmethod
@@ -53,9 +53,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         request_msg = RequestMessage(
             request_name=proto.request_name,
             request_description=proto.request_description,
-            target_address=deserialize(proto.address),
-            object_id=deserialize(proto.owner_address),
-            owner_address=deserialize(proto.owner_address),
+            address=deserialize(blob=proto.target_address),
+            object_id=deserialize(blob=proto.object_id),
+            owner_address=deserialize(blob=proto.owner_address),
         )
         request_msg.request_id = deserialize(blob=proto.request_id)
         return request_msg

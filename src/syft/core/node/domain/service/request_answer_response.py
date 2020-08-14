@@ -25,6 +25,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         msg = RequestAnswerResponse_PB()
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
         msg.status = self.status.value
+        msg.address.CopyFrom(serialize(obj=self.address))
         return msg
 
     @staticmethod
@@ -33,6 +34,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         request_response = RequestAnswerResponse(
             status=RequestStatus(proto.status),
             request_id=deserialize(blob=proto.request_id),
+            address=deserialize(blob=proto.address)
         )
         return request_response
 
