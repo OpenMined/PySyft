@@ -55,7 +55,8 @@ def test_przs_alpha_2of3(workers):
 
     values = [worker.crypto_store.przs.generate_alpha_2of3() for worker in workers_vals]
 
-    """Worker i holds (alpha_i, and alpha_i-1)
+    """
+        Worker i holds (alpha_i, and alpha_i-1)
         Here we do:
         ((alpha_i, alpha_i-1), (alpha_i+1, alpha_i))
     """
