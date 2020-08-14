@@ -1,6 +1,7 @@
 # external class imports
 from typing import Optional, Union
 from nacl.signing import VerifyKey
+from dataclasses import dataclass, field
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -12,10 +13,61 @@ from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
 from ...io.address import All
+import pandas
+from typing import Dict
+from .service import (
+    RequestAnswerMessageService,
+    RequestAnswerResponseService,
+    RequestService,
+    RequestMessage,
+    RequestAnswerResponse,
+    RequestStatus,
+)
+
+
+@dataclass(frozen=True)
+class Requests:
+    _requests: Dict[UID, dict] = field(default_factory=dict)
+    _object2request: Dict[UID, UID] = field(default_factory=dict)
+    _responses: Dict[UID, RequestStatus] = field(default_factory=dict)
+
+    def register_request(self, msg: RequestMessage) -> None:
+        self._requests[msg.request_id] = {
+            "message": msg,
+            "status": RequestStatus.Pending,
+        }
+
+    def register_response(self, msg: RequestAnswerResponse) -> None:
+        self._responses[msg.request_id] = msg.status
+
+    def get_status(self, request_id: UID) -> RequestStatus:
+        return self._requests[request_id]["status"]
+
+    def register_mapping(self, object_id: UID, request_id: UID) -> None:
+        self._object2request[object_id] = request_id
+
+    def get_request_id_from_object_id(self, object_id: UID) -> UID:
+        return self._object2request[object_id]
+
+    def set_request_status(self, request_id: UID, status: RequestStatus) -> None:
+        self._requests[request_id]["status"] = status
+
+    def display_requests(self) -> pandas.DataFrame:
+        request_lines = []
+        for request_id, request in self._requests.items():
+            request_lines.append(
+                {
+                    "Request name": request["message"].request_name,
+                    "Request description": request["message"].request_description,
+                    "Request ID": request_id,
+                    "Object Status": request["status"],
+                    "Object ID": request["message"].object_id,
+                }
+            )
+        return pandas.DataFrame(request_lines)
 
 
 class Domain(Node):
-
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
 
@@ -39,6 +91,11 @@ class Domain(Node):
 
         self.root_key = root_key
 
+        self.immediate_services_without_reply.append(RequestService)
+        self.immediate_services_without_reply.append(RequestAnswerResponseService)
+
+        self.immediate_services_with_reply.append(RequestAnswerMessageService)
+        self.requests = Requests()
         # available_device_types = set()
         # TODO: add available compute types
 
@@ -53,3 +110,6 @@ class Domain(Node):
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         return msg.address.domain.id in (self.id, All(),) and msg.address.device is None
+
+    def set_request_status(self, request_id, status):
+        self.requests.set_request_status(request_id, status)
