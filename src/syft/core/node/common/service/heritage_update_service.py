@@ -7,15 +7,21 @@ information to populate complete addresses into their clients."""
 # external class imports
 from nacl.signing import VerifyKey
 from typing import List
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
+
+from .....proto.core.node.common.service.heritage_update_service_pb2 import (
+    HeritageUpdateMessage as HeritageUpdateMessage_PB,
+)
 
 from .auth import service_auth
 from ....io.address import Address
 from .....decorators import syft_decorator
 from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithoutReply
+from ....common.serde.deserialize import _deserialize
 
 # TODO: change all old_message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name
@@ -27,6 +33,26 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.new_ancestry_address = new_ancestry_address
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> HeritageUpdateMessage_PB:
+        return HeritageUpdateMessage_PB(
+            new_ancestry_address=self.new_ancestry_address.serialize(),
+            address=self.address.serialize(),
+            msg_id=self.id.serialize(),
+        )
+
+    @staticmethod
+    def _proto2object(proto: HeritageUpdateMessage_PB) -> "HeritageUpdateMessage":
+        return HeritageUpdateMessage(
+            new_ancestry_address=_deserialize(blob=proto.new_ancestry_address),
+            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(blob=proto.msg_id),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return HeritageUpdateMessage_PB
 
 
 class HeritageUpdateService(ImmediateNodeServiceWithoutReply):

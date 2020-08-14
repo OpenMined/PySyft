@@ -42,9 +42,8 @@ from .client import Client
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import (
-    MessageWithoutReplyForwardingService,
-    MessageWithReplyForwardingService,
     SignedMessageWithReplyForwardingService,
+    SignedMessageWithoutReplyForwardingService,
 )
 from .service.obj_action_service import (
     EventualObjectActionServiceWithoutReply,
@@ -189,13 +188,13 @@ class Node(AbstractNode):
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
-        self.message_without_reply_forwarding_service = (
-            MessageWithoutReplyForwardingService()
-        )
-        self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
         self.signed_message_with_reply_forwarding_service = (
             SignedMessageWithReplyForwardingService()
+        )
+
+        self.signed_message_without_reply_forwarding_service = (
+            SignedMessageWithoutReplyForwardingService()
         )
 
         # now we need to load the relevant frameworks onto the node
@@ -220,6 +219,7 @@ class Node(AbstractNode):
         # PERMISSION REGISTRY:
         self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
+        self.in_memory_client_registry = {}
 
     @syft_decorator(typechecking=True)
     def get_client(self, routes: List[Route] = []) -> ClientT:
@@ -302,9 +302,10 @@ class Node(AbstractNode):
     ) -> None:
         self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
+    # TODO: Add SignedEventualSyftMessageWithoutReply and others
     def process_message(
         self, msg: SignedMessage, router: dict
-    ) -> Union[SyftMessage, None]:
+    ) -> Optional[SyftMessage]:
 
         if self.message_is_for_me(msg=msg):
             # Process Message here
@@ -323,15 +324,26 @@ class Node(AbstractNode):
                     + f"{e}"
                 )
 
-            return service.process(
-                node=self, msg=msg.message, verify_key=msg.verify_key
+            result = service.process(
+                node=self, msg=msg.message, verify_key=msg.verify_key,
             )
+
+            return result
+
+            # if isinstance(type(msg), SignedImmediateSyftMessageWithReply):
+            #     return result
 
         else:
             # Forward message onwards
-            return self.signed_message_with_reply_forwarding_service.process(
-                node=self, msg=msg,
-            )
+            if isinstance(type(msg), SignedImmediateSyftMessageWithReply):
+                return self.signed_message_with_reply_forwarding_service.process(
+                    node=self, msg=msg,
+                )
+            if isinstance(type(msg), SignedImmediateSyftMessageWithoutReply):
+                return self.signed_message_without_reply_forwarding_service.process(
+                    node=self, msg=msg,
+                )
+        return None
 
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:

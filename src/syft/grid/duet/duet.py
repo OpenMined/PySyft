@@ -38,24 +38,21 @@ class GridHttpClientConnection(ClientConnection):
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> requests.Response:
         blob = self.send_msg(msg).text
-        print(blob)
         response = sy.deserialize(blob=blob, from_json=True)
-        # print(response.obj)
         return response
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> requests.Response:
         return self.send_msg(msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> requests.Response:
         return self.send_msg(msg)
 
     def send_msg(self, msg: SyftMessage) -> requests.Response:
         json_msg = msg.json()
-        print("trying to send message", self.base_url, msg)
         r = requests.post(url=self.base_url + str(self.domain_id.value), json=json_msg)
         return r
 
@@ -119,7 +116,6 @@ class Duet(DomainClient):
         def recv() -> str:  # pylint: disable=unused-variable
             json_msg = request.get_json()
             msg = sy.deserialize(blob=json_msg, from_json=True)
-
             if isinstance(msg, SignedImmediateSyftMessageWithReply):
                 reply = domain.recv_immediate_msg_with_reply(msg=msg)
                 return reply.json()

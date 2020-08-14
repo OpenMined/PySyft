@@ -95,3 +95,15 @@ class SignedNodeServiceWithReply(ImmediateNodeService):
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
+
+
+class SignedNodeServiceWithoutReply(ImmediateNodeService):
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def process(node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[Type[Any]]:
+        raise NotImplementedError

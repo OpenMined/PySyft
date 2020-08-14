@@ -87,9 +87,19 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         # original child clients send_immediate_msg_without_reply function so
         # there is no way to invoke it
 
-        _ = HeritageUpdateMessage(
+        heritage_msg = HeritageUpdateMessage(
             new_ancestry_address=node.address, address=msg.child_node_client_address
         )
+
+        location = msg.child_node_client_address.target_id.id
+
+        try:
+            in_memory_client = node.in_memory_client_registry[location]
+            # we need to sign here with the current node not the destination side
+            return in_memory_client.send_immediate_msg_without_reply(msg=heritage_msg)
+        except Exception as e:
+            print(f"{location} not on nodes in_memory_client. {e}")
+            pass
 
         """"
         # old code had child_node_client which was a real object not a serialized address

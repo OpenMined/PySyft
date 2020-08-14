@@ -12,9 +12,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 from syft.core.common.message import (
+    SyftMessage,
     EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
 )
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
@@ -93,7 +93,16 @@ class Client(AbstractNodeClient):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
+    def register_in_memory_client(self, client: AbstractNodeClient) -> None:
+        # WARNING: Gross hack
+        route_index = self.default_route_index
+        self.routes[route_index].connection.server.node.in_memory_client_registry[
+            client.address.target_id.id
+        ] = client
+
+    @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
+        self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
             child_node_client_address=client.address, address=self.address
         )
@@ -139,17 +148,17 @@ class Client(AbstractNodeClient):
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply, route_index: int = 0
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SyftMessage, route_index: int = 0,
+    ) -> SyftMessage:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign(signing_key=self.signing_key)
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            msg = msg.sign(signing_key=self.signing_key)
 
-        response = self.routes[route_index].send_immediate_msg_with_reply(
-            msg=signed_msg
-        )
+        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
 
         if response.is_valid:
             return response.message
@@ -158,15 +167,19 @@ class Client(AbstractNodeClient):
             "Response was signed by a fake key or was corrupted in transit."
         )
 
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply, route_index: int = 0
+        self, msg: SyftMessage, route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
 
-        signed_msg = msg.sign(signing_key=self.signing_key)
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            print("are we signing this message?", type(msg))
+            msg = msg.sign(signing_key=self.signing_key)
+            print("signed?", type(msg))
 
-        self.routes[route_index].send_immediate_msg_without_reply(msg=signed_msg)
+        self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -258,27 +271,3 @@ class Client(AbstractNodeClient):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Client_PB
-
-    @property
-    def device(self) -> Optional[Location]:
-        # WARNING TEMP HACK to get around HeritageUpdateMessage issues
-        try:
-            # get reference to the node
-            _ = self.routes[0].connection.server.node
-        except Exception as e:
-            print(f"cant traverse to own node {e}")
-
-        return self._device
-
-    @device.setter
-    def device(self, new_device: Location) -> Optional[Location]:
-        self._device = new_device
-        if issubclass(type(self), AbstractNodeClient):
-            try:
-                # get reference to the node
-                node = self.routes[0].connection.server.node
-                node.device = new_device
-                print("BYPASS node device updated", node.device)
-            except Exception as e:
-                print(f"cant traverse to own node {e}")
-        return self._device
