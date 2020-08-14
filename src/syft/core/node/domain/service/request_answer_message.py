@@ -5,6 +5,7 @@ from ..... import serialize, deserialize
 from ....common import UID
 from ....io.address import Address
 from .....decorators import syft_decorator
+from ...abstract.node import AbstractNode
 from ....common.message import ImmediateSyftMessageWithReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from .....proto.core.node.domain.service.request_answer_message_pb2 import (
@@ -43,14 +44,14 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
 
 class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
+    # @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [RequestAnswerMessage]
 
     @staticmethod
     # @syft_decorator(typechecking=True)
-    def process(node, msg: RequestAnswerMessage) -> RequestAnswerResponse:
-        status = node.requests.get_status(msg.request_id)
+    def process(node: AbstractNode, msg: RequestAnswerMessage) -> RequestAnswerResponse:
+        status = node.requests.get_status(msg.request_id)  # type: ignore
         address = msg.reply_to
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status

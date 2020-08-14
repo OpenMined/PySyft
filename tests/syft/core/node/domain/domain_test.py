@@ -1,10 +1,15 @@
 import torch as th
 from syft.core.common import UID
 from syft.core.node.domain import Domain
-from syft.core.node.domain.service import RequestStatus, RequestMessage, RequestAnswerResponse, \
-    RequestAnswerMessage
+from syft.core.node.domain.service import (
+    RequestStatus,
+    RequestMessage,
+    RequestAnswerResponse,
+    RequestAnswerMessage,
+)
 from syft.core.io.address import Address
 from syft import serialize, deserialize
+
 
 def test_request_message():
     addr = Address()
@@ -25,14 +30,11 @@ def test_request_message():
     assert msg.owner_address == new_obj.owner_address
     assert msg.object_id == new_obj.object_id
 
+
 def test_request_answer_message():
     addr = Address()
 
-    msg = RequestAnswerMessage(
-        request_id=UID(),
-        address=addr,
-        reply_to=addr
-    )
+    msg = RequestAnswerMessage(request_id=UID(), address=addr, reply_to=addr)
 
     serialized = serialize(obj=msg)
     new_msg = deserialize(blob=serialized)
@@ -46,9 +48,7 @@ def test_request_answer_response():
     addr = Address()
 
     msg = RequestAnswerResponse(
-        request_id=UID(),
-        address=addr,
-        status=RequestStatus.Pending
+        request_id=UID(), address=addr, status=RequestStatus.Pending
     )
 
     serialized = serialize(obj=msg)
@@ -58,15 +58,18 @@ def test_request_answer_response():
     assert msg.address == new_msg.address
     assert msg.status == new_msg.status
 
+
 def test_domain_creation():
-    domain = Domain(name="test domain")
+    Domain(name="test domain")
+
 
 def test_domain_serde():
     domain_1 = Domain(name="domain 1")
     domain_1_client = domain_1.get_client()
 
     tensor = th.tensor([1, 2, 3])
-    ptr = tensor.send(domain_1_client)
+    _ = tensor.send(domain_1_client)
+
 
 def test_domain_request_access():
     domain_1 = Domain(name="remote domain")
@@ -74,16 +77,16 @@ def test_domain_request_access():
     domain_1_client = domain_1.get_client()
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
-
     domain_2 = Domain(name='my domain"')
 
     data_ptr_domain_1.request_access(domain_2)
 
     requested_object = data_ptr_domain_1.id_at_location
-    message_request_id = domain_2.requests.get_request_id_from_object_id(requested_object)
+    message_request_id = domain_2.requests.get_request_id_from_object_id(
+        requested_object
+    )
 
     domain_1.set_request_status(message_request_id, RequestStatus.Accepted)
 
-    response = data_ptr_domain_1.check_access(domain_2, message_request_id)
+    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
     print(response)
-

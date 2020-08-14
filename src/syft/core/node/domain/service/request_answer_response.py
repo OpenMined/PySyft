@@ -3,6 +3,8 @@ from typing import List
 from ..... import serialize, deserialize
 from ....io.address import Address
 from .....decorators import syft_decorator
+from ....common import UID
+from ...abstract.node import AbstractNode
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .....proto.core.node.domain.service.request_answer_response_pb2 import (
@@ -15,7 +17,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["status", "request_id"]
 
-    def __init__(self, status, request_id, address: Address):
+    def __init__(self, status: RequestStatus, request_id: UID, address: Address):
         super().__init__(address)
         self.status = status
         self.request_id = request_id
@@ -34,7 +36,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         request_response = RequestAnswerResponse(
             status=RequestStatus(proto.status),
             request_id=deserialize(blob=proto.request_id),
-            address=deserialize(blob=proto.address)
+            address=deserialize(blob=proto.address),
         )
         return request_response
 
@@ -52,5 +54,5 @@ class RequestAnswerResponseService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     # @syft_decorator(typechecking=True)
-    def process(node, msg: RequestAnswerResponse) -> None:
-        node.requests.register_response(msg)
+    def process(node: AbstractNode, msg: RequestAnswerResponse) -> None:
+        node.requests.register_response(msg)  # type: ignore

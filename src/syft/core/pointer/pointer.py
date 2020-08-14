@@ -1,15 +1,20 @@
+# external imports
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 # syft imports
 import syft as sy
 from ..common.uid import UID
+from ..common.pointer import AbstractPointer
+from ..node.abstract.node import AbstractNode
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
 from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# from ..node.domain.domain import Domain
 
 
-class Pointer(Serializable):
+class Pointer(AbstractPointer):
 
     # automatically generated subclasses of Pointer need to be able to look up
     # the path and name of the object type they point to as a part of serde
@@ -95,33 +100,34 @@ class Pointer(Serializable):
         return Pointer_PB
 
     def request_access(
-        self,
-        node,
-        request_access: str = "",
-        request_description: str = "",
-    ):
+        self, node: AbstractNode, request_name: str = "", request_description: str = "",
+    ) -> None:
         from ..node.domain.service import RequestMessage
+
         msg = RequestMessage(
-            request_name=request_access,
+            request_name=request_name,
             request_description=request_description,
             address=self.location,
-            owner_address=node.domain,
+            owner_address=node.domain,  # type: ignore
             object_id=self.id_at_location,
         )
+
         self.location.send_immediate_msg_without_reply(msg=msg)
-        node.requests.register_mapping(self.id_at_location, msg.request_id)
 
+        node.requests.register_mapping(self.id_at_location, msg.request_id)  # type: ignore
 
-    def check_access(self, node, request_id):
-        from ..node.domain.service import RequestAnswerMessage, RequestAnswerResponseService
+    def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
+        from ..node.domain.service import (
+            RequestAnswerMessage,
+            RequestAnswerResponseService,
+        )
+
         msg = RequestAnswerMessage(
-            request_id=request_id,
-            address=self.location,
-            reply_to=node.domain
+            request_id=request_id, address=self.location, reply_to=node.domain  # type: ignore
         )
         response = self.location.send_immediate_msg_with_reply(msg=msg)
 
-        #this should be handled by the service by default, should be patched after 0.3.0
+        # this should be handled by the service by default, should be patched after 0.3.0
         RequestAnswerResponseService.process(node, response)
 
         return response.status

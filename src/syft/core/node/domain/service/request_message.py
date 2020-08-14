@@ -10,12 +10,14 @@ from ....io.address import Address
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .....decorators import syft_decorator
+from ...abstract.node import AbstractNode
 
 
 class RequestStatus(Enum):
     Pending = 1
     Rejected = 2
     Accepted = 3
+
 
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
@@ -25,7 +27,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         self,
         object_id: UID,
         address: Address,
-        owner_address,
+        owner_address: Address,
         request_name: str = "",
         request_description: str = "",
     ):
@@ -73,6 +75,6 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         return [RequestMessage]
 
     @staticmethod
-    # @syft_decorator(typechecking=True)
-    def process(node, msg: RequestMessage) -> None:
-        node.requests.register_request(msg)
+    @syft_decorator(typechecking=True)
+    def process(node: AbstractNode, msg: RequestMessage) -> None:
+        node.requests.register_request(msg)  # type: ignore
