@@ -1,22 +1,17 @@
+import types
 from abc import ABC
 from abc import abstractmethod
 from functools import wraps
-import types
 from typing import List
 
 import syft
-from syft.generic.frameworks.hook import hook_args
-
-from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.workers.base import BaseWorker
-
 from syft.exceptions import route_method_exception
-
-
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.hook.pointers import PointerHook
 from syft.generic.frameworks.hook.string import StringHook
 from syft.generic.frameworks.hook.tensors import TensorHook
-from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.workers.base import BaseWorker
 
 
 class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):

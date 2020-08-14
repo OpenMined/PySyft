@@ -14,7 +14,7 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
@@ -322,7 +322,7 @@ class Role(SyftSerializable):
         elif isinstance(action.target, PlaceholderId):
             ph = self.placeholders.get(action.target.value, None)
             if ph is not None:
-                framework_name = ph.child.__module__
+                framework_name = ph.child.__module__.split(".")[0]
                 return getattr(syft, framework_name, syft.framework)
 
         return None

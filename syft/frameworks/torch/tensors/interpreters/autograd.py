@@ -90,6 +90,7 @@ class AutogradTensor(AbstractTensor):
         result = self.add(other)
         self.child = result.child
         self.grad_fn = result.grad_fn
+        return self
 
     def __sub__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
@@ -100,6 +101,7 @@ class AutogradTensor(AbstractTensor):
         result = self.sub(other)
         self.child = result.child
         self.grad_fn = result.grad_fn
+        return self
 
     def __mul__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):

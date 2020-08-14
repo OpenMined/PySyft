@@ -21,6 +21,7 @@ from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
 from syft.frameworks.torch.he.fv.evaluator import Evaluator
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
+from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 
 
 @pytest.mark.parametrize(
@@ -212,60 +213,11 @@ def test_get_sufficient_sk_power(poly_mod, coeff_mod, plain_mod, sk, max_power, 
 
 
 @pytest.mark.parametrize(
-    "poly_mod, coeff_mod, plain_mod, sk, ct, result",
-    [
-        (2, [17], 2, [[1, 1]], [[[1, 1]], [[1, 1]], [[1, 1]]], [[16, 5]]),
-        (2, [17], 2, [[1, 1]], [[[1, 1]], [[2, 3]], [[15, 5]]], [[7, 2]]),
-        (
-            4,
-            [31],
-            4,
-            [[1, 30, 30, 0]],
-            [[[189, 231, 179, 412]], [[12, 10, 0, 11]], [[134, 234, 11, 199]]],
-            [[29, 25, 25, 22]],
-        ),
-        (
-            4,
-            [1031],
-            4,
-            [[0, 1, 1030, 1030]],
-            [[[1, 2, 3, 4]], [[1, 2, 3, 4]], [[1, 2, 3, 4]], [[1, 2, 3, 4]]],
-            [[32, 32, 4, 1019]],
-        ),
-        (
-            4,
-            [1031],
-            4,
-            [[1030, 1, 1, 1030]],
-            [[[1, 1, 1, 1]], [[1, 2, 3, 4]], [[4, 3, 2, 1]], [[0, 0, 0, 0]]],
-            [[1026, 1030, 1028, 13]],
-        ),
-    ],
-)
-def test_mul_ct_sk(poly_mod, coeff_mod, plain_mod, sk, ct, result):
-    ctx = Context(EncryptionParams(poly_mod, coeff_mod, plain_mod))
-    sk = SecretKey(sk)
-    decrypter = Decryptor(ctx, sk)
-    output = decrypter._mul_ct_sk(ct)
-    assert output == result
-
-
-@pytest.mark.parametrize(
     "plain_modulus, value",
-    [
-        (0xFFFFFFFFFFFFFFF, 1),
-        (0xFFFFFFFFFFFFFFF, 2),
-        (0xFFFFFFFFFFFFFFF, -3),
-        (0xFFFFFFFFFFFFFFF, 64),
-        (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF),
-        (0xFFFFFFFFFFFFFFF, 0x80F02),
-        (1024, 64),
-    ],
+    [(128, 1), (64, 2), (32, -3), (256, 64), (128, 0xFFFFFFFFFFFFFFFF), (128, 0x80F02), (128, 64)],
 )
 def test_integer_encoder(plain_modulus, value):
-    enc_param = EncryptionParams(
-        16, CoeffModulus().create(plain_modulus, [100, 100, 100]), plain_modulus
-    )
+    enc_param = EncryptionParams(16, CoeffModulus().create(16, [30]), plain_modulus)
     ctx = Context(enc_param)
     encoder = IntegerEncoder(ctx)
     poly = encoder.encode(value)
@@ -400,7 +352,6 @@ def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_b
         (256, 256, [40, 40, 40], 2),
         (4096, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
         (1024, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
-        (64, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
         (4096, 256, [40, 40, 40], 314159265),
     ],
 )
@@ -581,7 +532,6 @@ def test_fv_sub_cipher_plain(int1, int2):
 @pytest.mark.parametrize(
     "int1, int2",
     [
-        (0x12345678, 0x54321),
         (-1, 1),
         (0, 0),
         (100, 10),
@@ -589,10 +539,11 @@ def test_fv_sub_cipher_plain(int1, int2):
         (-1000, 100),
         (-99, -99),
         (-99, 99),
+        (0x12345678, 0x54321),
     ],
 )
 def test_fv_mul_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40, 40]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
@@ -666,3 +617,106 @@ def test_fv_mul_plain_plain(int1, int2):
         == encoder.decode(evaluator.mul(op1, op2))
         == encoder.decode(evaluator._mul_plain_plain(op2, op1))
     )
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0]]),
+        (2, [3], 0, [[1 << 32, 1 << 33], [1 << 32, 1 << 33], [0, 0]], [[1, 2], [1, 2]]),
+        (2, [3], 0, [[15, 30], [15, 30], [15, 30], [15, 30]], [[0, 0], [0, 0]]),
+    ],
+)
+def test_rns_tool_sm_mrq(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.sm_mrq(input)
+    assert result == output
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0]]),
+        (2, [3], 0, [[15, 3], [15, 3], [15, 3]], [[5, 1], [5, 1]]),
+        (2, [3], 0, [[17, 4], [17, 4], [17, 4]], [[5, 1], [5, 1]]),
+        (
+            2,
+            [3, 5],
+            0,
+            [[15, 30], [15, 30], [15, 30], [15, 30], [15, 30]],
+            [[1, 2], [1, 2], [1, 2]],
+        ),
+        (
+            2,
+            [3, 5],
+            0,
+            [[21, 32], [21, 32], [21, 32], [21, 32], [21, 32]],
+            [[1, 1], [1, 1], [1, 1]],
+        ),
+    ],
+)
+def test_rns_tool_fast_floor(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.fast_floor(input)
+    assert result == output
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0]], [[0, 0]]),
+        (2, [3], 0, [[1, 2], [1, 2]], [[1, 2]]),
+        (2, [3, 5], 0, [[1, 2], [1, 2], [1, 2]], [[1, 2], [1, 2]]),
+    ],
+)
+def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.fastbconv_sk(input)
+    assert result == output
+
+
+@pytest.mark.parametrize(
+    "val1, val2", [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
+)
+def test_fv_relin(val1, val2):
+    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(val1))
+    op2 = encryptor.encrypt(encoder.encode(val2))
+    temp_prod = evaluator.mul(op1, op2)
+    relin_prod = evaluator.relin(temp_prod, relin_key)
+    assert len(temp_prod.data) - 1 == len(relin_prod.data)
+    assert val1 * val2 == encoder.decode(decryptor.decrypt(relin_prod))
+
+
+@pytest.mark.parametrize(
+    "val1, val2", [(-1, 1)],
+)
+def test_fv_relin_exceptions(val1, val2):
+    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40, 40]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(val1))
+    op2 = encryptor.encrypt(encoder.encode(val2))
+    temp_prod = evaluator.mul(op1, op2)
+
+    with pytest.raises(Warning):
+        evaluator.relin(op1, relin_key)  # Ciphertext size 2
+
+    with pytest.raises(Exception):
+        evaluator.relin(evaluator.mul(temp_prod, val1), relin_key)  # Ciphertext size 4

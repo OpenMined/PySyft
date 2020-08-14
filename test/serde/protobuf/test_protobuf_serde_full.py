@@ -23,6 +23,7 @@ samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
 samples[torch.memory_format] = make_torch_memoryformat
 samples[torch.dtype] = make_torch_dtype
+
 # PySyft
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
@@ -44,6 +45,10 @@ samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
+
+# OnnxModel
+samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
+
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage

@@ -22,6 +22,34 @@ def test_wrap():
     assert isinstance(x.child.child, torch.Tensor)
 
 
+def test_iadd():
+    """
+    Test += AutogradTensor
+    """
+
+    a = AutogradTensor(torch.Tensor([1, 2, 3]))
+    b = AutogradTensor(torch.Tensor([4, 5, 6]))
+    expected = AutogradTensor(torch.Tensor([5, 7, 9]))
+
+    a += b
+    assert a is not None
+    assert torch.equal(a, expected)
+
+
+def test_isub():
+    """
+    Test -= AutogradTensor
+    """
+
+    a = AutogradTensor(torch.Tensor([1, 2, 3]))
+    b = AutogradTensor(torch.Tensor([4, 5, 6]))
+    expected = AutogradTensor(torch.Tensor([-3, -3, -3]))
+
+    a -= b
+    assert a is not None
+    assert torch.equal(a, expected)
+
+
 @pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 @pytest.mark.parametrize("backward_one", [True, False])
 def test_backward_for_binary_cmd_with_autograd(cmd, backward_one):
@@ -216,7 +244,7 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     assert (b.grad.get() == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid"])
+@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid", "sum", "mean"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on unary methods on remote tensors using

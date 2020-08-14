@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 
+import asyncio
 import logging
+import time
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
@@ -27,6 +29,7 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 
 from syft.workers.abstract import AbstractWorker
 from syft.workers.message_handler import BaseMessageHandler
@@ -85,6 +88,8 @@ class BaseWorker(AbstractWorker):
             The argument may be a floating point number for subsecond
             precision.
     """
+
+    _framework_message_handler = {}
 
     def __init__(
         self,
@@ -165,6 +170,10 @@ class BaseWorker(AbstractWorker):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
+
+        # Register the specific handlers for each framework
+        for _, message_handler_constructor in BaseWorker._framework_message_handler.items():
+            self.message_handlers.append(message_handler_constructor(self.object_store, self))
 
         self.syft = sy
 
@@ -453,6 +462,36 @@ class BaseWorker(AbstractWorker):
 
         return pointer
 
+    def garbage(self, object_id, location):
+        """
+        Garbage manager which collects all the remote GC request and batch send
+        them every "delay" seconds for every location.
+        """
+        max_delay = self.object_store.garbage_delay
+        max_size = self.object_store.trash_capacity
+        trash = self.object_store.trash
+
+        if location.id not in trash:
+            trash[location.id] = (time.time(), [])
+
+        trash[location.id][1].append(object_id)
+
+        delay = time.time() - trash[location.id][0]
+        current_size = len(trash[location.id][1])
+        if delay > max_delay or current_size > max_size:
+            self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
+            trash[location.id] = (time.time(), [])
+
+    async def async_dispatch(self, workers, commands, return_value=False):
+        """Asynchronously send commands to several workers"""
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command, return_value=return_value)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
+
     def send_command(
         self,
         recipient: "BaseWorker",
@@ -730,7 +769,7 @@ class BaseWorker(AbstractWorker):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self.object_store.get_obj(idx, None)
+        return self.object_store.get_obj(idx)
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """
@@ -783,12 +822,9 @@ class BaseWorker(AbstractWorker):
         self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
-
         This method is executed for local execution.
-
         Args:
             protocol_id: A string indicating the protocol id.
-
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """
@@ -981,6 +1017,13 @@ class BaseWorker(AbstractWorker):
 
         return result
 
+    @staticmethod
+    def register_message_handlers():
+        if sy.dependency_check.crypten_available:
+            from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
+            BaseWorker._framework_message_handler["crypten"] = CryptenMessageHandler
+
     @classmethod
     def is_framework_supported(cls, framework: str) -> bool:
         """
@@ -989,3 +1032,6 @@ class BaseWorker(AbstractWorker):
         :return: True/False
         """
         return framework.lower() in framework_packages
+
+
+BaseWorker.register_message_handlers()

@@ -3,7 +3,7 @@ from typing import List
 import torch
 
 import syft as sy
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB

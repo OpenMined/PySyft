@@ -23,6 +23,14 @@ class ObjectStore:
         # This is an index to retrieve objects from their tags in an efficient way
         self._tag_to_object_ids = defaultdict(set)
 
+        # Garbage collect all remote data on a worker every garbage_delay seconds
+        self.garbage_delay = 0
+        # Store at most trash_capacity elements before garbage collecting
+        self.trash_capacity = 10_000
+        # Trash is a dict referencing for each worker key a tuple with the timestamp
+        # of the last GC and the list of object to GC
+        self.trash = {}
+
     @property
     def _tensors(self):
         return {id_: obj for id_, obj in self._objects.items() if isinstance(obj, FrameworkTensor)}
