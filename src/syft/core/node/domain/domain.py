@@ -55,13 +55,15 @@ class Requests:
     def display_requests(self) -> pandas.DataFrame:
         request_lines = []
         for request_id, request in self._requests.items():
-            request_lines.append({
-                "Request name": request["message"].request_name,
-                "Request description": request["message"].request_description,
-                "Request ID": request_id,
-                "Object Status": request["status"],
-                "Object ID": request["message"].object_id,
-            })
+            request_lines.append(
+                {
+                    "Request name": request["message"].request_name,
+                    "Request description": request["message"].request_description,
+                    "Request ID": request_id,
+                    "Object Status": request["status"],
+                    "Object ID": request["message"].object_id,
+                }
+            )
         return pandas.DataFrame(request_lines)
 
 

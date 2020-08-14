@@ -88,5 +88,7 @@ def test_domain_request_access():
 
     domain_1.set_request_status(message_request_id, RequestStatus.Accepted)
 
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
+    response = data_ptr_domain_1.check_access(
+        node=domain_2, request_id=message_request_id
+    )
     print(response)
