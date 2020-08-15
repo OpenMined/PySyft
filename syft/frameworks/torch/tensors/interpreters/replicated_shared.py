@@ -23,9 +23,10 @@ class ReplicatedSharingTensor(AbstractTensor):
     @staticmethod
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
-        if syft.hook.local_worker in workers:
-            workers.remove(syft.hook.local_worker)
-            workers = [syft.hook.local_worker] + workers
+        me = syft.hook.local_worker
+        if me in workers:
+            workers.remove(me)
+            workers = [me] + workers
         return workers
 
     def generate_shares(self, plain_text, number_of_shares=3):
