@@ -180,6 +180,21 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
     ) -> GetAllRequestsResponseMessage:
+
+        if verify_key == node.root_verify_key:
+            return GetAllRequestsResponseMessage(
+                requests=node.requests, address=msg.reply_to
+            )
+
+        # only return requests which concern the user asking
+        valid_requests = list()
+        for request in node.requests:
+            if request.requester_verify_key == verify_key:
+                valid_requests.append(request)
+
         return GetAllRequestsResponseMessage(
-            requests=node.requests, address=msg.reply_to
+            requests=valid_requests, address=msg.reply_to
         )
+
+
+

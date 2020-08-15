@@ -110,7 +110,6 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
 
 class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @service_auth(root_only=True)
     def process(
         node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
     ) -> None:
@@ -120,23 +119,29 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
             for req in node.requests:
                 if request_id == req.id:
 
-                    node.store[req.object_id].read_permissions.add(
-                        req.requester_verify_key
-                    )
-                    node.requests.remove(req)
+                    # you must be a root user to accept a request
+                    if verify_key == node.root_verify_key:
 
-                    if sy.VERBOSE:
-                        print(f"> Accepting Request:{request_id}")
-                    return None
+                        node.store[req.object_id].read_permissions.add(
+                            req.requester_verify_key
+                        )
+                        node.requests.remove(req)
+
+                        if sy.VERBOSE:
+                            print(f"> Accepting Request:{request_id}")
+                        return None
 
         else:
             request_id = msg.request_id
             for req in node.requests:
                 if request_id == req.id:
-                    node.requests.remove(req)
-                    if sy.VERBOSE:
-                        print(f"> Rejecting Request:{request_id}")
-                    return None
+                    # if you're a root user you can disable a request
+                    # also people can disable their own requets
+                    if verify_key == node.root_verify_key or verify_key == req.requester_verify_key:
+                        node.requests.remove(req)
+                        if sy.VERBOSE:
+                            print(f"> Rejecting Request:{request_id}")
+                        return None
 
     @staticmethod
     def message_handler_types() -> List[Type[AcceptOrDenyRequestMessage]]:
