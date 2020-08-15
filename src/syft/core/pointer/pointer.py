@@ -109,27 +109,25 @@ class Pointer(AbstractPointer):
         msg = RequestMessage(
             request_name=request_name,
             request_description=request_description,
-            address=self.location,
-            owner_address=node.domain,  # type: ignore
+            address=self.location.address,
+            owner_address=node.address,
             object_id=self.id_at_location,
         )
 
         self.location.send_immediate_msg_without_reply(msg=msg)
 
-        node.requests.register_mapping(self.id_at_location, msg.request_id)  # type: ignore
-
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         from ..node.domain.service import (
             RequestAnswerMessage,
-            RequestAnswerResponseService,
+            # RequestAnswerResponseService,
         )
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.location, reply_to=node.domain  # type: ignore
         )
         response = self.location.send_immediate_msg_with_reply(msg=msg)
-
-        # this should be handled by the service by default, should be patched after 0.3.0
-        RequestAnswerResponseService.process(node, response)
+        #
+        # # this should be handled by the service by default, should be patched after 0.3.0
+        # RequestAnswerResponseService.process(node=node, msg=response, verify_key=msg.)
 
         return response.status
