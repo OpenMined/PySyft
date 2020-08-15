@@ -23,6 +23,7 @@ flask
 forbiddenfruit>=0.1.3
 isort
 pandas
+pandas
 protobuf
 pyjwt
 PyNaCl
@@ -32,4 +33,3 @@ sqlitedict
 torch>=1.5
 typeguard
 typing-extensions # backport to older python 3
-pandas
