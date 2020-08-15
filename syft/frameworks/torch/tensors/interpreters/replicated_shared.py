@@ -1,4 +1,4 @@
-from operator import add, sub
+from operator import add, sub, mul
 import torch
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
@@ -120,23 +120,42 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_mul, self.private_mul)
 
     def public_mul(self, plain_text):
+        return self.public_multiplication_operation(plain_text, mul)
+
+    def private_mul(self, secret):
+        return self.private_multiplication_operation(secret, mul)
+
+    __mul__ = mul
+
+    def matmul(self, value):
+        return self.__switch_public_private(value, self.public_matmul, self.private_matmul)
+
+    def public_matmul(self, plain_text):
+        raise NotImplementedError()
+
+    def private_matmul(self, secret):
+        return self.private_multiplication_operation(secret, torch.matmul)
+
+    __matmul__ = matmul
+
+    def public_multiplication_operation(self, plain_text, operator):
         players = self.get_players()
         plain_text_map = {player: torch.tensor(plain_text).send(player) for player in players}
         shares_map = self.get_shares_map()
         for player in players:
             shares_map[player] = (
-                shares_map[player][0] * plain_text_map[player],
-                shares_map[player][1] * plain_text_map[player],
+                operator(shares_map[player][0], plain_text_map[player]),
+                operator(shares_map[player][1], plain_text_map[player]),
             )
         return ReplicatedSharingTensor(shares_map)
 
-    def private_mul(self, secret):
+    def private_multiplication_operation(self, secret, operator):
         x, y = self.get_shares_map(), secret.get_shares_map()
         players = self.get_players()
         z = [
-            (x[player][0] * y[player][0])
-            + (x[player][1] * y[player][0])
-            + (x[player][0] * y[player][1])
+            operator(x[player][0], y[player][0])
+            + operator(x[player][1], y[player][0])
+            + operator(x[player][0], y[player][1])
             for player in players
         ]
         z = self.__reshare(z, players)
@@ -153,8 +172,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
         # works but not secure till correlated randomness is added
         # TODO add correlated randomness
-
-    __mul__ = mul
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function):

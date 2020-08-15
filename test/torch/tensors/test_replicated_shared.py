@@ -97,3 +97,10 @@ def test_private_mul(workers):
     x = torch.tensor([3, 5]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([5, 2]).share(bob, alice, james, protocol="falcon")
     assert ((x * y).reconstruct() == torch.tensor([15, 10])).all()
+
+
+def test_private_matmul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor([[1, 2], [1, 2]]).share(bob, alice, james, protocol="falcon")
+    assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
