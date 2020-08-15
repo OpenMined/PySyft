@@ -20,6 +20,7 @@ whitelist["torch.ones"] = "torch.Tensor"
 whitelist["torch.nn.Linear"] = "torch.nn.Linear"
 # whitelist.add("torch.nn.Linear.parameters")
 whitelist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
+whitelist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
 
 
 def create_torch_ast():
