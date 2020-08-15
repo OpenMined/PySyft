@@ -11,8 +11,6 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 
-# from ..node.domain.domain import Domain
-
 
 class Pointer(AbstractPointer):
 
@@ -29,9 +27,13 @@ class Pointer(AbstractPointer):
 
     def get(self):
         obj_msg = GetObjectAction(
-            obj_id=self.id_at_location, address=self.location, reply_to=self.location
+            obj_id=self.id_at_location,
+            address=self.location.address,
+            reply_to=self.location.address,
         )
-        return self.location.send_immediate_msg_with_reply(msg=obj_msg).obj
+        response = self.location.send_immediate_msg_with_reply(msg=obj_msg)
+
+        return response.obj
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:
@@ -53,7 +55,7 @@ class Pointer(AbstractPointer):
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
             id_at_location=self.id_at_location.serialize(),
-            location=self.location.serialize(),
+            location=self.location.address.serialize(),
         )
 
     @staticmethod

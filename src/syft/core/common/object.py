@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Any
 
 # external class/method imports (sorted by length)
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
@@ -64,7 +65,7 @@ class ObjectWithID(Serializable):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "ObjectWithID") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
         This checks to see whether this ObjectWithIDs is equal to another by
@@ -72,12 +73,15 @@ class ObjectWithID(Serializable):
         come with their own __eq__ function which we assume to be correct.
 
         :param other: this is the other ObjectWithIDs to be compared with
-        :type other: ObjectWithIDs
+        :type other: Any (note this must be Any or __eq__ fails on other types)
         :return: returns True/False based on whether the objcts are the same
         :rtype: bool
         """
 
-        return self.id == other.id
+        try:
+            return self.id == other.id
+        except Exception:
+            return False
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

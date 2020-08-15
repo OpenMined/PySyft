@@ -25,7 +25,7 @@ This is because, for permissions reasons, the domain represents
 an intentional information bottleneck.
 
 This might beg the question, what is the point of Route if
-the right combination of Clients and Connnections can always
+the right combination of Clients and Connections can always
 get a old_message to where it needs to go?
 
 The answer is that neither a Connection, Client, or Node are
@@ -73,7 +73,7 @@ a route.
 
 While in theory this data-structure could allow for very sophisticated
 network analysis, in the beginning it will mostly exist to choose
-between Pub-sub, Request-Reponse, and Streaming options. In the
+between Pub-sub, Request-Response, and Streaming options. In the
 long run it will allow us to design routes which explicitly
 avoid the most costly network bottlenecks. For example, if Grid is
 advertising a new Federated Learning job, instead of sending the
@@ -84,18 +84,22 @@ node, propagating the model to all node which asked for it.
 """
 
 from typing import List
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
+    SignedEventualSyftMessageWithoutReply,
     SyftMessageWithoutReply,
-    SyftMessageWithReply,
-    ImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
 )
-from syft.core.common.message import SignedMessage
 
 from ..common.object import ObjectWithID
 from .connection import ClientConnection
+from .virtual import VirtualClientConnection
 from .location import Location
+from .location import SpecificLocation
+from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
+from ...decorators import syft_decorator
 
 
 class RouteSchema(ObjectWithID):
@@ -118,20 +122,27 @@ class Route(ObjectWithID):
         self.schema = schema
         self.stops = stops
 
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        raise NotImplementedError
+    @property
+    def icon(self) -> str:
+        return "🛣️ "
 
-    def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+    @property
+    def pprint(self) -> str:
+        return f"{self.icon} ({self.class_name})"
 
-    def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+    def send_immediate_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+    def send_immediate_msg_with_reply(
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        raise NotImplementedError
+
+    def send_eventual_msg_without_reply(
+        self, msg: SignedEventualSyftMessageWithoutReply
+    ) -> None:
         raise NotImplementedError
 
 
@@ -140,21 +151,39 @@ class SoloRoute(Route):
         super().__init__(schema=RouteSchema(destination=destination))
         self.connection = connection
 
-    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        self.connection.send_msg_without_reply(msg=msg)
+    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        print(f"> Routing {msg.pprint} via {self.pprint}")
+        self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         self.connection.send_eventual_msg_without_reply(msg=msg)
 
     def send_immediate_msg_with_reply(
-        self, msg: SyftMessageWithReply
-    ) -> SyftMessageWithoutReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
-        return self.connection.send_signed_msg_with_reply(msg=msg)
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> SoloRoute_PB:
+        return SoloRoute_PB(
+            destination=self.schema.destination._object2proto(),
+            connection=self.connection._object2proto(),
+        )
+
+    @staticmethod
+    def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":
+        connection = VirtualClientConnection._proto2object(proto.connection)
+        # connection = _deserialize(blob=proto.connection, from_proto=True)
+        return SoloRoute(
+            destination=SpecificLocation._proto2object(proto.destination),
+            connection=connection,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SoloRoute_PB
 
 
 class BroadcastRoute(SoloRoute):
