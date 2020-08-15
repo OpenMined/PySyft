@@ -1,5 +1,11 @@
 # external class imports
 from typing import Optional
+from typing import Any
+from typing import List
+from typing import Union
+
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # syft imports (sorted by length)
 from ..io.location import Location
@@ -11,9 +17,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 
 # utility addresses
-class All(object):
-    def __repr__(self):
-        return "All"
+# QUESTION: what is this? It breaks the __eq__ when checking
+# def message_is_for_me
+# return msg.address.device.id in (self.id, All(),) and msg.address.vm is None
+# in this case All is not an Address so the dunder throws an error due to the type
+# def __eq__(self, other: "Address") -> bool:
+# class All(object):
+#     def __repr__(self):
+#         return "All"
 
 
 class Unspecified(object):
@@ -64,6 +75,63 @@ class Address(Serializable):
         # is known
         self._vm = vm
 
+    @property
+    def icon(self) -> str:
+        # 4 different aspects of location
+        icon = "💠"
+        sub = []
+        if self.vm is not None:
+            sub.append("🍰")
+        if self.device is not None:
+            sub.append("📱")
+        if self.domain is not None:
+            sub.append("🏰")
+        if self.network is not None:
+            sub.append("🔗")
+
+        if len(sub) > 0:
+            icon = f"{icon} ["
+            for s in sub:
+                icon += s
+            icon += "]"
+        return icon
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} {self.named} ({self.class_name}"
+        if hasattr(self, "id"):
+            output += f"@{self.target_id.id.emoji()})"
+        return output
+
+    def post_init(self) -> None:
+        print(f"> Creating {self.pprint}")
+
+    @syft_decorator(typechecking=True)
+    def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
+        hex_chars = bytes(key).hex()[-8:]
+        return self.char_emoji(hex_chars=hex_chars)
+
+    @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
+
+    @property
+    def address(self) -> "Address":
+        # QUESTION what happens if we have none of these?
+        address = Address(
+            network=self.network, domain=self.domain, device=self.device, vm=self.vm
+        )
+        # sneak the name on there
+        if hasattr(self, "name"):
+            address.name = self.name  # type: ignore
+        return address
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Address_PB:
         """Returns a protobuf serialization of self.
@@ -73,7 +141,7 @@ class Address(Serializable):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ObjectWithID_PB
+        :rtype: Address_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -153,6 +221,13 @@ class Address(Serializable):
         return self._network
 
     @property
+    def network_id(self) -> Optional[Location]:
+        network = self.network
+        if network is not None:
+            return network.id
+        return None
+
+    @property
     def domain(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a domain
         or is a domain itself, this property will return the ID of that domain
@@ -173,6 +248,13 @@ class Address(Serializable):
         return self._domain
 
     @property
+    def domain_id(self) -> Optional[Location]:
+        domain = self.domain
+        if domain is not None:
+            return domain.id
+        return None
+
+    @property
     def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
         or is a device itself, this property will return the ID of that device
@@ -190,6 +272,13 @@ class Address(Serializable):
 
         self._device = new_device
         return self._device
+
+    @property
+    def device_id(self) -> Optional[Location]:
+        device = self.device
+        if device is not None:
+            return device.id
+        return None
 
     @property
     def vm(self) -> Optional[Location]:
@@ -212,6 +301,23 @@ class Address(Serializable):
         return self._vm
 
     @property
+    def vm_id(self) -> Optional[Location]:
+        vm = self.vm
+        if vm is not None:
+            return vm.id
+        return None
+
+    @property
+    def addressables(self) -> List[Optional[Location]]:
+        return [self.vm, self.device, self.domain, self.network]
+
+    def target_emoji(self) -> str:
+        output = ""
+        if self.target_id is not None:
+            output = f"@{self.target_id.id.emoji()}"
+        return output
+
+    @property
     def target_id(self) -> Location:
         """Return the address of the node which lives at this address.
 
@@ -229,21 +335,24 @@ class Address(Serializable):
         raise Exception("Address has no valid parts")
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "Address") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Returns whether two Address objects refer to the same set of locations
 
         :param other: the other object to compare with self
-        :param type: Address
+        :type other: Any (note this must be Any or __eq__ fails on other types)
         :returns: whether the two objects are the same
         :rtype: bool
         """
 
-        a = self.network == other.network
-        b = self.domain == other.domain
-        c = self.device == other.device
-        d = self.vm == other.vm
+        try:
+            a = self.network == other.network
+            b = self.domain == other.domain
+            c = self.device == other.device
+            d = self.vm == other.vm
 
-        return a and b and c and d
+            return a and b and c and d
+        except Exception:
+            return False
 
     def __repr__(self) -> str:
         out = f"<{type(self).__name__} -"

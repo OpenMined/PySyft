@@ -15,9 +15,6 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.store import (
-    store_object_pb2 as proto_dot_core_dot_store_dot_store__object__pb2,
-)
 from syft.proto.core.pointer import (
     pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
 )
@@ -29,11 +26,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.node.common.action",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n4proto/core/node/common/action/run_class_method.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a proto/core/pointer/pointer.proto\x1a\x1bproto/core/io/address.proto"\x92\x03\n\x14RunClassMethodAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12)\n\x05_self\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12(\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x12N\n\x06kwargs\x18\x04 \x03(\x0b\x32>.syft.core.node.common.action.RunClassMethodAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x05 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UID\x1aI\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
+    serialized_pb=b'\n4proto/core/node/common/action/run_class_method.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a proto/core/pointer/pointer.proto\x1a\x1bproto/core/io/address.proto"\x92\x03\n\x14RunClassMethodAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12)\n\x05_self\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12(\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x12N\n\x06kwargs\x18\x04 \x03(\x0b\x32>.syft.core.node.common.action.RunClassMethodAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x05 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UID\x1aI\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
@@ -46,7 +41,6 @@ _RUNCLASSMETHODACTION_KWARGSENTRY = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="key",
@@ -65,7 +59,6 @@ _RUNCLASSMETHODACTION_KWARGSENTRY = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="value",
@@ -84,7 +77,6 @@ _RUNCLASSMETHODACTION_KWARGSENTRY = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -95,8 +87,8 @@ _RUNCLASSMETHODACTION_KWARGSENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=555,
-    serialized_end=628,
+    serialized_start=518,
+    serialized_end=591,
 )
 
 _RUNCLASSMETHODACTION = _descriptor.Descriptor(
@@ -105,7 +97,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="path",
@@ -124,7 +115,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="_self",
@@ -143,7 +133,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="args",
@@ -162,7 +151,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="kwargs",
@@ -181,7 +169,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="id_at_location",
@@ -200,7 +187,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="address",
@@ -219,7 +205,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="msg_id",
@@ -238,7 +223,6 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -249,8 +233,8 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=226,
-    serialized_end=628,
+    serialized_start=189,
+    serialized_end=591,
 )
 
 _RUNCLASSMETHODACTION_KWARGSENTRY.fields_by_name[

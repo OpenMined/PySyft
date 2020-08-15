@@ -11,22 +11,23 @@ __all__ = [
 
 from syft.ast.globals import Globals
 
-whitelist = {}  # (path: str, return_type:type)
-# whitelist["torch.tensor"] = "torch.Tensor"
-whitelist["torch.Tensor"] = "torch.Tensor"
-whitelist["torch.Tensor.__add__"] = "torch.Tensor"
-whitelist["torch.zeros"] = "torch.Tensor"
-whitelist["torch.ones"] = "torch.Tensor"
-whitelist["torch.nn.Linear"] = "torch.nn.Linear"
-# whitelist.add("torch.nn.Linear.parameters")
-whitelist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
-whitelist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
+allowlist = {}  # (path: str, return_type:type)
+# allowlist["torch.tensor"] = "torch.Tensor"
+allowlist["torch.Tensor"] = "torch.Tensor"
+allowlist["torch.Tensor.__add__"] = "torch.Tensor"
+allowlist["torch.zeros"] = "torch.Tensor"
+allowlist["torch.ones"] = "torch.Tensor"
+allowlist["torch.nn.Linear"] = "torch.nn.Linear"
+# allowlist.add("torch.nn.Linear.parameters")
+allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
+allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
+
 
 
 def create_torch_ast():
     ast = Globals()
 
-    for method, return_type_name in whitelist.items():
+    for method, return_type_name in allowlist.items():
         ast.add_path(
             path=method, framework_reference=torch, return_type_name=return_type_name
         )

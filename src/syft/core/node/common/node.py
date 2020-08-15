@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-stuff
+CODING GUIDELINES:
+
+Do NOT (without talking to trask):
+- add another high level method for sending or receiving messages (like recv_eventual_msg_without_reply)
+- add a service to the list of services below unless you're SURE all nodes will need it!
+- serialize anything with pickle
 """
 
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
 import json
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 from syft.core.common.message import (
+    SignedEventualSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
@@ -33,9 +42,8 @@ from .client import Client
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import (
-    MessageWithoutReplyForwardingService,
-    MessageWithReplyForwardingService,
     SignedMessageWithReplyForwardingService,
+    SignedMessageWithoutReplyForwardingService,
 )
 from .service.obj_action_service import (
     EventualObjectActionServiceWithoutReply,
@@ -44,12 +52,11 @@ from .service.obj_action_service import (
 )
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
-from .service.authorized_service import (
-    HelloRootServiceWithReply,
-    ImmediateAuthorizedServiceWithReply,
-    ImmediateAuthorizedMessageWithReply,
-)
 from .service.node_service import ImmediateNodeServiceWithReply
+
+
+# this generic type for Client bound by Client
+ClientT = TypeVar("ClientT", bound=Client)
 
 
 class Node(AbstractNode):
@@ -61,12 +68,14 @@ class Node(AbstractNode):
     Each node is identified by an id of type ID and a name of type string.
     """
 
-    ClientT = TypeVar("ClientT", bound=Client)
     client_type = ClientT
     child_type_client_type = ClientT
 
     ChildT = TypeVar("ChildT", bound="Node")
     child_type = ChildT
+
+    signing_key: Optional[SigningKey]
+    verify_key: Optional[VerifyKey]
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -76,6 +85,8 @@ class Node(AbstractNode):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
 
         super().__init__(network=network, domain=domain, device=device, vm=vm)
@@ -177,32 +188,54 @@ class Node(AbstractNode):
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
-        self.message_without_reply_forwarding_service = (
-            MessageWithoutReplyForwardingService()
-        )
-        self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
-
-        # Authorized Services
-        self.authorized_msg_with_reply_router: Dict[
-            Type[ImmediateAuthorizedMessageWithReply],
-            ImmediateAuthorizedServiceWithReply,
-        ] = {}
 
         self.signed_message_with_reply_forwarding_service = (
             SignedMessageWithReplyForwardingService()
         )
 
-        self.authorized_services_with_reply: List[Any] = []
-        self.authorized_services_with_reply.append(HelloRootServiceWithReply)
+        self.signed_message_without_reply_forwarding_service = (
+            SignedMessageWithoutReplyForwardingService()
+        )
 
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
 
+        # The node needs to sign messages that it sends so that recipients know that it
+        # comes from the node. In order to do that, the node needs to generate keys
+        # for itself to sign and verify with.
+
+        # create a signing key if one isn't provided
+        if signing_key is None:
+            self.signing_key = SigningKey.generate()
+        else:
+            self.signing_key = signing_key
+
+        # if verify key isn't provided, get verify key from signing key
+        if verify_key is None:
+            self.verify_key = self.signing_key.verify_key
+        else:
+            self.verify_key = verify_key
+
+        # PERMISSION REGISTRY:
+        self.root_verify_key = self.verify_key  # TODO: CHANGE
+        self.guest_verify_key_registry = set()
+        self.in_memory_client_registry = {}
+
+    @property
+    def icon(self) -> str:
+        return "📍"
+
     @syft_decorator(typechecking=True)
-    def get_client(self, routes: List[Route] = []) -> Client:
+    def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            routes = [SoloRoute(destination=self.target_id, connection=conn_client)]
+            # QUESTION: this was destination=self.id and then destination=self.target_id
+            # reverting back but unsure what is correct
+            solo = SoloRoute(destination=self.id, connection=conn_client)
+            # inject name
+            solo.name = f"Route ({self.name} <-> {self.name} Client)"
+            routes = [SoloRoute(destination=self.id, connection=conn_client)]
+
         return self.client_type(
             name=self.name,
             routes=routes,
@@ -210,7 +243,15 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
+            signing_key=None,  # DO NOT PASS IN A SIGNING KEY!!! The client generates one.
+            verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
+
+    @syft_decorator(typechecking=True)
+    def get_root_client(self, routes: List[Route] = []) -> ClientT:
+        client = self.get_client(routes=routes)
+        self.root_verify_key = client.verify_key
+        return client
 
     def get_metadata_for_client(self) -> str:
         metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
@@ -234,10 +275,19 @@ class Node(AbstractNode):
         raise NotImplementedError
 
     @property
-    def known_child_nodes(self) -> List:
+    def known_child_nodes(self) -> List[Address]:
+        print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            return self.store.get_objects_of_type(obj_type=self.child_type_client_type)
+            nodes = []
+            for key in self.store.keys():
+                value = self.store[key]
+                nodes.append(value)
+
+            # TODO: Make this work again
+            # nodes = self.store.get_objects_of_type(obj_type=self.child_type_client_type)
+            return nodes
         else:
+            print(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
@@ -246,121 +296,78 @@ class Node(AbstractNode):
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
-        if self.message_is_for_me(msg=msg):
-            try:  # we use try/except here because it's marginally faster in Python
-                return self.immediate_msg_with_reply_router[type(msg)].process(
-                    node=self, msg=msg
-                )
-            except KeyError as e:
-                if type(msg) not in self.immediate_msg_with_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                        + f"{e}"
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-        else:
-            print("the old_message is not for me...")
-            return self.message_with_reply_forwarding_service.process(
-                node=self, msg=msg
-            )
-
-        # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
-        # return
-        raise Exception("Unable to dispatch message, not all exceptions were caught")
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        response = self.process_message(
+            msg=msg, router=self.immediate_msg_with_reply_router
+        )
+        # maybe I shouldn't have created process_message because it screws up
+        # all the type inferrence.
+        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+        output = (
+            f"> {self.pprint} Signing {res_msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+        )
+        print(output)
+        return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-
-        if self.message_is_for_me(msg=msg):
-            print("the message is for me!!!")
-            try:  # we use try/except here because it's marginally faster in Python
-
-                self.immediate_msg_without_reply_router[type(msg)].process(
-                    node=self, msg=msg
-                )
-
-            except KeyError as e:
-
-                if type(msg) not in self.immediate_msg_without_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise e
-
-        else:
-            print(f"the message is not for me... {self.id}")
-            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
+        print(f"> Received {msg.pprint} @ {self.pprint}")
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+        return None
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
+        self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
+    # TODO: Add SignedEventualSyftMessageWithoutReply and others
+    def process_message(
+        self, msg: SignedMessage, router: dict
+    ) -> Union[SyftMessage, None]:
+        print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):
-            print("the old_message is for me!!!")
-            try:  # we use try/except here because it's marginally faster in Python
+            print(
+                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+            )
+            # Process Message here
+            if not msg.is_valid:
+                raise Exception("Message is not valid.")
 
-                self.eventual_msg_without_reply_router[type(msg)].process(
-                    node=self, msg=msg
+            try:  # we use try/except here because it's marginally faster in Python
+                service = router[type(msg.message)]
+
+            except KeyError as e:
+                self.ensure_services_have_been_registered_error_if_not()
+
+                raise KeyError(
+                    f"The node {self.id} of type {type(self)} cannot process messages of type "
+                    + f"{type(msg.message)} because there is no service running to process it."
+                    + f"{e}"
                 )
 
-            except KeyError as e:
-
-                if type(msg) not in self.eventual_msg_without_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise e
-
-        else:
-            print("the old_message is not for me...")
-            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
-
-    @syft_decorator(typechecking=True)
-    def recv_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
-        if self.message_is_for_me(msg=msg):
-            valid = msg.is_valid()
-            inner_msg = msg.inner_message(allow_invalid=True)
-            try:  # we use try/except here because it's marginally faster in Python
-                response = self.authorized_msg_with_reply_router[
-                    type(inner_msg)
-                ].process(node=self, msg=inner_msg, valid=valid)
-
-                signing_key = SigningKey.generate()
-                sig_response = response.sign_message(signing_key=signing_key)
-                return sig_response
-            except KeyError as e:
-                if type(msg) not in self.authorized_msg_with_reply_router:
-                    raise KeyError(
-                        f"The node {self.id} of type {type(self)} cannot process messages of type "
-                        + f"{type(msg)} because there is no service running to process it."
-                        + f"{e}"
-                    )
-
-                self.ensure_services_have_been_registered_error_if_not()
-        else:
-            print("the old_message is not for me...")
-            return self.signed_message_with_reply_forwarding_service.process(
-                node=self, msg=msg
+            return service.process(
+                node=self, msg=msg.message, verify_key=msg.verify_key,
             )
 
-        # QUESTION what is the preferred pattern here, as the above doesnt exhaustively
-        # return
-        raise Exception("Unable to dispatch message, not all exceptions were caught")
+        else:
+            print(
+                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+            )
+            # Forward message onwards
+            if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
+                return self.signed_message_with_reply_forwarding_service.process(
+                    node=self, msg=msg,
+                )
+            if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+                return self.signed_message_without_reply_forwarding_service.process(
+                    node=self, msg=msg,
+                )
+        return None
 
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
@@ -426,22 +433,6 @@ class Node(AbstractNode):
                     self.eventual_msg_without_reply_router[
                         handler_type_subclass
                     ] = eswr_instance
-
-        for aswr in self.authorized_services_with_reply:
-            # Create a single instance of the service to cache in the router corresponding
-            # to one or more old_message types.
-            aswr_instance = aswr()
-            for handler_type in aswr.message_handler_types():
-
-                # for each explicitly supported type, add it to the router
-                self.authorized_msg_with_reply_router[handler_type] = aswr_instance
-
-                # for all sub-classes of the explicitly supported type, add them
-                # to the router as well.
-                for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.authorized_msg_with_reply_router[
-                        handler_type_subclass
-                    ] = aswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might
