@@ -8,6 +8,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft imports (sorted by length)
+import syft as sy
 from ..io.location import Location
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
@@ -104,7 +105,8 @@ class Address(Serializable):
         return output
 
     def post_init(self) -> None:
-        print(f"> Creating {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Creating {self.pprint}")
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:

@@ -101,17 +101,16 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request_access(
-        self, node: AbstractNode, request_name: str = "", request_description: str = "",
-    ) -> None:
+    def request_access(self, request_name: str = "", reason: str = "",) -> None:
         from ..node.domain.service import RequestMessage
 
         msg = RequestMessage(
             request_name=request_name,
-            request_description=request_description,
+            request_description=reason,
             address=self.location.address,
-            owner_address=node.address,
+            owner_address=self.location.address,
             object_id=self.id_at_location,
+            requester_verify_key=self.location.verify_key,
         )
 
         self.location.send_immediate_msg_without_reply(msg=msg)

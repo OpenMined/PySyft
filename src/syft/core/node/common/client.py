@@ -28,6 +28,7 @@ from ...io.route import SoloRoute
 from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
+import syft as sy
 
 
 class Client(AbstractNodeClient):
@@ -123,7 +124,8 @@ class Client(AbstractNodeClient):
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        print(f"> Registering {client.pprint} with {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
             lookup_id=client.id,
@@ -180,11 +182,12 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            output = (
-                f"> {self.pprint} Signing {msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-            )
-            print(output)
+            if sy.VERBOSE:
+                output = (
+                    f"> {self.pprint} Signing {msg.pprint} with "
+                    + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+                )
+                print(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
@@ -204,14 +207,15 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            output = (
-                f"> {self.pprint} Signing {msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-            )
-            print(output)
+            if sy.VERBOSE:
+                output = (
+                    f"> {self.pprint} Signing {msg.pprint} with "
+                    + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+                )
+                print(output)
             msg = msg.sign(signing_key=self.signing_key)
-
-        print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        if sy.VERBOSE:
+            print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -219,11 +223,12 @@ class Client(AbstractNodeClient):
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-        output = (
-            f"> {self.pprint} Signing {msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-        )
-        print(output)
+        if sy.VERBOSE:
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
         signed_msg = msg.sign(signing_key=self.signing_key)
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)

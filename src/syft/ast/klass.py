@@ -7,6 +7,7 @@ from ..core.common.serde.serialize import _serialize
 from google.protobuf.message import Message
 from typing import Union
 from ..util import aggressive_set_attr
+import syft as sy
 
 
 class Class(ast.callable.Callable):
@@ -50,8 +51,6 @@ class Class(ast.callable.Callable):
         klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
 
         klass_pointer.path_and_name = self.path_and_name
-
-        print("setting attr:" + str(self.pointer_name))
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self):

@@ -37,8 +37,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-        print("id at location:" + str(self.id_at_location))
-
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # print(self.path)
         # print(self._self)

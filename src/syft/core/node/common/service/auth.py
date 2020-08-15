@@ -7,6 +7,7 @@ from nacl.signing import VerifyKey
 # syft imports
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
+import syft as sy
 
 
 class AuthorizationException(Exception):
@@ -23,20 +24,24 @@ def service_auth(
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
         ) -> Optional[SyftMessage]:
-            print(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
+            if sy.VERBOSE:
+                print(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
             if root_only:
-                keys = (
-                    f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
-                    + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
-                )
-                print(keys)
+                if sy.VERBOSE:
+                    keys = (
+                        f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
+                        + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
+                    )
+                    print(keys)
                 if verify_key != node.root_verify_key:
-                    print(f"> ❌ Auth FAILED {msg.pprint}")
+                    if sy.VERBOSE:
+                        print(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "You are not Authorized to access this service"
                     )
                 else:
-                    print(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
+                    if sy.VERBOSE:
+                        print(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif existing_users_only:
                 assert verify_key in node.guest_verify_key_registry

@@ -2,6 +2,7 @@ from .util import get_original_constructor_name
 from .util import copy_static_methods
 from .util import replace_classes_in_module
 from ..core.common.uid import UID
+import syft as sy
 
 import inspect
 import sys
@@ -270,7 +271,6 @@ class ObjectConstructor(object):
 
     def assign_id(self, obj: object) -> object:
         obj.id = UID()  # type: ignore
-        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))  # type: ignore
         return obj
 
     @property
