@@ -47,6 +47,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Set[VerifyKey]] = set(),
+        search_permissions: Optional[Set[VerifyKey]] = set(),
     ):
         self.id = id
         self.data = data
@@ -56,6 +57,10 @@ class StorableObject(AbstractStorableObject):
         # the set of "verify key" objects corresponding to people
         # who are allowed to call .get() and download this object.
         self.read_permissions = read_permissions
+
+        # the set of "verify key" objects corresponding to people
+        # who are allowed to know that the tensor exists (via search or other means)
+        self.search_permissions = search_permissions
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
