@@ -11,6 +11,7 @@ from .....proto.core.node.domain.service.request_answer_response_pb2 import (
     RequestAnswerResponse as RequestAnswerResponse_PB,
 )
 from .request_message import RequestStatus
+from nacl.signing import VerifyKey
 
 
 class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
@@ -54,5 +55,7 @@ class RequestAnswerResponseService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     # @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: RequestAnswerResponse) -> None:
+    def process(
+        node: AbstractNode, msg: RequestAnswerResponse, verify_key: VerifyKey
+    ) -> None:
         node.requests.register_response(msg)  # type: ignore

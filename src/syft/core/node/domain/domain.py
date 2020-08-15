@@ -3,7 +3,6 @@ from typing import Optional
 from typing import Union
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from dataclasses import field
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -29,9 +28,9 @@ from .service import (
 
 
 class Requests:
-    _requests: Dict[UID, dict] = field(default_factory=dict)
-    _object2request: Dict[UID, UID] = field(default_factory=dict)
-    _responses: Dict[UID, RequestStatus] = field(default_factory=dict)
+    _requests: Dict[UID, dict] = {}
+    _object2request: Dict[UID, UID] = {}
+    _responses: Dict[UID, RequestStatus] = {}
 
     def register_request(self, msg: RequestMessage) -> None:
         self._requests[msg.request_id] = {

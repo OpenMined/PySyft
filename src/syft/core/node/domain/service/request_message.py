@@ -11,6 +11,7 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .....decorators import syft_decorator
 from ...abstract.node import AbstractNode
+from nacl.signing import VerifyKey
 
 
 class RequestStatus(Enum):
@@ -76,5 +77,5 @@ class RequestService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: RequestMessage) -> None:
+    def process(node: AbstractNode, msg: RequestMessage, verify_key: VerifyKey) -> None:
         node.requests.register_request(msg)  # type: ignore
