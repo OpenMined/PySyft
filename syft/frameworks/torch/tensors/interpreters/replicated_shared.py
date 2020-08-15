@@ -131,7 +131,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_matmul, self.private_matmul)
 
     def public_matmul(self, plain_text):
-        raise NotImplementedError()
+        return self.public_multiplication_operation(plain_text, torch.matmul)
 
     def private_matmul(self, secret):
         return self.private_multiplication_operation(secret, torch.matmul)
