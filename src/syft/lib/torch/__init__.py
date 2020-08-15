@@ -23,7 +23,6 @@ allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
 allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
 
 
-
 def create_torch_ast():
     ast = Globals()
 
