@@ -1,6 +1,11 @@
 # external class imports
 from typing import Optional
 from typing import Any
+from typing import List
+from typing import Union
+
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # syft imports (sorted by length)
 from ..io.location import Location
@@ -71,11 +76,61 @@ class Address(Serializable):
         self._vm = vm
 
     @property
+    def icon(self) -> str:
+        # 4 different aspects of location
+        icon = "💠"
+        sub = []
+        if self.vm is not None:
+            sub.append("🍰")
+        if self.device is not None:
+            sub.append("📱")
+        if self.domain is not None:
+            sub.append("🏰")
+        if self.network is not None:
+            sub.append("🔗")
+
+        if len(sub) > 0:
+            icon = f"{icon} ["
+            for s in sub:
+                icon += s
+            icon += "]"
+        return icon
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} {self.named} ({self.class_name}"
+        if hasattr(self, "id"):
+            output += f"@{self.target_id.id.emoji()})"
+        return output
+
+    def post_init(self) -> None:
+        print(f"> Creating {self.pprint}")
+
+    @syft_decorator(typechecking=True)
+    def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
+        hex_chars = bytes(key).hex()[-8:]
+        return self.char_emoji(hex_chars=hex_chars)
+
+    @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
+
+    @property
     def address(self) -> "Address":
         # QUESTION what happens if we have none of these?
-        return Address(
+        address = Address(
             network=self.network, domain=self.domain, device=self.device, vm=self.vm
         )
+        # sneak the name on there
+        if hasattr(self, "name"):
+            address.name = self.name  # type: ignore
+        return address
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Address_PB:
@@ -251,6 +306,16 @@ class Address(Serializable):
         if vm is not None:
             return vm.id
         return None
+
+    @property
+    def addressables(self) -> List[Optional[Location]]:
+        return [self.vm, self.device, self.domain, self.network]
+
+    def target_emoji(self) -> str:
+        output = ""
+        if self.target_id is not None:
+            output = f"@{self.target_id.id.emoji()}"
+        return output
 
     @property
     def target_id(self) -> Location:

@@ -56,10 +56,21 @@ class Device(Node):
 
         self._register_services()
 
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "📱"
+
     @property
     def id(self) -> UID:
         return self.device.id
 
-    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.device_id in (self.id,) and msg.address.vm is None
+        # this needs to be defensive by checking device_id NOT device.id or it breaks
+        try:
+            return msg.address.device_id == self.id and msg.address.vm is None
+        except Exception as e:
+            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+            print(error)
+            return False

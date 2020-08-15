@@ -26,7 +26,6 @@ from .service import (
 )
 
 
-
 @dataclass(frozen=True)
 class Requests:
     _requests: Dict[UID, dict] = field(default_factory=dict)
@@ -114,14 +113,24 @@ class Domain(Node):
 
         self._register_services()
 
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "🏰"
+
     @property
     def id(self) -> UID:
         return self.domain.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
+        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
+        try:
+            return msg.address.domain_id == self.id and msg.address.device is None
+        except Exception as e:
+            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+            print(error)
+            return False
 
-        return msg.address.domain.id == self.id and msg.address.device is None
-
-    def set_request_status(self, request_id, status):
+    def set_request_status(self, request_id: UID, status: RequestStatus) -> None:
         self.requests.set_request_status(request_id, status)
-

@@ -43,6 +43,8 @@ class DeviceClient(Client):
             verify_key=verify_key,
         )
 
+        self.post_init()
+
     # def create_vm(self, name:str):
     #
     #     # Step 1: create a old_message which will request for a VM to be created.

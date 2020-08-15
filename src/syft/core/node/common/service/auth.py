@@ -1,4 +1,5 @@
 from typing import Callable
+from typing import Optional
 
 # external class imports
 from nacl.signing import VerifyKey
@@ -21,12 +22,21 @@ def service_auth(
     def decorator(func: Callable) -> Callable:
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
-        ) -> SyftMessage:
+        ) -> Optional[SyftMessage]:
+            print(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
             if root_only:
+                keys = (
+                    f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
+                    + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
+                )
+                print(keys)
                 if verify_key != node.root_verify_key:
+                    print(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "You are not Authorized to access this service"
                     )
+                else:
+                    print(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif existing_users_only:
                 assert verify_key in node.guest_verify_key_registry
@@ -38,6 +48,7 @@ def service_auth(
             else:
                 raise Exception("You must configure services auth with a flag.")
 
+            # Can be None because not all functions reply
             return func(node=node, msg=msg, verify_key=verify_key)
 
         return process

@@ -62,8 +62,11 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey
     ) -> None:
-        print(f"Updating to {msg.new_ancestry_address} on node {node}")
+        print(
+            f"> Executing {HeritageUpdateService.pprint()} {msg.pprint} on {node.pprint}"
+        )
         addr = msg.new_ancestry_address
+
         if addr.network is not None:
             node.network = addr.network
         if addr.domain is not None:
@@ -71,13 +74,22 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         if addr.device is not None:
             node.device = addr.device
 
-        # TODO: solve this with node group address?
-        print("child nodes of:" + str(node.name))
         for node_client in node.known_child_nodes:
-            print("\t" + str(node_client.data.name))
-            # TODO: Client (and possibly Node) should subclass from StorableObject
-            msg.address = node_client.data
-            node_client.data.send_immediate_msg_without_reply(msg=msg)
+            try:
+                # TODO: Client (and possibly Node) should subclass from StorableObject
+                location_id = node_client.data.target_id.id
+                msg.address = node_client.data
+                try:
+                    in_memory_client = node.in_memory_client_registry[location_id]
+                    # we need to sign here with the current node not the destination side
+                    in_memory_client.send_immediate_msg_without_reply(msg=msg)
+                    print(f"> Flowing {msg.pprint} to {addr.target_emoji()}")
+                    return None
+                except Exception as e:
+                    print(f"{location_id} not on nodes in_memory_client. {e}")
+                    pass
+            except Exception as e:
+                print(e)
 
     @staticmethod
     @syft_decorator(typechecking=True)

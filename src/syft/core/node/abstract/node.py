@@ -66,6 +66,22 @@ class AbstractNode(Address):
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
+    @property
+    def keys(self) -> str:
+        verify = (
+            self.key_emoji(key=self.signing_key.verify_key)
+            if self.signing_key is not None
+            else "🚫"
+        )
+        root = (
+            self.key_emoji(key=self.root_verify_key)
+            if self.root_verify_key is not None
+            else "🚫"
+        )
+        keys = f"🔑 {verify}" + f"🗝 {root}"
+
+        return keys
+
 
 class AbstractNodeClient(Address):
     lib_ast: Any  # Cant import Globals (circular reference)

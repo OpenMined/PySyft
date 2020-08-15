@@ -134,6 +134,29 @@ class UID(Serializable):
         return f"<UID:{self.value}>"
 
     @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
+
+    @syft_decorator(typechecking=True)
+    def string_emoji(self, string: str, length: int, chunk: int) -> str:
+        output = []
+        part = string[-length:]
+        while len(part) > 0:
+            part, end = part[:-chunk], part[-chunk:]
+            output.append(self.char_emoji(hex_chars=end))
+        return "".join(output)
+
+    @syft_decorator(typechecking=True)
+    def emoji(self) -> str:
+        return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
+
+    @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
         """Returns a SHORT human-readable version of the ID
 

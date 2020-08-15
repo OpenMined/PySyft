@@ -24,6 +24,7 @@ class VirtualMachine(Node):
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
+    child_type_client_type = None
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -48,13 +49,24 @@ class VirtualMachine(Node):
 
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "🍰"
 
     @property
     def id(self) -> UID:
         return self.vm.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.vm_id == self.id
+        # this needs to be defensive by checking vm_id NOT vm.id or it breaks
+        try:
+            return msg.address.vm_id == self.id
+        except Exception as e:
+            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+            print(error)
+            return False
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:

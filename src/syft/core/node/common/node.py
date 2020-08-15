@@ -221,12 +221,19 @@ class Node(AbstractNode):
         self.guest_verify_key_registry = set()
         self.in_memory_client_registry = {}
 
+    @property
+    def icon(self) -> str:
+        return "📍"
+
     @syft_decorator(typechecking=True)
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
             # QUESTION: this was destination=self.id and then destination=self.target_id
             # reverting back but unsure what is correct
+            solo = SoloRoute(destination=self.id, connection=conn_client)
+            # inject name
+            solo.name = f"Route ({self.name} <-> {self.name} Client)"
             routes = [SoloRoute(destination=self.id, connection=conn_client)]
 
         return self.client_type(
@@ -268,10 +275,19 @@ class Node(AbstractNode):
         raise NotImplementedError
 
     @property
-    def known_child_nodes(self) -> List:
+    def known_child_nodes(self) -> List[Address]:
+        print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            return self.store.get_objects_of_type(obj_type=self.child_type_client_type)
+            nodes = []
+            for key in self.store.keys():
+                value = self.store[key]
+                nodes.append(value)
+
+            # TODO: Make this work again
+            # nodes = self.store.get_objects_of_type(obj_type=self.child_type_client_type)
+            return nodes
         else:
+            print(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
@@ -282,19 +298,26 @@ class Node(AbstractNode):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-
         response = self.process_message(
             msg=msg, router=self.immediate_msg_with_reply_router
         )
         # maybe I shouldn't have created process_message because it screws up
         # all the type inferrence.
-        return response.sign(signing_key=self.signing_key)  # type: ignore
+        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+        output = (
+            f"> {self.pprint} Signing {res_msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+        )
+        print(output)
+        return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
+        print(f"> Received {msg.pprint} @ {self.pprint}")
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+        return None
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
@@ -305,9 +328,12 @@ class Node(AbstractNode):
     # TODO: Add SignedEventualSyftMessageWithoutReply and others
     def process_message(
         self, msg: SignedMessage, router: dict
-    ) -> Optional[SyftMessage]:
-
+    ) -> Union[SyftMessage, None]:
+        print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):
+            print(
+                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+            )
             # Process Message here
             if not msg.is_valid:
                 raise Exception("Message is not valid.")
@@ -324,22 +350,20 @@ class Node(AbstractNode):
                     + f"{e}"
                 )
 
-            result = service.process(
+            return service.process(
                 node=self, msg=msg.message, verify_key=msg.verify_key,
             )
 
-            return result
-
-            # if isinstance(type(msg), SignedImmediateSyftMessageWithReply):
-            #     return result
-
         else:
+            print(
+                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+            )
             # Forward message onwards
-            if isinstance(type(msg), SignedImmediateSyftMessageWithReply):
+            if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
                     node=self, msg=msg,
                 )
-            if isinstance(type(msg), SignedImmediateSyftMessageWithoutReply):
+            if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
                     node=self, msg=msg,
                 )

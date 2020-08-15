@@ -73,4 +73,4 @@ def test_torch_permissions():
 
     assert (x == x2).all()
 
-    assert (x.grad == x2.grad)
+    assert x.grad == x2.grad
