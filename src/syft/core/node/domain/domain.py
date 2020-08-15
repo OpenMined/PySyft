@@ -1,13 +1,14 @@
 # external class imports
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from dataclasses import dataclass, field
+from dataclasses import field
 
 # syft imports
 from ....decorators.syft_decorator_impl import syft_decorator
-from ...io.location import SpecificLocation
 from ...common.message import SyftMessage, SignedMessage
+from ...io.location import SpecificLocation
 from ..device import Device, DeviceClient
 from ...io.location import Location
 from .client import DomainClient
