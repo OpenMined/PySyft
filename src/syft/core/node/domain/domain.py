@@ -14,6 +14,7 @@ from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
 
+
 import pandas
 from typing import Dict
 from .service import (
@@ -26,7 +27,7 @@ from .service import (
 )
 
 
-@dataclass(frozen=True)
+
 class Requests:
     _requests: Dict[UID, dict] = field(default_factory=dict)
     _object2request: Dict[UID, UID] = field(default_factory=dict)
@@ -124,6 +125,7 @@ class Domain(Node):
         return self.domain.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
+
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
             return msg.address.domain_id == self.id and msg.address.device is None
@@ -133,4 +135,5 @@ class Domain(Node):
             return False
 
     def set_request_status(self, request_id: UID, status: RequestStatus) -> None:
+
         self.requests.set_request_status(request_id, status)

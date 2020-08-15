@@ -11,8 +11,6 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 
-# from ..node.domain.domain import Domain
-
 
 class Pointer(AbstractPointer):
 
