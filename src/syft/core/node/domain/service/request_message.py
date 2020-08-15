@@ -64,6 +64,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         )
         self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
 
+    def withdraw(self):
+        self.deny()
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestMessage_PB:
         msg = RequestMessage_PB()
