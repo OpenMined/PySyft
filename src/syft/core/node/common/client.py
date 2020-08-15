@@ -1,21 +1,33 @@
-from typing import List, Tuple
+# external lib imports
+import json
+import sys
+
+# external class imports
+from typing import Optional
+from typing import List
+from typing import Tuple
+
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 from syft.core.common.message import (
+    SyftMessage,
     EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
+    SignedImmediateSyftMessageWithoutReply,
 )
-from syft.core.common.message import SignedMessage
-from syft.core.common.uid import UID
-from ....decorators import syft_decorator
-from ....lib import lib_ast
-from ...io.route import Route
-from ..abstract.node import AbstractNodeClient
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ...common.serde.deserialize import _deserialize
+from ..abstract.node import AbstractNodeClient
+from ....util import get_fully_qualified_name
+from ...io.location import SpecificLocation
+from ....decorators import syft_decorator
 from ...io.location import Location
-from typing import Optional
-import json
+from ...io.route import SoloRoute
+from ...io.route import Route
+from ...common.uid import UID
+from ....lib import lib_ast
 
 
 class Client(AbstractNodeClient):
@@ -35,14 +47,48 @@ class Client(AbstractNodeClient):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(network=network, domain=domain, device=device, vm=vm)
 
-        self.name = name
+        self.name = f"{name} Client"
         self.routes = routes
         self.default_route_index = 0
 
+        # create a signing key if one isn't provided
+        if signing_key is None:
+            self.signing_key = SigningKey.generate()
+        else:
+            self.signing_key = signing_key
+
+        # if verify key isn't provided, get verify key from signing key
+        if verify_key is None:
+            self.verify_key = self.signing_key.verify_key
+        else:
+            self.verify_key = verify_key
+
         self.install_supported_frameworks()
+
+    @property
+    def icon(self) -> str:
+        icon = "📡"
+        sub = []
+        if self.vm is not None:
+            sub.append("🍰")
+        if self.device is not None:
+            sub.append("📱")
+        if self.domain is not None:
+            sub.append("🏰")
+        if self.network is not None:
+            sub.append("🔗")
+
+        if len(sub) > 0:
+            icon = f"{icon} ["
+            for s in sub:
+                icon += s
+            icon += "]"
+        return icon
 
     @staticmethod
     def deserialize_client_metadata_from_node(
@@ -67,8 +113,23 @@ class Client(AbstractNodeClient):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
+    def register_in_memory_client(self, client: AbstractNodeClient) -> None:
+        # WARNING: Gross hack
+        route_index = self.default_route_index
+        # this ID should be unique but persistent so that lookups are universal
+        self.routes[route_index].connection.server.node.in_memory_client_registry[
+            client.address.target_id.id
+        ] = client
+
+    @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        msg = RegisterChildNodeMessage(child_node_client=client, address=self)
+        print(f"> Registering {client.pprint} with {self.pprint}")
+        self.register_in_memory_client(client=client)
+        msg = RegisterChildNodeMessage(
+            lookup_id=client.id,
+            child_node_client_address=client.address,
+            address=self.address,
+        )
 
         if self.network is not None:
             client.network = (
@@ -99,6 +160,8 @@ class Client(AbstractNodeClient):
                 else client.device
             )
 
+            assert self.device == client.device
+
         if self.vm is not None:
             client.vm = self.vm
 
@@ -109,33 +172,61 @@ class Client(AbstractNodeClient):
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply, route_index: int = 0
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SyftMessage, route_index: int = 0,
+    ) -> SyftMessage:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
 
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
+            msg = msg.sign(signing_key=self.signing_key)
+
+        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
+
+        if response.is_valid:
+            return response.message
+
+        raise Exception(
+            "Response was signed by a fake key or was corrupted in transit."
+        )
+
+    # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply, route_index: int = 0
+        self, msg: SyftMessage, route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
+
+        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
+            msg = msg.sign(signing_key=self.signing_key)
+
+        print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_eventual_msg_without_reply(msg=msg)
+        output = (
+            f"> {self.pprint} Signing {msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+        )
+        print(output)
+        signed_msg = msg.sign(signing_key=self.signing_key)
 
-    @syft_decorator(typechecking=True)
-    def send_signed_msg_with_reply(
-        self, msg: SignedMessage, route_index: int = 0
-    ) -> SignedMessage:
-        route_index = route_index or self.default_route_index
-        return self.routes[route_index].send_signed_msg_with_reply(msg=msg)
+        self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
@@ -148,3 +239,83 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Client_PB:
+        obj_type = get_fully_qualified_name(obj=self)
+
+        routes = [route.serialize() for route in self.routes]
+
+        network = self.network._object2proto() if self.network is not None else None
+
+        domain = self.domain._object2proto() if self.domain is not None else None
+
+        device = self.device._object2proto() if self.device is not None else None
+
+        vm = self.vm._object2proto() if self.vm is not None else None
+
+        client_pb = Client_PB(
+            obj_type=obj_type,
+            id=self.id.serialize(),
+            name=self.name,
+            routes=routes,
+            has_network=self.network is not None,
+            network=network,
+            has_domain=self.domain is not None,
+            domain=domain,
+            has_device=self.device is not None,
+            device=device,
+            has_vm=self.vm is not None,
+            vm=vm,
+        )
+
+        return client_pb
+
+    @staticmethod
+    def _proto2object(proto: Client_PB) -> "Client":
+        module_parts = proto.obj_type.split(".")
+        klass = module_parts.pop()
+        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
+
+        network = (
+            SpecificLocation._proto2object(proto.network) if proto.has_network else None
+        )
+        domain = (
+            SpecificLocation._proto2object(proto.domain) if proto.has_domain else None
+        )
+        device = (
+            SpecificLocation._proto2object(proto.device) if proto.has_device else None
+        )
+        vm = SpecificLocation._proto2object(proto.vm) if proto.has_vm else None
+        routes = [SoloRoute._proto2object(route) for route in proto.routes]
+
+        obj = obj_type(
+            name=proto.name,
+            routes=routes,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+        )
+
+        if type(obj) != obj_type:
+            raise TypeError(
+                f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
+            )
+
+        return obj
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Client_PB
+
+    @property
+    def keys(self) -> str:
+        verify = (
+            self.key_emoji(key=self.signing_key.verify_key)
+            if self.signing_key is not None
+            else "🚫"
+        )
+        keys = f"🔑 {verify}"
+
+        return keys

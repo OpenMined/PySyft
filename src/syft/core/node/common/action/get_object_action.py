@@ -1,17 +1,21 @@
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
+# external class imports
+from nacl.signing import VerifyKey
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...abstract.node import AbstractNode
+# syft imports
+from ....common.message import ImmediateSyftMessageWithoutReply
+from .....decorators.syft_decorator_impl import syft_decorator
+from ....common.serde.deserialize import _deserialize
 from .common import ImmediateActionWithReply
+from ...abstract.node import AbstractNode
 
+# syft proto imports
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
-from .....decorators.syft_decorator_impl import syft_decorator
-from ....common.serde.deserialize import _deserialize
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
@@ -88,8 +92,18 @@ class GetObjectAction(ImmediateActionWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.obj_id = obj_id
 
-    def execute_action(self, node: AbstractNode) -> ImmediateSyftMessageWithoutReply:
-        obj = node.store[self.obj_id].data
+    def execute_action(
+        self, node: AbstractNode, verify_key: VerifyKey
+    ) -> ImmediateSyftMessageWithoutReply:
+
+        storeable_object = node.store[self.obj_id]
+
+        if verify_key not in storeable_object.read_permissions:
+            raise Exception(
+                "You do not have permission to .get() this tensor. Please submit a request."
+            )
+
+        obj = storeable_object.data
         msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
         # TODO: send EventualActionWithoutReply to delete the object at the node's

@@ -1,8 +1,8 @@
-import numpy as np
+# import numpy as np
 
-from syft.core.store.storeable_object import StorableObject
-from syft.core.store.store_memory import MemoryStore
-from syft.core.common import UID
+# from syft.core.store.storeable_object import StorableObject
+# from syft.core.store.store_memory import MemoryStore
+# from syft.core.common import UID
 
 
 # def test_create_memory_storage():

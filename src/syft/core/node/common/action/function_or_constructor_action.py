@@ -1,11 +1,16 @@
-from typing import Tuple, Any, Dict, Optional
+# external class imports
+from typing import Any
+from typing import Dict
+from typing import Tuple
+from typing import Optional
+from nacl.signing import VerifyKey
+
+# syft imports
+from ....common.uid import UID
+from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-
 from ....store.storeable_object import StorableObject
 
 
@@ -28,7 +33,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         #  id on the object directly.
         self.id_at_location = id_at_location
 
-    def execute_action(self, node: AbstractNode) -> None:
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
         resolved_args = list()

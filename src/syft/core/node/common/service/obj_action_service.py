@@ -1,4 +1,6 @@
-from typing import List, Type
+from typing import List
+from typing import Type
+from nacl.signing import VerifyKey
 
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 
@@ -17,9 +19,12 @@ from ..action.common import (
 
 
 class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
+    @staticmethod
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: ImmediateActionWithoutReply) -> None:
-        msg.execute_action(node=node)
+    def process(
+        node: AbstractNode, msg: ImmediateActionWithoutReply, verify_key: VerifyKey
+    ) -> None:
+        msg.execute_action(node=node, verify_key=verify_key)
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -28,9 +33,12 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
 
 
 class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
+    @staticmethod
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: EventualActionWithoutReply) -> None:
-        msg.execute_action(node=node)
+    def process(
+        node: AbstractNode, msg: EventualActionWithoutReply, verify_key: VerifyKey
+    ) -> None:
+        msg.execute_action(node=node, verify_key=verify_key)
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -39,11 +47,12 @@ class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 
 
 class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
+    @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        self, node: AbstractNode, msg: ImmediateActionWithReply
+        node: AbstractNode, msg: ImmediateActionWithReply, verify_key: VerifyKey
     ) -> ImmediateSyftMessageWithoutReply:
-        return msg.execute_action(node=node)
+        return msg.execute_action(node=node, verify_key=verify_key)
 
     @staticmethod
     @syft_decorator(typechecking=True)

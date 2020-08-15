@@ -4,13 +4,23 @@ from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing import Union
 
+# Fixes python3.6
+# however API changed between versions so typing_extensions smooths this over:
+# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
+from typing_extensions import GenericMeta as GenericM  # type: ignore
+
+
 # syft imports
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
 from ....util import get_fully_qualified_name
 
 
-class MetaSerializable(type):
+# GenericMeta Fixes python 3.6
+# After python 3.7+ there is no GenericMeta only Generic and this becomes "type"
+# python 3.6 print(typing_extensions.GenericMeta) = <class 'typing.GenericMeta'>
+# python 3.7 print(typing_extensions.GenericMeta) = <class 'type'>
+class MetaSerializable(GenericM):
 
     """When we go to deserialize a JSON protobuf object, the JSON protobuf
     wrapper will return a python protobuf object corresponding to a subclass
@@ -89,8 +99,25 @@ class Serializable(metaclass=MetaSerializable):
     serialized using our messaging proto backbone.
     """
 
+    @property
+    def named(self) -> str:
+        if hasattr(self, "name"):
+            return self.name  # type: ignore
+        else:
+            return "UNNAMED"
+
+    @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    @property
+    def icon(self) -> str:
+        # as in cereal, get it!?
+        return "🌾"
+
+    @property
+    def pprint(self) -> str:
+        return f"{self.icon} {self.named} ({self.class_name})"
 
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":
