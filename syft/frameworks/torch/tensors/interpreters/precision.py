@@ -468,9 +468,19 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self):
-        ones = self * 0 + 1
-        return ones / self
+    def reciprocal(self, method=None, nr_iters=10):
+        if method is None:
+            ones = self * 0 + 1
+            return ones / self
+        elif method.lower() == "nr":
+            result = 3 * (0.5 - self).exp() + 0.003
+            for i in range(nr_iters):
+                result = 2 * result - result * result * self
+            return result
+        elif method.lower() == "log":
+            return (-self.log()).exp()
+        else:
+            raise ValueError(f"Invalid method {method} given for reciprocal function")
 
     # Approximations:
     def inverse(self, iterations=8):
