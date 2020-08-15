@@ -95,4 +95,3 @@ def test_domain_serde() -> None:
 #         node=domain_2, request_id=message_request_id
 #     )
 #     print(response)
-

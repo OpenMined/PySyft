@@ -27,7 +27,6 @@ from .service import (
 )
 
 
-
 class Requests:
     _requests: Dict[UID, dict] = field(default_factory=dict)
     _object2request: Dict[UID, UID] = field(default_factory=dict)
