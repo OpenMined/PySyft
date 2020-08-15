@@ -1,4 +1,6 @@
 import inspect
+from types import ModuleType
+from typing import Union, Callable
 from ..decorators.syft_decorator_impl import syft_decorator
 
 
@@ -76,3 +78,36 @@ def get_original_constructor_name(object_name: str) -> str:
     """
 
     return f"original_{object_name}"
+
+
+@syft_decorator(typechecking=True)
+def replace_classes_in_module(
+    module: ModuleType, from_class: Callable, to_class: Callable
+) -> None:
+    """Recursively replace occurence of `from_class` to `to_class` inside module.
+
+    For example, when syft replaces torch.nn.parameter.Parameter constructor,
+    there's also need to replace same constructor in other modules that has already
+    imported it.
+
+    Args:
+        module (ModuleType): top-level module to traverse
+        from_class: Original constructor
+        to_class: syft's ObjectConstructor
+    """
+    visited_modules = []
+
+    def recursive_update(
+        module: ModuleType, attr_name: Union[str, None] = None
+    ) -> None:
+        attr = getattr(module, attr_name) if isinstance(attr_name, str) else module
+        if isinstance(attr, ModuleType) and attr not in visited_modules:
+            visited_modules.append(attr)
+            for child_attr_name in dir(attr):
+                recursive_update(attr, child_attr_name)
+        elif (
+            isinstance(attr_name, str) and inspect.isclass(attr) and attr is from_class
+        ):
+            setattr(module, attr_name, to_class)
+
+    recursive_update(module)

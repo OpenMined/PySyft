@@ -1,8 +1,10 @@
 from .util import get_original_constructor_name
 from .util import copy_static_methods
+from .util import replace_classes_in_module
 from ..core.common.uid import UID
 
 import inspect
+import sys
 
 
 class ObjectConstructor(object):
@@ -80,10 +82,9 @@ class ObjectConstructor(object):
     def install_inside_library(self):
         """Installs this custom constructor by replacing the library constructor with itself"""
 
+        replacee = getattr(self.constructor_location, self.constructor_name)
         # If a custom constructor hasn't already been installed at this location, install it
-        if not isinstance(
-            getattr(self.constructor_location, self.constructor_name), ObjectConstructor
-        ):
+        if not isinstance(replacee, ObjectConstructor):
             # cache original constructor at original_<constructor name>
             self.store_original_constructor()
 
@@ -96,6 +97,14 @@ class ObjectConstructor(object):
                 # copy static methods from previous constructor to new one
                 copy_static_methods(
                     from_class=self.original_constructor, to_class=type(self)
+                )
+
+                # Replace all occurrences of the original constructor in the main module
+                main_module = sys.modules[
+                    self.constructor_location.__name__.split(".")[0]
+                ]
+                replace_classes_in_module(
+                    module=main_module, from_class=replacee, to_class=self
                 )
         else:
             raise AttributeError(

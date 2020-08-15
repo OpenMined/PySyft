@@ -71,7 +71,8 @@ class PyTorchParameterWrapper(StorableObject):
         return data
 
 
-param_type = type(Parameter(th.tensor([1.0, 2, 3])))
 aggressive_set_attr(
-    obj=param_type, name="serializable_wrapper_type", attr=PyTorchParameterWrapper
+    obj=th.nn.parameter.Parameter,
+    name="serializable_wrapper_type",
+    attr=PyTorchParameterWrapper,
 )
