@@ -62,8 +62,13 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey
     ) -> None:
-        print(f"Updating to {msg.new_ancestry_address} on node {node}")
+        print(
+            f"> Executing {HeritageUpdateService.pprint()} {msg.pprint} on {node.pprint}"
+        )
         addr = msg.new_ancestry_address
+        print(f"> New Address {addr.target_emoji()}")
+        print(f"> Before Update {node.pprint}")
+
         if addr.network is not None:
             node.network = addr.network
         if addr.domain is not None:
@@ -71,6 +76,7 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         if addr.device is not None:
             node.device = addr.device
 
+        print(f"> After Update {node.pprint}")
         # TODO: solve this with node group address?
         print("child nodes of:" + str(node.name))
         for node_client in node.known_child_nodes:

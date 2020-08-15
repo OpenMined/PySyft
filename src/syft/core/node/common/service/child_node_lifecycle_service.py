@@ -27,8 +27,11 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.child_node_client_address = child_node_client_address
 
+        self.post_init()
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterChildNodeMessage_PB:
+        print(f"> {self.icon} -> Proto 🔢")
         return RegisterChildNodeMessage_PB(
             child_node_client_address=self.child_node_client_address.serialize(),
             address=self.address.serialize(),
@@ -37,13 +40,15 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def _proto2object(proto: RegisterChildNodeMessage_PB) -> "RegisterChildNodeMessage":
-        return RegisterChildNodeMessage(
+        msg = RegisterChildNodeMessage(
             child_node_client_address=_deserialize(
                 blob=proto.child_node_client_address
             ),
             address=_deserialize(blob=proto.address),
             msg_id=_deserialize(blob=proto.msg_id),
         )
+        print(f"> {msg.icon} <- 🔢 Proto")
+        return msg
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

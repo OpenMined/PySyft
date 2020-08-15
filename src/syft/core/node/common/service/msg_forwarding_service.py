@@ -34,6 +34,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
                     pass
 
         try:
+            print(f"> Forwarding {msg.pprint} to {addr.target_emoji()}")
             in_memory_client = node.in_memory_client_registry[addr.target_id.id]
             return in_memory_client.send_immediate_msg_without_reply(msg=msg)
         except Exception as e:

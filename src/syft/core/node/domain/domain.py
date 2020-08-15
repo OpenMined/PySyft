@@ -26,7 +26,6 @@ from .service import (
 )
 
 
-
 @dataclass(frozen=True)
 class Requests:
     _requests: Dict[UID, dict] = field(default_factory=dict)
@@ -114,6 +113,12 @@ class Domain(Node):
 
         self._register_services()
 
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "🏰"
+
     @property
     def id(self) -> UID:
         return self.domain.id
@@ -124,4 +129,3 @@ class Domain(Node):
 
     def set_request_status(self, request_id, status):
         self.requests.set_request_status(request_id, status)
-

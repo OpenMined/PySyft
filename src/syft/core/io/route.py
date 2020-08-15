@@ -122,6 +122,14 @@ class Route(ObjectWithID):
         self.schema = schema
         self.stops = stops
 
+    @property
+    def icon(self) -> str:
+        return "🛣️ "
+
+    @property
+    def pprint(self) -> str:
+        return f"{self.icon} ({self.class_name})"
+
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -144,6 +152,7 @@ class SoloRoute(Route):
         self.connection = connection
 
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        print(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(

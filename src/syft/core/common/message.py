@@ -29,11 +29,33 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
     # this should be overloaded by a subclass
     signed_type: Type[SignedMessageT]
 
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)
+
+    @property
+    def icon(self) -> str:
+        icon = "✉️ "
+        if "signed" in self.class_name.lower():
+            icon += "🔏"
+        return icon
+
+    @property
+    def pprint(self) -> str:
+        return f"{self.icon} ({self.class_name})"
+
+    def post_init(self) -> None:
+        init_reason = "Creating"
+        if "signed" in self.class_name.lower():
+            init_reason = "Signing"
+        print(f"> {init_reason} {self.pprint}")
+
 
 class SyftMessage(AbstractMessage):
     def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         self.address = address
         super().__init__(id=msg_id)
+        self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
 
@@ -72,6 +94,10 @@ class SignedMessage(SyftMessage):
         self.serialized_message = message
         self.cached_deseralized_message = None
 
+    # @property
+    # def icon(self) -> str:
+    #     return f"{super.icon}🔏"
+
     @property
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
@@ -91,6 +117,7 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
+        print(f"> {self.icon} -> Proto 🔢")
 
         proto = SignedMessage_PB()
         # obj_type will be the final subclass callee for example ReprMessage
@@ -123,6 +150,11 @@ class SignedMessage(SyftMessage):
             verify_key=VerifyKey(proto.verify_key),
             message=proto.message,
         )
+
+        icon = "🤷🏾‍♀️"
+        if hasattr(obj, "icon"):
+            icon = obj.icon
+        print(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
             raise TypeError(

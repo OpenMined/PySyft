@@ -99,8 +99,25 @@ class Serializable(metaclass=MetaSerializable):
     serialized using our messaging proto backbone.
     """
 
+    @property
+    def named(self) -> str:
+        if hasattr(self, "name"):
+            return self.name  # type: ignore
+        else:
+            return "UNNAMED"
+
+    @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    @property
+    def icon(self) -> str:
+        # as in cereal, get it!?
+        return "🌾"
+
+    @property
+    def pprint(self) -> str:
+        return f"{self.icon} {self.named} ({self.class_name})"
 
     @staticmethod
     def _proto2object(proto: Message) -> "Serializable":

@@ -48,6 +48,11 @@ class VirtualMachine(Node):
 
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "🍰"
 
     @property
     def id(self) -> UID:

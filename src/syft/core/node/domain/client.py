@@ -39,6 +39,8 @@ class DomainClient(Client):
             verify_key=verify_key,
         )
 
+        self.post_init()
+
     @property
     def id(self) -> UID:
         return self.domain.id

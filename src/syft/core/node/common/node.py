@@ -227,6 +227,9 @@ class Node(AbstractNode):
             conn_client = create_virtual_connection(node=self)
             # QUESTION: this was destination=self.id and then destination=self.target_id
             # reverting back but unsure what is correct
+            solo = SoloRoute(destination=self.id, connection=conn_client)
+            # inject name
+            solo.name = f"Route ({self.name} <-> {self.name} Client)"
             routes = [SoloRoute(destination=self.id, connection=conn_client)]
 
         return self.client_type(
@@ -294,6 +297,7 @@ class Node(AbstractNode):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
+        print(f"> Received {msg.pprint} @ {self.pprint}")
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
 
     @syft_decorator(typechecking=True)
@@ -306,8 +310,11 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Optional[SyftMessage]:
-
+        print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):
+            print(
+                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+            )
             # Process Message here
             if not msg.is_valid:
                 raise Exception("Message is not valid.")

@@ -21,6 +21,18 @@ class NodeService:
     def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
 
+    @classmethod
+    def class_name(cls) -> str:
+        return str(cls.__name__)
+
+    @classmethod
+    def icon(cls) -> str:
+        return "⚙️ "
+
+    @classmethod
+    def pprint(cls) -> str:
+        return f"{cls.icon()} ({cls.class_name()})"
+
 
 class ImmediateNodeService(NodeService):
     """A service for messages which should be immediately executed"""

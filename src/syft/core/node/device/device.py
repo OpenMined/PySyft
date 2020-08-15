@@ -56,6 +56,12 @@ class Device(Node):
 
         self._register_services()
 
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "📱"
+
     @property
     def id(self) -> UID:
         return self.device.id

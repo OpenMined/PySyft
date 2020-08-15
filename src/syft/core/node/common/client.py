@@ -52,7 +52,7 @@ class Client(AbstractNodeClient):
     ):
         super().__init__(network=network, domain=domain, device=device, vm=vm)
 
-        self.name = name
+        self.name = f"{name} Client"
         self.routes = routes
         self.default_route_index = 0
 
@@ -69,6 +69,26 @@ class Client(AbstractNodeClient):
             self.verify_key = verify_key
 
         self.install_supported_frameworks()
+
+    @property
+    def icon(self) -> str:
+        icon = "📡"
+        sub = []
+        if self.vm is not None:
+            sub.append("🍰")
+        if self.device is not None:
+            sub.append("📱")
+        if self.domain is not None:
+            sub.append("🏰")
+        if self.network is not None:
+            sub.append("🔗")
+
+        if len(sub) > 0:
+            icon = f"{icon} ["
+            for s in sub:
+                icon += s
+            icon += "]"
+        return icon
 
     @staticmethod
     def deserialize_client_metadata_from_node(
@@ -175,10 +195,10 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            print("are we signing this message?", type(msg))
+            print(f"> Signing {msg.pprint} with {self.named} 🔑")
             msg = msg.sign(signing_key=self.signing_key)
-            print("signed?", type(msg))
 
+        print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
