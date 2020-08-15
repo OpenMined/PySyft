@@ -5,7 +5,7 @@ package syft.core.node.common.service;
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
-message AcceptOrDenyRequestMessage {
+message ObjectSearchPermissionUpdateMessage {
     syft.core.common.UID msg_id = 1;
     syft.core.io.Address address = 2;
     bytes target_verify_key = 3;

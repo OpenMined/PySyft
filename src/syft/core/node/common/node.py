@@ -54,6 +54,7 @@ from .service.obj_action_service import (
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
 from .service.node_service import ImmediateNodeServiceWithReply
+from .service.obj_search_permission_service import ImmediateObjectSearchPermissionUpdateService
 
 
 # this generic type for Client bound by Client
@@ -169,6 +170,7 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectActionServiceWithoutReply
         )
+        self.immediate_services_without_reply.append(ImmediateObjectSearchPermissionUpdateService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
