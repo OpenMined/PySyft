@@ -118,11 +118,6 @@ def test_reciprocal(workers):
     result = result.reciprocal(method="NR").get().float_prec()
     assert ((real_result - result).abs() <= 0.001).all()
 
-    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec()
-    result = x.share(bob, alice, crypto_provider=james)
-    result = result.reciprocal(method="LOG").get().float_prec()
-    assert ((real_result - result).abs() <= 0.5).all()
-
 
 def test_torch_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
