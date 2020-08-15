@@ -102,6 +102,25 @@ def test_methods_for_linear_module(method, parameter):
 
     assert (result == fp_result.float_precision()).all()
 
+def test_reciprocal(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([1., 2., 3.]).fix_prec()
+    real_result = torch.tensor([1., 2., 3.]).reciprocal()
+
+    result = x.reciprocal().float_prec()
+    assert (result == torch.tensor([1., 0.5, 0.333])).all()
+    assert ((real_result - result).abs() <= 0.001).all()
+
+    x = torch.tensor([1., 2., 3.]).fix_prec()
+    result = x.share(bob, alice, crypto_provider=james)
+    result = result.reciprocal(method="NR").get().float_prec()
+    assert ((real_result - result).abs() <= 0.001).all()
+
+    x = torch.tensor([1., 2., 3.]).fix_prec()
+    result = x.share(bob, alice, crypto_provider=james)
+    result = result.reciprocal(method="LOG").get().float_prec()
+    assert ((real_result - result).abs() <= 0.5).all()
 
 def test_torch_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
