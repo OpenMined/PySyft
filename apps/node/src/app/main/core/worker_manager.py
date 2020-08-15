@@ -1,16 +1,18 @@
 # workers module imports
+import abc
 import logging
 
-from ...core.exceptions import WorkerNotFoundError
+from .exceptions import WorkerNotFoundError
 
 # PyGrid imports
-from ...core.warehouse import Warehouse
-from .worker import Worker
+from .warehouse import Warehouse
+
+# from .worker import Worker
 
 
-class WorkerManager:
-    def __init__(self):
-        self._workers = Warehouse(Worker)
+class WorkerManager(metaclass=abc.ABCMeta):
+    def __init__(self, worker: "Worker") -> None:
+        self._workers = Warehouse(worker)
 
     def create(self, worker_id: str):
         """ Register a new worker

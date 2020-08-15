@@ -1,23 +1,17 @@
-# Processes module imports
-from ...core.exceptions import (
-    FLProcessConflict,
-    PlanNotFoundError,
-    ProcessNotFoundError,
-    ProtocolNotFoundError,
-)
+import abc
 
-# PyGrid imports
-from ...core.warehouse import Warehouse
-from ..syft_assets import plans, protocols
-from .config import Config
-from .fl_process import FLProcess
+from .warehouse import Warehouse
 
 
-class ProcessManager:
-    def __init__(self):
+class ProcessManager(metaclass=abc.ABCMeta):
+    """Abstract Process Manager for both Model and Data Centric Federated
+    Learning."""
+
+    def __init__(self, FLProcess, Config) -> None:
         self._processes = Warehouse(FLProcess)
         self._configs = Warehouse(Config)
 
+    @abc.abstractmethod
     def create(
         self,
         client_config,
@@ -39,38 +33,9 @@ class ProcessManager:
             Raises:
                 FLProcessConflict (PyGridError) : If Process Name/Version already exists.
         """
+        pass
 
-        name = client_config["name"]
-        version = client_config["version"]
-
-        # Check if already exists
-        if self._processes.contains(name=name, version=version):
-            raise FLProcessConflict
-
-        # Create a new process
-        fl_process = self._processes.register(name=name, version=version)
-
-        # Register client protocols
-        protocols.register(fl_process, client_protocols)
-
-        # Register Server avg plan
-        plans.register(fl_process, server_avg_plan, avg_plan=True)
-
-        # Register client plans
-        plans.register(fl_process, client_plans, avg_plan=False)
-
-        # Register the client setup configs
-        self._configs.register(config=client_config, server_flprocess_config=fl_process)
-
-        # Register the server setup configs
-        self._configs.register(
-            config=server_config,
-            is_server_config=True,
-            client_flprocess_config=fl_process,
-        )
-
-        return fl_process
-
+    @abc.abstractmethod
     def get_configs(self, **kwargs):
         """Return FL Process Configs.
 
@@ -81,19 +46,9 @@ class ProcessManager:
         Raises:
             ProcessFoundError (PyGridError) : If FL Process not found.
         """
-        _process = self._processes.last(**kwargs)
+        pass
 
-        if not _process:
-            raise ProcessNotFoundError
-
-        # Server configs
-        server = self._configs.first(fl_process_id=_process.id, is_server_config=True)
-
-        # Client configs
-        client = self._configs.first(fl_process_id=_process.id, is_server_config=False)
-
-        return (server.config, client.config)
-
+    @abc.abstractmethod
     def get_plans(self, **kwargs):
         """Return FL Process Plans.
 
@@ -104,19 +59,13 @@ class ProcessManager:
         Raises:
             PlanNotFoundError (PyGridError) : If Plan not found.
         """
-        _plans = plans.get(**kwargs)
+        pass
 
-        if not _plans:
-            raise PlanNotFoundError
-
-        # Build a plan dictionary
-        plan_dict = {_plan.name: _plan.id for _plan in _plans}
-
-        return plan_dict
-
+    @abc.abstractmethod
     def get_plan(self, **kwargs):
-        return plans.first(**kwargs)
+        pass
 
+    @abc.abstractmethod
     def get_protocols(self, **kwargs):
         """Return FL Process Protocols.
 
@@ -127,16 +76,9 @@ class ProcessManager:
         Raises:
             ProtocolNotFoundError (PyGridError) : If Protocol not found.
         """
-        _protocols = protocols.get(**kwargs)
+        pass
 
-        if not _protocols:
-            raise ProtocolNotFoundError
-
-        # Build a protocol dictionary
-        protocol_dict = {_protocol.name: _protocol.id for _protocol in _protocols}
-
-        return protocol_dict
-
+    @abc.abstractmethod
     def get(self, **kwargs):
         """Retrieve the desired federated learning process.
 
@@ -147,13 +89,9 @@ class ProcessManager:
         Raises:
             ProcessNotFoundError (PyGridError) : If Process not found.
         """
-        _process = self._processes.query(**kwargs)
+        pass
 
-        if not _process:
-            raise ProcessNotFoundError
-
-        return _process
-
+    @abc.abstractmethod
     def first(self, **kwargs):
         """Retrieve the desired federated learning process.
 
@@ -164,13 +102,9 @@ class ProcessManager:
         Raises:
             ProcessNotFoundError (PyGridError) : If Process not found.
         """
-        _process = self._processes.first(**kwargs)
+        pass
 
-        if not _process:
-            raise ProcessNotFoundError
-
-        return _process
-
+    @abc.abstractmethod
     def last(self, **kwargs):
         """Retrieve the desired federated learning process.
 
@@ -181,17 +115,13 @@ class ProcessManager:
         Raises:
             ProcessNotFound (PyGridError) : If Process not found.
         """
-        _process = self._processes.last(**kwargs)
+        pass
 
-        if not _process:
-            raise ProcessNotFoundError
-
-        return _process
-
+    @abc.abstractmethod
     def delete(self, **kwargs):
         """Delete a registered Process.
 
         Args:
             model_id: Model's ID.
         """
-        self._processes.delete(**kwargs)
+        pass

@@ -1,7 +1,6 @@
 # Cycle module imports
 import json
 import logging
-import random
 
 # Generic imports
 from datetime import datetime, timedelta
@@ -12,7 +11,7 @@ import torch as th
 from ...core.exceptions import CycleNotFoundError
 
 # PyGrid modules
-from ...storage.warehouse import Warehouse
+from ...core.warehouse import Warehouse
 from ..models import model_manager
 from ..processes import process_manager
 from ..syft_assets import PlanManager

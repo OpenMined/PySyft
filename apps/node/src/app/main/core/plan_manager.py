@@ -1,5 +1,7 @@
 # Syft assets module imports
 # Syft dependencies
+import abc
+
 import syft as sy
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.threepio import PlanTranslatorTfjs
@@ -7,56 +9,20 @@ from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.serde import protobuf
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 
-from ...core.exceptions import PlanInvalidError, PlanNotFoundError, PlanTranslationError
-
-# PyGrid imports
-from ...core.warehouse import Warehouse
-from .plan import Plan
+from .warehouse import Warehouse
+from .exceptions import PlanInvalidError, PlanNotFoundError, PlanTranslationError
 
 # Make fake local worker for serialization
 worker = sy.VirtualWorker(hook=None)
 
 
-class PlanManager:
-    def __init__(self):
-        self._plans = Warehouse(Plan)
+class PlanManager(metaclass=abc.ABCMeta):
+    def __init__(self, plan: "Plan") -> None:
+        self._plans = Warehouse(plan)
 
-    def register(self, process, plans: dict, avg_plan: bool):
-        if not avg_plan:
-            # Convert client plans to specific formats
-            plans_converted = {}
-            for idx, plan_ser in plans.items():
-                try:
-                    plan = self.deserialize_plan(plan_ser)
-                except:
-                    raise PlanInvalidError()
-                try:
-                    plan_ops = self.trim_plan(plan, "default")
-                    plan_ts = self.trim_plan(plan, "torchscript")
-                    plan_tfjs = self.trim_plan(plan, "tfjs")
-                    plan_ops_ser = self.serialize_plan(plan_ops)
-                    plan_ts_ser = self.serialize_plan(plan_ts)
-                    plan_tfjs_ser = self.serialize_plan(plan_tfjs)
-                except:
-                    raise PlanTranslationError()
-                plans_converted[idx] = {
-                    "list": plan_ops_ser,
-                    "torchscript": plan_ts_ser,
-                    "tfjs": plan_tfjs_ser,
-                }
-
-            # Register new Plans into the database
-            for key, plan in plans_converted.items():
-                self._plans.register(
-                    name=key,
-                    value=plan["list"],
-                    value_ts=plan["torchscript"],
-                    value_tfjs=plan["tfjs"],
-                    plan_flprocess=process,
-                )
-        else:
-            # Register the average plan into the database
-            self._plans.register(value=plans, avg_flprocess=process, is_avg_plan=True)
+    @abc.abstractmethod
+    def register(self, process, plans: dict, avg_plan: bool) -> None:
+        pass
 
     def get(self, **kwargs):
         """Retrieve the desired plans.
