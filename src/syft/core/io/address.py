@@ -2,6 +2,10 @@
 from typing import Optional
 from typing import Any
 from typing import List
+from typing import Union
+
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # syft imports (sorted by length)
 from ..io.location import Location
@@ -101,6 +105,21 @@ class Address(Serializable):
 
     def post_init(self) -> None:
         print(f"> Creating {self.pprint}")
+
+    @syft_decorator(typechecking=True)
+    def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
+        hex_chars = bytes(key).hex()[-8:]
+        return self.char_emoji(hex_chars=hex_chars)
+
+    @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
 
     @property
     def address(self) -> "Address":

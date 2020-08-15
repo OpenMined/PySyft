@@ -116,15 +116,19 @@ class Client(AbstractNodeClient):
     def register_in_memory_client(self, client: AbstractNodeClient) -> None:
         # WARNING: Gross hack
         route_index = self.default_route_index
+        # this ID should be unique but persistent so that lookups are universal
         self.routes[route_index].connection.server.node.in_memory_client_registry[
             client.address.target_id.id
         ] = client
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
+        print(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
-            child_node_client_address=client.address, address=self.address
+            lookup_id=client.id,
+            child_node_client_address=client.address,
+            address=self.address,
         )
 
         if self.network is not None:
@@ -176,6 +180,11 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
@@ -195,7 +204,11 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            print(f"> Signing {msg.pprint} with {self.named} 🔑")
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
@@ -206,7 +219,11 @@ class Client(AbstractNodeClient):
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-
+        output = (
+            f"> {self.pprint} Signing {msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+        )
+        print(output)
         signed_msg = msg.sign(signing_key=self.signing_key)
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
@@ -291,3 +308,14 @@ class Client(AbstractNodeClient):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Client_PB
+
+    @property
+    def keys(self) -> str:
+        verify = (
+            self.key_emoji(key=self.signing_key.verify_key)
+            if self.signing_key is not None
+            else "🚫"
+        )
+        keys = f"🔑 {verify}"
+
+        return keys

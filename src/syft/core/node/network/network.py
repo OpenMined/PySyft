@@ -57,4 +57,10 @@ class Network(Node):
         return self.network.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return msg.address.network_id in (self.id,) and msg.address.domain is None
+        # this needs to be defensive by checking network_id NOT network.id or it breaks
+        try:
+            return msg.address.network_id == self.id and msg.address.domain is None
+        except Exception as e:
+            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+            print(error)
+            return False

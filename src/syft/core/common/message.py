@@ -47,7 +47,7 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
     def post_init(self) -> None:
         init_reason = "Creating"
         if "signed" in self.class_name.lower():
-            init_reason = "Signing"
+            init_reason += " Signed"
         print(f"> {init_reason} {self.pprint}")
 
 
@@ -58,7 +58,7 @@ class SyftMessage(AbstractMessage):
         self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
-
+        print(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
         signed_message = signing_key.sign(self.serialize(to_binary=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -93,10 +93,6 @@ class SignedMessage(SyftMessage):
         self.verify_key = verify_key
         self.serialized_message = message
         self.cached_deseralized_message = None
-
-    # @property
-    # def icon(self) -> str:
-    #     return f"{super.icon}🔏"
 
     @property
     def message(self) -> "SyftMessage":
