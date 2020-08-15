@@ -6,20 +6,20 @@ __all__ = ["LowercaseTensorConstructor", "UppercaseTensorConstructor"]
 
 from syft.ast.globals import Globals
 
-whitelist = {}  # (path: str, return_type:type)
-# whitelist["torch.tensor"] = "torch.Tensor"
-whitelist["torch.Tensor"] = "torch.Tensor"
-whitelist["torch.Tensor.__add__"] = "torch.Tensor"
-whitelist["torch.zeros"] = "torch.Tensor"
-whitelist["torch.ones"] = "torch.Tensor"
-whitelist["torch.nn.Linear"] = "torch.nn.Linear"
-# whitelist.add("torch.nn.Linear.parameters")
+allowlist = {}  # (path: str, return_type:type)
+# allowlist["torch.tensor"] = "torch.Tensor"
+allowlist["torch.Tensor"] = "torch.Tensor"
+allowlist["torch.Tensor.__add__"] = "torch.Tensor"
+allowlist["torch.zeros"] = "torch.Tensor"
+allowlist["torch.ones"] = "torch.Tensor"
+allowlist["torch.nn.Linear"] = "torch.nn.Linear"
+# allowlist.add("torch.nn.Linear.parameters")
 
 
 def create_torch_ast():
     ast = Globals()
 
-    for method, return_type_name in whitelist.items():
+    for method, return_type_name in allowlist.items():
         ast.add_path(
             path=method, framework_reference=torch, return_type_name=return_type_name
         )

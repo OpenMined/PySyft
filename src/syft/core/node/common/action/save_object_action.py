@@ -1,17 +1,20 @@
+# external class imports
 from typing import Optional
-from ...abstract.node import AbstractNode
-from .common import ImmediateActionWithoutReply
+from nacl.signing import VerifyKey
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft imports
 from ....common.uid import UID
 from ....io.address import Address
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
+from ....store.storeable_object import StorableObject
+from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import Serializable
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
-from ....common.serde.deserialize import _deserialize
-from ....store.storeable_object import StorableObject
 
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
@@ -23,9 +26,21 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         self.obj_id = obj_id
         self.obj = obj
 
-    def execute_action(self, node: AbstractNode) -> None:
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
-        node.store.store(obj=StorableObject(id=self.obj.id, data=self.obj))  # type: ignore
+        node.store.store(
+            obj=StorableObject(
+                # ignoring this - the fundamental problem is that we can't force the classes
+                # we want to use to subclass from something without creating wrappers for
+                # everything which are mandatory for all operations. It's plausible that we
+                # will have to do this - but for now we aren't so we need to simply assume
+                # that we're adding ids to things. I don't like it though - wish there was a
+                # better way. But we want to support other frameworks so - gotta do it.
+                id=self.obj.id,  # type: ignore
+                data=self.obj,
+                read_permissions=set([verify_key, node.verify_key]),
+            )
+        )
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:

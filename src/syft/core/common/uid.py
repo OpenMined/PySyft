@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Any
 
 # external lib imports
 import uuid
@@ -104,7 +105,7 @@ class UID(Serializable):
         return self.value.int
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: "UID") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
         This checks to see whether this UID is equal to another UID by
@@ -112,12 +113,15 @@ class UID(Serializable):
         come with their own __eq__ function which we assume to be correct.
 
         :param other: this is the other ID to be compared with
-        :type other: UID
+        :type other: Any (note this must be Any or __eq__ fails on other types)
         :return: returns True/False based on whether the objcts are the same
         :rtype: bool
         """
 
-        return self.value == other.value
+        try:
+            return self.value == other.value
+        except Exception:
+            return False
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
@@ -128,6 +132,29 @@ class UID(Serializable):
         readable representations of other objects."""
 
         return f"<UID:{self.value}>"
+
+    @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
+
+    @syft_decorator(typechecking=True)
+    def string_emoji(self, string: str, length: int, chunk: int) -> str:
+        output = []
+        part = string[-length:]
+        while len(part) > 0:
+            part, end = part[:-chunk], part[-chunk:]
+            output.append(self.char_emoji(hex_chars=end))
+        return "".join(output)
+
+    @syft_decorator(typechecking=True)
+    def emoji(self) -> str:
+        return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
 
     @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
