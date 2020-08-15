@@ -56,6 +56,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         )
         self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
 
+    def approve(self):
+        self.accept()
+
     def deny(self):
         msg = AcceptOrDenyRequestMessage(
             address=self.owner_client_if_available.address,
@@ -63,6 +66,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
             request_id=self.id,
         )
         self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+
+    def reject(self):
+        self.deny()
 
     def withdraw(self):
         self.deny()
