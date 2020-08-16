@@ -471,10 +471,6 @@ class FixedPrecisionTensor(AbstractTensor):
     def reciprocal(self, nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
-        exp(x) = \lim_{n -> infty} (1 + x / n) ^ n
-
-        Here we compute exp by choosing n = 2 ** d for some large d equal to
-        iterations. We then compute (1 + x / n) once and square `d` times.
 
         Args:
             method:
