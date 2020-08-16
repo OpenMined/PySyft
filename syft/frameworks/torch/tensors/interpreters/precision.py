@@ -468,7 +468,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self, nr_iters=10):
+    def reciprocal(self, method=None, nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
 
