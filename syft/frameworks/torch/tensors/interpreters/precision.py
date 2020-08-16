@@ -488,7 +488,6 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         if method.lower() == "nr":
-            print("hello")
             result = 3 * (0.5 - self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * self
