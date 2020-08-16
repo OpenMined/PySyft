@@ -65,6 +65,9 @@ from syft.workers.virtual import VirtualWorker  # noqa: E402,F401
 from syft.workers.websocket_client import WebsocketClientWorker  # noqa: E402,F401
 from syft.workers.websocket_server import WebsocketServerWorker  # noqa: E402,F401
 
+# Register PRZS in PrimitiveStorage
+import syft.frameworks.torch.mpc.przs  # noqa: E402,F401
+
 # Import Syft's Public Tensor Types
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor  # noqa: E402,F401
 from syft.frameworks.torch.tensors.interpreters.additive_shared import (  # noqa: E402,F401

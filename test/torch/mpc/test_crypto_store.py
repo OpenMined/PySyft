@@ -53,7 +53,6 @@ def test_przs_alpha_2of3(workers):
     PRZS.setup(workers_vals)
 
     values = [gen_alpha_2of3(worker).get() for worker in workers_vals]
-    print(values)
 
     """
         Worker i holds (alpha_i, and alpha_i-1)
