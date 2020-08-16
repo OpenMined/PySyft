@@ -108,7 +108,6 @@ def test_reciprocal(workers):
 
     tensor = torch.tensor([1.0, 2.0, 3.0])
     x = tensor.fix_prec()
-    real_result = torch.tensor([1.0, 2.0, 3.0]).reciprocal()
 
     result = x.reciprocal().float_prec()
     assert torch.isclose(result, tensor.reciprocal()).all()
