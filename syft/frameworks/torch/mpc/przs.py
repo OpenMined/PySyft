@@ -43,8 +43,11 @@ class PRZS:
         for worker, seeds in workers_ptr.items():
             cur_seed = seeds["cur_seed"]
             prev_seed = seeds["prev_seed"]
-            func_remote = remote(_initialize_generators, location=worker)
-            func_remote(cur_seed, prev_seed)
+            if worker == syft.local_worker:
+                func = _initialize_generators
+            else:
+                func = remote(_initialize_generators, location=worker)
+            func(cur_seed, prev_seed)
 
 
 def get_random(name_generator, shape, worker):
