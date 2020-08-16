@@ -484,7 +484,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Ref: https://github.com/facebookresearch/CrypTen
         """
-        
+
         if method is None:
             ones = self * 0 + 1
             return ones / self
