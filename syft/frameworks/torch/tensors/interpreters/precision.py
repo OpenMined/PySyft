@@ -475,7 +475,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Args:
             method:
-                None, 'NR' and 'log' can be entered.
+                None, 'NR', 'Log' and 'Division' can be entered.
                 In general, NR is the fastest and most accurate.
             nr_iters:
                 Number of iterations for `Newton-Raphson`
@@ -483,14 +483,14 @@ class FixedPrecisionTensor(AbstractTensor):
             Reciprocal of `self`
         """
 
-        if method is None:
-            ones = self * 0 + 1
-            return ones / self
-        elif method.lower() == "nr":
+        if method is None or method.lower() == "nr":
             result = 3 * (0.5 - self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * self
             return result
+        elif method.lower() == "division":
+            ones = self * 0 + 1
+            return ones / self
         elif method.lower() == "log":
             return (-self.log()).exp()
         else:

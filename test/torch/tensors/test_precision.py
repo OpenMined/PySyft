@@ -113,7 +113,7 @@ def test_reciprocal(workers):
 
     x = tensor.fix_prec()
     result = x.share(bob, alice, crypto_provider=james)
-    result = result.reciprocal(method="NR").get().float_prec()
+    result = result.reciprocal(method="division").get().float_prec()
     assert torch.isclose(tensor.reciprocal(), result, atol=1e-2).all()
 
     x = tensor.fix_prec()
