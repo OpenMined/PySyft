@@ -482,6 +482,9 @@ class FixedPrecisionTensor(AbstractTensor):
                 In general, NR is the fastest and most accurate.
             nr_iters:
                 Number of iterations for `Newton-Raphson`
+        
+        Returns:
+            Reciprocal of `self`
 
         Ref: https://github.com/facebookresearch/CrypTen
         """
