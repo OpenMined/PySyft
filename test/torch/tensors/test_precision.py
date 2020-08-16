@@ -108,14 +108,18 @@ def test_reciprocal(workers):
 
     tensor = torch.tensor([1.0, 2.0, 3.0])
     x = tensor.fix_prec()
-
     result = x.reciprocal().float_prec()
-    assert torch.isclose(result, tensor.reciprocal()).all()
+    assert torch.isclose(tensor.reciprocal(), result, rtol=1e-2).all()
 
-    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec()
+    x = tensor.fix_prec()
     result = x.share(bob, alice, crypto_provider=james)
     result = result.reciprocal(method="NR").get().float_prec()
-    assert torch.isclose(result, tensor.reciprocal()).all()
+    assert torch.isclose(tensor.reciprocal(), result, atol=1e-2).all()
+
+    x = tensor.fix_prec()
+    result = x.share(bob, alice, crypto_provider=james)
+    result = result.reciprocal(method="Log").get().float_prec()
+    assert torch.isclose(tensor.reciprocal(), result, atol=5e-1).all()
 
 
 def test_torch_add(workers):
