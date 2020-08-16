@@ -1,6 +1,7 @@
 # external lib imports
 import json
 import sys
+import pandas as pd
 
 # external class imports
 from typing import Optional
@@ -16,6 +17,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     SignedImmediateSyftMessageWithoutReply,
 )
+from syft.core.node.common.service.obj_search_service import ObjectSearchMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ...common.serde.deserialize import _deserialize
@@ -29,6 +31,53 @@ from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
 import syft as sy
+
+class StoreClient:
+    def __init__(self, client):
+        self.client = client
+
+    @property
+    def store(self):
+        msg = ObjectSearchMessage(address=self.client.address,
+                                  msg_id=None,
+                                  reply_to=self.client.address)
+        results = self.client.send_immediate_msg_with_reply(msg=msg).results
+
+        # This is because of a current limitation in Pointer where we cannot
+        # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
+        for result in results:
+            result.location = self.client
+
+        return results
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            selected_key = None
+            for obj in self.store:
+                if key == str(obj.id.value):
+                    return obj
+            raise KeyError("No such request found for string id:" + str(key))
+        if isinstance(key, int):
+            return self.store[key]
+        else:
+            raise KeyError("Please pass in a string or int key")
+
+    def __repr__(self):
+        return repr(self.store)
+
+    @property
+    def pandas(self):
+
+        obj_lines = list()
+        for obj in self.store:
+            obj_lines.append(
+                {
+                    "ID": obj.id_at_location,
+                    "Tags": obj.tags,
+                    "Description": obj.description
+                }
+            )
+        return pd.DataFrame(obj_lines)
 
 
 class Client(AbstractNodeClient):
@@ -70,6 +119,8 @@ class Client(AbstractNodeClient):
             self.verify_key = verify_key
 
         self.install_supported_frameworks()
+
+        self.store = StoreClient(client=self)
 
     @property
     def icon(self) -> str:

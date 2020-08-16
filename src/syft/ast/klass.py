@@ -49,7 +49,6 @@ class Class(ast.callable.Callable):
             )
 
         klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
-
         klass_pointer.path_and_name = self.path_and_name
         setattr(self, self.pointer_name, klass_pointer)
 
@@ -57,7 +56,10 @@ class Class(ast.callable.Callable):
         def send(self, location):
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
-                location=location, id_at_location=self.id
+                location=location,
+                id_at_location=self.id,
+                tags=self.tags if hasattr(self, 'tags') else list(),
+                description=self.description if hasattr(self, 'description') else ""
             )
 
             # Step 2: create old_message which contains object to send
@@ -73,6 +75,22 @@ class Class(ast.callable.Callable):
 
         # using curse because Numpy tries to lock down custom attributes
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
+
+    def create_storable_object_attr_convenience_methods(outer_self):
+
+        def tag(self, *tags):
+            self.tags = list(tags)
+            return self
+
+        # using curse because Numpy tries to lock down custom attributes
+        aggressive_set_attr(obj=outer_self.ref, name="tag", attr=tag)
+
+        def describe(self, description):
+            self.description = description
+            return self
+
+        # using curse because Numpy tries to lock down custom attributes
+        aggressive_set_attr(obj=outer_self.ref, name="describe", attr=describe)
 
     def create_serialization_methods(outer_self):
         def serialize(  # type: ignore

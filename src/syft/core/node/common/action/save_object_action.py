@@ -38,6 +38,8 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 # better way. But we want to support other frameworks so - gotta do it.
                 id=self.obj.id,  # type: ignore
                 data=self.obj,
+                tags=self.obj.tags,
+                description=self.obj.description,
                 read_permissions=set([verify_key, node.verify_key]),
             )
         )
