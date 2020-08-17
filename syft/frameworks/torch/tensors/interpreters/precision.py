@@ -468,7 +468,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self, method="NR", nr_iters=10):
+    def reciprocal(self, method="division", nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
         Ref: https://github.com/facebookresearch/CrypTen
