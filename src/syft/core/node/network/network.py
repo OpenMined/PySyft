@@ -1,6 +1,9 @@
 # external class imports
 from typing import Optional, Union
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports (sorted by length)
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...io.location import SpecificLocation
@@ -10,7 +13,6 @@ from ..domain.domain import Domain
 from ...io.location import Location
 from .client import NetworkClient
 from ..common.node import Node
-from ...io.address import All
 from ...common.uid import UID
 
 
@@ -30,18 +32,35 @@ class Network(Node):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
-            name=name, network=network, domain=domain, device=device, vm=vm
+            name=name,
+            network=network,
+            domain=domain,
+            device=device,
+            vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
 
         self._register_services()
+        self.post_init()
+
+    @property
+    def icon(self) -> str:
+        return "🔗"
 
     @property
     def id(self) -> UID:
         return self.network.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        return (
-            msg.address.network.id in (self.id, All(),) and msg.address.domain is None
-        )
+        # this needs to be defensive by checking network_id NOT network.id or it breaks
+        try:
+            return msg.address.network_id == self.id and msg.address.domain is None
+        except Exception as e:
+            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+            print(error)
+            return False

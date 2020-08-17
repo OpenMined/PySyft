@@ -14,12 +14,12 @@ _sym_db = _symbol_database.Default()
 
 from syft.proto.lib.numpy import tensor_pb2 as proto_dot_lib_dot_numpy_dot_tensor__pb2
 
+
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/lib_object.proto",
     package="syft.lib",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1aproto/lib/lib_object.proto\x12\x08syft.lib\x1a\x1cproto/lib/numpy/tensor.proto">\n\tLibObject\x12\x31\n\x0cnumpy_tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.numpy.TensorProtob\x06proto3',
     dependencies=[proto_dot_lib_dot_numpy_dot_tensor__pb2.DESCRIPTOR,],
 )
@@ -31,7 +31,6 @@ _LIBOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="numpy_tensor",
@@ -50,7 +49,6 @@ _LIBOBJECT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

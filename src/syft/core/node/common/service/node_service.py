@@ -1,10 +1,14 @@
-from typing import List, Type, Any
+# external class imports
+from nacl.signing import VerifyKey
+from typing import List
+from typing import Type
+from typing import Any
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
-    SignedMessage,
+    SignedMessageT,
 )
 from syft.decorators import syft_decorator
 
@@ -16,6 +20,18 @@ class NodeService:
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
         raise NotImplementedError
+
+    @classmethod
+    def class_name(cls) -> str:
+        return str(cls.__name__)
+
+    @classmethod
+    def icon(cls) -> str:
+        return "⚙️ "
+
+    @classmethod
+    def pprint(cls) -> str:
+        return f"{cls.icon()} ({cls.class_name()})"
 
 
 class ImmediateNodeService(NodeService):
@@ -41,7 +57,7 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithReply
+        node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey
     ) -> ImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
@@ -54,7 +70,9 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
 class EventualNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: EventualSyftMessageWithoutReply) -> None:
+    def process(
+        node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey
+    ) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -66,7 +84,9 @@ class EventualNodeServiceWithoutReply(NodeService):
 class ImmediateNodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: ImmediateSyftMessageWithoutReply) -> None:
+    def process(
+        node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey
+    ) -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -78,7 +98,21 @@ class ImmediateNodeServiceWithoutReply(NodeService):
 class SignedNodeServiceWithReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SignedMessage) -> SignedMessage:
+    def process(
+        node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
+    ) -> SignedMessageT:
+        raise NotImplementedError
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[Type[Any]]:
+        raise NotImplementedError
+
+
+class SignedNodeServiceWithoutReply(ImmediateNodeService):
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def process(node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey) -> None:
         raise NotImplementedError
 
     @staticmethod

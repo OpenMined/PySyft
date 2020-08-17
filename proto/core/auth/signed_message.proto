@@ -5,5 +5,5 @@ message SignedMessage {
   string obj_type = 1;
   bytes signature = 2;
   bytes verify_key = 3;
-  bytes data = 4;
+  bytes message = 4;
 }

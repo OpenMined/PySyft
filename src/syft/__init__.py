@@ -24,8 +24,8 @@ classes.
 
 Syft "python" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library common syntax tree using a white\
-list of methods
+* :py:mod:`syft.ast` - code generates external library common syntax tree using an
+allowlist list of methods
 * :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive
 use of kwargs.
 * :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for

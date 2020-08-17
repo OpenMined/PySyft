@@ -1,5 +1,6 @@
 from ..ast.globals import Globals
-from syft.lib.numpy.__init__ import create_numpy_ast
+
+# from syft.lib.numpy.__init__ import create_numpy_ast
 from syft.lib.torch.__init__ import create_torch_ast
 
 
@@ -7,11 +8,11 @@ from syft.lib.torch.__init__ import create_torch_ast
 def create_lib_ast():
 
     torch_ast = create_torch_ast()
-    numpy_ast = create_numpy_ast()
+    # numpy_ast = create_numpy_ast()
 
     lib_ast = Globals()
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
-    lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
+    # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast
 

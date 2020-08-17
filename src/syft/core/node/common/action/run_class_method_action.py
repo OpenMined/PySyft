@@ -1,13 +1,19 @@
-from typing import Dict, Any, Tuple, Optional
-from ...abstract.node import AbstractNode
+# external class imports
+from typing import Any
+from typing import Dict
+from typing import Tuple
+from typing import Optional
+from nacl.signing import VerifyKey
 from .common import ImmediateActionWithoutReply
-
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from ....common.serde.deserialize import _deserialize
-from ....store.storeable_object import StorableObject
-from .....decorators.syft_decorator_impl import syft_decorator
 from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft imports
+from ....common.uid import UID
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from ....store.storeable_object import StorableObject
+from ....common.serde.deserialize import _deserialize
+from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -33,7 +39,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         print("id at location:" + str(self.id_at_location))
 
-    def execute_action(self, node: AbstractNode) -> None:
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # print(self.path)
         # print(self._self)
         # print(self.args)
@@ -42,26 +48,40 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         method = node.lib_ast(self.path)
 
-        resolved_self = node.store[self._self.id_at_location].data
+        resolved_self = node.store[self._self.id_at_location]
+
+        result_read_permissions = resolved_self.read_permissions
 
         resolved_args = list()
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location].data
-            resolved_args.append(r_arg)
+            r_arg = node.store[arg.id_at_location]
+
+            result_read_permissions = result_read_permissions.intersection(
+                r_arg.read_permissions
+            )
+
+            resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location].data
-            resolved_kwargs[arg_name] = r_arg
+            r_arg = node.store[arg.id_at_location]
+            result_read_permissions = result_read_permissions.intersection(
+                r_arg.read_permissions
+            )
+            resolved_kwargs[arg_name] = r_arg.data
 
-        result = method(resolved_self, *resolved_args, **resolved_kwargs)
+        result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
         # ensure that result has the right id
         # TODO: overload all methods to incorporate this automatically
         result.id = self.id_at_location
 
         if not isinstance(result, StorableObject):
-            result = StorableObject(id=self.id_at_location, data=result)
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=result_read_permissions,
+            )
 
         node.store.store(obj=result)
 

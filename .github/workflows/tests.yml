@@ -3,21 +3,20 @@ name: Tests
 on:
   push:
     branches:
-    - master
-    - syft_0.3.0
+      - master
+      - syft_0.3.0
     paths:
-    - '**.py'
-    - 'setup.cfg'
+      - "**.py"
+      - "setup.cfg"
 
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-    - '**.py'
-    - 'setup.cfg'
+      - "**.py"
+      - "setup.cfg"
 
 jobs:
   python-tests:
-
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
@@ -25,34 +24,63 @@ jobs:
         python-version: [3.8, 3.7, 3.6]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Cache packages
-      uses: actions/cache@v2
-      id: cache-reqs
-      with:
-        path: ~/.eggs
-        key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-    - name: Install lint, formatter, security checker
-      run: |
-            pip3 install flake8 black bandit
+      - name: Install lint, formatter, security checker
+        run: |
+          pip3 install flake8 black bandit
 
-    - name: Lint and format
-      run: |
-            black --check --verbose src tests
-            python setup.py flake8
+      - name: Lint and format
+        run: |
+          black --check --verbose src tests
+          python setup.py flake8
 
-    - name: Scan for security issues
-      run: |
-            bandit -r src -ll
+      - name: Scan for security issues
+        run: |
+          bandit -r src -ll
 
-    - name: Run tests with coverage
-      run: |
-            pip install typing-extensions dataclasses
-            python setup.py test
+      - name: Run tests
+        run: |
+          pip install pytest pytest-cov
+          pip install -r requirements.txt
+          pip install -e .
+          pytest --cov-fail-under 0
+
+  python-coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Run tests with coverage
+        run: |
+          pip install typing-extensions dataclasses
+          python setup.py test

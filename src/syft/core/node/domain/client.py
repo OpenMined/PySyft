@@ -1,6 +1,9 @@
 # external class imports
 from typing import List
 
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+
 # syft imports
 from ...io.location import SpecificLocation
 from ...io.location import Location
@@ -22,6 +25,8 @@ class DomainClient(Client):
         network: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        signing_key: Optional[SigningKey] = None,
+        verify_key: Optional[VerifyKey] = None,
     ):
         super().__init__(
             name=name,
@@ -30,7 +35,11 @@ class DomainClient(Client):
             domain=domain,
             device=device,
             vm=vm,
+            signing_key=signing_key,
+            verify_key=verify_key,
         )
+
+        self.post_init()
 
     @property
     def id(self) -> UID:
