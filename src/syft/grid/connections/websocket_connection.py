@@ -7,10 +7,10 @@ import asyncio
 from syft.core.common.serde import Serializable
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.node.abstract.node import AbstractNode
+from syft.core.node.common.client import Client
+from syft.core.common.serde import _deserialize, _serialize
 from typing import Set
-
-from syft.grid.duet.request import RequestResponse, RequestService
-
+import json
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
@@ -60,6 +60,7 @@ class WebsocketConnection(BidirectionalConnection):
         )  # Request Messages / Request Responses
         self.consumer_pool = asyncio.Queue(loop=self.loop)  # Request Responses
 
+        asyncio.run(self.get_metadata())
         asyncio.ensure_future(self.connect())
 
     @syft_decorator(typechecking=False)
@@ -90,7 +91,8 @@ class WebsocketConnection(BidirectionalConnection):
         while self.connected:
             # If producer pool is empty (any immediate message to send), wait here.
             message = await self.producer_pool.get()
-            await websocket.send(message)
+
+            await websocket.send(message.json())
 
     @syft_decorator(typechecking=False)
     async def consumer_handler(self, websocket) -> None:
@@ -104,7 +106,7 @@ class WebsocketConnection(BidirectionalConnection):
 
         # If consumer pool is empty (any message to receive), wait here.
         async for message in websocket:
-            await self.route(message)
+            await self.consumer(message)
 
     @syft_decorator(typechecking=True)
     def consumer(self, request: Serializable) -> None:
@@ -123,6 +125,8 @@ class WebsocketConnection(BidirectionalConnection):
 
         # We need to route all of them properly.
 
+        request = _deserialize(blob=request, from_json=True)
+
         # New Request Service
         if isinstance(request, RequestService):
 
@@ -140,7 +144,7 @@ class WebsocketConnection(BidirectionalConnection):
                 self.recv_eventual_msg_without_reply(msg=request)
 
         # Request Response
-        elif isinstance(request, RequestResponse):
+        else:
             self.consumer_pool.put(request)  # Just add in consumer pool queue.
 
     @syft_decorator(typechecking=True)
@@ -194,7 +198,7 @@ class WebsocketConnection(BidirectionalConnection):
         self, msg: ImmediateSyftMessageWithoutReply
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
-        self.producer_pool.put(msg)
+        self.producer_pool.put_nowait(msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -210,9 +214,10 @@ class WebsocketConnection(BidirectionalConnection):
         """
         return asyncio.run(self.send_sync_message(msg=msg))
 
+    @syft_decorator(typechecking=True)
     async def send_sync_message(
-        self, msg: Set[SignedMessage, ImmediateSyftMessageWithReply]
-    ) -> Set[SignedMessage, ImmediateSyftMessageWithReply]:
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> ImmediateSyftMessageWithReply:
         """ Send sync messages generically. """
 
         # To ensure the sequence of sending / receiving messages
@@ -229,3 +234,13 @@ class WebsocketConnection(BidirectionalConnection):
         response = await self.consumer_pool.get()
 
         return response
+
+    @syft_decorator(typechecking=True)
+    async def get_metadata(self) -> None:
+        async with websockets.connect(self.url + "/metadata") as websocket:
+            await websocket.send("Hello!")
+            response = await websocket.recv()
+            address, name, client_id = Client.deserialize_client_metadata_from_node(
+                response
+            )
+            self.metadata = (address, name, client_id)
