@@ -76,10 +76,10 @@ Before start the grid platform locally using Docker, we need to set up the domai
 
 ```
 127.0.0.1 network
-127.0.0.1 bob
 127.0.0.1 alice
-127.0.0.1 bill
-127.0.0.1 james
+127.0.0.1 bob
+127.0.0.1 charlie
+127.0.0.1 dan
 ```
 
 Note that you're not restricted to running 4 nodes and a network. You could instead run just a single node if you'd like - this is often all you need for model-centric federated learning. For the sake of our example, we'll use the network running 4 nodes underneath but you're welcome to modify it to your needs.

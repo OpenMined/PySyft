@@ -28,6 +28,7 @@ redis = "^3.5.3"
 sqlalchemy_utils = "^0.36.8"
 numpy = "^1.18.5"
 wsaccel = "^0.6.2"
+papermill = "~=2.0.0"
 
 [tool.poetry.dev-dependencies]
 aiounittest = "^1.4.0"
@@ -39,6 +40,8 @@ isort = "^5.0.5"
 docformatter = "^1.3.1"
 flake8 = "^3.8.3"
 flake8-comprehensions = "^3.2.3"
+papermill = "~=2.0.0"
+jupyter = "~=1.0.0"
 
 [build-system]
 requires = ["poetry>=0.12"]

@@ -9,12 +9,12 @@ services:
       - DATABASE_URL=sqlite:///databasenetwork.db
     ports:
       - 7000:7000
-  bob:
+  alice:
     image: openmined/grid-node:production
     build: ./apps/node
     environment:
-      - NODE_ID=Bob
-      - ADDRESS=http://bob:5000/
+      - NODE_ID=Alice
+      - ADDRESS=http://alice:5000/
       - PORT=5000
       - NETWORK=http://network:7000
       - DATABASE_URL=sqlite:///databasenode.db
@@ -22,12 +22,13 @@ services:
       - 'network'
     ports:
       - 5000:5000
-  alice:
+
+  bob:
     image: openmined/grid-node:production
     build: ./apps/node
     environment:
-      - NODE_ID=Alice
-      - ADDRESS=http://alice:5001/
+      - NODE_ID=Bob
+      - ADDRESS=http://bob:5001/
       - PORT=5001
       - NETWORK=http://network:7000
       - DATABASE_URL=sqlite:///databasenode.db
@@ -35,12 +36,13 @@ services:
       - 'network'
     ports:
       - 5001:5001
-  bill:
+
+  charlie:
     image: openmined/grid-node:production
     build: ./apps/node
     environment:
-      - NODE_ID=Bill
-      - ADDRESS=http://bill:5002/
+      - NODE_ID=Charlie
+      - ADDRESS=http://charlie:5002/
       - PORT=5002
       - NETWORK=http://network:7000
       - DATABASE_URL=sqlite:///databasenode.db
@@ -48,12 +50,12 @@ services:
       - 'network'
     ports:
       - 5002:5002
-  james:
+  dan:
     image: openmined/grid-node:production
     build: ./apps/node
     environment:
-      - NODE_ID=James
-      - ADDRESS=http://james:5003/
+      - NODE_ID=Dan
+      - ADDRESS=http://dan:5003/
       - PORT=5003
       - NETWORK=http://network:7000
       - DATABASE_URL=sqlite:///databasenode.db
@@ -61,3 +63,12 @@ services:
       - 'network'
     ports:
       - 5003:5003
+
+  jupyter:
+    image: openmined/pysyft-notebook
+    depends_on:
+      - 'dan'
+    ports:
+      - 8888:8888
+    volumes:
+      - ./examples:/workspace/examples
