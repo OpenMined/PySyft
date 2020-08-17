@@ -65,8 +65,8 @@ def sigmoid_approximation_plot(benchmark_data_sigmoid):
         for precision_value in range(1, (prec_frac + 1)):
 
             # temporary list for calculating average execution time and error
-            temp_time_taken = list()
-            temp_error = list()
+            temp_time_taken = []
+            temp_error = []
 
             for i in range(10):
                 start_time = timeit.default_timer()
