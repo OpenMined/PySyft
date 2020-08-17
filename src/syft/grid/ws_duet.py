@@ -10,8 +10,19 @@ from syft.grid.connections.websocket_connection import WebsocketConnection
 from nacl.signing import SigningKey
 
 
+from syft.core.common.message import (
+    SyftMessage,
+    EventualSyftMessageWithoutReply,
+    ImmediateSyftMessageWithoutReply,
+    ImmediateSyftMessageWithReply,
+    SignedMessage,
+)
+
+
 class WSDuet(DomainClient):
-    def __init__(self, url: str, node: Optional[AbstractNode], name: Optional[str]):
+    def __init__(
+        self, url: str, node: Optional[AbstractNode] = None, name: Optional[str] = None
+    ):
         # Duet Demo using Websocket/WebRTC approach.
 
         # To act as a server we need to bind our
@@ -37,9 +48,9 @@ class WSDuet(DomainClient):
                 )
 
         # Create WebSocketConnection Instance
-        self.conn = WebsocketConnection(url, self.domain)
+        self.conn = WebsocketConnection(url, self.node)
 
-        address, name, client_id = self.conn.metadata()
+        address, name, client_id = self.conn.metadata
         route = SoloRoute(destination=client_id, connection=self.conn)
 
         # Update DomainClient metadata
@@ -54,3 +65,18 @@ class WSDuet(DomainClient):
 
     def __del__(self) -> None:
         self.conn.connected = False
+
+    def send_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> SyftMessage:
+        return self.conn.send_immediate_msg_with_reply(msg=msg)
+
+    def send_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
+        self.conn.send_immediate_msg_without_reply(msg=msg)
+
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
+        self.conn.send_eventual_msg_without_reply(msg=msg)
