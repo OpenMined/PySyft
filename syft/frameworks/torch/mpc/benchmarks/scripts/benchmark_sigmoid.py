@@ -53,9 +53,9 @@ def sigmoid_approximation_plot(benchmark_data_sigmoid):
     ax2 = ax1.twinx()
 
     # list for handling graph data
-    x_data = list()
-    y_data = list()
-    y2_data = list()
+    x_data = []
+    y_data = []
+    y2_data = []
 
     for data in benchmark_data_sigmoid:
 
