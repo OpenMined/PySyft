@@ -1,5 +1,5 @@
 import sys
-
+import syft as sy
 from typing import Optional
 from typing import Type
 from typing import TypeVar
@@ -45,10 +45,11 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
         return f"{self.icon} ({self.class_name})"
 
     def post_init(self) -> None:
-        init_reason = "Creating"
-        if "signed" in self.class_name.lower():
-            init_reason += " Signed"
-        print(f"> {init_reason} {self.pprint}")
+        if sy.VERBOSE:
+            init_reason = "Creating"
+            if "signed" in self.class_name.lower():
+                init_reason += " Signed"
+            print(f"> {init_reason} {self.pprint}")
 
 
 class SyftMessage(AbstractMessage):
@@ -58,7 +59,10 @@ class SyftMessage(AbstractMessage):
         self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
-        print(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+        if sy.VERBOSE:
+            print(
+                f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
+            )
         signed_message = signing_key.sign(self.serialize(to_binary=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -113,7 +117,8 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        print(f"> {self.icon} -> Proto 🔢")
+        if sy.VERBOSE:
+            print(f"> {self.icon} -> Proto 🔢")
 
         proto = SignedMessage_PB()
         # obj_type will be the final subclass callee for example ReprMessage
@@ -147,10 +152,11 @@ class SignedMessage(SyftMessage):
             message=proto.message,
         )
 
-        icon = "🤷🏾‍♀️"
-        if hasattr(obj, "icon"):
-            icon = obj.icon
-        print(f"> {icon} <- 🔢 Proto")
+        if sy.VERBOSE:
+            icon = "🤷🏾‍♀️"
+            if hasattr(obj, "icon"):
+                icon = obj.icon
+            print(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
             raise TypeError(

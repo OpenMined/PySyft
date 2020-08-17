@@ -12,5 +12,5 @@ message RequestMessage {
     string request_description = 4;
     syft.core.io.Address target_address = 5;
     syft.core.io.Address owner_address = 6;
-
+    bytes requester_verify_key = 7;
 }

@@ -39,7 +39,6 @@ class TorchTensorWrapper(StorableObject):
             tags=value.tags if hasattr(value, "tags") else [],
             description=value.description if hasattr(value, "description") else "",
         )
-        print("Wrapped tensor with id:" + str(value.id))
         self.value = value
 
     def _data_object2proto(self) -> TensorProto:
