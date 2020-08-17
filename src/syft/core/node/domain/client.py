@@ -35,9 +35,15 @@ class RequestQueueClient:
 
         return requests
 
+    def get_request_id_from_object_id(self, object_id: UID) -> Optional[UID]:
+        for req in self.requests:
+            if req.object_id == object_id:
+                return req.request_id
+
+        return object_id
+
     def __getitem__(self, key):
         if isinstance(key, str):
-            selected_key = None
             for request in self.requests:
                 if key == str(request.id.value):
                     return request
@@ -69,6 +75,7 @@ class RequestQueueClient:
 class DomainClient(Client):
 
     domain: SpecificLocation
+    request_queue: RequestQueueClient
 
     def __init__(
         self,
@@ -92,8 +99,7 @@ class DomainClient(Client):
             verify_key=verify_key,
         )
 
-        self.requests = RequestQueueClient(client=self)
-
+        self.request_queue = RequestQueueClient(client=self)
         self.post_init()
 
     @property

@@ -32,15 +32,16 @@ from ...common.uid import UID
 from ....lib import lib_ast
 import syft as sy
 
+
 class StoreClient:
     def __init__(self, client):
         self.client = client
 
     @property
     def store(self):
-        msg = ObjectSearchMessage(address=self.client.address,
-                                  msg_id=None,
-                                  reply_to=self.client.address)
+        msg = ObjectSearchMessage(
+            address=self.client.address, msg_id=None, reply_to=self.client.address
+        )
         results = self.client.send_immediate_msg_with_reply(msg=msg).results
 
         # This is because of a current limitation in Pointer where we cannot
@@ -52,7 +53,6 @@ class StoreClient:
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            selected_key = None
             for obj in self.store:
                 if key == str(obj.id.value):
                     return obj
@@ -74,7 +74,7 @@ class StoreClient:
                 {
                     "ID": obj.id_at_location,
                     "Tags": obj.tags,
-                    "Description": obj.description
+                    "Description": obj.description,
                 }
             )
         return pd.DataFrame(obj_lines)
@@ -87,6 +87,8 @@ class Client(AbstractNodeClient):
     with all of the metadata in it, you should have all the information
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
+
+    verify_key: Optional[VerifyKey]
 
     @syft_decorator(typechecking=True)
     def __init__(

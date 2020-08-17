@@ -82,13 +82,14 @@ class StorableObject(AbstractStorableObject):
         data = self._data_object2proto()
         proto.data.Pack(data)
 
-        if hasattr(self.data, 'description'):
+        if hasattr(self.data, "description"):
             # Step 5: save the description into proto
-            proto.description = self.data.description
+            proto.description = self.data.description  # type: ignore
 
-        if hasattr(self.data, 'tags'):
+        # QUESTION: Which one do we want, self.data.tags or self.tags or both???
+        if hasattr(self.data, "tags"):
             # Step 6: save tags into proto if they exist
-            if self.data.tags is not None:
+            if self.data.tags is not None and self.tags is not None:  # type: ignore
                 for tag in self.tags:
                     proto.tags.append(tag)
 
@@ -162,7 +163,7 @@ class StorableObject(AbstractStorableObject):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

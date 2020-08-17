@@ -13,14 +13,10 @@ from ...io.location import Location
 from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
+from ..abstract.node import AbstractNodeClient
 
 
-import pandas
-from typing import Dict
-from .service import (
-    RequestAnswerMessageService,
-    RequestService,
-)
+from .service import RequestAnswerMessageService, RequestService, RequestStatus
 from .service.get_all_requests_service import GetAllRequestsService
 from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
 
@@ -82,6 +78,7 @@ class Domain(Node):
     def id(self) -> UID:
         return self.domain.id
 
+    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
@@ -91,3 +88,37 @@ class Domain(Node):
             error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
             print(error)
             return False
+
+    @syft_decorator(typechecking=True)
+    def set_request_status(
+        self, message_request_id: UID, status: RequestStatus, client: AbstractNodeClient
+    ) -> bool:
+        for req in self.requests:
+            if req.request_id == message_request_id:
+                req.owner_client_if_available = client
+                if status == RequestStatus.Accepted:
+                    req.accept()
+                    return True
+                elif status == RequestStatus.Rejected:
+                    req.deny()
+                    return True
+
+        return False
+
+    @syft_decorator(typechecking=True)
+    def get_request_status(self, message_request_id: UID) -> RequestStatus:
+        # is it still pending
+        for req in self.requests:
+            if req.request_id == message_request_id:
+                return RequestStatus.Pending
+
+        # TODO: implement RequestStatus.Accepted
+        # maybe pass through the verify key and check if that exists?
+        # check if it was accepted
+        # request_id => object_id is currently not persisted anywhere
+        # if object_id in self.store:
+        #     self.store[object_id] ??
+        # return RequestStatus.Accepted
+
+        # must have been rejected
+        return RequestStatus.Rejected

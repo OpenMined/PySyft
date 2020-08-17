@@ -7,7 +7,6 @@ from ..core.common.serde.serialize import _serialize
 from google.protobuf.message import Message
 from typing import Union
 from ..util import aggressive_set_attr
-import syft as sy
 
 
 class Class(ast.callable.Callable):
@@ -58,8 +57,8 @@ class Class(ast.callable.Callable):
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 location=location,
                 id_at_location=self.id,
-                tags=self.tags if hasattr(self, 'tags') else list(),
-                description=self.description if hasattr(self, 'description') else ""
+                tags=self.tags if hasattr(self, "tags") else list(),
+                description=self.description if hasattr(self, "description") else "",
             )
 
             # Step 2: create old_message which contains object to send
@@ -77,7 +76,6 @@ class Class(ast.callable.Callable):
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
 
     def create_storable_object_attr_convenience_methods(outer_self):
-
         def tag(self, *tags):
             self.tags = list(tags)
             return self
