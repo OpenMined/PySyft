@@ -8,7 +8,19 @@ from syft.frameworks.torch.mpc.benchmarks.scripts.benchmark_sample_data import (
 )
 
 
-def benchmark_sigmoid(method, prec_frac, tolerance, workers):
+def benchmark_sigmoid(method, prec_frac, workers):
+    """
+    This function approximates the sigmoid function using a given method.
+
+    Args:
+        method (str): the name of the method for approximation
+        prec_frac (int): precision value
+        workers (dict): workers used for sharing data
+
+    Returns:
+        diff (int): the difference between the syft and torch approximated value
+
+    """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     t = torch.tensor([1.23212])
@@ -19,11 +31,19 @@ def benchmark_sigmoid(method, prec_frac, tolerance, workers):
     # Calculation of the difference between FPT and normal sigmoid (error)
     diff = (r - t).abs().max()
     return diff.item()
-    # norm = (r + t).abs().max() / 2
-    # print(diff / (tolerance * norm))
 
 
 def sigmoid_approximation_plot(benchmark_data_sigmoid):
+    """
+    This function plots the graph for various sigmoidal approximation benchmarks namely
+    'chebyshev', 'maclaurin', 'exp'.
+
+    Args:
+        benchmark_data_sigmoid (list): the sample data to approximate
+
+    Returns:
+        sigmoid_function_approximations_benchmark (png): plotted graph in graph directory
+    """
 
     # initializing workers
     worker = workers(hook())
@@ -66,6 +86,8 @@ def sigmoid_approximation_plot(benchmark_data_sigmoid):
         x_data.clear()
         y_data.clear()
         y2_data.clear()
+
+    # plotting of the data
     ax1.set_xlabel("Precision Value")
     ax1.set_ylabel("Execution Time")
     ax2.set_ylabel("Error")
