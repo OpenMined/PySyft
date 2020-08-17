@@ -59,7 +59,7 @@ class Pointer(AbstractPointer):
             id_at_location=self.id_at_location.serialize(),
             location=self.location.address.serialize(),
             tags=self.tags,
-            description=self.description
+            description=self.description,
         )
 
     @staticmethod
@@ -76,7 +76,7 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-        #TODO: we need _proto2object to include a reference to the node doing the
+        # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
 
@@ -88,14 +88,14 @@ class Pointer(AbstractPointer):
             id_at_location=_deserialize(blob=proto.id_at_location),
             location=_deserialize(blob=proto.location),
             tags=proto.tags,
-            description=proto.description
+            description=proto.description,
         )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -132,7 +132,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.location, reply_to=node.domain  # type: ignore
+            request_id=request_id, address=self.location.address, reply_to=node.address
         )
         response = self.location.send_immediate_msg_with_reply(msg=msg)
         #

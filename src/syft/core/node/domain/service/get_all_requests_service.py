@@ -1,8 +1,7 @@
 from typing import List
-from enum import Enum
 
 from ...common.service.auth import service_auth
-from ..... import serialize, deserialize
+from ..... import deserialize
 from ....common import UID
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
@@ -75,7 +74,7 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -151,7 +150,7 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -195,6 +194,3 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
         return GetAllRequestsResponseMessage(
             requests=valid_requests, address=msg.reply_to
         )
-
-
-

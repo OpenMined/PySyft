@@ -23,7 +23,6 @@ from ....common.serde.deserialize import _deserialize
 from ...abstract.node import AbstractNode
 from ....io.address import Address
 from ....common.uid import UID
-from ...common.service.auth import service_auth
 import syft as sy
 
 
@@ -66,14 +65,16 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: AcceptOrDenyRequestMessage_PB) -> "ReprMessage":
-        """Creates a ReprMessage from a protobuf
+    def _proto2object(
+        proto: AcceptOrDenyRequestMessage_PB,
+    ) -> "AcceptOrDenyRequestMessage":
+        """Creates a AcceptOrDenyRequestMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
-        :rtype: ReprMessage
+        :return: returns an instance of AcceptOrDenyRequestMessage
+        :rtype: AcceptOrDenyRequestMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -91,7 +92,7 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -137,7 +138,10 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                 if request_id == req.id:
                     # if you're a root user you can disable a request
                     # also people can disable their own requets
-                    if verify_key == node.root_verify_key or verify_key == req.requester_verify_key:
+                    if (
+                        verify_key == node.root_verify_key
+                        or verify_key == req.requester_verify_key
+                    ):
                         node.requests.remove(req)
                         if sy.VERBOSE:
                             print(f"> Rejecting Request:{request_id}")

@@ -59,7 +59,11 @@ class GridHttpClientConnection(ClientConnection):
 
 class Duet(DomainClient):
     def __init__(
-        self, domain_url:str=None, host: str = "127.0.0.1", port: int = 5000, id: Optional[str] = None
+        self,
+        domain_url: Optional[str] = None,
+        host: str = "127.0.0.1",
+        port: int = 5000,
+        id: Optional[str] = None,
     ) -> None:
 
         # generate a signing key
@@ -87,11 +91,13 @@ class Duet(DomainClient):
         if id is not None:
             address = SpecificLocation(id=UID.from_string(value=id))
 
-        super().__init__(domain=address,
-                         name=name,
-                         routes=[route],
-                         signing_key=self.signing_key,
-                         verify_key=self.verify_key)
+        super().__init__(
+            domain=address,
+            name=name,
+            routes=[route],
+            signing_key=self.signing_key,
+            verify_key=self.verify_key,
+        )
         print("♫♫♫ > Connected!")
 
     def send_signed(self) -> None:

@@ -2,7 +2,6 @@ from .util import get_original_constructor_name
 from .util import copy_static_methods
 from .util import replace_classes_in_module
 from ..core.common.uid import UID
-import syft as sy
 
 import inspect
 import sys

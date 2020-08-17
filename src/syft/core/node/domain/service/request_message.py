@@ -1,4 +1,6 @@
 from typing import List
+from typing import Optional
+
 from enum import Enum
 
 from syft.core.node.domain.service.accept_or_deny_request_service import (
@@ -37,7 +39,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         request_name: str = "",
         request_description: str = "",
         request_id: UID = UID(),
-        owner_client_if_available: AbstractNodeClient = None,
+        owner_client_if_available: Optional[AbstractNodeClient] = None,
     ):
         super().__init__(address=address, msg_id=request_id)
         self.request_name = request_name
@@ -48,29 +50,35 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         self.owner_address = owner_address
         self.owner_client_if_available = owner_client_if_available
 
-    def accept(self):
-        msg = AcceptOrDenyRequestMessage(
-            address=self.owner_client_if_available.address,
-            accept=True,
-            request_id=self.id,
-        )
-        self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+    def accept(self) -> None:
+        if self.owner_client_if_available is not None:
+            msg = AcceptOrDenyRequestMessage(
+                address=self.owner_client_if_available.address,
+                accept=True,
+                request_id=self.id,
+            )
+            self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+        else:
+            raise Exception("No owner_client_if_available")
 
-    def approve(self):
+    def approve(self) -> None:
         self.accept()
 
-    def deny(self):
-        msg = AcceptOrDenyRequestMessage(
-            address=self.owner_client_if_available.address,
-            accept=False,
-            request_id=self.id,
-        )
-        self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+    def deny(self) -> None:
+        if self.owner_client_if_available is not None:
+            msg = AcceptOrDenyRequestMessage(
+                address=self.owner_client_if_available.address,
+                accept=False,
+                request_id=self.id,
+            )
+            self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+        else:
+            raise Exception("No owner_client_if_available")
 
-    def reject(self):
+    def reject(self) -> None:
         self.deny()
 
-    def withdraw(self):
+    def withdraw(self) -> None:
         self.deny()
 
     @syft_decorator(typechecking=True)

@@ -54,7 +54,9 @@ from .service.obj_action_service import (
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
 from .service.node_service import ImmediateNodeServiceWithReply
-from .service.obj_search_permission_service import ImmediateObjectSearchPermissionUpdateService
+from .service.obj_search_permission_service import (
+    ImmediateObjectSearchPermissionUpdateService,
+)
 from .service.obj_search_service import ImmediateObjectSearchService
 
 
@@ -171,7 +173,9 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectActionServiceWithoutReply
         )
-        self.immediate_services_without_reply.append(ImmediateObjectSearchPermissionUpdateService)
+        self.immediate_services_without_reply.append(
+            ImmediateObjectSearchPermissionUpdateService
+        )
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
@@ -234,8 +238,6 @@ class Node(AbstractNode):
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            # QUESTION: this was destination=self.id and then destination=self.target_id
-            # reverting back but unsure what is correct
             solo = SoloRoute(destination=self.id, connection=conn_client)
             # inject name
             solo.name = f"Route ({self.name} <-> {self.name} Client)"

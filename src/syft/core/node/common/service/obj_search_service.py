@@ -30,17 +30,19 @@ from .....util import obj2pointer_type
 from ....io.address import Address
 from ....common.uid import UID
 
-import torch as th
-
 
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
-    def __init__(self, address: Address, msg_id: Optional[UID] = None, reply_to: Address = None):
+    def __init__(
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
+        reply_to: Optional[Address] = None,
+    ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
         the sender is allowed to see. In the future we'll add support so that
         we can query for subsets."""
-
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchMessage_PB:
@@ -58,18 +60,20 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ObjectSearchMessage_PB(msg_id=self.id.serialize(),
-                                      address=self.address.serialize(),
-                                      reply_to=self.reply_to.serialize())
+        return ObjectSearchMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            reply_to=self.reply_to.serialize(),
+        )
 
     @staticmethod
-    def _proto2object(proto: ObjectSearchMessage_PB) -> "ReprMessage":
+    def _proto2object(proto: ObjectSearchMessage_PB) -> "ObjectSearchMessage":
         """Creates a ObjectSearchMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
+        :return: returns an instance of ObjectSearchMessage
         :rtype: ObjectSearchMessage
 
         .. note::
@@ -80,14 +84,14 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to)
+            reply_to=_deserialize(blob=proto.reply_to),
         )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -103,9 +107,15 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 
         return ObjectSearchMessage_PB
 
+
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, results:List[StorableObject], address: Address, msg_id: Optional[UID] = None):
+    def __init__(
+        self,
+        results: List[StorableObject],
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects
         the sender is allowed to see. In the future we'll add support so that
@@ -128,18 +138,20 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ObjectSearchReplyMessage_PB(msg_id=self.id.serialize(),
-                                           address=self.address.serialize(),
-                                           results=list(map(lambda x:x.serialize(), self.results)))
+        return ObjectSearchReplyMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            results=list(map(lambda x: x.serialize(), self.results)),
+        )
 
     @staticmethod
-    def _proto2object(proto: ObjectSearchMessage_PB) -> "ReprMessage":
+    def _proto2object(proto: ObjectSearchMessage_PB) -> "ObjectSearchMessage":
         """Creates a ObjectSearchMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
+        :return: returns an instance of ObjectSearchMessage
         :rtype: ObjectSearchMessage
 
         .. note::
@@ -150,14 +162,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchReplyMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x) for x in proto.results]
+            results=[_deserialize(blob=x) for x in proto.results],
         )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -176,22 +188,28 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
 
 class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     @staticmethod
-    def process(node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey) -> ObjectSearchReplyMessage:
+    def process(
+        node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
+    ) -> ObjectSearchReplyMessage:
         results = list()
 
         for obj in node.store.get_objects_of_type(obj_type=object):
-            if verify_key in obj.search_permissions or verify_key == node.root_verify_key:
+            if (
+                verify_key in obj.search_permissions
+                or verify_key == node.root_verify_key
+            ):
 
                 ptr_type = obj2pointer_type(obj.data)
-                ptr = ptr_type(location=node.address,
-                              id_at_location=obj.id,
-                               tags=obj.tags,
-                               description=obj.description)
+                ptr = ptr_type(
+                    location=node.address,
+                    id_at_location=obj.id,
+                    tags=obj.tags,
+                    description=obj.description,
+                )
 
                 results.append(ptr)
 
-        return ObjectSearchReplyMessage(address=msg.reply_to,
-                                        results=results)
+        return ObjectSearchReplyMessage(address=msg.reply_to, results=results)
 
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchMessage]]:
