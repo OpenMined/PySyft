@@ -18,12 +18,14 @@ class Pointer(AbstractPointer):
     # the path and name of the object type they point to as a part of serde
     path_and_name: str
 
-    def __init__(self, location, id_at_location=None):
+    def __init__(self, location, id_at_location=None, tags=list(), description=""):
         if id_at_location is None:
             id_at_location = UID()
 
         self.location = location
         self.id_at_location = id_at_location
+        self.tags = tags
+        self.description = description
 
     def get(self):
         obj_msg = GetObjectAction(
@@ -56,6 +58,8 @@ class Pointer(AbstractPointer):
             pointer_name=type(self).__name__,
             id_at_location=self.id_at_location.serialize(),
             location=self.location.address.serialize(),
+            tags=self.tags,
+            description=self.description,
         )
 
     @staticmethod
@@ -72,6 +76,10 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        # TODO: we need _proto2object to include a reference to the node doing the
+        # deserialization so that we can convert location into a client object. At present
+        # it is an address object which will cause things to break later.
+
         points_to_type = sy.lib_ast(
             proto.points_to_object_with_path, return_callable=True
         )
@@ -79,13 +87,15 @@ class Pointer(AbstractPointer):
         return pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             location=_deserialize(blob=proto.location),
+            tags=proto.tags,
+            description=proto.description,
         )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -101,17 +111,16 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request_access(
-        self, node: AbstractNode, request_name: str = "", request_description: str = "",
-    ) -> None:
+    def request_access(self, request_name: str = "", reason: str = "",) -> None:
         from ..node.domain.service import RequestMessage
 
         msg = RequestMessage(
             request_name=request_name,
-            request_description=request_description,
+            request_description=reason,
             address=self.location.address,
-            owner_address=node.address,
+            owner_address=self.location.address,
             object_id=self.id_at_location,
+            requester_verify_key=self.location.verify_key,
         )
 
         self.location.send_immediate_msg_without_reply(msg=msg)
@@ -123,7 +132,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.location, reply_to=node.domain  # type: ignore
+            request_id=request_id, address=self.location.address, reply_to=node.address
         )
         response = self.location.send_immediate_msg_with_reply(msg=msg)
         #

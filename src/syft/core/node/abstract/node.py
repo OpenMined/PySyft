@@ -39,6 +39,7 @@ class AbstractNode(Address):
 
     name: Optional[str]
     store: ObjectStore
+    requests: List
     lib_ast: Any  # Cant import Globals (circular reference)
     """"""
 

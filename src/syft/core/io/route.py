@@ -100,6 +100,7 @@ from .location import Location
 from .location import SpecificLocation
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ...decorators import syft_decorator
+import syft as sy
 
 
 class RouteSchema(ObjectWithID):
@@ -152,7 +153,8 @@ class SoloRoute(Route):
         self.connection = connection
 
     def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
-        print(f"> Routing {msg.pprint} via {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(

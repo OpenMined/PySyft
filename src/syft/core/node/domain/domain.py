@@ -13,59 +13,12 @@ from ...io.location import Location
 from .client import DomainClient
 from ..common.node import Node
 from ...common.uid import UID
+from ..abstract.node import AbstractNodeClient
 
 
-import pandas
-from typing import Dict
-from .service import (
-    RequestAnswerMessageService,
-    RequestAnswerResponseService,
-    RequestService,
-    RequestMessage,
-    RequestAnswerResponse,
-    RequestStatus,
-)
-
-
-class Requests:
-    _requests: Dict[UID, dict] = {}
-    _object2request: Dict[UID, UID] = {}
-    _responses: Dict[UID, RequestStatus] = {}
-
-    def register_request(self, msg: RequestMessage) -> None:
-        self._requests[msg.request_id] = {
-            "message": msg,
-            "status": RequestStatus.Pending,
-        }
-
-    def register_response(self, msg: RequestAnswerResponse) -> None:
-        self._responses[msg.request_id] = msg.status
-
-    def get_status(self, request_id: UID) -> RequestStatus:
-        return self._requests[request_id]["status"]
-
-    def register_mapping(self, object_id: UID, request_id: UID) -> None:
-        self._object2request[object_id] = request_id
-
-    def get_request_id_from_object_id(self, object_id: UID) -> UID:
-        return self._object2request[object_id]
-
-    def set_request_status(self, request_id: UID, status: RequestStatus) -> None:
-        self._requests[request_id]["status"] = status
-
-    def display_requests(self) -> pandas.DataFrame:
-        request_lines = []
-        for request_id, request in self._requests.items():
-            request_lines.append(
-                {
-                    "Request name": request["message"].request_name,
-                    "Request description": request["message"].request_description,
-                    "Request ID": request_id,
-                    "Object Status": request["status"],
-                    "Object ID": request["message"].object_id,
-                }
-            )
-        return pandas.DataFrame(request_lines)
+from .service import RequestAnswerMessageService, RequestService, RequestStatus
+from .service.get_all_requests_service import GetAllRequestsService
+from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
 
 
 class Domain(Node):
@@ -101,10 +54,12 @@ class Domain(Node):
         self.root_key = root_key
 
         self.immediate_services_without_reply.append(RequestService)
-        self.immediate_services_without_reply.append(RequestAnswerResponseService)
+        self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
-        self.requests = Requests()
+        self.immediate_services_with_reply.append(GetAllRequestsService)
+
+        self.requests = list()
         # available_device_types = set()
         # TODO: add available compute types
 
@@ -123,6 +78,7 @@ class Domain(Node):
     def id(self) -> UID:
         return self.domain.id
 
+    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
@@ -133,6 +89,36 @@ class Domain(Node):
             print(error)
             return False
 
-    def set_request_status(self, request_id: UID, status: RequestStatus) -> None:
+    @syft_decorator(typechecking=True)
+    def set_request_status(
+        self, message_request_id: UID, status: RequestStatus, client: AbstractNodeClient
+    ) -> bool:
+        for req in self.requests:
+            if req.request_id == message_request_id:
+                req.owner_client_if_available = client
+                if status == RequestStatus.Accepted:
+                    req.accept()
+                    return True
+                elif status == RequestStatus.Rejected:
+                    req.deny()
+                    return True
 
-        self.requests.set_request_status(request_id, status)
+        return False
+
+    @syft_decorator(typechecking=True)
+    def get_request_status(self, message_request_id: UID) -> RequestStatus:
+        # is it still pending
+        for req in self.requests:
+            if req.request_id == message_request_id:
+                return RequestStatus.Pending
+
+        # TODO: implement RequestStatus.Accepted
+        # maybe pass through the verify key and check if that exists?
+        # check if it was accepted
+        # request_id => object_id is currently not persisted anywhere
+        # if object_id in self.store:
+        #     self.store[object_id] ??
+        # return RequestStatus.Accepted
+
+        # must have been rejected
+        return RequestStatus.Rejected

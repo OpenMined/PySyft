@@ -37,8 +37,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-        print("id at location:" + str(self.id_at_location))
-
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # print(self.path)
         # print(self._self)
@@ -140,7 +138,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

@@ -47,6 +47,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Set[VerifyKey]] = set(),
+        search_permissions: Optional[Set[VerifyKey]] = set(),
     ):
         self.id = id
         self.data = data
@@ -56,6 +57,10 @@ class StorableObject(AbstractStorableObject):
         # the set of "verify key" objects corresponding to people
         # who are allowed to call .get() and download this object.
         self.read_permissions = read_permissions
+
+        # the set of "verify key" objects corresponding to people
+        # who are allowed to know that the tensor exists (via search or other means)
+        self.search_permissions = search_permissions
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
@@ -77,13 +82,16 @@ class StorableObject(AbstractStorableObject):
         data = self._data_object2proto()
         proto.data.Pack(data)
 
-        # Step 5: save the description into proto
-        proto.description = self.description
+        if hasattr(self.data, "description"):
+            # Step 5: save the description into proto
+            proto.description = self.data.description  # type: ignore
 
-        # Step 6: save tags into proto if they exist
-        if self.tags is not None:
-            for tag in self.tags:
-                proto.tags.append(tag)
+        # QUESTION: Which one do we want, self.data.tags or self.tags or both???
+        if hasattr(self.data, "tags"):
+            # Step 6: save tags into proto if they exist
+            if self.data.tags is not None and self.tags is not None:  # type: ignore
+                for tag in self.tags:
+                    proto.tags.append(tag)
 
         return proto
 
@@ -99,6 +107,8 @@ class StorableObject(AbstractStorableObject):
         #
         # schematic_type = data_type
 
+        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
+        #  PYDOC.LOCATE!!!
         # Step 3: get the type of wrapper to use to deserialize
         obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
         target_type = obj_type
@@ -124,9 +134,15 @@ class StorableObject(AbstractStorableObject):
         if proto.tags:
             tags = list(proto.tags)
 
-        return target_type.construct_new_object(
+        result = target_type.construct_new_object(
             id=id, data=data, tags=tags, description=description
         )
+
+        # just a backup
+        result.tags = tags
+        result.description = description
+
+        return result
 
     def _data_object2proto(self) -> Message:
         return self.data.serialize()  # type: ignore
@@ -147,7 +163,7 @@ class StorableObject(AbstractStorableObject):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
