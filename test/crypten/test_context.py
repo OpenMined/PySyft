@@ -1,5 +1,9 @@
+from os import name as os_name
+
+if os_name != 'nt':
+    import crypten
+
 import pytest
-import crypten
 
 import torch as th
 import torch.nn as nn
@@ -7,9 +11,10 @@ import torch.nn.functional as F
 
 import syft as sy
 
-from syft.frameworks.crypten.context import run_multiworkers, run_party
-from syft.frameworks.crypten.model import OnnxModel
-from syft.frameworks.crypten import utils
+if os_name != 'nt':
+    from syft.frameworks.crypten.context import run_multiworkers, run_party
+    from syft.frameworks.crypten.model import OnnxModel
+    from syft.frameworks.crypten import utils
 
 
 th.set_num_threads(1)
@@ -34,6 +39,7 @@ class ExampleNet(nn.Module):
         return out
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_plan(workers):
     # alice and bob
     n_workers = 2
@@ -68,6 +74,7 @@ def test_context_plan(workers):
         )
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_jail(workers):
     # alice and bob
     n_workers = 2
@@ -101,6 +108,7 @@ def test_context_jail(workers):
         )
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_jail_with_model(workers):
     dummy_input = th.empty(1, 1, 28, 28)
     pytorch_model = ExampleNet()
@@ -128,6 +136,7 @@ def test_context_jail_with_model(workers):
     assert th.all(result[0][1] == result[1][1])
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_jail_with_model_failures(workers):
     dummy_input = th.empty(1, 1, 28, 28)
     pytorch_model = ExampleNet()
@@ -180,6 +189,7 @@ def test_context_jail_with_model_failures(workers):
         result = run_encrypted_eval()
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_run_party():
     expected = th.tensor(5)
 
@@ -192,6 +202,7 @@ def test_run_party():
     assert result == expected
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_duplicate_ids(workers):
     # alice and bob
     n_workers = 2
@@ -207,6 +218,7 @@ def test_duplicate_ids(workers):
         return_values = jail_func()
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_plan_with_model(workers):
     dummy_input = th.empty(1, 1, 28, 28)
     pytorch_model = ExampleNet()
@@ -233,6 +245,7 @@ def test_context_plan_with_model(workers):
     assert th.all(result[0][1] == result[1][1])
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_context_plan_with_model_private(workers):
     """
         Test if we can run remote inference (using data that is not on our local

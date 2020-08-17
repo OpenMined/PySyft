@@ -1,6 +1,8 @@
 import pytest
 import torch as th
-from syft.frameworks.crypten import jail
+from os import name as os_name
+if os_name != 'nt':
+    from syft.frameworks.crypten import jail
 
 
 def add_tensors(tensor):  # pragma: no cover
@@ -9,6 +11,7 @@ def add_tensors(tensor):  # pragma: no cover
     return t + tensor
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_simple_func():
     func = jail.JailRunner(func=add_tensors)
     t = th.tensor(2)
@@ -20,12 +23,14 @@ def import_socket():  # pragma: no cover
     import socket  # noqa: F401
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_import():
     func = jail.JailRunner(func=import_socket)
     with pytest.raises(ImportError):
         func()
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_ser_deser():
     func = jail.JailRunner(func=add_tensors, modules=[th])
     func_ser = jail.JailRunner.simplify(func)
@@ -36,6 +41,7 @@ def test_ser_deser():
     assert expected == func_deser(t)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_empty_jail():
     with pytest.raises(ValueError) as e:
         empty_jail = jail.JailRunner()
@@ -53,11 +59,13 @@ s = "not a function"
         """,
     ],
 )
+@pytest.mark.skipif("os_name == 'nt'")
 def test_not_valid_func(src):
     with pytest.raises(ValueError):
         not_valid = jail.JailRunner(func_src=src)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_already_built():
     func = jail.JailRunner(func=add_tensors)
     with pytest.raises(RuntimeWarning):

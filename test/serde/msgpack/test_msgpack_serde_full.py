@@ -3,6 +3,7 @@ import pytest
 import numpy
 import torch
 from functools import partial
+from os import name as os_name
 
 import syft
 from syft.serde import msgpack
@@ -70,7 +71,8 @@ samples[
 ] = make_fixedprecisiontensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 
-samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
+if os_name != 'nt':
+    samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
 
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
@@ -98,6 +100,7 @@ samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 samples[SerializableDummyClass] = make_serializable_dummy_class
 
 
+@pytest.mark.xfail("os_name == 'nt'")
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
@@ -106,6 +109,7 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
+@pytest.mark.xfail("os_name == 'nt'")
 def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
     serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
@@ -143,6 +147,7 @@ def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
 
 
 @pytest.mark.parametrize("cls", samples)
+@pytest.mark.xfail("os_name == 'nt'")
 def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
     serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)

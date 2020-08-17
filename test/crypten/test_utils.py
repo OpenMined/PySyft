@@ -1,7 +1,9 @@
 import pytest
 import torch as th
-import crypten
-from syft.frameworks.crypten import utils
+from os import name as os_name
+if os_name != 'nt':
+    import crypten
+    from syft.frameworks.crypten import utils
 
 
 class ExampleNet(th.nn.Module):
@@ -23,6 +25,7 @@ class ExampleNet(th.nn.Module):
         (th.tensor([1, 2, 4, 5]), th.tensor([1.0, 2.0, 3.0]), th.tensor([5, 6, 7, 8])),
     ],
 )
+@pytest.mark.skipif("os_name == 'nt'")
 def test_pack_tensors(tensors):
     packed = utils.pack_values(tensors)
     unpacked = utils.unpack_values(packed)
@@ -36,6 +39,7 @@ def test_pack_tensors(tensors):
         assert th.all(unpacked == tensors)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_pack_crypten_model():
     dummy_input = th.rand(1, 28 * 28)
     expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
@@ -55,6 +59,7 @@ def test_pack_crypten_model():
     assert th.all(expected_out == out)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_pack_typerror_crypten_model():
     """
         Testing if we throw an error when trying to unpack an encrypted model,
@@ -68,6 +73,7 @@ def test_pack_typerror_crypten_model():
         packed = utils.pack_values(expected_crypten_model)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_unpack_typerror_crypten_model():
     dummy_input = th.rand(1, 28 * 28)
     expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
@@ -77,11 +83,13 @@ def test_unpack_typerror_crypten_model():
         utils.unpack_values(packed)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_pack_other():
     expected_value = utils.pack_values(42)
     assert 42 == utils.unpack_values(expected_value)
 
 
+@pytest.mark.skipif("os_name == 'nt'")
 def test_serialize_models():
     class ExampleNet(th.nn.Module):
         def __init__(self):
