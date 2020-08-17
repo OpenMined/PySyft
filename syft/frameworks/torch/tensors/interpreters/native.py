@@ -420,7 +420,7 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-        Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid errors.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")

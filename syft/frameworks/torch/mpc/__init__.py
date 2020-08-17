@@ -10,6 +10,7 @@ def crypto_protocol(protocol_name):
         protocol_name: the name of the protocol. Currently supported:
             - snn: SecureNN
             - fss: Function Secret Sharing
+            - falcon (WIP): Falcon
 
     Example in a tensor file:
         ```
