@@ -559,7 +559,7 @@ class FixedPrecisionTensor(AbstractTensor):
         x = tensor * sign
         ones = tensor * 0 + 1
         half = ones.div(2)
-        result = (ones + (-ones * x).exp()).reciprocal(method="division")
+        result = (ones + (-ones * x).exp()).reciprocal()
         return (result - half) * sign + half
 
     @staticmethod
@@ -606,7 +606,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return tanh_approx.div(2) + 0.5
 
-    def sigmoid(tensor, method="exp"):
+    def sigmoid(tensor, method="chebyshev"):
         """
         Approximates the sigmoid function using a given method
 
