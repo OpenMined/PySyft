@@ -352,7 +352,7 @@ class DataCentricFLClient(WebsocketClientWorker):
                 DataCentricFLClient.__qualname__
             )
 
-        code_dict = dict()
+        code_dict = {}
         code_dict["code"] = DataCentricFLClient.proto_id
         code_dict["forced_code"] = sy.serde.msgpack.serde.msgpack_code_generator(
             DataCentricFLClient.__qualname__ + "forced"
