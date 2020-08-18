@@ -17,7 +17,7 @@ There are two proper ways of receiving a pointer on some data:
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
     1. Request access.
-    2.1 - The data owner has to approve the request
+    2.1 - The data owner has to approve the request.
     2.2 - The data user checks if the request has been approved.
     3. After the request has been approved, the data user can call .get() on the pointer to get the
     data locally.
@@ -30,10 +30,13 @@ held.
 """
 # external imports
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing import Optional
+from typing import List
 
 # syft imports
 import syft as sy
 from ..common.uid import UID
+from ..io.address import Address
 from ..common.pointer import AbstractPointer
 from ..node.abstract.node import AbstractNode
 from ..common.serde.deserialize import _deserialize
@@ -43,11 +46,35 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 
 
 class Pointer(AbstractPointer):
-    # automatically generated subclasses of Pointer need to be able to look up
-    # the path and name of the object type they point to as a part of serde
+    """
+    Pointer is the handler when interacting with remote data.
+
+    Automatically generated subclasses of Pointer need to be able to look up
+    the path and name of the object type they point to as a part of serde
+
+    :param location: The location where the data is being held.
+    :type location: Address
+    :param id_at_location: The UID of the object on the remote location.
+    :type id_at_location: UID
+    """
+
     path_and_name: str
 
-    def __init__(self, location, id_at_location=None, tags=list(), description=""):
+    @syft_decorator(typechecking=True)
+    def __init__(
+        self,
+        location: Address,
+        id_at_location: Optional[UID] = None,
+        tags: Optional[List[str]] = None,
+        description: Optional[str] = None,
+    ):
+
+        if tags is None:
+            tags = []
+
+        if description is None:
+            description = ""
+
         if id_at_location is None:
             id_at_location = UID()
 
@@ -62,6 +89,7 @@ class Pointer(AbstractPointer):
             address=self.location.address,
             reply_to=self.location.address,
         )
+
         response = self.location.send_immediate_msg_with_reply(msg=obj_msg)
 
         return response.obj
@@ -116,7 +144,7 @@ class Pointer(AbstractPointer):
         return pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             location=_deserialize(blob=proto.location),
-            tags=proto.tags,
+            tags=list(proto.tags),
             description=proto.description,
         )
 
@@ -179,7 +207,7 @@ class Pointer(AbstractPointer):
         :param request_id: The request on which you are querying the status.
         :type request_id: UID
         """
-        from ..node.domain.service import  RequestAnswerMessage
+        from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.location.address, reply_to=node.address
