@@ -52,15 +52,14 @@ class ReplicatedSharingTensor(AbstractTensor):
         return plain_text
 
     def retrieve_shares(self):
-        shares_map = self.get_shares_map()
-        pointers = self.__retrieve_pointers(shares_map)
+        pointers = self.retrieve_pointers()
         shares = []
         for pointer in pointers:
             shares.append(pointer.get())
         return shares
 
-    @staticmethod
-    def __retrieve_pointers(shares_map):
+    def retrieve_pointers(self):
+        shares_map = self.get_shares_map()
         players = list(shares_map.keys())
         pointers = list(shares_map[players[0]])
         pointers.append(shares_map[players[1]][1])
@@ -175,11 +174,11 @@ class ReplicatedSharingTensor(AbstractTensor):
         # TODO add correlated randomness
 
     @staticmethod
-    def __switch_public_private(value, public_function, private_function):
+    def __switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
-            return public_function(value)
+            return public_function(value, *args, **kwargs)
         elif isinstance(value, syft.ReplicatedSharingTensor):
-            return private_function(value)
+            return private_function(value, *args, **kwargs)
         else:
             raise ValueError(
                 "expected int, float, torch tensor, or ReplicatedSharingTensor"
