@@ -1,3 +1,33 @@
+"""A Pointer is the main handler when interacting with remote data.
+A Pointer object represents an API for interacting with data (of any type)
+at a specific location. The relation between pointers and data is many to one,
+there can be multiple pointers pointing to the same piece of data, meanwhile,
+a pointer cannot point to multiple data sources.
+
+A pointer is just an object id on a remote location and a set of methods that can be
+executed on the remote machine directly on that object. One note that has to be made
+is that all operations between pointers will return a pointer, the only way to have access
+to the result is by calling .get() on the pointer.
+
+There are two proper ways of receiving a pointer on some data:
+    1. When sending that data on a remote machine the user receives a pointer.
+    2. When the user searches for the data in an object store it receives a pointer to that data,
+    if it has the correct permissions for that.
+
+After receiving a pointer, one might want to get the data behind the pointer locally. For that the
+user should:
+    1. Request access.
+    2.1 - The data owner has to approve the request
+    2.2 - The data user checks if the request has been approved.
+    3. After the request has been approved, the data user can call .get() on the pointer to get the
+    data locally.
+
+Pointers are being generated for most types of objects in the data science scene, but what you can
+do on them is not the pointers job, see the lib module for more details. One can see the pointer
+as a proxy to the actual data, the filtering and the security being applied where the data is being
+held.
+
+"""
 # external imports
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -13,7 +43,6 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 
 
 class Pointer(AbstractPointer):
-
     # automatically generated subclasses of Pointer need to be able to look up
     # the path and name of the object type they point to as a part of serde
     path_and_name: str
