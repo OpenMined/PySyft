@@ -945,7 +945,7 @@ class TorchTensor(AbstractTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
 
         if not no_wrap:
-            shared_tensor = shared_tensor.wrap()
+            shared_tensor = shared_tensor.wrap(self.dtype)
 
         return shared_tensor
 
