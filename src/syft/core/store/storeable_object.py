@@ -184,3 +184,23 @@ class StorableObject(AbstractStorableObject):
             + self.data.__repr__().replace("\n", "").replace("  ", " ")
             + ">"
         )
+
+    @property
+    def icon(self) -> str:
+        return "🗂️"
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} ({self.class_name}) ("
+        if hasattr(self.data, "pprint"):
+            output += self.data.pprint  # type: ignore
+        if self.description is not None and len(self.description) > 0:
+            output += f" desc: {self.description}"
+        if self.tags is not None and len(self.tags) > 0:
+            output += f" tags: {self.tags}"
+        output += ")"
+        return output
+
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)

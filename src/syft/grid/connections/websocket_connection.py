@@ -1,6 +1,7 @@
 from syft.core.io.connection import BidirectionalConnection
 
 import websockets
+from websockets.client import WebSocketClientProtocol
 
 import asyncio
 
@@ -8,16 +9,15 @@ from syft.core.common.serde import Serializable
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.client import Client
-from syft.core.common.serde import _deserialize, _serialize
-from typing import Set
-import json
+from syft.core.common.serde import _deserialize
 
 from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
-    SignedMessage,
 )
+
+from ...core.node.domain.service import RequestService
 
 
 class WebsocketConnection(BidirectionalConnection):
@@ -30,13 +30,13 @@ class WebsocketConnection(BidirectionalConnection):
 
         # Using this class we expect to be able to work
         # as a client, sending requests to the other peers
-        # and  as a server receiving and processing messages,
+        # and as a server receiving and processing messages,
         # from the other entities.
 
         # This class is useful in PyGrid context,
         # when you need to perform requests querying
         # by other nodes or datasets, but also need to be
-        # notified when someone wants to estabilish
+        # notified when someone wants to establish
         # a connection with you.
 
         # Uniform Resource Location
@@ -50,21 +50,29 @@ class WebsocketConnection(BidirectionalConnection):
         # EventLoop that manages async tasks (producer/consumer)
         # This structure is global and needs to be
         # defined beforehand.
-        self.loop = asyncio.get_running_loop()
+        try:
+            self.loop = asyncio.get_running_loop()
+            print("> Using WebSocket Event Loop")
+        except RuntimeError as e:
+            self.loop = asyncio.get_event_loop()
+            print(f"Error getting Event Loop. {e}")
+            print("> Creating WebSocket Event Loop")
 
         # Message pool (High Priority)
         # These queues will be used to manage
         # messages.
-        self.producer_pool = asyncio.Queue(
+        self.producer_pool: asyncio.Queue = asyncio.Queue(
             loop=self.loop
         )  # Request Messages / Request Responses
-        self.consumer_pool = asyncio.Queue(loop=self.loop)  # Request Responses
+        self.consumer_pool: asyncio.Queue = asyncio.Queue(
+            loop=self.loop
+        )  # Request Responses
 
         asyncio.run(self.get_metadata())
         asyncio.ensure_future(self.connect())
 
     @syft_decorator(typechecking=False)
-    async def handler(self, websocket) -> None:
+    async def handler(self, websocket: WebSocketClientProtocol) -> None:
         """ Websocket Handler."""
         # Start,monitor and finish producer/consumer tasks.
         # Adds producer and cosumer tasks into
@@ -83,7 +91,7 @@ class WebsocketConnection(BidirectionalConnection):
             task.cancel()
 
     @syft_decorator(typechecking=False)
-    async def producer_handler(self, websocket) -> None:
+    async def producer_handler(self, websocket: WebSocketClientProtocol) -> None:
         """ Producer Handler Task"""
 
         # Async task to retreive ImmediateSyftMessages
@@ -95,7 +103,7 @@ class WebsocketConnection(BidirectionalConnection):
             await websocket.send(message.json())
 
     @syft_decorator(typechecking=False)
-    async def consumer_handler(self, websocket) -> None:
+    async def consumer_handler(self, websocket: WebSocketClientProtocol) -> None:
         """ Consumer Handler Task"""
 
         # Async task to receive and process messages (any type)
@@ -121,7 +129,6 @@ class WebsocketConnection(BidirectionalConnection):
         # 1 - ImmediateSyftMessageWithReply
         # 2 - ImmediateSyftMessageWithoutReply
         # 3 - EventualSyftMessageWithoutReply
-        # 4 - SignedMessage
 
         # We need to route all of them properly.
 
@@ -180,10 +187,6 @@ class WebsocketConnection(BidirectionalConnection):
         """ Executes requests eventually. """
         self.node.recv_eventual_msg_without_reply(msg)
 
-    @syft_decorator(typechecking=True)
-    def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
-        raise NotImplementedError
-
     @syft_decorator(typechecking=False)
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
@@ -206,13 +209,6 @@ class WebsocketConnection(BidirectionalConnection):
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
         self.producer_pool.put(msg)
-
-    @syft_decorator(typechecking=True)
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
-        """" Sends signed messages waiting for their reply.
-            :return: returns an instance of ImmediateSyftMessageWithReply.
-        """
-        return asyncio.run(self.send_sync_message(msg=msg))
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(

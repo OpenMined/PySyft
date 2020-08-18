@@ -1,5 +1,10 @@
 # external class imports
 from typing import List
+<<<<<<< HEAD
+=======
+from typing import Optional
+
+>>>>>>> e287dbfb... Fixed a few small issues
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -9,7 +14,6 @@ from ...io.location import Location
 from ..common.client import Client
 from ...io.route import Route
 from ...common.uid import UID
-from typing import Optional
 
 # lib imports
 import pandas as pd
@@ -79,7 +83,7 @@ class DomainClient(Client):
 
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         domain: SpecificLocation,
         network: Optional[Location] = None,

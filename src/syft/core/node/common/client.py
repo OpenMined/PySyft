@@ -93,7 +93,7 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
@@ -102,9 +102,11 @@ class Client(AbstractNodeClient):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        super().__init__(network=network, domain=domain, device=device, vm=vm)
+        name = f"{name} Client" if name is not None else None
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
-        self.name = f"{name} Client"
         self.routes = routes
         self.default_route_index = 0
 

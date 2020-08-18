@@ -23,7 +23,7 @@ class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         vm: SpecificLocation,
         network: Optional[Location] = None,

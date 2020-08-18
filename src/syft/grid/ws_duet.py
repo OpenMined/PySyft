@@ -15,7 +15,6 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     ImmediateSyftMessageWithoutReply,
     ImmediateSyftMessageWithReply,
-    SignedMessage,
 )
 
 
@@ -39,13 +38,9 @@ class WSDuet(DomainClient):
             # generate a signing key
             self.signing_key = SigningKey.generate()
             self.verify_key = self.signing_key.verify_key
-            if name:
-                # Create a new domain
-                self.node = Domain(name=name, root_key=self.verify_key)
-            else:
-                raise ValueError(
-                    "You must define a node instance or at least, a node name."
-                )
+            self.node = Domain(name=name, root_key=self.verify_key)
+        else:
+            self.node = node
 
         # Create WebSocketConnection Instance
         self.conn = WebsocketConnection(url, self.node)

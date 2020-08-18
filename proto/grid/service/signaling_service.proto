@@ -7,13 +7,13 @@ import "proto/core/io/address.proto";
 import "proto/util/json_message.proto";
 
 message SignalingAnswerMessage {
-    syft.core.common.UID msg_id = 1;
-    syft.core.io.Address address = 2;
-    syft.util.JsonMessage content = 3;
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.util.JsonMessage content = 3;
 }
 
 message SignalingOfferMessage {
-    syft.core.common.UID msg_id = 1;
-    syft.core.io.Address address = 2;
-    syft.util.JsonMessage content = 3;
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.util.JsonMessage content = 3;
 }

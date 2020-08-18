@@ -23,7 +23,7 @@ class DeviceClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         device: SpecificLocation,
         network: Optional[Location] = None,

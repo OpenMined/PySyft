@@ -1,3 +1,4 @@
+from typing import Optional, Union, List
 from .. import ast
 from .util import builtin_func_type, class_type, func_type, module_type, unsplit
 from ..lib.generic import ObjectConstructor
@@ -25,8 +26,13 @@ class Module(ast.attribute.Attribute):
 
         return out
 
-    def add_path(self, path, index, return_type_name):
-
+    def add_path(
+        self,
+        path: Union[str, List[str]],
+        index: int,
+        return_type_name: Optional[str] = None,
+        framework_reference: Optional[object] = None,
+    ) -> None:
         if path[index] not in self.attrs:
 
             attr_ref = getattr(self.ref, path[index])
@@ -57,7 +63,7 @@ class Module(ast.attribute.Attribute):
                     attr=ast.klass.Class(
                         name=path[index],
                         path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref.original_type,
+                        ref=attr_ref.original_type,  # type: ignore
                         return_type_name=return_type_name,
                     ),
                 )
@@ -84,5 +90,5 @@ class Module(ast.attribute.Attribute):
                 )
 
         self.attrs[path[index]].add_path(
-            path, index + 1, return_type_name=return_type_name
+            path=path, index=index + 1, return_type_name=return_type_name
         )

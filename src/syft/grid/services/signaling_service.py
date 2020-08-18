@@ -2,6 +2,7 @@
 from typing import List
 from typing import Type
 from typing import Optional
+from typing import Union
 from nacl.signing import VerifyKey
 from typing_extensions import final
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -9,14 +10,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft class imports
 from .....proto.grid.service.signaling_service_pb2 import (
     SignalingOfferMessage as SignalingOfferMessage_PB,
-    SignaligAnswerMessage as SignalingAnswerMessage_PB,
+    SignalingAnswerMessage as SignalingAnswerMessage_PB,
 )
 
-from ....common.message import ImmediateSyftMessageWithoutReply
 from .....decorators.syft_decorator_impl import syft_decorator
-from .node_service import ImmediateNodeServiceWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ...core.common.message import ImmediateSyftMessageWithReply
 from ...abstract.node import AbstractNode
+from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from ....io.address import Address
 from ....common.uid import UID
 from .auth import service_auth
@@ -25,11 +26,12 @@ from .auth import service_auth
 @final
 class SignalingOfferMessage(ImmediateSyftMessageWithReply):
     def __init__(self, address: Address, content: dict, msg_id: Optional[UID] = None):
-        super().__init__(address=address, msg_id=msg_id)
+        # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
+        super().__init__(address=address, msg_id=msg_id, reply_to=None)
         self.content = content
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Message_PB:
+    def _object2proto(self) -> SignalingOfferMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -37,7 +39,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ReprMessage_PB
+        :rtype: SignalingOfferMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -48,13 +50,13 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(proto: SignalingOfferMessage_PB) -> "SignalingOfferMessage":
-        """Creates a ReprMessage from a protobuf
+        """Creates a SignalingOfferMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
-        :rtype: ReprMessage
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: SignalingOfferMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -64,13 +66,14 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
         return SignalingOfferMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
+            content=_deserialize(blob=proto.content),
         )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -90,8 +93,10 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
     def __init__(self, address: Address, msg_id: Optional[UID] = None):
-        super().__init__(address=address, msg_id=msg_id)
-        self.content = content
+        # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
+        super().__init__(address=address, msg_id=msg_id, reply_to=None)
+        # TODO: implement content
+        # self.content = content
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingAnswerMessage_PB:
@@ -102,7 +107,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ReprMessage_PB
+        :rtype: SignalingAnswerMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -113,13 +118,13 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(proto: SignalingAnswerMessage_PB) -> "SignalingAnswerMessage":
-        """Creates a ReprMessage from a protobuf
+        """Creates a SignalingAnswerMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
-        :rtype: ReprMessage
+        :return: returns an instance of SignalingAnswerMessage
+        :rtype: SignalingAnswerMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -135,7 +140,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -157,7 +162,7 @@ class SignalingService(ImmediateNodeServiceWithReply):
     @service_auth(root_only=True)
     def process(
         node: AbstractNode,
-        msg: Union[SignalingOfferMessage, SignaligAnswerMessage],
+        msg: Union[SignalingOfferMessage, SignalingAnswerMessage],
         verify_key: VerifyKey,
     ) -> None:
         if isinstance(msg, SignalingOfferMessage):
@@ -166,5 +171,7 @@ class SignalingService(ImmediateNodeServiceWithReply):
             print("process_answer")
 
     @staticmethod
-    def message_handler_types() -> List[Type[ReprMessage]]:
+    def message_handler_types() -> List[
+        Type[Union[SignalingOfferMessage, SignalingOfferMessage]]
+    ]:
         return [SignalingOfferMessage, SignalingAnswerMessage]
