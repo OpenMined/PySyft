@@ -3,6 +3,7 @@ from os import name as os_name
 
 import torch
 import syft
+
 if os_name != "nt":
     import crypten
 
