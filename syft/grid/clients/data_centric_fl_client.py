@@ -4,7 +4,6 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from typing import Union, Dict
 from urllib.parse import urlparse
-import pickle
 import torch
 
 # Syft imports
@@ -290,13 +289,13 @@ class DataCentricFLClient(WebsocketClientWorker):
     def simplify(worker: AbstractWorker, data_centric_fl_client: "DataCentricFLClient") -> tuple:
 
         # Simplify the attributes for DataCentricFLClient
-        address = pickle.dumps(data_centric_fl_client.address)
-        id = pickle.dumps(data_centric_fl_client.id)
-        is_client_worker = pickle.dumps(data_centric_fl_client.is_client_worker)
-        log_msgs = pickle.dumps(data_centric_fl_client.log_msgs)
-        verbose = pickle.dumps(data_centric_fl_client.verbose)
-        encoding = pickle.dumps(data_centric_fl_client.encoding)
-        timeout = pickle.dumps(data_centric_fl_client.timeout)
+        address = json.dumps(data_centric_fl_client.address)
+        id = json.dumps(data_centric_fl_client.id)
+        is_client_worker = json.dumps(data_centric_fl_client.is_client_worker)
+        log_msgs = json.dumps(data_centric_fl_client.log_msgs)
+        verbose = json.dumps(data_centric_fl_client.verbose)
+        encoding = json.dumps(data_centric_fl_client.encoding)
+        timeout = json.dumps(data_centric_fl_client.timeout)
 
         return (address, id, is_client_worker, log_msgs, verbose, encoding, timeout)
 
@@ -308,13 +307,13 @@ class DataCentricFLClient(WebsocketClientWorker):
         address, id, is_client_worker, log_msgs, verbose, encoding, timeout = client_tuple
 
         # detail client attributes
-        address = pickle.loads(address)
-        id = pickle.loads(id)
-        is_client_worker = pickle.loads(is_client_worker)
-        log_msgs = pickle.loads(log_msgs)
-        verbose = pickle.loads(verbose)
-        encoding = pickle.loads(encoding)
-        timeout = pickle.loads(timeout)
+        address = json.loads(address)
+        id = json.loads(id)
+        is_client_worker = json.loads(is_client_worker)
+        log_msgs = json.loads(log_msgs)
+        verbose = json.loads(verbose)
+        encoding = json.loads(encoding)
+        timeout = json.loads(timeout)
 
         # create torch hook
         hook = sy.TorchHook(torch)
