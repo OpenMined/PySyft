@@ -112,6 +112,18 @@ class Pointer(AbstractPointer):
         return Pointer_PB
 
     def request_access(self, request_name: str = "", reason: str = "",) -> None:
+        """Method that requests access to the data on which the pointer points to.
+
+        :param request_name: The title of the request that the data owner is going to see.
+        :type request_name: str
+        :param reason: The description of the request. This is the reason why you want to have
+        access to the data.
+        :type reason: str
+
+        .. note::
+            This method should be usen when the remote data associated with the pointer wants to be
+            downloaded locally (or use .get() on the pointer).
+        """
         from ..node.domain.service import RequestMessage
 
         msg = RequestMessage(
@@ -126,17 +138,23 @@ class Pointer(AbstractPointer):
         self.location.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
-        from ..node.domain.service import (
-            RequestAnswerMessage,
-            # RequestAnswerResponseService,
-        )
+        """Method that checks the status of an already made request. There are three possible
+        outcomes when requesting access:
+            1. RequestStatus.Accepted - your request has been approved, you can not .get() your
+            data.
+            2. RequestStatus.Pending - your request has not been reviewed yet.
+            3. RequestStatus.Rejected - your request has been rejected.
+
+        :param node: The node that queries the request status.
+        :type node: AbstractNode
+        :param request_id: The request on which you are querying the status.
+        :type request_id: UID
+        """
+        from ..node.domain.service import  RequestAnswerMessage
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.location.address, reply_to=node.address
         )
         response = self.location.send_immediate_msg_with_reply(msg=msg)
-        #
-        # # this should be handled by the service by default, should be patched after 0.3.0
-        # RequestAnswerResponseService.process(node=node, msg=response, verify_key=msg.)
 
         return response.status
