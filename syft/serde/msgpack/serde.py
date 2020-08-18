@@ -529,7 +529,7 @@ def msgpack_code_generator(class_name: str) -> int:
     """
 
     # the code Msgpack is generated as the hash of class name(first 8 digit of hash being used)
-    return int(hashlib.sha1(class_name.encode("utf-8")).hexdigest(), 16) % (10 ** 8)
+    return int(hashlib.sha256(class_name.encode("utf-8")).hexdigest(), 16) % (10 ** 8)
 
 
 msgpack_global_state = MsgpackGlobalState()
