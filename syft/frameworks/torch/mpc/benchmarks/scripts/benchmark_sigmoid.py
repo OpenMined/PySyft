@@ -8,7 +8,7 @@ from syft.frameworks.torch.mpc.benchmarks.scripts.benchmark_sample_data import (
 )
 
 
-def benchmark_sigmoid(method, prec_frac, workers):
+def benchmark_sigmoid(method, prec_frac, tolerance, workers):
     """
     This function approximates the sigmoid function using a given method.
 
@@ -31,6 +31,9 @@ def benchmark_sigmoid(method, prec_frac, workers):
     # Calculation of the difference between FPT and normal sigmoid (error)
     diff = (r - t).abs().max()
     return diff.item()
+    # norm = (r + t).abs().max() / 2
+    #
+    # return (diff / (tolerance * norm)) < 1
 
 
 def sigmoid_approximation_plot(benchmark_data_sigmoid):
@@ -76,6 +79,7 @@ def sigmoid_approximation_plot(benchmark_data_sigmoid):
                 temp_error.append(error)
 
             final_time_taken = sum(temp_time_taken) / len(temp_time_taken)
+            final_time_taken *= 1000
             final_error = sum(temp_error) / len(temp_error)
             x_data.append(precision_value)
             y_data.append(final_time_taken)
@@ -89,12 +93,13 @@ def sigmoid_approximation_plot(benchmark_data_sigmoid):
 
     # plotting of the data
     ax1.set_xlabel("Precision Value")
-    ax1.set_ylabel("Execution Time")
+    ax1.set_ylabel("Execution Time (ms)")
     ax2.set_ylabel("Error")
     ax1.legend(bbox_to_anchor=(1, 1.3), loc="upper right", title="Method", fontsize="small")
     ax2.legend(bbox_to_anchor=(0, 1.3), loc="upper left", title="Error", fontsize="small")
     plt.tight_layout()
-    plt.savefig("graphs/sigmoid_function_approximations_benchmark.png")
+    plt.savefig("../graphs/sigmoid_function_approximations_benchmark.png")
+    plt.show()
 
 
 # calling sigmoid_approximation_plot function
