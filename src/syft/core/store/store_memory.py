@@ -2,7 +2,6 @@ from typing import Dict
 from typing import KeysView
 from typing import ValuesView
 from typing import List
-
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ...decorators import syft_decorator
@@ -87,7 +86,7 @@ class MemoryStore(ObjectStore):
         pass
 
     @staticmethod
-    def _proto2object(proto):
+    def _proto2object(proto: GeneratedProtocolMessageType) -> object:
         pass
 
     def __repr__(self) -> str:

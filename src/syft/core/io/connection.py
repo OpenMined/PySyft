@@ -27,18 +27,6 @@ class BidirectionalConnection(object):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> None:
-        raise NotImplementedError
-
-    @staticmethod
-    def _proto2object() -> "ServerConnection":
-        raise NotImplementedError
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        raise NotImplementedError
-
-    @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -61,7 +49,7 @@ class BidirectionalConnection(object):
         raise NotImplementedError
 
     @staticmethod
-    def _proto2object() -> "ClientConnection":
+    def _proto2object(proto: GeneratedProtocolMessageType) -> "BidirectionalConnection":
         raise NotImplementedError
 
     @staticmethod
@@ -75,21 +63,30 @@ class ServerConnection(object):
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithoutReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         raise NotImplementedError
 
     def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     def recv_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
-    def recv_signed_msg_without_reply(self, msg: SignedMessage) -> SignedMessage:
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    def _proto2object(proto: GeneratedProtocolMessageType) -> "ServerConnection":
+        raise NotImplementedError
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         raise NotImplementedError
 
 
@@ -99,22 +96,30 @@ class ClientConnection(object):
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithReply:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def send_signed_msg_with_reply(self, msg: SignedMessage) -> SignedMessage:
+    def _object2proto(self) -> None:
+        raise NotImplementedError
+
+    @staticmethod
+    def _proto2object(proto: GeneratedProtocolMessageType) -> object:
+        raise NotImplementedError
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         raise NotImplementedError
