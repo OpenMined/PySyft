@@ -47,6 +47,6 @@ def remote(func, location):
             location, *command, return_ids=response_ids, return_value=return_value
         )
 
-        return response
+        return response.wrap()
 
     return remote_exec
