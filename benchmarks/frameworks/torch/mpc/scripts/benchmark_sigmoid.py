@@ -2,10 +2,8 @@ import torch
 import timeit
 import matplotlib.pyplot as plt
 
-from syft.frameworks.torch.mpc.benchmarks.scripts.workers_initialization import workers, hook
-from syft.frameworks.torch.mpc.benchmarks.scripts.benchmark_sample_data import (
-    benchmark_data_sigmoid,
-)
+from benchmarks.frameworks.torch.mpc.scripts.workers_initialization import workers, hook
+from benchmarks.frameworks.torch.mpc.scripts.benchmark_sample_data import benchmark_data_sigmoid
 
 
 def benchmark_sigmoid(method, prec_frac, workers):
