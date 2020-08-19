@@ -9,7 +9,7 @@ class LazyDict:
     when they are requested. After they have been requested the dictionary
     continues to hold onto the object for later use. In this way, the
     dictionary is really just a cache of objects. And if an object is never
-    requested, then we never expend any cycles adding it to the dictionary.s
+    requested, then we never expend any cycles adding it to the dictionary.
 
     The overall behavior is:
     * if the element is found, return the element.
@@ -109,17 +109,19 @@ class LazyDict:
 
 class LazySet:
     """
-    Struct that simulates the behavior of a normal dictionary, but that a
+    Struct that simulates the behavior of a normal set, but that a
     fallback update method when an object is not found to update the
-    dictionary.
+    set.
 
-    The overall behavior is:
-    * if the element if found, do nothing.
-    * else, update the elements of the dicts in a lazy manner.
-    * retry the search.
+   The overall behavior is:
+    * if the element is found, return the element.
+    * else, update the elements of the dict in a lazy manner.
+    * retry the search
+        - if the element is still not found - return False
+        - if the element is found - return True
 
     Attributes:
-         _dict: internal dict to store the elements of the lazy dict.
+         _set: internal set to store the elements of the lazy set.
 
     """
 
@@ -131,26 +133,25 @@ class LazySet:
 
     def __sizeof__(self) -> int:
         """
-        Method that returns the size of the wrapped dict.
+        Method that returns the size of the wrapped set.
 
         Returns:
-              int: size of the original dict.
+              int: size of the original set.
         """
         return self._set.__sizeof__()
 
     def __len__(self) -> int:
         """
-        Method that returns the size of the wrapped dict.
+        Method that returns the size of the wrapped set.
 
         Returns:
-            int: length of the original dict.
+            int: length of the original set.
         """
         return len(self._set)
 
     def __contains__(self, item: Any) -> bool:
         """
-        Method that checks if an object is being used as a key in the wrapped
-        dict.
+        Method that checks if an object is inside the wrapped set.
 
         Args:
             item (Any): the key to be searched for.

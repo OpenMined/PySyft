@@ -35,7 +35,7 @@ class Class(ast.callable.Callable):
                 args=args,
                 kwargs=kwargs,
                 id_at_location=result.id_at_location,
-                address=__self.location.address,  # TODO: these uses of the word "location" shoudl change to "address"
+                address=__self.location.address,  # TODO: these uses of the word "location" should change to "address"
             )
             __self.location.send_immediate_msg_without_reply(msg=cmd)
 
