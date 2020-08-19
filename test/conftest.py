@@ -15,6 +15,10 @@ from syft.generic.frameworks.hook import hook_args
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 
+collect_ignore = []
+if os.name == "nt":
+    collect_ignore.append("crypten/")
+
 
 def pytest_configure(config):
     config.addinivalue_line(
