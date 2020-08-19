@@ -2,6 +2,7 @@ from operator import add, sub, mul
 import torch
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
+from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
@@ -17,6 +18,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         workers = self.__arrange_workers(list(workers))
         shares = self.generate_shares(secret, number_of_shares)
         shares_map = self.__distribute_shares(workers, shares)
+        PRZS.setup(workers)
         self.child = shares_map
         return self
 
@@ -158,8 +160,14 @@ class ReplicatedSharingTensor(AbstractTensor):
             + operator(x[player][0], y[player][1])
             for player in players
         ]
+        z = self.__add_noise(z)
         z = self.__reshare(z, players)
         return ReplicatedSharingTensor(z)
+
+    @staticmethod
+    def __add_noise(shares):
+        noisy_shares = [share + gen_alpha_3of3(share.location).wrap() for share in shares]
+        return noisy_shares
 
     @staticmethod
     def __reshare(shares, workers):
@@ -170,8 +178,6 @@ class ReplicatedSharingTensor(AbstractTensor):
             pointer = shares[(i + 1) % len(shares)].copy().move(workers[i])
             shares_map[workers[i]] = (shares[i], pointer)
         return shares_map
-        # works but not secure till correlated randomness is added
-        # TODO add correlated randomness
 
     def conv2d(self, value):
         return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d)
