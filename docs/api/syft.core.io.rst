@@ -6,6 +6,13 @@ syft.core.io package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+   syft.core.io.location
+
 Submodules
 ----------
 
@@ -29,14 +36,6 @@ syft.core.io.hop module
 -----------------------
 
 .. automodule:: syft.core.io.hop
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.core.io.location module
-----------------------------
-
-.. automodule:: syft.core.io.location
    :members:
    :undoc-members:
    :show-inheritance:
