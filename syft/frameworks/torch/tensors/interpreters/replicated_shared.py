@@ -173,6 +173,15 @@ class ReplicatedSharingTensor(AbstractTensor):
         # works but not secure till correlated randomness is added
         # TODO add correlated randomness
 
+    def conv2d(self, value):
+        return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d)
+
+    def public_conv2d(self, plain_text):
+        pass
+
+    def private_conv2d(self, secret):
+        pass
+
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
@@ -201,6 +210,38 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares_map: dic(worker i : (share_pointer i, share_pointer i+1)
         """
         return self.child
+
+    def apply_to_shares(self, function, *args, **kwargs):
+        """
+        function: str:if the function is an attribute of torch.Tensor,
+                  else a reference to the function itself should be passed
+        """
+        shares_map = self.get_shares_map()
+        players = self.get_players()
+        if type(function) is str:
+            function = getattr(torch.Tensor, function)
+        shares_map = {
+            player: (
+                function(shares_map[player][0], *args, **kwargs),
+                function(shares_map[player][1], *args, **kwargs),
+            )
+            for player in players
+        }
+        return ReplicatedSharingTensor(shares_map)
+
+    def apply_to_shares_(self, function, *args, **kwargs):
+        """apply in-place method to shares"""
+        shares_map = self.get_shares_map()
+        players = self.get_players()
+        if type(function) is str:
+            function = getattr(torch.Tensor, function)
+        for player in players:
+            function(shares_map[player][0], *args, **kwargs)
+            function(shares_map[player][1], *args, **kwargs)
+
+    @property
+    def shape(self):
+        return self.retrieve_pointers()[0].shape
 
     def __repr__(self):
         return self.__str__()

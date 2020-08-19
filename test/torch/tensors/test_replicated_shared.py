@@ -111,3 +111,19 @@ def test_private_matmul(workers):
     x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([[1, 2], [1, 2]]).share(bob, alice, james, protocol="falcon")
     assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
+
+
+def test_get_shape(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[1, 2], [3, 4]])
+    shape = x.shape
+    x = x.share(bob, alice, james, protocol="falcon")
+    enc_shape = x.shape
+    assert shape == enc_shape
+
+
+def test_apply_to_shares(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
+    x = x.apply_to_shares("view", [1, 2])
+    assert x.shape == torch.Size([1, 2])
