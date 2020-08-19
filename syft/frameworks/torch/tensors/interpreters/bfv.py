@@ -1,7 +1,7 @@
 import syft as sy
 
-# import numpy as np
-# import torch as th
+import numpy as np
+import torch as th
 
 from syft.generic.abstract.tensor import AbstractTensor
 
@@ -16,9 +16,13 @@ from syft.generic.frameworks.hook.hook_args import (
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 
+from syft.frameworks.torch.he.fv.decryptor import Decryptor
+from syft.frameworks.torch.he.fv.encryptor import Encryptor
+from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
+
 
 class BFVTensor(AbstractTensor):
-    def __init__(self, **kwargs):
+    def __init__(self, context, **kwargs):
         """Initializes a BFVTensor.
 
         Args:
@@ -27,54 +31,48 @@ class BFVTensor(AbstractTensor):
             id: An optional string or integer id of the BFVTensor.
         """
         super().__init__(**kwargs)
+        self.context = context
+        self.encryptor = None
+        self.decryptor = None
+        self.encoder = None
 
-    def encrypt(self, public_key):
-        """This method will encrypt each value in the tensor using BFV
-        homomorphic encryption scheme.
-        """
-        print("encrypt called!")
-        pass
+    def encrypt(self, key, context):
+        self.context = context
+        if self.encoder is None:
+            self.encoder = IntegerEncoder(self.context)
+        if self.encryptor is None:
+            self.encryptor = Encryptor(self.context, key)
+
+        output = BFVTensor(context)
+        output.child = self.child
+        inputs = self.child.flatten().tolist()
+        new_child = [self.encryptor.encrypt(self.encoder.encode(int(x))) for x in inputs]
+
+        data = np.array(new_child).reshape(self.child.shape)
+        self.child = data
+        return output
 
     def decrypt(self, private_key):
-        """This method will decrypt each value in the tensor, returning a normal
-        torch tensor.
-        """
-        print("decrypt called!")
-        pass
+        if self.decryptor is None:
+            self.decryptor = Decryptor(self.context, private_key)
+
+        inputs = self.child.flatten().tolist()
+        new_child = [self.encoder.decode(self.decryptor.decrypt(x)) for x in inputs]
+        return th.tensor(new_child).view(*self.child.shape)
 
     def __add__(self, *args, **kwargs):
-        """
-        Here is the version of the add method without the decorator: as you can see
-        it is much more complicated. However you might need sometimes to specify
-        some particular behaviour: so here what to start from :)
-        """
         print("custom add called!")
         pass
 
     def __sub__(self, *args, **kwargs):
-        """
-        Here is the version of the sub method without the decorator: as you can see
-        it is much more complicated. However you might need sometimes to specify
-        some particular behaviour: so here what to start from :)
-        """
         print("custom sub called!")
         pass
 
     def __mul__(self, *args, **kwargs):
-        """
-        Here is the version of the mul method without the decorator: as you can see
-        it is much more complicated. However you might need sometimes to specify
-        some particular behaviour: so here what to start from :)
-        """
         print("custom mul called!")
         pass
 
     def mm(self, *args, **kwargs):
-        """
-        Here is matrix multiplication between an encrypted and unencrypted tensor. Note that
-        we cannot matrix multiply two encrypted tensors because Paillier does not support
-        the multiplication of two encrypted values.
-        """
         print("custom mm called!")
         pass
 

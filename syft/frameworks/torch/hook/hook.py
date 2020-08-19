@@ -182,7 +182,7 @@ class TorchHook(FrameworkHook):
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(PaillierTensor)
 
-        # Add all hooked tensor methods to FVTensor but change behaviour to just forward
+        # Add all hooked tensor methods to BFVTensor but change behaviour to just forward
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(BFVTensor)
 

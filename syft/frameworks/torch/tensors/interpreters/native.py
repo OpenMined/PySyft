@@ -10,6 +10,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.frameworks.torch.tensors.interpreters.bfv import BFVTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.abstract.tensor import AbstractTensor
@@ -1151,6 +1152,23 @@ class TorchTensor(AbstractTensor):
 
             return x_encrypted
 
+        elif protocol.lower() == "bfv":
+            context = kwargs.get("context")
+            public_key = kwargs.get("public_key")
+            private_key = kwargs.get("private_key")
+
+            x_encrypted = BFVTensor(context=context).on(self)
+            if private_key is not None:
+                # Homomorphic Encryption using private key; if private key available prefer it.
+                x_encrypted.child.encrypt(private_key, context)
+            elif public_key is not None:
+                x_encrypted.child.encrypt(
+                    public_key, context
+                )  # Homomorphic Encryption using public key
+            else:
+                raise RuntimeError("Secret key or Public key should be provided for encryption")
+            return x_encrypted
+
         else:
             raise NotImplementedError(
                 "Currently the .encrypt() method only supports Paillier Homomorphic "
@@ -1194,6 +1212,10 @@ class TorchTensor(AbstractTensor):
 
         elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
+            private_key = kwargs.get("private_key")
+            return self.child.decrypt(private_key)
+
+        elif isinstance(self.child, BFVTensor):
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)
 
