@@ -13,8 +13,8 @@ from typing_extensions import final
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft class imports
-from .....proto.core.node.common.service.repr_service_pb2 import (
-    ReprMessage as ReprMessage_PB,
+from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
+    ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from .....decorators.syft_decorator_impl import syft_decorator
@@ -27,12 +27,23 @@ from .auth import service_auth
 
 
 @final
-class ReprMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: Optional[UID] = None):
+class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        add_instead_of_remove: bool,
+        target_verify_key: VerifyKey,
+        target_object_id: UID,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
         super().__init__(address=address, msg_id=msg_id)
 
+        self.add_instead_of_remove = add_instead_of_remove
+        self.target_verify_key = target_verify_key
+        self.target_object_id = target_object_id
+
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> ReprMessage_PB:
+    def _object2proto(self) -> ObjectSearchPermissionUpdateMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -40,33 +51,44 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: ReprMessage_PB
+        :rtype: ObjectSearchPermissionUpdateMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ReprMessage_PB(msg_id=self.id.serialize())
+        return ObjectSearchPermissionUpdateMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            target_verify_key=bytes(self.target_verify_key),
+            target_object_id=self.target_object_id.serialize(),
+            add_instead_of_remove=self.add_instead_of_remove,
+        )
 
     @staticmethod
-    def _proto2object(proto: ReprMessage_PB) -> "ReprMessage":
-        """Creates a ReprMessage from a protobuf
+    def _proto2object(
+        proto: ObjectSearchPermissionUpdateMessage_PB,
+    ) -> "ObjectSearchPermissionUpdateMessage":
+        """Creates a ObjectSearchPermissionUpdateMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ReprMessage
-        :rtype: ReprMessage
+        :return: returns an instance of ObjectSearchPermissionUpdateMessage
+        :rtype: ObjectSearchPermissionUpdateMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return ReprMessage(
+        return ObjectSearchPermissionUpdateMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
+            target_verify_key=VerifyKey(proto.target_verify_key),
+            target_object_id=_deserialize(blob=proto.target_object_id),
+            add_instead_of_remove=proto.add_instead_of_remove,
         )
 
     @staticmethod
@@ -87,15 +109,22 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
 
         """
 
-        return ReprMessage_PB
+        return ObjectSearchPermissionUpdateMessage_PB
 
 
-class ReprService(ImmediateNodeServiceWithoutReply):
+class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(root_only=True)
-    def process(node: AbstractNode, msg: ReprMessage, verify_key: VerifyKey) -> None:
-        print(node.__repr__())
+    def process(
+        node: AbstractNode,
+        msg: ObjectSearchPermissionUpdateMessage,
+        verify_key: VerifyKey,
+    ) -> None:
+        if msg.add_instead_of_remove:
+            node.store[msg.target_object_id].search_permissions.add(verify_key)
+        else:
+            node.store[msg.target_object_id].search_permissions.remove(verify_key)
 
     @staticmethod
-    def message_handler_types() -> List[Type[ReprMessage]]:
-        return [ReprMessage]
+    def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:
+        return [ObjectSearchPermissionUpdateMessage]

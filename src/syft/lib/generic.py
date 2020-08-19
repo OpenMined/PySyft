@@ -270,7 +270,6 @@ class ObjectConstructor(object):
 
     def assign_id(self, obj: object) -> object:
         obj.id = UID()  # type: ignore
-        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))  # type: ignore
         return obj
 
     @property
