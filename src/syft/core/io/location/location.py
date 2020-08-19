@@ -1,3 +1,5 @@
+from typing import Optional
+
 # external class imports
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,7 +15,10 @@ class Location(Serializable):
     location-relevant metadata (such as how long it takes
     for us to communicate with this location, etc.)"""
 
-    def __init__(self) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
+        if name is None:
+            name = Serializable.random_name()
+        self.name = name
         super().__init__()
 
     @property

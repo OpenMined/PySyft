@@ -32,7 +32,7 @@ class Domain(Node):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         network: Optional[Location] = None,
         domain: SpecificLocation = SpecificLocation(),
         device: Optional[Location] = None,
@@ -51,6 +51,8 @@ class Domain(Node):
             verify_key=verify_key,
         )
 
+        # specific location with name
+        self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
         self.immediate_services_without_reply.append(RequestService)

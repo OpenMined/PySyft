@@ -34,14 +34,18 @@ class Unspecified(object):
 
 
 class Address(Serializable):
+    name: Optional[str]
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
+        name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
     ):
+        self.name = name if name is not None else Serializable.random_name()
 
         # All node should have a representation of where they think
         # they are currently held. Note that this is at risk of going
@@ -99,9 +103,9 @@ class Address(Serializable):
 
     @property
     def pprint(self) -> str:
-        output = f"{self.icon} {self.named} ({self.class_name}"
+        output = f"{self.icon} {self.named} ({self.class_name})"
         if hasattr(self, "id"):
-            output += f"@{self.target_id.id.emoji()})"
+            output += f"@{self.target_id.id.emoji()}"
         return output
 
     def post_init(self) -> None:
@@ -126,12 +130,21 @@ class Address(Serializable):
     @property
     def address(self) -> "Address":
         # QUESTION what happens if we have none of these?
-        address = Address(
-            network=self.network, domain=self.domain, device=self.device, vm=self.vm
-        )
+
         # sneak the name on there
         if hasattr(self, "name"):
-            address.name = self.name  # type: ignore
+            name = self.name
+        else:
+            name = Serializable.random_name()
+
+        address = Address(
+            name=name,
+            network=self.network,
+            domain=self.domain,
+            device=self.device,
+            vm=self.vm,
+        )
+
         return address
 
     @syft_decorator(typechecking=True)
@@ -151,6 +164,7 @@ class Address(Serializable):
             object.
         """
         return Address_PB(
+            name=self.name,
             has_network=self.network is not None,
             network=self.network.serialize() if self.network is not None else None,
             has_domain=self.domain is not None,
@@ -177,6 +191,7 @@ class Address(Serializable):
         """
 
         return Address(
+            name=proto.name,
             network=_deserialize(blob=proto.network) if proto.has_network else None,
             domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
             device=_deserialize(blob=proto.device) if proto.has_device else None,
