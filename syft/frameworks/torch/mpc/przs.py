@@ -51,7 +51,6 @@ class PRZS:
 
 
 def get_random(name_generator, shape, worker):
-    func = None
     if worker == syft.local_worker:
         func = _get_random_tensor(name_generator, shape, worker.id)
     else:
@@ -73,7 +72,7 @@ def _initialize_generators(cur_seed, prev_seed):
 
 
 @allow_command
-def _get_random_tensor(name_generator, shape, worker_id, ring_size):
+def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG
 
@@ -85,7 +84,6 @@ def _get_random_tensor(name_generator, shape, worker_id, ring_size):
 
 
 def gen_alpha_3of3(worker, ring_size=RING_SIZE):
-    func = None
     if worker == syft.local_worker:
         func = _generate_alpha_3of3
     else:
@@ -95,7 +93,6 @@ def gen_alpha_3of3(worker, ring_size=RING_SIZE):
 
 
 def gen_alpha_2of3(worker, ring_size=RING_SIZE):
-    func = None
     if worker == syft.local_worker:
         func = _generate_alpha_2of3
     else:
@@ -150,8 +147,6 @@ def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
 
 def __get_next_elem(generator, ring_size=RING_SIZE, shape=(1,)):
     tensor = torch.empty(shape, dtype=torch.long)
-    worker = tensor.owner
-
     return tensor.random_(0, ring_size, generator=generator)
 
 
