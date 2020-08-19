@@ -16,7 +16,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-from syft.proto.util import json_message_pb2 as proto_dot_util_dot_json__message__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -25,11 +24,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1dproto/util/json_message.proto\"\x90\x01\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x07\x63ontent\x18\x03 \x01(\x0b\x32\x16.syft.util.JsonMessage\"\x8f\x01\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x07\x63ontent\x18\x03 \x01(\x0b\x32\x16.syft.util.JsonMessageb\x06proto3",
+    serialized_pb=b'\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"x\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x04 \x01(\t"w\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x04 \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
-        proto_dot_util_dot_json__message__pb2.DESCRIPTOR,
     ],
 )
 
@@ -81,15 +79,15 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.service.SignalingAnswerMessage.content",
+            name="payload",
+            full_name="syft.grid.service.SignalingAnswerMessage.payload",
             index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
+            number=4,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -108,8 +106,8 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=165,
-    serialized_end=309,
+    serialized_start=133,
+    serialized_end=253,
 )
 
 
@@ -160,15 +158,15 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.service.SignalingOfferMessage.content",
+            name="payload",
+            full_name="syft.grid.service.SignalingOfferMessage.payload",
             index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
+            number=4,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -187,8 +185,8 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=312,
-    serialized_end=455,
+    serialized_start=255,
+    serialized_end=374,
 )
 
 _SIGNALINGANSWERMESSAGE.fields_by_name[
@@ -197,18 +195,12 @@ _SIGNALINGANSWERMESSAGE.fields_by_name[
 _SIGNALINGANSWERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SIGNALINGANSWERMESSAGE.fields_by_name[
-    "content"
-].message_type = proto_dot_util_dot_json__message__pb2._JSONMESSAGE
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SIGNALINGOFFERMESSAGE.fields_by_name[
-    "content"
-].message_type = proto_dot_util_dot_json__message__pb2._JSONMESSAGE
 DESCRIPTOR.message_types_by_name["SignalingAnswerMessage"] = _SIGNALINGANSWERMESSAGE
 DESCRIPTOR.message_types_by_name["SignalingOfferMessage"] = _SIGNALINGOFFERMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
