@@ -100,7 +100,7 @@ samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 samples[SerializableDummyClass] = make_serializable_dummy_class
 
 
-@pytest.mark.xfail("os_name == 'nt'")
+@pytest.mark.xfail("os_name == 'nt'", reason="Crypten unavailable for Windows")
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
@@ -109,7 +109,7 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
-@pytest.mark.xfail("os_name == 'nt'")
+@pytest.mark.xfail("os_name == 'nt'", reason="Crypten unavailable for Windows")
 def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
     serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
@@ -147,7 +147,7 @@ def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
 
 
 @pytest.mark.parametrize("cls", samples)
-@pytest.mark.xfail("os_name == 'nt'")
+@pytest.mark.xfail("os_name == 'nt'", reason="Crypten unavailable for Windows")
 def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
     serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)

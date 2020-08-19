@@ -66,7 +66,7 @@ samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 # samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 
-@pytest.mark.xfail("os_name == 'nt'")
+@pytest.mark.xfail("os_name == 'nt'", reason="Crypten unavailable for Windows")
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in protobuf.serde.protobuf_global_state.bufferizers.items():
@@ -75,7 +75,7 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
-@pytest.mark.xfail("os_name == 'nt'")
+@pytest.mark.xfail("os_name == 'nt'", reason="Crypten unavailable for Windows")
 def test_serde_roundtrip_protobuf(cls, workers, hook):
     """Checks that values passed through serialization-deserialization stay same"""
     serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)

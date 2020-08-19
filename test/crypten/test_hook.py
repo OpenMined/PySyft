@@ -1,15 +1,12 @@
 import pytest
-from os import name as os_name
 
 import torch
 import syft
 
-if os_name != "nt":
-    import crypten
+import crypten
 
 
 @pytest.fixture(scope="function")
-@pytest.mark.skipif("os_name == 'nt'")
 def model():
     l_in, l_h, l_out = 32, 16, 2
     model = crypten.nn.Sequential(
@@ -18,7 +15,6 @@ def model():
     return model
 
 
-@pytest.mark.skipif("os_name == 'nt'")
 def test_send_module(workers, model):
     alice = workers["alice"]
     model_cmp = model.copy()
@@ -37,7 +33,6 @@ def test_send_module(workers, model):
         assert torch.all(p.data == p_cmp)
 
 
-@pytest.mark.skipif("os_name == 'nt'")
 def test_share_module(workers, model):
     alice = workers["alice"]
     bob = workers["bob"]
@@ -55,7 +50,6 @@ def test_share_module(workers, model):
         assert isinstance(p, torch.Tensor)
 
 
-@pytest.mark.skipif("os_name == 'nt'")
 def test_move_module(workers, model):
     alice = workers["alice"]
     bob = workers["bob"]
@@ -69,7 +63,6 @@ def test_move_module(workers, model):
     assert model.location is None
 
 
-@pytest.mark.skipif("os_name == 'nt'")
 def test_copy(model):
     copy_model = model.copy()
     with torch.no_grad():
@@ -81,7 +74,6 @@ def test_copy(model):
             assert not torch.all(p == 0)
 
 
-@pytest.mark.skipif("os_name == 'nt'")
 def test_encrypted_model(model):
     crypten.init()
     model.encrypt()
