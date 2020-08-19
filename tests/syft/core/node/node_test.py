@@ -24,7 +24,7 @@ def test_send_message_from_vm_client_to_vm() -> None:
 
     with pytest.raises(AuthorizationException):
         bob_vm_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_vm_client)
+            msg=sy.ReprMessage(address=bob_vm_client.address)
         )
 
 
@@ -34,7 +34,7 @@ def test_send_message_from_device_client_to_device() -> None:
 
     with pytest.raises(AuthorizationException):
         bob_phone_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_phone_client)
+            msg=sy.ReprMessage(address=bob_phone_client.address)
         )
 
 
@@ -142,7 +142,7 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_domain_client.register(client=bob_phone_client)
 
     bob_domain_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm)
+        msg=sy.ReprMessage(address=bob_vm.address)
     )
 
 
@@ -195,5 +195,5 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
     bob_network_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm)
+        msg=sy.ReprMessage(address=bob_vm.address)
     )

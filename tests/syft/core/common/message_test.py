@@ -22,14 +22,16 @@ def get_signed_message_bytes() -> bytes:
         "msgId": {"value": "OSCFpuBSSeGS6TrP0S7Dkw=="},
         "objType": "syft.core.node.common.service.repr_service.ReprMessage",
         "signature": (
-            "642MAzjJBunVfkUw9oKr/px8hWzoBngd623f4fxH8tBAv1EFagvotgkvEAXkj4UN4rpbTMZfyv"
-            + "4vXRBQfBryAg=="
+            "//rltljJvXRhb3g4aRL6QJ1So1gbt9Vohp2BizxChbqhFkkeXPrmZmcE8RdSyRBTRnvOpAMXvj"
+            + "penwEHK8olCg=="
         ),
         "verifyKey": "gf/M/DfEVS6KKh8iPTAQxO+IyDAB8H0zC9SXrS9Qjw8=",
         "message": (
             "eyJvYmpUeXBlIjogInN5ZnQuY29yZS5ub2RlLmNvbW1vbi5zZXJ2aWNlLnJlcHJfc2VydmljZS"
             + "5SZXByTWVzc2FnZSIsICJjb250ZW50IjogIntcIm1zZ0lkXCI6IHtcInZhbHVlXCI6IFwiT1"
-            + "NDRnB1QlNTZUdTNlRyUDBTN0Rrdz09XCJ9fSJ9"
+            + "NDRnB1QlNTZUdTNlRyUDBTN0Rrdz09XCJ9LCBcImFkZHJlc3NcIjoge1wibmFtZVwiOiBcIl"
+            + "Rlc3RcIiwgXCJoYXNWbVwiOiB0cnVlLCBcInZtXCI6IHtcImlkXCI6IHtcInZhbHVlXCI6IF"
+            + "wiK3h1d1oxdTNURW0renVjQXF3b1ZGQT09XCJ9fX19In0="
         ),
     }
     envelope = {
@@ -41,7 +43,14 @@ def get_signed_message_bytes() -> bytes:
 
 
 def get_repr_message_bytes() -> bytes:
-    content = {"msgId": {"value": "OSCFpuBSSeGS6TrP0S7Dkw=="}}
+    content = {
+        "msgId": {"value": "OSCFpuBSSeGS6TrP0S7Dkw=="},
+        "address": {
+            "name": "Test",
+            "hasVm": True,
+            "vm": {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}},
+        },
+    }
     message = {
         "objType": "syft.core.node.common.service.repr_service.ReprMessage",
         "content": json.dumps(content),
