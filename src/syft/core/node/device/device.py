@@ -32,7 +32,7 @@ class Device(Node):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: SpecificLocation = SpecificLocation(),
@@ -51,6 +51,9 @@ class Device(Node):
             signing_key=signing_key,
             verify_key=verify_key,
         )
+
+        # specific location with name
+        self.device = SpecificLocation(name=self.name)
 
         self.device_type = device_type
 

@@ -27,7 +27,7 @@ class Network(Node):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         network: SpecificLocation = SpecificLocation(),
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
@@ -44,6 +44,9 @@ class Network(Node):
             signing_key=signing_key,
             verify_key=verify_key,
         )
+
+        # specific location with name
+        self.network = SpecificLocation(name=self.name)
 
         self._register_services()
         self.post_init()

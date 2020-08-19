@@ -6,6 +6,13 @@ syft.core.node.domain package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+   syft.core.node.domain.service
+
 Submodules
 ----------
 

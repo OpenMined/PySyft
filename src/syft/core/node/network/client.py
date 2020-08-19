@@ -23,7 +23,7 @@ class NetworkClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         network: SpecificLocation,
         domain: Optional[Location] = None,

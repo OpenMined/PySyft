@@ -121,9 +121,9 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         verify_key: VerifyKey,
     ) -> None:
         if msg.add_instead_of_remove:
-            node.store[msg.target_object_id].search_permissions.add(verify_key)
+            node.store[msg.target_object_id].search_permissions[verify_key] = msg.id
         else:
-            node.store[msg.target_object_id].search_permissions.remove(verify_key)
+            node.store[msg.target_object_id].search_permissions.pop(verify_key, None)
 
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:

@@ -1,3 +1,6 @@
+from typing import Optional
+from typing import List
+
 from .. import ast
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
@@ -41,7 +44,9 @@ class Callable(ast.attribute.Attribute):
                 path=path, index=index + 1, return_callable=return_callable
             )
 
-    def add_path(self, path, index, return_type_name=None):
+    def add_path(
+        self, path: List[str], index: int, return_type_name: Optional[str] = None
+    ) -> None:
 
         self.return_type_name = return_type_name
 

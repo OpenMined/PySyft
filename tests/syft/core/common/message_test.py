@@ -19,16 +19,19 @@ def get_signing_key() -> SigningKey:
 def get_signed_message_bytes() -> bytes:
     # return a signed message fixture containing the uid from get_uid
     message = {
+        "msgId": {"value": "OSCFpuBSSeGS6TrP0S7Dkw=="},
         "objType": "syft.core.node.common.service.repr_service.ReprMessage",
         "signature": (
-            "WXQGcBRtwv8k6Jvf+oscfK8wbFvSCuMywz9vxhXBpCUGdmL5XiWmQsojS52UWoZK4Rb3+rcYZL"
-            + "0jfCGKcYMoCQ=="
+            "//rltljJvXRhb3g4aRL6QJ1So1gbt9Vohp2BizxChbqhFkkeXPrmZmcE8RdSyRBTRnvOpAMXvj"
+            + "penwEHK8olCg=="
         ),
         "verifyKey": "gf/M/DfEVS6KKh8iPTAQxO+IyDAB8H0zC9SXrS9Qjw8=",
         "message": (
             "eyJvYmpUeXBlIjogInN5ZnQuY29yZS5ub2RlLmNvbW1vbi5zZXJ2aWNlLnJlcHJfc2VydmljZS"
-            + "5SZXByTWVzc2FnZSIsICJjb250ZW50IjogIntcIm1zZ0lkXCI6IHtcInZhbHVlXCI6IFwiR2"
-            + "1vMXF0NFhUK0dGcTl3d0lXS2dTdz09XCJ9fSJ9"
+            + "5SZXByTWVzc2FnZSIsICJjb250ZW50IjogIntcIm1zZ0lkXCI6IHtcInZhbHVlXCI6IFwiT1"
+            + "NDRnB1QlNTZUdTNlRyUDBTN0Rrdz09XCJ9LCBcImFkZHJlc3NcIjoge1wibmFtZVwiOiBcIl"
+            + "Rlc3RcIiwgXCJoYXNWbVwiOiB0cnVlLCBcInZtXCI6IHtcImlkXCI6IHtcInZhbHVlXCI6IF"
+            + "wiK3h1d1oxdTNURW0renVjQXF3b1ZGQT09XCJ9fX19In0="
         ),
     }
     envelope = {
@@ -40,7 +43,14 @@ def get_signed_message_bytes() -> bytes:
 
 
 def get_repr_message_bytes() -> bytes:
-    content = {"msgId": {"value": "Gmo1qt4XT+GFq9wwIWKgSw=="}}
+    content = {
+        "msgId": {"value": "OSCFpuBSSeGS6TrP0S7Dkw=="},
+        "address": {
+            "name": "Test",
+            "hasVm": True,
+            "vm": {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}},
+        },
+    }
     message = {
         "objType": "syft.core.node.common.service.repr_service.ReprMessage",
         "content": json.dumps(content),
@@ -66,7 +76,6 @@ def test_create_signed_message() -> None:
 
     # we will be signing this serializable object
     msg = get_repr_message()
-
     signing_key = get_signing_key()
     sig_msg = msg.sign(signing_key=signing_key)
 

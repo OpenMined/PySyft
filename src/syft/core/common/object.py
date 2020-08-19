@@ -74,7 +74,7 @@ class ObjectWithID(Serializable):
 
         :param other: this is the other ObjectWithIDs to be compared with
         :type other: Any (note this must be Any or __eq__ fails on other types)
-        :return: returns True/False based on whether the objcts are the same
+        :return: returns True/False based on whether the objects are the same
         :rtype: bool
         """
 
