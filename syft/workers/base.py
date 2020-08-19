@@ -163,11 +163,10 @@ class BaseWorker(AbstractWorker):
             self.framework = hook.framework
             if hasattr(hook, "torch"):
                 self.torch = self.framework
-                self.remote = Remote(self, "torch")
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
-                self.remote = Remote(self, "tensorflow")
 
+        self.remote = Remote(self, sy.framework.ALIAS)
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 

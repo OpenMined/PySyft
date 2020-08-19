@@ -15,6 +15,8 @@ class PrimitiveStorage:
     Used by crypto providers to build crypto primitives
     """
 
+    _known_components = {}
+
     def __init__(self, owner: AbstractWorker):
         """
         Their are below different kinds of primitives available.
@@ -40,6 +42,12 @@ class PrimitiveStorage:
         }
 
         self.force_preprocessing = False
+        for name, component in PrimitiveStorage._known_components.items():
+            setattr(self, name, component())
+
+    @staticmethod
+    def register_component(name, cls):
+        PrimitiveStorage._known_components[name] = cls
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
