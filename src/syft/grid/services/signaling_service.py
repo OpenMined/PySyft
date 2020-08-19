@@ -8,27 +8,27 @@ from typing_extensions import final
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft class imports
-from .....proto.grid.service.signaling_service_pb2 import (
+from syft.proto.grid.service.signaling_service_pb2 import (
     SignalingOfferMessage as SignalingOfferMessage_PB,
     SignalingAnswerMessage as SignalingAnswerMessage_PB,
 )
 
-from .....decorators.syft_decorator_impl import syft_decorator
-from ....common.serde.deserialize import _deserialize
-from ...core.common.message import ImmediateSyftMessageWithReply
-from ...abstract.node import AbstractNode
-from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from ....io.address import Address
-from ....common.uid import UID
-from .auth import service_auth
+from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.uid import UID
+from syft.core.node.abstract.node import AbstractNode
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
+from syft.core.node.common.service.auth import service_auth
+from syft.core.io.address import Address
 
 
 @final
 class SignalingOfferMessage(ImmediateSyftMessageWithReply):
-    def __init__(self, address: Address, content: dict, msg_id: Optional[UID] = None):
+    def __init__(self, address: Address, payload: str, msg_id: Optional[UID] = None):
         # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
         super().__init__(address=address, msg_id=msg_id, reply_to=None)
-        self.content = content
+        self.payload = payload
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingOfferMessage_PB:
@@ -66,7 +66,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
         return SignalingOfferMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=_deserialize(blob=proto.content),
+            payload=_deserialize(blob=proto.payload),
         )
 
     @staticmethod
@@ -92,11 +92,11 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
-    def __init__(self, address: Address, msg_id: Optional[UID] = None):
+    def __init__(self, address: Address, payload=str, msg_id: Optional[UID] = None):
         # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
         super().__init__(address=address, msg_id=msg_id, reply_to=None)
         # TODO: implement content
-        # self.content = content
+        self.payload = payload
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingAnswerMessage_PB:
