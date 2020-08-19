@@ -114,13 +114,18 @@ class Domain(Node):
             if req.request_id == message_request_id:
                 return RequestStatus.Pending
 
-        # TODO: implement RequestStatus.Accepted
-        # maybe pass through the verify key and check if that exists?
         # check if it was accepted
-        # request_id => object_id is currently not persisted anywhere
-        # if object_id in self.store:
-        #     self.store[object_id] ??
-        # return RequestStatus.Accepted
+        # TODO remove brute search of all store objects
+        # Currently theres no way to find which object to check the permissions
+        # to find the stored request_id
+        for obj_id in self.store.keys():
+            for _, request_id in self.store[obj_id].read_permissions.items():
+                if request_id == message_request_id:
+                    return RequestStatus.Accepted
+
+            for _, request_id in self.store[obj_id].search_permissions.items():
+                if request_id == message_request_id:
+                    return RequestStatus.Accepted
 
         # must have been rejected
         return RequestStatus.Rejected

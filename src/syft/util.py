@@ -1,5 +1,9 @@
 from typing import List
+from typing import Union
 from random import randint
+
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # breaking convention here because index_globals needs
 # the full syft name to be present.
@@ -118,6 +122,23 @@ def obj2pointer_type(obj):
     fqn = get_fully_qualified_name(obj=obj)
     ref = syft.lib_ast(fqn, return_callable=True)
     return ref.pointer_type
+
+
+@syft_decorator(typechecking=True)
+def key_emoji(key: Union[bytes, SigningKey, VerifyKey]) -> str:
+    hex_chars = bytes(key).hex()[-8:]
+    return char_emoji(hex_chars=hex_chars)
+
+
+@syft_decorator(typechecking=True)
+def char_emoji(hex_chars: str) -> str:
+    base = ord("\U0001F642")
+    hex_base = ord("0")
+    code = 0
+    for char in hex_chars:
+        offset = ord(char)
+        code += offset - hex_base
+    return chr(base + code)
 
 
 left_name = [

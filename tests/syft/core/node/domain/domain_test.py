@@ -150,28 +150,30 @@ def test_domain_request_access_denied() -> None:
     assert RequestStatus.Rejected == response
 
 
-# def test_domain_request_access_accepted() -> None:
-#     domain_1 = Domain(name="remote domain")
-#     tensor = th.tensor([1, 2, 3])
+def test_domain_request_access_accepted() -> None:
+    domain_1 = Domain(name="remote domain")
+    tensor = th.tensor([1, 2, 3])
 
-#     domain_1_client = domain_1.get_root_client()
-#     data_ptr_domain_1 = tensor.send(domain_1_client)
+    domain_1_client = domain_1.get_root_client()
+    data_ptr_domain_1 = tensor.send(domain_1_client)
 
-#     domain_2 = Domain(name="my domain")
+    domain_2 = Domain(name="my domain")
 
-#     data_ptr_domain_1.request_access(
-#         request_name="My Request", reason="I'd lke to see this pointer"
-#     )
+    data_ptr_domain_1.request_access(
+        request_name="My Request", reason="I'd lke to see this pointer"
+    )
 
-#     requested_object = data_ptr_domain_1.id_at_location
+    requested_object = data_ptr_domain_1.id_at_location
 
-#     message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
-#         object_id=requested_object
-#     )
+    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+        object_id=requested_object
+    )
 
-#     response = data_ptr_domain_1.check_access(
-#         node=domain_2, request_id=message_request_id
-#     )
+    domain_1.requests[0].owner_client_if_available = domain_1_client
+    domain_1.requests[0].accept()
 
-#     # not working until we implement a mapping from request_id => object_id
-#     assert RequestStatus.Accepted == response
+    response = data_ptr_domain_1.check_access(
+        node=domain_2, request_id=message_request_id
+    )
+
+    assert RequestStatus.Accepted == response

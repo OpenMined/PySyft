@@ -16,6 +16,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.io.address_pb2 import Address as Address_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+from ...util import key_emoji as key_emoji_util
 
 # utility addresses
 # QUESTION: what is this? It breaks the __eq__ when checking
@@ -114,18 +115,7 @@ class Address(Serializable):
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
-        hex_chars = bytes(key).hex()[-8:]
-        return self.char_emoji(hex_chars=hex_chars)
-
-    @syft_decorator(typechecking=True)
-    def char_emoji(self, hex_chars: str) -> str:
-        base = ord("\U0001F642")
-        hex_base = ord("0")
-        code = 0
-        for char in hex_chars:
-            offset = ord(char)
-            code += offset - hex_base
-        return chr(base + code)
+        return key_emoji_util(key=key)
 
     @property
     def address(self) -> "Address":

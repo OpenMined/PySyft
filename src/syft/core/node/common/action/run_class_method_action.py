@@ -37,13 +37,21 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        # print(self.path)
-        # print(self._self)
-        # print(self.args)
-        # print(self.kwargs)
-        # print(self.id_at_location)
+    def intersect_keys(
+        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
+    ) -> Dict[VerifyKey, UID]:
+        # get the intersection of the dict keys, the value is the request_id
+        # if the request_id is different for some reason we still want to keep it,
+        # so only intersect the keys and then copy those over from the main dict
+        # into a new one
+        intersection = set(left.keys()).intersection(right.keys())
+        intersection_dict = {}
+        for k in intersection:
+            intersection_dict[k] = left[k]  # left and right have the same keys
 
+        return intersection_dict
+
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
         resolved_self = node.store[self._self.id_at_location]
@@ -54,8 +62,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
 
-            result_read_permissions = result_read_permissions.intersection(
-                r_arg.read_permissions
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
             )
 
             resolved_args.append(r_arg.data)
@@ -63,8 +71,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
-            result_read_permissions = result_read_permissions.intersection(
-                r_arg.read_permissions
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
 

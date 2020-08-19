@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Iterable, List, Type
 
+import syft as sy
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from .storeable_object import StorableObject
@@ -176,7 +177,8 @@ class ObjectStore(ABC):
         return output
 
     def post_init(self) -> None:
-        print(f"> Creating {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Creating {self.pprint}")
 
     @property
     def class_name(self) -> str:
