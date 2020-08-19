@@ -195,7 +195,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
         for obj in node.store.get_objects_of_type(obj_type=object):
             if (
-                verify_key in obj.search_permissions
+                verify_key in obj.search_permissions.keys()
                 or verify_key == node.root_verify_key
             ):
 

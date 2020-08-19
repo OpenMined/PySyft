@@ -79,7 +79,7 @@ class DomainClient(Client):
 
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         domain: SpecificLocation,
         network: Optional[Location] = None,

@@ -24,6 +24,7 @@ from ...abstract.node import AbstractNode
 from ....io.address import Address
 from ....common.uid import UID
 import syft as sy
+from .....util import key_emoji
 
 
 @final
@@ -115,21 +116,28 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
         node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
     ) -> None:
 
+        if sy.VERBOSE:
+            print((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
         if msg.accept:
             request_id = msg.request_id
             for req in node.requests:
                 if request_id == req.id:
-
                     # you must be a root user to accept a request
                     if verify_key == node.root_verify_key:
-
-                        node.store[req.object_id].read_permissions.add(
+                        node.store[req.object_id].read_permissions[
                             req.requester_verify_key
-                        )
+                        ] = req.id
                         node.requests.remove(req)
 
                         if sy.VERBOSE:
-                            print(f"> Accepting Request:{request_id}")
+                            print(
+                                f"> Accepting Request:{request_id} {request_id.emoji()}"
+                            )
+                            print(
+                                "> Adding can_read for 🔑 "
+                                + f"{key_emoji(key=req.requester_verify_key)} to "
+                                + f"Store UID {req.object_id} {req.object_id.emoji()}"
+                            )
                         return None
 
         else:

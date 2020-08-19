@@ -226,23 +226,19 @@ def test_proto_serialization():
     """Tests that default Address serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-
-    obj = Address(
-        network=SpecificLocation(id=uid),
-        domain=SpecificLocation(id=uid),
-        device=SpecificLocation(id=uid),
-        vm=SpecificLocation(id=uid),
-    )
+    loc = SpecificLocation(id=uid, name="Test Location")
+    obj = Address(name="Test Address", network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
+        name="Test Address",
         has_network=True,
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=SpecificLocation(id=uid).serialize(),
-        domain=SpecificLocation(id=uid).serialize(),
-        device=SpecificLocation(id=uid).serialize(),
-        vm=SpecificLocation(id=uid).serialize(),
+        network=loc.serialize(),
+        domain=loc.serialize(),
+        device=loc.serialize(),
+        vm=loc.serialize(),
     )
 
     assert obj.proto() == blob
@@ -254,23 +250,19 @@ def test_proto_deserialization():
     """Tests that default Address deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    loc = SpecificLocation(id=uid, name="Test Location")
 
-    obj = Address(
-        network=SpecificLocation(id=uid),
-        domain=SpecificLocation(id=uid),
-        device=SpecificLocation(id=uid),
-        vm=SpecificLocation(id=uid),
-    )
+    obj = Address(network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
         has_network=True,
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=SpecificLocation(id=uid).serialize(),
-        domain=SpecificLocation(id=uid).serialize(),
-        device=SpecificLocation(id=uid).serialize(),
-        vm=SpecificLocation(id=uid).serialize(),
+        network=loc.serialize(),
+        domain=loc.serialize(),
+        device=loc.serialize(),
+        vm=loc.serialize(),
     )
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)

@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Iterable, List, Type
 
+import syft as sy
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from .storeable_object import StorableObject
@@ -157,3 +158,28 @@ class ObjectStore(ABC):
     @syft_decorator(typechecking=True)
     def get_objects_of_type(self, obj_type: Type) -> List[AbstractStorableObject]:
         raise NotImplementedError
+
+    @property
+    def icon(self) -> str:
+        return "🗃️"
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} ({self.class_name}) {self.peek}"
+        return output
+
+    @property
+    def peek(self) -> str:
+        output = "{"
+        for k in self.keys():
+            output += f"\n  > {k} {k.emoji()} => {self[k].pprint}\n"
+        output += "}"
+        return output
+
+    def post_init(self) -> None:
+        if sy.VERBOSE:
+            print(f"> Creating {self.pprint}")
+
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)
