@@ -76,7 +76,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     attr_list = fully_qualified_name.split(".")
     assert attr_list[0] == "syft"
-    assert attr_list[1] == "core" or attr_list[1] == "lib"
+    assert attr_list[1] == "core" or attr_list[1] == "lib" or attr_list[1] == "grid"
     return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
@@ -112,6 +112,12 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
         setattr(obj, name, attr)
     except Exception:
         curse(obj, name, attr)
+
+
+def obj2pointer_type(obj):
+    fqn = get_fully_qualified_name(obj=obj)
+    ref = syft.lib_ast(fqn, return_callable=True)
+    return ref.pointer_type
 
 
 left_name = [
@@ -471,4 +477,3 @@ def random_name() -> str:
     left_i = randint(0, len(left_name) - 1)
     right_i = randint(0, len(right_name) - 1)
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
->>>>>>> e287dbfb... Fixed a few small issues
