@@ -92,7 +92,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
-    def __init__(self, address: Address, payload=str, msg_id: Optional[UID] = None):
+    def __init__(self, address: Address, payload: str, msg_id: Optional[UID] = None):
         # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
         super().__init__(address=address, msg_id=msg_id, reply_to=None)
         # TODO: implement content
@@ -134,6 +134,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
         return SignalingAnswerMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
+            payload=_deserialize(blob=proto.payload),
         )
 
     @staticmethod
