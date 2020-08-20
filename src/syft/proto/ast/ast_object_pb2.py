@@ -17,6 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.ast",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1aproto/ast/ast_object.proto\x12\x08syft.ast"\x0b\n\tAstObjectb\x06proto3',
 )
 
@@ -27,6 +28,7 @@ _ASTOBJECT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[],
     extensions=[],
     nested_types=[],

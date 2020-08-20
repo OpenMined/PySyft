@@ -1,5 +1,6 @@
 # external class imports
 from typing import List
+from typing import Optional
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -9,7 +10,6 @@ from ...io.location import Location
 from ..common.client import Client
 from ...io.route import Route
 from ...common.uid import UID
-from typing import Optional
 
 # lib imports
 import pandas as pd

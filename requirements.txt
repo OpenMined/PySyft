@@ -33,3 +33,4 @@ sqlitedict
 torch>=1.5
 typeguard
 typing-extensions # backport to older python 3
+websockets
