@@ -124,7 +124,7 @@ class Pointer(AbstractPointer):
         client: Any,
         id_at_location: Optional[UID] = None,
         tags: Optional[List[str]] = None,
-        description: Optional[str] = "",
+        description: str = "",
     ) -> None:
         if id_at_location is None:
             id_at_location = UID()
