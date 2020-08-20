@@ -53,7 +53,6 @@ jobs:
 
       - name: Run tests
         run: |
-          pip install pytest pytest-cov
           pip install -r requirements.txt
           pip install -e .
           pytest --cov-fail-under 0
@@ -82,7 +81,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pip install typing-extensions dataclasses
+          pip install -r requirements.txt
           python setup.py test
 
   python-nb-examples:
@@ -107,10 +106,9 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Run tests with coverage
+      - name: Run notebook examples
         run: |
-          pip install pytest pytest-cov nbconvert
           pip install -r requirements.txt
           pip install -e .
           jupyter nbconvert --to script examples/api/*.ipynb
-          python examples/api/start.py
+          pytest examples/api --cov-fail-under 0
