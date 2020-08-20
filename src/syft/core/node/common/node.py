@@ -94,13 +94,13 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
     ):
 
-        super().__init__(network=network, domain=domain, device=device, vm=vm)
-
-        # This is the name of the node - it exists purely to help the
+        # The node has a name - it exists purely to help the
         # end user have some idea about what this node is in a human
         # readable form. It is not guaranteed to be unique (or to
         # really be anything for that matter).
-        self.name = name
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here

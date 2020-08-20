@@ -5,3 +5,39 @@ syft.lib.torch package
    :members:
    :undoc-members:
    :show-inheritance:
+
+Submodules
+----------
+
+syft.lib.torch.lowercase\_tensor module
+---------------------------------------
+
+.. automodule:: syft.lib.torch.lowercase_tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.lib.torch.parameter module
+-------------------------------
+
+.. automodule:: syft.lib.torch.parameter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.lib.torch.tensor\_util module
+----------------------------------
+
+.. automodule:: syft.lib.torch.tensor_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.lib.torch.uppercase\_tensor module
+---------------------------------------
+
+.. automodule:: syft.lib.torch.uppercase_tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

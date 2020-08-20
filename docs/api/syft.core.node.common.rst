@@ -25,14 +25,6 @@ syft.core.node.common.client module
    :undoc-members:
    :show-inheritance:
 
-syft.core.node.common.location\_aware\_object module
-----------------------------------------------------
-
-.. automodule:: syft.core.node.common.location_aware_object
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.node.common.node module
 ---------------------------------
 

@@ -49,7 +49,10 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                     if hasattr(self.obj, "description")
                     else ""
                 ),
-                read_permissions=set([verify_key, node.verify_key]),
+                read_permissions={
+                    node.verify_key: node.id,
+                    verify_key: None,  # we dont have the passed in sender's UID
+                },
             )
         )
 
