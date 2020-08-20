@@ -1,4 +1,6 @@
 # external imports
+from typing import List
+from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft imports
@@ -10,30 +12,42 @@ from ..common.serde.deserialize import _deserialize
 from ...decorators.syft_decorator_impl import syft_decorator
 from ..node.common.action.get_object_action import GetObjectAction
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ..store.storeable_object import StorableObject
+
+# TODO: Fix circular import for Client interface
+# from ...core.node.common.client import Client
+from typing import Any
 
 
+# TODO: Fix the Client, Address, Location confusion
 class Pointer(AbstractPointer):
 
     # automatically generated subclasses of Pointer need to be able to look up
     # the path and name of the object type they point to as a part of serde
     path_and_name: str
 
-    def __init__(self, location, id_at_location=None, tags=list(), description=""):
+    def __init__(
+        self,
+        client: Any,
+        id_at_location: Optional[UID] = None,
+        tags: List[str] = [],
+        description: str = "",
+    ) -> None:
         if id_at_location is None:
             id_at_location = UID()
 
-        self.location = location
+        self.client = client
         self.id_at_location = id_at_location
         self.tags = tags
         self.description = description
 
-    def get(self):
+    def get(self) -> StorableObject:
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location,
-            address=self.location.address,
-            reply_to=self.location.address,
+            address=self.client.address,
+            reply_to=self.client.address,
         )
-        response = self.location.send_immediate_msg_with_reply(msg=obj_msg)
+        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
         return response.obj
 
@@ -57,7 +71,7 @@ class Pointer(AbstractPointer):
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
             id_at_location=self.id_at_location.serialize(),
-            location=self.location.address.serialize(),
+            location=self.client.address.serialize(),
             tags=self.tags,
             description=self.description,
         )
@@ -84,9 +98,11 @@ class Pointer(AbstractPointer):
             proto.points_to_object_with_path, return_callable=True
         )
         pointer_type = getattr(points_to_type, proto.pointer_name)
+        # WARNING: This is sending a serialized Address back to the constructor
+        # which currently depends on a Client for send_immediate_msg_with_reply
         return pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
-            location=_deserialize(blob=proto.location),
+            client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
         )
@@ -117,13 +133,13 @@ class Pointer(AbstractPointer):
         msg = RequestMessage(
             request_name=request_name,
             request_description=reason,
-            address=self.location.address,
-            owner_address=self.location.address,
+            address=self.client.address,
+            owner_address=self.client.address,
             object_id=self.id_at_location,
-            requester_verify_key=self.location.verify_key,
+            requester_verify_key=self.client.verify_key,
         )
 
-        self.location.send_immediate_msg_without_reply(msg=msg)
+        self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         from ..node.domain.service import (
@@ -132,9 +148,9 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.location.address, reply_to=node.address
+            request_id=request_id, address=self.client.address, reply_to=node.address
         )
-        response = self.location.send_immediate_msg_with_reply(msg=msg)
+        response = self.client.send_immediate_msg_with_reply(msg=msg)
         #
         # # this should be handled by the service by default, should be patched after 0.3.0
         # RequestAnswerResponseService.process(node=node, msg=response, verify_key=msg.)

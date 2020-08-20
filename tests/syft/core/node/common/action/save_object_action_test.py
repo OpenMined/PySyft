@@ -7,7 +7,7 @@ from syft.core.node.common.action.save_object_action import SaveObjectAction
 import torch as th
 
 
-def test_save_object_action_serde():
+def test_save_object_action_serde() -> None:
 
     uid = UID()
     obj = th.tensor([1, 2, 3])

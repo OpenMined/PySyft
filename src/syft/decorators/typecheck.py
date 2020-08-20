@@ -1,3 +1,6 @@
+from typing import Tuple
+from typing import Any
+
 try:
     from typing import ForwardRef
 except ImportError:
@@ -49,7 +52,7 @@ def type_hints(
         decorated, globalns={class_name: ForwardRef(class_name)}
     )
 
-    def check_args(*args, **kwargs):
+    def check_args(*args: Tuple[Any, ...], **kwargs: Any) -> None:
         """In this method, we want to check to see if all arguments (except self) are passed in as
         kwargs. Additionally, we want to have an informative error for when args are passed in
         incorrectly. The requirement to only use kwargs is a bit of an exotic one and some Python
@@ -96,7 +99,7 @@ def type_hints(
                 f"function {decorated.__qualname__}."
             )
 
-    def decorator(*args, **kwargs):
+    def decorator(*args: Tuple[Any, ...], **kwargs: Any) -> type:
         if prohibit_args:
             check_args(*args, **kwargs)
         return typechecked(decorated)(*args, **kwargs)

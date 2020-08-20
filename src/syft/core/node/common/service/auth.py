@@ -15,11 +15,11 @@ class AuthorizationException(Exception):
 
 
 def service_auth(
-    root_only=False,
-    existing_users_only=False,
-    guests_welcome=False,
-    register_new_guests=False,
-):
+    root_only: bool = False,
+    existing_users_only: bool = False,
+    guests_welcome: bool = False,
+    register_new_guests: bool = False,
+) -> Callable:
     def decorator(func: Callable) -> Callable:
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey

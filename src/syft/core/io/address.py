@@ -25,12 +25,12 @@ from ...util import key_emoji as key_emoji_util
 # in this case All is not an Address so the dunder throws an error due to the type
 # def __eq__(self, other: "Address") -> bool:
 # class All(object):
-#     def __repr__(self):
+#     def __repr__(self) -> str:
 #         return "All"
 
 
 class Unspecified(object):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Unspecified"
 
 

@@ -2,7 +2,7 @@ import syft as sy
 import torch as th
 
 
-def test_parameter_vm_remote_operation():
+def test_parameter_vm_remote_operation() -> None:
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
@@ -26,7 +26,7 @@ def test_parameter_vm_remote_operation():
     # assert len(alice.store._objects) == 0
 
 
-def test_parameter_serde():
+def test_parameter_serde() -> None:
     param = th.nn.parameter.Parameter(th.tensor([1.0, 2, 3]), requires_grad=True)
     # Setting grad manually to check it is passed through serialization
     param.grad = th.randn_like(param)
@@ -40,7 +40,7 @@ def test_parameter_serde():
     assert param2.requires_grad == param2.requires_grad
 
 
-def test_linear_grad_serde():
+def test_linear_grad_serde() -> None:
     # Parameter is created inside Linear module
     linear = th.nn.Linear(5, 1)
     param = linear.weight

@@ -160,7 +160,9 @@ class StorableObject(AbstractStorableObject):
         return None
 
     @staticmethod
-    def construct_new_object(id, data, tags, description):
+    def construct_new_object(
+        id: UID, data: object, description: Optional[str], tags: Optional[List[str]]
+    ) -> "StorableObject":
         return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
@@ -182,7 +184,7 @@ class StorableObject(AbstractStorableObject):
         """
         return StorableObject_PB
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             "<Storable:"
             + self.data.__repr__().replace("\n", "").replace("  ", " ")

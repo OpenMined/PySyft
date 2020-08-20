@@ -118,7 +118,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
         curse(obj, name, attr)
 
 
-def obj2pointer_type(obj):
+def obj2pointer_type(obj: object) -> type:
     fqn = get_fully_qualified_name(obj=obj)
     ref = syft.lib_ast(fqn, return_callable=True)
     return ref.pointer_type

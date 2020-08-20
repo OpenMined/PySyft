@@ -3,6 +3,10 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing import Union
+from typing import Type
+from typing import Tuple
+from typing import Dict
+from typing import Any
 
 # Fixes python3.6
 # however API changed between versions so typing_extensions smooths this over:
@@ -34,7 +38,9 @@ class MetaSerializable(GenericM):
     for all subclasses of Serializable via this metaclass. This way, nobody has
     to worry about remembering to implement this flag."""
 
-    def __new__(cls, name, bases, dct):
+    def __new__(
+        cls: Type, name: str, bases: Tuple[Type, ...], dct: Dict[str, Any]
+    ) -> "MetaSerializable":
         x = super().__new__(cls, name, bases, dct)
         try:
             protobuf_schema = dct["get_protobuf_schema"].__get__("")()

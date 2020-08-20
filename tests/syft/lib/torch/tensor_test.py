@@ -3,7 +3,7 @@ import torch as th
 import pytest
 
 
-def test_torch_vm_remote_operation():
+def test_torch_vm_remote_operation() -> None:
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
@@ -27,7 +27,7 @@ def test_torch_vm_remote_operation():
     # assert len(alice.store._objects) == 0
 
 
-def test_torch_serde():
+def test_torch_serde() -> None:
 
     x = th.tensor([1.0, 2, 3, 4], requires_grad=True)
 
@@ -43,7 +43,7 @@ def test_torch_serde():
     assert (x == x2).all()
 
 
-def test_torch_permissions():
+def test_torch_permissions() -> None:
 
     bob = sy.VirtualMachine(name="bob")
     root_bob = bob.get_root_client()
@@ -57,7 +57,7 @@ def test_torch_permissions():
     ptr = x.send(root_bob)
 
     # guest bob creates a pointer to that object (assuming he could guess/inpher the ID)
-    ptr.location = guest_bob
+    ptr.client = guest_bob
 
     # this should trigger an exception
     with pytest.raises(Exception):

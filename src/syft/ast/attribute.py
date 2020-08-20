@@ -1,66 +1,94 @@
+from typing import Dict
+from typing import Union
+from typing import List
+from typing import Optional
+from typing import Callable as CallableT
+
 from abc import ABC
 
 from .. import ast
 
+# TODO: Fix circular import for Client interface
+# from ..core.node.common.client import Client
+from typing import Any
+
 
 class Attribute(ABC):
-    def __init__(self, name, path_and_name, ref, return_type_name):
+    client: Optional[Any]
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        path_and_name: Optional[str] = None,
+        ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
+        return_type_name: Optional[str] = None,
+    ):
         self.name = name  # __add__
         self.path_and_name = path_and_name  # torch.Tensor.__add__
         self.ref = ref  # <the actual add method object>
-        self.attrs = {}  # any attrs of __add__ ... is none in this case
+        self.attrs: Dict[
+            str, Union[ast.callable.Callable, CallableT]
+        ] = {}  # any attrs of __add__ ... is none in this case
         self.return_type_name = return_type_name
-        self.client = None
 
-    def set_client(self, client):
+    def set_client(self, client: Any) -> None:
         self.client = client
-        for key, attr in self.attrs.items():
-            attr.set_client(client=client)
+        for _, attr in self.attrs.items():
+            if hasattr(attr, "set_client"):
+                attr.set_client(client=client)  # type: ignore
 
     @property
-    def classes(self):
-        out = list()
+    def classes(self) -> List["ast.klass.Class"]:
+        out: List[ast.klass.Class] = list()
 
         if isinstance(self, ast.klass.Class):
             out.append(self)
 
-        for name, ref in self.attrs.items():
-            for klass in ref.classes:
-                out.append(klass)
+        for _, ref in self.attrs.items():
+            sub_prop = getattr(ref, "classes", None)
+            if sub_prop is not None:
+                for sub in sub_prop:
+                    out.append(sub)
         return out
 
     @property
-    def methods(self):
-        out = list()
+    def methods(self) -> List["ast.method.Method"]:
+        out: List[ast.method.Method] = []
 
         if isinstance(self, ast.method.Method):
             out.append(self)
 
-        for name, ref in self.attrs.items():
-            for klass in ref.methods:
-                out.append(klass)
+        for _, ref in self.attrs.items():
+            sub_prop = getattr(ref, "methods", None)
+            if sub_prop is not None:
+                for sub in sub_prop:
+                    out.append(sub)
         return out
 
     @property
-    def functions(self):
-        out = list()
+    def functions(self) -> List["ast.function.Function"]:
+        out: List[ast.function.Function] = []
 
         if isinstance(self, ast.function.Function):
             out.append(self)
 
-        for name, ref in self.attrs.items():
-            for klass in ref.functions:
-                out.append(klass)
+        for _, ref in self.attrs.items():
+            sub_prop = getattr(ref, "functions", None)
+            if sub_prop is not None:
+                for sub in sub_prop:
+                    out.append(sub)
         return out
 
     @property
-    def modules(self):
-        out = list()
+    def modules(self) -> List["ast.module.Module"]:
+        out: List[ast.module.Module] = []
 
         if isinstance(self, ast.module.Module):
             out.append(self)
 
-        for name, ref in self.attrs.items():
-            for klass in ref.modules:
-                out.append(klass)
+        for _, ref in self.attrs.items():
+            sub_prop = getattr(ref, "modules", None)
+            if sub_prop is not None:
+                for sub in sub_prop:
+                    out.append(sub)
         return out

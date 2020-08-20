@@ -89,7 +89,7 @@ class MemoryStore(ObjectStore):
         pass
 
     @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> object:
+    def _proto2object(proto: GeneratedProtocolMessageType) -> "MemoryStore":
         pass
 
     def __repr__(self) -> str:

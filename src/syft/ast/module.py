@@ -1,5 +1,9 @@
-from typing import Optional, List
+from typing import Optional
+from typing import List
+from typing import Union
+from typing import Callable as CallableT
 from .. import ast
+from ..ast.callable import Callable
 from .util import builtin_func_type, class_type, func_type, module_type, unsplit
 from ..lib.generic import ObjectConstructor
 
@@ -8,18 +12,26 @@ class Module(ast.attribute.Attribute):
 
     """A module which contains other modules or callables."""
 
-    def add_attr(self, attr_name, attr):
+    def add_attr(
+        self, attr_name: str, attr: Optional[Union[Callable, CallableT]],
+    ) -> None:
         self.__setattr__(attr_name, attr)
-        self.attrs[attr_name] = attr
+        if attr is not None:
+            self.attrs[attr_name] = attr
 
-    def __call__(self, path=None, index=0, return_callable=False):
+    def __call__(
+        self,
+        path: Union[str, List[str]] = [],
+        index: int = 0,
+        return_callable: bool = False,
+    ) -> Optional[Union[Callable, CallableT]]:
         if isinstance(path, str):
             path = path.split(".")
         return self.attrs[path[index]](
             path=path, index=index + 1, return_callable=return_callable
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         out = "Module:\n"
         for name, module in self.attrs.items():
             out += "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
@@ -31,7 +43,7 @@ class Module(ast.attribute.Attribute):
         path: List[str],
         index: int,
         return_type_name: Optional[str] = None,
-        framework_reference: Optional[object] = None,
+        framework_reference: Optional[Union[Callable, CallableT]] = None,
     ) -> None:
         if path[index] not in self.attrs:
 
@@ -89,6 +101,8 @@ class Module(ast.attribute.Attribute):
                     ),
                 )
 
-        self.attrs[path[index]].add_path(
-            path=path, index=index + 1, return_type_name=return_type_name
-        )
+        attr = self.attrs[path[index]]
+        if hasattr(attr, "add_path"):
+            attr.add_path(  # type: ignore
+                path=path, index=index + 1, return_type_name=return_type_name
+            )

@@ -1,5 +1,6 @@
 # external class imports
 from typing import List
+from typing import Union
 from typing import Optional
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -10,17 +11,18 @@ from ...io.location import Location
 from ..common.client import Client
 from ...io.route import Route
 from ...common.uid import UID
+from .service import RequestMessage
 
 # lib imports
 import pandas as pd
 
 
 class RequestQueueClient:
-    def __init__(self, client):
+    def __init__(self, client: Client) -> None:
         self.client = client
 
     @property
-    def requests(self):
+    def requests(self) -> List[RequestMessage]:
         from syft.core.node.domain.service.get_all_requests_service import (
             GetAllRequestsMessage,
         )
@@ -28,7 +30,9 @@ class RequestQueueClient:
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
-        requests = self.client.send_immediate_msg_with_reply(msg=msg).requests
+        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(
+            msg=msg
+        ).requests
 
         for request in requests:
             request.owner_client_if_available = self.client
@@ -42,7 +46,7 @@ class RequestQueueClient:
 
         return object_id
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[str, int]) -> RequestMessage:
         if isinstance(key, str):
             for request in self.requests:
                 if key == str(request.id.value):
@@ -53,11 +57,11 @@ class RequestQueueClient:
         else:
             raise KeyError("Please pass in a string or int key")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.requests)
 
     @property
-    def pandas(self):
+    def pandas(self) -> pd.DataFrame:
 
         request_lines = list()
         for request in self.requests:
