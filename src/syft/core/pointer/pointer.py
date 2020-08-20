@@ -1,6 +1,8 @@
 """A Pointer is the main handler when interacting with remote data.
 A Pointer object represents an API for interacting with data (of any type)
-at a specific location. The relation between pointers and data is many to one,
+at a specific location. Pointer should never be instantiated, only subclassed.
+
+The relation between pointers and data is many to one,
 there can be multiple pointers pointing to the same piece of data, meanwhile,
 a pointer cannot point to multiple data sources.
 
@@ -16,11 +18,14 @@ There are two proper ways of receiving a pointer on some data:
 
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
-    1. Request access.
-    2.1 - The data owner has to approve the request.
-    2.2 - The data user checks if the request has been approved.
+    1. Request access by calling .request_access().
+        Eg: pointer_object.request_access(request_name = "Request name", reason = "The reason why
+        do you want the data").
+    2.1 - The data owner has to approve the request (check the domain node docs).
+    2.2 - The data user checks if the request has been approved (check the domain node docs).
     3. After the request has been approved, the data user can call .get() on the pointer to get the
     data locally.
+        Eg: pointer_object.get()
 
 Pointers are being generated for most types of objects in the data science scene, but what you can
 do on them is not the pointers job, see the lib module for more details. One can see the pointer
@@ -50,7 +55,9 @@ class Pointer(AbstractPointer):
     Pointer is the handler when interacting with remote data.
 
     Automatically generated subclasses of Pointer need to be able to look up
-    the path and name of the object type they point to as a part of serde
+    the path and name of the object type they point to as a part of serde. For more
+    information on how subclasses are automatically generated, please check the ast
+    module.
 
     :param location: The location where the data is being held.
     :type location: Address
@@ -84,6 +91,13 @@ class Pointer(AbstractPointer):
         self.description = description
 
     def get(self):
+        """Method to download a remote object from a pointer object if you have the right
+        permissions.
+
+        ..note::
+            To be able to call .get() on a pointer, you have to request for access first. See
+            the documentation on .request_access() to see how to submit an access request.
+        """
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location,
             address=self.location.address,
@@ -170,6 +184,20 @@ class Pointer(AbstractPointer):
 
     def request_access(self, request_name: str = "", reason: str = "",) -> None:
         """Method that requests access to the data on which the pointer points to.
+
+        Eg:
+            domain_1 = Domain(name="Data holder")
+            tensor = th.tensor([1, 2, 3])
+
+            domain_1_client = domain_1.get_root_client()
+            data_ptr_domain_1 = tensor.send(domain_1_client)
+
+            domain_2 = Domain(name="Data user")
+
+            data_ptr_domain_1.request_access(
+                request_name="My Request", reason="I'd lke to see this pointer"
+                )
+
 
         :param request_name: The title of the request that the data owner is going to see.
         :type request_name: str
