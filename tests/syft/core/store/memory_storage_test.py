@@ -14,6 +14,7 @@ from syft.core.store.storeable_object import StorableObject
 from syft.core.store.store_memory import MemoryStore
 from syft.core.common import UID
 from syft.core.store import ObjectStore
+from syft.core.common.object import ObjectWithID
 
 from typing import Tuple, List
 
@@ -86,10 +87,17 @@ def test_get_objects_of_type() -> None:
         description="Another dummy tensor",
         tags=["another", "dummy", "tensor"],
     )
+    id3, obj3 = generate_id_obj(
+        data=ObjectWithID(),
+        description="Dummy object with ID",
+        tags=["dummy", "object", "with", "id"],
+    )
 
     store[id1] = obj1
     store[id2] = obj2
+    store[id3] = obj3
     assert store.get_objects_of_type(th.Tensor) == [obj1, obj2]
+    assert store.get_objects_of_type(ObjectWithID) == [obj3]
 
 
 def test_keys_values() -> None:
