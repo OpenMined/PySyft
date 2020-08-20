@@ -8,7 +8,11 @@ from syft.core.node.common.service.auth import AuthorizationException
 from syft.core.node.common.service.auth import service_auth
 
 
+<<<<<<< HEAD
 def test_service_auth_root_fails() -> None:
+=======
+def test_service_auth() -> None:
+>>>>>>> add return type to test function
     node = sy.Device()
     msg = sy.ReprMessage(address=node.address)
 
