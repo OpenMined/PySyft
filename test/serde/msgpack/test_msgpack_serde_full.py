@@ -70,7 +70,7 @@ samples[
 ] = make_fixedprecisiontensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 
-samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
+#samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
 
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
@@ -93,6 +93,7 @@ samples[syft.messaging.message.CryptenInitPlan] = make_crypteninitplan
 samples[syft.messaging.message.CryptenInitJail] = make_crypteninitjail
 
 samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
+samples[syft.grid.clients.data_centric_fl_client.DataCentricFLClient] = make_data_centric_fl_client
 
 # testing
 samples[SerializableDummyClass] = make_serializable_dummy_class

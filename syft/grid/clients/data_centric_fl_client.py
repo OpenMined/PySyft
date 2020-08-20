@@ -300,9 +300,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return (address, id, is_client_worker, log_msgs, verbose, encoding, timeout)
 
     @staticmethod
-    def detail(
-        worker: AbstractWorker, client_tuple: tuple
-    ) -> Union["DataCentricFLClient", int, str]:
+    def detail(worker: AbstractWorker, client_tuple: tuple) -> "DataCentricFLClient":
 
         address, id, is_client_worker, log_msgs, verbose, encoding, timeout = client_tuple
 
@@ -315,8 +313,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         encoding = json.loads(encoding)
         timeout = json.loads(timeout)
 
-        # create torch hook
-        hook = sy.TorchHook(torch)
+        hook = sy.local_worker.hook
         me = hook.local_worker
 
         # if worker with same id exist return that worker 2 worker with same id raises error

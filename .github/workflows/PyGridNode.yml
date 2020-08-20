@@ -1,0 +1,58 @@
+name: PyGridNode 
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
+
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
+
+jobs:
+  python-tests:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v1.1.2
+      id: cache-reqs
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
+    - name: Install PySyft dependencies
+      run: |
+        sudo apt-get update
+        python -m pip install --upgrade pip
+        hash -r
+        pip3 install -r pip-dep/requirements.txt
+        pip3 install -r pip-dep/requirements_dev.txt
+        pip3 install -r pip-dep/requirements_udacity.txt
+        pip3 install -r pip-dep/requirements_notebooks.txt
+        python setup.py install
+    - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==1.0 
+
+    - name: Install Grid Node and Initialize Grid Node
+        run: |
+          git clone https://github.com/OpenMined/PyGrid.git
+          cd PyGrid/apps/node/
+          # Install dependencies
+          poetry install
+          ./run.sh --id test_bob --host localhost --port 5001 --start_local_db
