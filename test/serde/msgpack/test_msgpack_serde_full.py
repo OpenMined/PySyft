@@ -70,7 +70,7 @@ samples[
 ] = make_fixedprecisiontensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 
-#samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
+# samples[syft.frameworks.crypten.model.OnnxModel] = make_onnxmodel
 
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer

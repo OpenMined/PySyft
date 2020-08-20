@@ -137,10 +137,9 @@ class ModelCentricFLClient:
         serialized_model = self._send_http_req("GET", "/model-centric/retrieve-model", params)
         return self._unserialize(serialized_model, StatePB)
 
-
     @staticmethod
     def simplify(worker: AbstractWorker, model_centric_fl_client: "ModelCentricFLClient") -> tuple:
-        
+
         # Simplify the attributes for ModelCentricFLClient
         address = json.dumps(model_centric_fl_client.address)
         id = json.dumps(model_centric_fl_client.id)
@@ -149,8 +148,7 @@ class ModelCentricFLClient:
         return (address, id, secure)
 
     @staticmethod
-    def detail(
-        worker: AbstractWorker, client_tuple: tuple ) -> "ModelCentricFLClient":
+    def detail(worker: AbstractWorker, client_tuple: tuple) -> "ModelCentricFLClient":
 
         address, id, secure = client_tuple
 
@@ -159,9 +157,7 @@ class ModelCentricFLClient:
         id = json.loads(id)
         secure = json.loads(secure)
 
-        Client = ModelCentricFLClient(
-            address, id, secure
-        )
+        Client = ModelCentricFLClient(address, id, secure)
 
         return Client
 
