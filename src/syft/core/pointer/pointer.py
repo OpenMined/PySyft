@@ -84,13 +84,10 @@ Example:
 from typing import List
 from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from typing import Optional
-from typing import List
 
 # syft imports
 import syft as sy
 from ..common.uid import UID
-from ..io.address import Address
 from ..common.pointer import AbstractPointer
 from ..node.abstract.node import AbstractNode
 from ..common.serde.deserialize import _deserialize
