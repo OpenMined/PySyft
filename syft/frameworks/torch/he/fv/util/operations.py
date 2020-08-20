@@ -57,19 +57,6 @@ def invert_mod(value, modulus):
         return gcd_tuple[1]
 
 
-def poly_add(op1, op2, poly_mod):
-    """return addition of two polynomials"""
-
-    # For non same size polynomials we have to shift the polynomials because numpy consider right
-    # side as lower order of polynomial and we consider right side as heigher order.
-    if len(op1) != poly_mod:
-        op1 += [0] * (poly_mod - len(op1))
-    if len(op2) != poly_mod:
-        op2 += [0] * (poly_mod - len(op2))
-
-    return np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")).tolist()
-
-
 def poly_add_mod(op1, op2, coeff_mod, poly_mod):
     """Add two polynomials and modulo every coefficient with coeff_mod.
 
@@ -114,31 +101,6 @@ def poly_sub_mod(op1, op2, coeff_mod, poly_mod):
     return np.mod(
         np.polysub(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
     ).tolist()
-
-
-def poly_mul(op1, op2, poly_mod):
-    """return multiplication of two polynomials with result % t(polynomial modulus)"""
-
-    # For non same size polynomials we have to shift the polynomials because numpy consider right
-    # side as lower order of polynomial and we consider right side as heigher order.
-    if len(op1) != len(op2):
-        if len(op1) > len(op2):
-            op2 = op2 + [0] * (len(op1) - len(op2))
-        else:
-            op1 = op1 + [0] * (len(op2) - len(op1))
-
-    poly_len = poly_mod
-    poly_mod = np.array([1] + [0] * (poly_len - 1) + [1])
-    result = (
-        poly.polydiv(
-            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")), poly_mod,
-        )[1]
-    ).tolist()
-
-    if len(result) != poly_len:
-        result += [0] * (poly_len - len(result))
-
-    return [round(x) for x in result]
 
 
 def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
@@ -257,7 +219,7 @@ def xgcd(x, y):
     return [x, prev_a, prev_b]
 
 
-def multiply_add_plain_with_delta(ct, pt, context):
+def multiply_add_plain_with_delta(ct, pt, context_data):
     """Add message into phase.
 
     Args:
@@ -268,10 +230,11 @@ def multiply_add_plain_with_delta(ct, pt, context):
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
-    coeff_modulus = context.param.coeff_modulus
+    ct_param_id = ct.param_id
+    coeff_modulus = context_data.param.coeff_modulus
     pt = pt.data
     plain_coeff_count = len(pt)
-    delta = context.coeff_div_plain_modulus
+    delta = context_data.coeff_div_plain_modulus
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
@@ -281,10 +244,10 @@ def multiply_add_plain_with_delta(ct, pt, context):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]
             ct0[j][i] = (ct0[j][i] + temp) % coeff_modulus[j]
 
-    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e + delta * pt
+    return CipherText([ct0, ct1], ct_param_id)  # ct0 = pk0 * u * e + delta * pt
 
 
-def multiply_sub_plain_with_delta(ct, pt, context):
+def multiply_sub_plain_with_delta(ct, pt, context_data):
     """Subtract plaintext from ciphertext.
 
     Args:
@@ -295,10 +258,11 @@ def multiply_sub_plain_with_delta(ct, pt, context):
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
-    coeff_modulus = context.param.coeff_modulus
+    ct_param_id = ct.param_id
+    coeff_modulus = context_data.param.coeff_modulus
     pt = pt.data
     plain_coeff_count = len(pt)
-    delta = context.coeff_div_plain_modulus
+    delta = context_data.coeff_div_plain_modulus
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
@@ -308,4 +272,4 @@ def multiply_sub_plain_with_delta(ct, pt, context):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]
             ct0[j][i] = (ct0[j][i] - temp) % coeff_modulus[j]
 
-    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e - delta * pt
+    return CipherText([ct0, ct1], ct_param_id)  # ct0 = pk0 * u * e - delta * pt

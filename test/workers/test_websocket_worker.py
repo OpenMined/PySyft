@@ -19,7 +19,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
     def create_self_signed_cert(cert_path, key_path):
         # create a key pair
         k = crypto.PKey()
-        k.generate_key(crypto.TYPE_RSA, 1024)
+        k.generate_key(crypto.TYPE_RSA, 2048)
 
         # create a self-signed cert
         cert = crypto.X509()

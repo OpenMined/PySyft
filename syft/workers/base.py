@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+import asyncio
 import logging
 import time
 from typing import List
@@ -88,6 +89,8 @@ class BaseWorker(AbstractWorker):
             precision.
     """
 
+    _framework_message_handler = {}
+
     def __init__(
         self,
         hook: "FrameworkHook",
@@ -160,13 +163,16 @@ class BaseWorker(AbstractWorker):
             self.framework = hook.framework
             if hasattr(hook, "torch"):
                 self.torch = self.framework
-                self.remote = Remote(self, "torch")
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
-                self.remote = Remote(self, "tensorflow")
 
+        self.remote = Remote(self, sy.framework.ALIAS)
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
+
+        # Register the specific handlers for each framework
+        for _, message_handler_constructor in BaseWorker._framework_message_handler.items():
+            self.message_handlers.append(message_handler_constructor(self.object_store, self))
 
         self.syft = sy
 
@@ -475,6 +481,16 @@ class BaseWorker(AbstractWorker):
             self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
             trash[location.id] = (time.time(), [])
 
+    async def async_dispatch(self, workers, commands, return_value=False):
+        """Asynchronously send commands to several workers"""
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command, return_value=return_value)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
+
     def send_command(
         self,
         recipient: "BaseWorker",
@@ -752,7 +768,7 @@ class BaseWorker(AbstractWorker):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self.object_store.get_obj(idx, None)
+        return self.object_store.get_obj(idx)
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """
@@ -805,12 +821,9 @@ class BaseWorker(AbstractWorker):
         self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
-
         This method is executed for local execution.
-
         Args:
             protocol_id: A string indicating the protocol id.
-
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """
@@ -1003,6 +1016,13 @@ class BaseWorker(AbstractWorker):
 
         return result
 
+    @staticmethod
+    def register_message_handlers():
+        if sy.dependency_check.crypten_available:
+            from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
+            BaseWorker._framework_message_handler["crypten"] = CryptenMessageHandler
+
     @classmethod
     def is_framework_supported(cls, framework: str) -> bool:
         """
@@ -1011,3 +1031,6 @@ class BaseWorker(AbstractWorker):
         :return: True/False
         """
         return framework.lower() in framework_packages
+
+
+BaseWorker.register_message_handlers()

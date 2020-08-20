@@ -32,3 +32,14 @@ class EncryptionParams:
         self.coeff_modulus = coeff_modulus
 
         self.plain_modulus = plain_modulus
+        self.param_id = self.compute_parms_id()
+
+    def set_coeff_modulus(self, coeff_mod):
+        """Set coefficient modulus and generate new param_id."""
+        self.coeff_modulus = coeff_mod
+        self.param_id = self.compute_parms_id()
+
+    def compute_parms_id(self):
+        # TODO: use hash function here.
+        param_data = [self.poly_modulus, *self.coeff_modulus, self.plain_modulus]
+        return " ".join(str(x) for x in param_data)

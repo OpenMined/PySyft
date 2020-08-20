@@ -4,7 +4,7 @@ from abc import abstractmethod
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 

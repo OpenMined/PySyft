@@ -13,6 +13,7 @@ import syft as sy
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
@@ -119,7 +120,7 @@ class WebsocketServerWorker(VirtualWorker):
     def _recv_msg(self, message: bin) -> bin:
         try:
             return self.recv_msg(message)
-        except (ResponseSignatureError, GetNotPermittedError) as e:
+        except (EmptyCryptoPrimitiveStoreError, GetNotPermittedError, ResponseSignatureError) as e:
             return sy.serde.serialize(e)
 
     async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):

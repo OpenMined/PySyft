@@ -13,7 +13,7 @@ from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
 
 
-class DynamicFLClient(WebsocketClientWorker):
+class DataCentricFLClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(
@@ -226,7 +226,7 @@ class DynamicFLClient(WebsocketClientWorker):
             "model": serialized_model,
         }
 
-        url = self.address.replace("ws", "http") + "/dynamic/serve-model/"
+        url = self.address.replace("ws", "http") + "/data_centric/serve-model/"
 
         # Multipart encoding
         form = MultipartEncoder(message)

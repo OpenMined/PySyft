@@ -40,8 +40,9 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None, trace_autograd=False):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False, args_dtypes=()):
         self.args_shape = args_shape
+        self.args_dtypes = args_dtypes
         self.state_tensors = state or ()
         # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
@@ -62,7 +63,7 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args_ = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape, self.args_dtypes)
             try:
                 plan.build(*args_, trace_autograd=self.trace_autograd)
             except TypeError as e:
@@ -84,6 +85,9 @@ class Plan(AbstractSendable):
     reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
+
+    Specifically, a Plan contains only ComputationAction and does not concern itself with
+    operations covered by CommunicationAction. Use Protocol to cover both types of actions.
 
     All arguments are optional.
 
@@ -272,10 +276,8 @@ class Plan(AbstractSendable):
         self.role.register_inputs(args_placeholders)
 
         # Register outputs in role
-        if isinstance(results, (tuple, list)):
-            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
-        else:
-            results_placeholders = PlaceHolder.extract(results)
+
+        results_placeholders = PlaceHolder.recursive_extract(results)
         self.role.register_outputs(results_placeholders)
 
         # Disable tracing
@@ -462,9 +464,13 @@ class Plan(AbstractSendable):
 
         def create_dummy(input_type, input_placeholder):
             if issubclass(input_type, FrameworkTensor):
-                return input_type(
-                    PlaceHolder.create_placeholders([input_placeholder.expected_shape])[0]
+                tensors = PlaceHolder.create_placeholders(
+                    [input_placeholder.expected_shape], [input_placeholder.expected_dtype]
                 )
+                var = tensors[0]
+                if input_type != type(var):
+                    var = input_type(var)
+                return var
             else:
                 return input_type()
 

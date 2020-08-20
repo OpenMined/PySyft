@@ -1,4 +1,4 @@
-from syft.workers.static_fl_worker import StaticFLWorker
+from syft.workers.model_centric_fl_worker import ModelCentricFLWorker
 from syft.grid.exceptions import GridError
 from syft.execution.state import State
 from syft.execution.placeholder import PlaceHolder
@@ -25,7 +25,9 @@ class FLJob(EventEmitter):
     EVENT_REJECTED = "rejected"
     EVENT_ERROR = "error"
 
-    def __init__(self, fl_client, grid_worker: StaticFLWorker, model_name: str, model_version: str):
+    def __init__(
+        self, fl_client, grid_worker: ModelCentricFLWorker, model_name: str, model_version: str
+    ):
         super().__init__()
         self.fl_client = fl_client
         self.grid_worker = grid_worker
@@ -51,7 +53,7 @@ class FLJob(EventEmitter):
         # Load plans
         for plan_name, plan_id in cycle_params["plans"].items():
             self.plans[plan_name] = self.grid_worker.get_plan(
-                worker_id, request_key, plan_id, StaticFLWorker.PLAN_TYPE_TORCHSCRIPT
+                worker_id, request_key, plan_id, ModelCentricFLWorker.PLAN_TYPE_TORCHSCRIPT
             )
 
         # Load protocols
@@ -71,10 +73,10 @@ class FLJob(EventEmitter):
             )
             cycle_params = cycle_request_response["data"]
 
-            if cycle_params["status"] == StaticFLWorker.CYCLE_STATUS_ACCEPTED:
+            if cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_ACCEPTED:
                 self._init_cycle(cycle_params)
                 self.trigger(self.EVENT_ACCEPTED, self)
-            elif cycle_params["status"] == StaticFLWorker.CYCLE_STATUS_REJECTED:
+            elif cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_REJECTED:
                 self.trigger(self.EVENT_REJECTED, self, cycle_params.get("timeout", None))
         except GridError as e:
             self.trigger(self.EVENT_ERROR, self, f"Grid communication error: {e.error}")

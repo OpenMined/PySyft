@@ -160,6 +160,24 @@ class FixedPrecisionTensor(AbstractTensor):
             return self
 
     @overloaded.method
+    def mod(self, _self, divisor):
+        """
+        Define the modulo operation over object instances.
+        """
+        if isinstance(divisor, (int, float)):
+            scaled_divisor = int(divisor * self.base ** self.precision_fractional)
+            if isinstance(_self, AdditiveSharingTensor):
+                return getattr(_self, "mod")(scaled_divisor)
+            else:
+                return getattr(_self, "fmod")(scaled_divisor)
+
+        response = getattr(_self, "fmod")(divisor)
+
+        return response
+
+    __mod__ = mod
+
+    @overloaded.method
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
@@ -381,6 +399,9 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             power (int): the exponent supposed to be an integer > 0
         """
+        if power < 0:
+            raise RuntimeError("Negative integer powers are not allowed.")
+
         base = self
 
         result = None
@@ -447,9 +468,37 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self):
-        ones = self * 0 + 1
-        return ones / self
+    def reciprocal(self, method="NR", nr_iters=10):
+        r"""
+        Calculate the reciprocal using the algorithm specified in the method args.
+        Ref: https://github.com/facebookresearch/CrypTen
+
+        Args:
+            method:
+            'NR' : `Newton-Raphson`_ method computes the reciprocal using iterations
+                    of :math:`x_{i+1} = (2x_i - self * x_i^2)` and uses
+                    :math:`3*exp(-(x-.5)) + 0.003` as an initial guess by default
+            'log' : Computes the reciprocal of the input from the observation that:
+                    :math:`x^{-1} = exp(-log(x))`
+
+            nr_iters:
+                Number of iterations for `Newton-Raphson`
+        Returns:
+            Reciprocal of `self`
+        """
+
+        if method.lower() == "nr":
+            result = 3 * (0.5 - self).exp() + 0.003
+            for i in range(nr_iters):
+                result = 2 * result - result * result * self
+            return result
+        elif method.lower() == "division":
+            ones = self * 0 + 1
+            return ones / self
+        elif method.lower() == "log":
+            return (-self.log()).exp()
+        else:
+            raise ValueError(f"Invalid method {method} given for reciprocal function")
 
     # Approximations:
     def inverse(self, iterations=8):
@@ -510,7 +559,7 @@ class FixedPrecisionTensor(AbstractTensor):
         x = tensor * sign
         ones = tensor * 0 + 1
         half = ones.div(2)
-        result = (ones + (-ones * x).exp()).reciprocal()
+        result = (ones + (-ones * x).exp()).reciprocal(method="division")
         return (result - half) * sign + half
 
     @staticmethod
@@ -557,7 +606,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return tanh_approx.div(2) + 0.5
 
-    def sigmoid(tensor, method="exp"):
+    def sigmoid(tensor, method="chebyshev"):
         """
         Approximates the sigmoid function using a given method
 
@@ -687,12 +736,26 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __eq__ = eq
 
+    @overloaded.method
+    def argmax(self, _self, **kwargs):
+        result = _self.argmax(**kwargs)
+        return result.long() * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def argmin(self, _self, **kwargs):
+        result = _self.argmin(**kwargs)
+        return result.long() * self.base ** self.precision_fractional
+
     def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu
         mean = (unbiased_self * unbiased_self).mean(**kwargs)
         if unbiased:
-            numel = self.numel()
+            if kwargs.get("dim"):
+                dim = kwargs["dim"]
+                numel = self.shape[dim]
+            else:
+                numel = self.numel()
             return mean * numel / (numel - 1)
         else:
             return mean
@@ -700,6 +763,11 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def fmod(self, other):
+            return self.__mod__(other)
+
+        module.fmod = fmod
+
         def add(self, other):
             return self.__add__(other)
 

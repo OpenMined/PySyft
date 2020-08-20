@@ -34,6 +34,15 @@ if dependency_check.torch_available:
     framework_layer_module.named_tensors = torch.nn.Module.named_parameters
     framework_layer_modules.append(framework_layer_module)
 
+
+if dependency_check.crypten_available:
+    import crypten
+
+    framework_packages["crypten"] = crypten
+    framework_tensors.append(crypten.mpc.MPCTensor)
+    framework_tensors.append(crypten.nn.Module)
+
+
 framework_tensors = tuple(framework_tensors)
 FrameworkTensorType = Union[framework_tensors]
 FrameworkTensor = framework_tensors

@@ -7,7 +7,7 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.execution.translation.threepio import PlanTranslatorTfjs
 
@@ -1269,6 +1269,64 @@ def make_string(**kwargs):
     ]
 
 
+# syft.frameworks.crypten.model.OnnxModel
+def make_onnxmodel(**kwargs):
+
+    from syft.frameworks.crypten.utils import pytorch_to_onnx
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(3, 3)
+            self.fc2 = torch.nn.Linear(3, 2)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            x = self.fc2(x)
+            return torch.nn.functional.log_softmax(x, dim=0)
+
+    dummy_input = torch.Tensor([1, 2, 3])
+    serialized_model = pytorch_to_onnx(Net(), dummy_input)
+
+    def compare_simplified(actual, expected):
+        assert actual[0] == expected[0]
+        assert actual[1][0] == expected[1][0]
+        assert actual[1][1] == expected[1][1]
+        assert set(actual[1][2][1]) == set(expected[1][2][1])
+        assert actual[1][3] == expected[1][3]
+        return True
+
+    def compare_detailed(detailed, original):
+        assert detailed.serialized_model == original.serialized_model
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+
+        return True
+
+    return [
+        {
+            "value": syft.frameworks.crypten.model.OnnxModel(
+                serialized_model=serialized_model,
+                id=1234,
+                tags={"tag1", "tag2"},
+                description="Test Onnx",
+            ),
+            "simplified": (
+                CODE[syft.frameworks.crypten.model.OnnxModel],
+                (
+                    serialized_model,
+                    1234,
+                    (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"Test Onnx",)),
+                ),
+            ),
+            "cmp_detailed": compare_detailed,
+            "cmp_simplified": compare_simplified,
+        }
+    ]
+
+
 # syft.workers.virtual.VirtualWorker
 def make_virtual_worker(**kwargs):
     worker = VirtualWorker(
@@ -1988,6 +2046,44 @@ def make_responsesignatureerror(**kwargs):
     ]
 
 
+# syft.exceptions.EmptyCryptoPrimitiveStoreError
+def make_emptycryptoprimitivestoreerror(**kwargs):
+    try:
+        raise syft.exceptions.EmptyCryptoPrimitiveStoreError()
+    except syft.exceptions.EmptyCryptoPrimitiveStoreError as e:
+        err = e
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.exceptions.EmptyCryptoPrimitiveStoreError
+        assert (
+            traceback.format_tb(detailed.__traceback__)[-1]
+            == traceback.format_tb(original.__traceback__)[-1]
+        )
+        assert detailed.kwargs_ == original.kwargs_
+        return True
+
+    return [
+        {
+            "value": err,
+            "simplified": (
+                CODE[syft.exceptions.EmptyCryptoPrimitiveStoreError],
+                (
+                    (CODE[str], (b"EmptyCryptoPrimitiveStoreError",)),  # (str) __name__
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"],
+                        "Traceback (most recent call last):\n"
+                        + "".join(traceback.format_tb(err.__traceback__)),
+                    ),  # (str) traceback
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], {"kwargs_": err.kwargs_}
+                    ),  # (dict) attributes
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
 def make_gradfn(**kwargs):
     alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
@@ -2032,6 +2128,95 @@ def make_gradfn(**kwargs):
             ),
             "cmp_detailed": compare,
         }
+    ]
+
+
+# syft.messaging.message.CryptenInitPlan
+def make_crypteninitplan(**kwargs):
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CryptenInitPlan
+        assert detailed.crypten_context == original.crypten_context
+        assert detailed.model == original.model
+
+        return True
+
+    rank_to_worker_id = {0: "alice", 1: "bob"}
+    model = b"test binary model"
+    model_simplified = model
+
+    return [
+        {
+            "value": syft.messaging.message.CryptenInitPlan(
+                (rank_to_worker_id, 2, "127.0.0.1", 8080), model
+            ),
+            "simplified": (
+                CODE[syft.messaging.message.CryptenInitPlan],
+                (
+                    (
+                        CODE[tuple],
+                        (  # rank to worker id
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
+                            2,  # world size
+                            (CODE[str], (b"127.0.0.1",)),  # address
+                            8080,  # port
+                            model_simplified,  # serialized model
+                        ),
+                    ),
+                ),  # (Any) simplified content
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.messaging.message.CryptenInitJail
+def make_crypteninitjail(**kwargs):
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CryptenInitJail
+        assert detailed.crypten_context == original.crypten_context
+        assert detailed.jail_runner == original.jail_runner
+        assert detailed.model == original.model
+
+        return True
+
+    jail_runner = ("test = 5", ["crypten"])
+    jr_simplified = (
+        CODE[tuple],
+        ((CODE[str], (b"test = 5",)), (CODE[list], ((CODE[str], (b"crypten",)),))),
+    )
+    model = b"test binary model"
+    model_simplified = model
+    rank_to_worker_id = {0: "alice", 1: "bob"}
+
+    return [
+        {
+            "value": syft.messaging.message.CryptenInitJail(
+                (rank_to_worker_id, 2, "127.0.0.1", 8080), jail_runner, model
+            ),
+            "simplified": (
+                CODE[syft.messaging.message.CryptenInitJail],
+                (
+                    (
+                        CODE[tuple],
+                        (  # rank to worker id
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
+                            2,  # world size
+                            (CODE[str], (b"127.0.0.1",)),  # address
+                            8080,  # port
+                            jr_simplified,  # serialized code
+                            model_simplified,  # serialized model
+                        ),
+                    ),
+                ),  # (Any) simplified content
+            ),
+            "cmp_detailed": compare,
+        },
     ]
 
 
