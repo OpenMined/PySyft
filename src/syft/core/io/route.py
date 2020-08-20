@@ -110,7 +110,7 @@ class RouteSchema(ObjectWithID):
     two groups of functionality:
 
     1) Discovering new routes
-    2) Comparing known routes to find the best one for a old_message
+    2) Comparing known routes to find the best one for a message
     """
 
     def __init__(self, destination: Location):
