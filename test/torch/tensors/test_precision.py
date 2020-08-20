@@ -198,9 +198,10 @@ def test_torch_add_():
 def test_torch_add2():
     a = torch.tensor(5).fix_prec()
     b = torch.tensor(2)
-    c = b + a
+    c = a + b
     expected = torch.tensor(7)
     assert c.float_prec() == expected
+
 
 def test_torch_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])

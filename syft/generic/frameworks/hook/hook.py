@@ -158,7 +158,6 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                         from syft import FixedPrecisionTensor
                         if isinstance(_, FixedPrecisionTensor):
                             self = self.fix_prec()
-                            print("whee")
                         else:
                             self = _.on(self, wrap=True)
                         args = [args[0]]
