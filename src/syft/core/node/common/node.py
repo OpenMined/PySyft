@@ -277,7 +277,7 @@ class Node(AbstractNode):
         by returning the clients we used to interact with them from
         the object store."""
 
-        return self.store.get_objects_of_type(obj_type=Client)
+        return list(self.store.get_objects_of_type(obj_type=Client))
 
     @property
     def id(self) -> UID:
