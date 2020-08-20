@@ -195,6 +195,12 @@ def test_torch_add_():
 
     assert (y == torch.tensor([0.15, 0.3, 0.45])).all()
 
+def test_torch_add2():
+    a = torch.tensor(5).fix_prec()
+    b = torch.tensor(2)
+    c = b + a
+    expected = torch.tensor(7)
+    assert c.float_prec() == expected
 
 def test_torch_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -271,6 +277,13 @@ def test_torch_sub_():
 
     assert (y == torch.tensor([0.05, 0.1, 0.15])).all()
 
+def test_torch_sub2():
+    a = torch.tensor(2).fix_prec()
+    b = torch.tensor(5)
+    c = b - a
+    expected = torch.tensor(3)
+    assert c.float_prec() == expected
+
 
 def test_torch_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -331,6 +344,13 @@ def test_torch_mul(workers):
     z = x * y
     assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
 
+def test_torch_mul2():
+    a = torch.tensor(5).fix_prec()
+    b = torch.tensor(5)
+    c = b * a
+    expected = torch.tensor(25)
+    assert c.float_prec() == expected
+
 
 def test_torch_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -365,6 +385,13 @@ def test_torch_div(workers):
 
     z = torch.div(x, y)
     assert (z.float_prec() == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
+
+def test_torch_div2():
+    a = torch.tensor(5).fix_prec()
+    b = torch.tensor(5)
+    c = b / a
+    expected = torch.tensor(1)
+    assert c.float_prec() == expected
 
 
 def test_inplace_operations():

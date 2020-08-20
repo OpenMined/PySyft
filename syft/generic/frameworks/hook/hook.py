@@ -154,7 +154,13 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                     # that we could accidentally serialize and send a tensor in the
                     # arguments
                     if not isinstance(args[0].child, PointerTensor):
-                        self = type(args[0].child)().on(self, wrap=True)
+                        _ = type(args[0].child)()
+                        from syft import FixedPrecisionTensor
+                        if isinstance(_, FixedPrecisionTensor):
+                            self = self.fix_prec()
+                            print("whee")
+                        else:
+                            self = _.on(self, wrap=True)
                         args = [args[0]]
                         return overloaded_native_method(self, *args, **kwargs)
 

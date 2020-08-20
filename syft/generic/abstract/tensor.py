@@ -75,7 +75,6 @@ class AbstractTensor(AbstractSendable):
             # We usually call .on() on newly created tensor so it's not a sacrilege
             # to rewrite its id
             self.id = tensor.id
-
             self.child = tensor.child
             tensor.child = self
             return tensor
