@@ -14,23 +14,25 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/util/json_message.proto",
-    package="syft.proto.util",
+    package="syft.util",
     syntax="proto3",
     serialized_options=None,
-    serialized_pb=b'\n\x1dproto/util/json_message.proto\x12\x0fsyft.proto.util"0\n\x0bJsonMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\tb\x06proto3',
+    create_key=_descriptor._internal_create_key,
+    serialized_pb=b'\n\x1dproto/util/json_message.proto\x12\tsyft.util"0\n\x0bJsonMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\tb\x06proto3',
 )
 
 
 _JSONMESSAGE = _descriptor.Descriptor(
     name="JsonMessage",
-    full_name="syft.proto.util.JsonMessage",
+    full_name="syft.util.JsonMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_type",
-            full_name="syft.proto.util.JsonMessage.obj_type",
+            full_name="syft.util.JsonMessage.obj_type",
             index=0,
             number=1,
             type=9,
@@ -45,10 +47,11 @@ _JSONMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.proto.util.JsonMessage.content",
+            full_name="syft.util.JsonMessage.content",
             index=1,
             number=2,
             type=9,
@@ -63,6 +66,7 @@ _JSONMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -73,8 +77,8 @@ _JSONMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=50,
-    serialized_end=98,
+    serialized_start=44,
+    serialized_end=92,
 )
 
 DESCRIPTOR.message_types_by_name["JsonMessage"] = _JSONMESSAGE
@@ -86,7 +90,7 @@ JsonMessage = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _JSONMESSAGE,
         "__module__": "proto.util.json_message_pb2"
-        # @@protoc_insertion_point(class_scope:syft.proto.util.JsonMessage)
+        # @@protoc_insertion_point(class_scope:syft.util.JsonMessage)
     },
 )
 _sym_db.RegisterMessage(JsonMessage)

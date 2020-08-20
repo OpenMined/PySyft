@@ -145,7 +145,6 @@ class SignedMessage(SyftMessage):
         module_parts = proto.obj_type.split(".")
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-
         obj = obj_type.signed_type(
             msg_id=_deserialize(blob=proto.msg_id),
             address=address,
