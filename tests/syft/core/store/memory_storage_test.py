@@ -1,15 +1,25 @@
+"""In this test suite, we evaluate the MemoryStore class. For more info
+on the MemoryStore class and its purpose, please see the documentation
+in the class itself.
+
+Table of Contents:
+    - INITIALIZATION: tests for ways MemoryStore can be initialized
+    - CLASS METHODS: tests for the use of MemoryStore's class methods
+"""
+
 import torch as th
 import re
 
 from syft.core.store.storeable_object import StorableObject
 from syft.core.store.store_memory import MemoryStore
 from syft.core.common import UID
+from syft.core.store import ObjectStore
 
 from typing import Tuple, List
 
 
 def generate_id_obj(
-    data: th.Tensor, description: str, tags: List[str]
+        data: th.Tensor, description: str, tags: List[str]
 ) -> Tuple[UID, StorableObject]:
     id = UID()
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
@@ -17,12 +27,23 @@ def generate_id_obj(
     return id, obj
 
 
+# --------------------- INITIALIZATION ---------------------
+
+
 def test_create_memory_storage() -> None:
+    """Test that creating MemoryStore() does in fact create
+    an ObjectStore."""
+
     store = MemoryStore()
-    assert isinstance(store, MemoryStore)
+    assert isinstance(store, ObjectStore)
+
+
+# --------------------- CLASS METHODS ---------------------
 
 
 def test_set_item() -> None:
+    """Tests that __setitem__ and __getitem__ work intuitively."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
@@ -36,6 +57,8 @@ def test_set_item() -> None:
 
 
 def test_store_item() -> None:
+    """Tests that store() works as an alternative to __setitem__."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
@@ -49,6 +72,9 @@ def test_store_item() -> None:
 
 
 def test_get_objects_of_type() -> None:
+    """Tests that get_objects_of_type() allows MemoryStore to filter data
+    types."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
@@ -67,6 +93,9 @@ def test_get_objects_of_type() -> None:
 
 
 def test_keys_values() -> None:
+    """Tests that keys() and values() work intuitively and offer MemoryStore
+    a dict-like usage."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
@@ -86,6 +115,9 @@ def test_keys_values() -> None:
 
 
 def test_clear_len() -> None:
+    """Tests that clear() empties the MemoryStore and and len() returns the
+    number of stored objects."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
@@ -107,6 +139,8 @@ def test_clear_len() -> None:
 
 
 def test_str() -> None:
+    """Tests that MemoryStore is converted to string properly."""
+
     store = MemoryStore()
     id1, obj1 = generate_id_obj(
         data=th.Tensor([1, 2, 3, 4]),
