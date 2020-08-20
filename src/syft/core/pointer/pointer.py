@@ -19,18 +19,65 @@ There are two proper ways of receiving a pointer on some data:
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
     1. Request access by calling .request_access().
-        Eg: pointer_object.request_access(request_name = "Request name", reason = "The reason why
-        do you want the data").
+    Example:
+
+    .. code-block::
+
+        pointer_object.request_access(request_name = "Request name", reason = "Request reason")
+
     2.1 - The data owner has to approve the request (check the domain node docs).
     2.2 - The data user checks if the request has been approved (check the domain node docs).
     3. After the request has been approved, the data user can call .get() on the pointer to get the
     data locally.
-        Eg: pointer_object.get()
+    Example:
+
+    .. code-block::
+
+        pointer_object.get()
 
 Pointers are being generated for most types of objects in the data science scene, but what you can
 do on them is not the pointers job, see the lib module for more details. One can see the pointer
 as a proxy to the actual data, the filtering and the security being applied where the data is being
 held.
+
+Example:
+
+.. code-block::
+
+    # creating the data holder domain
+    domain_1 = Domain(name="Data holder domain")
+
+    # creating dummy data
+    tensor = th.tensor([1, 2, 3])
+
+    # creating the data holder client
+    domain_1_client = domain_1.get_root_client()
+
+    # sending the data to the client and receiving a pointer of that data.
+    data_ptr_domain_1 = tensor.send(domain_1_client)
+
+    # creating the data user domain
+    domain_2 = Domain(name="Data user domain")
+
+    # creating a request to access the data
+    data_ptr_domain_1.request_access(
+        request_name="My Request", reason="I'd lke to see this pointer"
+    )
+
+    # getting the remote id of the object
+    requested_object = data_ptr_domain_1.id_at_location
+
+    # getting the request id
+    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+        object_id=requested_object
+    )
+
+    # the data holder accepts the request
+    domain_1.requests[0].owner_client_if_available = domain_1_client
+    domain_1.requests[0].accept()
+
+    # the data user checks if the data holder approved his request
+    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
 
 """
 # external imports
@@ -185,19 +232,24 @@ class Pointer(AbstractPointer):
     def request_access(self, request_name: str = "", reason: str = "",) -> None:
         """Method that requests access to the data on which the pointer points to.
 
-        Eg:
+        Example:
+
+        .. code-block::
+
+            # data holder domain
             domain_1 = Domain(name="Data holder")
+
+            # data
             tensor = th.tensor([1, 2, 3])
 
+            # generating the client for the domain
             domain_1_client = domain_1.get_root_client()
+
+            # sending the data and receiving a pointer
             data_ptr_domain_1 = tensor.send(domain_1_client)
 
-            domain_2 = Domain(name="Data user")
-
-            data_ptr_domain_1.request_access(
-                request_name="My Request", reason="I'd lke to see this pointer"
-                )
-
+            # requesting access to the pointer
+            data_ptr_domain_1.request_access(request_name="My Request", reason="Research project.")
 
         :param request_name: The title of the request that the data owner is going to see.
         :type request_name: str
