@@ -368,7 +368,7 @@ class CryptoProviderNotFoundError(Exception):
         )
         super().__init__(message)
 
-        
+
 class TranslationUnavailableError(Exception):
     """Raised when trying to translate a plan to use a framework that is unavailable"""
 
