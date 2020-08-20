@@ -26,6 +26,7 @@ def service_auth(
         ) -> Optional[SyftMessage]:
             if sy.VERBOSE:
                 print(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
+
             if root_only:
                 if sy.VERBOSE:
                     keys = (
@@ -44,9 +45,10 @@ def service_auth(
                         print(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif existing_users_only:
-                assert verify_key in node.guest_verify_key_registry
-            elif guests_welcome:
+                if verify_key not in node.guest_verify_key_registry:
+                    raise AuthorizationException("User not known.")
 
+            elif guests_welcome:
                 if register_new_guests:
                     node.guest_verify_key_registry.add(verify_key)
 
