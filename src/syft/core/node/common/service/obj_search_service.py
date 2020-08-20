@@ -19,12 +19,12 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
+from ....pointer.pointer import Pointer
 from ....common.message import ImmediateSyftMessageWithoutReply
 from .....decorators.syft_decorator_impl import syft_decorator
 from ....common.message import ImmediateSyftMessageWithReply
 from .node_service import ImmediateNodeServiceWithReply
 from ....common.serde.deserialize import _deserialize
-from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .....util import obj2pointer_type
 from ....io.address import Address
@@ -111,10 +111,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        results: List[StorableObject],
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, results: List[Pointer], address: Address, msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects
@@ -191,7 +188,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     def process(
         node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
     ) -> ObjectSearchReplyMessage:
-        results = list()
+        results: List[Pointer] = list()
 
         for obj in node.store.get_objects_of_type(obj_type=object):
             if (

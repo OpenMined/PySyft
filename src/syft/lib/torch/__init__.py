@@ -23,7 +23,7 @@ allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
 allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
 
 
-def create_torch_ast():
+def create_torch_ast() -> Globals:
     ast = Globals()
 
     for method, return_type_name in allowlist.items():

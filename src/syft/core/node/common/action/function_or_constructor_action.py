@@ -18,7 +18,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         path: str,
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[Any, Any],
         id_at_location: int,
         address: Address,

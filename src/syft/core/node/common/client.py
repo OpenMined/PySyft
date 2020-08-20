@@ -7,6 +7,9 @@ import pandas as pd
 from typing import Optional
 from typing import List
 from typing import Tuple
+from typing import Dict
+from typing import Any
+from typing import Union
 
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
@@ -30,54 +33,8 @@ from ...io.route import SoloRoute
 from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
+from ....core.pointer.pointer import Pointer
 import syft as sy
-
-
-class StoreClient:
-    def __init__(self, client):
-        self.client = client
-
-    @property
-    def store(self):
-        msg = ObjectSearchMessage(
-            address=self.client.address, msg_id=None, reply_to=self.client.address
-        )
-        results = self.client.send_immediate_msg_with_reply(msg=msg).results
-
-        # This is because of a current limitation in Pointer where we cannot
-        # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
-        for result in results:
-            result.location = self.client
-
-        return results
-
-    def __getitem__(self, key):
-        if isinstance(key, str):
-            for obj in self.store:
-                if key == str(obj.id.value):
-                    return obj
-            raise KeyError("No such request found for string id:" + str(key))
-        if isinstance(key, int):
-            return self.store[key]
-        else:
-            raise KeyError("Please pass in a string or int key")
-
-    def __repr__(self):
-        return repr(self.store)
-
-    @property
-    def pandas(self):
-
-        obj_lines = list()
-        for obj in self.store:
-            obj_lines.append(
-                {
-                    "ID": obj.id_at_location,
-                    "Tags": obj.tags,
-                    "Description": obj.description,
-                }
-            )
-        return pd.DataFrame(obj_lines)
 
 
 class Client(AbstractNodeClient):
@@ -158,10 +115,11 @@ class Client(AbstractNodeClient):
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
-        self.lib_ast.set_client(self)
+        if self.lib_ast is not None:
+            self.lib_ast.set_client(self)
 
-        for attr_name, attr in self.lib_ast.attrs.items():
-            setattr(self, attr_name, attr)
+            for attr_name, attr in self.lib_ast.attrs.items():
+                setattr(self, attr_name, attr)
 
     def add_me_to_my_address(self) -> None:
         raise NotImplementedError
@@ -377,3 +335,50 @@ class Client(AbstractNodeClient):
         keys = f"🔑 {verify}"
 
         return keys
+
+
+class StoreClient:
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    @property
+    def store(self) -> List[Pointer]:
+        msg = ObjectSearchMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        results = self.client.send_immediate_msg_with_reply(msg=msg).results
+
+        # This is because of a current limitation in Pointer where we cannot
+        # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
+        for result in results:
+            result.location = self.client
+
+        return results
+
+    def __getitem__(self, key: Union[str, int]) -> Pointer:
+        if isinstance(key, str):
+            for obj in self.store:
+                if key == str(obj.id_at_location.value):
+                    return obj
+            raise KeyError("No such request found for string id:" + str(key))
+        if isinstance(key, int):
+            return self.store[key]
+        else:
+            raise KeyError("Please pass in a string or int key")
+
+    def __repr__(self) -> str:
+        return repr(self.store)
+
+    @property
+    def pandas(self) -> pd.DataFrame:
+
+        obj_lines: List[Dict[str, Any]] = list()
+        for obj in self.store:
+            obj_lines.append(
+                {
+                    "ID": obj.id_at_location,
+                    "Tags": obj.tags,
+                    "Description": obj.description,
+                }
+            )
+        return pd.DataFrame(obj_lines)

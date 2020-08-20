@@ -1,7 +1,7 @@
 import syft as sy
 
 
-def test_client_from_metadata():
+def test_client_from_metadata() -> None:
 
     domain = sy.Domain(name="duet")
 

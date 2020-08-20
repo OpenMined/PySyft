@@ -5,7 +5,7 @@ from syft.lib.torch.__init__ import create_torch_ast
 
 
 # now we need to load the relevant frameworks onto the node
-def create_lib_ast():
+def create_lib_ast() -> Globals:
 
     torch_ast = create_torch_ast()
     # numpy_ast = create_numpy_ast()
@@ -17,5 +17,6 @@ def create_lib_ast():
     return lib_ast
 
 
+# constructor: copyType = create_lib_ast
 lib_ast = create_lib_ast()
-lib_ast.copy = create_lib_ast
+lib_ast._copy = create_lib_ast

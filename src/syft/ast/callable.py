@@ -1,5 +1,9 @@
 from typing import Optional
 from typing import List
+from typing import Union
+from typing import Tuple
+from typing import Any
+from typing import Callable as CallableT
 
 from .. import ast
 from ..core.node.common.action.function_or_constructor_action import (
@@ -9,28 +13,36 @@ from .util import module_type, unsplit
 
 
 class Callable(ast.attribute.Attribute):
+    client: Optional[Any]
 
     """A method, function, or constructor which can be directly executed"""
 
-    def __call__(self, *args, return_callable=False, **kwargs):
+    def __call__(
+        self, *args: Tuple[Any, ...], return_callable: bool = False, **kwargs: Any,
+    ) -> Optional[Union["Callable", CallableT]]:
 
-        if self.client is not None and return_callable is False:
+        if (
+            hasattr(self, "client")
+            and self.client is not None
+            and return_callable is False
+        ):
             print(f"call {self.path_and_name} on client {self.client}")
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
-            ptr = return_tensor_type_pointer_type(location=self.client)
+            ptr = return_tensor_type_pointer_type(client=self.client)
 
-            msg = RunFunctionOrConstructorAction(
-                path=self.path_and_name,
-                args=args,
-                kwargs=kwargs,
-                id_at_location=ptr.id_at_location,
-                address=self.client,
-            )
+            if self.path_and_name is not None:
+                msg = RunFunctionOrConstructorAction(
+                    path=self.path_and_name,
+                    args=args,
+                    kwargs=kwargs,
+                    id_at_location=ptr.id_at_location,
+                    address=self.client.address,
+                )
 
-            self.client.send_immediate_msg_without_reply(msg=msg)
-            return ptr
+                self.client.send_immediate_msg_without_reply(msg=msg)
+                return ptr
 
         path = kwargs["path"]
         index = kwargs["index"]
