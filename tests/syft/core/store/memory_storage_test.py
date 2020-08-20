@@ -20,7 +20,7 @@ from typing import Tuple, List
 
 
 def generate_id_obj(
-        data: th.Tensor, description: str, tags: List[str]
+    data: th.Tensor, description: str, tags: List[str]
 ) -> Tuple[UID, StorableObject]:
     id = UID()
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
