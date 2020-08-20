@@ -1,7 +1,6 @@
 from typing import Dict
 from typing import KeysView
 from typing import ValuesView
-from typing import List
 from typing import Set
 
 
