@@ -1,3 +1,85 @@
+"""A Pointer is the main handler when interacting with remote data.
+A Pointer object represents an API for interacting with data (of any type)
+at a specific location. Pointer should never be instantiated, only subclassed.
+
+The relation between pointers and data is many to one,
+there can be multiple pointers pointing to the same piece of data, meanwhile,
+a pointer cannot point to multiple data sources.
+
+A pointer is just an object id on a remote location and a set of methods that can be
+executed on the remote machine directly on that object. One note that has to be made
+is that all operations between pointers will return a pointer, the only way to have access
+to the result is by calling .get() on the pointer.
+
+There are two proper ways of receiving a pointer on some data:
+    1. When sending that data on a remote machine the user receives a pointer.
+    2. When the user searches for the data in an object store it receives a pointer to that data,
+    if it has the correct permissions for that.
+
+After receiving a pointer, one might want to get the data behind the pointer locally. For that the
+user should:
+    1. Request access by calling .request_access().
+    Example:
+
+    .. code-block::
+
+        pointer_object.request_access(request_name = "Request name", reason = "Request reason")
+
+    2.1 - The data owner has to approve the request (check the domain node docs).
+    2.2 - The data user checks if the request has been approved (check the domain node docs).
+    3. After the request has been approved, the data user can call .get() on the pointer to get the
+    data locally.
+    Example:
+
+    .. code-block::
+
+        pointer_object.get()
+
+Pointers are being generated for most types of objects in the data science scene, but what you can
+do on them is not the pointers job, see the lib module for more details. One can see the pointer
+as a proxy to the actual data, the filtering and the security being applied where the data is being
+held.
+
+Example:
+
+.. code-block::
+
+    # creating the data holder domain
+    domain_1 = Domain(name="Data holder domain")
+
+    # creating dummy data
+    tensor = th.tensor([1, 2, 3])
+
+    # creating the data holder client
+    domain_1_client = domain_1.get_root_client()
+
+    # sending the data to the client and receiving a pointer of that data.
+    data_ptr_domain_1 = tensor.send(domain_1_client)
+
+    # creating the data user domain
+    domain_2 = Domain(name="Data user domain")
+
+    # creating a request to access the data
+    data_ptr_domain_1.request_access(
+        request_name="My Request", reason="I'd lke to see this pointer"
+    )
+
+    # getting the remote id of the object
+    requested_object = data_ptr_domain_1.id_at_location
+
+    # getting the request id
+    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+        object_id=requested_object
+    )
+
+    # the data holder accepts the request
+    domain_1.requests[0].owner_client_if_available = domain_1_client
+    domain_1.requests[0].accept()
+
+    # the data user checks if the data holder approved his request
+    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
+
+"""
 # external imports
 from typing import List
 from typing import Optional
@@ -21,20 +103,34 @@ from typing import Any
 
 # TODO: Fix the Client, Address, Location confusion
 class Pointer(AbstractPointer):
+    """
+    Pointer is the handler when interacting with remote data.
 
-    # automatically generated subclasses of Pointer need to be able to look up
-    # the path and name of the object type they point to as a part of serde
+    Automatically generated subclasses of Pointer need to be able to look up
+    the path and name of the object type they point to as a part of serde. For more
+    information on how subclasses are automatically generated, please check the ast
+    module.
+
+    :param location: The location where the data is being held.
+    :type location: Address
+    :param id_at_location: The UID of the object on the remote location.
+    :type id_at_location: UID
+    """
+
     path_and_name: str
 
     def __init__(
         self,
         client: Any,
         id_at_location: Optional[UID] = None,
-        tags: List[str] = [],
+        tags: Optional[List[str]] = None,
         description: str = "",
     ) -> None:
         if id_at_location is None:
             id_at_location = UID()
+
+        if tags is None:
+            tags = []
 
         self.client = client
         self.id_at_location = id_at_location
@@ -42,11 +138,18 @@ class Pointer(AbstractPointer):
         self.description = description
 
     def get(self) -> StorableObject:
+        """Method to download a remote object from a pointer object if you have the right
+        permissions.
+
+        :return: returns the downloaded data
+        :rtype: StorableObject
+        """
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location,
             address=self.client.address,
             reply_to=self.client.address,
         )
+
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
         return response.obj
@@ -128,6 +231,37 @@ class Pointer(AbstractPointer):
         return Pointer_PB
 
     def request_access(self, request_name: str = "", reason: str = "",) -> None:
+        """Method that requests access to the data on which the pointer points to.
+
+        Example:
+
+        .. code-block::
+
+            # data holder domain
+            domain_1 = Domain(name="Data holder")
+
+            # data
+            tensor = th.tensor([1, 2, 3])
+
+            # generating the client for the domain
+            domain_1_client = domain_1.get_root_client()
+
+            # sending the data and receiving a pointer
+            data_ptr_domain_1 = tensor.send(domain_1_client)
+
+            # requesting access to the pointer
+            data_ptr_domain_1.request_access(request_name="My Request", reason="Research project.")
+
+        :param request_name: The title of the request that the data owner is going to see.
+        :type request_name: str
+        :param reason: The description of the request. This is the reason why you want to have
+        access to the data.
+        :type reason: str
+
+        .. note::
+            This method should be usen when the remote data associated with the pointer wants to be
+            downloaded locally (or use .get() on the pointer).
+        """
         from ..node.domain.service import RequestMessage
 
         msg = RequestMessage(
@@ -142,17 +276,23 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
-        from ..node.domain.service import (
-            RequestAnswerMessage,
-            # RequestAnswerResponseService,
-        )
+        """Method that checks the status of an already made request. There are three possible
+        outcomes when requesting access:
+            1. RequestStatus.Accepted - your request has been approved, you can not .get() your
+            data.
+            2. RequestStatus.Pending - your request has not been reviewed yet.
+            3. RequestStatus.Rejected - your request has been rejected.
+
+        :param node: The node that queries the request status.
+        :type node: AbstractNode
+        :param request_id: The request on which you are querying the status.
+        :type request_id: UID
+        """
+        from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.client.address, reply_to=node.address
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
-        #
-        # # this should be handled by the service by default, should be patched after 0.3.0
-        # RequestAnswerResponseService.process(node=node, msg=response, verify_key=msg.)
 
         return response.status
