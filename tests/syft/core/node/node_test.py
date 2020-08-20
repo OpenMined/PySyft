@@ -24,7 +24,7 @@ def test_send_message_from_vm_client_to_vm() -> None:
 
     with pytest.raises(AuthorizationException):
         bob_vm_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_vm_client)
+            msg=sy.ReprMessage(address=bob_vm_client.address)
         )
 
 
@@ -34,7 +34,7 @@ def test_send_message_from_device_client_to_device() -> None:
 
     with pytest.raises(AuthorizationException):
         bob_phone_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_phone_client)
+            msg=sy.ReprMessage(address=bob_phone_client.address)
         )
 
 
@@ -85,14 +85,16 @@ def test_send_message_from_device_client_to_vm() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
     bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_vm.pprint} {bob_vm.keys}")
-    print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_vm.pprint} {bob_vm.keys}")
+        print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
 
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
     bob_phone.root_verify_key = bob_phone_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_phone.pprint} {bob_phone.keys}")
-    print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_phone.pprint} {bob_phone.keys}")
+        print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
 
     bob_phone_client.register(client=bob_vm_client)
 
@@ -115,14 +117,16 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
     bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_vm.pprint} {bob_vm.keys}")
-    print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_vm.pprint} {bob_vm.keys}")
+        print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
 
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
     bob_phone.root_verify_key = bob_phone_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_phone.pprint} {bob_phone.keys}")
-    print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_phone.pprint} {bob_phone.keys}")
+        print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
 
     bob_phone_client.register(client=bob_vm_client)
 
@@ -138,7 +142,7 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_domain_client.register(client=bob_phone_client)
 
     bob_domain_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm)
+        msg=sy.ReprMessage(address=bob_vm.address)
     )
 
 
@@ -151,14 +155,16 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
     bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_vm.pprint} {bob_vm.keys}")
-    print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_vm.pprint} {bob_vm.keys}")
+        print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
 
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
     bob_phone.root_verify_key = bob_phone_client.verify_key  # inject 📡🔑 as 📍🗝
-    print(f"> {bob_phone.pprint} {bob_phone.keys}")
-    print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
+    if sy.VERBOSE:
+        print(f"> {bob_phone.pprint} {bob_phone.keys}")
+        print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
 
     bob_phone_client.register(client=bob_vm_client)
 
@@ -189,5 +195,5 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
     bob_network_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm)
+        msg=sy.ReprMessage(address=bob_vm.address)
     )

@@ -29,7 +29,7 @@ class VirtualMachine(Node):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
@@ -46,6 +46,9 @@ class VirtualMachine(Node):
             signing_key=signing_key,
             verify_key=verify_key,
         )
+
+        # specific location with name
+        self.vm = SpecificLocation(name=self.name)
 
         # All node subclasses have to call this at the end of their __init__
         self._register_services()

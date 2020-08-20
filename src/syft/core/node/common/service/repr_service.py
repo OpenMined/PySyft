@@ -47,7 +47,10 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ReprMessage_PB(msg_id=self.id.serialize())
+
+        return ReprMessage_PB(
+            msg_id=self.id.serialize(), address=self.address.serialize(),
+        )
 
     @staticmethod
     def _proto2object(proto: ReprMessage_PB) -> "ReprMessage":

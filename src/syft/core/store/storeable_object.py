@@ -1,15 +1,17 @@
 import pydoc
 from typing import List, Optional, Type
-from typing import Set
+from typing import Dict
+from nacl.signing import VerifyKey
+from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
-from google.protobuf.message import Message
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
-from nacl.signing import VerifyKey
+from ...util import key_emoji
 
 
 class StorableObject(AbstractStorableObject):
@@ -46,19 +48,21 @@ class StorableObject(AbstractStorableObject):
         data: object,
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
-        read_permissions: Optional[Set[VerifyKey]] = set(),
-        search_permissions: Optional[Set[VerifyKey]] = set(),
+        read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
+        search_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data
         self.description = description
         self.tags = tags
 
-        # the set of "verify key" objects corresponding to people
+        # the dict key of "verify key" objects corresponding to people
+        # the value is the original request_id to allow lookup later
         # who are allowed to call .get() and download this object.
         self.read_permissions = read_permissions
 
-        # the set of "verify key" objects corresponding to people
+        # the dict key of "verify key" objects corresponding to people
+        # the value is the original request_id to allow lookup later
         # who are allowed to know that the tensor exists (via search or other means)
         self.search_permissions = search_permissions
 
@@ -184,3 +188,40 @@ class StorableObject(AbstractStorableObject):
             + self.data.__repr__().replace("\n", "").replace("  ", " ")
             + ">"
         )
+
+    @property
+    def icon(self) -> str:
+        return "🗂️"
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} ({self.class_name}) ("
+        if hasattr(self.data, "pprint"):
+            output += self.data.pprint  # type: ignore
+        else:
+            output += "(Key Only)"
+        if self.description is not None and len(self.description) > 0:
+            output += f" desc: {self.description}"
+        if self.tags is not None and len(self.tags) > 0:
+            output += f" tags: {self.tags}"
+        if self.read_permissions is not None and len(self.read_permissions.keys()) > 0:
+            output += (
+                " can_read: "
+                + f"{[key_emoji(key=key) for key in self.read_permissions.keys()]}"
+            )
+
+        if (
+            self.search_permissions is not None
+            and len(self.search_permissions.keys()) > 0
+        ):
+            output += (
+                " can_search: "
+                + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
+            )
+
+        output += ")"
+        return output
+
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)
