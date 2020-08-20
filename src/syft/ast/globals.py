@@ -29,7 +29,7 @@ class Globals(Module):
         if isinstance(path, str):
             path = path.split(".")
 
-        framework_name = path[0]
+        framework_name = path[index]
 
         if framework_name not in self.attrs:
             if framework_reference is not None:
