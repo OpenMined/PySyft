@@ -5,7 +5,7 @@ from syft.core.common.uid import UID
 from syft.core.node.common.action.get_object_action import GetObjectAction
 
 
-def test_get_object_action_serde():
+def test_get_object_action_serde() -> None:
     msg = GetObjectAction(
         obj_id=UID(), address=Address(), reply_to=Address(), msg_id=UID()
     )

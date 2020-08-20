@@ -10,5 +10,5 @@ app = Flask(__name__)
 device = Device(name="cpu1")
 
 
-def run():
+def run() -> None:
     app.run()

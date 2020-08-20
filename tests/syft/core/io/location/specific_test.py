@@ -22,7 +22,7 @@ import syft as sy
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_specific_location_init_without_arguments():
+def test_specific_location_init_without_arguments() -> None:
     """Test that SpecificLocation will self-create an ID object if none is given"""
 
     # init works without arguments
@@ -31,7 +31,7 @@ def test_specific_location_init_without_arguments():
     assert isinstance(loc.id, UID)
 
 
-def test_specific_location_init_with_specific_id():
+def test_specific_location_init_with_specific_id() -> None:
     """Test that SpecificLocation will use the ID you pass into the constructor"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -44,7 +44,7 @@ def test_specific_location_init_with_specific_id():
 # --------------------- CLASS METHODS ---------------------
 
 
-def test_compare():
+def test_compare() -> None:
     """While uses of this feature should be quite rare, we
     should be able to check whether two objects are the same
     based on their IDs being the same by default. Note that
@@ -61,7 +61,7 @@ def test_compare():
     assert obj == obj2
 
 
-def test_to_string():
+def test_to_string() -> None:
     """Tests that SpecificLocation generates an intuitive string."""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -73,7 +73,7 @@ def test_to_string():
 # --------------------- SERDE ---------------------
 
 
-def test_default_serialization():
+def test_default_serialization() -> None:
     """Tests that default SpecificLocation serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -84,7 +84,7 @@ def test_default_serialization():
     assert obj.serialize() == blob
 
 
-def test_default_deserialization():
+def test_default_deserialization() -> None:
     """Tests that default SpecificLocation deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -96,7 +96,7 @@ def test_default_deserialization():
     assert obj == obj2
 
 
-def test_proto_serialization():
+def test_proto_serialization() -> None:
     """Tests that default SpecificLocation serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -109,7 +109,7 @@ def test_proto_serialization():
     assert obj.serialize(to_proto=True) == blob
 
 
-def test_proto_deserialization():
+def test_proto_deserialization() -> None:
     """Tests that default SpecificLocation deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -121,7 +121,7 @@ def test_proto_deserialization():
     assert obj == obj2
 
 
-def test_json_serialization():
+def test_json_serialization() -> None:
     """Tests that JSON SpecificLocation serialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -139,7 +139,7 @@ def test_json_serialization():
     assert obj.serialize(to_json=True) == blob
 
 
-def test_json_deserialization():
+def test_json_deserialization() -> None:
     """Tests that JSON SpecificLocation deserialization works as expected"""
 
     content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
@@ -156,7 +156,7 @@ def test_json_deserialization():
     )
 
 
-def test_binary_serialization():
+def test_binary_serialization() -> None:
     """Tests that binary SpecificLocation serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -174,7 +174,7 @@ def test_binary_serialization():
     assert obj.serialize(to_binary=True) == blob
 
 
-def test_binary_deserialization():
+def test_binary_deserialization() -> None:
     """Test that binary SpecificLocation deserialization works as expected"""
 
     content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
@@ -191,7 +191,7 @@ def test_binary_deserialization():
     )
 
 
-def test_hex_serialization():
+def test_hex_serialization() -> None:
     """Tests that hex SpecificLocation serializes as expected"""
 
     obj = SpecificLocation(
@@ -211,7 +211,7 @@ def test_hex_serialization():
     assert obj.serialize(to_hex=True) == blob
 
 
-def test_hex_deserialization():
+def test_hex_deserialization() -> None:
     """Test that hex SpecificLocation deserialization works as expected"""
 
     blob = (

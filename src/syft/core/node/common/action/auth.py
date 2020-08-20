@@ -8,22 +8,25 @@ from ...abstract.node import AbstractNode
 
 
 def service_auth(
-    root_only=False,
-    existing_users_only=False,
-    guests_welcome=False,
-    register_new_guests=False,
-):
+    root_only: bool = False,
+    existing_users_only: bool = False,
+    guests_welcome: bool = False,
+    register_new_guests: bool = False,
+) -> Callable:
     def decorator(func: Callable) -> Callable:
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
         ) -> SyftMessage:
 
             if root_only:
-                assert verify_key == node.root_verify_key
-            elif existing_users_only:
-                assert verify_key in node.guest_verify_key_registry
-            elif guests_welcome:
+                if verify_key != node.root_verify_key:
+                    raise Exception("User is not root.")
 
+            elif existing_users_only:
+                if verify_key not in node.guest_verify_key_registry:
+                    raise Exception("User not known.")
+
+            elif guests_welcome:
                 if register_new_guests:
                     node.guest_verify_key_registry.add(verify_key)
 

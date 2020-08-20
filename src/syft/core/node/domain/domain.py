@@ -1,6 +1,7 @@
 # external class imports
 from typing import Optional
 from typing import Union
+from typing import List
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -16,7 +17,12 @@ from ...common.uid import UID
 from ..abstract.node import AbstractNodeClient
 
 
-from .service import RequestAnswerMessageService, RequestService, RequestStatus
+from .service import (
+    RequestAnswerMessageService,
+    RequestService,
+    RequestStatus,
+    RequestMessage,
+)
 from .service.get_all_requests_service import GetAllRequestsService
 from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
 
@@ -61,7 +67,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
         self.immediate_services_with_reply.append(GetAllRequestsService)
 
-        self.requests = list()
+        self.requests: List[RequestMessage] = list()
         # available_device_types = set()
         # TODO: add available compute types
 

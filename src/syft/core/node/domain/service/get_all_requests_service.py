@@ -186,7 +186,7 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
             )
 
         # only return requests which concern the user asking
-        valid_requests = list()
+        valid_requests: List[RequestMessage] = list()
         for request in node.requests:
             if request.requester_verify_key == verify_key:
                 valid_requests.append(request)
