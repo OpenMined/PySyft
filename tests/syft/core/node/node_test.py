@@ -15,7 +15,7 @@ def get_verify_key() -> VerifyKey:
     return get_signing_key().verify_key
 
 
-def test_send_message_from_vm_client_to_vm() -> None:
+def test_send_message_from_vm_client_to_vm():
 
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
