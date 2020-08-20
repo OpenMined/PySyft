@@ -1,7 +1,7 @@
 from typing import Dict
 from typing import KeysView
 from typing import ValuesView
-from typing import List
+from typing import Set
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore
@@ -25,11 +25,11 @@ class MemoryStore(ObjectStore):
         self._objects: Dict[UID, AbstractStorableObject] = {}
         self._search_engine = None
 
-    def get_objects_of_type(self, obj_type: type) -> List[AbstractStorableObject]:
-        results = list()
+    def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
+        results = set()
         for key, obj in self._objects.items():
             if isinstance(obj.data, obj_type):
-                results.append(obj)
+                results.add(obj)
 
         return results
 

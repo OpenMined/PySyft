@@ -96,8 +96,8 @@ def test_get_objects_of_type() -> None:
     store[id1] = obj1
     store[id2] = obj2
     store[id3] = obj3
-    assert store.get_objects_of_type(th.Tensor) == [obj1, obj2]
-    assert store.get_objects_of_type(ObjectWithID) == [obj3]
+    assert all(x in store.get_objects_of_type(th.Tensor) for x in [obj1, obj2])
+    assert obj3 in store.get_objects_of_type(ObjectWithID)
 
 
 def test_keys_values() -> None:
@@ -123,7 +123,7 @@ def test_keys_values() -> None:
 
 
 def test_clear_len() -> None:
-    """Tests that clear() empties the MemoryStore and and len() returns the
+    """Tests that clear() empties the MemoryStore and len() returns the
     number of stored objects."""
 
     store = MemoryStore()
