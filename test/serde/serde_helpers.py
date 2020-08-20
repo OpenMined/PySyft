@@ -1372,6 +1372,53 @@ def make_virtual_worker(**kwargs):
     ]
 
 
+# This should be enabled in future when we have a running Pygrid Node for testing
+"""
+# syft.workers.virtual.VirtualWorker
+def make_data_centric_fl_client(**kwargs):
+    data_centric_fl_client = DataCentricFLClient(
+        hook=kwargs["workers"]["serde_worker"].hook, address="http://0.0.0.0:5001", id="test_bob"
+    )
+
+    return [
+        {
+            "value": data_centric_fl_client,
+            "simplified": (
+                CODE[syft.grid.clients.data_centric_fl_client.DataCentricFLClient],
+                (
+                    json.dumps(data_centric_fl_client.address),
+                    json.dumps(data_centric_fl_client.id),
+                    json.dumps(data_centric_fl_client.is_client_worker),
+                    json.dumps(data_centric_fl_client.log_msgs),
+                    json.dumps(data_centric_fl_client.verbose),
+                    json.dumps(data_centric_fl_client.encoding),
+                    json.dumps(data_centric_fl_client.timeout),
+                ),
+            ),
+        },
+    ]
+
+
+# syft.workers.virtual.VirtualWorker
+def make_model_centric_fl_client(**kwargs):
+    model_centric_fl_client = ModelCentricFLClient(address="http://0.0.0.0:5001", id="test_bob")
+
+    return [
+        {
+            "value": model_centric_fl_client,
+            "simplified": (
+                CODE[syft.grid.clients.model_centric_fl_client.ModelCentricFLClient],
+                (
+                    json.dumps(model_centric_fl_client.address),
+                    json.dumps(model_centric_fl_client.id),
+                    json.dumps(model_centric_fl_client.secure),
+                ),
+            ),
+        }
+    ]
+"""
+
+
 # syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor
 def make_autogradtensor(**kwargs):
 
