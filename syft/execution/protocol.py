@@ -70,6 +70,9 @@ class Protocol(AbstractSendable):
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the protocol and the pointers.
 
+    Specifically, a Protocol can contain a mix of ComputationAction and CommunicationAction and
+    acts as a cross-worker. Use Plan for pure mathematical operations.
+
     All arguments are optional.
 
     Args:

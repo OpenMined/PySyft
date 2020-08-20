@@ -343,15 +343,58 @@ class UndefinedProtocolTypePropertyError(Exception):
 class EmptyCryptoPrimitiveStoreError(Exception):
     """Raised when trying to get crypto primtives from an empty crypto store"""
 
-    def __init__(self, crypto_store, crypto_type, available_instances, n_instances):
-        message = (
-            f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
-            f"but its crypto_store doesn't have enough primitives left for the type "
-            f"'{crypto_type}' ({n_instances} were requested while only {available_instances}"
-            f" are available). Use your crypto_provider to `provide_primitives` to your "
-            f"worker."
+    def __init__(self, crypto_store=None, available_instances=None, **kwargs):
+        if crypto_store is not None:
+            message = (
+                f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
+                f"but its crypto_store doesn't have enough primitives left for the type "
+                f"'{kwargs.get('op')} {kwargs.get('shapes')}' ({kwargs.get('n_instances')}"
+                f" were requested while only {available_instances} are available). Use "
+                f"your crypto_provider to `provide_primitives` to your worker."
+            )
+            super().__init__(message)
+        self.kwargs_ = kwargs
+
+    @staticmethod
+    def simplify(worker: "sy.workers.AbstractWorker", e):
+        """
+        Serialize information about an Exception which was raised to forward it
+        """
+        # Get information about the exception: type of error,  traceback
+        tp = type(e)
+        tb = e.__traceback__
+        # Serialize the traceback
+        traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
+        # Include special attributes if relevant
+        attributes = {"kwargs_": e.kwargs_}
+
+        return (
+            sy.serde.msgpack.serde._simplify(worker, tp.__name__),
+            sy.serde.msgpack.serde._simplify(worker, traceback_str),
+            sy.serde.msgpack.serde._simplify(worker, attributes),
         )
-        super().__init__(message)
+
+    @staticmethod
+    def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
+        """
+        Detail and re-raise an Exception forwarded by another worker
+        """
+        error_name, traceback_str, attributes = error_tuple
+        error_name = sy.serde.msgpack.serde._detail(worker, error_name)
+        traceback_str = sy.serde.msgpack.serde._detail(worker, traceback_str)
+        attributes = sy.serde.msgpack.serde._detail(worker, attributes)
+        # De-serialize the traceback
+        tb = Traceback.from_string(traceback_str)
+        # Check that the error belongs to a valid set of Exceptions
+        if error_name in dir(sy.exceptions):
+            error_type = getattr(sy.exceptions, error_name)
+            error = error_type()
+            # Include special attributes if any
+            for attr_name, attr in attributes.items():
+                setattr(error, attr_name, attr)
+            reraise(error_type, error, tb.as_traceback())
+        else:
+            raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
 
 
 class CryptoProviderNotFoundError(Exception):
@@ -368,32 +411,28 @@ class CryptoProviderNotFoundError(Exception):
         )
         super().__init__(message)
 
-        
+
 class TranslationUnavailableError(Exception):
     """Raised when trying to translate a plan to use a framework that is unavailable"""
 
     pass
 
 
-def route_method_exception(exception, self, args_, kwargs_):  # noqa: C901
+def route_method_exception(exception, self, args_, kwargs_):
     try:
-        if self.is_wrapper:
-            if isinstance(self.child, sy.PointerTensor):
-                if len(args_) > 0:
-                    if not args_[0].is_wrapper:
-                        return TensorsNotCollocatedException(self, args_[0])
-                    elif isinstance(args_[0].child, sy.PointerTensor):
-                        if self.location != args_[0].child.location:
-                            return TensorsNotCollocatedException(self, args_[0])
+        if self.is_wrapper and isinstance(self.child, sy.PointerTensor) and len(args_) > 0:
+            if not args_[0].is_wrapper:
+                return TensorsNotCollocatedException(self, args_[0])
+            elif isinstance(args_[0].child, sy.PointerTensor):
+                if self.location != args_[0].child.location:
+                    return TensorsNotCollocatedException(self, args_[0])
 
         # if self is a normal tensor
-        elif isinstance(self, FrameworkTensor):
-            if len(args_) > 0:
-                if args_[0].is_wrapper:
-                    if isinstance(args_[0].child, sy.PointerTensor):
-                        return TensorsNotCollocatedException(self, args_[0])
-                elif isinstance(args_[0], sy.PointerTensor):
-                    return TensorsNotCollocatedException(self, args_[0])
+        elif isinstance(self, FrameworkTensor) and len(args_) > 0:
+            if args_[0].is_wrapper and isinstance(args_[0].child, sy.PointerTensor):
+                return TensorsNotCollocatedException(self, args_[0])
+            elif isinstance(args_[0], sy.PointerTensor):
+                return TensorsNotCollocatedException(self, args_[0])
     except:  # noqa: E722
         ""
     return exception

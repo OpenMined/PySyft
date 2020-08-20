@@ -6,6 +6,7 @@ import torch
 import weakref
 
 import syft
+from syft import dependency_check
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.remote import Remote
@@ -114,6 +115,21 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        """
+        In Syft there is a syft.framework value that can contain only one framework.
+        Ideally it should contain a list of supported frameworks.
+
+        We do this because in Plans there is method to reduce the number of actions
+        that are traced (and then sent).
+        The actions that are not returning a result, changing a placeholder, inplace
+        or changing the global state are eliminated from the traced list
+        """
+        if dependency_check.crypten_available:
+            import crypten
+            from syft.frameworks.crypten.crypten_attributes import CryptenAttributes
+
+            syft.crypten = CryptenAttributes(crypten, self)
+
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()
 
@@ -137,6 +153,13 @@ class TorchHook(FrameworkHook):
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
+
+        if dependency_check.crypten_available:
+            from syft.frameworks.crypten.hook.hook import crypten_to_auto_overload
+
+            for crypten_class, method_names in crypten_to_auto_overload.items():
+                self.to_auto_overload[crypten_class] = method_names
+                self._hook_syft_placeholder_methods(crypten_class, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
@@ -209,6 +232,13 @@ class TorchHook(FrameworkHook):
 
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
+
+        # Hook the Crypten module
+        if dependency_check.crypten_available:
+            from syft.frameworks.crypten.hook.hook import hook_crypten, hook_crypten_module
+
+            hook_crypten()
+            hook_crypten_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times

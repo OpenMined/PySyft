@@ -1,5 +1,5 @@
-from syft.grid.grid_client import GridClient
-from syft.grid.grid_client import GridError
+from syft.workers.model_centric_fl_worker import ModelCentricFLWorker
+from syft.grid.exceptions import GridError
 from syft.execution.state import State
 from syft.execution.placeholder import PlaceHolder
 
@@ -25,10 +25,12 @@ class FLJob(EventEmitter):
     EVENT_REJECTED = "rejected"
     EVENT_ERROR = "error"
 
-    def __init__(self, fl_client, grid_client: GridClient, model_name: str, model_version: str):
+    def __init__(
+        self, fl_client, grid_worker: ModelCentricFLWorker, model_name: str, model_version: str
+    ):
         super().__init__()
         self.fl_client = fl_client
-        self.grid_client = grid_client
+        self.grid_worker = grid_worker
         self.model_name = model_name
         self.model_version = model_version
 
@@ -46,24 +48,24 @@ class FLJob(EventEmitter):
         request_key = cycle_params["request_key"]
 
         # Load model
-        self.model = self.grid_client.get_model(worker_id, request_key, cycle_params["model_id"])
+        self.model = self.grid_worker.get_model(worker_id, request_key, cycle_params["model_id"])
 
         # Load plans
         for plan_name, plan_id in cycle_params["plans"].items():
-            self.plans[plan_name] = self.grid_client.get_plan(
-                worker_id, request_key, plan_id, GridClient.PLAN_TYPE_TORCHSCRIPT
+            self.plans[plan_name] = self.grid_worker.get_plan(
+                worker_id, request_key, plan_id, ModelCentricFLWorker.PLAN_TYPE_TORCHSCRIPT
             )
 
         # Load protocols
         for protocol_name, protocol_id in cycle_params["protocols"].items():
-            self.protocols[protocol_name] = self.grid_client.get_protocol(
+            self.protocols[protocol_name] = self.grid_worker.get_protocol(
                 worker_id, request_key, protocol_id
             )
 
     def start(self):
         try:
-            speed_info = self.grid_client.get_connection_speed(self.fl_client.worker_id)
-            cycle_request_response = self.grid_client.cycle_request(
+            speed_info = self.grid_worker.get_connection_speed(self.fl_client.worker_id)
+            cycle_request_response = self.grid_worker.cycle_request(
                 worker_id=self.fl_client.worker_id,
                 model_name=self.model_name,
                 model_version=self.model_version,
@@ -71,10 +73,10 @@ class FLJob(EventEmitter):
             )
             cycle_params = cycle_request_response["data"]
 
-            if cycle_params["status"] == GridClient.CYCLE_STATUS_ACCEPTED:
+            if cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_ACCEPTED:
                 self._init_cycle(cycle_params)
                 self.trigger(self.EVENT_ACCEPTED, self)
-            elif cycle_params["status"] == GridClient.CYCLE_STATUS_REJECTED:
+            elif cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_REJECTED:
                 self.trigger(self.EVENT_REJECTED, self, cycle_params.get("timeout", None))
         except GridError as e:
             self.trigger(self.EVENT_ERROR, self, f"Grid communication error: {e.error}")
@@ -88,7 +90,7 @@ class FLJob(EventEmitter):
         diff_ph = [PlaceHolder().instantiate(t) for t in diff_params]
         diff = State(state_placeholders=diff_ph)
 
-        response = self.grid_client.report(
+        response = self.grid_worker.report(
             worker_id=self.fl_client.worker_id,
             request_key=self.cycle_params["request_key"],
             diff=diff,

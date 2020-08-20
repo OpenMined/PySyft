@@ -1,45 +1,63 @@
-from typing import Callable
-import torch
+import torch as th
+from typing import Tuple
 
-from syft.workers.abstract import AbstractWorker
+import syft as sy
 
 
-def request_triple(
-    crypto_provider: AbstractWorker,
-    cmd: Callable,
+def build_triple(
+    op: str,
+    shape: Tuple[th.Size, th.Size],
+    n_workers: int,
+    n_instances: int,
+    torch_dtype: th.dtype,
     field: int,
-    dtype: str,
-    a_size: tuple,
-    b_size: tuple,
-    locations: list,
 ):
-    """Generates a multiplication triple and sends it to all locations.
+    """
+    Generates and shares a multiplication triple (a, b, c)
 
     Args:
-        crypto_provider: worker you would like to request the triple from
-        cmd: An equation in einsum notation.
-        field: An integer representing the field size.
-        dtype: represents the dtype of shares
-        a_size: A tuple which is the size that a should be or
-                a torch.Size instance
-        b_size: A tuple which is the size that b should be or
-                a torch.Size intance
-        locations: A list of workers where the triple should be shared between.
+        op (str): 'mul' or 'matmul': the op ° which ensures a ° b = c
+        shape (Tuple[th.Size, th.Size]): the shapes of a and b
+        n_workers (int): number of workers
+        n_instances (int): the number of tuples (works only for mul: there is a
+            shape issue for matmul which could be addressed)
+        torch_dtype (th.dtype): the type of the shares
+        field (int): the field for the randomness
 
     Returns:
-        A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
+        a triple of shares (a_sh, b_sh, c_sh) per worker where a_sh is a share of a
     """
-    a = crypto_provider.remote.torch.randint(-(field // 2), (field - 1) // 2, a_size)
-    b = crypto_provider.remote.torch.randint(-(field // 2), (field - 1) // 2, b_size)
-    c = cmd(a, b)
+    left_shape, right_shape = shape
+    cmd = getattr(th, op)
+    low_bound, high_bound = -(field // 2), (field - 1) // 2
+    a = th.randint(low_bound, high_bound, (n_instances, *left_shape), dtype=torch_dtype)
+    b = th.randint(low_bound, high_bound, (n_instances, *right_shape), dtype=torch_dtype)
 
-    res = torch.cat((a.view(-1), b.view(-1), c.view(-1)))
+    if op == "mul" and b.numel() == a.numel():
+        # examples:
+        #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
+        #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
+        if len(a.shape) == len(b.shape):
+            c = cmd(a, b)
+        elif len(a.shape) > len(b.shape):
+            shape = b.shape
+            b = b.reshape_as(a)
+            c = cmd(a, b)
+            b = b.reshape(*shape)
+        else:  # len(a.shape) < len(b.shape):
+            shape = a.shape
+            a = a.reshape_as(b)
+            c = cmd(a, b)
+            a = a.reshape(*shape)
+    else:
+        c = cmd(a, b)
 
-    shares = (
-        res.share(*locations, field=field, dtype=dtype, crypto_provider=crypto_provider).get().child
-    )
-    a_shared = shares[: a.numel()].reshape(a_size)
-    b_shared = shares[a.numel() : -c.numel()].reshape(b_size)
-    c_shared = shares[-c.numel() :].reshape(c.shape)
+    helper = sy.AdditiveSharingTensor(field=field)
 
-    return a_shared, b_shared, c_shared
+    shares_worker = [[0, 0, 0] for _ in range(n_workers)]
+    for i, tensor in enumerate([a, b, c]):
+        shares = helper.generate_shares(secret=tensor, n_workers=n_workers, random_type=torch_dtype)
+        for w_id in range(n_workers):
+            shares_worker[w_id][i] = shares[w_id]
+
+    return shares_worker

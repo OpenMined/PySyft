@@ -10,7 +10,7 @@ from typing import Union
 
 import syft
 from syft.grid.abstract_grid import AbstractGrid
-from syft.workers.node_client import NodeClient
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 from syft.execution.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
@@ -19,7 +19,7 @@ class PrivateGridNetwork(AbstractGrid):
     def __init__(self, *workers):
         super().__init__()
         self.workers = list(workers)
-        self._connect_all_nodes(self.workers, NodeClient)
+        self._connect_all_nodes(self.workers, DataCentricFLClient)
 
     def search(self, *query) -> Dict[Any, Any]:
         """ Searches over a collection of workers, returning pointers to the results
@@ -64,7 +64,7 @@ class PrivateGridNetwork(AbstractGrid):
             NotImplementedError: If workers used by grid network aren't grid nodes.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, NodeClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         if n_replica > len(self.workers):
@@ -100,7 +100,7 @@ class PrivateGridNetwork(AbstractGrid):
             RuntimeError: If model id not found.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, NodeClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         if not mpc:
@@ -112,7 +112,7 @@ class PrivateGridNetwork(AbstractGrid):
 
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["NodeClient", Tuple["NodeClient"]]:
+    ) -> Union["DataCentricFLClient", Tuple["DataCentricFLClient"]]:
         """ Search for node host from a specific model registered on grid network, if found,
         It will return the frist host/ set of hosts that contains the desired model.
 
@@ -128,7 +128,7 @@ class PrivateGridNetwork(AbstractGrid):
         """
 
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, NodeClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         # Search for non mpc models.
@@ -183,7 +183,7 @@ class PrivateGridNetwork(AbstractGrid):
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def _query_encrypted_model_hosts(self, id: str) -> Tuple["NodeClient"]:
+    def _query_encrypted_model_hosts(self, id: str) -> Tuple["DataCentricFLClient"]:
         """ Search for an encrypted model and return its mpc nodes.
 
         Args:

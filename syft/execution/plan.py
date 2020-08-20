@@ -8,6 +8,7 @@ import inspect
 import io
 import torch
 import warnings
+import traceback
 
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
@@ -39,8 +40,9 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None, trace_autograd=False):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False, args_dtypes=()):
         self.args_shape = args_shape
+        self.args_dtypes = args_dtypes
         self.state_tensors = state or ()
         # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
@@ -61,7 +63,7 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args_ = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape, self.args_dtypes)
             try:
                 plan.build(*args_, trace_autograd=self.trace_autograd)
             except TypeError as e:
@@ -83,6 +85,9 @@ class Plan(AbstractSendable):
     reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
+
+    Specifically, a Plan contains only ComputationAction and does not concern itself with
+    operations covered by CommunicationAction. Use Protocol to cover both types of actions.
 
     All arguments are optional.
 
@@ -271,15 +276,14 @@ class Plan(AbstractSendable):
         self.role.register_inputs(args_placeholders)
 
         # Register outputs in role
-        if isinstance(results, (tuple, list)):
-            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
-        else:
-            results_placeholders = PlaceHolder.extract(results)
+
+        results_placeholders = PlaceHolder.recursive_extract(results)
         self.role.register_outputs(results_placeholders)
 
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
+        self.role._prune_actions()
         self.is_built = True
 
         # Build registered translations
@@ -288,7 +292,9 @@ class Plan(AbstractSendable):
                 self.add_translation(translator)
                 self.translations.append(translator)
             except:
-                warnings.warn(f"Failed to translate Plan with {translator.__name__}")
+                warnings.warn(
+                    f"Failed to translate Plan with {translator.__name__}: {traceback.format_exc()}"
+                )
 
         return results
 
@@ -310,7 +316,8 @@ class Plan(AbstractSendable):
             tags=self.tags,
             input_types=self.input_types,
             description=self.description,
-            roles=self.roles,
+            base_framework=self._base_framework,
+            roles={fw_name: role.copy() for fw_name, role in self.roles.items()},
         )
 
         plan_copy.torchscript = self.torchscript
@@ -457,9 +464,13 @@ class Plan(AbstractSendable):
 
         def create_dummy(input_type, input_placeholder):
             if issubclass(input_type, FrameworkTensor):
-                return input_type(
-                    PlaceHolder.create_placeholders([input_placeholder.expected_shape])[0]
+                tensors = PlaceHolder.create_placeholders(
+                    [input_placeholder.expected_shape], [input_placeholder.expected_dtype]
                 )
+                var = tensors[0]
+                if input_type != type(var):
+                    var = input_type(var)
+                return var
             else:
                 return input_type()
 
@@ -490,8 +501,9 @@ class Plan(AbstractSendable):
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         role = plan_translator(self).translate()
-        self.roles[plan_translator.framework] = role
-        return role
+        if isinstance(role, Role):
+            self.roles[plan_translator.framework] = role
+        return self
 
     def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
         plan_translator(self).remove()
@@ -641,6 +653,8 @@ class Plan(AbstractSendable):
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
             sy.serde.msgpack.serde._simplify(worker, plan.input_types),
+            sy.serde.msgpack.serde._simplify(worker, plan._base_framework),
+            sy.serde.msgpack.serde._simplify(worker, plan.roles),
         )
 
     @staticmethod
@@ -652,7 +666,18 @@ class Plan(AbstractSendable):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript, input_types) = plan_tuple
+        (
+            id_,
+            role,
+            include_state,
+            name,
+            tags,
+            description,
+            torchscript,
+            input_types,
+            base_framework,
+            roles,
+        ) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -661,6 +686,8 @@ class Plan(AbstractSendable):
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
         input_types = sy.serde.msgpack.serde._detail(worker, input_types)
+        base_framework = sy.serde.msgpack.serde._detail(worker, base_framework)
+        roles = sy.serde.msgpack.serde._detail(worker, roles)
 
         plan = sy.Plan(
             role=role,
@@ -672,6 +699,8 @@ class Plan(AbstractSendable):
             tags=tags,
             description=description,
             input_types=input_types,
+            base_framework=base_framework,
+            roles=roles,
         )
 
         plan.torchscript = torchscript
@@ -711,6 +740,14 @@ class Plan(AbstractSendable):
             input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
             protobuf_plan.input_types.CopyFrom(input_types)
 
+        protobuf_plan.base_framework = plan._base_framework
+
+        if plan.roles:
+            for framework_name, role in plan.roles.items():
+                protobuf_plan.roles.get_or_create(framework_name).CopyFrom(
+                    sy.serde.protobuf.serde._bufferize(worker, role)
+                )
+
         return protobuf_plan
 
     @staticmethod
@@ -730,6 +767,13 @@ class Plan(AbstractSendable):
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
         input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
+        base_framework = protobuf_plan.base_framework
+
+        roles = {}
+        for framework_name in protobuf_plan.roles:
+            roles[framework_name] = sy.serde.protobuf.serde._unbufferize(
+                worker, protobuf_plan.roles[framework_name]
+            )
 
         plan = Plan(
             role=role,
@@ -741,6 +785,8 @@ class Plan(AbstractSendable):
             tags=tags,
             description=description,
             input_types=input_types,
+            base_framework=base_framework,
+            roles=roles,
         )
 
         if protobuf_plan.torchscript:

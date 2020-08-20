@@ -58,9 +58,6 @@ class TorchTensor(AbstractTensor):
     origin = None
     id_at_origin = None
 
-    def has_child(self):
-        return hasattr(self, "child")
-
     def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
         """
         This hook is triggered when a tensor which was received from a sender has
@@ -284,13 +281,25 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, torch.nn.Parameter)
 
-    # Fix handle_command_function to correct this. #2637
     @staticmethod
     @overloaded.module
     def torch(module):
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+        module.nn = nn  # Handles all the overloading properly
+
+    @staticmethod
+    @overloaded.module
+    def native_torch(module):
         def roll(tensor, shifts, **kwargs):
-            int_shifts = int(shifts.item())
-            return torch.native_roll(tensor, int_shifts, **kwargs)
+            if isinstance(shifts, FrameworkTensor):
+                shifts = int(shifts.item())
+            return torch.native_roll(tensor, shifts, **kwargs)
 
         module.roll = roll
 
@@ -299,11 +308,9 @@ class TorchTensor(AbstractTensor):
         """
         Operates as a router for functions. A function call always starts
         by being handled here and 3 scenarii must be considered:
-
         Real Torch tensor:
             The arguments of the function are real tensors so we should
             run the native torch command
-
         Torch wrapper:
             The arguments are just wrappers at the top of a chain
             (ex: wrapper>LoggingTensor>Torch tensor), so just forward
@@ -311,7 +318,6 @@ class TorchTensor(AbstractTensor):
             the example above to LoggingTensor.handle_func_command),
             get the response and replace a wrapper on top of all tensors
             found in the response.
-
         Syft Tensor:
             The arguments are syft tensors of same type: this can happen
             if at any node of the chain where some function is forwarded,
@@ -319,7 +325,6 @@ class TorchTensor(AbstractTensor):
             call but keeps the arguments "un-wrapped". Making a new call
             means that by default the command is treated here in the
             global router.
-
         :param command: instruction of a function command: (command name,
         <no self>, arguments[, kwargs_])
         :return: the response of the function command
@@ -327,7 +332,6 @@ class TorchTensor(AbstractTensor):
         cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
-
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
@@ -339,6 +343,15 @@ class TorchTensor(AbstractTensor):
                 return args_type.handle_func_command(command)
             # build the new command
             new_command = (cmd, None, new_args, new_kwargs)
+
+            # Check that the function has not been overwritten
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, cmd)
+                return command(*args_, **kwargs_)
+            except AttributeError:
+                pass
+
             # Send it to the appropriate class and get the response
             try:
                 response = new_type.handle_func_command(new_command)
@@ -356,7 +369,7 @@ class TorchTensor(AbstractTensor):
             # Check that the function has not been overwritten
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-                command = cls.rgetattr(cls, cmd)
+                command = cls.rgetattr(cls, f"native_{cmd}")
                 return command(*args_, **kwargs_)
             except AttributeError:
                 pass
@@ -407,7 +420,7 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-        Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid errors.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
@@ -464,7 +477,7 @@ class TorchTensor(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            if self.has_child() and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
@@ -601,7 +614,7 @@ class TorchTensor(AbstractTensor):
 
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.mid_get()
@@ -612,7 +625,7 @@ class TorchTensor(AbstractTensor):
 
         TODO: make this kind of message forwarding generic?
         """
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.remote_get()
@@ -893,6 +906,11 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if protocol == "falcon":
+            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
+                self, owners
+            )
+            return shared_tensor
         if self.has_child():
             chain = self.child
 
@@ -920,7 +938,7 @@ class TorchTensor(AbstractTensor):
                     owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
-                .init_shares(*owners)
+                .share_secret(*owners)
             )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):

@@ -109,19 +109,21 @@ def sample_poly_uniform(param):
     return result
 
 
-def encrypt_asymmetric(context, public_key):
+def encrypt_asymmetric(context, param_id, public_key):
     """Create encryption of zero values with a public key which can be used in
     subsequent processes to add a message into it.
 
     Args:
         context (Context): A valid context required for extracting the encryption
             parameters.
+        param_id: Parameter id for accessing the correct parameters from the context chain.
         public_key (PublicKey): A public key generated with same encryption parameters.
 
     Returns:
         A ciphertext object containing encryption of zeroes by asymmetric encryption procedure.
     """
-    param = context.param
+    param = context.context_data_map[param_id].param
+    poly_mod = param.poly_modulus
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     encrypted_size = len(public_key)
@@ -141,30 +143,36 @@ def encrypt_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         for i in range(coeff_mod_size):
             result[j][i] = poly_add_mod(
-                poly_mul_mod(public_key[j][i], u[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+                poly_mul_mod(public_key[j][i], u[i], coeff_modulus[i], poly_mod),
+                e[i],
+                coeff_modulus[i],
+                poly_mod,
             )
-    return CipherText(result)
+    return CipherText(result, param_id)
 
 
-def encrypt_symmetric(context, secret_key):
+def encrypt_symmetric(context, param_id, secret_key):
     """Create encryption of zero values with a secret key which can be used in subsequent
     processes to add a message into it.
 
     Args:
         context (Context): A valid context required for extracting the encryption parameters.
+        param_id: Parameter id for accessing the correct parameters from the context chain.
         secret_key (SecretKey): A secret key generated with same encryption parameters.
 
     Returns:
         A ciphertext object containing encryption of zeroes by symmetric encryption procedure.
     """
-    coeff_modulus = context.param.coeff_modulus
+    key_param = context.context_data_map[param_id].param
+    poly_mod = key_param.poly_modulus
+    coeff_modulus = key_param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
 
     # Sample uniformly at random
-    c1 = sample_poly_uniform(context.param)
+    c1 = sample_poly_uniform(key_param)
 
     # Sample e <-- chi
-    e = sample_poly_normal(context.param)
+    e = sample_poly_normal(key_param)
 
     # calculate -(a*s + e) (mod q) and store in c0
 
@@ -173,9 +181,12 @@ def encrypt_symmetric(context, secret_key):
     for i in range(coeff_mod_size):
         c0[i] = poly_negate_mod(
             poly_add_mod(
-                poly_mul_mod(c1[i], secret_key[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+                poly_mul_mod(c1[i], secret_key[i], coeff_modulus[i], poly_mod),
+                e[i],
+                coeff_modulus[i],
+                poly_mod,
             ),
             coeff_modulus[i],
         )
 
-    return CipherText([c0, c1])
+    return CipherText([c0, c1], param_id)

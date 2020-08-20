@@ -2,7 +2,7 @@
 
 import syft
 from syft.workers.abstract import AbstractWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 
 from . import gradients
 

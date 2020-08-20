@@ -12,7 +12,7 @@ from abc import abstractmethod
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
@@ -620,14 +620,14 @@ class ForceObjectDeleteMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, obj_id):
+    def __init__(self, obj_ids):
         """Initialize the message."""
 
-        self.object_id = obj_id
+        self.object_ids = obj_ids
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.object_id})"
+        return f"({type(self).__name__} {self.object_ids})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ForceObjectDeleteMessage") -> tuple:
@@ -642,7 +642,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, msg.object_id),)
+        return sy.serde.msgpack.serde._simplify(worker, msg.object_ids)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ForceObjectDeleteMessage":
@@ -659,7 +659,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ForceObjectDeleteMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        return ForceObjectDeleteMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple))
 
     @staticmethod
     def bufferize(worker, msg):
@@ -673,7 +673,13 @@ class ForceObjectDeleteMessage(Message):
                 proto_msg (ForceObjectDeleteMessagePB): serialized ForceObjectDeleteMessage.
         """
         proto_msg = ForceObjectDeleteMessagePB()
-        sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
+        for elem in msg.object_ids:
+            id = IdPB()
+            if isinstance(elem, str):
+                id.id_str = elem
+            else:
+                id.id_int = elem
+            proto_msg.object_ids.append(id)
         return proto_msg
 
     @staticmethod
@@ -687,8 +693,11 @@ class ForceObjectDeleteMessage(Message):
             Returns:
                 ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
         """
-        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
-        return ForceObjectDeleteMessage(obj_id=obj_id)
+        obj_ids = []
+        for elem in proto_msg.object_ids:
+            obj_ids.append(getattr(elem, elem.WhichOneof("id")))
+
+        return ForceObjectDeleteMessage(obj_ids=obj_ids)
 
     @staticmethod
     def get_protobuf_schema():
@@ -1004,3 +1013,117 @@ class WorkerCommandMessage(Message):
     #             Protobuf schema for WorkerCommandMessage.
     #     """
     #     return WorkerCommandMessagePB
+
+
+class CryptenInitPlan(Message):
+    """Initialize a Crypten party using this message.
+
+    Crypten uses processes as parties, those processes need to be initialized with information
+    so they can communicate and exchange tensors and shares while doing computation. This message
+    allows the exchange of information such as the ip and port of the master party to connect to,
+    as well as the rank of the party to run and the number of parties involved."""
+
+    def __init__(self, crypten_context, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
+        self.crypten_context = crypten_context
+        self.model = model
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.crypten_context})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, message: "CryptenInitPlan") -> tuple:
+        """
+        This function takes the attributes of a CryptenInitPlan and saves them in a tuple
+
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (CryptenInitPlan): a Message
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(worker, (*message.crypten_context, message.model)),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitPlan":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a CryptenInitPlan. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+
+        Returns:
+            CryptenInitPlan message.
+
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
+        *context, model = msg_tuple
+        return CryptenInitPlan(tuple(context), model)
+
+
+class CryptenInitJail(Message):
+    """Initialize a Crypten party using this message.
+
+    Crypten uses processes as parties, those processes need to be initialized with information
+    so they can communicate and exchange tensors and shares while doing computation. This message
+    allows the exchange of information such as the ip and port of the master party to connect to,
+    as well as the rank of the party to run and the number of parties involved. Compared to
+    CryptenInitPlan, this message also sends two extra fields, a JailRunner and a Crypten model."""
+
+    def __init__(self, crypten_context, jail_runner, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
+        self.crypten_context = crypten_context
+        self.jail_runner = jail_runner
+        self.model = model
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.crypten_context}, {self.jail_runner})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, message: "CryptenInitJail") -> tuple:
+        """
+        This function takes the attributes of a CryptenInitJail and saves them in a tuple
+
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (CryptenInitJail): a Message
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(
+                worker, (*message.crypten_context, message.jail_runner, message.model)
+            ),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitJail":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a CryptenInitJail. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+
+        Returns:
+            CryptenInitJail message.
+
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
+        *context, jail_runner, model = msg_tuple
+        return CryptenInitJail(tuple(context), jail_runner, model)

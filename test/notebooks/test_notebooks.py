@@ -149,7 +149,7 @@ def test_notebooks_advanced(isolated_filesystem, notebook):
     notebook = notebook.replace("examples/tutorials/", "")
     list_name = Path("examples/tutorials/") / notebook
     tested_notebooks.append(str(list_name))
-    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=400)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
