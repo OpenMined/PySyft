@@ -1,24 +1,58 @@
+"""In this test suite, we evaluate the operations done on a remote tensor
+(we use the the pointer to a tensor).
+For more info on the remote tensor please see the documentation syft/lib/torch
+"""
+
+from syft.core.pointer.pointer import Pointer
+from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
+
 import syft as sy
 import torch as th
 import pytest
+from itertools import product
+
+TYPES_TEST = [e for e in TORCH_STR_DTYPE.keys() if not e.startswith("complex")]
+BASIC_OPS = ["__add__", "add", "__sub__", "sub", "__mul__", "mul"]
+TEST_DATA = list(product(TYPES_TEST, BASIC_OPS))
 
 
-def test_torch_vm_remote_operation() -> None:
+def test_torch_remote_tensor_register() -> None:
+    """ Test if sending a tensor will be registered on the remote worker. """
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
-    x = th.tensor([1, 2, 3, 4])
+    x = th.tensor([-1, 0, 1, 2, 3, 4])
+    ptr = x.send(alice_client)
+
+    assert len(alice.store) == 1
+
+    ptr = x.send(alice_client)
+    assert len(alice.store) == 1  # Same id
+
+    ptr.get()
+    assert len(alice.store) == 0  # Get removes the object
+
+
+@pytest.mark.parametrize("tensor_type_str, op_name", TEST_DATA)
+def test_torch_remote_remote_basic_ops(tensor_type_str, op_name):
+    """ Test basic operations on remote simple tensors """
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    t_type = TORCH_STR_DTYPE[tensor_type_str]
+    x = th.tensor([-1, 0, 1, 2, 3, 4], dtype=t_type)
 
     xp = x.send(alice_client)
 
-    y = xp + xp
+    op_method = getattr(xp, op_name, None)
+    assert op_method
 
-    assert len(alice.store._objects) == 2
+    result = op_method(xp)  # op(xp, xp)
 
-    y.get()
-
-    assert len(alice.store._objects) == 1
+    assert isinstance(result, Pointer)
+    local_result = result.get()
 
     # TODO: put thought into garbage collection and then
     #  uncoment this.
