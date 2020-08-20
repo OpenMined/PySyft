@@ -183,10 +183,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d)
 
     def public_conv2d(self, plain_text):
-        pass
+        raise NotImplementedError()
 
     def private_conv2d(self, secret):
-        pass
+        raise NotImplementedError()
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
@@ -219,13 +219,11 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def apply_to_shares(self, function, *args, **kwargs):
         """
-        function: str:if the function is an attribute of torch.Tensor,
-                  else a reference to the function itself should be passed
+        function: a reference to a function
+        e.g. torch.Tensor.view, torch.nn.F.fold
         """
         shares_map = self.get_shares_map()
         players = self.get_players()
-        if type(function) is str:
-            function = getattr(torch.Tensor, function)
         shares_map = {
             player: (
                 function(shares_map[player][0], *args, **kwargs),
@@ -236,11 +234,12 @@ class ReplicatedSharingTensor(AbstractTensor):
         return ReplicatedSharingTensor(shares_map)
 
     def apply_to_shares_(self, function, *args, **kwargs):
-        """apply in-place method to shares"""
+        """
+        function: a reference to an in-place function
+        e.g. sort, append
+        """
         shares_map = self.get_shares_map()
         players = self.get_players()
-        if type(function) is str:
-            function = getattr(torch.Tensor, function)
         for player in players:
             function(shares_map[player][0], *args, **kwargs)
             function(shares_map[player][1], *args, **kwargs)

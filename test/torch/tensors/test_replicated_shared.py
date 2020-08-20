@@ -125,5 +125,5 @@ def test_get_shape(workers):
 def test_apply_to_shares(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
-    x = x.apply_to_shares("view", [1, 2])
+    x = x.apply_to_shares(torch.Tensor.view, [1, 2])
     assert x.shape == torch.Size([1, 2])
