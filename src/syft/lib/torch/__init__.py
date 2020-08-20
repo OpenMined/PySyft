@@ -20,7 +20,7 @@ allowlist["torch.ones"] = "torch.Tensor"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 # allowlist.add("torch.nn.Linear.parameters")
 
-def create_torch_ast():
+def create_torch_ast() -> Globals:
     ast = Globals()
 
     for method, return_type_name in allowlist.items():

@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1dproto/util/json_message.proto\x12\tsyft.util"0\n\x0bJsonMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\tb\x06proto3',
+    serialized_pb=b'\n\x1dproto/util/json_message.proto\x12\x0fsyft.proto.util"0\n\x0bJsonMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\tb\x06proto3',
 )
 
 

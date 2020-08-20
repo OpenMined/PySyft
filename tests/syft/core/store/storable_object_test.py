@@ -6,7 +6,7 @@ from syft.core.store.storeable_object import StorableObject
 from syft.core.common import UID
 
 
-def test_create_storable_obj():
+def test_create_storable_obj() -> None:
     id = UID()
     data = UID()
     description = "This is a dummy test"
@@ -14,7 +14,7 @@ def test_create_storable_obj():
     StorableObject(id=id, data=data, description=description, tags=tags)
 
 
-def test_serde_storable_obj():
+def test_serde_storable_obj() -> None:
     id = UID()
     data = UID()
     description = "This is a dummy test"
@@ -26,7 +26,7 @@ def test_serde_storable_obj():
     sy.deserialize(blob=blob)
 
 
-# def test_serde_storable_obj_with_wrapped_class():
+# def test_serde_storable_obj_with_wrapped_class() -> None:
 #     """Ensure that storable object serialization works wrapping non-syft classes (like np.ndarray)"""
 #
 #     id = UID()

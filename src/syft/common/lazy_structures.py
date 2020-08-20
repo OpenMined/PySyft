@@ -92,18 +92,18 @@ class LazyDict:
         """
         self._dict[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Any) -> Any:
         if item not in self._dict:
             self._update_rule()
         return self._dict[item]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._dict)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._dict)
 
-    def clear(self):
+    def clear(self) -> None:
         self._dict.clear()
 
 
@@ -165,14 +165,14 @@ class LazySet:
             contains = item in self._set
         return contains
 
-    def add(self, obj):
+    def add(self, obj: Any) -> None:
         self._set.add(obj)
 
-    def clear(self):
+    def clear(self) -> None:
         self._set.clear()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._set)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._set)
