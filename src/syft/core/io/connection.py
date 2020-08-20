@@ -58,7 +58,7 @@ class BidirectionalConnection(object):
 
 
 class ServerConnection(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     @syft_decorator(typechecking=True)
@@ -91,7 +91,7 @@ class ServerConnection(object):
 
 
 class ClientConnection(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     @syft_decorator(typechecking=True)
