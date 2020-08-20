@@ -15,19 +15,18 @@ from syft.proto.grid.service.signaling_service_pb2 import (
 
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.core.node.common.service.auth import service_auth
 from syft.core.io.address import Address
 
 
 @final
-class SignalingOfferMessage(ImmediateSyftMessageWithReply):
+class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
     def __init__(self, address: Address, payload: str, msg_id: Optional[UID] = None):
-        # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
-        super().__init__(address=address, msg_id=msg_id, reply_to=None)
+        super().__init__(address=address, msg_id=msg_id)
         self.payload = payload
 
     @syft_decorator(typechecking=True)
@@ -46,7 +45,11 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return SignalingOfferMessage_PB(msg_id=self.id.serialize())
+        return SignalingOfferMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            payload=self.payload,
+        )
 
     @staticmethod
     def _proto2object(proto: SignalingOfferMessage_PB) -> "SignalingOfferMessage":
@@ -66,7 +69,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
         return SignalingOfferMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            payload=_deserialize(blob=proto.payload),
+            payload=proto.payload,
         )
 
     @staticmethod
@@ -80,7 +83,8 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
         Importantly, this method is also used to create the reverse lookup ability within
         the metaclass of Serializable. In the metaclass, it calls this method and then
         it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
 
         :return: the type of protobuf object which corresponds to this class.
         :rtype: GeneratedProtocolMessageType
@@ -91,10 +95,9 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 
 
 @final
-class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
+class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(self, address: Address, payload: str, msg_id: Optional[UID] = None):
-        # TODO add reply_to or change to ImmediateSyftMessageWithoutReply
-        super().__init__(address=address, msg_id=msg_id, reply_to=None)
+        super().__init__(address=address, msg_id=msg_id)
         # TODO: implement content
         self.payload = payload
 
@@ -114,7 +117,11 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return SignalingAnswerMessage_PB(msg_id=self.id.serialize())
+        return SignalingAnswerMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            payload=self.payload,
+        )
 
     @staticmethod
     def _proto2object(proto: SignalingAnswerMessage_PB) -> "SignalingAnswerMessage":
@@ -134,7 +141,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
         return SignalingAnswerMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            payload=_deserialize(blob=proto.payload),
+            payload=proto.payload,
         )
 
     @staticmethod
@@ -158,7 +165,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
         return SignalingAnswerMessage_PB
 
 
-class SignalingService(ImmediateNodeServiceWithReply):
+class SignalingService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(root_only=True)
     def process(
@@ -173,6 +180,6 @@ class SignalingService(ImmediateNodeServiceWithReply):
 
     @staticmethod
     def message_handler_types() -> List[
-        Type[Union[SignalingOfferMessage, SignalingOfferMessage]]
+        Type[Union[SignalingOfferMessage, SignalingAnswerMessage]]
     ]:
         return [SignalingOfferMessage, SignalingAnswerMessage]
