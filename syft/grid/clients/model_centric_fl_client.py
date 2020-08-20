@@ -1,5 +1,5 @@
 import json
-from typing import Union, Dict
+from typing import Dict
 
 import binascii
 import websocket

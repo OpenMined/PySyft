@@ -3,13 +3,10 @@ import numpy
 import torch
 import traceback
 import io
-import json
 
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
-from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
-from syft.grid.clients.model_centric_fl_client import ModelCentricFLClient
 from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.execution.translation.threepio import PlanTranslatorTfjs
@@ -1375,6 +1372,8 @@ def make_virtual_worker(**kwargs):
     ]
 
 
+# This should be enabled in future when we have a running Pygrid Node for testing
+"""
 # syft.workers.virtual.VirtualWorker
 def make_data_centric_fl_client(**kwargs):
     data_centric_fl_client = DataCentricFLClient(
@@ -1410,13 +1409,14 @@ def make_model_centric_fl_client(**kwargs):
             "simplified": (
                 CODE[syft.grid.clients.model_centric_fl_client.ModelCentricFLClient],
                 (
-                    json.dumps(data_centric_fl_client.address),
-                    json.dumps(data_centric_fl_client.id),
-                    json.dumps(data_centric_fl_client.secure),
+                    json.dumps(model_centric_fl_client.address),
+                    json.dumps(model_centric_fl_client.id),
+                    json.dumps(model_centric_fl_client.secure),
                 ),
             ),
         }
     ]
+"""
 
 
 # syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor

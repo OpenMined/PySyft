@@ -2,9 +2,8 @@ import json
 import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
-from typing import Union, Dict
+from typing import Dict, Union
 from urllib.parse import urlparse
-import torch
 
 # Syft imports
 import syft as sy
@@ -316,15 +315,16 @@ class DataCentricFLClient(WebsocketClientWorker):
         hook = sy.local_worker.hook
         me = hook.local_worker
 
-        # if worker with same id exist return that worker 2 worker with same id raises error
-        if id in me._known_workers.keys():
-            return me._known_workers[id]
+        # if worker with same id exist return that worker, 2 worker with same id raises error
+        client = me.local_worker.get_worker(id)
+        if isinstance(client, sy.grid.clients.data_centric_fl_client.DataCentricFLClient):
+            return client
 
-        Client = DataCentricFLClient(
+        client = DataCentricFLClient(
             hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
         )
 
-        return Client
+        return client
 
     @staticmethod
     def get_msgpack_code() -> Dict[str, int]:
