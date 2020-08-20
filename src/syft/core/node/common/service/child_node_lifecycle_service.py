@@ -47,9 +47,7 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: RegisterChildNodeMessage_PB) -> "RegisterChildNodeMessage":
         msg = RegisterChildNodeMessage(
-            lookup_id=_deserialize(
-                blob=proto.msg_id
-            ),  # TODO: not sure if this is needed anymore
+            lookup_id=_deserialize(blob=proto.lookup_id),
             child_node_client_address=_deserialize(
                 blob=proto.child_node_client_address
             ),
@@ -96,7 +94,12 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         obj_id = msg.lookup_id  # TODO: Fix, see above
         node.store.store(obj=StorableObject(id=obj_id, data=addr,))
         if sy.VERBOSE:
-            print(f"> Saving {addr.target_emoji()} 💾 to {node.pprint} ")
+            print(
+                (
+                    f"> Saving 💾 {addr.pprint} {addr.target_emoji()} with "
+                    + f"Key: {obj_id} ➡️ {node.store.pprint}"
+                )
+            )
 
         # Step 2: update the child node and its descendants with our node.id in their
         # .address objects

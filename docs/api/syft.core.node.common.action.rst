@@ -9,6 +9,14 @@ syft.core.node.common.action package
 Submodules
 ----------
 
+syft.core.node.common.action.auth module
+----------------------------------------
+
+.. automodule:: syft.core.node.common.action.auth
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.node.common.action.common module
 ------------------------------------------
 
