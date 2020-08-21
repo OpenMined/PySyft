@@ -102,7 +102,10 @@ def test_torch_no_read_permissions() -> None:
     with pytest.raises(Exception) as exception:
         local_x = ptr.get()
 
-    assert str(exception.value) == "You do not have permission to .get() this tensor. Please submit a request."
+    assert (
+        str(exception.value)
+        == "You do not have permission to .get() this tensor. Please submit a request."
+    )
 
     x = th.tensor([1, 2, 3, 4])
 
