@@ -24,7 +24,6 @@ forbiddenfruit>=0.1.3
 isort
 nbconvert
 pandas
-pandas
 protobuf
 pyjwt
 PyNaCl
