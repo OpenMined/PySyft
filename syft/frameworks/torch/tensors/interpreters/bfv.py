@@ -5,7 +5,7 @@ import torch as th
 
 from syft.generic.abstract.tensor import AbstractTensor
 
-# from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook_args import (
     get_child,
     register_backward_func,
@@ -19,10 +19,14 @@ from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
 from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
+from syft.frameworks.torch.he.fv.evaluator import Evaluator
+
+# from syft.frameworks.torch.he.fv.plaintext import PlainText
+# from syft.frameworks.torch.he.fv.ciphertext import CipherText
 
 
 class BFVTensor(AbstractTensor):
-    def __init__(self, context, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes a BFVTensor.
 
         Args:
@@ -31,42 +35,101 @@ class BFVTensor(AbstractTensor):
             id: An optional string or integer id of the BFVTensor.
         """
         super().__init__(**kwargs)
-        self.context = context
+        self.context = None
         self.encryptor = None
         self.decryptor = None
         self.encoder = None
+        self.evaluator = None
 
     def encrypt(self, key, context):
         self.context = context
-        if self.encoder is None:
-            self.encoder = IntegerEncoder(self.context)
-        if self.encryptor is None:
-            self.encryptor = Encryptor(self.context, key)
+        self.prepareEncryptor(key)
 
-        output = BFVTensor(context)
+        output = BFVTensor()
         output.child = self.child
         inputs = self.child.flatten().tolist()
-        new_child = [self.encryptor.encrypt(self.encoder.encode(int(x))) for x in inputs]
+        new_child = [self.encryptor.encrypt(self.encoder.encode(x)) for x in inputs]
 
         data = np.array(new_child).reshape(self.child.shape)
         self.child = data
         return output
 
     def decrypt(self, private_key):
-        if self.decryptor is None:
-            self.decryptor = Decryptor(self.context, private_key)
+        self.prepareDecryptor(private_key)
 
         inputs = self.child.flatten().tolist()
         new_child = [self.encoder.decode(self.decryptor.decrypt(x)) for x in inputs]
         return th.tensor(new_child).view(*self.child.shape)
 
     def __add__(self, *args, **kwargs):
-        print("custom add called!")
-        pass
+        self.prepareEvaluator()
+
+        if not args[0].shape == self.child.shape:
+            raise ValueError(
+                f"Cannot add tensors with different shape {args[0].shape} , {self.child.shape}"
+            )
+
+        args = args[0].flatten().tolist()
+
+        # if integer values; transform it to plaintext
+        if isinstance(args[0], int):
+            args = [self.encoder.encode(x) for x in args]
+
+        child = self.child.flatten().tolist()
+
+        data = [self.evaluator.add(x, y) for x, y in zip(child, args)]
+        data = np.array(data).reshape(self.child.shape)
+        obj = BFVTensor()
+        obj.context = self.context
+        obj.child = data
+        return obj
+
+        # Replace all syft tensor with their child attribute
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+            "__add__", self, args, kwargs
+        )
+
+        # Send it to the appropriates class and get the response
+        response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = hook_args.hook_response("__add__", response, wrap_type=type(self))
+        return response
 
     def __sub__(self, *args, **kwargs):
-        print("custom sub called!")
-        pass
+        self.prepareEvaluator()
+
+        if not args[0].shape == self.child.shape:
+            raise ValueError(
+                f"Cannot subtract tensors with different shape {args[0].shape} , {self.child.shape}"
+            )
+
+        args = args[0].flatten().tolist()
+
+        # if integer values; transform it to plaintext
+        if isinstance(args[0], int):
+            args = [self.encoder.encode(x) for x in args]
+
+        child = self.child.flatten().tolist()
+
+        data = [self.evaluator.sub(x, y) for x, y in zip(child, args)]
+        data = np.array(data).reshape(self.child.shape)
+        obj = BFVTensor()
+        obj.context = self.context
+        obj.child = data
+        return obj
+
+        # Replace all syft tensor with their child attribute
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+            "__add__", self, args, kwargs
+        )
+
+        # Send it to the appropriates class and get the response
+        response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = hook_args.hook_response("__add__", response, wrap_type=type(self))
+        return response
 
     def __mul__(self, *args, **kwargs):
         print("custom mul called!")
@@ -87,7 +150,7 @@ class BFVTensor(AbstractTensor):
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
 
-        return self + args[0]
+        return _self + args[0]
 
     # Method overloading
     @overloaded.method
@@ -100,7 +163,7 @@ class BFVTensor(AbstractTensor):
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
 
-        return self - args[0]
+        return _self - args[0]
 
     # Method overloading
     @overloaded.method
@@ -113,7 +176,7 @@ class BFVTensor(AbstractTensor):
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
 
-        return self * args[0]
+        return _self * args[0]
 
     # Module & Function overloading
 
@@ -196,6 +259,24 @@ class BFVTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+    def prepareEncryptor(self, key):
+        if self.encoder is None:
+            self.encoder = IntegerEncoder(self.context)
+        if self.encryptor is None:
+            self.encryptor = Encryptor(self.context, key)
+
+    def prepareDecryptor(self, private_key):
+        if self.encoder is None:
+            self.encoder = IntegerEncoder(self.context)
+        if self.decryptor is None:
+            self.decryptor = Decryptor(self.context, private_key)
+
+    def prepareEvaluator(self):
+        if self.encoder is None:
+            self.encoder = IntegerEncoder(self.context)
+        if self.evaluator is None:
+            self.evaluator = Evaluator(self.context)
 
 
 register_type_rule({BFVTensor: one})

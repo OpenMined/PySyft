@@ -1157,7 +1157,7 @@ class TorchTensor(AbstractTensor):
             public_key = kwargs.get("public_key")
             private_key = kwargs.get("private_key")
 
-            x_encrypted = BFVTensor(context=context).on(self)
+            x_encrypted = BFVTensor().on(self)
             if private_key is not None:
                 # Homomorphic Encryption using private key; if private key available prefer it.
                 x_encrypted.child.encrypt(private_key, context)
