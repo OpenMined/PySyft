@@ -468,7 +468,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self, method="NR", nr_iters=10):
+    def reciprocal(self, method="division", nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
         Ref: https://github.com/facebookresearch/CrypTen
@@ -488,15 +488,25 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         if method.lower() == "nr":
+            sgn = (self > 0)
+            pos = sgn
+            neg = (sgn - 1)
+            sgn=pos+neg
+            self=sgn*self
             result = 3 * (0.5 - self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * self
-            return result
+            return sgn*result
         elif method.lower() == "division":
             ones = self * 0 + 1
             return ones / self
         elif method.lower() == "log":
-            return (-self.log()).exp()
+            sgn = (self > 0)
+            pos = sgn
+            neg = (sgn - 1)
+            sgn=pos+neg
+            self=sgn*self
+            return (-self.log()).exp()*sgn
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
 
