@@ -2,17 +2,18 @@ import json
 import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
-from typing import Dict, Union
+from typing import Union
 from urllib.parse import urlparse
 
 # Syft imports
-import syft as sy
 from syft.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 
 class DataCentricFLClient(WebsocketClientWorker):
@@ -285,73 +286,16 @@ class DataCentricFLClient(WebsocketClientWorker):
         return f"<Federated Worker id:{self.id}>"
 
     @staticmethod
-    def simplify(worker: AbstractWorker, data_centric_fl_client: "DataCentricFLClient") -> tuple:
-
-        # Simplify the attributes for DataCentricFLClient
-        address = json.dumps(data_centric_fl_client.address)
-        id = json.dumps(data_centric_fl_client.id)
-        is_client_worker = json.dumps(data_centric_fl_client.is_client_worker)
-        log_msgs = json.dumps(data_centric_fl_client.log_msgs)
-        verbose = json.dumps(data_centric_fl_client.verbose)
-        encoding = json.dumps(data_centric_fl_client.encoding)
-        timeout = json.dumps(data_centric_fl_client.timeout)
-
-        return (address, id, is_client_worker, log_msgs, verbose, encoding, timeout)
+    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
+        return BaseWorker.simplify(_worker, worker)
 
     @staticmethod
-    def detail(worker: AbstractWorker, client_tuple: tuple) -> "DataCentricFLClient":
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
+        detailed = BaseWorker.detail(worker, worker_tuple)
 
-        address, id, is_client_worker, log_msgs, verbose, encoding, timeout = client_tuple
+        if isinstance(detailed, int):
+            result = VirtualWorker(id=detailed, hook=worker.hook)
+        else:
+            result = detailed
 
-        # detail client attributes
-        address = json.loads(address)
-        id = json.loads(id)
-        is_client_worker = json.loads(is_client_worker)
-        log_msgs = json.loads(log_msgs)
-        verbose = json.loads(verbose)
-        encoding = json.loads(encoding)
-        timeout = json.loads(timeout)
-
-        hook = sy.local_worker.hook
-        me = hook.local_worker
-
-        # if worker with same id exist return that worker, 2 worker with same id raises error
-        client = me.local_worker.get_worker(id)
-        if isinstance(client, sy.grid.clients.data_centric_fl_client.DataCentricFLClient):
-            return client
-
-        client = DataCentricFLClient(
-            hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
-        )
-
-        return client
-
-    @staticmethod
-    def get_msgpack_code() -> Dict[str, int]:
-        """This is the implementation of the `get_msgpack_code()`
-        method required by PySyft's SyftSerializable class.
-        It provides a code for msgpack if the type is not present in proto.json.
-        The returned object should be similar to:
-        {
-            "code": int value,
-            "forced_code": int value
-        }
-        Both keys are optional, the common and right way would be to add only the "code" key.
-        Returns:
-            dict: A dict with the "code" and/or "forced_code" keys.
-        """
-
-        # If a msgpack code is not already generated, then generate one
-        # the code is hash of class name
-        if not hasattr(DataCentricFLClient, "proto_id"):
-            DataCentricFLClient.proto_id = sy.serde.msgpack.serde.msgpack_code_generator(
-                DataCentricFLClient.__qualname__
-            )
-
-        code_dict = {}
-        code_dict["code"] = DataCentricFLClient.proto_id
-        code_dict["forced_code"] = sy.serde.msgpack.serde.msgpack_code_generator(
-            DataCentricFLClient.__qualname__ + "forced"
-        )
-
-        return code_dict
+        return result
