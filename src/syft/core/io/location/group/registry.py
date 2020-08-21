@@ -9,7 +9,7 @@ class RegistryBackedLocationGroup(LocationGroup):
     determined by an official owner who has an official list. The
     best and most practical example of this is a Node and its group
     of children (or grand children, etc.). Sending messages to this
-    group requires sending a old_message to its owner and asking it
+    group requires sending a message to its owner and asking it
     to redistribute to the group. However, we can still maintain a list
     of workers which we believe to be in the group which allows us
     to logically reason about the group itself."""

@@ -93,12 +93,12 @@ class Class(Callable):
                 description=self.description if hasattr(self, "description") else "",
             )
 
-            # Step 2: create old_message which contains object to send
+            # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
                 obj_id=ptr.id_at_location, obj=self, address=client.address
             )
 
-            # Step 3: send old_message
+            # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer
