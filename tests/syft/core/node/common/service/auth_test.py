@@ -4,7 +4,8 @@ from nacl.signing import VerifyKey
 
 import syft as sy
 
-from syft.core.node.common.action.auth import service_auth
+from syft.core.node.common.service.auth import AuthorizationException
+from syft.core.node.common.service.auth import service_auth
 
 
 def test_service_auth_root_fails() -> None:
@@ -21,7 +22,9 @@ def test_service_auth_root_fails() -> None:
 
     process(node=node, msg=msg, verify_key=node.root_verify_key)
 
-    with pytest.raises(Exception, match="User is not root."):
+    with pytest.raises(
+        AuthorizationException, match="You are not Authorized to access this service"
+    ):
         process(node=node, msg=msg, verify_key=random_verify_key)
 
 
@@ -36,7 +39,7 @@ def test_service_auth_existing_user() -> None:
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
 
-    with pytest.raises(Exception, match="User not known."):
+    with pytest.raises(AuthorizationException, match="User not known."):
         process(node=node, msg=msg, verify_key=random_verify_key)
 
     # NOTE didn't find a method to add a key to guest_verify_key_registry
