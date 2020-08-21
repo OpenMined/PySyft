@@ -11,5 +11,5 @@ bandit -r src -ll
 python setup.py test
 
 # run API documentation test notebooks
-jupyter nbconvert --to script examples/api/*.ipynb
-pytest examples/api
+./scripts/nb_test.sh
+pytest examples/api --cov-fail-under 0
