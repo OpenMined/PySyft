@@ -13,7 +13,7 @@ __all__ = [
 
 from syft.ast.globals import Globals
 
-allowlist: Dict[str, type] = {}  # (path: str, return_type:type)
+allowlist: Dict[str, str] = {}  # (path: str, return_type:type)
 # allowlist["torch.tensor"] = "torch.Tensor"
 
 allowlist["torch.Tensor"] = "torch.Tensor"
