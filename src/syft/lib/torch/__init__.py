@@ -1,6 +1,5 @@
 import torch
 
-from typing import Dict
 from .lowercase_tensor import LowercaseTensorConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
 from .parameter import ParameterConstructor
@@ -13,28 +12,7 @@ __all__ = [
 
 from syft.ast.globals import Globals
 
-allowlist: Dict[str, str] = {}  # (path: str, return_type:type)
-# allowlist["torch.tensor"] = "torch.Tensor"
-
-allowlist["torch.Tensor"] = "torch.Tensor"
-
-# Basic operations
-# + - * -
-allowlist["torch.Tensor.__add__"] = "torch.Tensor"
-allowlist["torch.Tensor.__sub__"] = "torch.Tensor"
-allowlist["torch.Tensor.__mul__"] = "torch.Tensor"
-
-allowlist["torch.Tensor.add"] = "torch.Tensor"
-allowlist["torch.Tensor.sub"] = "torch.Tensor"
-allowlist["torch.Tensor.mul"] = "torch.Tensor"
-
-
-allowlist["torch.zeros"] = "torch.Tensor"
-allowlist["torch.ones"] = "torch.Tensor"
-allowlist["torch.nn.Linear"] = "torch.nn.Linear"
-# allowlist.add("torch.nn.Linear.parameters")
-allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
-allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
+from .allowlist import allowlist
 
 
 def create_torch_ast() -> Globals:
