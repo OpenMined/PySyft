@@ -40,8 +40,7 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-
-        def get_run_class_method(attr_path_and_name: str):
+        def get_run_class_method(attr_path_and_name: str) -> object: #TODO: tighten to return Callable
             """It might seem hugely un-necessary to have these methods nested in this way.
             However, it has to do with ensuring that the scope of attr_path_and_name is local
             and not global. If we do not put a get_run_class_method around run_class_method then
@@ -52,9 +51,7 @@ class Class(Callable):
             different methods each time with a different intenral attr_path_and_name variable."""
 
             def run_class_method(
-                __self: Any,
-                *args: Tuple[Any, ...],
-                **kwargs: Any,
+                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
             ) -> object:
                 # TODO: lookup actual return type instead of just guessing that it's identical
                 result = self.pointer_type(client=__self.client)
@@ -73,6 +70,7 @@ class Class(Callable):
                     __self.client.send_immediate_msg_without_reply(msg=cmd)
 
                 return result
+
             return run_class_method
 
         attrs = {}

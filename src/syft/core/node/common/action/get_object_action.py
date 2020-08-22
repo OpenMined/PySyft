@@ -126,8 +126,8 @@ class GetObjectAction(ImmediateActionWithReply):
         return msg
 
     @property
-    def pprint(self):
-        return f'GetObjectAction({self.obj_id})'
+    def pprint(self) -> str:
+        return f"GetObjectAction({self.obj_id})"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:

@@ -43,7 +43,8 @@ def test_torch_remote_tensor_register() -> None:
 
 @pytest.mark.parametrize("tensor_type, op_name", TEST_DATA)
 def test_symmetric_tensor_methods(tensor_type: str, op_name: str) -> None:
-    """ Test basic operations on remote simple tensors """
+    """ Test torch methods which accept another tensor of the same size and
+    shape as the other tensor"""
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
@@ -56,7 +57,7 @@ def test_symmetric_tensor_methods(tensor_type: str, op_name: str) -> None:
         # if this is a valid method for this type in torch
         valid_torch_command = True
         target_result = target_op_method(x)
-    except Exception as e:
+    except Exception:
         # looks like this isn't a valid method for this type
         # or some other problem existed with the setup of the test
         valid_torch_command = False
@@ -116,7 +117,7 @@ def test_torch_no_read_permissions() -> None:
 
     # this should trigger an exception
     with pytest.raises(Exception) as exception:
-        local_x = ptr.get()
+        ptr.get()
 
     assert (
         str(exception.value)

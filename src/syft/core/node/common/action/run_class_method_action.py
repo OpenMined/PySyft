@@ -55,8 +55,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return intersection_dict
 
     @property
-    def pprint(self):
-        return f'RunClassMethodAction({self.path})'
+    def pprint(self) -> str:
+        return f"RunClassMethodAction({self.path})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
