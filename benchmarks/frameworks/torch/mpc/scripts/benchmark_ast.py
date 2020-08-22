@@ -7,6 +7,7 @@ from benchmarks.frameworks.torch.mpc.scripts.workers_initialization import worke
 from benchmarks.frameworks.torch.mpc.scripts.benchmark_sample_data import (
     b_data_share_get,
     b_data_max_pool2d,
+    b_data_avg_pool2d,
 )
 
 
@@ -128,7 +129,7 @@ def benchmark_max_pool2d(workers, protocol, prec_frac):
 
     # # without
     # expected = F.max_pool2d(t, kernel_size=3)
-    # result = F.max_pool2d(x, kernel_size=3).get().float_prec(precision_fractional=prec_frac)
+    # result = F.max_pool2d(x, kernel_size=3).get().float_prec()
 
 
 def benchmark_max_pool2d_plot(b_data_max_pool2d):
@@ -187,3 +188,95 @@ def benchmark_max_pool2d_plot(b_data_max_pool2d):
 
 # calling benchmark_max_pool2d_plot
 benchmark_max_pool2d_plot(b_data_max_pool2d)
+
+
+def benchmark_avg_pool2d(workers, protocol, prec_frac):
+    """
+            This function benchmarks avg_plot2d function.
+
+            Args:
+                workers (dict): workers used for sharing data
+                protocol (str): the name of the protocol
+                prec_frac (int): the precision value (upper limit)
+        """
+
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+
+    m = 4
+    t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
+    x = t.fix_prec(precision_fractional=prec_frac).share(*args, **kwargs)
+
+    # using maxpool optimization for kernel_size=2
+    expected = F.avg_pool2d(t, kernel_size=2)
+    result = F.avg_pool2d(x, kernel_size=2).get().float_prec()
+
+    # # without
+    # expected = F.avg_pool2d(t, kernel_size=3)
+    # result = F.avg_pool2d(x, kernel_size=3).get().float_prec()
+
+
+def benchmark_avg_pool2d_plot(b_data_avg_pool2d):
+    """
+            This function plots the graph for various protocols benchmarks for
+            avg_pool2d.
+
+            Args:
+                b_data_avg_pool2d (list): list of protocols to approximate
+
+            Returns:
+                benchmark_avg_pool2d.png (png): plotted graph in graph/ast_benchmarks directory
+            """
+
+    # initializing workers
+    worker = workers(hook())
+
+    # getting data (protocols)
+    protocols = b_data_avg_pool2d
+
+    # initializing graph plot
+    fig, ax = plt.subplots()
+
+    for protocol in protocols:
+
+        # list for handling graph data
+        x_data = []
+        y_data = []
+
+        for prec_frac in range(1, 5):
+            temp_time_taken = []
+
+            for i in range(10):
+                start_time = timeit.default_timer()
+                benchmark_avg_pool2d(worker, protocol, prec_frac)
+                time_taken = timeit.default_timer() - start_time
+                temp_time_taken.append(time_taken)
+
+            final_time_taken = sum(temp_time_taken) / len(temp_time_taken)
+            final_time_taken *= 1000
+            y_data.append(final_time_taken)
+            x_data.append(prec_frac)
+
+        ax.plot(x_data, y_data, label=protocol, linestyle="-")
+        x_data.clear()
+        y_data.clear()
+
+    # plotting of the data
+    plt.title("Benchmark avg_pool2d")
+    ax.set_xlabel("Precision Value")
+    ax.set_ylabel("Execution Time (ms)")
+    ax.legend(bbox_to_anchor=(1, 1.3), loc="upper right", title="Protocol", fontsize="small")
+    plt.tight_layout()
+    plt.savefig("../graphs/ast_benchmarks/benchmark_avg_pool2d.png")
+    # plt.show()
+
+
+# calling benchmark_avg_pool2d_plot
+benchmark_avg_pool2d_plot(b_data_avg_pool2d)
