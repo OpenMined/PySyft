@@ -468,7 +468,24 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self, method="division", nr_iters=10):
+    def signum(self):
+        r"""
+            Calculation of signum function for a given tensor
+        """
+        sgn = self > 0
+        zero = self == 0
+        pos = sgn
+        neg = sgn - 1
+        sgn = pos + neg + zero
+        return sgn
+
+    def modulus(self):
+        r"""
+            Calculation of modulus for a given tensor
+        """
+        return self.signum() * self
+
+    def reciprocal(self, method="NR", nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
         Ref: https://github.com/facebookresearch/CrypTen
@@ -488,25 +505,17 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         if method.lower() == "nr":
-            sgn = self > 0
-            pos = sgn
-            neg = sgn - 1
-            sgn = pos + neg
-            self = sgn * self
-            result = 3 * (0.5 - self).exp() + 0.003
+            new_self = self.modulus()
+            result = 3 * (0.5 - new_self).exp() + 0.003
             for i in range(nr_iters):
-                result = 2 * result - result * result * self
-            return sgn * result
+                result = 2 * result - result * result * new_self
+            return result * self.signum()
         elif method.lower() == "division":
             ones = self * 0 + 1
             return ones / self
         elif method.lower() == "log":
-            sgn = self > 0
-            pos = sgn
-            neg = sgn - 1
-            sgn = pos + neg
-            self = sgn * self
-            return (-self.log()).exp() * sgn
+            new_self = self.modulus()
+            return (-new_self.log()).exp() * self.signum()
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
 
