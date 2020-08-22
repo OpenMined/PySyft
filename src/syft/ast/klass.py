@@ -40,7 +40,9 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-        def get_run_class_method(attr_path_and_name: str) -> object: #TODO: tighten to return Callable
+        def get_run_class_method(
+            attr_path_and_name: str,
+        ) -> object:  # TODO: tighten to return Callable
             """It might seem hugely un-necessary to have these methods nested in this way.
             However, it has to do with ensuring that the scope of attr_path_and_name is local
             and not global. If we do not put a get_run_class_method around run_class_method then
