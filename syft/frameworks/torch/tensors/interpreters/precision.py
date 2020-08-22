@@ -488,25 +488,25 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         if method.lower() == "nr":
-            sgn = (self > 0)
+            sgn = self > 0
             pos = sgn
-            neg = (sgn - 1)
-            sgn=pos+neg
-            self=sgn*self
+            neg = sgn - 1
+            sgn = pos + neg
+            self = sgn * self
             result = 3 * (0.5 - self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * self
-            return sgn*result
+            return sgn * result
         elif method.lower() == "division":
             ones = self * 0 + 1
             return ones / self
         elif method.lower() == "log":
-            sgn = (self > 0)
+            sgn = self > 0
             pos = sgn
-            neg = (sgn - 1)
-            sgn=pos+neg
-            self=sgn*self
-            return (-self.log()).exp()*sgn
+            neg = sgn - 1
+            sgn = pos + neg
+            self = sgn * self
+            return (-self.log()).exp() * sgn
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
 
