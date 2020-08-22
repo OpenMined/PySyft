@@ -14,6 +14,7 @@ from syft.ast.globals import Globals
 
 from .allowlist import allowlist
 
+
 def create_torch_ast() -> Globals:
     ast = Globals()
 

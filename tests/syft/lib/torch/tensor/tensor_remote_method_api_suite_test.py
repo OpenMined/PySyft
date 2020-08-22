@@ -13,8 +13,9 @@ import torch as th
 import pytest
 from itertools import product
 from typing import List
+from typing import Any
 
-tensor_type = type(th.tensor([1,2,3]))
+tensor_type = type(th.tensor([1, 2, 3]))
 
 # Currently, we do not have constructors with torch.Tensor
 # for dtype in ["complex*", "q*"] (complex and quantized types)
@@ -26,14 +27,14 @@ TEST_TYPES = [
 
 BASIC_OPS = list()
 for method in allowlist.keys():
-    if('torch.Tensor.' in method):
+    if "torch.Tensor." in method:
         BASIC_OPS.append(method.split(".")[-1])
 
-BASIC_SELF_TENSORS = list()
-BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4]) # with a 0
+BASIC_SELF_TENSORS: List[Any] = list()
+BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4])  # with a 0
 # BASIC_INPUT_TENSORS.append([-1, 1, 2, 3, 4]) # without a 0
 # BASIC_INPUT_TENSORS.append([-0.1, 0.1, 0.2, 0.3, 0.4]) # with a decimal
-BASIC_SELF_TENSORS.append([[-0.1, 0.1],[0.2, 0.3]]) # square
+BASIC_SELF_TENSORS.append([[-0.1, 0.1], [0.2, 0.3]])  # square
 
 BASIC_METHOD_ARGS = list()
 BASIC_METHOD_ARGS.append("self")
@@ -50,8 +51,11 @@ TEST_DATA = list(product(TEST_TYPES, BASIC_OPS, BASIC_SELF_TENSORS, BASIC_METHOD
 alice = sy.VirtualMachine(name="alice")
 alice_client = alice.get_client()
 
-@pytest.mark.parametrize("tensor_type, op_name, self, args", TEST_DATA)
-def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: str, op_name: str, self: List, args:str) -> None:
+
+@pytest.mark.parametrize("tensor_type, op_name, self, _args", TEST_DATA)
+def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
+    tensor_type: str, op_name: str, self: List, _args: str
+) -> None:
 
     # Step 2: Decide which type we're testing
     t_type = TORCH_STR_DTYPE[tensor_type]
@@ -60,17 +64,16 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
     self = th.tensor(self, dtype=t_type)
 
     # Step 4: Create the arguments we're going to pass the method on
-    if args == "None":
+    if _args == "None":
         args = None
-    elif args == "self":
+    elif _args == "self":
         args = [th.tensor(self, dtype=t_type)]
-    elif args == "0":
+    elif _args == "0":
         args = [0]
-    elif args == "True":
+    elif _args == "True":
         args = [True]
-    elif args == "False":
+    elif _args == "False":
         args = [False]
-
 
     # Step 4: Get the method we're going to call
     target_op_method = getattr(self, op_name)
@@ -94,7 +97,7 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
 
         if """not implemented for""" in msg:
             valid_torch_command = False
-        elif msg == """RuntimeError('Subtraction, the `-` operator, with two bool tensors is not supported. Use the `^` or `logical_xor()` operator instead.')""":
+        elif """two bool tensors is not supported.""" in msg:
             valid_torch_command = False
         elif msg == """RuntimeError('ZeroDivisionError')""":
             valid_torch_command = False
@@ -145,17 +148,29 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
             valid_torch_command = False
         elif "must be Number, not Tensor" in msg:
             valid_torch_command = False
-        elif """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")""" == msg:
+        elif (
+            """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")"""
+            == msg
+        ):
             valid_torch_command = False
-        elif """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")""" == msg:
+        elif (
+            """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")"""
+            == msg
+        ):
             valid_torch_command = False
-        elif """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")""" == msg:
+        elif (
+            """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")"""
+            == msg
+        ):
             valid_torch_command = False
         elif """(position 1) must be int, not Tensor")""" in msg:
             valid_torch_command = False
         elif "received an invalid combination of arguments" in msg:
             valid_torch_command = False
-        elif """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")""" == msg:
+        elif (
+            """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")"""
+            == msg
+        ):
             valid_torch_command = False
         elif """must be bool, not Tensor""" in msg:
             valid_torch_command = False
@@ -165,7 +180,10 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
 
     except ValueError as e:
         msg = repr(e)
-        if msg == "ValueError('only one element tensors can be converted to Python scalars')":
+        if (
+            msg
+            == "ValueError('only one element tensors can be converted to Python scalars')"
+        ):
             valid_torch_command = False
         else:
             print(msg)
@@ -183,11 +201,13 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
     if valid_torch_command:
 
         # Step 7: Send our target tensor to alice.
-        xp = self.send(alice_client)
+        xp = self.send(alice_client)  # type:ignore
         if args is not None:
-            argsp = [arg.send(alice_client) if hasattr(arg, 'send') else arg for arg in args]
+            argsp = [
+                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
+            ]
         else:
-            argsp = None
+            argsp = None  # type:ignore
 
         # Step 8: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)
@@ -199,7 +219,7 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
         if argsp is not None:
             result = op_method(*argsp)
         else:
-            result = op_method()
+            result = op_method()  # type:ignore
 
         # Step 11: Ensure the method returned a pointer
         assert isinstance(result, Pointer)
@@ -223,10 +243,6 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(tensor_type: 
             # some types can't set Nans to 0 or do the final check
             if "not implemented for" not in msg:
                 raise e
-
-
-
-
 
     # TODO: put thought into garbage collection and then
     #  uncoment this.
