@@ -42,24 +42,41 @@ def test_torch_remote_tensor_register() -> None:
 
 
 @pytest.mark.parametrize("tensor_type, op_name", TEST_DATA)
-def test_torch_remote_remote_basic_ops(tensor_type: str, op_name: str) -> None:
-    """ Test basic operations on remote simple tensors """
+def test_symmetric_tensor_methods(tensor_type: str, op_name: str) -> None:
+    """ Test torch methods which accept another tensor of the same size and
+    shape as the other tensor"""
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
     t_type = TORCH_STR_DTYPE[tensor_type]
     x = th.tensor([-1, 0, 1, 2, 3, 4], dtype=t_type)
+    target_op_method = getattr(x, op_name)
 
-    xp = x.send(alice_client)
+    try:
+        # if this is a valid method for this type in torch
+        valid_torch_command = True
+        target_result = target_op_method(x)
+    except Exception:
+        # looks like this isn't a valid method for this type
+        # or some other problem existed with the setup of the test
+        valid_torch_command = False
 
-    op_method = getattr(xp, op_name, None)
-    assert op_method
+    # if the command is valid for tensors of this type - continue it
+    if valid_torch_command:
 
-    result = op_method(xp)  # op(xp, xp)
+        xp = x.send(alice_client)
 
-    assert isinstance(result, Pointer)
-    local_result = result.get()
+        op_method = getattr(xp, op_name, None)
+
+        assert op_method
+
+        result = op_method(xp)  # op(xp, xp)
+
+        assert isinstance(result, Pointer)
+        local_result = result.get()
+
+        assert (local_result == target_result).all()
 
     # TODO: put thought into garbage collection and then
     #  uncoment this.
@@ -100,7 +117,7 @@ def test_torch_no_read_permissions() -> None:
 
     # this should trigger an exception
     with pytest.raises(Exception) as exception:
-        local_x = ptr.get()
+        ptr.get()
 
     assert (
         str(exception.value)

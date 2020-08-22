@@ -40,34 +40,43 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-        def run_class_method(
-            attr: Union[Callable, CallableT],
-            attr_path_and_name: str,
-            __self: Any,
-            args: Tuple[Any, ...],
-            kwargs: Any,
-        ) -> object:
-            # TODO: lookup actual return type instead of just guessing that it's identical
-            result = self.pointer_type(client=__self.client)
+        def get_run_class_method(attr_path_and_name: str) -> object: #TODO: tighten to return Callable
+            """It might seem hugely un-necessary to have these methods nested in this way.
+            However, it has to do with ensuring that the scope of attr_path_and_name is local
+            and not global. If we do not put a get_run_class_method around run_class_method then
+            each run_class_method will end up referencing the same attr_path_and_name variable
+            and all methods will actually end up calling the same method. However, if we return
+            the function object itself then it includes the current attr_path_and_name as an internal
+            variable and when we call get_run_class_method multiple times it returns genuinely
+            different methods each time with a different intenral attr_path_and_name variable."""
 
-            # QUESTION can the id_at_location be None?
-            result_id_at_location = getattr(result, "id_at_location", None)
-            if result_id_at_location is not None:
-                cmd = RunClassMethodAction(
-                    path=attr_path_and_name,
-                    _self=__self,
-                    args=args,
-                    kwargs=kwargs,
-                    id_at_location=result_id_at_location,
-                    address=__self.client.address,  # TODO: these uses of the word "location" should change to "address"
-                )
-                __self.client.send_immediate_msg_without_reply(msg=cmd)
+            def run_class_method(
+                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
+            ) -> object:
+                # TODO: lookup actual return type instead of just guessing that it's identical
+                result = self.pointer_type(client=__self.client)
 
-            return result
+                # QUESTION can the id_at_location be None?
+                result_id_at_location = getattr(result, "id_at_location", None)
+                if result_id_at_location is not None:
+                    cmd = RunClassMethodAction(
+                        path=attr_path_and_name,
+                        _self=__self,
+                        args=args,
+                        kwargs=kwargs,
+                        id_at_location=result_id_at_location,
+                        address=__self.client.address,
+                    )
+                    __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+                return result
+
+            return run_class_method
 
         attrs = {}
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
+
             # QUESTION: Could path_and_name be None?
             # It seems as though attrs can contain
             # Union[Callable, CallableT]
@@ -75,9 +84,7 @@ class Class(Callable):
             # where CallableT is typing.Callable == any function, method, lambda
             # so we have to check for path_and_name
             if attr_path_and_name is not None:
-                attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(
-                    attr, attr_path_and_name, _self, args, kwargs
-                )
+                attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)

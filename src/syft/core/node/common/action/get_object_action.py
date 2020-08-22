@@ -101,8 +101,10 @@ class GetObjectAction(ImmediateActionWithReply):
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.obj_id = obj_id
+
+        # the logger needs self.obj_id to be set already - so we call this later
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
     def execute_action(
         self, node: AbstractNode, verify_key: VerifyKey
@@ -122,6 +124,10 @@ class GetObjectAction(ImmediateActionWithReply):
         # convenience instead of definitely having to delete it now
         del node.store[self.obj_id]
         return msg
+
+    @property
+    def pprint(self) -> str:
+        return f"GetObjectAction({self.obj_id})"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:

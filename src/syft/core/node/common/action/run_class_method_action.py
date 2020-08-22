@@ -30,12 +30,15 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         address: Address,
         msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
         self.path = path
         self._self = _self
         self.args = args
         self.kwargs = kwargs
         self.id_at_location = id_at_location
+
+        # logging (sy.VERBOSE) needs .path to exist before calling
+        # this which is why i've put this super().__init__ down here
+        super().__init__(address=address, msg_id=msg_id)
 
     def intersect_keys(
         self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
@@ -50,6 +53,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             intersection_dict[k] = left[k]  # left and right have the same keys
 
         return intersection_dict
+
+    @property
+    def pprint(self) -> str:
+        return f"RunClassMethodAction({self.path})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
