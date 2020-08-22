@@ -18,3 +18,6 @@ b_data_max_pool2d = ["snn", "fss"]
 
 # data format for  benchmark_avg_pool2d_plot: (list) (['protocols'])
 b_data_avg_pool2d = ["snn", "fss"]
+
+# data format for  benchmark_avg_pool2d_plot: (list) (['protocols'])
+b_data_batch_norm = ["snn", "fss"]
