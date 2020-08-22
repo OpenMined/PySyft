@@ -41,6 +41,7 @@ def test_share_get(workers, protocol, dtype, n_workers):
 
     t = torch.tensor([1, 2, 3])
     x = t.share(*share_holders[:n_workers], **kwargs)
+    assert t.dtype == x.dtype
     x = x.get()
 
     assert (x == t).all()
