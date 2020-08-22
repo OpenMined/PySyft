@@ -22,7 +22,7 @@ import syft as sy
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_specific_location_init_without_arguments():
+def test_specific_location_init_without_arguments() -> None:
     """Test that SpecificLocation will self-create an ID object if none is given"""
 
     # init works without arguments
@@ -31,7 +31,7 @@ def test_specific_location_init_without_arguments():
     assert isinstance(loc.id, UID)
 
 
-def test_specific_location_init_with_specific_id():
+def test_specific_location_init_with_specific_id() -> None:
     """Test that SpecificLocation will use the ID you pass into the constructor"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -44,7 +44,7 @@ def test_specific_location_init_with_specific_id():
 # --------------------- CLASS METHODS ---------------------
 
 
-def test_compare():
+def test_compare() -> None:
     """While uses of this feature should be quite rare, we
     should be able to check whether two objects are the same
     based on their IDs being the same by default. Note that
@@ -61,7 +61,7 @@ def test_compare():
     assert obj == obj2
 
 
-def test_to_string():
+def test_to_string() -> None:
     """Tests that SpecificLocation generates an intuitive string."""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -73,22 +73,22 @@ def test_to_string():
 # --------------------- SERDE ---------------------
 
 
-def test_default_serialization():
+def test_default_serialization() -> None:
     """Tests that default SpecificLocation serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = SpecificLocation(id=uid)
+    obj = SpecificLocation(id=uid, name="Test")
 
     blob = obj.to_proto()
 
     assert obj.serialize() == blob
 
 
-def test_default_deserialization():
+def test_default_deserialization() -> None:
     """Tests that default SpecificLocation deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = SpecificLocation(id=uid)
+    obj = SpecificLocation(id=uid, name="Test")
 
     blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize())
 
@@ -96,20 +96,20 @@ def test_default_deserialization():
     assert obj == obj2
 
 
-def test_proto_serialization():
+def test_proto_serialization() -> None:
     """Tests that default SpecificLocation serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = SpecificLocation(id=uid)
+    obj = SpecificLocation(id=uid, name="Test")
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize())
+    blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize(), name="Test")
 
     assert obj.proto() == blob
     assert obj.to_proto() == blob
     assert obj.serialize(to_proto=True) == blob
 
 
-def test_proto_deserialization():
+def test_proto_deserialization() -> None:
     """Tests that default SpecificLocation deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -121,13 +121,13 @@ def test_proto_deserialization():
     assert obj == obj2
 
 
-def test_json_serialization():
+def test_json_serialization() -> None:
     """Tests that JSON SpecificLocation serialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = SpecificLocation(id=uid)
+    obj = SpecificLocation(id=uid, name="Test")
 
-    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
     main = {
         "objType": "syft.core.io.location.specific.SpecificLocation",
         "content": json.dumps(content),
@@ -139,10 +139,10 @@ def test_json_serialization():
     assert obj.serialize(to_json=True) == blob
 
 
-def test_json_deserialization():
+def test_json_deserialization() -> None:
     """Tests that JSON SpecificLocation deserialization works as expected"""
 
-    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
     main = {
         "objType": "syft.core.io.location.specific.SpecificLocation",
         "content": json.dumps(content),
@@ -156,47 +156,54 @@ def test_json_deserialization():
     )
 
 
-def test_binary_serialization():
+def test_binary_serialization() -> None:
     """Tests that binary SpecificLocation serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = SpecificLocation(id=uid)
+    obj = SpecificLocation(id=uid, name="Test")
 
-    blob = (
-        b'{"objType": "syft.core.io.location.specific.SpecificLocation", "content":'
-        b' "{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
-    )
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
+    main = {
+        "objType": "syft.core.io.location.specific.SpecificLocation",
+        "content": json.dumps(content),
+    }
+    blob = bytes(json.dumps(main), "utf-8")
 
     assert obj.binary() == blob
     assert obj.to_binary() == blob
     assert obj.serialize(to_binary=True) == blob
 
 
-def test_binary_deserialization():
+def test_binary_deserialization() -> None:
     """Test that binary SpecificLocation deserialization works as expected"""
 
-    blob = (
-        b'{"objType": "syft.core.io.location.specific.SpecificLocation", "content": '
-        b'"{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
-    )
+    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}, "name": "Test"}
+    main = {
+        "objType": "syft.core.io.location.specific.SpecificLocation",
+        "content": json.dumps(content),
+    }
+    blob = bytes(json.dumps(main), "utf-8")
+
     obj = sy.deserialize(blob=blob, from_binary=True)
     assert obj == SpecificLocation(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)),
+        name="Test",
     )
 
 
-def test_hex_serialization():
+def test_hex_serialization() -> None:
     """Tests that hex SpecificLocation serializes as expected"""
 
     obj = SpecificLocation(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)),
+        name="Test",
     )
 
     blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e696f2e6c6f636174696"
-        "f6e2e73706563696669632e53706563696669634c6f636174696f6e222c202263"
-        "6f6e74656e74223a20227b5c2269645c223a207b5c2276616c75655c223a205c2"
-        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d7d227d"
+        "7b226f626a54797065223a2022737966742e636f72652e696f2e6c6f636174696f6e2e73706563"
+        "696669632e53706563696669634c6f636174696f6e222c2022636f6e74656e74223a20227b5c22"
+        "69645c223a207b5c2276616c75655c223a205c222b7875775a31753354456d2b7a75634171776f"
+        "5646413d3d5c227d2c205c226e616d655c223a205c22546573745c227d227d"
     )
 
     assert obj.hex() == blob
@@ -204,17 +211,18 @@ def test_hex_serialization():
     assert obj.serialize(to_hex=True) == blob
 
 
-def test_hex_deserialization():
+def test_hex_deserialization() -> None:
     """Test that hex SpecificLocation deserialization works as expected"""
 
     blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e696f2e6c6f636174696"
-        "f6e2e73706563696669632e53706563696669634c6f636174696f6e222c202263"
-        "6f6e74656e74223a20227b5c2269645c223a207b5c2276616c75655c223a205c2"
-        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d7d227d"
+        "7b226f626a54797065223a2022737966742e636f72652e696f2e6c6f636174696f6e2e73706563"
+        "696669632e53706563696669634c6f636174696f6e222c2022636f6e74656e74223a20227b5c22"
+        "69645c223a207b5c2276616c75655c223a205c222b7875775a31753354456d2b7a75634171776f"
+        "5646413d3d5c227d2c205c226e616d655c223a205c22546573745c227d227d"
     )
 
     obj = sy.deserialize(blob=blob, from_hex=True)
     assert obj == SpecificLocation(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)),
+        name="Test",
     )

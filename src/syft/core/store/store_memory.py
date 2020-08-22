@@ -1,7 +1,11 @@
 from typing import Dict
 from typing import KeysView
 from typing import ValuesView
-from typing import List
+from typing import Set
+
+
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from . import ObjectStore
@@ -20,16 +24,17 @@ class MemoryStore(ObjectStore):
 
     __slots__ = ["_objects", "_search_engine"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._objects: Dict[UID, AbstractStorableObject] = {}
         self._search_engine = None
+        self.post_init()
 
-    def get_objects_of_type(self, obj_type: type) -> List[AbstractStorableObject]:
-        results = list()
+    def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
+        results = set()
         for key, obj in self._objects.items():
             if isinstance(obj.data, obj_type):
-                results.append(obj)
+                results.add(obj)
 
         return results
 
@@ -79,11 +84,11 @@ class MemoryStore(ObjectStore):
     def clear(self) -> None:
         self._objects.clear()
 
-    def _object2proto(self) -> None:
+    def _object2proto(self) -> GeneratedProtocolMessageType:
         pass
 
     @staticmethod
-    def _proto2object(proto):
+    def _proto2object(proto: GeneratedProtocolMessageType) -> "MemoryStore":
         pass
 
     def __repr__(self) -> str:

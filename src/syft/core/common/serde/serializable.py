@@ -3,6 +3,10 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing import Union
+from typing import Type
+from typing import Tuple
+from typing import Dict
+from typing import Any
 
 # Fixes python3.6
 # however API changed between versions so typing_extensions smooths this over:
@@ -14,6 +18,7 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
 from ....util import get_fully_qualified_name
+from ....util import random_name
 
 
 # GenericMeta Fixes python 3.6
@@ -33,7 +38,9 @@ class MetaSerializable(GenericM):
     for all subclasses of Serializable via this metaclass. This way, nobody has
     to worry about remembering to implement this flag."""
 
-    def __new__(cls, name, bases, dct):
+    def __new__(
+        cls: Type, name: str, bases: Tuple[Type, ...], dct: Dict[str, Any]
+    ) -> "MetaSerializable":
         x = super().__new__(cls, name, bases, dct)
         try:
             protobuf_schema = dct["get_protobuf_schema"].__get__("")()
@@ -156,7 +163,7 @@ class Serializable(metaclass=MetaSerializable):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -321,3 +328,7 @@ class Serializable(metaclass=MetaSerializable):
                             one of the arguments of the serialize() method such as:
                             to_proto, to_json, to_binary, or to_hex."""
             )
+
+    @staticmethod
+    def random_name() -> str:
+        return random_name()

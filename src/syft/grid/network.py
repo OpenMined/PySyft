@@ -10,17 +10,14 @@ from syft.core.node.network.network import Network
 
 app = Flask(__name__)
 
-
 network = Network(name="ucsf-net")
 
 
 @app.route("/")
-def get_client():
-
+def get_client() -> str:
     client = network.get_client()
-
     return pickle.dumps(client).hex()
 
 
-def run():
+def run() -> None:
     app.run()

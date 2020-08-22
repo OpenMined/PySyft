@@ -59,24 +59,31 @@ class GridHttpClientConnection(ClientConnection):
 
 class Duet(DomainClient):
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 5000, id: Optional[str] = None
+        self,
+        domain_url: Optional[str] = None,
+        host: str = "127.0.0.1",
+        port: int = 5000,
+        id: Optional[str] = None,
     ) -> None:
-        domain_url = "http://" + host + ":" + str(port) + "/"
 
         # generate a signing key
         self.signing_key = SigningKey.generate()
         self.verify_key = self.signing_key.verify_key
 
-        # start a node on host and port
-        if id is None:
-            # set the pub_key as the root_key of the server so this user will be root
-            self.start_server(host=host, port=port, root_key=self.verify_key)
-            print(f"♫♫♫ > URL:{domain_url}")
+        if domain_url is None:
 
-            time.sleep(0.5)
-            print("♫♫♫ > Connecting...")
+            domain_url = "http://" + host + ":" + str(port) + "/"
 
-            time.sleep(0.5)
+            # start a node on host and port
+            if id is None:
+                # set the pub_key as the root_key of the server so this user will be root
+                self.start_server(host=host, port=port, root_key=self.verify_key)
+                print(f"♫♫♫ > URL:{domain_url}")
+
+                time.sleep(0.5)
+                print("♫♫♫ > Connecting...")
+
+                time.sleep(0.5)
 
         address, name, route = self.get_client_params(domain_url=domain_url)
 
@@ -84,7 +91,13 @@ class Duet(DomainClient):
         if id is not None:
             address = SpecificLocation(id=UID.from_string(value=id))
 
-        super().__init__(domain=address, name=name, routes=[route])
+        super().__init__(
+            domain=address,
+            name=name,
+            routes=[route],
+            signing_key=self.signing_key,
+            verify_key=self.verify_key,
+        )
         print("♫♫♫ > Connected!")
 
     def send_signed(self) -> None:
@@ -105,7 +118,7 @@ class Duet(DomainClient):
 
     def start_server(self, host: str, port: int, root_key: VerifyKey) -> None:
         app = Flask(__name__)
-        domain = Domain(name="duet", root_key=root_key)
+        domain = Domain(name="duet", verify_key=root_key)
         print(f"Domain with Root Key: {domain.root_key}")
 
         @app.route("/")

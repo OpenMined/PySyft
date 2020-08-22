@@ -1,11 +1,15 @@
 # external lib imports
 import json
 import sys
+import pandas as pd
 
 # external class imports
 from typing import Optional
 from typing import List
 from typing import Tuple
+from typing import Dict
+from typing import Any
+from typing import Union
 
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
@@ -16,6 +20,7 @@ from syft.core.common.message import (
     EventualSyftMessageWithoutReply,
     SignedImmediateSyftMessageWithoutReply,
 )
+from syft.core.node.common.service.obj_search_service import ObjectSearchMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ...common.serde.deserialize import _deserialize
@@ -28,6 +33,8 @@ from ...io.route import SoloRoute
 from ...io.route import Route
 from ...common.uid import UID
 from ....lib import lib_ast
+from ....core.pointer.pointer import Pointer
+import syft as sy
 
 
 class Client(AbstractNodeClient):
@@ -41,7 +48,7 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         routes: List[Route],
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
@@ -50,9 +57,11 @@ class Client(AbstractNodeClient):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        super().__init__(network=network, domain=domain, device=device, vm=vm)
+        name = f"{name} Client" if name is not None else None
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
-        self.name = f"{name} Client"
         self.routes = routes
         self.default_route_index = 0
 
@@ -69,6 +78,8 @@ class Client(AbstractNodeClient):
             self.verify_key = verify_key
 
         self.install_supported_frameworks()
+
+        self.store = StoreClient(client=self)
 
     @property
     def icon(self) -> str:
@@ -104,10 +115,11 @@ class Client(AbstractNodeClient):
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
-        self.lib_ast.set_client(self)
+        if self.lib_ast is not None:
+            self.lib_ast.set_client(self)
 
-        for attr_name, attr in self.lib_ast.attrs.items():
-            setattr(self, attr_name, attr)
+            for attr_name, attr in self.lib_ast.attrs.items():
+                setattr(self, attr_name, attr)
 
     def add_me_to_my_address(self) -> None:
         raise NotImplementedError
@@ -123,7 +135,8 @@ class Client(AbstractNodeClient):
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        print(f"> Registering {client.pprint} with {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
             lookup_id=client.id,
@@ -180,11 +193,12 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            output = (
-                f"> {self.pprint} Signing {msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-            )
-            print(output)
+            if sy.VERBOSE:
+                output = (
+                    f"> {self.pprint} Signing {msg.pprint} with "
+                    + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+                )
+                print(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
@@ -204,14 +218,15 @@ class Client(AbstractNodeClient):
         route_index = route_index or self.default_route_index
 
         if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-            output = (
-                f"> {self.pprint} Signing {msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-            )
-            print(output)
+            if sy.VERBOSE:
+                output = (
+                    f"> {self.pprint} Signing {msg.pprint} with "
+                    + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+                )
+                print(output)
             msg = msg.sign(signing_key=self.signing_key)
-
-        print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        if sy.VERBOSE:
+            print(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -219,11 +234,12 @@ class Client(AbstractNodeClient):
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
         route_index = route_index or self.default_route_index
-        output = (
-            f"> {self.pprint} Signing {msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-        )
-        print(output)
+        if sy.VERBOSE:
+            output = (
+                f"> {self.pprint} Signing {msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"
+            )
+            print(output)
         signed_msg = msg.sign(signing_key=self.signing_key)
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
@@ -319,3 +335,50 @@ class Client(AbstractNodeClient):
         keys = f"🔑 {verify}"
 
         return keys
+
+
+class StoreClient:
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    @property
+    def store(self) -> List[Pointer]:
+        msg = ObjectSearchMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        results = self.client.send_immediate_msg_with_reply(msg=msg).results
+
+        # This is because of a current limitation in Pointer where we cannot
+        # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
+        for result in results:
+            result.client = self.client
+
+        return results
+
+    def __getitem__(self, key: Union[str, int]) -> Pointer:
+        if isinstance(key, str):
+            for obj in self.store:
+                if key == str(obj.id_at_location.value):
+                    return obj
+            raise KeyError("No such request found for string id:" + str(key))
+        if isinstance(key, int):
+            return self.store[key]
+        else:
+            raise KeyError("Please pass in a string or int key")
+
+    def __repr__(self) -> str:
+        return repr(self.store)
+
+    @property
+    def pandas(self) -> pd.DataFrame:
+
+        obj_lines: List[Dict[str, Any]] = list()
+        for obj in self.store:
+            obj_lines.append(
+                {
+                    "ID": obj.id_at_location,
+                    "Tags": obj.tags,
+                    "Description": obj.description,
+                }
+            )
+        return pd.DataFrame(obj_lines)

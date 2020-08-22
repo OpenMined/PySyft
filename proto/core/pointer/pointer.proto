@@ -11,5 +11,7 @@ message Pointer {
     string pointer_name = 2;
     syft.core.common.UID id_at_location = 3;
     syft.core.io.Address location = 4;
+    repeated string tags = 5;
+    string description = 6;
 
 }

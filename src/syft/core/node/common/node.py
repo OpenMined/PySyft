@@ -8,6 +8,7 @@ Do NOT (without talking to trask):
 - serialize anything with pickle
 """
 
+import syft as sy
 from typing import List, TypeVar, Dict, Union, Optional, Type, Any
 import json
 from nacl.signing import SigningKey
@@ -53,6 +54,10 @@ from .service.obj_action_service import (
 from .service.repr_service import ReprService
 from .service.node_service import EventualNodeServiceWithoutReply
 from .service.node_service import ImmediateNodeServiceWithReply
+from .service.obj_search_permission_service import (
+    ImmediateObjectSearchPermissionUpdateService,
+)
+from .service.obj_search_service import ImmediateObjectSearchService
 
 
 # this generic type for Client bound by Client
@@ -89,13 +94,13 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
     ):
 
-        super().__init__(network=network, domain=domain, device=device, vm=vm)
-
-        # This is the name of the node - it exists purely to help the
+        # The node has a name - it exists purely to help the
         # end user have some idea about what this node is in a human
         # readable form. It is not guaranteed to be unique (or to
         # really be anything for that matter).
-        self.name = name
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
@@ -168,11 +173,15 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectActionServiceWithoutReply
         )
+        self.immediate_services_without_reply.append(
+            ImmediateObjectSearchPermissionUpdateService
+        )
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
         self.immediate_services_with_reply: List[Any] = []
         self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
+        self.immediate_services_with_reply.append(ImmediateObjectSearchService)
 
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
@@ -229,8 +238,6 @@ class Node(AbstractNode):
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            # QUESTION: this was destination=self.id and then destination=self.target_id
-            # reverting back but unsure what is correct
             solo = SoloRoute(destination=self.id, connection=conn_client)
             # inject name
             solo.name = f"Route ({self.name} <-> {self.name} Client)"
@@ -268,7 +275,7 @@ class Node(AbstractNode):
         by returning the clients we used to interact with them from
         the object store."""
 
-        return self.store.get_objects_of_type(obj_type=Client)
+        return list(self.store.get_objects_of_type(obj_type=Client))
 
     @property
     def id(self) -> UID:
@@ -276,7 +283,8 @@ class Node(AbstractNode):
 
     @property
     def known_child_nodes(self) -> List[Address]:
-        print(f"> {self.pprint} Getting known Children Nodes")
+        if sy.VERBOSE:
+            print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
             nodes = []
             for key in self.store.keys():
@@ -287,7 +295,8 @@ class Node(AbstractNode):
             # nodes = self.store.get_objects_of_type(obj_type=self.child_type_client_type)
             return nodes
         else:
-            print(f"> Node {self.pprint} has no children")
+            if sy.VERBOSE:
+                print(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
@@ -304,18 +313,20 @@ class Node(AbstractNode):
         # maybe I shouldn't have created process_message because it screws up
         # all the type inferrence.
         res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        output = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        print(output)
+        if sy.VERBOSE:
+            output = (
+                f"> {self.pprint} Signing {res_msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+            )
+            print(output)
         return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        print(f"> Received {msg.pprint} @ {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Received {msg.pprint} @ {self.pprint}")
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
         return None
 
@@ -329,11 +340,13 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
-        print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):
-            print(
-                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-            )
+            if sy.VERBOSE:
+                print(
+                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+                )
             # Process Message here
             if not msg.is_valid:
                 raise Exception("Message is not valid.")
@@ -355,9 +368,10 @@ class Node(AbstractNode):
             )
 
         else:
-            print(
-                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
-            )
+            if sy.VERBOSE:
+                print(
+                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+                )
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(

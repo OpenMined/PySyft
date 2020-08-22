@@ -38,7 +38,21 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 # better way. But we want to support other frameworks so - gotta do it.
                 id=self.obj.id,  # type: ignore
                 data=self.obj,
-                read_permissions=set([verify_key, node.verify_key]),
+                tags=(
+                    # QUESTION: do we want None or an empty []
+                    self.obj.tags  # type: ignore
+                    if hasattr(self.obj, "tags")
+                    else None
+                ),
+                description=(
+                    self.obj.description  # type: ignore
+                    if hasattr(self.obj, "description")
+                    else ""
+                ),
+                read_permissions={
+                    node.verify_key: node.id,
+                    verify_key: None,  # we dont have the passed in sender's UID
+                },
             )
         )
 

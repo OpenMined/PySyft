@@ -10,6 +10,7 @@ from syft.core.common.uid import UID
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
     RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
 )
+import syft as sy
 from .auth import service_auth
 from ....io.address import Address
 from .....decorators import syft_decorator
@@ -34,7 +35,8 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterChildNodeMessage_PB:
-        print(f"> {self.icon} -> Proto 🔢")
+        if sy.VERBOSE:
+            print(f"> {self.icon} -> Proto 🔢")
         return RegisterChildNodeMessage_PB(
             lookup_id=self.lookup_id.serialize(),  # TODO: not sure if this is needed anymore
             child_node_client_address=self.child_node_client_address.serialize(),
@@ -45,16 +47,15 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: RegisterChildNodeMessage_PB) -> "RegisterChildNodeMessage":
         msg = RegisterChildNodeMessage(
-            lookup_id=_deserialize(
-                blob=proto.msg_id
-            ),  # TODO: not sure if this is needed anymore
+            lookup_id=_deserialize(blob=proto.lookup_id),
             child_node_client_address=_deserialize(
                 blob=proto.child_node_client_address
             ),
             address=_deserialize(blob=proto.address),
             msg_id=_deserialize(blob=proto.msg_id),
         )
-        print(f"> {msg.icon} <- 🔢 Proto")
+        if sy.VERBOSE:
+            print(f"> {msg.icon} <- 🔢 Proto")
         return msg
 
     @staticmethod
@@ -73,9 +74,10 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: RegisterChildNodeMessage, verify_key: VerifyKey
     ) -> None:
-        print(
-            f"> Executing {ChildNodeLifecycleService.pprint()} {msg.pprint} on {node.pprint}"
-        )
+        if sy.VERBOSE:
+            print(
+                f"> Executing {ChildNodeLifecycleService.pprint()} {msg.pprint} on {node.pprint}"
+            )
         # Step 1: Store the client to the child in our object store.
         # QUESTION: Now that these are serialized Address not Full Client
         # What do we want to store and which id do we want?
@@ -91,7 +93,13 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         addr = msg.child_node_client_address
         obj_id = msg.lookup_id  # TODO: Fix, see above
         node.store.store(obj=StorableObject(id=obj_id, data=addr,))
-        print(f"> Saving {addr.target_emoji()} 💾 to {node.pprint} ")
+        if sy.VERBOSE:
+            print(
+                (
+                    f"> Saving 💾 {addr.pprint} {addr.target_emoji()} with "
+                    + f"Key: {obj_id} ➡️ {node.store.pprint}"
+                )
+            )
 
         # Step 2: update the child node and its descendants with our node.id in their
         # .address objects
@@ -105,9 +113,11 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         # now that its a serialized address there are no pointers in memory to the
         # original child clients send_immediate_msg_without_reply function so
         # there is no way to invoke it
-
-        print(f"> Sending 👪 Update from {node.pprint} back to {addr.target_emoji()}")
-        print("> Update Contains", type(node.address), node.address)
+        if sy.VERBOSE:
+            print(
+                f"> Sending 👪 Update from {node.pprint} back to {addr.target_emoji()}"
+            )
+            print("> Update Contains", type(node.address), node.address)
         heritage_msg = HeritageUpdateMessage(
             new_ancestry_address=node.address, address=msg.child_node_client_address
         )
@@ -117,7 +127,8 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
             in_memory_client = node.in_memory_client_registry[location]
             # we need to sign here with the current node not the destination side
             in_memory_client.send_immediate_msg_without_reply(msg=heritage_msg)
-            print(f"> Forwarding {msg.pprint} to {addr.target_emoji()}")
+            if sy.VERBOSE:
+                print(f"> Forwarding {msg.pprint} to {addr.target_emoji()}")
             return None
         except Exception as e:
             print(f"{location} not on nodes in_memory_client. {e}")

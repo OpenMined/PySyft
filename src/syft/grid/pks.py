@@ -11,11 +11,11 @@ network = Network(name="ucsf-net")
 
 
 @app.route("/")
-def hello_world():
+def hello_world() -> str:
     return "A network:" + str(network.name)
 
 
-def run():
+def run() -> None:
     app.run()
 
 

@@ -25,7 +25,7 @@ from syft.core.common import UID
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_basic_init():
+def test_basic_init() -> None:
     """Test that creating ObjectWithID() does in fact create
     an object with an id."""
 
@@ -33,7 +33,7 @@ def test_basic_init():
     assert isinstance(obj.id, UID)
 
 
-def test_immutability_of_id():
+def test_immutability_of_id() -> None:
     """We shouldn't allow people to modify the id of an
     ObjectWithID because this can create all sorts of errors.
 
@@ -55,7 +55,7 @@ def test_immutability_of_id():
 # --------------------- CLASS METHODS ---------------------
 
 
-def test_compare():
+def test_compare() -> None:
     """While uses of this feature should be quite rare, we
     should be able to check whether two objects are the same
     based on their IDs being the same by default. Note that
@@ -72,7 +72,7 @@ def test_compare():
     assert obj == obj2
 
 
-def test_to_string():
+def test_to_string() -> None:
     """Tests that UID generates an intuitive string."""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -84,7 +84,7 @@ def test_to_string():
 # --------------------- SERDE ---------------------
 
 
-def test_object_with_id_default_serialization():
+def test_object_with_id_default_serialization() -> None:
     """Tests that default ObjectWithID serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -95,7 +95,7 @@ def test_object_with_id_default_serialization():
     assert obj.serialize() == blob
 
 
-def test_object_with_id_default_deserialization():
+def test_object_with_id_default_deserialization() -> None:
     """Tests that default ObjectWithID deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -107,7 +107,7 @@ def test_object_with_id_default_deserialization():
     assert obj == obj2
 
 
-def test_object_with_id_proto_serialization():
+def test_object_with_id_proto_serialization() -> None:
     """Tests that default ObjectWithID serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -120,7 +120,7 @@ def test_object_with_id_proto_serialization():
     assert obj.serialize(to_proto=True) == blob
 
 
-def test_object_with_id_proto_deserialization():
+def test_object_with_id_proto_deserialization() -> None:
     """Tests that default UID deserialization works as expected - from JSON"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -132,7 +132,7 @@ def test_object_with_id_proto_deserialization():
     assert obj == obj2
 
 
-def test_object_with_id_json_serialization():
+def test_object_with_id_json_serialization() -> None:
     """Tests that JSON ObjectWithID serialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -150,7 +150,7 @@ def test_object_with_id_json_serialization():
     assert obj.serialize(to_json=True) == blob
 
 
-def test_object_with_id_json_deserialization():
+def test_object_with_id_json_deserialization() -> None:
     """Tests that JSON ObjectWithID deserialization works as expected"""
 
     content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
@@ -167,7 +167,7 @@ def test_object_with_id_json_deserialization():
     )
 
 
-def test_object_with_id_binary_serialization():
+def test_object_with_id_binary_serialization() -> None:
     """Tests that binary ObjectWithID serializes as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -183,7 +183,7 @@ def test_object_with_id_binary_serialization():
     assert obj.serialize(to_binary=True) == blob
 
 
-def test_object_with_id_binary_deserialization():
+def test_object_with_id_binary_deserialization() -> None:
     """Test that binary ObjectWithID deserialization works as expected"""
 
     blob = (
@@ -196,7 +196,7 @@ def test_object_with_id_binary_deserialization():
     )
 
 
-def test_object_with_id_hex_serialization():
+def test_object_with_id_hex_serialization() -> None:
     """Tests that hex ObjectWithID serializes as expected"""
 
     obj = ObjectWithID(
@@ -214,7 +214,7 @@ def test_object_with_id_hex_serialization():
     assert obj.serialize(to_hex=True) == blob
 
 
-def test_object_with_id_hex_deserialization():
+def test_object_with_id_hex_deserialization() -> None:
     """Test that hex ObjectWithID deserialization works as expected"""
 
     blob = (
@@ -233,7 +233,7 @@ def test_object_with_id_hex_deserialization():
 # ----------------------- CHILDREN -----------------------
 
 
-def test_subclasses_have_names():
+def test_subclasses_have_names() -> None:
     """Ensure that all known subclassses of ObjectWithID have
     a __name__ parameter. I'm not sure why but occasionally
     I came across objects without them"""

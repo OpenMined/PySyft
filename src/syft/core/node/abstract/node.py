@@ -19,6 +19,7 @@ from ...common.message import (
 
 class AbstractNode(Address):
 
+    name: Optional[str]
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
@@ -30,15 +31,18 @@ class AbstractNode(Address):
     @syft_decorator(typechecking=True)
     def __init__(
         self,
+        name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
     ):
-        super().__init__(network=network, domain=domain, device=device, vm=vm)
+        super().__init__(
+            name=name, network=network, domain=domain, device=device, vm=vm
+        )
 
-    name: Optional[str]
     store: ObjectStore
+    requests: List
     lib_ast: Any  # Cant import Globals (circular reference)
     """"""
 

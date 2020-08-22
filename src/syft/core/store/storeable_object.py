@@ -1,15 +1,17 @@
 import pydoc
 from typing import List, Optional, Type
-from typing import Set
+from typing import Dict
+from nacl.signing import VerifyKey
+from google.protobuf.message import Message
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from syft.core.common.serde.deserialize import _deserialize
 from ..common.uid import UID
-from google.protobuf.message import Message
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
-from nacl.signing import VerifyKey
+from ...util import key_emoji
 
 
 class StorableObject(AbstractStorableObject):
@@ -46,16 +48,23 @@ class StorableObject(AbstractStorableObject):
         data: object,
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
-        read_permissions: Optional[Set[VerifyKey]] = set(),
+        read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
+        search_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data
         self.description = description
         self.tags = tags
 
-        # the set of "verify key" objects corresponding to people
+        # the dict key of "verify key" objects corresponding to people
+        # the value is the original request_id to allow lookup later
         # who are allowed to call .get() and download this object.
         self.read_permissions = read_permissions
+
+        # the dict key of "verify key" objects corresponding to people
+        # the value is the original request_id to allow lookup later
+        # who are allowed to know that the tensor exists (via search or other means)
+        self.search_permissions = search_permissions
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
@@ -77,13 +86,16 @@ class StorableObject(AbstractStorableObject):
         data = self._data_object2proto()
         proto.data.Pack(data)
 
-        # Step 5: save the description into proto
-        proto.description = self.description
+        if hasattr(self.data, "description"):
+            # Step 5: save the description into proto
+            proto.description = self.data.description  # type: ignore
 
-        # Step 6: save tags into proto if they exist
-        if self.tags is not None:
-            for tag in self.tags:
-                proto.tags.append(tag)
+        # QUESTION: Which one do we want, self.data.tags or self.tags or both???
+        if hasattr(self.data, "tags"):
+            # Step 6: save tags into proto if they exist
+            if self.data.tags is not None and self.tags is not None:  # type: ignore
+                for tag in self.tags:
+                    proto.tags.append(tag)
 
         return proto
 
@@ -99,6 +111,8 @@ class StorableObject(AbstractStorableObject):
         #
         # schematic_type = data_type
 
+        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
+        #  PYDOC.LOCATE!!!
         # Step 3: get the type of wrapper to use to deserialize
         obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
         target_type = obj_type
@@ -124,9 +138,15 @@ class StorableObject(AbstractStorableObject):
         if proto.tags:
             tags = list(proto.tags)
 
-        return target_type.construct_new_object(
+        result = target_type.construct_new_object(
             id=id, data=data, tags=tags, description=description
         )
+
+        # just a backup
+        result.tags = tags
+        result.description = description
+
+        return result
 
     def _data_object2proto(self) -> Message:
         return self.data.serialize()  # type: ignore
@@ -140,14 +160,16 @@ class StorableObject(AbstractStorableObject):
         return None
 
     @staticmethod
-    def construct_new_object(id, data, tags, description):
+    def construct_new_object(
+        id: UID, data: object, description: Optional[str], tags: Optional[List[str]]
+    ) -> "StorableObject":
         return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -162,9 +184,46 @@ class StorableObject(AbstractStorableObject):
         """
         return StorableObject_PB
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             "<Storable:"
             + self.data.__repr__().replace("\n", "").replace("  ", " ")
             + ">"
         )
+
+    @property
+    def icon(self) -> str:
+        return "🗂️"
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} ({self.class_name}) ("
+        if hasattr(self.data, "pprint"):
+            output += self.data.pprint  # type: ignore
+        else:
+            output += "(Key Only)"
+        if self.description is not None and len(self.description) > 0:
+            output += f" desc: {self.description}"
+        if self.tags is not None and len(self.tags) > 0:
+            output += f" tags: {self.tags}"
+        if self.read_permissions is not None and len(self.read_permissions.keys()) > 0:
+            output += (
+                " can_read: "
+                + f"{[key_emoji(key=key) for key in self.read_permissions.keys()]}"
+            )
+
+        if (
+            self.search_permissions is not None
+            and len(self.search_permissions.keys()) > 0
+        ):
+            output += (
+                " can_search: "
+                + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
+            )
+
+        output += ")"
+        return output
+
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)

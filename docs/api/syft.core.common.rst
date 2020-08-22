@@ -40,6 +40,22 @@ syft.core.common.object module
    :undoc-members:
    :show-inheritance:
 
+syft.core.common.pointer module
+-------------------------------
+
+.. automodule:: syft.core.common.pointer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.common.storeable\_object module
+-----------------------------------------
+
+.. automodule:: syft.core.common.storeable_object
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.common.uid module
 ---------------------------
 

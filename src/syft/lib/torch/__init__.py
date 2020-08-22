@@ -1,4 +1,6 @@
 import torch
+
+from typing import Dict
 from .lowercase_tensor import LowercaseTensorConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
 from .parameter import ParameterConstructor
@@ -11,10 +13,22 @@ __all__ = [
 
 from syft.ast.globals import Globals
 
-allowlist = {}  # (path: str, return_type:type)
+allowlist: Dict[str, type] = {}  # (path: str, return_type:type)
 # allowlist["torch.tensor"] = "torch.Tensor"
+
 allowlist["torch.Tensor"] = "torch.Tensor"
+
+# Basic operations
+# + - * -
 allowlist["torch.Tensor.__add__"] = "torch.Tensor"
+allowlist["torch.Tensor.__sub__"] = "torch.Tensor"
+allowlist["torch.Tensor.__mul__"] = "torch.Tensor"
+
+allowlist["torch.Tensor.add"] = "torch.Tensor"
+allowlist["torch.Tensor.sub"] = "torch.Tensor"
+allowlist["torch.Tensor.mul"] = "torch.Tensor"
+
+
 allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.ones"] = "torch.Tensor"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
@@ -23,7 +37,7 @@ allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
 allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
 
 
-def create_torch_ast():
+def create_torch_ast() -> Globals:
     ast = Globals()
 
     for method, return_type_name in allowlist.items():
@@ -36,4 +50,5 @@ def create_torch_ast():
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_serialization_methods()
+        klass.create_storable_object_attr_convenience_methods()
     return ast

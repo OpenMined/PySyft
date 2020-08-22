@@ -1,4 +1,5 @@
 # external class imports
+from typing import Optional
 from nacl.signing import VerifyKey
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -8,6 +9,9 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from ....common.serde.deserialize import _deserialize
 from .common import ImmediateActionWithReply
 from ...abstract.node import AbstractNode
+from ....io.address import Address
+from ....common.uid import UID
+from ....store.storeable_object import StorableObject
 
 # syft proto imports
 from .....proto.core.node.common.action.get_object_pb2 import (
@@ -19,7 +23,9 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, obj, address, msg_id=None):
+    def __init__(
+        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
+    ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
@@ -70,7 +76,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 
@@ -88,7 +94,13 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
 
 
 class GetObjectAction(ImmediateActionWithReply):
-    def __init__(self, obj_id, address, reply_to, msg_id=None):
+    def __init__(
+        self,
+        obj_id: UID,
+        address: Address,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.obj_id = obj_id
 
@@ -160,7 +172,7 @@ class GetObjectAction(ImmediateActionWithReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

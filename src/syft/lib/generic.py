@@ -1,3 +1,9 @@
+from typing import Callable
+from typing import Any
+from typing import Tuple
+from typing import Type
+from typing import Optional
+
 from .util import get_original_constructor_name
 from .util import copy_static_methods
 from .util import replace_classes_in_module
@@ -73,13 +79,15 @@ class ObjectConstructor(object):
 
     # This represents the location in which our tensor constructor is stored within the library. If original_constructor
     # is 'torch.Tensor', then constructor_location is 'torch'.
-    constructor_location = None  # some python module on which the constructor lives
+    constructor_location: Optional[
+        Type
+    ] = None  # some python module on which the constructor lives
 
     # OPTIONAL: if constructor_name is actually a function which isn't init, meaning that the constructor produces
     # an object with a different name, deposit that object type here
-    constructor_produces_type = None
+    constructor_produces_type: Optional[Type] = None
 
-    def install_inside_library(self):
+    def install_inside_library(self) -> None:
         """Installs this custom constructor by replacing the library constructor with itself"""
 
         replacee = getattr(self.constructor_location, self.constructor_name)
@@ -100,12 +108,13 @@ class ObjectConstructor(object):
                 )
 
                 # Replace all occurrences of the original constructor in the main module
-                main_module = sys.modules[
-                    self.constructor_location.__name__.split(".")[0]
-                ]
-                replace_classes_in_module(
-                    module=main_module, from_class=replacee, to_class=self
-                )
+                if self.constructor_location is not None:
+                    main_module = sys.modules[
+                        self.constructor_location.__name__.split(".")[0]
+                    ]
+                    replace_classes_in_module(
+                        module=main_module, from_class=replacee, to_class=self
+                    )
         else:
             raise AttributeError(
                 f"You have already installed a custom constructor at location {self.constructor_location}."
@@ -114,7 +123,7 @@ class ObjectConstructor(object):
                 f"concatenating their pre_init, init, and post_init methods."
             )
 
-    def install_id_attribute(self, original_constructor):
+    def install_id_attribute(self, original_constructor: Type) -> Type:
 
         if (
             inspect.isclass(original_constructor)
@@ -129,16 +138,16 @@ class ObjectConstructor(object):
             try:
                 # if you are allowed to subclass this type
 
-                class OriginalConstructorSubclass(type_to_subclass):
+                class OriginalConstructorSubclass(type_to_subclass):  # type: ignore
 
                     __name__ = type_to_subclass.__name__
 
                     @property
-                    def id(self):
+                    def id(self) -> UID:
                         return self.__id
 
                     @id.setter
-                    def id(self, new_id):
+                    def id(self, new_id: UID) -> None:
                         self.__id = new_id
 
                 original_constructor = OriginalConstructorSubclass
@@ -149,19 +158,17 @@ class ObjectConstructor(object):
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
             except TypeError:
 
-                @property
-                def id(self):
+                def id_get(self: Any) -> UID:
                     return self.__id
 
-                @id.setter
-                def id(self, new_id):
+                def id_set(self: Any, new_id: UID) -> None:
                     self.__id = new_id
 
-                original_constructor.id = id
+                original_constructor.id = property(fget=id_get, fset=id_set)
 
         return original_constructor
 
-    def store_original_constructor(self):
+    def store_original_constructor(self) -> None:
         """Copies current object constructor to original_<constructor_name>
 
         Since all instances of ObjectConstructor are overloading an existing constructor within a library, we
@@ -187,7 +194,7 @@ class ObjectConstructor(object):
                 original_constructor,
             )
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Tuple[Any, ...], **kwargs: Any) -> object:
         """Step-by-step method for constructing an object.
 
         Step 1: run pre_init() - augmenting args and kwargs as necessary.
@@ -211,7 +218,9 @@ class ObjectConstructor(object):
 
         return obj
 
-    def pre_init(self, *args, **kwargs):
+    def pre_init(
+        self, *args: Tuple[Any, ...], **kwargs: Any
+    ) -> Tuple[Tuple[Any, ...], Any]:
         """Execute functionality before object is created
 
         Called before an object is initialized. Within this method you can
@@ -233,7 +242,7 @@ class ObjectConstructor(object):
 
         return args, kwargs
 
-    def init(self, *args, **kwargs):
+    def init(self, *args: Tuple[Any, ...], **kwargs: Any) -> object:
         """Initialize the object using original constructor
 
         This method selects a subset of the args and kwargs and uses them to
@@ -248,7 +257,7 @@ class ObjectConstructor(object):
         """
         return self.original_constructor(*args, **kwargs)
 
-    def post_init(self, obj: object, *args: list, **kwargs: dict) -> object:
+    def post_init(self, obj: object, *args: Tuple[Any, ...], **kwargs: Any) -> object:
         """Execute functionality after object has been created.
 
         This method executes functionality which can only be
@@ -270,11 +279,10 @@ class ObjectConstructor(object):
 
     def assign_id(self, obj: object) -> object:
         obj.id = UID()  # type: ignore
-        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))  # type: ignore
         return obj
 
     @property
-    def original_constructor(self):
+    def original_constructor(self) -> Callable:
         """Return the original constructor for this method (i.e., the constructor the library had by
         default which this custom constructor overloaded.
 
@@ -300,7 +308,7 @@ class ObjectConstructor(object):
             )
 
     @classmethod
-    def __instancecheck__(cls, instance):
+    def __instancecheck__(cls, instance: object) -> bool:
         """Allow constructor to represent type it constructs
 
         Since we replace framework constructors (i.e., torch.Tensor) with instances of this

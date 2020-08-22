@@ -23,7 +23,7 @@ import syft as sy
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_init_without_arguments():
+def test_init_without_arguments() -> None:
     """Test that Address have all attributes as None if none are given"""
 
     # init works without arguments
@@ -38,7 +38,7 @@ def test_init_without_arguments():
         assert addr.target_id is None
 
 
-def test_init_with_specific_id():
+def test_init_with_specific_id() -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
 
     # init works with arguments
@@ -109,7 +109,7 @@ def test_init_with_specific_id():
 # --------------------- CLASS METHODS ---------------------
 
 
-def test_compare():
+def test_compare() -> None:
     """Tests whether two address objects are the same. This functionality
     is likely to get used a lot when nodes are determining whether a message
     is for them or not."""
@@ -135,7 +135,7 @@ def test_compare():
     assert y != z
 
 
-def test_to_string():
+def test_to_string() -> None:
     """Tests that SpecificLocation generates an intuitive string."""
 
     an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -160,7 +160,7 @@ def test_to_string():
 # --------------------- SERDE ---------------------
 
 
-def test_default_serialization_and_deserialization():
+def test_default_serialization_and_deserialization() -> None:
     """Tests that default Address serde works as expected - to Protobuf"""
 
     an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -178,7 +178,7 @@ def test_default_serialization_and_deserialization():
     assert obj == sy.deserialize(blob=blob)
 
 
-def test_partial_serialization_and_deserialization():
+def test_partial_serialization_and_deserialization() -> None:
     """Test that addresses with only some attributes serialize and deserialize correctly/"""
 
     an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
@@ -222,27 +222,23 @@ def test_partial_serialization_and_deserialization():
     assert obj == sy.deserialize(blob=blob)
 
 
-def test_proto_serialization():
+def test_proto_serialization() -> None:
     """Tests that default Address serialization works as expected - to Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-
-    obj = Address(
-        network=SpecificLocation(id=uid),
-        domain=SpecificLocation(id=uid),
-        device=SpecificLocation(id=uid),
-        vm=SpecificLocation(id=uid),
-    )
+    loc = SpecificLocation(id=uid, name="Test Location")
+    obj = Address(name="Test Address", network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
+        name="Test Address",
         has_network=True,
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=SpecificLocation(id=uid).serialize(),
-        domain=SpecificLocation(id=uid).serialize(),
-        device=SpecificLocation(id=uid).serialize(),
-        vm=SpecificLocation(id=uid).serialize(),
+        network=loc.serialize(),
+        domain=loc.serialize(),
+        device=loc.serialize(),
+        vm=loc.serialize(),
     )
 
     assert obj.proto() == blob
@@ -250,27 +246,23 @@ def test_proto_serialization():
     assert obj.serialize(to_proto=True) == blob
 
 
-def test_proto_deserialization():
+def test_proto_deserialization() -> None:
     """Tests that default Address deserialization works as expected - from Protobuf"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    loc = SpecificLocation(id=uid, name="Test Location")
 
-    obj = Address(
-        network=SpecificLocation(id=uid),
-        domain=SpecificLocation(id=uid),
-        device=SpecificLocation(id=uid),
-        vm=SpecificLocation(id=uid),
-    )
+    obj = Address(network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
         has_network=True,
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=SpecificLocation(id=uid).serialize(),
-        domain=SpecificLocation(id=uid).serialize(),
-        device=SpecificLocation(id=uid).serialize(),
-        vm=SpecificLocation(id=uid).serialize(),
+        network=loc.serialize(),
+        domain=loc.serialize(),
+        device=loc.serialize(),
+        vm=loc.serialize(),
     )
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)

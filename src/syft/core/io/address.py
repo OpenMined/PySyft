@@ -8,6 +8,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft imports (sorted by length)
+import syft as sy
 from ..io.location import Location
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
@@ -15,6 +16,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.io.address_pb2 import Address as Address_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+from ...util import key_emoji as key_emoji_util
 
 # utility addresses
 # QUESTION: what is this? It breaks the __eq__ when checking
@@ -23,24 +25,28 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # in this case All is not an Address so the dunder throws an error due to the type
 # def __eq__(self, other: "Address") -> bool:
 # class All(object):
-#     def __repr__(self):
+#     def __repr__(self) -> str:
 #         return "All"
 
 
 class Unspecified(object):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Unspecified"
 
 
 class Address(Serializable):
+    name: Optional[str]
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
+        name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
     ):
+        self.name = name if name is not None else Serializable.random_name()
 
         # All node should have a representation of where they think
         # they are currently held. Note that this is at risk of going
@@ -98,38 +104,37 @@ class Address(Serializable):
 
     @property
     def pprint(self) -> str:
-        output = f"{self.icon} {self.named} ({self.class_name}"
+        output = f"{self.icon} {self.named} ({self.class_name})"
         if hasattr(self, "id"):
-            output += f"@{self.target_id.id.emoji()})"
+            output += f"@{self.target_id.id.emoji()}"
         return output
 
     def post_init(self) -> None:
-        print(f"> Creating {self.pprint}")
+        if sy.VERBOSE:
+            print(f"> Creating {self.pprint}")
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
-        hex_chars = bytes(key).hex()[-8:]
-        return self.char_emoji(hex_chars=hex_chars)
-
-    @syft_decorator(typechecking=True)
-    def char_emoji(self, hex_chars: str) -> str:
-        base = ord("\U0001F642")
-        hex_base = ord("0")
-        code = 0
-        for char in hex_chars:
-            offset = ord(char)
-            code += offset - hex_base
-        return chr(base + code)
+        return key_emoji_util(key=key)
 
     @property
     def address(self) -> "Address":
         # QUESTION what happens if we have none of these?
-        address = Address(
-            network=self.network, domain=self.domain, device=self.device, vm=self.vm
-        )
+
         # sneak the name on there
         if hasattr(self, "name"):
-            address.name = self.name  # type: ignore
+            name = self.name
+        else:
+            name = Serializable.random_name()
+
+        address = Address(
+            name=name,
+            network=self.network,
+            domain=self.domain,
+            device=self.device,
+            vm=self.vm,
+        )
+
         return address
 
     @syft_decorator(typechecking=True)
@@ -149,6 +154,7 @@ class Address(Serializable):
             object.
         """
         return Address_PB(
+            name=self.name,
             has_network=self.network is not None,
             network=self.network.serialize() if self.network is not None else None,
             has_domain=self.domain is not None,
@@ -175,6 +181,7 @@ class Address(Serializable):
         """
 
         return Address(
+            name=proto.name,
             network=_deserialize(blob=proto.network) if proto.has_network else None,
             domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
             device=_deserialize(blob=proto.device) if proto.has_device else None,
@@ -185,7 +192,7 @@ class Address(Serializable):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

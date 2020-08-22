@@ -1,23 +1,35 @@
 # from .. import ast # CAUSES Circular import errors
+from typing import Union
+from typing import List
+from typing import Optional
+from typing import Callable as CallableT
 from .module import Module
+from .callable import Callable
 from .util import unsplit
 
 
 class Globals(Module):
 
+    _copy: Optional["copyType"]
     """The collection of frameworks held in a global namespace"""
 
-    def __init__(self):
-        super().__init__("globals", None, None, None)
+    def __init__(self) -> None:
+        super().__init__("globals")
 
-    def add_framework(self, attr_name, attr):
+    def add_framework(self, attr_name: str, attr: Union[Callable, CallableT],) -> None:
         self.attrs[attr_name] = attr
 
-    def add_path(self, path, return_type_name=None, framework_reference=None):
+    def add_path(
+        self,
+        path: Union[str, List[str]],
+        index: int = 0,
+        return_type_name: Optional[str] = None,
+        framework_reference: Optional[Union[Callable, CallableT]] = None,
+    ) -> None:
         if isinstance(path, str):
             path = path.split(".")
 
-        framework_name = path[0]
+        framework_name = path[index]
 
         if framework_name not in self.attrs:
             if framework_reference is not None:
@@ -33,4 +45,16 @@ class Globals(Module):
                     "within a framework."
                 )
 
-        self.attrs[framework_name].add_path(path, 1, return_type_name=return_type_name)
+        attr = self.attrs[framework_name]
+        if hasattr(attr, "add_path"):
+            attr.add_path(  # type: ignore
+                path=path, index=1, return_type_name=return_type_name
+            )
+
+    def copy(self) -> Optional["Globals"]:
+        if self._copy is not None:
+            return self._copy()
+        return None
+
+
+copyType = CallableT[[], Globals]

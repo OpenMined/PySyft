@@ -14,6 +14,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Dict
+from typing import Any
 
 dir_name = inspect.getfile(inspect.currentframe())  # type: ignore
 __location__ = os.path.join(os.getcwd(), os.path.dirname(dir_name))
@@ -84,7 +85,9 @@ extensions.append("recommonmark")
 templates_path = ["_templates"]
 
 # override autodoc defaults to skip/not skip certain methods
-def skip(app, what, name, obj, would_skip, options):
+def skip(
+    app: Any, what: Any, name: str, obj: Any, would_skip: bool, options: Any
+) -> bool:
     if name == "__init__":
         return False
     if name == "__hash__":
@@ -103,7 +106,7 @@ def skip(app, what, name, obj, would_skip, options):
 
 
 # To configure AutoStructify
-def setup(app):
+def setup(app: Any) -> None:
     from recommonmark.transform import AutoStructify
 
     app.add_config_value(

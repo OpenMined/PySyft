@@ -1,3 +1,5 @@
+from typing import Optional
+
 # external class imports
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,7 +15,10 @@ class Location(Serializable):
     location-relevant metadata (such as how long it takes
     for us to communicate with this location, etc.)"""
 
-    def __init__(self) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
+        if name is None:
+            name = Serializable.random_name()
+        self.name = name
         super().__init__()
 
     @property
@@ -67,7 +72,7 @@ class Location(Serializable):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

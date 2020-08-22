@@ -16,8 +16,18 @@ class SpecificLocation(ObjectWithID, Location):
     represented by a single UID. It may not have any functionality
     beyond Location but there is logic which interprets it differently."""
 
-    def __init__(self, id: Optional[UID] = None):
+    def __init__(self, id: Optional[UID] = None, name: Optional[str] = None):
         ObjectWithID.__init__(self, id=id)
+        self.name = name if name is not None else self.name
+
+    @property
+    def icon(self) -> str:
+        return "📌"
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} {self.name} ({self.class_name})@{self.id.emoji()}"
+        return output
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SpecificLocation_PB:
@@ -35,7 +45,7 @@ class SpecificLocation(ObjectWithID, Location):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return SpecificLocation_PB(id=self.id.serialize())
+        return SpecificLocation_PB(id=self.id.serialize(), name=self.name)
 
     @staticmethod
     def _proto2object(proto: SpecificLocation_PB) -> "SpecificLocation":
@@ -52,13 +62,13 @@ class SpecificLocation(ObjectWithID, Location):
             if you wish to deserialize an object.
         """
 
-        return SpecificLocation(id=_deserialize(blob=proto.id))
+        return SpecificLocation(id=_deserialize(blob=proto.id), name=proto.name)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

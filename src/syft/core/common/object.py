@@ -74,7 +74,7 @@ class ObjectWithID(Serializable):
 
         :param other: this is the other ObjectWithIDs to be compared with
         :type other: Any (note this must be Any or __eq__ fails on other types)
-        :return: returns True/False based on whether the objcts are the same
+        :return: returns True/False based on whether the objects are the same
         :rtype: bool
         """
 
@@ -142,7 +142,7 @@ class ObjectWithID(Serializable):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """ Return the type of protobuf object which stores a class of this type
 
-        As a part of serializatoin and deserialization, we need the ability to
+        As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
 

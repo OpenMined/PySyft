@@ -1,5 +1,5 @@
 import sys
-
+import syft as sy
 from typing import Optional
 from typing import Type
 from typing import TypeVar
@@ -45,10 +45,11 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
         return f"{self.icon} ({self.class_name})"
 
     def post_init(self) -> None:
-        init_reason = "Creating"
-        if "signed" in self.class_name.lower():
-            init_reason += " Signed"
-        print(f"> {init_reason} {self.pprint}")
+        if sy.VERBOSE:
+            init_reason = "Creating"
+            if "signed" in self.class_name.lower():
+                init_reason += " Signed"
+            print(f"> {init_reason} {self.pprint} {self.id.emoji()}")
 
 
 class SyftMessage(AbstractMessage):
@@ -58,13 +59,17 @@ class SyftMessage(AbstractMessage):
         self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
-        print(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+        if sy.VERBOSE:
+            print(
+                f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
+            )
         signed_message = signing_key.sign(self.serialize(to_binary=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
         # == SignedImmediateSyftMessageWithoutReply
         return self.signed_type(
+            msg_id=self.id,
             address=self.address,
             obj_type=get_fully_qualified_name(obj=self),
             signature=signed_message.signature,
@@ -86,8 +91,9 @@ class SignedMessage(SyftMessage):
         signature: bytes,
         verify_key: VerifyKey,
         message: bytes,
+        msg_id: Optional[UID] = None,
     ) -> None:
-        super().__init__(address=address)
+        super().__init__(msg_id=msg_id, address=address)
         self.obj_type = obj_type
         self.signature = signature
         self.verify_key = verify_key
@@ -113,16 +119,17 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        print(f"> {self.icon} -> Proto 🔢")
+        if sy.VERBOSE:
+            print(f"> {self.icon} -> Proto 🔢")
 
-        proto = SignedMessage_PB()
         # obj_type will be the final subclass callee for example ReprMessage
-        proto.obj_type = self.obj_type
-        proto.signature = bytes(self.signature)
-        proto.verify_key = bytes(self.verify_key)
-        proto.message = self.serialized_message
-
-        return proto
+        return SignedMessage_PB(
+            msg_id=self.id.proto(),
+            obj_type=self.obj_type,
+            signature=bytes(self.signature),
+            verify_key=bytes(self.verify_key),
+            message=self.serialized_message,
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -138,8 +145,8 @@ class SignedMessage(SyftMessage):
         module_parts = proto.obj_type.split(".")
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-
         obj = obj_type.signed_type(
+            msg_id=_deserialize(blob=proto.msg_id),
             address=address,
             obj_type=proto.obj_type,
             signature=proto.signature,
@@ -147,10 +154,11 @@ class SignedMessage(SyftMessage):
             message=proto.message,
         )
 
-        icon = "🤷🏾‍♀️"
-        if hasattr(obj, "icon"):
-            icon = obj.icon
-        print(f"> {icon} <- 🔢 Proto")
+        if sy.VERBOSE:
+            icon = "🤷🏾‍♀️"
+            if hasattr(obj, "icon"):
+                icon = obj.icon
+            print(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
             raise TypeError(

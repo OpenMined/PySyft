@@ -1,11 +1,14 @@
-from typing import Optional, Type
+from typing import Optional
+from typing import List
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ..generic import ObjectConstructor
-from syft.proto.lib.torch.tensor_pb2 import TensorProto
+from syft.proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
 from syft.lib.torch.tensor_util import protobuf_tensor_serializer
 from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
 from syft.core.store.storeable_object import StorableObject
 from ...util import aggressive_set_attr
+from ...core.common.uid import UID
 
 import torch as th
 
@@ -32,26 +35,27 @@ torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 
 class TorchTensorWrapper(StorableObject):
-    def __init__(self, value):
+    def __init__(self, value: object):
         super().__init__(
             data=value,
-            id=value.id,
-            tags=value.tags if hasattr(value, "tags") else [],
-            description=value.description if hasattr(value, "description") else "",
+            id=getattr(value, "id", UID()),
+            tags=getattr(value, "tags", []),
+            description=getattr(value, "description", ""),
         )
-        print("Wrapped tensor with id:" + str(value.id))
         self.value = value
 
-    def _data_object2proto(self) -> TensorProto:
-        proto = TensorProto()
+    def _data_object2proto(self) -> Tensor_PB:
+        proto = Tensor_PB()
         proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value))
-        if self.value.grad is not None:
-            proto.grad.CopyFrom(protobuf_tensor_serializer(self.value.grad))
+
+        grad = getattr(self.value, "grad", None)
+        if grad is not None:
+            proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
 
         return proto
 
     @staticmethod
-    def _data_proto2object(proto: TensorProto) -> th.Tensor:
+    def _data_proto2object(proto: Tensor_PB) -> th.Tensor:
         tensor = protobuf_tensor_deserializer(proto.tensor)
         if proto.HasField("grad"):
             tensor.grad = protobuf_tensor_deserializer(proto.grad)
@@ -59,15 +63,17 @@ class TorchTensorWrapper(StorableObject):
         return tensor
 
     @staticmethod
-    def get_data_protobuf_schema() -> Optional[Type]:
-        return TensorProto
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Tensor_PB
 
     @staticmethod
     def get_wrapped_type() -> type:
         return torch_tensor_type
 
     @staticmethod
-    def construct_new_object(id, data, tags, description):
+    def construct_new_object(
+        id: UID, data: StorableObject, tags: List[str], description: Optional[str]
+    ) -> object:
         data.id = id
         data.tags = tags
         data.description = description

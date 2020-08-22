@@ -44,8 +44,6 @@ from pathlib import Path
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
-import syft as sy
-
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
 
@@ -67,6 +65,7 @@ from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 # Convenience Functions
 from syft.decorators import type_hints  # noqa: F401
 from syft.grid.duet.duet import Duet  # noqa: F401
+from syft.grid.ws_duet import WSDuet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
@@ -84,19 +83,10 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
+sys.path.append(str(Path(__file__)))
+
+
 # LIBRARY CONFIG
 
-# When you pass in an argument which is of the incorrect type,
-# do you want the long or abbreviated stack trace?
-
-
-def LONG_TYPECHECK_STACK_TRACES(setting=None):
-    if setting is not None:
-        sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES = setting
-    return sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES
-
-
-LONG_TYPECHECK_STACK_TRACES(True)
-
-
-sys.path.append(str(Path(__file__)))
+# do you want verbose logging to help with debugging?
+VERBOSE = True

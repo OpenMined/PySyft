@@ -22,14 +22,17 @@ flake8
 flask
 forbiddenfruit>=0.1.3
 isort
-pandas
+nbconvert
 pandas
 protobuf
 pyjwt
 PyNaCl
 pyscaffold[all]
+pytest
+pytest-cov
 requests
 sqlitedict
 torch>=1.5
 typeguard
 typing-extensions # backport to older python 3
+websockets
