@@ -127,3 +127,29 @@ def test_apply_to_shares(workers):
     x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
     x = x.apply_to_shares(torch.Tensor.view, [1, 2])
     assert x.shape == torch.Size([1, 2])
+
+
+def test_con2d_public(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
+        bob, alice, james, protocol="falcon"
+    )
+    y = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]])
+    assert (
+        x.conv2d(y, padding=1).reconstruct()
+        == torch.tensor([[[[123, 180, 132], [224, 312, 224], [132, 180, 123]]]])
+    ).all()
+
+
+def test_con2d_private(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
+        bob, alice, james, protocol="falcon"
+    )
+    y = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
+        bob, alice, james, protocol="falcon"
+    )
+    assert (
+        x.conv2d(y, padding=1).reconstruct()
+        == torch.tensor([[[[123, 180, 132], [224, 312, 224], [132, 180, 123]]]])
+    ).all()

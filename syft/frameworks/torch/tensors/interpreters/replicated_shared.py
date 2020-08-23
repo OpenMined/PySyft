@@ -182,14 +182,34 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_map[workers[i]] = (shares[i], pointer)
         return shares_map
 
-    def conv2d(self, value):
-        return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d)
+    def conv2d(self, value, padding=0):
+        return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d, padding)
 
-    def public_conv2d(self, plain_text):
-        raise NotImplementedError()
+    def public_conv2d(self, plain_text, padding):
+        plain_text = plain_text.double()
+        batches_in, channels_in, width_in, height_in = plain_text.shape
+        batches_out, channels_out, width_out, height_out = self.shape
+        plain_text = torch.nn.functional.unfold(plain_text, kernel_size=height_out, padding=padding)
+        plain_text = plain_text.long()
+        self = self.apply_to_shares(torch.Tensor.view, channels_out, -1)
+        res = self @ plain_text
+        size = (height_in - height_out + 2 * padding) + 1
+        res = res.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
+        return res
 
-    def private_conv2d(self, secret):
-        raise NotImplementedError()
+    def private_conv2d(self, secret, padding):
+        secret = secret.apply_to_shares(torch.Tensor.double)
+        batches_in, channels_in, width_in, height_in = secret.shape
+        batches_out, channels_out, width_out, height_out = self.shape
+        secret = secret.apply_to_shares(
+            torch.nn.functional.unfold, kernel_size=height_out, padding=padding
+        )
+        secret = secret.apply_to_shares(torch.Tensor.long)
+        self = self.apply_to_shares(torch.Tensor.view, channels_out, -1)
+        res = self @ secret
+        size = (height_in - height_out + 2 * padding) + 1
+        res = res.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
+        return res
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
