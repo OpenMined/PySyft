@@ -11,7 +11,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.child = shares_map
-        self.ring_size = 2 ** 5
+        self.ring_size = 2 ** 32
 
     def share_secret(self, secret, workers):
         number_of_shares = len(workers)
@@ -33,9 +33,10 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def generate_shares(self, plain_text, number_of_shares=3):
         shares = []
+        plain_text.long()
         for _ in range(number_of_shares - 1):
-            shares.append(torch.randint(high=self.ring_size, size=plain_text.shape))
-        shares.append(torch.tensor((plain_text - sum(shares)) % self.ring_size))
+            shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
+        shares.append((plain_text - sum(shares) % self.ring_size))
         return shares
 
     @staticmethod
@@ -111,7 +112,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     def public_linear_operation(self, plain_text, operator):
         players = self.get_players()
         shares_map = self.get_shares_map()
-        plain_text = torch.tensor(plain_text).send(players[0])
+        plain_text = torch.tensor(plain_text).long().send(players[0])
         shares_map[players[0]] = (
             operator(shares_map[players[0]][0], plain_text),
             shares_map[players[0]][1],
@@ -142,7 +143,9 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def public_multiplication_operation(self, plain_text, operator):
         players = self.get_players()
-        plain_text_map = {player: torch.tensor(plain_text).send(player) for player in players}
+        plain_text_map = {
+            player: torch.tensor(plain_text).long().send(player) for player in players
+        }
         shares_map = self.get_shares_map()
         for player in players:
             shares_map[player] = (
