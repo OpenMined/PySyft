@@ -469,18 +469,14 @@ class FixedPrecisionTensor(AbstractTensor):
     mm = matmul
 
     def signum(self):
-        r"""
+        """
             Calculation of signum function for a given tensor
         """
-        sgn = self > 0
-        zero = self == 0
-        pos = sgn
-        neg = sgn - 1
-        sgn = pos + neg + zero
+        sgn = (self > 0) - (self < 0)
         return sgn
 
     def modulus(self):
-        r"""
+        """
             Calculation of modulus for a given tensor
         """
         return self.signum() * self
