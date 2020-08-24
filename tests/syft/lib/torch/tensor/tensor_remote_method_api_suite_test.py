@@ -41,11 +41,13 @@ BASIC_SELF_TENSORS.append([[-0.1, 0.1], [0.2, 0.3]])  # square
 BASIC_METHOD_ARGS = list()
 BASIC_METHOD_ARGS.append("self")
 BASIC_METHOD_ARGS.append("None")
-# BASIC_METHOD_ARGS.append("0") #TODO: add ints as remote argument types (can't call .serialize() on int)
-# BASIC_METHOD_ARGS.append("1") #TODO: add ints as remote argument types (can't call .serialize() on int)
+BASIC_METHOD_ARGS.append("[0]")
+BASIC_METHOD_ARGS.append("[1]")
+BASIC_METHOD_ARGS.append("0")
+BASIC_METHOD_ARGS.append("1")
+
 # BASIC_METHOD_ARGS.append("True") #TODO: add ints as remote argument types (can't call .serialize() on bool)
 # BASIC_METHOD_ARGS.append("False") #TODO: add ints as remote argument types (can't call .serialize() on bool)
-
 
 TEST_DATA = list(product(TEST_TYPES, BASIC_OPS, BASIC_SELF_TENSORS, BASIC_METHOD_ARGS))
 
@@ -54,35 +56,49 @@ alice = sy.VirtualMachine(name="alice")
 alice_client = alice.get_client()
 
 
-@pytest.mark.parametrize("tensor_type, op_name, self, _args", TEST_DATA)
+@pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
 def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
-    tensor_type: str, op_name: str, self: List, _args: str
+    tensor_type: str, op_name: str, self_tensor: List, _args: str
 ) -> None:
 
     # Step 2: Decide which type we're testing
     t_type = TORCH_STR_DTYPE[tensor_type]
 
     # Step 3: Create the object we're going to call a method on
-    # NOTE: we need a second copy because some methods mutate self before we send
-    self, self_copy = th.tensor(self, dtype=t_type), th.tensor(self, dtype=t_type)
+    # NOTE: we need a second copy because some methods mutate tensor before we send
+    self_tensor, self_tensor_copy = (
+        th.tensor(self_tensor, dtype=t_type),
+        th.tensor(self_tensor, dtype=t_type),
+    )
 
     # Copy the UID over so that its easier to see they are supposed to be the same obj
-    self_copy.id = self.id  # type: ignore
+    self_tensor_copy.id = self_tensor.id  # type: ignore
+
+    # TODO: This needs to be enforced to something more specific
+    args: Any
 
     # Step 4: Create the arguments we're going to pass the method on
     if _args == "None":
         args = None
     elif _args == "self":
-        args = [th.tensor(self, dtype=t_type)]
+        args = [th.tensor(self_tensor, dtype=t_type)]
     elif _args == "0":
-        args = [0]
+        args = 0
+    elif _args == "1":
+        args = 1
+    elif _args == "[0]":
+        args = [th.tensor([0], dtype=t_type)]
+    elif _args == "[1]":
+        args = [th.tensor([1], dtype=t_type)]
     elif _args == "True":
         args = [True]
     elif _args == "False":
         args = [False]
+    else:
+        args = _args
 
     # Step 4: Get the method we're going to call
-    target_op_method = getattr(self, op_name)
+    target_op_method = getattr(self_tensor, op_name)
 
     # Step 5: Test to see whether this method and arguments combination is valid
     # in normal PyTorch. If it this is an invalid combination, abort the test
@@ -132,6 +148,11 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         elif "RuntimeError('expected total dims >= 2, but got total dims = 1')" == msg:
             valid_torch_command = False
         elif "Integer division of tensors using div or / is no longer supported" in msg:
+            valid_torch_command = False
+        elif (
+            "RuntimeError(\"result type Float can't be cast to the desired output type"
+            in msg
+        ):
             valid_torch_command = False
         else:
             print(msg)
@@ -210,7 +231,7 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
         # Step 7: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
-        xp = self_copy.send(alice_client)
+        xp = self_tensor_copy.send(alice_client)
         if args is not None:
             argsp = [
                 arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
@@ -245,8 +266,16 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
                 assert local_result == target_result
             else:
                 # type(target_result) == torch.Tensor
-                local_result[local_result != local_result] = 0
-                target_result[target_result != target_result] = 0
+
+                # Set all NaN to 0
+                # If we have two tensors like
+                # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+                # those are not equal
+                nan_mask = local_result.isnan()
+
+                # Use the same mask for local and target
+                local_result[nan_mask] = 0
+                target_result[nan_mask] = 0
 
                 # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
                 # using Syft pointers to communicate with remote torch objects
