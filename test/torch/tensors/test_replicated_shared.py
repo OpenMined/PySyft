@@ -12,7 +12,7 @@ def test_sharing(workers):
 
 def test_reconstruction(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    plain_text = torch.tensor([3, 7, 11])
+    plain_text = torch.tensor([3, -7, 11])
     secret = plain_text.share(bob, alice, james, protocol="falcon")
     decryption = secret.reconstruct()
     assert (plain_text == decryption).all()
@@ -29,15 +29,15 @@ def test_shares_number():
 def test_private_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
-    y = torch.tensor([2, 5]).share(bob, alice, james, protocol="falcon")
-    assert (x.add(y).reconstruct() == torch.Tensor([9, 9])).all()
+    y = torch.tensor([-2, 5]).share(bob, alice, james, protocol="falcon")
+    assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
 
 
 def test_public_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
-    y = torch.Tensor([2, 5])
-    assert (x.add(y).reconstruct() == torch.Tensor([9, 9])).all()
+    y = torch.Tensor([-2, 5])
+    assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
 
 
 def test_private_sub(workers):
@@ -76,14 +76,14 @@ def test_add_with_operator(workers):
 
 def test_public_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
-    assert ((x * 2).reconstruct() == torch.Tensor([14, 8])).all()
+    x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
+    assert ((x * 2).reconstruct() == torch.Tensor([14, -8])).all()
 
 
 def test_private_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([3, 5]).share(bob, alice, james, protocol="falcon")
-    y = torch.tensor([5, 2]).share(bob, alice, james, protocol="falcon")
+    x = torch.tensor([3, -5]).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor([5, -2]).share(bob, alice, james, protocol="falcon")
     assert ((x * y).reconstruct() == torch.tensor([15, 10])).all()
 
 

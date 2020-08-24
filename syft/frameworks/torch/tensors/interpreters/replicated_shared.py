@@ -32,6 +32,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     @staticmethod
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
+        if len(workers) != 3:
+            raise ValueError("you must provide 3 players")
         me = syft.hook.local_worker
         if me in workers:
             workers.remove(me)
