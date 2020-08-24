@@ -11,15 +11,18 @@ class ReplicatedSharingTensor(AbstractTensor):
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.ring_size = 2 ** 32
-        self.child = self.__init_child(plain_text, players)
+        shares_map = self.__generate_shares_map(plain_text, players)
+        self.child = shares_map
 
-    def __init_child(self, plain_text, players):
+    def __generate_shares_map(self, plain_text, players):
         if plain_text is None or players is None:
             return None
-        elif plain_text is ReplicatedSharingTensor:
-            return plain_text.child
-        else:
+        elif isinstance(plain_text, torch.Tensor):
             return self.share_secret(plain_text, players)
+        elif plain_text is ReplicatedSharingTensor:
+            return plain_text.get_shares_map()
+        else:
+            raise ValueError(f" {type(plain_text)} is not supported")
 
     def share_secret(self, plain_text, workers):
         number_of_shares = len(workers)
@@ -193,7 +196,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         filters = self
         image_batches, image_channels, image_width, image_height = image.shape
         channels_out, filter_channels, filter_width, filter_height = filters.shape
-        image = filters.__unfold(image, filter_height, padding)
+        image = self.__unfold(image, filter_height, padding)
         filters = filters.apply_to_shares(torch.Tensor.view, channels_out, -1)
         result = filters @ image
         output_size = (image_height - filter_height + 2 * padding) + 1
