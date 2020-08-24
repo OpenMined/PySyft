@@ -16,7 +16,7 @@ RestrictedPython~=5.0
 requests-toolbelt==0.9.1
 shaloop==0.2.1-alpha.11
 scipy~=1.4.1
-git+https://github.com/OpenMined/syft-proto.git@2090357a2247ab1921e2cc73cd7bb076d1067d26#egg=syft-proto
+syft-proto~=0.5.2
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0
