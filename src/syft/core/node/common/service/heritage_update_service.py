@@ -24,7 +24,7 @@ from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithoutReply
 from ....common.serde.deserialize import _deserialize
 
-# TODO: change all old_message names in syft to have "WithReply" or "WithoutReply"
+# TODO: change all message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name
 
 
