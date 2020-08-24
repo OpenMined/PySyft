@@ -5,7 +5,7 @@ from syft.generic.utils import remote, allow_command
 import torch
 import syft
 
-RING_SIZE = 2 ** 5
+RING_SIZE = 2 ** 32
 ERR_MSG = "You must call PRZS.setup because the seeds where not shared between workers"
 
 

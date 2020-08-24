@@ -36,7 +36,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         plain_text.long()
         for _ in range(number_of_shares - 1):
             shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
-        shares.append((plain_text - sum(shares) % self.ring_size))
+        shares.append((plain_text - sum(shares)) % self.ring_size)
         return shares
 
     @staticmethod
@@ -82,10 +82,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_add, self.private_add)
 
     def public_add(self, plain_text):
-        return self.public_linear_operation(plain_text, add)
+        return self.__public_linear_operation(plain_text, add)
 
     def private_add(self, secret):
-        return self.private_linear_operation(secret, add)
+        return self.__private_linear_operation(secret, add)
 
     __add__ = add
 
@@ -93,14 +93,14 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_sub, self.private_sub)
 
     def public_sub(self, plain_text):
-        return self.public_linear_operation(plain_text, sub)
+        return self.__public_linear_operation(plain_text, sub)
 
     def private_sub(self, secret):
-        return self.private_linear_operation(secret, sub)
+        return self.__private_linear_operation(secret, sub)
 
     __sub__ = sub
 
-    def private_linear_operation(self, secret, operator):
+    def __private_linear_operation(self, secret, operator):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
@@ -109,7 +109,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
 
-    def public_linear_operation(self, plain_text, operator):
+    def __public_linear_operation(self, plain_text, operator):
         players = self.get_players()
         shares_map = self.get_shares_map()
         plain_text = torch.tensor(plain_text).long().send(players[0])
@@ -123,10 +123,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_mul, self.private_mul)
 
     def public_mul(self, plain_text):
-        return self.public_multiplication_operation(plain_text, mul)
+        return self.__public_multiplication_operation(plain_text, mul)
 
     def private_mul(self, secret):
-        return self.private_multiplication_operation(secret, mul)
+        return self.__private_multiplication_operation(secret, mul)
 
     __mul__ = mul
 
@@ -134,14 +134,14 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__switch_public_private(value, self.public_matmul, self.private_matmul)
 
     def public_matmul(self, plain_text):
-        return self.public_multiplication_operation(plain_text, torch.matmul)
+        return self.__public_multiplication_operation(plain_text, torch.matmul)
 
     def private_matmul(self, secret):
-        return self.private_multiplication_operation(secret, torch.matmul)
+        return self.__private_multiplication_operation(secret, torch.matmul)
 
     __matmul__ = matmul
 
-    def public_multiplication_operation(self, plain_text, operator):
+    def __public_multiplication_operation(self, plain_text, operator):
         players = self.get_players()
         plain_text_map = {
             player: torch.tensor(plain_text).long().send(player) for player in players
@@ -154,7 +154,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             )
         return ReplicatedSharingTensor(shares_map)
 
-    def private_multiplication_operation(self, secret, operator):
+    def __private_multiplication_operation(self, secret, operator):
         x, y = self.get_shares_map(), secret.get_shares_map()
         players = self.get_players()
         z = [
@@ -182,23 +182,26 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_map[workers[i]] = (shares[i], pointer)
         return shares_map
 
-    def conv2d(self, value, padding=0):
-        batches_in, channels_in, width_in, height_in = value.shape
-        batches_out, channels_out, width_out, height_out = self.shape
-        value = self.unfold(value, height_out, padding)
-        self = self.apply_to_shares(torch.Tensor.view, channels_out, -1)
-        result = self @ value
-        size = (height_in - height_out + 2 * padding) + 1
-        result = result.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
+    def conv2d(self, image, padding=0):
+        filters = self
+        image_batches, image_channels, image_width, image_height = image.shape
+        channels_out, filter_channels, filter_width, filter_height = filters.shape
+        image = filters.__unfold(image, filter_height, padding)
+        filters = filters.apply_to_shares(torch.Tensor.view, channels_out, -1)
+        result = filters @ image
+        output_size = (image_height - filter_height + 2 * padding) + 1
+        result = result.apply_to_shares(
+            torch.Tensor.view, -1, channels_out, output_size, output_size
+        )
         return result
 
-    def unfold(self, value, kernel_size, padding=0):
+    def __unfold(self, value, kernel_size, padding=0):
         return self.__switch_public_private(
-            value, self.public_unfold, self.private_unfold, kernel_size, padding
+            value, self.__public_unfold, self.__private_unfold, kernel_size, padding
         )
 
     @staticmethod
-    def public_unfold(plain_text, kernel_size, padding):
+    def __public_unfold(plain_text, kernel_size, padding):
         plain_text = plain_text.double()
         plain_text = torch.nn.functional.unfold(
             plain_text, kernel_size=kernel_size, padding=padding
@@ -207,7 +210,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return plain_text
 
     @staticmethod
-    def private_unfold(secret, kernel_size, padding):
+    def __private_unfold(secret, kernel_size, padding):
         secret = secret.apply_to_shares(torch.Tensor.double)
         secret = secret.apply_to_shares(
             torch.nn.functional.unfold, kernel_size=kernel_size, padding=padding
@@ -259,17 +262,6 @@ class ReplicatedSharingTensor(AbstractTensor):
             for player in players
         }
         return ReplicatedSharingTensor(shares_map)
-
-    def apply_to_shares_(self, function, *args, **kwargs):
-        """
-        function: a reference to an in-place function
-        e.g. sort, append
-        """
-        shares_map = self.get_shares_map()
-        players = self.get_players()
-        for player in players:
-            function(shares_map[player][0], *args, **kwargs)
-            function(shares_map[player][1], *args, **kwargs)
 
     @property
     def shape(self):
