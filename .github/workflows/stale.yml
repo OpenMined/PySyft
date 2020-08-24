@@ -22,4 +22,4 @@ jobs:
         stale-pr-label: "Status: Stale :bread:"
         exempt-pr-labels: "epic"
         days-before-stale: 30
-        days-before-close: 7
+        days-before-close: 30
