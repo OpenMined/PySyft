@@ -106,7 +106,7 @@ def test_methods_for_linear_module(method, parameter):
 def test_reciprocal(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
-    tensor = torch.tensor([1.0, 2.0, 3.0])
+    tensor = torch.tensor([-2.0, 6.0, 2.0, 3.0, -5.0, -0.5])
     x = tensor.fix_prec()
     result = x.reciprocal(method="division").float_prec()
     assert torch.isclose(tensor.reciprocal(), result, rtol=1e-2).all()

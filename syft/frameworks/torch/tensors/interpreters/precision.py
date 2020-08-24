@@ -468,6 +468,19 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
+    def signum(self):
+        """
+            Calculation of signum function for a given tensor
+        """
+        sgn = (self > 0) - (self < 0)
+        return sgn
+
+    def modulus(self):
+        """
+            Calculation of modulus for a given tensor
+        """
+        return self.signum() * self
+
     def reciprocal(self, method="NR", nr_iters=10):
         r"""
         Calculate the reciprocal using the algorithm specified in the method args.
@@ -488,15 +501,17 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         if method.lower() == "nr":
-            result = 3 * (0.5 - self).exp() + 0.003
+            new_self = self.modulus()
+            result = 3 * (0.5 - new_self).exp() + 0.003
             for i in range(nr_iters):
-                result = 2 * result - result * result * self
-            return result
+                result = 2 * result - result * result * new_self
+            return result * self.signum()
         elif method.lower() == "division":
             ones = self * 0 + 1
             return ones / self
         elif method.lower() == "log":
-            return (-self.log()).exp()
+            new_self = self.modulus()
+            return (-new_self.log()).exp() * self.signum()
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
 
