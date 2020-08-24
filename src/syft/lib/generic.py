@@ -53,14 +53,14 @@ class ObjectConstructor(object):
         - arbitrary functionality before the underlying (original) object constructor is called
         - arbitrary functionality after the underlying (original) object constructor is called.
 
-    Thus, if any object has it's functionality extended or overridden by PySyft, it should be created using
+    Thus, if any object has its functionality extended or overridden by PySyft, it should be created using
     an extension of this class.
 
     GARBAGE COLLECTION NOTES:
 
     There is a special case in codebases which wrap C++ functionality wherein an object can be created on the
     C++ side, a Python wrapper is created (calling our constructor above). However, some methods can destroy
-    and then re-create the Python wrappr without destroying or re-creating the underlying tensor. This can be very
+    and then re-create the Python wrapper without destroying or re-creating the underlying tensor. This can be very
     tricky to deal with for a variety of reasons. However, we have observed that we can override this ability by:
 
     - caching the Python object somewhere so that the original python object doesn't get destroyed until it should be
@@ -295,14 +295,14 @@ class ObjectConstructor(object):
             raise AttributeError(
                 f"Syft's custom object constructor {type(self)} "
                 f"cannot find the original constructor"
-                f"to initialize '{self.constructor_name}'' "
+                f"to initialize '{self.constructor_name}' "
                 f"objects, which should have been stored at "
                 f"'{self.original_constructor_name}'. Either "
-                f"you're doing active development and forgot"
-                f" to cache the original constructor in the "
-                f"right place before installing Syft's custom"
+                f"you're doing active development and forgot "
+                f"to cache the original constructor in the "
+                f"right place before installing Syft's custom "
                 f"constructor or something is very broken and "
-                f"you should file a Github Issue. See"
+                f"you should file a Github Issue. See "
                 f"the documentation for ObjectConstructor for "
                 f"more information on this functionality."
             )

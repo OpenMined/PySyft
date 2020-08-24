@@ -123,7 +123,7 @@ class Node(AbstractNode):
 
         # ABOUT SERVICES AND MESSAGES
 
-        # Each service corresponds to one or more old_message types which
+        # Each service corresponds to one or more message types which
         # the service processes. There are two kinds of messages, those
         # which require a reply and those which do not. Thus, there
         # are two kinds of services, service which generate a reply
@@ -141,15 +141,15 @@ class Node(AbstractNode):
         # which reply with some amount of information.
 
         # for messages which need a reply, this uses the type
-        # of the old_message to look up the service which
-        # addresses that old_message.
+        # of the message to look up the service which
+        # addresses that message.
         self.immediate_msg_with_reply_router: Dict[
             Type[ImmediateSyftMessageWithReply], ImmediateNodeServiceWithReply
         ] = {}
 
         # for messages which don't lead to a reply, this uses
-        # the type of the old_message to look up the service
-        # which addresses that old_message
+        # the type of the message to look up the service
+        # which addresses that message
         self.immediate_msg_without_reply_router: Dict[
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
@@ -191,9 +191,9 @@ class Node(AbstractNode):
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all types.
-        # Thus, it does not live in a old_message router since
+        # Thus, it does not live in a message router since
         # routers only exist to decide which messages go to which
-        # services, and they require that every old_message only correspond
+        # services, and they require that every message only correspond
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
@@ -393,17 +393,17 @@ class Node(AbstractNode):
 
     @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
-        """In this method, we set each old_message type to the appropriate
-        service for this node. It's important to note that one old_message type
+        """In this method, we set each message type to the appropriate
+        service for this node. It's important to note that one message type
         cannot map to multiple services on any given node type. If you want to
-        send information to a different service, create a new old_message type for that
-        service. Put another way, a service can have multiple old_message types which
-        correspond to it, but each old_message type can only have one service (per node
+        send information to a different service, create a new message type for that
+        service. Put another way, a service can have multiple message types which
+        correspond to it, but each message type can only have one service (per node
         subclass) which corresponds to it."""
 
         for isr in self.immediate_services_with_reply:
             # Create a single instance of the service to cache in the router corresponding
-            # to one or more old_message types.
+            # to one or more message types.
             isr_instance = isr()
             for handler_type in isr.message_handler_types():
                 # for each explicitly supported type, add it to the router
@@ -418,7 +418,7 @@ class Node(AbstractNode):
 
         for iswr in self.immediate_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
-            # to one or more old_message types.
+            # to one or more message types.
             iswr_instance = iswr()
             for handler_type in iswr.message_handler_types():
 
@@ -434,7 +434,7 @@ class Node(AbstractNode):
 
         for eswr in self.eventual_services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
-            # to one or more old_message types.
+            # to one or more message types.
             eswr_instance = eswr()
             for handler_type in eswr.message_handler_types():
 
