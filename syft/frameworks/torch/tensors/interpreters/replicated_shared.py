@@ -183,33 +183,37 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     def conv2d(self, value, padding=0):
-        return self.__switch_public_private(value, self.public_conv2d, self.private_conv2d, padding)
-
-    def public_conv2d(self, plain_text, padding):
-        plain_text = plain_text.double()
-        batches_in, channels_in, width_in, height_in = plain_text.shape
+        batches_in, channels_in, width_in, height_in = value.shape
         batches_out, channels_out, width_out, height_out = self.shape
-        plain_text = torch.nn.functional.unfold(plain_text, kernel_size=height_out, padding=padding)
-        plain_text = plain_text.long()
+        value = self.unfold(value, height_out, padding)
         self = self.apply_to_shares(torch.Tensor.view, channels_out, -1)
-        res = self @ plain_text
+        result = self @ value
         size = (height_in - height_out + 2 * padding) + 1
-        res = res.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
-        return res
+        result = result.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
+        return result
 
-    def private_conv2d(self, secret, padding):
+    def unfold(self, value, kernel_size, padding=0):
+        return self.__switch_public_private(
+            value, self.public_unfold, self.private_unfold, kernel_size, padding
+        )
+
+    @staticmethod
+    def public_unfold(plain_text, kernel_size, padding):
+        plain_text = plain_text.double()
+        plain_text = torch.nn.functional.unfold(
+            plain_text, kernel_size=kernel_size, padding=padding
+        )
+        plain_text = plain_text.long()
+        return plain_text
+
+    @staticmethod
+    def private_unfold(secret, kernel_size, padding):
         secret = secret.apply_to_shares(torch.Tensor.double)
-        batches_in, channels_in, width_in, height_in = secret.shape
-        batches_out, channels_out, width_out, height_out = self.shape
         secret = secret.apply_to_shares(
-            torch.nn.functional.unfold, kernel_size=height_out, padding=padding
+            torch.nn.functional.unfold, kernel_size=kernel_size, padding=padding
         )
         secret = secret.apply_to_shares(torch.Tensor.long)
-        self = self.apply_to_shares(torch.Tensor.view, channels_out, -1)
-        res = self @ secret
-        size = (height_in - height_out + 2 * padding) + 1
-        res = res.apply_to_shares(torch.Tensor.view, batches_out, channels_out, size, size)
-        return res
+        return secret
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
