@@ -51,7 +51,6 @@ class PyTorchParameterWrapper(StorableObject):
         tensor_data = getattr(self.value, "data", None)
         if tensor_data is not None:
             proto.tensor.CopyFrom(protobuf_tensor_serializer(tensor_data))
-        # QUESTION is False the default here?
         proto.requires_grad = getattr(self.value, "requires_grad", False)
         grad = getattr(self.value, "grad", None)
         if grad is not None:

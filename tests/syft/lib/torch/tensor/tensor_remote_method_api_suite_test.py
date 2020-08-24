@@ -7,6 +7,7 @@ types and ensure that they can be executed in a remote environment.
 from syft.lib.torch import allowlist
 from syft.core.pointer.pointer import Pointer
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
+from syft.lib.python.primitive import isprimitive
 
 import syft as sy
 import torch as th
@@ -14,6 +15,7 @@ import pytest
 from itertools import product
 from typing import List
 from typing import Any
+
 
 tensor_type = type(th.tensor([1, 2, 3]))
 
@@ -61,7 +63,11 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
     t_type = TORCH_STR_DTYPE[tensor_type]
 
     # Step 3: Create the object we're going to call a method on
-    self = th.tensor(self, dtype=t_type)
+    # NOTE: we need a second copy because some methods mutate self before we send
+    self, self_copy = th.tensor(self, dtype=t_type), th.tensor(self, dtype=t_type)
+
+    # Copy the UID over so that its easier to see they are supposed to be the same obj
+    self_copy.id = self.id  # type: ignore
 
     # Step 4: Create the arguments we're going to pass the method on
     if _args == "None":
@@ -203,7 +209,8 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
     if valid_torch_command:
 
         # Step 7: Send our target tensor to alice.
-        xp = self.send(alice_client)  # type:ignore
+        # NOTE: send the copy we haven't mutated
+        xp = self_copy.send(alice_client)
         if args is not None:
             argsp = [
                 arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
@@ -232,13 +239,18 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         # Step 13: If there are NaN values, set them to 0 (this is normal for division by 0)
 
         try:
+            # TODO: We should detect tensor vs primitive in a more reliable way
             # set all NaN to 0
-            local_result[local_result != local_result] = 0
-            target_result[target_result != target_result] = 0
+            if isprimitive(value=target_result):
+                assert local_result == target_result
+            else:
+                # type(target_result) == torch.Tensor
+                local_result[local_result != local_result] = 0
+                target_result[target_result != target_result] = 0
 
-            # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
-            # using Syft pointers to communicate with remote torch objects
-            assert (local_result == target_result).all()
+                # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
+                # using Syft pointers to communicate with remote torch objects
+                assert (local_result == target_result).all()
 
         except RuntimeError as e:
             msg = repr(e)
