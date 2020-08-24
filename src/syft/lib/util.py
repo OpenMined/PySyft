@@ -65,6 +65,7 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
 
 @syft_decorator(typechecking=True)
 def get_original_constructor_name(object_name: str) -> str:
+    print("Constructor")
     """Generate name for original constructor
 
     For each custom constructor, we move the original constructor to a consistent location relative to

@@ -89,8 +89,9 @@ class ObjectConstructor(object):
 
     def install_inside_library(self) -> None:
         """Installs this custom constructor by replacing the library constructor with itself"""
-
+        print("HWQEEQWEQW")
         replacee = getattr(self.constructor_location, self.constructor_name)
+        print("Replace ", replacee)
         # If a custom constructor hasn't already been installed at this location, install it
         if not isinstance(replacee, ObjectConstructor):
             # cache original constructor at original_<constructor name>
@@ -124,7 +125,6 @@ class ObjectConstructor(object):
             )
 
     def install_id_attribute(self, original_constructor: Type) -> Type:
-
         if (
             inspect.isclass(original_constructor)
             or self.constructor_produces_type is not None
@@ -183,7 +183,6 @@ class ObjectConstructor(object):
 
         # save the original_constructor
         original_constructor = getattr(self.constructor_location, self.constructor_name)
-
         original_constructor = self.install_id_attribute(original_constructor)
 
         # copies the original constructor to a safe place for later use
@@ -319,6 +318,14 @@ class ObjectConstructor(object):
             instance (object): an object of which we want to check the type against cls.
 
         """
+        print(cls.constructor_name)
+        print(cls.constructor_location)
+        getattr(
+                cls.constructor_location,
+                get_original_constructor_name(object_name=cls.constructor_name),
+            )()
+        import pdb; pdb.set_trace()
+
         return isinstance(
             instance,
             getattr(

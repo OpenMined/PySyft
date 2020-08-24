@@ -28,7 +28,8 @@ TEST_TYPES = [
 BASIC_OPS = list()
 for method in allowlist.keys():
     if "torch.Tensor." in method:
-        BASIC_OPS.append(method.split(".")[-1])
+        if method == "torch.Tensor.true_divide":
+            BASIC_OPS.append(method.split(".")[-1])
 
 BASIC_SELF_TENSORS: List[Any] = list()
 BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4])  # with a 0
@@ -39,6 +40,7 @@ BASIC_SELF_TENSORS.append([[-0.1, 0.1], [0.2, 0.3]])  # square
 BASIC_METHOD_ARGS = list()
 BASIC_METHOD_ARGS.append("self")
 BASIC_METHOD_ARGS.append("None")
+BASIC_METHOD_ARGS.append("2")
 # BASIC_METHOD_ARGS.append("0") #TODO: add ints as remote argument types (can't call .serialize() on int)
 # BASIC_METHOD_ARGS.append("1") #TODO: add ints as remote argument types (can't call .serialize() on int)
 # BASIC_METHOD_ARGS.append("True") #TODO: add ints as remote argument types (can't call .serialize() on bool)
@@ -70,6 +72,8 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         args = [th.tensor(self, dtype=t_type)]
     elif _args == "0":
         args = [0]
+    elif _args == "2":
+        args = [2]
     elif _args == "True":
         args = [True]
     elif _args == "False":
