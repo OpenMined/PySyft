@@ -15,6 +15,9 @@ import pytest
 from itertools import product
 from typing import List
 from typing import Any
+from typing import Dict
+from typing import Type
+from typing import Callable
 
 
 tensor_type = type(th.tensor([1, 2, 3]))
@@ -54,6 +57,70 @@ TEST_DATA = list(product(TEST_TYPES, BASIC_OPS, BASIC_SELF_TENSORS, BASIC_METHOD
 # Step 1: Create remote worker
 alice = sy.VirtualMachine(name="alice")
 alice_client = alice.get_client()
+
+
+def is_expected_runtime_error(msg: str) -> bool:
+    expected_msgs = {
+        """not implemented for""",
+        """two bool tensors is not supported.""",
+        """RuntimeError('ZeroDivisionError')""",
+        """not supported on""",
+        "RuntimeError('Can only calculate the mean of floating types.",
+        "expected a tensor with 2 or more dimensions of floating types",
+        "only supports floating-point dtypes",
+        "invalid argument 1: A should be 2 dimensional at",
+        "invalid argument 1: expected a matrix at",
+        "Expected object of scalar type Long but got scalar type",
+        "RuntimeError('expected total dims >= 2, but got total dims = 1')",
+        "Integer division of tensors using div or / is no longer supported",
+        "RuntimeError(\"result type Float can't be cast to the desired output type",
+        "RuntimeError('inconsistent tensor size, expected tensor",
+        "RuntimeError('size mismatch",
+        "RuntimeError('1D tensors expected, got 2D",
+        "RuntimeError(requested resize to",
+        "RuntimeError('ger: Expected 1-D ",
+        "RuntimeError(\"At least one of 'min' or 'max' must not be None\")",
+        "RuntimeError('Boolean value of Tensor with more than one value is ambiguous')",
+    }
+
+    return any(expected_msg in msg for expected_msg in expected_msgs)
+
+
+def is_expected_type_error(msg: str) -> bool:
+    expected_msgs = {
+        "received an invalid combination of arguments - got (), but expected",
+        "missing 1 required positional arguments:",
+        "takes no arguments",
+        "is only implemented on",
+        "missing 1 required positional argument",
+        "takes 0 positional arguments but",
+        "argument after * must be an iterable, not int",
+        "must be Number, not Tensor",
+        """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")""",
+        """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")""",
+        """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")""",
+        """(position 1) must be int, not Tensor")""",
+        "received an invalid combination of arguments",
+        """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")""",
+        """must be bool, not Tensor""",
+        "TypeError('nonzero() takes from 1 to 0 positional arguments but",
+    }
+
+    return any(expected_msg in msg for expected_msg in expected_msgs)
+
+
+def is_expected_value_error(msg: str) -> bool:
+    expected_msgs = {
+        "ValueError('only one element tensors can be converted to Python scalars')"
+    }
+
+    return any(expected_msg in msg for expected_msg in expected_msgs)
+
+
+def is_expected_index_error(msg: str) -> bool:
+    expected_msgs = {"Dimension out of range"}
+
+    return any(expected_msg in msg for expected_msg in expected_msgs)
 
 
 @pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
@@ -97,6 +164,13 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
     else:
         args = _args
 
+    expected_exception: Dict[Type, Callable[[str], bool]] = {
+        RuntimeError: is_expected_runtime_error,
+        TypeError: is_expected_type_error,
+        ValueError: is_expected_value_error,
+        IndexError: is_expected_index_error,
+    }
+
     # Step 4: Get the method we're going to call
     target_op_method = getattr(self_tensor, op_name)
 
@@ -113,114 +187,10 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         if target_result == NotImplemented:
             valid_torch_command = False
 
-    except RuntimeError as e:
-
+    except (RuntimeError, TypeError, ValueError, IndexError) as e:
         msg = repr(e)
 
-        if """not implemented for""" in msg:
-            valid_torch_command = False
-        elif """two bool tensors is not supported.""" in msg:
-            valid_torch_command = False
-        elif msg == """RuntimeError('ZeroDivisionError')""":
-            valid_torch_command = False
-        elif """not supported on""" in msg:
-            valid_torch_command = False
-        elif """is not supported""" in msg:
-            valid_torch_command = False
-        elif "At least one of" in msg and " must not be None" in msg:
-            valid_torch_command = False
-        elif "1D tensors expected, got 2D, 2D tensors at" in msg:
-            valid_torch_command = False
-        elif "RuntimeError('ger: Expected 1-D argument self, but got 2-D')" in msg:
-            valid_torch_command = False
-        elif "RuntimeError('Can only calculate the mean of floating types." in msg:
-            valid_torch_command = False
-        elif "expected a tensor with 2 or more dimensions of floating types" in msg:
-            valid_torch_command = False
-        elif "only supports floating-point dtypes" in msg:
-            valid_torch_command = False
-        elif "invalid argument 1: A should be 2 dimensional at" in msg:
-            valid_torch_command = False
-        elif "invalid argument 1: expected a matrix at" in msg:
-            valid_torch_command = False
-        elif "Expected object of scalar type Long but got scalar type" in msg:
-            valid_torch_command = False
-        elif "RuntimeError('expected total dims >= 2, but got total dims = 1')" == msg:
-            valid_torch_command = False
-        elif "Integer division of tensors using div or / is no longer supported" in msg:
-            valid_torch_command = False
-        elif (
-            "RuntimeError(\"result type Float can't be cast to the desired output type"
-            in msg
-        ):
-            valid_torch_command = False
-        else:
-            print(msg)
-            raise e
-
-    except TypeError as e:
-        msg = repr(e)
-
-        if "received an invalid combination of arguments - got (), but expected" in msg:
-            valid_torch_command = False
-        elif "missing 1 required positional arguments:" in msg:
-            valid_torch_command = False
-        elif "takes no arguments" in msg:
-            valid_torch_command = False
-        elif "is only implemented on" in msg:
-            valid_torch_command = False
-        elif "missing 1 required positional argument" in msg:
-            valid_torch_command = False
-        elif "takes 0 positional arguments but" in msg:
-            valid_torch_command = False
-        elif "argument after * must be an iterable, not int" in msg:
-            valid_torch_command = False
-        elif "must be Number, not Tensor" in msg:
-            valid_torch_command = False
-        elif (
-            """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")"""
-            == msg
-        ):
-            valid_torch_command = False
-        elif (
-            """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")"""
-            == msg
-        ):
-            valid_torch_command = False
-        elif (
-            """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")"""
-            == msg
-        ):
-            valid_torch_command = False
-        elif """(position 1) must be int, not Tensor")""" in msg:
-            valid_torch_command = False
-        elif "received an invalid combination of arguments" in msg:
-            valid_torch_command = False
-        elif (
-            """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")"""
-            == msg
-        ):
-            valid_torch_command = False
-        elif """must be bool, not Tensor""" in msg:
-            valid_torch_command = False
-        else:
-            print(msg)
-            raise e
-
-    except ValueError as e:
-        msg = repr(e)
-        if (
-            msg
-            == "ValueError('only one element tensors can be converted to Python scalars')"
-        ):
-            valid_torch_command = False
-        else:
-            print(msg)
-            raise e
-
-    except IndexError as e:
-        msg = repr(e)
-        if "Dimension out of range" in msg:
+        if type(e) in expected_exception and expected_exception[type(e)](msg):
             valid_torch_command = False
         else:
             print(msg)
