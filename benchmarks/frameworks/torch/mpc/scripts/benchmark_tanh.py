@@ -30,21 +30,21 @@ def benchmark_tanh(method, prec_frac, workers):
     r_sh = t_sh.tanh(method=method)
     r = r_sh.get().float_prec()
     t = t.tanh()
-    # Calculation of the difference between FPT and normal sigmoid (error)
+    # Calculation of the difference between FPT and normal tanh (error)
     diff = (r - t).abs().max()
     return diff.item()
 
 
 def tanh_approximation_plot(benchmark_data_tanh):
     """
-    This function plots the graph for various sigmoidal approximation benchmarks namely
-    'chebyshev', 'maclaurin', 'exp'.
+    This function plots the graph for various tanh approximation benchmarks namely
+    'chebyshev', 'sigmoid'.
 
     Args:
-        benchmark_data_sigmoid (list): the sample data to approximate
+        benchmark_data_tanh (list): the sample data to approximate
 
     Returns:
-        sigmoid_function_approximations_benchmark (png): plotted graph in graph directory
+        tanh_function_approximations_benchmark (png): plotted graph in graph directory
     """
 
     # initializing workers
@@ -61,7 +61,7 @@ def tanh_approximation_plot(benchmark_data_tanh):
 
     for data in benchmark_data_tanh:
 
-        # getting value from benchmark_data_sigmoid
+        # getting value from benchmark_data_tanh
         method, prec_frac = data
 
         for precision_value in range(1, (prec_frac + 1)):
@@ -100,5 +100,5 @@ def tanh_approximation_plot(benchmark_data_tanh):
     plt.savefig("../graphs/tanh_function_approximations_benchmark.png")
 
 
-# calling sigmoid_approximation_plot function
+# calling tanh_approximation_plot function
 tanh_approximation_plot(benchmark_data_tanh)
