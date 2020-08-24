@@ -26,18 +26,6 @@ def test_shares_number():
     assert len(shares) == number_of_shares
 
 
-def test_verify_players(workers):
-    bob, alice, james, charlie = (
-        workers["bob"],
-        workers["alice"],
-        workers["james"],
-        workers["charlie"],
-    )
-    secret1 = torch.tensor(7).share(bob, alice, james, protocol="falcon")
-    secret2 = torch.tensor(5).share(bob, alice, charlie, protocol="falcon")
-    assert secret1.verify_matching_players(secret2) is False
-
-
 def test_private_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")

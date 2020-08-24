@@ -7,20 +7,27 @@ from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 class ReplicatedSharingTensor(AbstractTensor):
     def __init__(
-        self, shares_map=None, owner=None, id=None, tags=None, description=None,
+        self, plain_text=None, players=None, owner=None, id=None, tags=None, description=None,
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        self.child = shares_map
         self.ring_size = 2 ** 32
+        self.child = self.__init_child(plain_text, players)
 
-    def share_secret(self, secret, workers):
+    def __init_child(self, plain_text, players):
+        if plain_text is None or players is None:
+            return None
+        elif plain_text is ReplicatedSharingTensor:
+            return plain_text.child
+        else:
+            return self.share_secret(plain_text, players)
+
+    def share_secret(self, plain_text, workers):
         number_of_shares = len(workers)
         workers = self.__arrange_workers(list(workers))
-        shares = self.generate_shares(secret, number_of_shares)
+        shares = self.generate_shares(plain_text, number_of_shares)
         shares_map = self.__distribute_shares(workers, shares)
         PRZS.setup(workers)
-        self.child = shares_map
-        return self
+        return shares_map
 
     @staticmethod
     def __arrange_workers(workers):
@@ -101,13 +108,11 @@ class ReplicatedSharingTensor(AbstractTensor):
     __sub__ = sub
 
     def __private_linear_operation(self, secret, operator):
-        if not self.verify_matching_players(secret):
-            raise ValueError("Shares must be distributed among same parties")
         z = {}
         x, y = self.get_shares_map(), secret.get_shares_map()
         for player in x.keys():
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
-        return ReplicatedSharingTensor(z)
+        return ReplicatedSharingTensor().__set_shares_map(z)
 
     def __public_linear_operation(self, plain_text, operator):
         players = self.get_players()
@@ -117,7 +122,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             operator(shares_map[players[0]][0], plain_text),
             shares_map[players[0]][1],
         )
-        return ReplicatedSharingTensor(shares_map)
+        return ReplicatedSharingTensor().__set_shares_map(shares_map)
 
     def mul(self, value):
         return self.__switch_public_private(value, self.public_mul, self.private_mul)
@@ -152,7 +157,7 @@ class ReplicatedSharingTensor(AbstractTensor):
                 operator(shares_map[player][0], plain_text_map[player]),
                 operator(shares_map[player][1], plain_text_map[player]),
             )
-        return ReplicatedSharingTensor(shares_map)
+        return ReplicatedSharingTensor().__set_shares_map(shares_map)
 
     def __private_multiplication_operation(self, secret, operator):
         x, y = self.get_shares_map(), secret.get_shares_map()
@@ -165,7 +170,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         ]
         z = self.__add_noise(z)
         z = self.__reshare(z, players)
-        return ReplicatedSharingTensor(z)
+        return ReplicatedSharingTensor().__set_shares_map(z)
 
     @staticmethod
     def __add_noise(shares):
@@ -230,14 +235,6 @@ class ReplicatedSharingTensor(AbstractTensor):
                 "but got {}".format(type(value))
             )
 
-    def verify_matching_players(self, *secrets):
-        players_set_0 = self.get_players()
-        for secret in secrets:
-            players_set_i = secret.get_players()
-            if players_set_i != players_set_0:
-                return False
-        return True
-
     def get_players(self):
         return list(self.get_shares_map().keys())
 
@@ -246,6 +243,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares_map: dic(worker i : (share_pointer i, share_pointer i+1)
         """
         return self.child
+
+    def __set_shares_map(self, shares_map):
+        self.child = shares_map
+        return self
 
     def apply_to_shares(self, function, *args, **kwargs):
         """
@@ -261,7 +262,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             )
             for player in players
         }
-        return ReplicatedSharingTensor(shares_map)
+        return ReplicatedSharingTensor().__set_shares_map(shares_map)
 
     @property
     def shape(self):
