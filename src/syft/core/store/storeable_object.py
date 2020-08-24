@@ -161,7 +161,10 @@ class StorableObject(AbstractStorableObject):
 
     @staticmethod
     def construct_new_object(
-        id: UID, data: object, description: Optional[str], tags: Optional[List[str]]
+        id: UID,
+        data: "StorableObject",
+        description: Optional[str],
+        tags: Optional[List[str]],
     ) -> "StorableObject":
         return StorableObject(id=id, data=data, description=description, tags=tags)
 
@@ -200,6 +203,8 @@ class StorableObject(AbstractStorableObject):
         output = f"{self.icon} ({self.class_name}) ("
         if hasattr(self.data, "pprint"):
             output += self.data.pprint  # type: ignore
+        elif self.data is not None:
+            output += self.data.__repr__()
         else:
             output += "(Key Only)"
         if self.description is not None and len(self.description) > 0:

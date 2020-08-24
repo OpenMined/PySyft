@@ -83,6 +83,7 @@ Example:
 # external imports
 from typing import List
 from typing import Optional
+from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft imports
@@ -137,7 +138,9 @@ class Pointer(AbstractPointer):
         self.tags = tags
         self.description = description
 
-    def get(self) -> StorableObject:
+    def get(
+        self,
+    ) -> Union[StorableObject, None, bool, int, float, str, tuple, list, dict]:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -151,6 +154,10 @@ class Pointer(AbstractPointer):
         )
 
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+
+        # TODO: Fix circular imports for PythonPrimitive so we can use isinstance
+        if type(response.obj).__name__ == "PythonPrimitive":
+            return response.obj.value
 
         return response.obj
 
