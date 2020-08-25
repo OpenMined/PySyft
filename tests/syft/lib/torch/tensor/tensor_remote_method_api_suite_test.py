@@ -146,6 +146,8 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif "takes 0 positional arguments but" in msg:
             valid_torch_command = False
+        elif "takes from 1 to 0 positional arguments but" in msg:
+            valid_torch_command = False
         elif "argument after * must be an iterable, not int" in msg:
             valid_torch_command = False
         elif "must be Number, not Tensor" in msg:
