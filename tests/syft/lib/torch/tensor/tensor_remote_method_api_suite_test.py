@@ -127,6 +127,8 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif "Integer division of tensors using div or / is no longer supported" in msg:
             valid_torch_command = False
+        elif "RuntimeError('Boolean value of Tensor with more than one value is ambiguous')" == msg:
+            valid_torch_command = False
         else:
             print(msg)
             raise e
