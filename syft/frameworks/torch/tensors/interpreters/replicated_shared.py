@@ -128,6 +128,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     def public_xor(self, plain_text):
         return self + plain_text - (self * 2 * plain_text)
 
+    __xor__ = xor
+
     def __private_linear_operation(self, secret, operator):
         x, y = self.get_shares_map(), secret.get_shares_map()
         players = self.get_players()
@@ -140,10 +142,15 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __public_linear_operation(self, plain_text, operator):
         players = self.get_players()
         shares_map = self.get_shares_map().copy()
-        plain_text = torch.tensor(plain_text, dtype=torch.long).send(players[0])
+        plain_text = torch.tensor(plain_text, dtype=torch.long)
+        remote_plain_text = [plain_text.send(players[0]), plain_text.send(players[-1])]
         shares_map[players[0]] = (
-            operator(shares_map[players[0]][0], plain_text),
+            operator(shares_map[players[0]][0], remote_plain_text[0]),
             shares_map[players[0]][1],
+        )
+        shares_map[players[-1]] = (
+            operator(shares_map[players[-1]][-1], remote_plain_text[-1]),
+            shares_map[players[-1]][1],
         )
         return ReplicatedSharingTensor().__set_shares_map(shares_map)
 
