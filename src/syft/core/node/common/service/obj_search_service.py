@@ -198,7 +198,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
                 ptr_type = obj2pointer_type(obj.data)
                 ptr = ptr_type(
-                    location=node.address,
+                    client=node,
                     id_at_location=obj.id,
                     tags=obj.tags,
                     description=obj.description,
