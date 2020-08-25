@@ -23,14 +23,70 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n'proto/lib/python/python_primitive.proto\x12\x10syft.core.common\x1a%proto/core/common/common_object.proto\"W\n\x0fPythonPrimitive\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\tb\x06proto3",
+    serialized_pb=b'\n\'proto/lib/python/python_primitive.proto\x12\x10syft.core.common\x1a%proto/core/common/common_object.proto"\xcb\x01\n\x0bPyPrimitive\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x32\n\x04type\x18\x02 \x01(\x0e\x32$.syft.core.common.PyPrimitive.PyType\x12\x0b\n\x03int\x18\x03 \x01(\x12\x12\r\n\x05\x66loat\x18\x04 \x01(\x01\x12\x0b\n\x03str\x18\x05 \x01(\t"<\n\x06PyType\x12\x08\n\x04NONE\x10\x00\x12\x08\n\x04\x42OOL\x10\x01\x12\x07\n\x03INT\x10\x02\x12\t\n\x05\x46LOAT\x10\x03\x12\n\n\x06STRING\x10\x04\x62\x06proto3',
     dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
 
 
-_PYTHONPRIMITIVE = _descriptor.Descriptor(
-    name="PythonPrimitive",
-    full_name="syft.core.common.PythonPrimitive",
+_PYPRIMITIVE_PYTYPE = _descriptor.EnumDescriptor(
+    name="PyType",
+    full_name="syft.core.common.PyPrimitive.PyType",
+    filename=None,
+    file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
+    values=[
+        _descriptor.EnumValueDescriptor(
+            name="NONE",
+            index=0,
+            number=0,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="BOOL",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="INT",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="FLOAT",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="STRING",
+            index=4,
+            number=4,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    containing_type=None,
+    serialized_options=None,
+    serialized_start=244,
+    serialized_end=304,
+)
+_sym_db.RegisterEnumDescriptor(_PYPRIMITIVE_PYTYPE)
+
+
+_PYPRIMITIVE = _descriptor.Descriptor(
+    name="PyPrimitive",
+    full_name="syft.core.common.PyPrimitive",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -38,7 +94,7 @@ _PYTHONPRIMITIVE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="id",
-            full_name="syft.core.common.PythonPrimitive.id",
+            full_name="syft.core.common.PyPrimitive.id",
             index=0,
             number=1,
             type=11,
@@ -56,15 +112,15 @@ _PYTHONPRIMITIVE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="obj_type",
-            full_name="syft.core.common.PythonPrimitive.obj_type",
+            name="type",
+            full_name="syft.core.common.PyPrimitive.type",
             index=1,
             number=2,
-            type=9,
-            cpp_type=9,
+            type=14,
+            cpp_type=8,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=0,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -75,10 +131,48 @@ _PYTHONPRIMITIVE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.core.common.PythonPrimitive.content",
+            name="int",
+            full_name="syft.core.common.PyPrimitive.int",
             index=2,
             number=3,
+            type=18,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="float",
+            full_name="syft.core.common.PyPrimitive.float",
+            index=3,
+            number=4,
+            type=1,
+            cpp_type=5,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="str",
+            full_name="syft.core.common.PyPrimitive.str",
+            index=4,
+            number=5,
             type=9,
             cpp_type=9,
             label=1,
@@ -96,32 +190,34 @@ _PYTHONPRIMITIVE = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[],
+    enum_types=[_PYPRIMITIVE_PYTYPE,],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=100,
-    serialized_end=187,
+    serialized_start=101,
+    serialized_end=304,
 )
 
-_PYTHONPRIMITIVE.fields_by_name[
+_PYPRIMITIVE.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-DESCRIPTOR.message_types_by_name["PythonPrimitive"] = _PYTHONPRIMITIVE
+_PYPRIMITIVE.fields_by_name["type"].enum_type = _PYPRIMITIVE_PYTYPE
+_PYPRIMITIVE_PYTYPE.containing_type = _PYPRIMITIVE
+DESCRIPTOR.message_types_by_name["PyPrimitive"] = _PYPRIMITIVE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-PythonPrimitive = _reflection.GeneratedProtocolMessageType(
-    "PythonPrimitive",
+PyPrimitive = _reflection.GeneratedProtocolMessageType(
+    "PyPrimitive",
     (_message.Message,),
     {
-        "DESCRIPTOR": _PYTHONPRIMITIVE,
+        "DESCRIPTOR": _PYPRIMITIVE,
         "__module__": "proto.lib.python.python_primitive_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.PythonPrimitive)
+        # @@protoc_insertion_point(class_scope:syft.core.common.PyPrimitive)
     },
 )
-_sym_db.RegisterMessage(PythonPrimitive)
+_sym_db.RegisterMessage(PyPrimitive)
 
 
 # @@protoc_insertion_point(module_scope)

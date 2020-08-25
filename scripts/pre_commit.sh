@@ -8,6 +8,7 @@ set -e
 black src tests
 pre-commit run --all-files
 bandit -r src -ll
+# pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
 python setup.py test
 
 # run API documentation test notebooks

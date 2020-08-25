@@ -8,7 +8,8 @@ from .common import ImmediateActionWithoutReply
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft imports
-from .....lib.python.primitive import isprimitive, PythonPrimitive
+from .....lib.python.primitive import isprimitive, PyPrimitive
+
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -87,13 +88,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
         if isprimitive(value=result):
-            # Wrap in a PythonPrimitive
-            primitive = PythonPrimitive(value=result, id=self.id_at_location)
-            result = StorableObject(
-                id=self.id_at_location,
-                data=primitive,
-                read_permissions=result_read_permissions,
-            )
+            # Wrap in a PyPrimitive
+            result = PyPrimitive(data=result, id=self.id_at_location)
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
@@ -112,7 +108,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 data=result,
                 read_permissions=result_read_permissions,
             )
-
         node.store.store(obj=result)
 
     @syft_decorator(typechecking=True)

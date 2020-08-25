@@ -60,9 +60,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             pass
         if sy.VERBOSE:
             print(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
-        raise Exception(
-            "Address unknown - cannot forward message. Throwing it away."
-        )
+        raise Exception("Address unknown - cannot forward message. Throwing it away.")
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -117,9 +115,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             pass
         if sy.VERBOSE:
             print(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
-        raise Exception(
-            "Address unknown - cannot forward message. Throwing it away."
-        )
+        raise Exception("Address unknown - cannot forward message. Throwing it away.")
 
     @staticmethod
     @syft_decorator(typechecking=True)
