@@ -37,7 +37,9 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     @staticmethod
     def one_shares(players, field, shape=(1,)):
-        return ReplicatedSharingTensor(plain_text=torch.ones(shape, dtype=torch.int64), players=players, field=field)
+        return ReplicatedSharingTensor(
+            plain_text=torch.ones(shape, dtype=torch.int64), players=players, field=field
+        )
 
     @staticmethod
     def __arrange_workers(workers):
