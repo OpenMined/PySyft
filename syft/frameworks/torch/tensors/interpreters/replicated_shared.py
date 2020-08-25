@@ -36,6 +36,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     @staticmethod
+    def one_shares(players, field, shape=(1,)):
+        return ReplicatedSharingTensor(plain_text=torch.ones(shape, dtype=torch.int64), players=players, field=field)
+
+    @staticmethod
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
         if len(workers) != 3:
@@ -84,7 +88,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return pointers
 
     def __sum_shares(self, shares):
-        return sum(shares) % self.ring_size
+        return sum(shares) % self.field
 
     def __map_modular_to_real(self, mod_number):
         """In a modular ring, a number x is mapped to a negative
