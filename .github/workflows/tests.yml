@@ -159,7 +159,52 @@ jobs:
       - name: Run tests with coverage
         run: |
           pip install -r requirements.txt
-          python setup.py test
+          pip install -e .
+          pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+
+  python-allowlist:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'macOS')
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Run allowlist tests
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pytest -k "test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
 
   python-nb-examples:
     runs-on: ubuntu-latest
