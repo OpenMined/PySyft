@@ -104,13 +104,13 @@ This will download the latest Openmined Docker images and start a grid platform 
 If you want to build your own custom images, you may do so using the following command for the Node:
 
 ```
-docker build . --file ./apps/node/Dockerfile --tag openmined/grid-node:mybuildname
+docker build ./apps/node --file ./apps/node/Dockerfile --tag openmined/grid-node:mybuildname
 ```
 
 Or for the Network:
 
 ```
-docker build . --file ./apps/node/Dockerfile --tag openmined/grid-node:mybuildname
+docker build ./apps/network --file ./apps/network/Dockerfile --tag openmined/grid-network:mybuildname
 ```
 
 ### Manual Start
