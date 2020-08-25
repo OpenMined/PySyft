@@ -22,6 +22,9 @@ class ReplicatedSharingTensor(AbstractTensor):
         self.child = shares_map
 
     def __generate_shares_map(self, plain_text, players):
+        """
+        shares_map: dic(worker i : (share_pointer i, share_pointer i+1)
+        """
         if plain_text is None or players is None:
             return None
         elif isinstance(plain_text, torch.Tensor):
@@ -269,9 +272,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         return list(self.get_shares_map().keys())
 
     def get_shares_map(self):
-        """
-        shares_map: dic(worker i : (share_pointer i, share_pointer i+1)
-        """
         return self.child
 
     def __set_shares_map(self, shares_map):
