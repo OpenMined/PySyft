@@ -22,6 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.io",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1cproto/core/io/location.proto\x12\x0csyft.core.io\x1a%proto/core/common/common_object.proto"C\n\x10SpecificLocation\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\tb\x06proto3',
     dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
@@ -33,6 +34,7 @@ _SPECIFICLOCATION = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="id",
@@ -51,6 +53,7 @@ _SPECIFICLOCATION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="name",
@@ -69,6 +72,7 @@ _SPECIFICLOCATION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

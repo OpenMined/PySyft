@@ -17,6 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.util",
     syntax="proto3",
     serialized_options=None,
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1dproto/util/json_message.proto\x12\tsyft.util"0\n\x0bJsonMessage\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\tb\x06proto3',
 )
 
@@ -27,6 +28,7 @@ _JSONMESSAGE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_type",
@@ -45,6 +47,7 @@ _JSONMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="content",
@@ -63,6 +66,7 @@ _JSONMESSAGE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
