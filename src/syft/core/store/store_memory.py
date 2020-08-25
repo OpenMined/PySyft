@@ -32,7 +32,7 @@ class MemoryStore(ObjectStore):
 
     def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
         results = set()
-        for key, obj in self._objects.items():
+        for obj in self._objects.values():
             if isinstance(obj.data, obj_type):
                 results.add(obj)
 

@@ -23,16 +23,10 @@ class RequestQueueClient:
 
     @property
     def requests(self) -> List[RequestMessage]:
-        from syft.core.node.domain.service.get_all_requests_service import (
-            GetAllRequestsMessage,
-        )
+        from syft.core.node.domain.service.get_all_requests_service import GetAllRequestsMessage
 
-        msg = GetAllRequestsMessage(
-            address=self.client.address, reply_to=self.client.address
-        )
-        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(
-            msg=msg
-        ).requests
+        msg = GetAllRequestsMessage(address=self.client.address, reply_to=self.client.address)
+        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(msg=msg).requests
 
         for request in requests:
             request.owner_client_if_available = self.client
@@ -62,17 +56,15 @@ class RequestQueueClient:
 
     @property
     def pandas(self) -> pd.DataFrame:
-
-        request_lines = list()
-        for request in self.requests:
-            request_lines.append(
-                {
-                    "Request Name": request.request_name,
-                    "Reason": request.request_description,
-                    "Request ID": request.id,
-                    "Requested Object's ID": request.object_id,
-                }
-            )
+        request_lines = [
+            {
+                "Request Name": request.request_name,
+                "Reason": request.request_description,
+                "Request ID": request.id,
+                "Requested Object's ID": request.object_id,
+            }
+            for request in self.requests
+        ]
         return pd.DataFrame(request_lines)
 
 
