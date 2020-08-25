@@ -520,7 +520,7 @@ allowlist["torch.Tensor.var"] = "torch.Tensor"
 # allowlist['torch.Tensor.view'] = #
 # allowlist['torch.Tensor.view_as'] = #
 # allowlist['torch.Tensor.where'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist['torch.Tensor.zero_'] = #
+allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 
 
 # SECTION - other classes and modules
