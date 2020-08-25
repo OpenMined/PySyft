@@ -166,6 +166,7 @@ class GoogleCloud:
                 docker pull openmined/grid-node:production;
                 docker run \
                 -e NODE_ID={name} \
+                -e HOST = "$(hostname -I)" \
                 -e PORT=80 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
@@ -242,6 +243,7 @@ class GoogleCloud:
                 docker pull openmined/grid-node:production;
                 docker run \
                 -e NODE_ID={name} \
+                -e HOST="$(curl ifcongif.co)" \
                 -e PORT=80 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
