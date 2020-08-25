@@ -15,6 +15,13 @@ def get_verify_key() -> VerifyKey:
     return get_signing_key().verify_key
 
 
+def test_to_string() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+
+    assert str(bob_vm) == f"VirtualMachine:Bob:{bob_vm.id}"
+    assert bob_vm.__repr__() == f"VirtualMachine:Bob:{bob_vm.id}"
+
+
 def test_send_message_from_vm_client_to_vm() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -141,9 +148,7 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_vm.root_verify_key = bob_domain_client.verify_key  # inject 📡🔑 as 📍🗝
     bob_domain_client.register(client=bob_phone_client)
 
-    bob_domain_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm.address)
-    )
+    bob_domain_client.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=bob_vm.address))
 
 
 def test_send_message_from_network_client_to_vm() -> None:
@@ -194,6 +199,5 @@ def test_send_message_from_network_client_to_vm() -> None:
     # # switch keys
     bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
-    bob_network_client.send_immediate_msg_without_reply(
-        msg=sy.ReprMessage(address=bob_vm.address)
-    )
+    bob_network_client.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=bob_vm.address))
+
