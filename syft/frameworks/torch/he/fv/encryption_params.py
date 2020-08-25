@@ -1,6 +1,5 @@
 class EncryptionParams:
-    """A class for holding all the encryption parameters at one place for easy accessing
-    by any component of scheme.
+    """A class to hold the encryption parameters for easy access by any component of scheme.
 
     Attribute:
         poly_modulus: The polynomial modulus directly affects the number of coefficients in
