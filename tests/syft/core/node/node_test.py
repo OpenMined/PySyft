@@ -85,7 +85,7 @@ def test_register_vm_on_device_succeeds() -> None:
     assert bob_vm_client.device is not None
 
 
-def test_known_child_nodes():
+def test_known_child_nodes() -> None:
     bob_vm = sy.VirtualMachine(name="Bob VM")
     bob_vm_client = bob_vm.get_client()
     bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
@@ -107,6 +107,7 @@ def test_known_child_nodes():
 
     assert len(bob_phone.known_child_nodes) == 2
     assert bob_vm_2.address.vm in (obj.data.vm for obj in bob_phone.known_child_nodes)
+
 
 def test_send_message_from_device_client_to_vm() -> None:
     # Register a 🍰 with a 📱
@@ -171,7 +172,9 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_vm.root_verify_key = bob_domain_client.verify_key  # inject 📡🔑 as 📍🗝
     bob_domain_client.register(client=bob_phone_client)
 
-    bob_domain_client.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=bob_vm.address))
+    bob_domain_client.send_immediate_msg_without_reply(
+        msg=sy.ReprMessage(address=bob_vm.address)
+    )
 
 
 def test_send_message_from_network_client_to_vm() -> None:
@@ -222,5 +225,6 @@ def test_send_message_from_network_client_to_vm() -> None:
     # # switch keys
     bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
-    bob_network_client.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=bob_vm.address))
-
+    bob_network_client.send_immediate_msg_without_reply(
+        msg=sy.ReprMessage(address=bob_vm.address)
+    )

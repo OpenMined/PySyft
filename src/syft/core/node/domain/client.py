@@ -23,10 +23,16 @@ class RequestQueueClient:
 
     @property
     def requests(self) -> List[RequestMessage]:
-        from syft.core.node.domain.service.get_all_requests_service import GetAllRequestsMessage
+        from syft.core.node.domain.service.get_all_requests_service import (
+            GetAllRequestsMessage,
+        )
 
-        msg = GetAllRequestsMessage(address=self.client.address, reply_to=self.client.address)
-        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(msg=msg).requests
+        msg = GetAllRequestsMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(
+            msg=msg
+        ).requests
 
         for request in requests:
             request.owner_client_if_available = self.client
