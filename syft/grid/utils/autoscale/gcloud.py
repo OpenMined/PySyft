@@ -153,6 +153,7 @@ class GoogleCloud:
         )
         self.config += image
 
+        # HOST environment variable is set to internal IP address
         node = terrascript.resource.google_compute_instance(
             name,
             name=name,
@@ -230,6 +231,7 @@ class GoogleCloud:
                 --name gridnetwork -p 80:80 -d openmined/grid-network:production;""",
         )
 
+        # HOST environment variable is set to external IP address
         pygrid_network_address = "http://" + gridnetwork_ip
         instance_template = terrascript.resource.google_compute_instance_template(
             name + "-template",
