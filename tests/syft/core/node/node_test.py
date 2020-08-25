@@ -85,6 +85,29 @@ def test_register_vm_on_device_succeeds() -> None:
     assert bob_vm_client.device is not None
 
 
+def test_known_child_nodes():
+    bob_vm = sy.VirtualMachine(name="Bob VM")
+    bob_vm_client = bob_vm.get_client()
+    bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
+
+    bob_vm_2 = sy.VirtualMachine(name="Bob VM 2")
+    bob_vm_client_2 = bob_vm_2.get_client()
+    bob_vm_2.root_verify_key = bob_vm_client_2.verify_key  # inject 📡🔑 as 📍🗝
+
+    bob_phone = sy.Device(name="Bob's iPhone")
+    bob_phone_client = bob_phone.get_client()
+    bob_phone.root_verify_key = bob_phone_client.verify_key  # inject 📡🔑 as 📍🗝
+
+    bob_phone_client.register(client=bob_vm_client)
+
+    assert len(bob_phone.known_child_nodes) == 1
+    assert bob_vm.address.vm in (obj.data.vm for obj in bob_phone.known_child_nodes)
+
+    bob_phone_client.register(client=bob_vm_client_2)
+
+    assert len(bob_phone.known_child_nodes) == 2
+    assert bob_vm_2.address.vm in (obj.data.vm for obj in bob_phone.known_child_nodes)
+
 def test_send_message_from_device_client_to_vm() -> None:
     # Register a 🍰 with a 📱
     # Send ✉️ from 📱 ➡️ 🍰

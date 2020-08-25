@@ -286,7 +286,7 @@ class Node(AbstractNode):
         if sy.VERBOSE:
             print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            return self.store.get_objects_of_type(obj_type=Address)
+            return list(self.store.get_objects_of_type(obj_type=Address))
         else:
             if sy.VERBOSE:
                 print(f"> Node {self.pprint} has no children")
