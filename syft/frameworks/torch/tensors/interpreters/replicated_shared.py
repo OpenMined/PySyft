@@ -1,4 +1,4 @@
-from operator import add, sub, mul
+from operator import add, sub, mul, xor
 import torch
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
@@ -7,10 +7,17 @@ from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 class ReplicatedSharingTensor(AbstractTensor):
     def __init__(
-        self, plain_text=None, players=None, owner=None, id=None, tags=None, description=None,
+        self,
+        plain_text=None,
+        players=None,
+        ring_size=None,
+        owner=None,
+        id=None,
+        tags=None,
+        description=None,
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        self.ring_size = 2 ** 32
+        self.ring_size = ring_size or 2 ** 32
         shares_map = self.__generate_shares_map(plain_text, players)
         self.child = shares_map
 
@@ -70,7 +77,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         pointers = self.retrieve_pointers()
         shares = []
         for pointer in pointers:
-            shares.append(pointer.get())
+            shares.append(pointer.copy().get())
         return shares
 
     def retrieve_pointers(self):
@@ -112,17 +119,28 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     __sub__ = sub
 
+    def xor(self, value):
+        return self.__switch_public_private(value, self.public_xor, self.private_xor)
+
+    def private_xor(self, secret):
+        return self.__private_linear_operation(secret, xor)
+
+    def public_xor(self, plain_text):
+        return self + plain_text - (self * 2 * plain_text)
+
     def __private_linear_operation(self, secret, operator):
-        z = {}
         x, y = self.get_shares_map(), secret.get_shares_map()
-        for player in x.keys():
-            z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
+        players = self.get_players()
+        z = {
+            player: (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
+            for player in players
+        }
         return ReplicatedSharingTensor().__set_shares_map(z)
 
     def __public_linear_operation(self, plain_text, operator):
         players = self.get_players()
-        shares_map = self.get_shares_map()
-        plain_text = torch.tensor(plain_text).long().send(players[0])
+        shares_map = self.get_shares_map().copy()
+        plain_text = torch.tensor(plain_text, dtype=torch.long).send(players[0])
         shares_map[players[0]] = (
             operator(shares_map[players[0]][0], plain_text),
             shares_map[players[0]][1],
@@ -154,9 +172,9 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __public_multiplication_operation(self, plain_text, operator):
         players = self.get_players()
         plain_text_map = {
-            player: torch.tensor(plain_text).long().send(player) for player in players
+            player: torch.tensor(plain_text, dtype=torch.long).send(player) for player in players
         }
-        shares_map = self.get_shares_map()
+        shares_map = self.get_shares_map().copy()
         for player in players:
             shares_map[player] = (
                 operator(shares_map[player][0], plain_text_map[player]),

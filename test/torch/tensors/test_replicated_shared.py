@@ -13,7 +13,7 @@ def test_sharing(workers):
 def test_reconstruction(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, -7, 11])
-    secret = plain_text.share(bob, alice, james, protocol="falcon")
+    secret = plain_text.share(bob, alice, james, protocol="falcon", field=2 ** 5)
     decryption = secret.reconstruct()
     assert (plain_text == decryption).all()
 
@@ -141,3 +141,33 @@ def test_con2d_private(workers):
         x.conv2d(y, padding=1).reconstruct()
         == torch.tensor([[[[123, 180, 132], [224, 312, 224], [132, 180, 123]]]])
     ).all()
+
+
+def test_public_xor(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
+    y = torch.tensor([1])
+    a = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
+    b = torch.tensor([0])
+    assert (x.xor(y).reconstruct() == torch.tensor(1)).all()
+    assert (x.xor(b).reconstruct() == torch.tensor(0)).all()
+    assert (a.xor(y).reconstruct() == torch.tensor(0)).all()
+    assert (a.xor(b).reconstruct() == torch.tensor(1)).all()
+
+
+def test_private_xor(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
+    y = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
+    assert (x.xor(y).reconstruct() == torch.tensor(1)).all()
+    assert (x.xor(x).reconstruct() == torch.tensor(0)).all()
+    assert (y.xor(y).reconstruct() == torch.tensor(0)).all()
+    assert (y.xor(x).reconstruct() == torch.tensor(1)).all()
+
+
+def test_consecutive_arithmetic(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
+    z = x * x + y * 2 - x * 4
+    assert (z.reconstruct() == torch.tensor([-1, 0])).all()
