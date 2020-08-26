@@ -95,15 +95,15 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
         msg = repr(e)
 
-        if """not implemented for""" in msg:
+        if "not implemented for" in msg:
             valid_torch_command = False
-        elif """two bool tensors is not supported.""" in msg:
+        elif "two bool tensors is not supported." in msg:
             valid_torch_command = False
         elif "RuntimeError" in msg and "ZeroDivisionError" in msg:
             valid_torch_command = False
-        elif """not supported on""" in msg:
+        elif "not supported on" in msg:
             valid_torch_command = False
-        elif """is not supported""" in msg:
+        elif "is not supported" in msg:
             valid_torch_command = False
         elif "At least one of" in msg and " must not be None" in msg:
             valid_torch_command = False
@@ -111,10 +111,7 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif "ger: Expected 1-D argument self, but got 2-D" in msg:
             valid_torch_command = False
-        elif (
-            "RuntimeError" in msg
-            and "Can only calculate the mean of floating types" in msg
-        ):
+        elif "Can only calculate the mean of floating types" in msg:
             valid_torch_command = False
         elif "expected a tensor with 2 or more dimensions of floating types" in msg:
             valid_torch_command = False
@@ -158,20 +155,16 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         elif "must be Number, not Tensor" in msg:
             valid_torch_command = False
         elif (
-            "TypeError" in msg
-            and "flatten(): argument 'start_dim' (position 1) must be int, not Tensor"
+            "flatten(): argument 'start_dim' (position 1) must be int, not Tensor"
             in msg
         ):
             valid_torch_command = False
         elif (
-            "TypeError" in msg
-            and "diagonal(): argument 'offset' (position 1) must be int, not Tensor"
-            in msg
+            "diagonal(): argument 'offset' (position 1) must be int, not Tensor" in msg
         ):
             valid_torch_command = False
         elif (
-            "TypeError" in msg
-            and "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor"
+            "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor"
             in msg
         ):
             valid_torch_command = False
