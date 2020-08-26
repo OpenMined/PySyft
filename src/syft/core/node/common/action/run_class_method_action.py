@@ -8,6 +8,8 @@ from .common import ImmediateActionWithoutReply
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft imports
+from .....lib.python.primitive import isprimitive, PyPrimitive
+
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -85,9 +87,20 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
-        # ensure that result has the right id
-        # TODO: overload all methods to incorporate this automatically
-        result.id = self.id_at_location
+        if isprimitive(value=result):
+            # Wrap in a PyPrimitive
+            result = PyPrimitive(data=result, id=self.id_at_location)
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                result.id = self.id_at_location
+
+            # QUESTION: There seems to be return value tensors that have no id
+            # and get auto wrapped? So is this code not correct?
+            # else:
+            #     # TODO: Add tests, this could happen if the isprimitive fails due to an
+            #     # unsupported type
+            #     raise Exception(f"Result has no ID. {result}")
 
         if not isinstance(result, StorableObject):
             result = StorableObject(
@@ -95,7 +108,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 data=result,
                 read_permissions=result_read_permissions,
             )
-
         node.store.store(obj=result)
 
     @syft_decorator(typechecking=True)

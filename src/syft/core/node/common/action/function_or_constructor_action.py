@@ -58,5 +58,4 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         if not isinstance(result, StorableObject):
             result = StorableObject(id=self.id_at_location, data=result)
 
-        # QUESTION: Where is store_object defined
         node.store.store(obj=result)
