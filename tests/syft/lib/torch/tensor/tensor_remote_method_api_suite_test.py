@@ -99,6 +99,7 @@ def is_expected_type_error(msg: str) -> bool:
         "is only implemented on",
         "missing 1 required positional argument",
         "takes 0 positional arguments but",
+        "takes from 1 to 0 positional arguments but",
         "argument after * must be an iterable, not int",
         "must be Number, not Tensor",
         "flatten(): argument 'start_dim' (position 1) must be int, not Tensor",
