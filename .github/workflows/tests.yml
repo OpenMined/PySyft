@@ -64,7 +64,7 @@ jobs:
       - name: Run tests
         run: |
           pip install -r requirements.txt
-          pip install torch==${{ runner.torch-version }}
+          pip install torch==${{ matrix.torch-version }}
           pip install -e .
           pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
 
