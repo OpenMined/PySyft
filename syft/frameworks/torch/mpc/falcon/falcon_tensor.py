@@ -7,7 +7,7 @@ class FalconTensor(ReplicatedSharingTensor):
         super().__init__(plain_text=plain_text, players=players, ring_size=ring_size, owner=owner)
 
     def xor(self, value):
-        return self.switch_public_private(value, self.__public_xor, self.__private_xor)
+        return self._switch_public_private(value, self.__public_xor, self.__private_xor)
 
     def __public_xor(self, plain_text):
         return self + plain_text - (self * 2 * plain_text)

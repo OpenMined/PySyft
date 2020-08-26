@@ -92,7 +92,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return real_number
 
     def add(self, value):
-        return self.switch_public_private(value, self.__public_add, self.__private_add)
+        return self._switch_public_private(value, self.__public_add, self.__private_add)
 
     def __public_add(self, plain_text):
         return self.__public_linear_operation(plain_text, add)
@@ -103,7 +103,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     __add__ = add
 
     def sub(self, value):
-        return self.switch_public_private(value, self.__public_sub, self.__private_sub)
+        return self._switch_public_private(value, self.__public_sub, self.__private_sub)
 
     def __public_sub(self, plain_text):
         return self.__public_linear_operation(plain_text, sub)
@@ -114,7 +114,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     __sub__ = sub
 
     def mul(self, value):
-        return self.switch_public_private(value, self.__public_mul, self.__private_mul)
+        return self._switch_public_private(value, self.__public_mul, self.__private_mul)
 
     def __public_mul(self, plain_text):
         return self._public_multiplication_operation(plain_text, mul)
@@ -125,7 +125,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     __mul__ = mul
 
     def matmul(self, value):
-        return self.switch_public_private(value, self.__public_matmul, self.__private_matmul)
+        return self._switch_public_private(value, self.__public_matmul, self.__private_matmul)
 
     def __public_matmul(self, plain_text):
         return self._public_multiplication_operation(plain_text, torch.matmul)
@@ -148,7 +148,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return image
 
     @staticmethod
-    def switch_public_private(value, public_function, private_function, *args, **kwargs):
+    def _switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
             return public_function(value, *args, **kwargs)
         elif isinstance(value, syft.ReplicatedSharingTensor):
