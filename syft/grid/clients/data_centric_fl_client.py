@@ -11,6 +11,9 @@ from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 
 class DataCentricFLClient(WebsocketClientWorker):
@@ -188,7 +191,6 @@ class DataCentricFLClient(WebsocketClientWorker):
         allow_remote_inference: bool = False,
     ):
         """ Hosts the model and optionally serve it using a Socket / Rest API.
-
         Args:
             model : A jit model or Syft Plan.
             model_id (str): An integer/string representing the model id.
@@ -251,7 +253,6 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     def run_remote_inference(self, model_id, data):
         """ Run a dataset inference using a remote model.
-
         Args:
             model_id (str) : Model ID.
             data (Tensor) : dataset to be inferred.
@@ -272,7 +273,6 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     def delete_model(self, model_id: str) -> bool:
         """ Delete a model previously registered.
-
         Args:
             model_id (String) : ID of the model that will be deleted.
         Returns:
@@ -284,3 +284,18 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     def __str__(self) -> str:
         return f"<Federated Worker id:{self.id}>"
+
+    @staticmethod
+    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
+        return BaseWorker.simplify(_worker, worker)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
+        detailed = BaseWorker.detail(worker, worker_tuple)
+
+        if isinstance(detailed, int):
+            result = VirtualWorker(id=detailed, hook=worker.hook)
+        else:
+            result = detailed
+
+        return result

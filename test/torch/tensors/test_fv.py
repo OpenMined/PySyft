@@ -43,7 +43,7 @@ from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
     ],
 )
 def test_is_prime(num, status):
-    assert is_prime(num) == status
+    assert is_prime(num) == status  # checking for probably prime, not strict checking.
 
 
 @pytest.mark.parametrize(

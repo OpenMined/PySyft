@@ -15,7 +15,7 @@ from syft.frameworks.torch.he.fv.util.global_variable import POLY_MOD_DEGREE_MIN
 
 class Context:
     def __init__(self, params):
-        """A class used as for holding and easily supplying of all the general
+        """A class used as for holding and supplying all the general
         parameters required throughout the implementation.
 
         Args:

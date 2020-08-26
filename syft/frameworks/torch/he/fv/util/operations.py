@@ -61,8 +61,8 @@ def poly_add_mod(op1, op2, coeff_mod, poly_mod):
     """Add two polynomials and modulo every coefficient with coeff_mod.
 
     Args:
-        op1 (list): First Polynomail (Augend).
-        op2 (list): Second Polynomail (Addend).
+        op1 (list): First polynomial (Augend).
+        op2 (list): Second polynomial (Addend).
 
     Returns:
         A list with polynomial coefficients.
@@ -84,8 +84,8 @@ def poly_sub_mod(op1, op2, coeff_mod, poly_mod):
     """Subtract two polynomials and modulo every coefficient with coeff_mod.
 
     Args:
-        op1 (list): First Polynomail (Minuend).
-        op2 (list): Second Polynomail (Subtrahend).
+        op1 (list): First polynomial (Minuend).
+        op2 (list): Second polynomial (Subtrahend).
 
     Returns:
         A list with polynomial coefficients.
@@ -107,8 +107,8 @@ def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
     """Multiply two polynomials and modulo every coefficient with coeff_mod.
 
     Args:
-        op1 (list): First Polynomail (Multiplicand).
-        op2 (list): Second Polynomail (Multiplier).
+        op1 (list): First polynomial (Multiplicand).
+        op2 (list): Second polynomial (Multiplier).
 
     Returns:
         A list with polynomial coefficients.
@@ -138,11 +138,11 @@ def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
 
 
 def poly_negate_mod(op, coeff_mod):
-    """Negate polynomail and modulo every coefficient with coeff_mod.
+    """Negate polynomial and modulo every coefficient with coeff_mod.
 
     Args:
-        op1 (list): First Polynomail (Multiplicand).
-        op2 (list): Second Polynomail (Multiplier).
+        op1 (list): First polynomial (Multiplicand).
+        op2 (list): Second polynomial (Multiplier).
 
     Returns:
         A list with polynomial coefficients.
@@ -171,7 +171,7 @@ def get_significant_count(values):
 
 
 def reverse_bit(value):
-    """calculate the value of the reverse binary representation of the given integer."""
+    """Calculate the value of the reverse binary representation of the given integer."""
     result = 0
     while value:
         result = (result << 1) + (value & 1)
@@ -220,7 +220,7 @@ def xgcd(x, y):
 
 
 def multiply_add_plain_with_delta(ct, pt, context_data):
-    """Add message into phase.
+    """Add plaintext to ciphertext.
 
     Args:
         ct (Ciphertext): ct is pre-computed carrier polynomial where we can add pt data.
