@@ -62,6 +62,8 @@ jobs:
           bandit -r src -ll
 
       - name: Run tests
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
           pip install -r requirements.txt
           pip install -e .
