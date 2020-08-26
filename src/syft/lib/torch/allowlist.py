@@ -7,7 +7,10 @@ allowlist["torch.Tensor"] = "torch.Tensor"
 
 # SECTION - Tensor methods which return a torch tensor object
 
+# TODO: T is a property and requires detecting properties and supporting them in
+# run_class_method_action.py
 # allowlist['torch.Tensor.T'] = #
+allowlist["torch.Tensor.t"] = "torch.Tensor"
 allowlist["torch.Tensor.__abs__"] = "torch.Tensor"
 allowlist["torch.Tensor.__add__"] = "torch.Tensor"
 allowlist["torch.Tensor.__and__"] = "torch.Tensor"
@@ -278,7 +281,7 @@ allowlist["torch.Tensor.int"] = "torch.Tensor"
 # allowlist['torch.Tensor.is_contiguous'] = #
 # allowlist['torch.Tensor.is_cuda'] = #
 # allowlist['torch.Tensor.is_distributed'] = #
-allowlist["torch.Tensor.is_floating_point"] = "bool"
+allowlist["torch.Tensor.is_floating_point"] = "builtins.bool"
 # allowlist['torch.Tensor.is_leaf'] = #
 # allowlist['torch.Tensor.is_mkldnn'] = #
 # allowlist['torch.Tensor.is_nonzero'] = #

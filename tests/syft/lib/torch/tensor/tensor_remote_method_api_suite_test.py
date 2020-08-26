@@ -31,9 +31,12 @@ TEST_TYPES = [
 ]
 
 BASIC_OPS = list()
-for method in allowlist.keys():
+BASIC_OPS_RETURN_TYPE = {}
+for method, return_type in allowlist.items():
     if "torch.Tensor." in method:
-        BASIC_OPS.append(method.split(".")[-1])
+        method_name = method.split(".")[-1]
+        BASIC_OPS.append(method_name)
+        BASIC_OPS_RETURN_TYPE[method_name] = return_type
 
 BASIC_SELF_TENSORS: List[Any] = list()
 BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4])  # with a 0
@@ -121,6 +124,10 @@ def is_expected_index_error(msg: str) -> bool:
     expected_msgs = {"Dimension out of range"}
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
+
+
+def full_name_with_qualname(klass: type) -> str:
+    return f"{klass.__module__}.{klass.__qualname__}"
 
 
 @pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
@@ -233,7 +240,10 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             # TODO: We should detect tensor vs primitive in a more reliable way
             # set all NaN to 0
             if isprimitive(value=target_result):
+                # check that it matches functionally
                 assert local_result == target_result
+                # unbox the real value for type comparison below
+                local_result = local_result.data
             else:
                 # type(target_result) == torch.Tensor
 
@@ -250,6 +260,15 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
                 # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
                 # using Syft pointers to communicate with remote torch objects
                 assert (local_result == target_result).all()
+
+            # make sure the return types match
+            assert type(local_result) == type(target_result)
+
+            # make sure the return type matches the specified allowlist return type
+            assert (
+                full_name_with_qualname(type(local_result))
+                == BASIC_OPS_RETURN_TYPE[op_name]
+            )
 
         except RuntimeError as e:
             msg = repr(e)
