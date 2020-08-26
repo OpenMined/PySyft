@@ -30,7 +30,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
 
         # TODO: eliminate this explicit parameter and just set the object
-        #  id on the object directly.
+        #  id on the object directly
         self.id_at_location = id_at_location
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
