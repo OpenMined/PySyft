@@ -31,7 +31,7 @@ class MemoryStore(ObjectStore):
         self.post_init()
 
     def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
-        return {obj for obj in self._objects.values() if isinstance(obj.data, obj_type)}
+        return {obj for obj in self.values() if isinstance(obj.data, obj_type)}
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
