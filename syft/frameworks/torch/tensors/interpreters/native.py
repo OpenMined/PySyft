@@ -18,6 +18,7 @@ from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
+from syft.frameworks.torch.mpc.falcon.falcon_tensor import FalconTensor
 
 
 def _get_maximum_precision():
@@ -907,9 +908,7 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
         if protocol == "falcon":
-            shared_tensor = syft.ReplicatedSharingTensor(
-                self, owners, ring_size=field, owner=self.owner
-            )
+            shared_tensor = FalconTensor(self, owners, ring_size=field, owner=self.owner)
             return shared_tensor
         if self.has_child():
             chain = self.child
