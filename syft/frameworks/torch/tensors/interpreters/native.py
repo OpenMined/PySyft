@@ -907,7 +907,7 @@ class TorchTensor(AbstractTensor):
         """
         if protocol == "falcon":
             shared_tensor = syft.ReplicatedSharingTensor(
-                self, owners, ring_size=field, owner=self.owner
+                self, owners, field=field, owner=self.owner
             )
             return shared_tensor
         if self.has_child():

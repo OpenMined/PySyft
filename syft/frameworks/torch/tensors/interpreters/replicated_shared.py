@@ -6,7 +6,7 @@ from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
-    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
+    def __init__(self, plain_text=None, players=None, field=None, owner=None):
         super().__init__(owner=owner)
         self.ring_size = ring_size or 2 ** 32
         shares_map = self.__validate_input(plain_text, players)
@@ -56,8 +56,8 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares = []
         plain_text.long()
         for _ in range(number_of_shares - 1):
-            shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
-        shares.append((plain_text - sum(shares)) % self.ring_size)
+            shares.append(torch.randint(high=self.field // 2, size=plain_text.shape))
+        shares.append((plain_text - sum(shares)) % self.field)
         return shares
 
     @staticmethod
