@@ -42,6 +42,12 @@ class ReplicatedSharingTensor(AbstractTensor):
         )
 
     @staticmethod
+    def zero_shares(players, field, shape=(1,)):
+        return ReplicatedSharingTensor(
+            plain_text=torch.zeros(shape, dtype=torch.int64), players=players, field=field
+        )
+
+    @staticmethod
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
         if len(workers) != 3:
