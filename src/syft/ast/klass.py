@@ -50,7 +50,7 @@ class Class(Callable):
             and all methods will actually end up calling the same method. However, if we return
             the function object itself then it includes the current attr_path_and_name as an internal
             variable and when we call get_run_class_method multiple times it returns genuinely
-            different methods each time with a different intenral attr_path_and_name variable."""
+            different methods each time with a different internal attr_path_and_name variable."""
 
             def run_class_method(
                 __self: Any, *args: Tuple[Any, ...], **kwargs: Any,

@@ -13,6 +13,7 @@ from ....io.address import Address
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
 
+
 # syft proto imports
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
@@ -20,6 +21,7 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
+from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
@@ -45,10 +47,24 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
+        ser = self.obj.serialize()
+        # TODO: Fix this hack
+        # we need to check if the serialize chain creates a storable if not
+        # we need to go use the serializable_wrapper_type
+        # this is because klasses have a different def serialize to normal serializables
+        # which checks for the serializable_wrapper_type and uses it
+        if not isinstance(ser, StorableObject_PB):
+            if hasattr(self.obj, "serializable_wrapper_type"):
+                obj = self.obj.serializable_wrapper_type(  # type: ignore
+                    value=self.obj
+                )
+                ser = obj.serialize()
+            else:
+                raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
+
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            obj=self.obj.serialize(),
+            msg_id=self.id.serialize(), address=self.address.serialize(), obj=ser,
         )
 
     @staticmethod

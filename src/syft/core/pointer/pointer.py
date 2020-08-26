@@ -137,7 +137,7 @@ class Pointer(AbstractPointer):
         self.tags = tags
         self.description = description
 
-    def get(self) -> StorableObject:
+    def get(self,) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
