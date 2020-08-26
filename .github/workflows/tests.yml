@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.8, 3.7, 3.6]
-        torch-version: [1.4.0, 1.5.0, 1.5.1, 1.6.0, latest]
+        torch-version: [1.4.0, 1.5.0, 1.5.1, 1.6.0]
 
     runs-on: ${{ matrix.os }}
     steps:
