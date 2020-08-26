@@ -106,9 +106,11 @@ class FixedPrecisionTensor(AbstractTensor):
         return None
 
     def backward(self, *args, **kwargs):
-        """Calling backward on Precision Tensor doesn't make sense, but sometimes a call
+        """
+        Calling backward on Precision Tensor doesn't make sense, but sometimes a call
         can be propagated downward the chain to an Precision Tensor (for example in
-        create_grad_objects), so we just ignore the call."""
+        create_grad_objects), so we just ignore the call.
+        """
         pass
 
     def attr(self, attr_name):
@@ -161,9 +163,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def mod(self, _self, divisor):
-        """
-        Define the modulo operation over object instances.
-        """
+        """Define the modulo operation over object instances."""
         if isinstance(divisor, (int, float)):
             scaled_divisor = int(divisor * self.base ** self.precision_fractional)
             if isinstance(_self, AdditiveSharingTensor):
@@ -179,8 +179,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, _self, other):
-        """Add two fixed precision tensors together.
-        """
+        """Add two fixed precision tensors together."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "add")(scaled_int)
@@ -211,16 +210,14 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     def __iadd__(self, other):
-        """Add two fixed precision tensors together.
-        """
+        """Add two fixed precision tensors together."""
         self.child = self.add(other).child
 
         return self
 
     @overloaded.method
     def sub(self, _self, other):
-        """Subtracts a fixed precision tensor from another one.
-        """
+        """Subtracts a fixed precision tensor from another one."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "sub")(scaled_int)
@@ -389,8 +386,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     def pow(self, power):
-        """
-        Compute integer power of a number by recursion using mul
+        """Compute integer power of a number by recursion using mul
 
         This uses the following trick:
          - Divide power by 2 and multiply base to itself (if the power is even)
@@ -420,10 +416,8 @@ class FixedPrecisionTensor(AbstractTensor):
     __pow__ = pow
 
     def matmul(self, *args, **kwargs):
-        """
-        Hook manually matmul to add the truncation part which is inherent to multiplication
-        in the fixed precision setting
-        """
+        """Hook manually matmul to add the truncation part which is inherent
+        to multiplication in the fixed precision setting."""
 
         other = args[0]
 
@@ -469,16 +463,12 @@ class FixedPrecisionTensor(AbstractTensor):
     mm = matmul
 
     def signum(self):
-        """
-            Calculation of signum function for a given tensor
-        """
+        """Calculation of signum function for a given tensor"""
         sgn = (self > 0) - (self < 0)
         return sgn
 
     def modulus(self):
-        """
-            Calculation of modulus for a given tensor
-        """
+        """Calculation of modulus for a given tensor"""
         return self.signum() * self
 
     def reciprocal(self, method="NR", nr_iters=10):
@@ -553,8 +543,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _sigmoid_exp(tensor):
-        """
-        Implementation taken from FacebookResearch - CrypTen project
+        """Implementation taken from FacebookResearch - CrypTen project
 
         Compute the sigmoid using the exp approximation
         sigmoid(x) = 1 / (1 + exp(-x))
@@ -606,8 +595,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _sigmoid_chebyshev(tensor, maxval: int = 6, terms: int = 32):
-        """
-        Implementation taken from FacebookResearch - CrypTen project
+        """Implementation taken from FacebookResearch - CrypTen project
+
         Computes the sigmoid function as
                  sigmoid(x) = (tanh(x /2) + 1) / 2
 
@@ -622,8 +611,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return tanh_approx.div(2) + 0.5
 
     def sigmoid(tensor, method="chebyshev"):
-        """
-        Approximates the sigmoid function using a given method
+        """Approximates the sigmoid function using a given method
 
         Args:
             tensor: the fixed precision tensor
@@ -637,6 +625,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def log(self, iterations=2, exp_iterations=8):
         """Approximates the natural logarithm using 8th order modified Householder iterations.
+
         Recall that Householder method is an algorithm to solve a non linear equation f(x) = 0.
         Here  f: x -> 1 - C * exp(-x)  with C = self
 
@@ -667,8 +656,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _tanh_chebyshev(tensor, maxval: int = 6, terms: int = 32):
-        r"""
-        Implementation taken from FacebookResearch - CrypTen project
+        r"""Implementation taken from FacebookResearch - CrypTen project
+
         Computes tanh via Chebyshev approximation with truncation.
           tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
           where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
@@ -1018,14 +1007,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def bufferize(worker, prec_tensor):
-        """
-         This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
+        """This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
 
-          Args:
-             prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
+        Args:
+            prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
 
-          Returns:
-             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+        Returns:
+            proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
          """
         proto_prec_tensor = FixedPrecisionTensorPB()
         syft.serde.protobuf.proto.set_protobuf_id(proto_prec_tensor.id, prec_tensor.id)
@@ -1046,15 +1034,14 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def unbufferize(worker, proto_prec_tensor):
-        """
-            This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
+        """This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
 
-            Args:
-                proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
-                deserialized.
+        Args:
+            proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
+            deserialized.
 
-            Returns:
-                tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
+        Returns:
+            tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
         """
         proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_prec_tensor.id)
 
@@ -1079,11 +1066,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def get_protobuf_schema():
-        """
-            Returns the protobuf schema used for FixedPrecisionTensor.
+        """Returns the protobuf schema used for FixedPrecisionTensor.
 
-            Returns:
-                Protobuf schema for FixedPrecisionTensor.
+        Returns:
+            Protobuf schema for FixedPrecisionTensor.
         """
         return FixedPrecisionTensorPB
 
