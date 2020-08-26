@@ -99,7 +99,7 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif """two bool tensors is not supported.""" in msg:
             valid_torch_command = False
-        elif msg == """RuntimeError('ZeroDivisionError')""":
+        elif "RuntimeError" in msg and "ZeroDivisionError" in msg:
             valid_torch_command = False
         elif """not supported on""" in msg:
             valid_torch_command = False
@@ -109,9 +109,12 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif "1D tensors expected, got 2D, 2D tensors at" in msg:
             valid_torch_command = False
-        elif "RuntimeError('ger: Expected 1-D argument self, but got 2-D')" in msg:
+        elif "ger: Expected 1-D argument self, but got 2-D" in msg:
             valid_torch_command = False
-        elif "RuntimeError('Can only calculate the mean of floating types." in msg:
+        elif (
+            "RuntimeError" in msg
+            and "Can only calculate the mean of floating types" in msg
+        ):
             valid_torch_command = False
         elif "expected a tensor with 2 or more dimensions of floating types" in msg:
             valid_torch_command = False
@@ -123,14 +126,11 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
             valid_torch_command = False
         elif "Expected object of scalar type Long but got scalar type" in msg:
             valid_torch_command = False
-        elif "RuntimeError('expected total dims >= 2, but got total dims = 1')" == msg:
+        elif "expected total dims >= 2, but got total dims = 1" in msg:
             valid_torch_command = False
         elif "Integer division of tensors using div or / is no longer supported" in msg:
             valid_torch_command = False
-        elif (
-            "RuntimeError('Boolean value of Tensor with more than one value is ambiguous')"
-            == msg
-        ):
+        elif "Boolean value of Tensor with more than one value is ambiguous" in msg:
             valid_torch_command = False
         else:
             print(msg)
@@ -158,27 +158,29 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
         elif "must be Number, not Tensor" in msg:
             valid_torch_command = False
         elif (
-            """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")"""
-            == msg
+            "TypeError" in msg
+            and "flatten(): argument 'start_dim' (position 1) must be int, not Tensor"
+            in msg
         ):
             valid_torch_command = False
         elif (
-            """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")"""
-            == msg
+            "TypeError" in msg
+            and "diagonal(): argument 'offset' (position 1) must be int, not Tensor"
+            in msg
         ):
             valid_torch_command = False
         elif (
-            """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")"""
-            == msg
+            "TypeError" in msg
+            and "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor"
+            in msg
         ):
             valid_torch_command = False
-        elif """(position 1) must be int, not Tensor")""" in msg:
+        elif "(position 1) must be int, not Tensor" in msg:
             valid_torch_command = False
         elif "received an invalid combination of arguments" in msg:
             valid_torch_command = False
         elif (
-            """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")"""
-            == msg
+            "pinverse(): argument 'rcond' (position 1) must be float, not Tensor" in msg
         ):
             valid_torch_command = False
         elif """must be bool, not Tensor""" in msg:
@@ -189,10 +191,8 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
     except ValueError as e:
         msg = repr(e)
-        if (
-            msg
-            == "ValueError('only one element tensors can be converted to Python scalars')"
-        ):
+        # error is slightly different in python 3.6 so we need to check it this way
+        if "only one element tensors can be converted to Python scalars" in msg:
             valid_torch_command = False
         else:
             print(msg)
