@@ -61,26 +61,28 @@ alice_client = alice.get_client()
 
 def is_expected_runtime_error(msg: str) -> bool:
     expected_msgs = {
-        """not implemented for""",
-        """two bool tensors is not supported.""",
-        """RuntimeError('ZeroDivisionError')""",
-        """not supported on""",
-        "RuntimeError('Can only calculate the mean of floating types.",
+        "not implemented for",
+        "two bool tensors is not supported.",
+        "ZeroDivisionError",
+        "not supported on",
+        "Can only calculate the mean of floating types",
         "expected a tensor with 2 or more dimensions of floating types",
         "only supports floating-point dtypes",
         "invalid argument 1: A should be 2 dimensional at",
         "invalid argument 1: expected a matrix at",
         "Expected object of scalar type Long but got scalar type",
-        "RuntimeError('expected total dims >= 2, but got total dims = 1')",
+        "expected total dims >= 2, but got total dims = 1",
         "Integer division of tensors using div or / is no longer supported",
-        "RuntimeError(\"result type Float can't be cast to the desired output type",
-        "RuntimeError('inconsistent tensor size, expected tensor",
-        "RuntimeError('size mismatch",
-        "RuntimeError('1D tensors expected, got 2D",
-        "RuntimeError(requested resize to",
-        "RuntimeError('ger: Expected 1-D ",
-        "RuntimeError(\"At least one of 'min' or 'max' must not be None\")",
-        "RuntimeError('Boolean value of Tensor with more than one value is ambiguous')",
+        "result type Float can't be cast to the desired output type",
+        "inconsistent tensor size, expected tensor",
+        "size mismatch",
+        "1D tensors expected, got 2D",
+        "requested resize to",
+        "ger: Expected 1-D ",
+        "At least one of 'min' or 'max' must not be None",
+        "Boolean value of Tensor with more than one value is ambiguous",
+        "shape '[1]' is invalid for input of size",  # BASIC_METHOD_ARGS.append("[1]")
+        "Negation, the `-` operator, on a bool tensor is not supported",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -96,23 +98,21 @@ def is_expected_type_error(msg: str) -> bool:
         "takes 0 positional arguments but",
         "argument after * must be an iterable, not int",
         "must be Number, not Tensor",
-        """TypeError("flatten(): argument 'start_dim' (position 1) must be int, not Tensor")""",
-        """TypeError("diagonal(): argument 'offset' (position 1) must be int, not Tensor")""",
-        """TypeError("eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor")""",
-        """(position 1) must be int, not Tensor")""",
+        "flatten(): argument 'start_dim' (position 1) must be int, not Tensor",
+        "diagonal(): argument 'offset' (position 1) must be int, not Tensor",
+        "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor",
+        "(position 1) must be int, not Tensor",
         "received an invalid combination of arguments",
-        """TypeError("pinverse(): argument 'rcond' (position 1) must be float, not Tensor")""",
-        """must be bool, not Tensor""",
-        "TypeError('nonzero() takes from 1 to 0 positional arguments but",
+        "pinverse(): argument 'rcond' (position 1) must be float, not Tensor",
+        "must be bool, not Tensor",
+        "nonzero() takes from 1 to 0 positional arguments but",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
 
 
 def is_expected_value_error(msg: str) -> bool:
-    expected_msgs = {
-        "ValueError('only one element tensors can be converted to Python scalars')"
-    }
+    expected_msgs = {"only one element tensors can be converted to Python scalars"}
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
 
