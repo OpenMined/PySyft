@@ -37,7 +37,6 @@ def test_evaluate(beta, workers):
     x_sh = x.share(*workers, protocol="falcon")
     field = x_sh.field
     shape = x_sh.shape
-    print(shape)
 
     if beta:
         beta_sh = ReplicatedSharingTensor.one_shares(workers, field=field, shape=shape)
