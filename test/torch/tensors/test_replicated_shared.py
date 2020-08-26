@@ -2,6 +2,7 @@ import syft
 import torch
 
 
+# interface
 def test_sharing(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, 7, 11])
@@ -16,14 +17,6 @@ def test_reconstruction(workers):
     secret = plain_text.share(bob, alice, james, protocol="falcon", field=2 ** 5)
     decryption = secret.reconstruct()
     assert (plain_text == decryption).all()
-
-
-def test_shares_number():
-    tensor = syft.ReplicatedSharingTensor()
-    secret = torch.tensor(7)
-    number_of_shares = 4
-    shares = tensor.generate_shares(secret, number_of_shares)
-    assert len(shares) == number_of_shares
 
 
 def test_private_add(workers):
@@ -52,19 +45,6 @@ def test_public_sub(workers):
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
     y = 3
     assert x.sub(y).reconstruct() == 4
-
-
-def test_negative_result(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
-    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
-    assert y.sub(x).reconstruct() == -4
-
-
-def test_workers_arrangement(workers):
-    me, bob, alice = (workers["me"], workers["bob"], workers["alice"])
-    x = torch.tensor(7).share(bob, alice, me, protocol="falcon")
-    assert x.get_players()[0] == me
 
 
 def test_add_with_operator(workers):
@@ -110,14 +90,20 @@ def test_get_shape(workers):
     assert shape == enc_shape
 
 
-def test_apply_to_shares(workers):
+def test_get_players(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
+    assert x.players == [bob, alice, james]
+
+
+def test_view(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
-    x = x.apply_to_shares(torch.Tensor.view, [1, 2])
+    x = x.view([1, 2])
     assert x.shape == torch.Size([1, 2])
 
 
-def test_con2d_public(workers):
+def test_conv2d_public(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
         bob, alice, james, protocol="falcon"
@@ -129,7 +115,7 @@ def test_con2d_public(workers):
     ).all()
 
 
-def test_con2d_private(workers):
+def test_conv2d_private(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
         bob, alice, james, protocol="falcon"
@@ -165,9 +151,32 @@ def test_private_xor(workers):
     assert (y.xor(x).reconstruct() == torch.tensor(1)).all()
 
 
+# corner cases
 def test_consecutive_arithmetic(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
     z = x * x + y * 2 - x * 4
     assert (z.reconstruct() == torch.tensor([-1, 0])).all()
+
+
+def test_negative_result(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
+    assert y.sub(x).reconstruct() == -4
+
+
+# utility functions
+def test_shares_number():
+    tensor = syft.ReplicatedSharingTensor()
+    secret = torch.tensor(7)
+    number_of_shares = 4
+    shares = tensor.generate_shares(secret, number_of_shares)
+    assert len(shares) == number_of_shares
+
+
+def test_workers_arrangement(workers):
+    me, bob, alice = (workers["me"], workers["bob"], workers["alice"])
+    x = torch.tensor(7).share(bob, alice, me, protocol="falcon")
+    assert x.players[0] == me
