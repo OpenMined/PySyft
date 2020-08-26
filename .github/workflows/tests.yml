@@ -68,6 +68,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip install torch==$TORCH_VERSION
+          pip unfreeze
           pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
 
   python-linting:
