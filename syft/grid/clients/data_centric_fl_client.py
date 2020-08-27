@@ -4,6 +4,7 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from typing import Union
 from urllib.parse import urlparse
+import sys
 
 # Syft imports
 from syft.serde import serialize
@@ -155,8 +156,45 @@ class DataCentricFLClient(WebsocketClientWorker):
         Returns:
             node_response (bytes) : response payload.
         """
-        self.ws.send_binary(message)
-        response = self.ws.recv()
+        if sys.getsizeof(message) / 10 ** 6 > 50:
+            print("Huge message size: ", sys.getsizeof(message) / 10 ** 6," MB's" )
+            print("Sending a message by  HTTP request ... ")
+            
+            decoded_message = message.decode(self.encoding)
+    
+            message = {
+                "encoding": self.encoding,
+                "payload": decoded_message,
+            }
+
+            url = self.address.replace("ws", "http") + "/data-centric/syft/"
+
+            # Multipart encoding
+            form = MultipartEncoder(message)
+            upload_size = form.len
+
+            # Callback that shows upload progress
+            def progress_callback(monitor):
+                upload_progress = "{} / {} ({:.2f} %)".format(
+                    monitor.bytes_read, upload_size, (monitor.bytes_read / upload_size) * 100
+                )
+                print(upload_progress, end="\r")
+                if monitor.bytes_read == upload_size:
+                    print()
+
+            monitor = MultipartEncoderMonitor(form, progress_callback)
+            headers = {"Prefer": "respond-async", "Content-Type": monitor.content_type}
+
+            session = requests.Session()
+            response = session.post(url, headers=headers, data=monitor).content
+            session.close()
+            response = json.loads(response)['payload']
+            response = response.encode(self.encoding)
+            return response
+        else:
+            print("Sending via websocket ... ")
+            self.ws.send_binary(message)
+            response = self.ws.recv()
         return response
 
     def _return_bool_result(self, result, return_key=None):
