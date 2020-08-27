@@ -86,6 +86,7 @@ def is_expected_runtime_error(msg: str) -> bool:
         "Boolean value of Tensor with more than one value is ambiguous",
         "shape '[1]' is invalid for input of size",  # BASIC_METHOD_ARGS.append("[1]")
         "Negation, the `-` operator, on a bool tensor is not supported",
+        "True division requires a floating output type, but got",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -252,7 +253,9 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
                 # If we have two tensors like
                 # local = [Nan, 0, 1] and remote = [0, Nan, 1]
                 # those are not equal
-                nan_mask = local_result.isnan()
+                # Tensor.isnan was added in torch 1.6
+                # so we need to do torch.isnan(tensor)
+                nan_mask = th.isnan(local_result)
 
                 # Use the same mask for local and target
                 local_result[nan_mask] = 0
