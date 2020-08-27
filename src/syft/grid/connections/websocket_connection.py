@@ -164,10 +164,10 @@ class WebsocketConnection(BidirectionalConnection):
     def recv_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithReply:
-        """ Executes/Replies requests instantly.
+        """Executes/Replies requests instantly.
 
-            :return: returns an instance of ImmediateSyftMessageWithReply
-            :rtype: ImmediateSyftMessageWithReply
+        :return: returns an instance of ImmediateSyftMessageWithReply
+        :rtype: ImmediateSyftMessageWithReply
         """
         # Execute node services now
         reply = self.node.recv_immediate_msg_with_reply(msg)
@@ -191,8 +191,8 @@ class WebsocketConnection(BidirectionalConnection):
     def send_immediate_msg_with_reply(
         self, msg: ImmediateSyftMessageWithReply
     ) -> ImmediateSyftMessageWithReply:
-        """ Sends high priority messages and wait for their responses.
-            :return: returns an instance of ImmediateSyftMessageWithReply.
+        """Sends high priority messages and wait for their responses.
+        :return: returns an instance of ImmediateSyftMessageWithReply.
         """
         return asyncio.run(self.send_sync_message(msg=msg))
 
