@@ -109,19 +109,19 @@ class LazyDict:
 
 class LazySet:
     """
-    Struct that simulates the behavior of a normal set, but that a
-    fallback update method when an object is not found to update the
-    set.
+     Struct that simulates the behavior of a normal set, but that a
+     fallback update method when an object is not found to update the
+     set.
 
-   The overall behavior is:
-    * if the element is found, return the element.
-    * else, update the elements of the dict in a lazy manner.
-    * retry the search
-        - if the element is still not found - return False
-        - if the element is found - return True
+    The overall behavior is:
+     * if the element is found, return the element.
+     * else, update the elements of the dict in a lazy manner.
+     * retry the search
+         - if the element is still not found - return False
+         - if the element is found - return True
 
-    Attributes:
-         _set: internal set to store the elements of the lazy set.
+     Attributes:
+          _set: internal set to store the elements of the lazy set.
 
     """
 

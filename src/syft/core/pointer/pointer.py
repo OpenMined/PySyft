@@ -137,7 +137,9 @@ class Pointer(AbstractPointer):
         self.tags = tags
         self.description = description
 
-    def get(self,) -> StorableObject:
+    def get(
+        self,
+    ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -212,7 +214,7 @@ class Pointer(AbstractPointer):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -230,7 +232,11 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request_access(self, request_name: str = "", reason: str = "",) -> None:
+    def request_access(
+        self,
+        request_name: str = "",
+        reason: str = "",
+    ) -> None:
         """Method that requests access to the data on which the pointer points to.
 
         Example:
