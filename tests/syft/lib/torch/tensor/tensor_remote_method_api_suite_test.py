@@ -4,6 +4,16 @@ called from the syft package. We then permute this list over all tensor
 types and ensure that they can be executed in a remote environment.
 """
 
+from packaging import version
+from itertools import product
+from typing import List
+from typing import Any
+from typing import Dict
+from typing import Type
+from typing import Union
+from typing import Callable
+import pytest
+
 from syft.lib.torch import allowlist
 from syft.core.pointer.pointer import Pointer
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
@@ -11,13 +21,8 @@ from syft.lib.python.primitive import isprimitive
 
 import syft as sy
 import torch as th
-import pytest
-from itertools import product
-from typing import List
-from typing import Any
-from typing import Dict
-from typing import Type
-from typing import Callable
+
+TORCH_VERSION = version.parse(th.__version__)
 
 
 tensor_type = type(th.tensor([1, 2, 3]))
@@ -30,13 +35,32 @@ TEST_TYPES = [
     e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)
 ]
 
+
+def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
+    if isinstance(support_dict, str):
+        return support_dict
+    else:
+        return support_dict["return_type"]
+
+
+def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
+    if isinstance(support_dict, str):
+        return True
+    else:
+        return TORCH_VERSION >= version.parse(support_dict["min_version"])
+
+
 BASIC_OPS = list()
 BASIC_OPS_RETURN_TYPE = {}
-for method, return_type in allowlist.items():
+for method, return_type_name_or_dict in allowlist.items():
     if "torch.Tensor." in method:
-        method_name = method.split(".")[-1]
-        BASIC_OPS.append(method_name)
-        BASIC_OPS_RETURN_TYPE[method_name] = return_type
+        if version_supported(support_dict=return_type_name_or_dict):
+            return_type = get_return_type(support_dict=return_type_name_or_dict)
+            method_name = method.split(".")[-1]
+            BASIC_OPS.append(method_name)
+            BASIC_OPS_RETURN_TYPE[method_name] = return_type
+        else:
+            print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
 
 BASIC_SELF_TENSORS: List[Any] = list()
 BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4])  # with a 0
@@ -87,6 +111,9 @@ def is_expected_runtime_error(msg: str) -> bool:
         "shape '[1]' is invalid for input of size",  # BASIC_METHOD_ARGS.append("[1]")
         "Negation, the `-` operator, on a bool tensor is not supported",
         "True division requires a floating output type, but got",
+        "vector and vector expected, got",  # torch==1.4.0 "ger"
+        "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
+        "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
