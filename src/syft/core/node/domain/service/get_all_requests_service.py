@@ -72,7 +72,7 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -148,7 +148,7 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This

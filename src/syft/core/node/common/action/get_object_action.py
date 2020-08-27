@@ -56,15 +56,15 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         # which checks for the serializable_wrapper_type and uses it
         if not isinstance(ser, StorableObject_PB):
             if hasattr(self.obj, "serializable_wrapper_type"):
-                obj = self.obj.serializable_wrapper_type(  # type: ignore
-                    value=self.obj
-                )
+                obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
                 ser = obj.serialize()
             else:
                 raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
 
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.serialize(), address=self.address.serialize(), obj=ser,
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            obj=ser,
         )
 
     @staticmethod
@@ -90,7 +90,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -192,7 +192,7 @@ class GetObjectAction(ImmediateActionWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
