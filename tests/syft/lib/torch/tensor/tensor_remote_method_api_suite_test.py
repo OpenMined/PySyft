@@ -101,6 +101,8 @@ def is_expected_runtime_error(msg: str) -> bool:
         "expected total dims >= 2, but got total dims = 1",
         "Integer division of tensors using div or / is no longer supported",
         "result type Float can't be cast to the desired output type",
+        # py3.6 torch==1.6.0 "square" space typo "Longcan't" is correct
+        "result type Longcan't be cast to the desired output type Bool",
         "inconsistent tensor size, expected tensor",
         "size mismatch",
         "1D tensors expected, got 2D",
