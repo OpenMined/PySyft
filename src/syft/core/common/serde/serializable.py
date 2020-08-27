@@ -161,7 +161,7 @@ class Serializable(metaclass=MetaSerializable):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -181,11 +181,11 @@ class Serializable(metaclass=MetaSerializable):
     @staticmethod
     def get_wrapped_type() -> None:
         """
-            This static method returns the wrapped type, if the current class is
-            a wrapper over an external object.
+        This static method returns the wrapped type, if the current class is
+        a wrapper over an external object.
 
-            :return: the wrapped type
-            :rtype: type
+        :return: the wrapped type
+        :rtype: type
         """
         raise NotImplementedError
 

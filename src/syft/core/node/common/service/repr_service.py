@@ -49,7 +49,8 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ReprMessage_PB(
-            msg_id=self.id.serialize(), address=self.address.serialize(),
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
         )
 
     @staticmethod
@@ -74,7 +75,7 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This

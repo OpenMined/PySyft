@@ -89,7 +89,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -111,7 +111,10 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, results: List[Pointer], address: Address, msg_id: Optional[UID] = None,
+        self,
+        results: List[Pointer],
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects
@@ -164,7 +167,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """ Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This

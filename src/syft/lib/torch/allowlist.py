@@ -1,6 +1,7 @@
+from typing import Union
 from typing import Dict
 
-allowlist: Dict[str, str] = {}  # (path: str, return_type:type)
+allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 # SECTION - add the capital constructor
 allowlist["torch.Tensor"] = "torch.Tensor"
@@ -25,11 +26,22 @@ allowlist["torch.Tensor.__and__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__delitem__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__dict__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__dir__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
-allowlist["torch.Tensor.__div__"] = "torch.Tensor"
+allowlist[
+    "torch.Tensor.__div__"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+
 # allowlist['torch.Tensor.__doc__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 allowlist["torch.Tensor.__eq__"] = "torch.Tensor"
 allowlist["torch.Tensor.__float__"] = "torch.Tensor"
-allowlist["torch.Tensor.__floordiv__"] = "torch.Tensor"
+allowlist[
+    "torch.Tensor.__floordiv__"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 # allowlist['torch.Tensor.__format__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 allowlist["torch.Tensor.__ge__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__getattribute__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
@@ -75,7 +87,12 @@ allowlist["torch.Tensor.__rdiv__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__reduce_ex__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__repr__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__reversed__'] = #
-allowlist["torch.Tensor.__rfloordiv__"] = "torch.Tensor"
+allowlist[
+    "torch.Tensor.__rfloordiv__"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.__rmul__"] = "torch.Tensor"
 allowlist["torch.Tensor.__rpow__"] = "torch.Tensor"
 allowlist["torch.Tensor.__rshift__"] = "torch.Tensor"
@@ -150,12 +167,24 @@ allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
 # allowlist['torch.Tensor.bfloat16'] = #
 # allowlist['torch.Tensor.binary'] = #
 # allowlist['torch.Tensor.bincount'] = #
-allowlist["torch.Tensor.bitwise_and"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_and_"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_and"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.bitwise_and_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.bitwise_not"] = "torch.Tensor"
 allowlist["torch.Tensor.bitwise_not_"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_or"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_or_"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_or"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.bitwise_or_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.bitwise_xor"] = "torch.Tensor"
 allowlist["torch.Tensor.bitwise_xor_"] = "torch.Tensor"
 # allowlist['torch.Tensor.bmm'] = #
@@ -207,8 +236,18 @@ allowlist["torch.Tensor.diagonal"] = "torch.Tensor"
 # allowlist['torch.Tensor.digamma_'] = #
 # allowlist['torch.Tensor.dim'] = #
 # allowlist['torch.Tensor.dist'] = #
-allowlist["torch.Tensor.div"] = "torch.Tensor"
-allowlist["torch.Tensor.div_"] = "torch.Tensor"
+allowlist[
+    "torch.Tensor.div"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist[
+    "torch.Tensor.div_"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.dot"] = "torch.Tensor"
 allowlist["torch.Tensor.double"] = "torch.Tensor"
 # allowlist['torch.Tensor.dtype'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET - talk to TRASK
@@ -238,12 +277,18 @@ allowlist["torch.Tensor.flatten"] = "torch.Tensor"
 allowlist["torch.Tensor.float"] = "torch.Tensor"
 allowlist["torch.Tensor.floor"] = "torch.Tensor"
 allowlist["torch.Tensor.floor_"] = "torch.Tensor"
-allowlist["torch.Tensor.floor_divide"] = "torch.Tensor"
-allowlist["torch.Tensor.floor_divide_"] = "torch.Tensor"
+allowlist["torch.Tensor.floor_divide"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.floor_divide_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 # allowlist['torch.Tensor.fmod'] = #
 # allowlist['torch.Tensor.fmod_'] = #
 allowlist["torch.Tensor.frac"] = "torch.Tensor"
-# allowlist['torch.Tensor.frac_'] = #
+allowlist["torch.Tensor.frac_"] = "torch.Tensor"
 # allowlist['torch.Tensor.gather'] = #
 allowlist["torch.Tensor.ge"] = "torch.Tensor"
 allowlist["torch.Tensor.ge_"] = "torch.Tensor"
@@ -315,12 +360,24 @@ allowlist["torch.Tensor.log2_"] = "torch.Tensor"
 # allowlist['torch.Tensor.log_softmax'] = #
 
 # allowlist['torch.Tensor.logdet'] = #
-allowlist["torch.Tensor.logical_and"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_and_"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_and"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.logical_and_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.logical_not"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_not_"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_or"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_or_"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_or"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.logical_or_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_xor_"] = "torch.Tensor"
 # allowlist['torch.Tensor.logsumexp'] = #
@@ -396,15 +453,25 @@ allowlist["torch.Tensor.prod"] = "torch.Tensor"
 # allowlist['torch.Tensor.qscheme'] = #
 # allowlist['torch.Tensor.random_'] = #
 allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
-# allowlist['torch.Tensor.reciprocal_'] = #
+allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
 # allowlist['torch.Tensor.record_stream'] =SECURITY WARNING: DO NOT ADD TO ALLOW LIST#
 # allowlist['torch.Tensor.refine_names'] = #
 # allowlist['torch.Tensor.register_hook'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.reinforce'] = #
 allowlist["torch.Tensor.relu"] = "torch.Tensor"
 allowlist["torch.Tensor.relu_"] = "torch.Tensor"
-allowlist["torch.Tensor.remainder"] = "torch.Tensor"
-allowlist["torch.Tensor.remainder_"] = "torch.Tensor"
+allowlist[
+    "torch.Tensor.remainder"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist[
+    "torch.Tensor.remainder_"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 # allowlist['torch.Tensor.rename'] = #
 # allowlist['torch.Tensor.rename_'] = #
 # allowlist['torch.Tensor.renorm'] = #
@@ -461,8 +528,14 @@ allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
 # allowlist['torch.Tensor.split_with_sizes'] = #
 allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
 allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
-allowlist["torch.Tensor.square"] = "torch.Tensor"
-# allowlist['torch.Tensor.square_'] = #
+allowlist["torch.Tensor.square"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.square_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
 allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
 # allowlist['torch.Tensor.sspaddmm'] = #
@@ -498,15 +571,20 @@ allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
 # allowlist['torch.Tensor.topk'] = #
 allowlist["torch.Tensor.trace"] = "torch.Tensor"
 allowlist["torch.Tensor.transpose"] = "torch.Tensor"
-# https://pytorch.org/docs/stable/tensors.html#torch.Tensor.transpose_
-# allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
+allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
 # allowlist['torch.Tensor.triangular_solve'] = #
 allowlist["torch.Tensor.tril"] = "torch.Tensor"
 allowlist["torch.Tensor.tril_"] = "torch.Tensor"
 allowlist["torch.Tensor.triu"] = "torch.Tensor"
 allowlist["torch.Tensor.triu_"] = "torch.Tensor"
-allowlist["torch.Tensor.true_divide"] = "torch.Tensor"
-allowlist["torch.Tensor.true_divide_"] = "torch.Tensor"
+allowlist["torch.Tensor.true_divide"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
+allowlist["torch.Tensor.true_divide_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.0",
+}
 allowlist["torch.Tensor.trunc"] = "torch.Tensor"
 allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
 # allowlist['torch.Tensor.type'] =
