@@ -56,7 +56,7 @@ class ObjectConstructor(object):
     Thus, if any object has its functionality extended or overridden by PySyft, it should be created using
     an extension of this class.
 
-    GARBAGE COLLECTION NOTES:
+    GARBAGE COLLECTION NOTES:z
 
     There is a special case in codebases which wrap C++ functionality wherein an object can be created on the
     C++ side, a Python wrapper is created (calling our constructor above). However, some methods can destroy

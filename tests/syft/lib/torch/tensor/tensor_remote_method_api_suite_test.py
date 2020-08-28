@@ -30,13 +30,16 @@ TEST_TYPES = [
     e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)
 ]
 
-BASIC_OPS = list()
-BASIC_OPS_RETURN_TYPE = {}
-for method, return_type in allowlist.items():
-    if "torch.Tensor." in method:
-        method_name = method.split(".")[-1]
-        BASIC_OPS.append(method_name)
-        BASIC_OPS_RETURN_TYPE[method_name] = return_type
+
+BASIC_OPS = ["unfold"]
+BASIC_OPS_RETURN_TYPE = {"unfold": "torch.Tensor"}
+# BASIC_OPS = list()
+# BASIC_OPS_RETURN_TYPE = {}
+# for method, return_type in allowlist.items():
+#     if "torch.Tensor." in method:
+#         method_name = method.split(".")[-1]
+#         BASIC_OPS.append(method_name)
+#         BASIC_OPS_RETURN_TYPE[method_name] = return_type
 
 BASIC_SELF_TENSORS: List[Any] = list()
 BASIC_SELF_TENSORS.append([-1, 0, 1, 2, 3, 4])  # with a 0
@@ -98,6 +101,7 @@ def is_expected_type_error(msg: str) -> bool:
         "takes no arguments",
         "is only implemented on",
         "missing 1 required positional argument",
+        "unfold() missing 3 required positional argument: 'dimension', 'size', 'step'",
         "takes 0 positional arguments but",
         "takes from 1 to 0 positional arguments but",
         "argument after * must be an iterable, not int",
@@ -110,6 +114,7 @@ def is_expected_type_error(msg: str) -> bool:
         "pinverse(): argument 'rcond' (position 1) must be float, not Tensor",
         "must be bool, not Tensor",
         "nonzero() takes from 1 to 0 positional arguments but",
+
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -197,11 +202,9 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
     except (RuntimeError, TypeError, ValueError, IndexError) as e:
         msg = repr(e)
-
         if type(e) in expected_exception and expected_exception[type(e)](msg):
             valid_torch_command = False
         else:
-            print(msg)
             raise e
 
     # Step 6: If the command is valid, continue testing

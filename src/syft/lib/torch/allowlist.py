@@ -513,7 +513,7 @@ allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
 # allowlist['torch.Tensor.type_as'] = #
 # allowlist['torch.Tensor.unbind'] = #
 # allowlist['torch.Tensor.unflatten'] = #
-# allowlist['torch.Tensor.unfold'] = #
+allowlist['torch.Tensor.unfold'] = "torch.Tensor"
 # https://pytorch.org/docs/stable/nn.init.html#torch.nn.init.uniform_
 # allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
 allowlist["torch.Tensor.unique"] = "torch.Tensor"
