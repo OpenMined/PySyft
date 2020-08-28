@@ -101,12 +101,12 @@ def test_known_child_nodes() -> None:
     bob_phone_client.register(client=bob_vm_client)
 
     assert len(bob_phone.known_child_nodes) == 1
-    assert bob_vm.address.vm in (obj.data.vm for obj in bob_phone.known_child_nodes)
+    assert bob_vm in bob_phone.known_child_nodes
 
     bob_phone_client.register(client=bob_vm_client_2)
 
     assert len(bob_phone.known_child_nodes) == 2
-    assert bob_vm_2.address.vm in (obj.data.vm for obj in bob_phone.known_child_nodes)
+    assert bob_vm_2 in bob_phone.known_child_nodes
 
 
 def test_send_message_from_device_client_to_vm() -> None:
@@ -172,6 +172,9 @@ def test_send_message_from_domain_client_to_vm() -> None:
     bob_vm.root_verify_key = bob_domain_client.verify_key  # inject 📡🔑 as 📍🗝
     bob_domain_client.register(client=bob_phone_client)
 
+    assert bob_phone.domain is not None
+    assert bob_phone_client.domain is not None
+
     bob_domain_client.send_immediate_msg_without_reply(
         msg=sy.ReprMessage(address=bob_vm.address)
     )
@@ -186,16 +189,10 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()
     bob_vm.root_verify_key = bob_vm_client.verify_key  # inject 📡🔑 as 📍🗝
-    if sy.VERBOSE:
-        print(f"> {bob_vm.pprint} {bob_vm.keys}")
-        print(f"> {bob_vm_client.pprint} {bob_vm_client.keys}")
 
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
     bob_phone.root_verify_key = bob_phone_client.verify_key  # inject 📡🔑 as 📍🗝
-    if sy.VERBOSE:
-        print(f"> {bob_phone.pprint} {bob_phone.keys}")
-        print(f"> {bob_phone_client.pprint} {bob_phone_client.keys}")
 
     bob_phone_client.register(client=bob_vm_client)
 
@@ -206,8 +203,6 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_domain_client = bob_domain.get_client()
     bob_domain.root_verify_key = bob_domain_client.verify_key  # inject 📡🔑 as 📍🗝
 
-    # # switch keys
-    # # bob_vm.root_verify_key = bob_domain_client.verify_key  # inject 📡🔑 as 📍🗝
     bob_domain_client.register(client=bob_phone_client)
 
     assert bob_phone.domain is not None
@@ -217,13 +212,12 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_network_client = bob_network.get_client()
     bob_network.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
+    # switch keys
+    bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
     bob_network_client.register(client=bob_domain_client)
 
     assert bob_domain.network is not None
     assert bob_domain_client.network is not None
-
-    # # switch keys
-    bob_vm.root_verify_key = bob_network_client.verify_key  # inject 📡🔑 as 📍🗝
 
     bob_network_client.send_immediate_msg_without_reply(
         msg=sy.ReprMessage(address=bob_vm.address)

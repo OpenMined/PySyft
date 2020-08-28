@@ -274,8 +274,7 @@ class Node(AbstractNode):
         """This is a property which returns a list of all known node
         by returning the clients we used to interact with them from
         the object store."""
-
-        return list(self.store.get_objects_of_type(obj_type=Client))
+        return list(self.in_memory_client_registry.values())
 
     @property
     def id(self) -> UID:
@@ -286,7 +285,9 @@ class Node(AbstractNode):
         if sy.VERBOSE:
             print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            return list(self.store.get_objects_of_type(obj_type=Address))
+            # TODO check that we return only the children, not all known nodes
+            # How? Check that self.network/domain/... is in client's address?
+            return list(self.in_memory_client_registry.values())
         else:
             if sy.VERBOSE:
                 print(f"> Node {self.pprint} has no children")
