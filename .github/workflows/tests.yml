@@ -18,10 +18,11 @@ on:
 jobs:
   python-tests:
     strategy:
-      max-parallel: 9
+      max-parallel: 24
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.8, 3.7, 3.6]
+        torch-version: [1.4.0, 1.5.0, 1.5.1, 1.6.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -61,9 +62,13 @@ jobs:
           bandit -r src -ll
 
       - name: Run tests
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
+          pip install torch==$TORCH_VERSION
           pip install -r requirements.txt
           pip install -e .
+          pip freeze | grep torch
           pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
 
   python-linting:
@@ -165,9 +170,11 @@ jobs:
   python-allowlist:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 24
       matrix:
-        python-version: [3.8]
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.8, 3.7, 3.6]
+        torch-version: [1.4.0, 1.5.0, 1.5.1, 1.6.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -201,7 +208,10 @@ jobs:
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
       - name: Run allowlist tests
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
+          pip install torch==$TORCH_VERSION
           pip install -r requirements.txt
           pip install -e .
           pytest -k "test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
