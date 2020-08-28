@@ -285,9 +285,24 @@ class Node(AbstractNode):
         if sy.VERBOSE:
             print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            # TODO check that we return only the children, not all known nodes
-            # How? Check that self.network/domain/... is in client's address?
-            return list(self.in_memory_client_registry.values())
+            return [
+                client
+                for client in self.in_memory_client_registry.values()
+                if all(
+                    [
+                        self.network is None
+                        or client.network is None
+                        or self.network == client.network,
+                        self.domain is None
+                        or client.domain is None
+                        or self.domain == client.domain,
+                        self.device is None
+                        or client.device is None
+                        or self.device == client.device,
+                        self.vm is None or client.vm is None or self.vm == client.vm,
+                    ]
+                )
+            ]
         else:
             if sy.VERBOSE:
                 print(f"> Node {self.pprint} has no children")
