@@ -30,6 +30,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
         timeout: int = None,
+        http_protocol: bool = False
     ):
         """
         Args:
@@ -49,9 +50,11 @@ class DataCentricFLClient(WebsocketClientWorker):
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
             timeout : connection's timeout with the remote worker.
+            http_protocol : option to send the messages by using HTTP protocol instead of WebSocket protocol.
         """
         self.address = address
         self.encoding = encoding
+        self.http_protocol = http_protocol
 
         # Parse address string to get scheme, host and port
         self.secure, self.host, self.port = self._parse_address(address)
@@ -156,10 +159,8 @@ class DataCentricFLClient(WebsocketClientWorker):
         Returns:
             node_response (bytes) : response payload.
         """
-        if sys.getsizeof(message) / 10 ** 6 > 50:
-            print("Huge message size: ", sys.getsizeof(message) / 10 ** 6," MB's" )
-            print("Sending a message by  HTTP request ... ")
-            
+        
+        if self.http_protocol:
             decoded_message = message.decode(self.encoding)
     
             message = {
@@ -188,13 +189,13 @@ class DataCentricFLClient(WebsocketClientWorker):
             session = requests.Session()
             response = session.post(url, headers=headers, data=monitor).content
             session.close()
+        
             response = json.loads(response)['payload']
             response = response.encode(self.encoding)
-            return response
         else:
-            print("Sending via websocket ... ")
             self.ws.send_binary(message)
             response = self.ws.recv()
+        
         return response
 
     def _return_bool_result(self, result, return_key=None):
