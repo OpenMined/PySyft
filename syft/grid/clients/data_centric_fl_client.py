@@ -49,7 +49,8 @@ class DataCentricFLClient(WebsocketClientWorker):
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
             timeout : connection's timeout with the remote worker.
-            http_protocol : option to send the messages by using HTTP protocol instead of WebSocket protocol.
+            http_protocol : option to send the messages by using
+                HTTP protocol instead of WebSocket protocol.
         """
         self.address = address
         self.encoding = encoding
