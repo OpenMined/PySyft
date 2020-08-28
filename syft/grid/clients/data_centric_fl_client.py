@@ -4,7 +4,6 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from typing import Union
 from urllib.parse import urlparse
-import sys
 
 # Syft imports
 from syft.serde import serialize
@@ -30,7 +29,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
         timeout: int = None,
-        http_protocol: bool = False
+        http_protocol: bool = False,
     ):
         """
         Args:
@@ -159,10 +158,10 @@ class DataCentricFLClient(WebsocketClientWorker):
         Returns:
             node_response (bytes) : response payload.
         """
-        
+
         if self.http_protocol:
             decoded_message = message.decode(self.encoding)
-    
+
             message = {
                 "encoding": self.encoding,
                 "payload": decoded_message,
@@ -189,13 +188,13 @@ class DataCentricFLClient(WebsocketClientWorker):
             session = requests.Session()
             response = session.post(url, headers=headers, data=monitor).content
             session.close()
-        
-            response = json.loads(response)['payload']
+
+            response = json.loads(response)["payload"]
             response = response.encode(self.encoding)
         else:
             self.ws.send_binary(message)
             response = self.ws.recv()
-        
+
         return response
 
     def _return_bool_result(self, result, return_key=None):
