@@ -174,16 +174,7 @@ class DataCentricFLClient(WebsocketClientWorker):
             form = MultipartEncoder(message)
             upload_size = form.len
 
-            # Callback that shows upload progress
-            def progress_callback(monitor):
-                upload_progress = "{} / {} ({:.2f} %)".format(
-                    monitor.bytes_read, upload_size, (monitor.bytes_read / upload_size) * 100
-                )
-                print(upload_progress, end="\r")
-                if monitor.bytes_read == upload_size:
-                    print()
-
-            monitor = MultipartEncoderMonitor(form, progress_callback)
+            monitor = MultipartEncoderMonitor(form, None)
             headers = {"Prefer": "respond-async", "Content-Type": monitor.content_type}
 
             session = requests.Session()
@@ -195,7 +186,6 @@ class DataCentricFLClient(WebsocketClientWorker):
         else:
             self.ws.send_binary(message)
             response = self.ws.recv()
-
         return response
 
     def _return_bool_result(self, result, return_key=None):
