@@ -1,5 +1,86 @@
+import pytest
 from syft.lib.python.int import Int
 import sys
+
+INVALID_UNDERSCORE_LITERALS = [
+    # Trailing underscores:
+    '0_',
+    '42_',
+    '1.4j_',
+    '0x_',
+    '0b1_',
+    '0xf_',
+    '0o5_',
+    '0 if 1_Else 1',
+    # Underscores in the base selector:
+    '0_b0',
+    '0_xf',
+    '0_o5',
+    # Old-style octal, still disallowed:
+    '0_7',
+    '09_99',
+    # Multiple consecutive underscores:
+    '4_______2',
+    '0.1__4',
+    '0.1__4j',
+    '0b1001__0100',
+    '0xffff__ffff',
+    '0x___',
+    '0o5__77',
+    '1e1__0',
+    '1e1__0j',
+    # Underscore right before a dot:
+    '1_.4',
+    '1_.4j',
+    # Underscore right after a dot:
+    '1._4',
+    '1._4j',
+    '._5',
+    '._5j',
+    # Underscore right after a sign:
+    '1.0e+_1',
+    '1.0e+_1j',
+    # Underscore right before j:
+    '1.4_j',
+    '1.4e5_j',
+    # Underscore right before e:
+    '1_e1',
+    '1.4_e1',
+    '1.4_e1j',
+    # Underscore right after e:
+    '1e_1',
+    '1.4e_1',
+    '1.4e_1j',
+    # Complex cases with parens:
+    '(1+1.5_j_)',
+    '(1+1.5_j)',
+]
+
+
+
+VALID_UNDERSCORE_LITERALS = [
+    '0_0_0',
+    '4_2',
+    '1_0000_0000',
+    '0b1001_0100',
+    '0xffff_ffff',
+    '0o5_7_7',
+    '1_00_00.5',
+    '1_00_00.5e5',
+    '1_00_00e5_1',
+    '1e1_0',
+    '.1_4',
+    '.1_4e1',
+    '0b_0',
+    '0x_f',
+    '0o_5',
+    '1_00_00j',
+    '1_00_00.5j',
+    '1_00_00e5_1j',
+    '.1_4j',
+    '(1_2.5+3_3j)',
+    '(.5_6j)',
+]
 
 L = [
         ('0', 0),
@@ -59,29 +140,30 @@ def test_basic():
     assert Int(value=s[1:]) == sys.maxsize + 1
 
     # # should return int
-    # x = int(1e100)
-    # self.assertIsInstance(x, int)
-    # x = int(-1e100)
-    # self.assertIsInstance(x, int)
-    #
-    # # SF bug 434186:  0x80000000/2 != 0x80000000>>1.
-    # # Worked by accident in Windows release build, but failed in debug build.
-    # # Failed in all Linux builds.
-    # x = -1 - sys.maxsize
-    # assert x >> 1, x // 2)
-    #
-    # x = int('1' * 600)
-    # self.assertIsInstance(x, int)
-    #
+    x = Int(value=1e100)
+    assert isinstance(x, int)
+
+    x = Int(value=-1e100)
+    assert isinstance(x, int)
+
+    # SF bug 434186:  0x80000000/2 != 0x80000000>>1.
+    # Worked by accident in Windows release build, but failed in debug build.
+    # Failed in all Linux builds.
+    x = -1 - sys.maxsize
+    assert x >> 1 == x // 2
+
+    x = Int(value='1' * 600)
+    assert isinstance(x, int)
+
     # self.assertRaises(TypeError, int, 1, 12)
-    #
-    # assert int('0o123', 0), 83)
-    # assert int('0x123', 16), 291)
-    #
-    # # Bug 1679: "0x" is not a valid hex literal
-    # self.assertRaises(ValueError, int, "0x", 16)
-    # self.assertRaises(ValueError, int, "0x", 0)
-    #
+
+    assert Int(value='0o123', base=0) == 83
+    assert Int(value='0x123', base=16) == 291
+
+    # Bug 1679: "0x" is not a valid hex literal
+    # assert Raises(ValueError, int, "0x", 16)
+    # assert Raises(ValueError, int, "0x", 0)
+
     # self.assertRaises(ValueError, int, "0o", 8)
     # self.assertRaises(ValueError, int, "0o", 0)
     #
@@ -91,69 +173,68 @@ def test_basic():
     # # SF bug 1334662: int(string, base) wrong answers
     # # Various representations of 2**32 evaluated to 0
     # # rather than 2**32 in previous versions
-    #
-    # assert int('100000000000000000000000000000000', 2), 4294967296)
-    # assert int('102002022201221111211', 3), 4294967296)
-    # assert int('10000000000000000', 4), 4294967296)
-    # assert int('32244002423141', 5), 4294967296)
-    # assert int('1550104015504', 6), 4294967296)
-    # assert int('211301422354', 7), 4294967296)
-    # assert int('40000000000', 8), 4294967296)
-    # assert int('12068657454', 9), 4294967296)
-    # assert int('4294967296', 10), 4294967296)
-    # assert int('1904440554', 11), 4294967296)
-    # assert int('9ba461594', 12), 4294967296)
-    # assert int('535a79889', 13), 4294967296)
-    # assert int('2ca5b7464', 14), 4294967296)
-    # assert int('1a20dcd81', 15), 4294967296)
-    # assert int('100000000', 16), 4294967296)
-    # assert int('a7ffda91', 17), 4294967296)
-    # assert int('704he7g4', 18), 4294967296)
-    # assert int('4f5aff66', 19), 4294967296)
-    # assert int('3723ai4g', 20), 4294967296)
-    # assert int('281d55i4', 21), 4294967296)
-    # assert int('1fj8b184', 22), 4294967296)
-    # assert int('1606k7ic', 23), 4294967296)
-    # assert int('mb994ag', 24), 4294967296)
-    # assert int('hek2mgl', 25), 4294967296)
-    # assert int('dnchbnm', 26), 4294967296)
-    # assert int('b28jpdm', 27), 4294967296)
-    # assert int('8pfgih4', 28), 4294967296)
-    # assert int('76beigg', 29), 4294967296)
-    # assert int('5qmcpqg', 30), 4294967296)
-    # assert int('4q0jto4', 31), 4294967296)
-    # assert int('4000000', 32), 4294967296)
-    # assert int('3aokq94', 33), 4294967296)
-    # assert int('2qhxjli', 34), 4294967296)
-    # assert int('2br45qb', 35), 4294967296)
-    # assert int('1z141z4', 36), 4294967296)
-    #
-    # # tests with base 0
-    # # this fails on 3.0, but in 2.x the old octal syntax is allowed
-    # assert int(' 0o123  ', 0), 83)
-    # assert int(' 0o123  ', 0), 83)
-    # assert int('000', 0), 0)
-    # assert int('0o123', 0), 83)
-    # assert int('0x123', 0), 291)
-    # assert int('0b100', 0), 4)
-    # assert int(' 0O123   ', 0), 83)
-    # assert int(' 0X123  ', 0), 291)
-    # assert int(' 0B100 ', 0), 4)
-    #
-    # # without base still base 10
-    # assert int('0123'), 123)
-    # assert int('0123', 10), 123)
-    #
-    # # tests with prefix and base != 0
-    # assert int('0x123', 16), 291)
-    # assert int('0o123', 8), 83)
-    # assert int('0b100', 2), 4)
-    # assert int('0X123', 16), 291)
-    # assert int('0O123', 8), 83)
-    # assert int('0B100', 2), 4)
-    #
-    # # the code has special checks for the first character after the
-    # #  type prefix
+
+    assert Int(value='100000000000000000000000000000000', base=2) == 4294967296
+    assert Int(value='102002022201221111211', base=3) == 4294967296
+    assert Int(value='10000000000000000', base=4) == 4294967296
+    assert Int(value='32244002423141', base=5) == 4294967296
+    assert Int(value='1550104015504', base=6) == 4294967296
+    assert Int(value='211301422354', base=7) == 4294967296
+    assert Int(value='40000000000', base=8) == 4294967296
+    assert Int(value='12068657454', base=9) == 4294967296
+    assert Int(value='4294967296', base=10) == 4294967296
+    assert Int(value='1904440554', base=11) == 4294967296
+    assert Int(value='9ba461594', base=12) == 4294967296
+    assert Int(value='535a79889', base=13) == 4294967296
+    assert Int(value='2ca5b7464', base=14) == 4294967296
+    assert Int(value='1a20dcd81', base=15) == 4294967296
+    assert Int(value='100000000', base=16) == 4294967296
+    assert Int(value='a7ffda91', base=17) == 4294967296
+    assert Int(value='704he7g4', base=18) == 4294967296
+    assert Int(value='4f5aff66', base=19) == 4294967296
+    assert Int(value='3723ai4g', base=20) == 4294967296
+    assert Int(value='281d55i4', base=21) == 4294967296
+    assert Int(value='1fj8b184', base=22) == 4294967296
+    assert Int(value='1606k7ic', base=23) == 4294967296
+    assert Int(value='mb994ag', base=24) == 4294967296
+    assert Int(value='hek2mgl', base=25) == 4294967296
+    assert Int(value='dnchbnm', base=26) == 4294967296
+    assert Int(value='b28jpdm', base=27) == 4294967296
+    assert Int(value='8pfgih4', base=28) == 4294967296
+    assert Int(value='76beigg', base=29) == 4294967296
+    assert Int(value='5qmcpqg', base=30) == 4294967296
+    assert Int(value='4q0jto4', base=31) == 4294967296
+    assert Int(value='4000000', base=32) == 4294967296
+    assert Int(value='3aokq94', base=33) == 4294967296
+    assert Int(value='2qhxjli', base=34) == 4294967296
+    assert Int(value='2br45qb', base=35) == 4294967296
+    assert Int(value='1z141z4', base=36) == 4294967296
+
+    # tests with base 03 2.x the old octal syntax is allowed
+    assert Int(value=' 0o123  ', base=0) == 83
+    assert Int(value=' 0o123  ', base=0) == 83
+    assert Int(value='000', base=0) == 0
+    assert Int(value='0o123', base=0) == 83
+    assert Int(value='0x123', base=0) == 291
+    assert Int(value='0b100', base=0) == 4
+    assert Int(value=' 0O123   ', base=0) == 83
+    assert Int(value=' 0X123  ', base=0) == 291
+    assert Int(value=' 0B100 ', base=0) == 4
+
+    # without base still base 10
+    assert Int(value='0123') == 123
+    assert Int(value='0123', base=10) == 123
+
+    # tests with prefix and base != 0
+    assert Int(value='0x123', base=16) == 291
+    assert Int(value='0o123', base=8) == 83
+    assert Int(value='0b100', base=2) == 4
+    assert Int(value='0X123', base=16) == 291
+    assert Int(value='0O123', base=8) == 83
+    assert Int(value='0B100', base=2) == 4
+
+    # the code has special checks for the first character after the
+    #  type prefix
     # self.assertRaises(ValueError, int, '0b2', 2)
     # self.assertRaises(ValueError, int, '0b02', 2)
     # self.assertRaises(ValueError, int, '0B2', 2)
@@ -166,403 +247,369 @@ def test_basic():
     # self.assertRaises(ValueError, int, '0x0g', 16)
     # self.assertRaises(ValueError, int, '0Xg', 16)
     # self.assertRaises(ValueError, int, '0X0g', 16)
-    #
+
     # # SF bug 1334662: int(string, base) wrong answers
     # # Checks for proper evaluation of 2**32 + 1
-    # assert int('100000000000000000000000000000001', 2), 4294967297)
-    # assert int('102002022201221111212', 3), 4294967297)
-    # assert int('10000000000000001', 4), 4294967297)
-    # assert int('32244002423142', 5), 4294967297)
-    # assert int('1550104015505', 6), 4294967297)
-    # assert int('211301422355', 7), 4294967297)
-    # assert int('40000000001', 8), 4294967297)
-    # assert int('12068657455', 9), 4294967297)
-    # assert int('4294967297', 10), 4294967297)
-    # assert int('1904440555', 11), 4294967297)
-    # assert int('9ba461595', 12), 4294967297)
-    # assert int('535a7988a', 13), 4294967297)
-    # assert int('2ca5b7465', 14), 4294967297)
-    # assert int('1a20dcd82', 15), 4294967297)
-    # assert int('100000001', 16), 4294967297)
-    # assert int('a7ffda92', 17), 4294967297)
-    # assert int('704he7g5', 18), 4294967297)
-    # assert int('4f5aff67', 19), 4294967297)
-    # assert int('3723ai4h', 20), 4294967297)
-    # assert int('281d55i5', 21), 4294967297)
-    # assert int('1fj8b185', 22), 4294967297)
-    # assert int('1606k7id', 23), 4294967297)
-    # assert int('mb994ah', 24), 4294967297)
-    # assert int('hek2mgm', 25), 4294967297)
-    # assert int('dnchbnn', 26), 4294967297)
-    # assert int('b28jpdn', 27), 4294967297)
-    # assert int('8pfgih5', 28), 4294967297)
-    # assert int('76beigh', 29), 4294967297)
-    # assert int('5qmcpqh', 30), 4294967297)
-    # assert int('4q0jto5', 31), 4294967297)
-    # assert int('4000001', 32), 4294967297)
-    # assert int('3aokq95', 33), 4294967297)
-    # assert int('2qhxjlj', 34), 4294967297)
-    # assert int('2br45qc', 35), 4294967297)
-    # assert int('1z141z5', 36), 4294967297)
+    assert Int(value='100000000000000000000000000000001', base=2) == 4294967297
+    assert Int(value='102002022201221111212', base=3) == 4294967297
+    assert Int(value='10000000000000001', base=4) == 4294967297
+    assert Int(value='32244002423142', base=5) == 4294967297
+    assert Int(value='1550104015505', base=6) == 4294967297
+    assert Int(value='211301422355', base=7) == 4294967297
+    assert Int(value='40000000001', base=8) == 4294967297
+    assert Int(value='12068657455', base=9) == 4294967297
+    assert Int(value='4294967297', base=10) == 4294967297
+    assert Int(value='1904440555', base=11) == 4294967297
+    assert Int(value='9ba461595', base=12) == 4294967297
+    assert Int(value='535a7988a', base=13) == 4294967297
+    assert Int(value='2ca5b7465', base=14) == 4294967297
+    assert Int(value='1a20dcd82', base=15) == 4294967297
+    assert Int(value='100000001', base=16) == 4294967297
+    assert Int(value='a7ffda92', base=17) == 4294967297
+    assert Int(value='704he7g5', base=18) == 4294967297
+    assert Int(value='4f5aff67', base=19) == 4294967297
+    assert Int(value='3723ai4h', base=20) == 4294967297
+    assert Int(value='281d55i5', base=21) == 4294967297
+    assert Int(value='1fj8b185', base=22) == 4294967297
+    assert Int(value='1606k7id', base=23) == 4294967297
+    assert Int(value='mb994ah', base=24) == 4294967297
+    assert Int(value='hek2mgm', base=25) == 4294967297
+    assert Int(value='dnchbnn', base=26) == 4294967297
+    assert Int(value='b28jpdn', base=27) == 4294967297
+    assert Int(value='8pfgih5', base=28) == 4294967297
+    assert Int(value='76beigh', base=29) == 4294967297
+    assert Int(value='5qmcpqh', base=30) == 4294967297
+    assert Int(value='4q0jto5', base=31) == 4294967297
+    assert Int(value='4000001', base=32) == 4294967297
+    assert Int(value='3aokq95', base=33) == 4294967297
+    assert Int(value='2qhxjlj', base=34) == 4294967297
+    assert Int(value='2br45qc', base=35) == 4294967297
+    assert Int(value='1z141z5', base=36) == 4294967297
 
-# class IntSubclass(int):
-#     pass
-#
-# class IntTestCases(unittest.TestCase):
-#
-#     def test_underscores(self):
-#         for lit in VALID_UNDERSCORE_LITERALS:
-#             if any(ch in lit for ch in '.eEjJ'):
-#                 continue
-#             assert int(lit, 0), eval(lit))
-#             assert int(lit, 0), int(lit.replace('_', ''), 0))
-#         for lit in INVALID_UNDERSCORE_LITERALS:
-#             if any(ch in lit for ch in '.eEjJ'):
-#                 continue
-#             self.assertRaises(ValueError, int, lit, 0)
-#         # Additional test cases with bases != 0, only for the constructor:
-#         assert int("1_00", 3), 9)
-#         assert int("0_100"), 100)  # not valid as a literal!
-#         assert int(b"1_00"), 100)  # byte underscore
-#         self.assertRaises(ValueError, int, "_100")
-#         self.assertRaises(ValueError, int, "+_100")
-#         self.assertRaises(ValueError, int, "1__00")
-#         self.assertRaises(ValueError, int, "100_")
-#
-#     @support.cpython_only
-#     def test_small_ints(self):
-#         # Bug #3236: Return small longs from PyLong_FromString
-#         self.assertIs(int('10'), 10)
-#         self.assertIs(int('-1'), -1)
-#         self.assertIs(int(b'10'), 10)
-#         self.assertIs(int(b'-1'), -1)
-#
-#     def test_no_args(self):
-#         assert int(), 0)
-#
-#     def test_keyword_args(self):
-#         # Test invoking int() using keyword arguments.
-#         assert int('100', base=2), 4)
-#         with self.assertRaisesRegex(TypeError, 'keyword argument'):
-#             int(x=1.2)
-#         with self.assertRaisesRegex(TypeError, 'keyword argument'):
-#             int(x='100', base=2)
-#         self.assertRaises(TypeError, int, base=10)
-#         self.assertRaises(TypeError, int, base=0)
-#
-#     def test_int_base_limits(self):
-#         """Testing the supported limits of the int() base parameter."""
-#         assert int('0', 5), 0)
-#         with self.assertRaises(ValueError):
-#             int('0', 1)
-#         with self.assertRaises(ValueError):
-#             int('0', 37)
-#         with self.assertRaises(ValueError):
-#             int('0', -909)  # An old magic value base from Python 2.
-#         with self.assertRaises(ValueError):
-#             int('0', base=0-(2**234))
-#         with self.assertRaises(ValueError):
-#             int('0', base=2**234)
-#         # Bases 2 through 36 are supported.
-#         for base in range(2,37):
-#             assert int('0', base=base), 0)
-#
-#     def test_int_base_bad_types(self):
-#         """Not integer types are not valid bases; issue16772."""
-#         with self.assertRaises(TypeError):
-#             int('0', 5.5)
-#         with self.assertRaises(TypeError):
-#             int('0', 5.0)
-#
-#     def test_int_base_indexable(self):
-#         class MyIndexable(object):
-#             def __init__(self, value):
-#                 self.value = value
-#             def __index__(self):
-#                 return self.value
-#
-#         # Check out of range bases.
-#         for base in 2**100, -2**100, 1, 37:
-#             with self.assertRaises(ValueError):
-#                 int('43', base)
-#
-#         # Check in-range bases.
-#         assert int('101', base=MyIndexable(2)), 5)
-#         assert int('101', base=MyIndexable(10)), 101)
-#         assert int('101', base=MyIndexable(36)), 1 + 36**2)
-#
-#     def test_non_numeric_input_types(self):
-#         # Test possible non-numeric types for the argument x, including
-#         # subclasses of the explicitly documented accepted types.
-#         class CustomStr(str): pass
-#         class CustomBytes(bytes): pass
-#         class CustomByteArray(bytearray): pass
-#
-#         factories = [
-#             bytes,
-#             bytearray,
-#             lambda b: CustomStr(b.decode()),
-#             CustomBytes,
-#             CustomByteArray,
-#             memoryview,
-#         ]
-#         try:
-#             from array import array
-#         except ImportError:
-#             pass
-#         else:
-#             factories.append(lambda b: array('B', b))
-#
-#         for f in factories:
-#             x = f(b'100')
-#             with self.subTest(type(x)):
-#                 assert int(x), 100)
-#                 if isinstance(x, (str, bytes, bytearray)):
-#                     assert int(x, 2), 4)
-#                 else:
-#                     msg = "can't convert non-string"
-#                     with self.assertRaisesRegex(TypeError, msg):
-#                         int(x, 2)
-#                 with self.assertRaisesRegex(ValueError, 'invalid literal'):
-#                     int(f(b'A' * 0x10))
-#
-#     def test_int_memoryview(self):
-#         assert int(memoryview(b'123')[1:3]), 23)
-#         assert int(memoryview(b'123\x00')[1:3]), 23)
-#         assert int(memoryview(b'123 ')[1:3]), 23)
-#         assert int(memoryview(b'123A')[1:3]), 23)
-#         assert int(memoryview(b'1234')[1:3]), 23)
-#
-#     def test_string_float(self):
-#         self.assertRaises(ValueError, int, '1.2')
-#
-#     def test_intconversion(self):
-#         # Test __int__()
-#         class ClassicMissingMethods:
-#             pass
-#         self.assertRaises(TypeError, int, ClassicMissingMethods())
-#
-#         class MissingMethods(object):
-#             pass
-#         self.assertRaises(TypeError, int, MissingMethods())
-#
-#         class Foo0:
-#             def __int__(self):
-#                 return 42
-#
-#         assert int(Foo0()), 42)
-#
-#         class Classic:
-#             pass
-#         for base in (object, Classic):
-#             class IntOverridesTrunc(base):
-#                 def __int__(self):
-#                     return 42
-#                 def __trunc__(self):
-#                     return -12
-#             assert int(IntOverridesTrunc()), 42)
-#
-#             class JustTrunc(base):
-#                 def __trunc__(self):
-#                     return 42
-#             assert int(JustTrunc()), 42)
-#
-#             class ExceptionalTrunc(base):
-#                 def __trunc__(self):
-#                     1 / 0
-#             with self.assertRaises(ZeroDivisionError):
-#                 int(ExceptionalTrunc())
-#
-#             for trunc_result_base in (object, Classic):
-#                 class Index(trunc_result_base):
-#                     def __index__(self):
-#                         return 42
-#
-#                 class TruncReturnsNonInt(base):
-#                     def __trunc__(self):
-#                         return Index()
-#                 assert int(TruncReturnsNonInt()), 42)
-#
-#                 class Intable(trunc_result_base):
-#                     def __int__(self):
-#                         return 42
-#
-#                 class TruncReturnsNonIndex(base):
-#                     def __trunc__(self):
-#                         return Intable()
-#                 assert int(TruncReturnsNonInt()), 42)
-#
-#                 class NonIntegral(trunc_result_base):
-#                     def __trunc__(self):
-#                         # Check that we avoid infinite recursion.
-#                         return NonIntegral()
-#
-#                 class TruncReturnsNonIntegral(base):
-#                     def __trunc__(self):
-#                         return NonIntegral()
-#                 try:
-#                     int(TruncReturnsNonIntegral())
-#                 except TypeError as e:
-#                     assert str(e),
-#                                       "__trunc__ returned non-Integral"
-#                                       " (type NonIntegral)")
-#                 else:
-#                     self.fail("Failed to raise TypeError with %s" %
-#                               ((base, trunc_result_base),))
-#
-#                 # Regression test for bugs.python.org/issue16060.
-#                 class BadInt(trunc_result_base):
-#                     def __int__(self):
-#                         return 42.0
-#
-#                 class TruncReturnsBadInt(base):
-#                     def __trunc__(self):
-#                         return BadInt()
-#
-#                 with self.assertRaises(TypeError):
-#                     int(TruncReturnsBadInt())
-#
-#     def test_int_subclass_with_index(self):
-#         class MyIndex(int):
-#             def __index__(self):
-#                 return 42
-#
-#         class BadIndex(int):
-#             def __index__(self):
-#                 return 42.0
-#
-#         my_int = MyIndex(7)
-#         assert my_int, 7)
-#         assert int(my_int), 7)
-#
-#         assert int(BadIndex()), 0)
-#
-#     def test_int_subclass_with_int(self):
-#         class MyInt(int):
-#             def __int__(self):
-#                 return 42
-#
-#         class BadInt(int):
-#             def __int__(self):
-#                 return 42.0
-#
-#         my_int = MyInt(7)
-#         assert my_int, 7)
-#         assert int(my_int), 42)
-#
-#         my_int = BadInt(7)
-#         assert my_int, 7)
-#         self.assertRaises(TypeError, int, my_int)
-#
-#     def test_int_returns_int_subclass(self):
-#         class BadIndex:
-#             def __index__(self):
-#                 return True
-#
-#         class BadIndex2(int):
-#             def __index__(self):
-#                 return True
-#
-#         class BadInt:
-#             def __int__(self):
-#                 return True
-#
-#         class BadInt2(int):
-#             def __int__(self):
-#                 return True
-#
-#         class TruncReturnsBadIndex:
-#             def __trunc__(self):
-#                 return BadIndex()
-#
-#         class TruncReturnsBadInt:
-#             def __trunc__(self):
-#                 return BadInt()
-#
-#         class TruncReturnsIntSubclass:
-#             def __trunc__(self):
-#                 return True
-#
-#         bad_int = BadIndex()
-#         with self.assertWarns(DeprecationWarning):
-#             n = int(bad_int)
-#         assert n, 1)
-#         self.assertIs(type(n), int)
-#
-#         bad_int = BadIndex2()
-#         n = int(bad_int)
-#         assert n, 0)
-#         self.assertIs(type(n), int)
-#
-#         bad_int = BadInt()
-#         with self.assertWarns(DeprecationWarning):
-#             n = int(bad_int)
-#         assert n, 1)
-#         self.assertIs(type(n), int)
-#
-#         bad_int = BadInt2()
-#         with self.assertWarns(DeprecationWarning):
-#             n = int(bad_int)
-#         assert n, 1)
-#         self.assertIs(type(n), int)
-#
-#         bad_int = TruncReturnsBadIndex()
-#         with self.assertWarns(DeprecationWarning):
-#             n = int(bad_int)
-#         assert n, 1)
-#         self.assertIs(type(n), int)
-#
-#         bad_int = TruncReturnsBadInt()
-#         self.assertRaises(TypeError, int, bad_int)
-#
-#         good_int = TruncReturnsIntSubclass()
-#         n = int(good_int)
-#         assert n, 1)
-#         self.assertIs(type(n), int)
-#         n = IntSubclass(good_int)
-#         assert n, 1)
-#         self.assertIs(type(n), IntSubclass)
-#
-#     def test_error_message(self):
-#         def check(s, base=None):
-#             with self.assertRaises(ValueError,
-#                                    msg="int(%r, %r)" % (s, base)) as cm:
-#                 if base is None:
-#                     int(s)
-#                 else:
-#                     int(s, base)
-#             assert cm.exception.args[0],
-#                 "invalid literal for int() with base %d: %r" %
-#                 (10 if base is None else base, s))
-#
-#         check('\xbd')
-#         check('123\xbd')
-#         check('  123 456  ')
-#
-#         check('123\x00')
-#         # SF bug 1545497: embedded NULs were not detected with explicit base
-#         check('123\x00', 10)
-#         check('123\x00 245', 20)
-#         check('123\x00 245', 16)
-#         check('123\x00245', 20)
-#         check('123\x00245', 16)
-#         # byte string with embedded NUL
-#         check(b'123\x00')
-#         check(b'123\x00', 10)
-#         # non-UTF-8 byte string
-#         check(b'123\xbd')
-#         check(b'123\xbd', 10)
-#         # lone surrogate in Unicode string
-#         check('123\ud800')
-#         check('123\ud800', 10)
-#
-#     def test_issue31619(self):
-#         assert int('1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1_0_1', 2),
-#                          0b1010101010101010101010101010101)
-#         assert int('1_2_3_4_5_6_7_0_1_2_3', 8), 0o12345670123)
-#         assert int('1_2_3_4_5_6_7_8_9', 16), 0x123456789)
-#         assert int('1_2_3_4_5_6_7', 32), 1144132807)
-#
-#
-# if __name__ == "__main__":
-#     unittest.main()
+def test_int_underscores():
+    for lit in VALID_UNDERSCORE_LITERALS:
+        if any(ch in lit for ch in '.eEjJ'):
+            continue
+        assert Int(value=lit, base=0) == eval(lit)
+
+    for lit in INVALID_UNDERSCORE_LITERALS:
+        if any(ch in lit for ch in '.eEjJ'):
+            continue
+    assert Int(value="1_00", base=3) == 9
+    assert Int(value="0_100") == 100  # not valid as a literal!
+    assert Int(value=b"1_00") == 100  # byte underscore
+    # self.assertRaises(ValueError, int, "_100")
+    # self.assertRaises(ValueError, int, "+_100")
+    # self.assertRaises(ValueError, int, "1__00")
+    # self.assertRaises(ValueError, int, "100_")
+
+def test_small_ints():
+    assert Int(value='10') is 10
+    assert Int(value='-1') is -1
+    assert Int(value=b'10') is 10
+    assert Int(value=b'-1') is -1
+
+def test_no_args():
+    assert Int() == 0
+
+def test_accepted_bases():
+    for base in range(2, 37):
+        assert Int(value='0', base=base) == 0
+
+def test_int_memoryview():
+    assert Int(value=memoryview(b'123')[1:3]) == 23
+    assert Int(value=memoryview(b'123\x00')[1:3]) == 23
+    assert Int(value=memoryview(b'123 ')[1:3]) == 23
+    assert Int(value=memoryview(b'123A')[1:3]) == 23
+    assert Int(value=memoryview(b'1234')[1:3]) == 23
+
+def test_check_base_ranges():
+    for base in 2**100, -2**100, 1, 37:
+        with pytest.raises(ValueError):
+            Int(value='43', base=base)
+
+
+def test_int_base_indexable():
+    class MyIndexable(object):
+        def __init__(self, value):
+            self.value = value
+
+        def __index__(self):
+            return self.value
+
+    assert Int(value='101', base=MyIndexable(2)) == 5
+    assert Int(value='101', base=MyIndexable(10)) == 101
+    assert Int(value='101', base=MyIndexable(36)) == 1 + 36**2
+
+def test_int_base_bad_types():
+    """Not integer types are not valid bases; issue16772."""
+    with pytest.raises(TypeError):
+        Int(value='0', base=5.5)
+    with pytest.raises(TypeError):
+        Int(value='0', base=5.0)
+
+def test_non_numeric_input_types():
+    # Test possible non-numeric types for the argument x, including
+    # subclasses of the explicitly documented accepted types.
+    class CustomStr(str): pass
+    class CustomBytes(bytes): pass
+    class CustomByteArray(bytearray): pass
+
+    factories = [
+        bytes,
+        bytearray,
+        lambda b: CustomStr(b.decode()),
+        CustomBytes,
+        CustomByteArray,
+        memoryview,
+    ]
+
+    try:
+        from array import array
+    except ImportError:
+        pass
+    else:
+        factories.append(lambda b: array('B', b))
+
+    for f in factories:
+        x = f(b'100')
+        assert Int(value=x) == 100
+        if isinstance(x, (str, bytes, bytearray)):
+            assert Int(value=x, base=2) == 4
+        else:
+            msg = "can't convert non-string"
+            with pytest.raises(TypeError) as e:
+                Int(value=x, base=2)
+            assert str(e.value) == msg
+
+            with pytest.raises(ValueError, 'invalid literal'):
+                Int(value=f(b'A' * 0x10))
+
+
+
+def test_string_float():
+    with pytest.raises(ValueError):
+        Int(value="1.2")
+
+def test_intconversion():
+    class ClassicMissingMethods:
+        pass
+
+    with pytest.raises(TypeError):
+        Int(value=ClassicMissingMethods)
+
+    class MissingMethods(object):
+        pass
+
+    with pytest.raises(TypeError):
+        Int(value=MissingMethods())
+
+
+    class Foo0:
+        def __int__(self):
+            return 42
+
+    assert Int(value=Foo0()) == 42
+
+    class Classic:
+        pass
+
+    for base in (object, Classic):
+        class IntOverridesTrunc(base):
+            def __int__(self):
+                return 42
+
+            def __trunc__(self):
+                return -12
+
+        assert Int(IntOverridesTrunc()) == 42
+
+        class JustTrunc(base):
+            def __trunc__(self):
+                return 42
+
+        assert Int(value=JustTrunc()) == 42
+
+        class ExceptionalTrunc(base):
+            def __trunc__(self):
+                1 / 0
+
+        with pytest.raises(ZeroDivisionError):
+            Int(value=ExceptionalTrunc())
+
+        for trunc_result_base in (object, Classic):
+            class Index(trunc_result_base):
+                def __index__(self):
+                    return 42
+
+            class TruncReturnsNonInt(base):
+                def __trunc__(self):
+                    return Index()
+
+            assert Int(value=TruncReturnsNonInt()) == 42
+
+            class Intable(trunc_result_base):
+                def __int__(self):
+                    return 42
+
+            class TruncReturnsNonIndex(base):
+                def __trunc__(self):
+                    return Intable()
+
+            assert Int(value=TruncReturnsNonInt()) == 42
+
+            class NonIntegral(trunc_result_base):
+                def __trunc__(self):
+                    # Check that we avoid infinite recursion.
+                    return NonIntegral()
+
+            class TruncReturnsNonIntegral(base):
+                def __trunc__(self):
+                    return NonIntegral()
+
+            try:
+                Int(value=TruncReturnsNonIntegral())
+            except TypeError as e:
+                assert str(e)== "__trunc__ returned non-Integral (type NonIntegral)"
+
+            class BadInt(trunc_result_base):
+                def __int__(self):
+                    return 42.0
+
+            class TruncReturnsBadInt(base):
+                def __trunc__(self):
+                    return BadInt()
+
+            with pytest.raises(TypeError):
+                Int(value=TruncReturnsBadInt())
+
+def test_int_subclass_with_index():
+    class MyIndex(int):
+        def __index__(self):
+            return 42
+
+    class BadIndex(int):
+        def __index__(self):
+            return 42.0
+
+    my_int = MyIndex(7)
+    assert my_int == 7
+    assert Int(value=my_int), 7
+
+    assert Int(value=BadIndex()) == 0
+
+def test_int_subclass_with_int():
+    class MyInt(int):
+        def __int__(self):
+            return 42
+
+    class BadInt(int):
+        def __int__(self):
+            return 42.0
+
+    my_int = MyInt(7)
+    assert my_int == 7
+    assert Int(value=my_int) == 42
+
+    my_int = BadInt(7)
+    assert my_int == 7
+    with pytest.raises(TypeError):
+        Int(value=my_int)
+
+def test_int_returns_int_subclass():
+    class BadIndex:
+        def __index__(self):
+            return True
+
+    class BadIndex2(int):
+        def __index__(self):
+            return True
+
+    class BadInt:
+        def __int__(self):
+            return True
+
+    class BadInt2(int):
+        def __int__(self):
+            return True
+
+    class TruncReturnsBadIndex:
+        def __trunc__(self):
+            return BadIndex()
+
+    class TruncReturnsBadInt:
+        def __trunc__(self):
+            return BadInt()
+
+    class TruncReturnsIntSubclass:
+        def __trunc__(self):
+            return True
+
+    bad_int = BadIndex()
+    with pytest.raises(DeprecationWarning):
+        n = Int(bad_int)
+
+    assert n == 1
+    assert type(n) is Int
+
+    bad_int = BadIndex2()
+    n = Int(value=bad_int)
+    assert n == 0
+    assert type(n) is int
+
+    bad_int = BadInt()
+    with pytest.raises(DeprecationWarning):
+        n = Int(value=bad_int)
+
+    assert n == 1
+    assert type(n) is int
+
+    bad_int = BadInt2()
+    with pytest.raises(DeprecationWarning):
+        n = Int(value=bad_int)
+
+    assert n == 1
+    assert type(n) is int
+
+    bad_int = TruncReturnsBadIndex()
+    with pytest.raises(DeprecationWarning):
+        n = Int(value=bad_int)
+
+    assert n == 1
+    assert n is int
+
+    assert n == 1
+    assert type(n) is Int
+
+def test_error_message():
+    def check(s, base=None):
+        with pytest.raises(ValueError) as cm:
+            if base is None:
+                Int(value=s)
+            else:
+                Int(value=s, base=base)
+
+        msg_err = f"invalid literal for int() with base {10 if base is None else base}: '{s}'"
+        assert str(cm.value) ==  msg_err
+
+    check('\xbd')
+    check('123\xbd')
+    check('  123 456  ')
+
+    check('123\x00')
+    # SF bug 1545497: embedded NULs were not detected with explicit base
+    check('123\x00', 10)
+    check('123\x00 245', 20)
+    check('123\x00 245', 16)
+    check('123\x00245', 20)
+    check('123\x00245', 16)
+    # byte string with embedded NUL
+    check(b'123\x00')
+    check(b'123\x00', 10)
+    # non-UTF-8 byte string
+    check(b'123\xbd')
+    check(b'123\xbd', 10)
+    # lone surrogate in Unicode string
+    check('123\ud800')
+    check('123\ud800', 10)
+

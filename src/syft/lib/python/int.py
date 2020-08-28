@@ -12,16 +12,22 @@ from typing import Optional
 
 
 class Int(int, PyPrimitive):
-    @syft_decorator(typechecking=True)
-    def __new__(self, value: Union[int, float, str], base: int = 10, id: Optional[UID] = None) -> int:
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __new__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None) -> int:
+        if value is None:
+            value = 0
+
         if isinstance(value, str):
             return int.__new__(self, value, base)
 
         return int.__new__(self, value)
 
-    @syft_decorator(typechecking=True)
-    def __init__(self, value: Union[int, float, str], base: int = 10, id: Optional[UID] = None):
-        int.__init__(value, base)
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __init__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None):
+        if value is None:
+            value = 0
+
+        int.__init__(value)
 
         if id is None:
             self._id = UID()
