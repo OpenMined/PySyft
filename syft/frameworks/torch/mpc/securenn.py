@@ -135,7 +135,7 @@ def _shares_of_zero(size, field, dtype, crypto_provider, *workers):
 
 
 def select_share(alpha_sh, x_sh, y_sh):
-    """ Performs select share protocol
+    """Performs select share protocol
     If the bit alpha_sh is 0, x_sh is returned
     If the bit alpha_sh is 1, y_sh is returned
 
@@ -551,7 +551,7 @@ def relu(a_sh):
 # In division, bit_len_max is set to Q_BITS // 2 to avoid overflow problems (multiplying by
 # 2**64 would almost always lead to overflow).
 def division(x_sh, y_sh, bit_len_max=None):
-    """ Performs division of encrypted numbers
+    """Performs division of encrypted numbers
 
     Args:
         x_sh, y_sh (AdditiveSharingTensor): the private tensors on which the op applies
@@ -609,7 +609,7 @@ def division(x_sh, y_sh, bit_len_max=None):
 
 
 def maxpool(x_sh):
-    """ Compute MaxPool: returns fresh shares of the max value in the input tensor
+    """Compute MaxPool: returns fresh shares of the max value in the input tensor
     and the index of this value in the flattened tensor
 
     Args:
@@ -664,7 +664,7 @@ def maxpool(x_sh):
 
 
 def maxpool_deriv(x_sh):
-    """ Compute derivative of MaxPool
+    """Compute derivative of MaxPool
 
     Args:
         x_sh (AdditiveSharingTensor): the private tensor on which the op applies
@@ -766,7 +766,10 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
                         a_sh[
-                            batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1],
+                            batch,
+                            channel,
+                            r_in : r_in + kernel[0],
+                            c_in : c_in + kernel[1],
                         ].child
                     )
                     res.append(m.wrap())

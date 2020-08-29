@@ -46,7 +46,7 @@ class PlaceHolder(AbstractTensor):
 
     @classmethod
     def handle_func_command(cls, command):
-        """ Receive an instruction for a function to be applied on a Placeholder,
+        """Receive an instruction for a function to be applied on a Placeholder,
         Replace in the args with their child attribute, forward the command
         instruction to the handle_function_command of the type of the child attributes,
         get the response and wrap it in a Placeholder.
@@ -264,7 +264,7 @@ class PlaceHolder(AbstractTensor):
 
     @staticmethod
     def create_from(tensor, role=None, tracing=False):
-        """ Helper method to create a placeholder already
+        """Helper method to create a placeholder already
         instantiated with tensor.
         """
         return PlaceHolder(role=role, tracing=tracing).instantiate(tensor)
@@ -312,7 +312,7 @@ class PlaceHolder(AbstractTensor):
 
     @staticmethod
     def create_placeholders(args_shape, args_dtypes=()):
-        """ Helper method to create a list of placeholders with shapes
+        """Helper method to create a list of placeholders with shapes
         in args_shape.
         """
         # In order to support -1 value in shape to indicate any dimension

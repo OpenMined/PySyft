@@ -16,8 +16,8 @@ import time
 
 
 class Network(threading.Thread):
-    """ Grid Network class to operate in background processing grid requests
-        and handling multiple peer connections with different nodes.
+    """Grid Network class to operate in background processing grid requests
+    and handling multiple peer connections with different nodes.
     """
 
     # Events called by the grid monitor to health checking and signaling webrtc connections.
@@ -29,10 +29,10 @@ class Network(threading.Thread):
     }
 
     def __init__(self, node_id: str, **kwargs):
-        """ Create a new thread to send/receive messages from the grid service.
+        """Create a new thread to send/receive messages from the grid service.
 
-            Args:
-                node_id: ID used to identify this peer.
+        Args:
+            node_id: ID used to identify this peer.
         """
         threading.Thread.__init__(self)
         self._connect(**kwargs)
@@ -42,7 +42,7 @@ class Network(threading.Thread):
         self.available = False
 
     def run(self):
-        """ Run the thread sending a request to join into the grid network and listening
+        """Run the thread sending a request to join into the grid network and listening
         the grid network requests.
         """
 
@@ -60,10 +60,10 @@ class Network(threading.Thread):
         self._ws.shutdown()
 
     def _update_node_infos(self, node_id: str):
-        """ Create a new virtual worker to store/compute datasets owned by this peer.
+        """Create a new virtual worker to store/compute datasets owned by this peer.
 
-            Args:
-                node_id: ID used to identify this peer.
+        Args:
+            node_id: ID used to identify this peer.
         """
         worker = sy.VirtualWorker(sy.hook, id=node_id)
         sy.local_worker._known_workers[node_id] = worker
@@ -71,7 +71,7 @@ class Network(threading.Thread):
         return worker
 
     def _listen(self):
-        """ Listen the sockets waiting for grid network health checks and webrtc
+        """Listen the sockets waiting for grid network health checks and webrtc
         connection requests.
         """
         while self.available:
@@ -82,10 +82,10 @@ class Network(threading.Thread):
                 self._ws.send(json.dumps(response))
 
     def _handle_messages(self, message):
-        """ Route and process the messages received from the websocket connection.
+        """Route and process the messages received from the websocket connection.
 
-            Args:
-                message : message to be processed.
+        Args:
+            message : message to be processed.
         """
         msg_type = message.get(MSG_FIELD.TYPE, None)
         if msg_type in Network.EVENTS:
@@ -100,11 +100,11 @@ class Network(threading.Thread):
         return self._worker.id
 
     def connect(self, destination_id: str):
-        """ Create a webrtc connection between this peer and the destination peer by using the grid network
-            to forward the webrtc connection request protocol.
+        """Create a webrtc connection between this peer and the destination peer by using the grid network
+        to forward the webrtc connection request protocol.
 
-            Args:
-                destination_id : Id used to identify the peer to be connected.
+        Args:
+            destination_id : Id used to identify the peer to be connected.
         """
 
         # Temporary Notebook async weird constraints
@@ -135,20 +135,20 @@ class Network(threading.Thread):
         return self._connection_handler.get(destination_id)
 
     def disconnect(self, destination_id: str):
-        """ Disconnect with some peer connected previously.
+        """Disconnect with some peer connected previously.
 
-            Args:
-                destination_id: Id used to identify the peer to be disconnected.
+        Args:
+            destination_id: Id used to identify the peer to be disconnected.
         """
         _connection = self._connection_handler.get(destination_id)
         if _connection:
             _connection.available = False
 
     def host_dataset(self, dataset):
-        """ Host dataset using the virtual worker defined previously.
+        """Host dataset using the virtual worker defined previously.
 
-            Args:
-                dataset: Dataset to be hosted.
+        Args:
+            dataset: Dataset to be hosted.
         """
         allowed_users = None
 

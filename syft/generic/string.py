@@ -180,7 +180,7 @@ class String(AbstractSendable):
         return self
 
     def __add__(self, other: Union[str, "String"]):
-        """ [Important] overriding the `__add__` here is not yet
+        """[Important] overriding the `__add__` here is not yet
         activated. The real hooking happens in
         syft/generic/frameworks/hook/hook.py.
         Hooking as implemented here (using @overloaded.method)
@@ -354,7 +354,7 @@ class String(AbstractSendable):
 
         Returns:
            Protobuf schema for String.
-       """
+        """
         return StringPB
 
 

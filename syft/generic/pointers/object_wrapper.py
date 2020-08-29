@@ -13,12 +13,10 @@ if TYPE_CHECKING:
 
 
 class ObjectWrapper(SyftSerializable):
-    """A class that wraps an arbitrary object and provides it with an id, tags, and description
-
-    """
+    """A class that wraps an arbitrary object and provides it with an id, tags, and description"""
 
     def __init__(self, obj, id: int, tags: List[str] = None, description: str = None):
-        """ object wrapper initialization
+        """object wrapper initialization
         Args:
             obj: An arbitrary object, can also be a function
             id: id to be associated with the object
@@ -58,7 +56,7 @@ class ObjectWrapper(SyftSerializable):
         garbage_collect_data=None,
         **kwargs,
     ):
-        """ Creates a callable pointer to the object wrapper instance
+        """Creates a callable pointer to the object wrapper instance
 
         Args:
             owner: A BaseWorker parameter to specify the worker on which the

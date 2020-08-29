@@ -64,8 +64,7 @@ class IdProvider:
         self.given_ids += given_ids
 
     def start_recording_ids(self):
-        """Starts the recording in form of a list of the generated ids.
-        """
+        """Starts the recording in form of a list of the generated ids."""
         self.record_ids = True
         self.recorded_ids = []
 
