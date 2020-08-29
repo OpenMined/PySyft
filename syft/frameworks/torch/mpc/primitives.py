@@ -151,7 +151,11 @@ class PrimitiveStorage:
                 )
 
     def provide_primitives(
-        self, op: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
+        self,
+        op: str,
+        workers: List[AbstractWorker],
+        n_instances: int = 10,
+        **kwargs,
     ):
         """Build n_instances of crypto primitives of the different crypto_types given and
         send them to some workers.

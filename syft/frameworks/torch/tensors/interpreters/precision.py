@@ -179,8 +179,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, _self, other):
-        """Add two fixed precision tensors together.
-        """
+        """Add two fixed precision tensors together."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "add")(scaled_int)
@@ -211,16 +210,14 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     def __iadd__(self, other):
-        """Add two fixed precision tensors together.
-        """
+        """Add two fixed precision tensors together."""
         self.child = self.add(other).child
 
         return self
 
     @overloaded.method
     def sub(self, _self, other):
-        """Subtracts a fixed precision tensor from another one.
-        """
+        """Subtracts a fixed precision tensor from another one."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "sub")(scaled_int)
@@ -470,14 +467,14 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def signum(self):
         """
-            Calculation of signum function for a given tensor
+        Calculation of signum function for a given tensor
         """
         sgn = (self > 0) - (self < 0)
         return sgn
 
     def modulus(self):
         """
-            Calculation of modulus for a given tensor
+        Calculation of modulus for a given tensor
         """
         return self.signum() * self
 
@@ -1019,14 +1016,14 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def bufferize(worker, prec_tensor):
         """
-         This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
+        This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
 
-          Args:
-             prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
+         Args:
+            prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
 
-          Returns:
-             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
-         """
+         Returns:
+            proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+        """
         proto_prec_tensor = FixedPrecisionTensorPB()
         syft.serde.protobuf.proto.set_protobuf_id(proto_prec_tensor.id, prec_tensor.id)
         proto_prec_tensor.field = str(prec_tensor.field)
@@ -1047,14 +1044,14 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def unbufferize(worker, proto_prec_tensor):
         """
-            This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
+        This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
 
-            Args:
-                proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
-                deserialized.
+        Args:
+            proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
+            deserialized.
 
-            Returns:
-                tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
+        Returns:
+            tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
         """
         proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_prec_tensor.id)
 
@@ -1080,10 +1077,10 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for FixedPrecisionTensor.
+        Returns the protobuf schema used for FixedPrecisionTensor.
 
-            Returns:
-                Protobuf schema for FixedPrecisionTensor.
+        Returns:
+            Protobuf schema for FixedPrecisionTensor.
         """
         return FixedPrecisionTensorPB
 

@@ -83,7 +83,7 @@ class MetaMsgpackGlobalState(type):
 @dataclass
 class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
     """
-        Global msgpack state. This should become deprecated soon.
+    Global msgpack state. This should become deprecated soon.
     """
 
     _OBJ_SIMPLIFIER_AND_DETAILERS = []

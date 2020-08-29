@@ -47,8 +47,12 @@ def serialize(
     return strategy(obj, worker, simplified, force_full_simplification)
 
 
-def deserialize(binary: bin, worker=None, strategy: Callable[[bin], object] = None,) -> object:
-    """ This method can deserialize any object PySyft needs to send or store.
+def deserialize(
+    binary: bin,
+    worker=None,
+    strategy: Callable[[bin], object] = None,
+) -> object:
+    """This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
     of objects which PySyft has sent over the wire or stored. It includes three

@@ -58,7 +58,7 @@ class GradFunc(SyftSerializable):
 
     @staticmethod
     def simplify(worker: AbstractWorker, grad_fn) -> tuple:
-        """ Takes the attributes of a grad_fn object and saves them in a tuple
+        """Takes the attributes of a grad_fn object and saves them in a tuple
             Every gradient function class that extends `GradFunc` uses this function to
             simplify the attributes.
 
@@ -82,7 +82,7 @@ class GradFunc(SyftSerializable):
 
     @staticmethod
     def detail(worker: AbstractWorker, gradfn_tuple):
-        """ This function reconstructs (deserializes) the gradient function object,
+        """This function reconstructs (deserializes) the gradient function object,
          given its attributes in the form of a tuple
 
          Args:

@@ -119,7 +119,7 @@ class TensorCommandMessage(Message):
 
     @staticmethod
     def computation(name, target, args_, kwargs_, return_ids, return_value=False):
-        """ Helper function to build a TensorCommandMessage containing a ComputationAction
+        """Helper function to build a TensorCommandMessage containing a ComputationAction
         directly from the action arguments.
         """
         action = ComputationAction(name, target, args_, kwargs_, return_ids, return_value)
@@ -127,7 +127,7 @@ class TensorCommandMessage(Message):
 
     @staticmethod
     def communication(name, target, args_, kwargs_, return_ids):
-        """ Helper function to build a TensorCommandMessage containing a CommunicationAction
+        """Helper function to build a TensorCommandMessage containing a CommunicationAction
         directly from the action arguments.
         """
         action = CommunicationAction(name, target, args_, kwargs_, return_ids)
@@ -219,10 +219,10 @@ class TensorCommandMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for TensorCommandMessage.
+        Returns the protobuf schema used for TensorCommandMessage.
 
-            Returns:
-                Protobuf schema for torch.Size.
+        Returns:
+            Protobuf schema for torch.Size.
         """
         return CommandMessagePB
 
@@ -296,13 +296,13 @@ class ObjectMessage(Message):
     @staticmethod
     def unbufferize(worker, protobuf_obj):
         """
-            This method deserializes ObjectMessagePB into ObjectMessage.
+        This method deserializes ObjectMessagePB into ObjectMessage.
 
-            Args:
-                protobuf_obj (ObjectMessagePB): input serialized ObjectMessagePB.
+        Args:
+            protobuf_obj (ObjectMessagePB): input serialized ObjectMessagePB.
 
-            Returns:
-                object_msg (ObjectMessage): deserialized ObjectMessagePB.
+        Returns:
+            object_msg (ObjectMessage): deserialized ObjectMessagePB.
         """
         protobuf_obj = protobuf_obj.tensor
         object_ = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj)
@@ -313,10 +313,10 @@ class ObjectMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for ObjectMessage.
+        Returns the protobuf schema used for ObjectMessage.
 
-            Returns:
-                Protobuf schema for ObjectMessage.
+        Returns:
+            Protobuf schema for ObjectMessage.
         """
         return ObjectMessagePB
 
@@ -385,13 +385,13 @@ class ObjectRequestMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a ObjectRequestMessage using ObjectRequestMessagePB.
+        This method serializes a ObjectRequestMessage using ObjectRequestMessagePB.
 
-            Args:
-                msg (ObjectRequestMessage): input ObjectRequestMessage to be serialized.
+        Args:
+            msg (ObjectRequestMessage): input ObjectRequestMessage to be serialized.
 
-            Returns:
-                proto_msg (ObjectRequestMessagePB): serialized ObjectRequestMessage.
+        Returns:
+            proto_msg (ObjectRequestMessagePB): serialized ObjectRequestMessage.
         """
         proto_msg = ObjectRequestMessagePB()
         sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
@@ -401,13 +401,13 @@ class ObjectRequestMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes ObjectRequestMessagePB into ObjectRequestMessage.
+        This method deserializes ObjectRequestMessagePB into ObjectRequestMessage.
 
-            Args:
-                protobuf_msg (ObjectRequestMessagePB): input serialized ObjectRequestMessagePB.
+        Args:
+            protobuf_msg (ObjectRequestMessagePB): input serialized ObjectRequestMessagePB.
 
-            Returns:
-               ObjectRequestMessage: deserialized ObjectRequestMessagePB.
+        Returns:
+           ObjectRequestMessage: deserialized ObjectRequestMessagePB.
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
@@ -416,10 +416,10 @@ class ObjectRequestMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for ObjectRequestMessage.
+        Returns the protobuf schema used for ObjectRequestMessage.
 
-            Returns:
-                Protobuf schema for ObjectRequestMessage.
+        Returns:
+            Protobuf schema for ObjectRequestMessage.
         """
         return ObjectRequestMessagePB
 
@@ -478,13 +478,13 @@ class IsNoneMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a IsNoneMessage using IsNoneMessagePB.
+        This method serializes a IsNoneMessage using IsNoneMessagePB.
 
-            Args:
-                msg (IsNoneMessage): input IsNoneMessage to be serialized.
+        Args:
+            msg (IsNoneMessage): input IsNoneMessage to be serialized.
 
-            Returns:
-                protobuf_script (IsNoneMessagePB): serialized IsNoneMessage.
+        Returns:
+            protobuf_script (IsNoneMessagePB): serialized IsNoneMessage.
         """
         proto_msg = IsNoneMessagePB()
         sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
@@ -493,13 +493,13 @@ class IsNoneMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes IsNoneMessagePB into IsNoneMessage.
+        This method deserializes IsNoneMessagePB into IsNoneMessage.
 
-            Args:
-                protobuf_msg (IsNoneMessagePB): input serialized IsNoneMessagePB.
+        Args:
+            protobuf_msg (IsNoneMessagePB): input serialized IsNoneMessagePB.
 
-            Returns:
-                IsNoneMessage: deserialized IsNoneMessagePB.
+        Returns:
+            IsNoneMessage: deserialized IsNoneMessagePB.
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         return IsNoneMessage(obj_id=obj_id)
@@ -507,10 +507,10 @@ class IsNoneMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for IsNoneMessage.
+        Returns the protobuf schema used for IsNoneMessage.
 
-            Returns:
-                Protobuf schema for ObjectRequestMessage.
+        Returns:
+            Protobuf schema for ObjectRequestMessage.
         """
         return IsNoneMessagePB
 
@@ -572,13 +572,13 @@ class GetShapeMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a GetShapeMessage using GetShapeMessagePB.
+        This method serializes a GetShapeMessage using GetShapeMessagePB.
 
-            Args:
-                msg (GetShapeMessage): input GetShapeMessage to be serialized.
+        Args:
+            msg (GetShapeMessage): input GetShapeMessage to be serialized.
 
-            Returns:
-                proto_msg (GetShapeMessagePB): serialized GetShapeMessage.
+        Returns:
+            proto_msg (GetShapeMessagePB): serialized GetShapeMessage.
         """
         proto_msg = GetShapeMessagePB()
         sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.tensor_id)
@@ -587,13 +587,13 @@ class GetShapeMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_obj):
         """
-            This method deserializes GetShapeMessagePB into GetShapeMessage.
+        This method deserializes GetShapeMessagePB into GetShapeMessage.
 
-            Args:
-                protobuf_obj (GetShapeMessage): input serialized GetShapeMessagePB.
+        Args:
+            protobuf_obj (GetShapeMessage): input serialized GetShapeMessagePB.
 
-            Returns:
-                GetShapeMessage: deserialized GetShapeMessagePB.
+        Returns:
+            GetShapeMessage: deserialized GetShapeMessagePB.
         """
         tensor_id = sy.serde.protobuf.proto.get_protobuf_id(proto_obj.object_id)
         return GetShapeMessage(tensor_id=tensor_id)
@@ -601,10 +601,10 @@ class GetShapeMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for GetShapeMessage.
+        Returns the protobuf schema used for GetShapeMessage.
 
-            Returns:
-                Protobuf schema for GetShapeMessage.
+        Returns:
+            Protobuf schema for GetShapeMessage.
         """
         return GetShapeMessagePB
 
@@ -664,13 +664,13 @@ class ForceObjectDeleteMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a ForceObjectDeleteMessage using ForceObjectDeleteMessagePB.
+        This method serializes a ForceObjectDeleteMessage using ForceObjectDeleteMessagePB.
 
-            Args:
-                msg (ForceObjectDeleteMessage): input ForceObjectDeleteMessage to be serialized.
+        Args:
+            msg (ForceObjectDeleteMessage): input ForceObjectDeleteMessage to be serialized.
 
-            Returns:
-                proto_msg (ForceObjectDeleteMessagePB): serialized ForceObjectDeleteMessage.
+        Returns:
+            proto_msg (ForceObjectDeleteMessagePB): serialized ForceObjectDeleteMessage.
         """
         proto_msg = ForceObjectDeleteMessagePB()
         for elem in msg.object_ids:
@@ -685,13 +685,13 @@ class ForceObjectDeleteMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes ForceObjectDeleteMessagePB into ForceObjectDeleteMessage.
+        This method deserializes ForceObjectDeleteMessagePB into ForceObjectDeleteMessage.
 
-            Args:
-                proto_msg (ForceObjectDeleteMessagePB): input serialized ForceObjectDeleteMessagePB.
+        Args:
+            proto_msg (ForceObjectDeleteMessagePB): input serialized ForceObjectDeleteMessagePB.
 
-            Returns:
-                ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
+        Returns:
+            ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
         """
         obj_ids = []
         for elem in proto_msg.object_ids:
@@ -702,10 +702,10 @@ class ForceObjectDeleteMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for ForceObjectDeleteMessage.
+        Returns the protobuf schema used for ForceObjectDeleteMessage.
 
-            Returns:
-                Protobuf schema for ForceObjectDeleteMessage.
+        Returns:
+            Protobuf schema for ForceObjectDeleteMessage.
         """
         return ForceObjectDeleteMessagePB
 
@@ -765,13 +765,13 @@ class SearchMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a SearchMessage using SearchMessagePB.
+        This method serializes a SearchMessage using SearchMessagePB.
 
-            Args:
-                msg (SearchMessage): input SearchMessage to be serialized.
+        Args:
+            msg (SearchMessage): input SearchMessage to be serialized.
 
-            Returns:
-                proto_msg (SearchMessagePB): serialized SearchMessage.
+        Returns:
+            proto_msg (SearchMessagePB): serialized SearchMessage.
         """
         proto_msg = SearchMessagePB()
         for elem in msg.query:
@@ -786,13 +786,13 @@ class SearchMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_obj):
         """
-            This method deserializes SearchMessagePB into SearchMessage.
+        This method deserializes SearchMessagePB into SearchMessage.
 
-            Args:
-                proto_msg (SearchMessagePB): input serialized SearchMessagePB.
+        Args:
+            proto_msg (SearchMessagePB): input serialized SearchMessagePB.
 
-            Returns:
-                SearchMessage: deserialized SearchMessagePB.
+        Returns:
+            SearchMessage: deserialized SearchMessagePB.
         """
         query = []
         for elem in proto_obj.query:
@@ -803,10 +803,10 @@ class SearchMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for SearchMessage.
+        Returns the protobuf schema used for SearchMessage.
 
-            Returns:
-                Protobuf schema for SearchMessage.
+        Returns:
+            Protobuf schema for SearchMessage.
         """
         return SearchMessagePB
 
@@ -872,13 +872,13 @@ class PlanCommandMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a PlanCommandMessage using PlanCommandMessagePB.
+        This method serializes a PlanCommandMessage using PlanCommandMessagePB.
 
-            Args:
-                msg (PlanCommandMessage): input PlanCommandMessage to be serialized.
+        Args:
+            msg (PlanCommandMessage): input PlanCommandMessage to be serialized.
 
-            Returns:
-                proto_msg (PlanCommandMessagePB): serialized PlanCommandMessage.
+        Returns:
+            proto_msg (PlanCommandMessagePB): serialized PlanCommandMessage.
         """
         proto_msg = PlanCommandMessagePB()
         proto_msg.command_name = msg.command_name
@@ -889,13 +889,13 @@ class PlanCommandMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes PlanCommandMessagePB into PlanCommandMessage.
+        This method deserializes PlanCommandMessagePB into PlanCommandMessage.
 
-            Args:
-                proto_msg (PlanCommandMessagePB): input serialized PlanCommandMessagePB.
+        Args:
+            proto_msg (PlanCommandMessagePB): input serialized PlanCommandMessagePB.
 
-            Returns:
-                PlanCommandMessage: deserialized PlanCommandMessagePB.
+        Returns:
+            PlanCommandMessage: deserialized PlanCommandMessagePB.
         """
         args = sy.serde.protobuf.serde.unbufferize_args(worker, proto_msg.args)
         return PlanCommandMessage(command_name=proto_msg.command_name, args_=tuple(args))
@@ -903,10 +903,10 @@ class PlanCommandMessage(Message):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for PlanCommandMessage.
+        Returns the protobuf schema used for PlanCommandMessage.
 
-            Returns:
-                Protobuf schema for PlanCommandMessage.
+        Returns:
+            Protobuf schema for PlanCommandMessage.
         """
         return PlanCommandMessagePB
 
@@ -975,13 +975,13 @@ class WorkerCommandMessage(Message):
     @staticmethod
     def bufferize(worker, msg):
         """
-            This method serializes a WorkerCommandMessage using WorkerCommandMessagePB.
+        This method serializes a WorkerCommandMessage using WorkerCommandMessagePB.
 
-            Args:
-                msg (WorkerCommandMessage): input WorkerCommandMessage to be serialized.
+        Args:
+            msg (WorkerCommandMessage): input WorkerCommandMessage to be serialized.
 
-            Returns:
-                proto_msg (WorkerCommandMessagePB): serialized WorkerCommandMessage.
+        Returns:
+            proto_msg (WorkerCommandMessagePB): serialized WorkerCommandMessage.
         """
         proto_msg = WorkerCommandMessage()
         proto_msg.command_name = msg.command_name
@@ -992,13 +992,13 @@ class WorkerCommandMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes WorkerCommandMessagePB into WorkerCommandMessage.
+        This method deserializes WorkerCommandMessagePB into WorkerCommandMessage.
 
-            Args:
-                proto_msg (WorkerCommandMessagePB): input serialized WorkerCommandMessagePB.
+        Args:
+            proto_msg (WorkerCommandMessagePB): input serialized WorkerCommandMessagePB.
 
-            Returns:
-                WorkerCommandMessage: deserialized WorkerCommandMessagePB.
+        Returns:
+            WorkerCommandMessage: deserialized WorkerCommandMessagePB.
         """
         args = sy.serde.protobuf.serde.unbufferize_args(worker, proto_msg.args)
         return WorkerCommandMessage(command_name=proto_msg.command_name, args_=tuple(args))

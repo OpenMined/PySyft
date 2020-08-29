@@ -11,7 +11,9 @@ class FLClient:
 
         url_fragments = urlparse(url)
         self.grid_worker = ModelCentricFLWorker(
-            id="", address=url_fragments.netloc, secure=not verbose,
+            id="",
+            address=url_fragments.netloc,
+            secure=not verbose,
         )
 
     def new_job(self, model_name, model_version) -> FLJob:

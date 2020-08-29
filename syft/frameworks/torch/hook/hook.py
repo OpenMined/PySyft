@@ -618,8 +618,7 @@ class TorchHook(FrameworkHook):
         self.element_iter_dict = {}
 
         def register_element_iterator(name, func):
-            """register an internal element buffer iterator
-            """
+            """register an internal element buffer iterator"""
             if name in self.element_iter_dict.keys():
                 return
             self.element_iter_dict[name] = func
