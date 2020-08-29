@@ -46,10 +46,7 @@ class GoogleCloud:
             ports = [80]
 
         self.config += terrascript.resource.google_compute_firewall(
-            name,
-            name=name,
-            network="default",
-            allow={"protocol": "tcp", "ports": ports},
+            name, name=name, network="default", allow={"protocol": "tcp", "ports": ports},
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -66,15 +63,11 @@ class GoogleCloud:
             name: name of the reversed ip
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(
-            name,
-            name=name,
-        )
+        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
-            name + "-ip",
-            value="${" + pygrid_network_ip.address + "}",
+            name + "-ip", value="${" + pygrid_network_ip.address + "}",
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -93,15 +86,11 @@ class GoogleCloud:
             zone: zone of your GCP project
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(
-            name,
-            name=name,
-        )
+        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
-            name + "-ip",
-            value="${" + pygrid_network_ip.address + "}",
+            name + "-ip", value="${" + pygrid_network_ip.address + "}",
         )
 
         self.expose_port(name="pygrid", apply=False)
