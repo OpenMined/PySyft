@@ -188,7 +188,7 @@ def multiply_many_except(operands, count, expt):
 
 
 def xgcd(x, y):
-    """ Extended GCD
+    """Extended GCD
 
     Args:
         x (integer)

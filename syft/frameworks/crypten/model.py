@@ -90,9 +90,15 @@ class OnnxModel(AbstractSendable):
         return utils.onnx_to_crypten(self.serialized_model)
 
     def send(
-        self, location, garbage_collect_data: bool = True,
+        self,
+        location,
+        garbage_collect_data: bool = True,
     ):
-        ptr = self.owner.send(self, location, garbage_collect_data=garbage_collect_data,)
+        ptr = self.owner.send(
+            self,
+            location,
+            garbage_collect_data=garbage_collect_data,
+        )
 
         ptr.description = self.description
         ptr.tags = self.tags
@@ -144,12 +150,12 @@ class OnnxModel(AbstractSendable):
     @staticmethod
     def bufferize(worker, onnx_model):
         """
-         This method serializes OnnxModel into OnnxModelPB.
-          Args:
-             onnx_model (OnnxModel): input OnnxModel to be serialized.
-          Returns:
-             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
-         """
+        This method serializes OnnxModel into OnnxModelPB.
+         Args:
+            onnx_model (OnnxModel): input OnnxModel to be serialized.
+         Returns:
+            proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+        """
         proto_onnx_model = OnnxModelPB()
         syft.serde.protobuf.proto.set_protobuf_id(proto_onnx_model.id, onnx_model.id)
         proto_onnx_model.serialized_model = onnx_model.serialized_model
@@ -162,12 +168,12 @@ class OnnxModel(AbstractSendable):
     @staticmethod
     def unbufferize(worker, proto_onnx_model):
         """
-            This method deserializes OnnxModelPB into OnnxModel.
-            Args:
-                proto_onnx_model (OnnxModelPB): input OnnxModel to be
-                deserialized.
-            Returns:
-                onnx_model (OnnxModel): deserialized OnnxModelPB
+        This method deserializes OnnxModelPB into OnnxModel.
+        Args:
+            proto_onnx_model (OnnxModelPB): input OnnxModel to be
+            deserialized.
+        Returns:
+            onnx_model (OnnxModel): deserialized OnnxModelPB
         """
         proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_onnx_model.id)
 
@@ -184,8 +190,8 @@ class OnnxModel(AbstractSendable):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for OnnxModel.
-            Returns:
-                Protobuf schema for OnnxModel.
+        Returns the protobuf schema used for OnnxModel.
+        Returns:
+            Protobuf schema for OnnxModel.
         """
         return OnnxModelPB

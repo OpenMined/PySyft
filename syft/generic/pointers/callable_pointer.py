@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class CallablePointer(ObjectPointer):
-    """ A class of pointers that are callable
+    """A class of pointers that are callable
 
     A CallablePointer is an ObjectPointer which implements the __call__ function.
     This lets you execute a command directly on the object to which it points.

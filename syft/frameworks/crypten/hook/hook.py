@@ -189,9 +189,9 @@ def hook_crypten():
 
 def hook_crypten_module():
     """Overloading crypten.nn.Module with PySyft functionality, the primary module
-        responsible for core ML functionality such as Neural network layers and
-        loss functions.
-        It is important to note that all the operations are actually in-place.
+    responsible for core ML functionality such as Neural network layers and
+    loss functions.
+    It is important to note that all the operations are actually in-place.
     """
     import crypten
 

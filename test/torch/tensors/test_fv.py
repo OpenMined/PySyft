@@ -672,7 +672,8 @@ def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
 
 
 @pytest.mark.parametrize(
-    "val1, val2", [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
+    "val1, val2",
+    [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
 )
 def test_fv_relin(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
@@ -693,7 +694,8 @@ def test_fv_relin(val1, val2):
 
 
 @pytest.mark.parametrize(
-    "val1, val2", [(-1, 1)],
+    "val1, val2",
+    [(-1, 1)],
 )
 def test_fv_relin_exceptions(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))

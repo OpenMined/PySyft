@@ -39,25 +39,25 @@ class StringHook(ABC):
     @classmethod
     def _string_input_args_adaptor(cls, args_: Tuple[object]):
         """
-           This method is used when hooking String methods.
+        This method is used when hooking String methods.
 
-           Some 'String' methods which are overriden from 'str'
-           such as the magic '__add__' method
-           expects an object of type 'str' as its first
-           argument. However, since the '__add__' method
-           here is hooked to a String type, it will receive
-           arguments of type 'String' not 'str' in some cases.
-           This won't worker for the underlying hooked method
-           '__add__' of the 'str' type.
-           That is why the 'String' argument to '__add__' should
-           be peeled down to 'str'
+        Some 'String' methods which are overriden from 'str'
+        such as the magic '__add__' method
+        expects an object of type 'str' as its first
+        argument. However, since the '__add__' method
+        here is hooked to a String type, it will receive
+        arguments of type 'String' not 'str' in some cases.
+        This won't worker for the underlying hooked method
+        '__add__' of the 'str' type.
+        That is why the 'String' argument to '__add__' should
+        be peeled down to 'str'
 
-           Args:
-               args_: A tuple or positional arguments of the method
-                     being hooked to the String class.
+        Args:
+            args_: A tuple or positional arguments of the method
+                  being hooked to the String class.
 
-           Return:
-               A list of adapted positional arguments.
+        Return:
+            A list of adapted positional arguments.
 
         """
 
@@ -81,13 +81,13 @@ class StringHook(ABC):
     @classmethod
     def _get_hooked_string_method(cls, attr):
         """
-           Hook a `str` method to a corresponding method  of
-          `String` with the same name.
+         Hook a `str` method to a corresponding method  of
+        `String` with the same name.
 
-           Args:
-               attr (str): the method to hook
-           Return:
-               the hooked method
+         Args:
+             attr (str): the method to hook
+         Return:
+             the hooked method
 
         """
 
@@ -114,13 +114,13 @@ class StringHook(ABC):
     @classmethod
     def _get_hooked_string_pointer_method(cls, attr):
         """
-           Hook a `String` method to a corresponding method  of
-          `StringPointer` with the same name.
+         Hook a `String` method to a corresponding method  of
+        `StringPointer` with the same name.
 
-           Args:
-               attr (str): the method to hook
-           Return:
-               the hooked method
+         Args:
+             attr (str): the method to hook
+         Return:
+             the hooked method
 
         """
 

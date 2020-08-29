@@ -270,14 +270,14 @@ class TorchDeviceWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, device: torch.device) -> DevicePB:
         """
-            This method converts a Torch device into a serialized device
-            using Protobuf.
+        This method converts a Torch device into a serialized device
+        using Protobuf.
 
-            Args:
-                device (torch.device): an input device to be serialized
+        Args:
+            device (torch.device): an input device to be serialized
 
-            Returns:
-                protobuf_device (DevicePB): Protobuf version of torch device.
+        Returns:
+            protobuf_device (DevicePB): Protobuf version of torch device.
         """
         protobuf_device = DevicePB()
         protobuf_device.type = device.type
@@ -286,13 +286,13 @@ class TorchDeviceWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_device: DevicePB) -> torch.device:
         """
-            This method converts a serialized device into a Torch device using the protobuf schema.
+        This method converts a serialized device into a Torch device using the protobuf schema.
 
-            Args:
-                device (DevicePB): serialized input device.
+        Args:
+            device (DevicePB): serialized input device.
 
-            Returns:
-                torch.device: torch Device.
+        Returns:
+            torch.device: torch Device.
         """
         device_type = protobuf_device.type
         return torch.device(type=device_type)
@@ -310,10 +310,10 @@ class TorchDeviceWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> type(DevicePB):
         """
-           Returns the protobuf schema used for torch.device.
+        Returns the protobuf schema used for torch.device.
 
-           Returns:
-               type: protobuf schema for torch.device.
+        Returns:
+            type: protobuf schema for torch.device.
         """
         return DevicePB
 
@@ -326,13 +326,13 @@ class ParameterWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
         """
-            This method converts a torch.nn.Parameter into a serialized parameter using ParameterPB.
+        This method converts a torch.nn.Parameter into a serialized parameter using ParameterPB.
 
-            Args:
-                param (torch.nn.Parameter): input nn.parameter to be serialized.
+        Args:
+            param (torch.nn.Parameter): input nn.parameter to be serialized.
 
-            Returns:
-                protobuf_param: serialized torch.nn.Parameter.
+        Returns:
+            protobuf_param: serialized torch.nn.Parameter.
         """
         protobuf_param = ParameterPB()
         set_protobuf_id(protobuf_param.id, param.id)
@@ -345,13 +345,13 @@ class ParameterWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_param: ParameterPB) -> torch.nn.Parameter:
         """
-            This method converts a ParameterPB into a torch.nn.Parameter.
+        This method converts a ParameterPB into a torch.nn.Parameter.
 
-            Args:
-                protobuf_param (ParameterPB): input ParameterPB to be deserialized.
+        Args:
+            protobuf_param (ParameterPB): input ParameterPB to be deserialized.
 
-            Returns:
-                param: (torch.nn.Parameter): deserialized ParameterPB.
+        Returns:
+            param: (torch.nn.Parameter): deserialized ParameterPB.
         """
         data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
         param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
@@ -373,10 +373,10 @@ class ParameterWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> type(ParameterPB):
         """
-           This method returns the protobuf schema used for torch.nn.Parameter.
+        This method returns the protobuf schema used for torch.nn.Parameter.
 
-           Returns:
-               Protobuf schema for torch.nn.Parameter.
+        Returns:
+            Protobuf schema for torch.nn.Parameter.
         """
         return ParameterPB
 
@@ -389,13 +389,13 @@ class ScriptModuleWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, script_module: torch.jit.ScriptModule) -> ScriptModulePB:
         """
-            This method serializes a torch.jit.ScriptModule using ScriptModulePB.
+        This method serializes a torch.jit.ScriptModule using ScriptModulePB.
 
-            Args:
-                script_module (torch.jit.ScriptModule): input jit.ScriptModule to be serialized.
+        Args:
+            script_module (torch.jit.ScriptModule): input jit.ScriptModule to be serialized.
 
-            Returns:
-                protobuf_script (ScriptModulePB): serialized jit.ScriptModule.
+        Returns:
+            protobuf_script (ScriptModulePB): serialized jit.ScriptModule.
         """
         protobuf_script = ScriptModulePB()
         protobuf_script.obj = script_module.save_to_buffer()
@@ -406,13 +406,13 @@ class ScriptModuleWrapper(SyftSerializable):
         worker: AbstractWorker, protobuf_script: ScriptModulePB
     ) -> torch.jit.ScriptModule:
         """
-            This method deserializes a serialized script module into a torch.jit.ScriptModule.
+        This method deserializes a serialized script module into a torch.jit.ScriptModule.
 
-            Args:
-                protobuf_script (ScriptModulePB): input ScriptModulePB to be deserialized .
+        Args:
+            protobuf_script (ScriptModulePB): input ScriptModulePB to be deserialized .
 
-            Returns:
-                loaded_module (torch.jit.ScriptModule): deserialized ScriptModulePB.
+        Returns:
+            loaded_module (torch.jit.ScriptModule): deserialized ScriptModulePB.
         """
         script_module_stream = io.BytesIO(protobuf_script.obj)
         loaded_module = torch.jit.load(script_module_stream)
@@ -421,10 +421,10 @@ class ScriptModuleWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> type(ScriptModulePB):
         """
-           This methods returns the protobuf schema used for torch.nn.Parameter.
+        This methods returns the protobuf schema used for torch.nn.Parameter.
 
-           Returns:
-               Protobuf schema for torch.nn.Parameter.
+        Returns:
+            Protobuf schema for torch.nn.Parameter.
         """
         return ScriptModulePB
 
@@ -496,7 +496,7 @@ class ScriptFunctionWrapper(SyftSerializable):
 
         Returns:
            Protobuf schema for torch.jit.ScriptFunction.
-       """
+        """
         return ScriptFunctionPB
 
 
@@ -510,14 +510,14 @@ class TopLevelTracedModuleWrapper(SyftSerializable):
         worker: AbstractWorker, script_module: torch.jit.TopLevelTracedModule
     ) -> TracedModulePB:
         """
-            This method serializes a torch.jit.TopLevelTracedModule using TracedModulePB.
+        This method serializes a torch.jit.TopLevelTracedModule using TracedModulePB.
 
-            Args:
-                script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule
-                to be serialized.
+        Args:
+            script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule
+            to be serialized.
 
-            Returns:
-                protobuf_script (TracedModulePB): serialized TopLevelTracedModule.
+        Returns:
+            protobuf_script (TracedModulePB): serialized TopLevelTracedModule.
         """
         protobuf_script = ScriptModulePB()
         protobuf_script.obj = script_module.save_to_buffer()
@@ -528,13 +528,13 @@ class TopLevelTracedModuleWrapper(SyftSerializable):
         worker: AbstractWorker, protobuf_script: TracedModulePB
     ) -> torch.jit.TopLevelTracedModule:
         """
-            This method deserializes TracedModulePB into torch.jit.TopLevelTracedModule.
+        This method deserializes TracedModulePB into torch.jit.TopLevelTracedModule.
 
-            Args:
-                protobuf_script (TracedModulePB): input serialized TracedModulePB.
+        Args:
+            protobuf_script (TracedModulePB): input serialized TracedModulePB.
 
-            Returns:
-                loaded_module (torch.jit.TopLevelTracedModule): deserialized TracedModulePB.
+        Returns:
+            loaded_module (torch.jit.TopLevelTracedModule): deserialized TracedModulePB.
         """
         script_module_stream = io.BytesIO(protobuf_script.obj)
         loaded_module = torch.jit.load(script_module_stream)
@@ -543,20 +543,20 @@ class TopLevelTracedModuleWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> type(TracedModulePB):
         """
-             This method returns the protobuf schema used for torch.jit.TopLevelTracedModule.
+        This method returns the protobuf schema used for torch.jit.TopLevelTracedModule.
 
-             Returns:
-                Protobuf schema for torch.jit.TopLevelTracedModule.
+        Returns:
+           Protobuf schema for torch.jit.TopLevelTracedModule.
         """
         return TracedModulePB
 
     @staticmethod
     def get_original_class() -> type(torch.jit.TopLevelTracedModule):
         """
-            This method returns the wrapped type.
+        This method returns the wrapped type.
 
-            Returns:
-                Wrapped type.
+        Returns:
+            Wrapped type.
         """
         return torch.jit.TopLevelTracedModule
 
@@ -569,13 +569,13 @@ class TorchSizeWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, size: torch.Size) -> SizePB:
         """
-            This method serializes torch.Size into SizePB.
+        This method serializes torch.Size into SizePB.
 
-            Args:
-                size (torch.Size): input torch.Size to be serialized.
+        Args:
+            size (torch.Size): input torch.Size to be serialized.
 
-            Returns:
-                protobuf_size: serialized torch.Size
+        Returns:
+            protobuf_size: serialized torch.Size
         """
         protobuf_size = SizePB()
         protobuf_size.dims.extend(size)
@@ -584,33 +584,33 @@ class TorchSizeWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_size: SizePB) -> torch.Size:
         """
-            This method deserializes SizePB into torch.Size.
+        This method deserializes SizePB into torch.Size.
 
-            Args:
-                protobuf_size (SizePB): input SizePB to be deserialized.
+        Args:
+            protobuf_size (SizePB): input SizePB to be deserialized.
 
-            Returns:
-                torch.Size: deserialized SizePB
+        Returns:
+            torch.Size: deserialized SizePB
         """
         return torch.Size(protobuf_size.dims)
 
     @staticmethod
     def get_original_class() -> type(torch.Size):
         """
-            This method returns the wrapped type.
+        This method returns the wrapped type.
 
-            Returns:
-                Wrapped type.
+        Returns:
+            Wrapped type.
         """
         return torch.Size
 
     @staticmethod
     def get_protobuf_schema() -> type(SizePB):
         """
-            Returns the protobuf schema used for torch.Size.
+        Returns the protobuf schema used for torch.Size.
 
-            Returns:
-                Protobuf schema for torch.Size.
+        Returns:
+            Protobuf schema for torch.Size.
         """
         return SizePB
 
@@ -640,13 +640,13 @@ class TorchMemFormatWrapper(SyftSerializable):
         worker: AbstractWorker, protobuf_mem_format: MemoryFormatPB
     ) -> torch.memory_format:
         """
-            This method deserializes MemoryFormatPB into torch.memory_format.
+        This method deserializes MemoryFormatPB into torch.memory_format.
 
-            Args:
-                protobuf_size (MemoryFormatPB): input MemoryFormatPB to be deserialized.
+        Args:
+            protobuf_size (MemoryFormatPB): input MemoryFormatPB to be deserialized.
 
-            Returns:
-                torch.memory_format: deserialized MemoryFormatPB
+        Returns:
+            torch.memory_format: deserialized MemoryFormatPB
         """
         return getattr(torch, protobuf_mem_format.memory_format_type)
 
@@ -657,10 +657,10 @@ class TorchMemFormatWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> type(MemoryFormatPB):
         """
-            Returns the protobuf schema used for torch.memory_format.
+        Returns the protobuf schema used for torch.memory_format.
 
-            Returns:
-                Protobuf schema for torch.memory_format.
+        Returns:
+            Protobuf schema for torch.memory_format.
         """
         return MemoryFormatPB
 
@@ -673,13 +673,13 @@ class TorchDTypeWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, torch_dtype: torch.dtype) -> TorchDTypePB:
         """
-            This method serializes torch.dtype into TorchDTypePB.
+        This method serializes torch.dtype into TorchDTypePB.
 
-            Args:
-                torch_dtype (torch.dtype): input torch.dtype to be serialized.
+        Args:
+            torch_dtype (torch.dtype): input torch.dtype to be serialized.
 
-            Returns:
-                protobuf_size: serialized torch.dtype
+        Returns:
+            protobuf_size: serialized torch.dtype
         """
         protobuf_msg = TorchDTypePB()
         protobuf_msg.torch_type = str(torch_dtype)
@@ -688,32 +688,32 @@ class TorchDTypeWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_dtype: TorchDTypePB) -> torch.dtype:
         """
-            This method deserializes TorchDTypePB into torch.dtype.
+        This method deserializes TorchDTypePB into torch.dtype.
 
-            Args:
-                protobuf_dtype (TorchDTypePB): input TorchDTypePB to be deserialized.
+        Args:
+            protobuf_dtype (TorchDTypePB): input TorchDTypePB to be deserialized.
 
-            Returns:
-                torch.Size: deserialized TorchDTypePB
+        Returns:
+            torch.Size: deserialized TorchDTypePB
         """
         return pydoc.locate(protobuf_dtype.torch_type)
 
     @staticmethod
     def get_original_class() -> type(torch.dtype):
         """
-            This method returns the wrapped type.
+        This method returns the wrapped type.
 
-            Returns:
-                Wrapped type.
+        Returns:
+            Wrapped type.
         """
         return torch.dtype
 
     @staticmethod
     def get_protobuf_schema() -> type(TorchDTypePB):
         """
-            Returns the protobuf schema used for torch.dtype.
+        Returns the protobuf schema used for torch.dtype.
 
-            Returns:
-                Protobuf schema for torch.dtype.
+        Returns:
+            Protobuf schema for torch.dtype.
         """
         return TorchDTypePB

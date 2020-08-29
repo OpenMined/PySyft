@@ -87,7 +87,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def __map_modular_to_real(self, mod_number):
         """In a modular ring, a number x is mapped to a negative
-         real number ]0,-∞[ iff x > ring_size/2 """
+        real number ]0,-∞[ iff x > ring_size/2"""
         element_wise_comparison = mod_number > self.ring_size // 2
         real_number = (element_wise_comparison * -self.ring_size) + mod_number
         return real_number
@@ -218,7 +218,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     @staticmethod
     def __reshare(shares, workers):
         """convert 3-out-of-3 secret sharing: {player i : share i}
-          to 2-out-of-3 sharing: {player i : (share i, share i+1)}  """
+        to 2-out-of-3 sharing: {player i : (share i, share i+1)}"""
         shares_map = {}
         for i in range(len(shares)):
             pointer = shares[(i + 1) % len(shares)].copy().move(workers[i])

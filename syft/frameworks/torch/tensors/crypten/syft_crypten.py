@@ -6,7 +6,12 @@ from syft.generic.frameworks.hook.trace import tracer
 
 class SyftCrypTensor(AbstractTensor):
     def __init__(
-        self, owner=None, id=None, tensor=None, tags: set = None, description: str = None,
+        self,
+        owner=None,
+        id=None,
+        tensor=None,
+        tags: set = None,
+        description: str = None,
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.tensor = tensor

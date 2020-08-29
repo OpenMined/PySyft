@@ -43,15 +43,15 @@ def benchmark_share_get(workers, protocol, dtype, n_workers):
 
 def benchmark_share_get_plot(b_data_share_get):
     """
-        This function plots the graph for various protocols benchmarks for additive
-        shared tensors
+    This function plots the graph for various protocols benchmarks for additive
+    shared tensors
 
-        Args:
-            b_data_share_get (list): the sample data to approximate
+    Args:
+        b_data_share_get (list): the sample data to approximate
 
-        Returns:
-            benchmark_share_get.png (png): plotted graph in graph/ast_benchmarks directory
-        """
+    Returns:
+        benchmark_share_get.png (png): plotted graph in graph/ast_benchmarks directory
+    """
     # initializing workers
     worker = workers(hook())
 
@@ -104,12 +104,12 @@ benchmark_share_get_plot(b_data_share_get)
 
 def benchmark_max_pool2d(workers, protocol, prec_frac):
     """
-        This function benchmarks max_plot2d function.
+    This function benchmarks max_plot2d function.
 
-        Args:
-            workers (dict): workers used for sharing data
-            protocol (str): the name of the protocol
-            prec_frac (int): the precision value (upper limit)
+    Args:
+        workers (dict): workers used for sharing data
+        protocol (str): the name of the protocol
+        prec_frac (int): the precision value (upper limit)
     """
 
     me, alice, bob, crypto_provider = (
@@ -137,15 +137,15 @@ def benchmark_max_pool2d(workers, protocol, prec_frac):
 
 def benchmark_max_pool2d_plot(b_data_max_pool2d):
     """
-            This function plots the graph for various protocols benchmarks for
-            max_pool2d.
+    This function plots the graph for various protocols benchmarks for
+    max_pool2d.
 
-            Args:
-                b_data_max_pool2d (list): list of protocols to approximate
+    Args:
+        b_data_max_pool2d (list): list of protocols to approximate
 
-            Returns:
-                benchmark_max_pool2d.png (png): plotted graph in graph/ast_benchmarks directory
-            """
+    Returns:
+        benchmark_max_pool2d.png (png): plotted graph in graph/ast_benchmarks directory
+    """
 
     # initializing workers
     worker = workers(hook())
@@ -195,13 +195,13 @@ benchmark_max_pool2d_plot(b_data_max_pool2d)
 
 def benchmark_avg_pool2d(workers, protocol, prec_frac):
     """
-            This function benchmarks avg_plot2d function.
+    This function benchmarks avg_plot2d function.
 
-            Args:
-                workers (dict): workers used for sharing data
-                protocol (str): the name of the protocol
-                prec_frac (int): the precision value (upper limit)
-        """
+    Args:
+        workers (dict): workers used for sharing data
+        protocol (str): the name of the protocol
+        prec_frac (int): the precision value (upper limit)
+    """
 
     me, alice, bob, crypto_provider = (
         workers["me"],
@@ -228,15 +228,15 @@ def benchmark_avg_pool2d(workers, protocol, prec_frac):
 
 def benchmark_avg_pool2d_plot(b_data_avg_pool2d):
     """
-            This function plots the graph for various protocols benchmarks for
-            avg_pool2d.
+    This function plots the graph for various protocols benchmarks for
+    avg_pool2d.
 
-            Args:
-                b_data_avg_pool2d (list): list of protocols to approximate
+    Args:
+        b_data_avg_pool2d (list): list of protocols to approximate
 
-            Returns:
-                benchmark_avg_pool2d.png (png): plotted graph in graph/ast_benchmarks directory
-            """
+    Returns:
+        benchmark_avg_pool2d.png (png): plotted graph in graph/ast_benchmarks directory
+    """
 
     # initializing workers
     worker = workers(hook())
@@ -287,13 +287,13 @@ benchmark_avg_pool2d_plot(b_data_avg_pool2d)
 
 def benchmark_batch_norm(workers, protocol, training, prec_frac):
     """
-        This function benchmarks batch_norm function.
+    This function benchmarks batch_norm function.
 
-        Args:
-            workers (dict): workers used for sharing data
-            protocol (str): the name of the protocol
-            training (bool): training or eval mode
-            prec_frac (int): the precision value (upper limit)
+    Args:
+        workers (dict): workers used for sharing data
+        protocol (str): the name of the protocol
+        training (bool): training or eval mode
+        prec_frac (int): the precision value (upper limit)
     """
 
     me, alice, bob, crypto_provider = (
@@ -324,15 +324,15 @@ def benchmark_batch_norm(workers, protocol, training, prec_frac):
 
 def benchmark_batch_norm_plot(b_data_batch_norm):
     """
-                This function plots the graph for various protocols benchmarks for
-                batch_norm.
+    This function plots the graph for various protocols benchmarks for
+    batch_norm.
 
-                Args:
-                    b_data_batch_norm (list): list of protocols to approximate
+    Args:
+        b_data_batch_norm (list): list of protocols to approximate
 
-                Returns:
-                    benchmark_batch_norm.png (png): plotted graph in graph/ast_benchmarks directory
-                """
+    Returns:
+        benchmark_batch_norm.png (png): plotted graph in graph/ast_benchmarks directory
+    """
 
     # initializing workers
     worker = workers(hook())
