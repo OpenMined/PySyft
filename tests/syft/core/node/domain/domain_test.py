@@ -38,7 +38,9 @@ def test_domain_request_access_pending() -> None:
     )
 
     # check status
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
+    response = data_ptr_domain_1.check_access(
+        node=domain_2, request_id=message_request_id
+    )
 
     assert RequestStatus.Pending == response
 
@@ -68,7 +70,9 @@ def test_domain_request_access_denied() -> None:
     domain_1.requests[0].deny()
 
     # check status
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
+    response = data_ptr_domain_1.check_access(
+        node=domain_2, request_id=message_request_id
+    )
 
     assert RequestStatus.Rejected == response
 
@@ -95,6 +99,8 @@ def test_domain_request_access_accepted() -> None:
     domain_1.requests[0].owner_client_if_available = domain_1_client
     domain_1.requests[0].accept()
 
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
+    response = data_ptr_domain_1.check_access(
+        node=domain_2, request_id=message_request_id
+    )
 
     assert RequestStatus.Accepted == response

@@ -28,7 +28,9 @@ def test_request_answer_response() -> None:
 
     addr = Address()
 
-    msg = RequestAnswerResponse(request_id=UID(), address=addr, status=RequestStatus.Pending)
+    msg = RequestAnswerResponse(
+        request_id=UID(), address=addr, status=RequestStatus.Pending
+    )
 
     serialized = serialize(obj=msg)
     new_msg = deserialize(blob=serialized)
