@@ -42,7 +42,7 @@ def test_request_message() -> None:
 
 
 @mark.parametrize("method_name", ["accept", "approve"])
-def test_accept(method_name) -> None:
+def test_accept(method_name: str) -> None:
     node = Domain(name="remote domain")
     node_client = node.get_root_client()
 
@@ -65,7 +65,7 @@ def test_accept(method_name) -> None:
 
 
 @mark.parametrize("method_name", ["deny", "reject", "withdraw"])
-def test_deny(method_name) -> None:
+def test_deny(method_name: str) -> None:
     node = Domain(name="remote domain")
     node_client = node.get_root_client()
 
