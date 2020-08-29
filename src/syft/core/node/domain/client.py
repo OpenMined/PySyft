@@ -62,17 +62,15 @@ class RequestQueueClient:
 
     @property
     def pandas(self) -> pd.DataFrame:
-
-        request_lines = list()
-        for request in self.requests:
-            request_lines.append(
-                {
-                    "Request Name": request.request_name,
-                    "Reason": request.request_description,
-                    "Request ID": request.id,
-                    "Requested Object's ID": request.object_id,
-                }
-            )
+        request_lines = [
+            {
+                "Request Name": request.request_name,
+                "Reason": request.request_description,
+                "Request ID": request.id,
+                "Requested Object's ID": request.object_id,
+            }
+            for request in self.requests
+        ]
         return pd.DataFrame(request_lines)
 
 
