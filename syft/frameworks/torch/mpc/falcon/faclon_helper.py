@@ -21,6 +21,10 @@ class FalconHelper:
         return image.unfold(kernel_size, padding)
 
     @staticmethod
+    def xor(value, other):
+        return value + other - (value * 2 * other)
+
+    @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
             return public_function(value, *args, **kwargs)

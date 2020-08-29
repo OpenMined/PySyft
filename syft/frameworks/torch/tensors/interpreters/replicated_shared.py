@@ -16,14 +16,15 @@ class ReplicatedSharingTensor(AbstractTensor):
         """
         shares_map: dict(worker i : (share_pointer i, share_pointer i+1)
         """
-        if plain_text is None or players is None:
-            return None
-        elif isinstance(plain_text, torch.Tensor):
-            return self.__share_secret(plain_text, players)
-        elif plain_text is ReplicatedSharingTensor:
-            return plain_text.__get_shares_map()
+        if plain_text is not None and players:
+            if isinstance(plain_text, torch.Tensor):
+                return self.__share_secret(plain_text, players)
+            elif plain_text is ReplicatedSharingTensor:
+                return plain_text.__get_shares_map()
+            else:
+                raise ValueError(f" {type(plain_text)} is not supported")
         else:
-            raise ValueError(f" {type(plain_text)} is not supported")
+            return None
 
     def __share_secret(self, plain_text, workers):
         number_of_shares = len(workers)
