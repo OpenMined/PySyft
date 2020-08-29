@@ -176,13 +176,15 @@ class DataCentricFLClient(WebsocketClientWorker):
 
             monitor = MultipartEncoderMonitor(form, None)
             headers = {"Prefer": "respond-async", "Content-Type": monitor.content_type}
+            try:
+                session = requests.Session()
+                response = session.post(url, headers=headers, data=monitor).content
+                session.close()
 
-            session = requests.Session()
-            response = session.post(url, headers=headers, data=monitor).content
-            session.close()
-
-            response = json.loads(response)["payload"]
-            response = response.encode(self.encoding)
+                response = json.loads(response)["payload"]
+                response = response.encode(self.encoding)
+            except TypeError:
+                response = serialize(None)
         else:
             self.ws.send_binary(message)
             response = self.ws.recv()
