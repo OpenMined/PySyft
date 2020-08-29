@@ -13,7 +13,9 @@ from typing import Optional
 
 class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __new__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None) -> int:
+    def __new__(
+        self, value: Any = None, base: Any = 10, id: Optional[UID] = None
+    ) -> int:
         if value is None:
             value = 0
 
@@ -233,6 +235,7 @@ class Int(int, PyPrimitive):
     # @id.setter
     # def id(self, value):
     #     self._id = value
+
 
 #
 # class PyPrimitiveWrapper(StorableObject):

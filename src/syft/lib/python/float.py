@@ -2,7 +2,7 @@ from typing import Any
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ...decorators import syft_decorator
-from .primitive_interface import  PyPrimitive
+from .primitive_interface import PyPrimitive
 from .primitive_factory import PrimitiveFactory
 from ...core.common import UID
 from ...proto.lib.python.float_pb2 import Float as Float_PB
@@ -10,20 +10,136 @@ from ... import serialize, deserialize
 
 from typing import Optional
 
+to_test = [
+    "as_integer_ratio",
+    "conjugate",
+    "fromhex",
+    "hex",
+    "imag",
+    "is_integer",
+    "real",
+]
+
+get_direct_inheritance = [
+    "__hash__",
+    "__trunc__",
+    "__repr__",
+]
+
+ID_PRESERVING_OPERATIONS = [
+    "__iadd__",
+    "__isub__",
+    "__imul__",
+    "__ifloordiv__",
+    "__idiv__",
+    "__itruediv__",
+    "__imod__",
+    "__ipow__",
+]
+
+ID_NONPRESERVING_OPERATIONS = [
+    "__abs__",
+    "__add__",
+    # '__bool__',
+    # '__divmod__',
+    # '__eq__',
+    # '__float__',
+    # '__ge__',
+    # '__gt__',
+    # '__int__',
+    # '__le__',
+    # '__lt__',
+    "__mod__",
+    "__mul__",
+    "__ne__",
+    "__neg__",
+    "__pow__",
+    "__radd__",
+    "__rdivmod__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rmul__",
+    "__round__",
+    "__rpow__",
+    "__rsub__",
+    "__rtruediv__",
+    "__sub__",
+    "__truediv__",
+]
+
 
 class Float(float, PyPrimitive):
-    @syft_decorator(typechecking=True)
-    def __new__(self, value: float, id: Optional[UID] = None) -> float:
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __new__(self, value: Any = None, id: Optional[UID] = None) -> float:
+        if value is None:
+            value = 0.0
         return float.__new__(self, value)
 
-    @syft_decorator(typechecking=True)
-    def __init__(self, value: float, id: Optional[UID] = None):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __init__(self, value: Any = None, id: Optional[UID] = None):
+        if value is None:
+            value = 0.0
+
         float.__init__(value)
 
         if id is None:
             self._id = UID()
         else:
             self._id = id
+
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __eq__(self, other: Any) -> bool:
+        return super().__eq__(other)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __ge__(self, other: Any) -> bool:
+        return self.__ge__(other)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __lt__(self, other: Any) -> bool:
+        return self.__lt__(other)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __le__(self, other: Any) -> bool:
+        return self.__le__(other)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __gt__(self, other: Any) -> bool:
+        return self.__gt__(other)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __repr__(self) -> str:
+        return super().__repr__()
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Float_PB:
+        Float_pb = Float_PB()
+        Float_pb.data = self
+        Float_pb.id.CopyFrom(serialize(self.id))
+        return Float_pb
+
+    def __hash__(self):
+        return super().__hash__()
+
+    @staticmethod
+    def _proto2object(proto: Float_PB) -> "Float":
+        Float_id: UID = deserialize(blob=proto.id)
+        return Float(value=proto.data, id=Float_id)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Float_PB
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
@@ -54,31 +170,6 @@ class Float(float, PyPrimitive):
         res = super().__rmul__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: Any) -> bool:
-        return self == other
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __div__(self, other: Any) -> PyPrimitive:
-        res = super().__div__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdiv__(self, other: Any) -> PyPrimitive:
-        res = super().__rdiv__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, other: Any) -> PyPrimitive:
         res = super().__mul__(self, other)
@@ -90,32 +181,28 @@ class Float(float, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
-        res = super().__div__(self, other)
+        res = super().__floordiv__(self, other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __truediv__(self, other: Any) -> PyPrimitive:
         res = super().__truediv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdiv__(self, other: Any) -> PyPrimitive:
-        return self.__div__(other)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
         res = super().__floordiv__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __truediv__(self, other: Any) -> PyPrimitive:
         res = super().__truediv__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mod__(self, other: Any) -> PyPrimitive:
         res = super().__mod__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rmod__(self, other: Any) -> PyPrimitive:
@@ -123,96 +210,50 @@ class Float(float, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, other: Any) -> PyPrimitive:
-        res = super().__pow__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rpow__(self, other: Any) -> PyPrimitive:
-        return self.__pow__(other)
+        return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __lshift__(self, other: Any) -> PyPrimitive:
-        res = super().__lshift__(other)
-        return PrimitiveFactory.generate_primitive(res)
+    def __iadd__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__add__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rlshift__(self, other: Any) -> PyPrimitive:
-        return self.__lshift__(other)
+    def __isub__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__sub__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rshift__(self, other: Any) -> PyPrimitive:
-        res = super().__rshift__(other)
-        return PrimitiveFactory.generate_primitive(res)
+    def __imul__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__mul__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rrshift__(self, other: Any) -> PyPrimitive:
-        return self.__rshift__(other)
+    def __ifloordiv__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__floordiv__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __and__(self, other: Any) -> PyPrimitive:
-        res = super().__and__(other)
-        return PrimitiveFactory.generate_primitive(res)
+    def __itruediv__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__truediv__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rand__(self, other: Any) -> PyPrimitive:
-        return self.__and__(other)
+    def __imod__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__mod__(other), id=self.id
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __xor__(self, other: Any) -> PyPrimitive:
-        res = super().__xor__(other)
-        return PrimitiveFactory.generate_primitive(res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rxor__(self, other: Any) -> PyPrimitive:
-        return self.__xor__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __or__(self, other: Any) -> PyPrimitive:
-        res = super().__or__(other)
-        return PrimitiveFactory.generate_primitive(res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ror__(self, other: Any) -> Any:
-        return self.__or__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ge__(self, other: Any) -> bool:
-        return self.__ge__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __lt__(self, other: Any) -> bool:
-        return self.__lt__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __le__(self, other: Any) -> bool:
-        return self.__le__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __gt__(self, other: Any) -> bool:
-        return self.__gt__(other)
-
-    @syft_decorator(typechecking=True)
-    def __repr__(self) -> str:
-        """Returns a human-readable version of the PyPrimitive
-
-        Return a human-readable representation of the PyPrimitive with brackets
-        so that it can be easily spotted when nested inside of the human-
-        readable representations of other objects."""
-
-        return f"<{type(self).__name__}:{self.id.value} {super(Float, self).__repr__()}>"
-
-    @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Float_PB:
-        Float_pb = Float_PB()
-        Float_pb.data = self
-        Float_pb.id.CopyFrom(serialize(self.id))
-        return Float_pb
-
-    @staticmethod
-    def _proto2object(proto: Float_PB) -> "Float":
-        Float_id: UID = deserialize(blob=proto.id)
-        return Float(value=proto.data, id=Float_id)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Float_PB
+    def __ipow__(self, other: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(
+            value=super().__pow__(other), id=self.id
+        )

@@ -114,7 +114,6 @@ def is_expected_type_error(msg: str) -> bool:
         "pinverse(): argument 'rcond' (position 1) must be float, not Tensor",
         "must be bool, not Tensor",
         "nonzero() takes from 1 to 0 positional arguments but",
-
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
