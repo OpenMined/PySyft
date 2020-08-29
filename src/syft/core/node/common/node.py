@@ -274,8 +274,7 @@ class Node(AbstractNode):
         """This is a property which returns a list of all known node
         by returning the clients we used to interact with them from
         the object store."""
-
-        return list(self.store.get_objects_of_type(obj_type=Client))
+        return list(self.in_memory_client_registry.values())
 
     @property
     def id(self) -> UID:
@@ -286,14 +285,24 @@ class Node(AbstractNode):
         if sy.VERBOSE:
             print(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
-            nodes = []
-            for key in self.store.keys():
-                value = self.store[key]
-                nodes.append(value)
-
-            # TODO: Make this work again
-            # nodes = self.store.get_objects_of_type(obj_type=self.child_type_client_type)
-            return nodes
+            return [
+                client
+                for client in self.in_memory_client_registry.values()
+                if all(
+                    [
+                        self.network is None
+                        or client.network is None
+                        or self.network == client.network,
+                        self.domain is None
+                        or client.domain is None
+                        or self.domain == client.domain,
+                        self.device is None
+                        or client.device is None
+                        or self.device == client.device,
+                        self.vm is None or client.vm is None or self.vm == client.vm,
+                    ]
+                )
+            ]
         else:
             if sy.VERBOSE:
                 print(f"> Node {self.pprint} has no children")

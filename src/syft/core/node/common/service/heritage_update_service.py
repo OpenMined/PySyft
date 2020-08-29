@@ -79,8 +79,8 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
         for node_client in node.known_child_nodes:
             try:
                 # TODO: Client (and possibly Node) should subclass from StorableObject
-                location_id = node_client.data.target_id.id
-                msg.address = node_client.data
+                location_id = node_client.address.target_id.id
+                msg.address = node_client.address
                 try:
                     in_memory_client = node.in_memory_client_registry[location_id]
                     # we need to sign here with the current node not the destination side
