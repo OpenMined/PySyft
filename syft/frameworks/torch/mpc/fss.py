@@ -166,7 +166,6 @@ def fss_op(x1, x2, op="eq"):
             share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
             shares.append(share)
     else:
-        print("async")
         shares = asyncio.run(
             sy.local_worker.async_dispatch(
                 workers=locations,
