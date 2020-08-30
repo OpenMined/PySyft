@@ -90,15 +90,9 @@ class OnnxModel(AbstractSendable):
         return utils.onnx_to_crypten(self.serialized_model)
 
     def send(
-        self,
-        location,
-        garbage_collect_data: bool = True,
+        self, location, garbage_collect_data: bool = True,
     ):
-        ptr = self.owner.send(
-            self,
-            location,
-            garbage_collect_data=garbage_collect_data,
-        )
+        ptr = self.owner.send(self, location, garbage_collect_data=garbage_collect_data,)
 
         ptr.description = self.description
         ptr.tags = self.tags

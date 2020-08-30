@@ -9,10 +9,10 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
         super().__init__(owner=owner)
         self.ring_size = ring_size or 2 ** 32
-        shares_map = self.__generate_shares_map(plain_text, players)
+        shares_map = self.__validate_input(plain_text, players)
         self.child = shares_map
 
-    def __generate_shares_map(self, plain_text, players):
+    def __validate_input(self, plain_text, players):
         """
         shares_map: dict(worker i : (share_pointer i, share_pointer i+1)
         """
@@ -20,7 +20,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             if isinstance(plain_text, torch.Tensor):
                 return self.__share_secret(plain_text, players)
             elif plain_text is ReplicatedSharingTensor:
-                return plain_text.__get_shares_map()
+                return plain_text.child
             else:
                 raise ValueError(f" {type(plain_text)} is not supported")
         else:

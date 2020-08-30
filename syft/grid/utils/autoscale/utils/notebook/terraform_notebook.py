@@ -9,10 +9,7 @@ def init():
     args:
     """
     proc = subprocess.Popen(
-        "/bin/sh",
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        "/bin/sh", stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
 
     def outloop():
@@ -42,10 +39,7 @@ def apply():
     args:
     """
     proc = subprocess.Popen(
-        "/bin/sh",
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        "/bin/sh", stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
 
     def outloop():
@@ -75,10 +69,7 @@ def destroy():
     args:
     """
     proc = subprocess.Popen(
-        "/bin/sh",
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        "/bin/sh", stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
 
     def outloop():
