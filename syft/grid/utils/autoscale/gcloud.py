@@ -30,7 +30,7 @@ class GoogleCloud:
         self.provider = "google"
         self.config = terrascript.Terrascript()
         self.config += terrascript.provider.google(
-            credentials=self.credentials, project=self.project_id, region=self.region
+            credentials=self.credentials, project=self.project_id, region=self.region,
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -122,7 +122,9 @@ class GoogleCloud:
                 docker run \
                 -e PORT=80 \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnetwork -p 80:80 -d openmined/grid-network:production;""",
+                --name gridnetwork\
+                -p 80:80 \
+                -d openmined/grid-network:production;""",
         )
         self.config += node
 
@@ -177,7 +179,9 @@ class GoogleCloud:
                 -e PORT=80 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnode -p 80:80 -d openmined/grid-node:production;""",
+                --name gridnode \
+                -p 80:80 \
+                -d openmined/grid-node:production;""",
         )
         self.config += node
         with open("main.tf.json", "w") as main_config:
@@ -206,7 +210,8 @@ class GoogleCloud:
             zone: zone of your GCP project
             reserve_ip_name: name of the reserved ip created using reserve_ip
             target_size: number of wokers to be created(N workers + 1 master)
-            eviction_policy: "delete" to teardown the cluster after calling .sweep() else None
+            eviction_policy: "delete" to teardown the cluster after calling
+            cluster.sweep() else None
             apply: to call terraform apply at the end
         """
         self.expose_port("pygrid", ports=[80, 3000], apply=False)
@@ -236,7 +241,9 @@ class GoogleCloud:
                 docker run \
                 -e PORT=80 \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnetwork -p 80:80 -d openmined/grid-network:production;
+                --name gridnetwork \
+                -p 80:80 \
+                -d openmined/grid-network:production;
                 docker pull openmined/grid-node:production;
                 docker run \
                 -e NODE_ID={name+"-network-node"} \
@@ -244,7 +251,9 @@ class GoogleCloud:
                 -e PORT=3000 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnode -p 3000:3000 -d openmined/grid-node:production;""",
+                --name gridnode \
+                -p 3000:3000 \
+                -d openmined/grid-node:production;""",
         )
 
         # HOST environment variable is set to external IP address
@@ -264,7 +273,9 @@ class GoogleCloud:
                 -e PORT=80 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnode -p 80:80 -d openmined/grid-node:production;""",
+                --name gridnode \
+                -p 80:80 \
+                -d openmined/grid-node:production;""",
             lifecycle={"create_before_destroy": True},
         )
         self.config += instance_template
@@ -286,7 +297,7 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-        return Cluster(name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy)
+        return Cluster(name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy,)
 
     def compute_instance(self, name, machine_type, zone, image_family, apply=True):
         """
@@ -334,7 +345,8 @@ class Cluster:
             name: name of the cluster
             provider: terrafrom provider for the cluster
             gridnetwork_ip: ip of grid network instance
-            eviction_policy: "delete" to teardown the cluster after calling .sweep() else None
+            eviction_policy: "delete" to teardown the cluster after calling
+            cluster.sweep() else None
         """
         self.name = name
         self.provider = provider
