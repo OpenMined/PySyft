@@ -114,10 +114,18 @@ c1 = instance_name.create_cluster(
 - Run a parameter sweep to figure out the best parameters using:
 
 ```python
-c1.sweep()
+c1.sweep(
+        model,
+        hook,
+        model_id="new_model",
+        mpc=False,
+        allow_download=False,
+        allow_remote_inference=False,
+        apply=True,
+    )
 ```
 
-- Destroy the created instances using:
+- Destroy all the created resources using:
 
 ```python
 instance_name.destroy()

@@ -30,7 +30,9 @@ class GoogleCloud:
         self.provider = "google"
         self.config = terrascript.Terrascript()
         self.config += terrascript.provider.google(
-            credentials=self.credentials, project=self.project_id, region=self.region,
+            credentials=self.credentials,
+            project=self.project_id,
+            region=self.region,
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -51,7 +53,10 @@ class GoogleCloud:
             ports = [80]
 
         self.config += terrascript.resource.google_compute_firewall(
-            name, name=name, network="default", allow={"protocol": "tcp", "ports": ports},
+            name,
+            name=name,
+            network="default",
+            allow={"protocol": "tcp", "ports": ports},
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -68,11 +73,15 @@ class GoogleCloud:
             name: name of the reversed ip
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
+        pygrid_network_ip = terrascript.resource.google_compute_address(
+            name,
+            name=name,
+        )
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
-            name + "-ip", value="${" + pygrid_network_ip.address + "}",
+            name + "-ip",
+            value="${" + pygrid_network_ip.address + "}",
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
@@ -91,17 +100,23 @@ class GoogleCloud:
             zone: zone of your GCP project
             apply: to call terraform apply at the end
         """
-        pygrid_network_ip = terrascript.resource.google_compute_address(name, name=name,)
+        pygrid_network_ip = terrascript.resource.google_compute_address(
+            name,
+            name=name,
+        )
         self.config += pygrid_network_ip
 
         self.config += terrascript.output(
-            name + "-ip", value="${" + pygrid_network_ip.address + "}",
+            name + "-ip",
+            value="${" + pygrid_network_ip.address + "}",
         )
 
         self.expose_port(name="pygrid", apply=False)
 
         image = terrascript.data.google_compute_image(
-            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
+            name + "container-optimized-os",
+            family="cos-81-lts",
+            project="cos-cloud",
         )
         self.config += image
 
@@ -157,7 +172,9 @@ class GoogleCloud:
         host = "curl ifconfig.co" if gridnetwork_ip else "hostname -I"
 
         image = terrascript.data.google_compute_image(
-            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
+            name + "container-optimized-os",
+            family="cos-81-lts",
+            project="cos-cloud",
         )
         self.config += image
 
@@ -223,7 +240,9 @@ class GoogleCloud:
         pygrid_network_address = "http://" + gridnetwork_ip
 
         image = terrascript.data.google_compute_image(
-            name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
+            name + "container-optimized-os",
+            family="cos-81-lts",
+            project="cos-cloud",
         )
         self.config += image
 
@@ -297,7 +316,12 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-        return Cluster(name, self.provider, gridnetwork_ip, eviction_policy=eviction_policy,)
+        return Cluster(
+            name,
+            self.provider,
+            gridnetwork_ip,
+            eviction_policy=eviction_policy,
+        )
 
     def compute_instance(self, name, machine_type, zone, image_family, apply=True):
         """
