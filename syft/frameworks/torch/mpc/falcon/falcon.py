@@ -4,9 +4,6 @@ import torch
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 
-from typing import List
-from syft.workers.base import BaseWorker
-
 
 def conv2d(filters: syft.ReplicatedSharingTensor, image, padding=0):
     image_batches, image_channels, image_width, image_height = image.shape

@@ -3,7 +3,10 @@ import pytest
 import torch
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
-TEST_VALS = list((x, y, x ^ y) for x, y in itertools.product(torch.LongTensor([0, 1]), repeat=2))
+import itertools
+
+
+TEST_VALS = [(x, y, x ^ y) for x, y in itertools.product(torch.LongTensor([0, 1]), repeat=2)]
 
 
 @pytest.mark.parametrize("x, y, x_xor_y", TEST_VALS)
