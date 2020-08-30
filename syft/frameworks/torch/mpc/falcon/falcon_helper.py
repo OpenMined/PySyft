@@ -72,7 +72,7 @@ class FalconHelper:
         x: ReplicatedSharingTensor,
         y: ReplicatedSharingTensor,
     ) -> ReplicatedSharingTensor:
-        """Select x share or y share depending on b
+        """Select x or y depending on b
 
         Args:
             x (ReplicatedSharingTensor): RST that will be selected if b reconstructed is 0

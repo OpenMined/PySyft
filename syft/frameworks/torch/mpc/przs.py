@@ -72,14 +72,14 @@ def _initialize_generators(cur_seed, prev_seed):
 
 
 @allow_command
-def _get_random_tensor(name_generator, shape, worker_id, high=RING_SIZE):
+def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG
 
     generators = worker.crypto_store.przs.generators
 
     gen = generators[name_generator]
-    rand_elem = torch.randint(0, high, shape, dtype=torch.long, generator=gen)
+    rand_elem = torch.randint(0, ring_size, shape, dtype=torch.long, generator=gen)
     return rand_elem
 
 

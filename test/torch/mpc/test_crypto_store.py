@@ -1,7 +1,7 @@
 import pytest
 
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
-from syft.frameworks.torch.mpc.przs import MAX_LIMIT, PRZS, gen_alpha_3of3, gen_alpha_2of3
+from syft.frameworks.torch.mpc.przs import RING_SIZE, PRZS, gen_alpha_3of3, gen_alpha_2of3
 
 
 def test_primitives_usage(workers):
