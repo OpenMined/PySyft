@@ -163,11 +163,10 @@ class BaseWorker(AbstractWorker):
             self.framework = hook.framework
             if hasattr(hook, "torch"):
                 self.torch = self.framework
-                self.remote = Remote(self, "torch")
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
-                self.remote = Remote(self, "tensorflow")
 
+        self.remote = Remote(self, sy.framework.ALIAS)
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
@@ -224,8 +223,7 @@ class BaseWorker(AbstractWorker):
         del self._known_workers[worker_id]
 
     def remove_worker_from_local_worker_registry(self):
-        """Removes itself from the registry of hook.local_worker.
-        """
+        """Removes itself from the registry of hook.local_worker."""
         self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
 
     def load_data(self, data: List[Union[FrameworkTensorType, AbstractTensor]]) -> None:

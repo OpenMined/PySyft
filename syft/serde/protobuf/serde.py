@@ -62,38 +62,38 @@ class MetaProtobufGlobalState(type):
 @dataclass
 class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
     """
-        Class to generate a global state of the protobufers in a lazy way. All attributes
-        should be used by their properties, not by their hidden value.
+    Class to generate a global state of the protobufers in a lazy way. All attributes
+    should be used by their properties, not by their hidden value.
 
-        The global state can be marked as stale by setting stale_state to False, forcing
-        the next usage of the to be updated, enabling dynamic types in serde.
+    The global state can be marked as stale by setting stale_state to False, forcing
+    the next usage of the to be updated, enabling dynamic types in serde.
 
-        All types should be enrolled in proto.json in syft-serde (soon to be deprecated,
-        when msgpack is removed).
+    All types should be enrolled in proto.json in syft-serde (soon to be deprecated,
+    when msgpack is removed).
 
-        Attributes:
+    Attributes:
 
-            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own
-            force_bufferize and force_unbufferize functions, it should be stored in this list.
-            This will become deprecated soon.
+        _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own
+        force_bufferize and force_unbufferize functions, it should be stored in this list.
+        This will become deprecated soon.
 
-            _bufferizers (OrderedDict): The mapping from a type to its own bufferizer.
+        _bufferizers (OrderedDict): The mapping from a type to its own bufferizer.
 
-            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced
-            bufferizer.
+        _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced
+        bufferizer.
 
-            _unbufferizers (OrderedDict): The mapping from a type to its own unbufferizer.
+        _unbufferizers (OrderedDict): The mapping from a type to its own unbufferizer.
 
-            _no_bufferizers_found (set): In this set we store the primitives that we cannot
-            bufferize anymore.
+        _no_bufferizers_found (set): In this set we store the primitives that we cannot
+        bufferize anymore.
 
-            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot
-            force bufferize anymore.
+        _no_full_bufferizers_found (set): In this set we store the primitives that we cannot
+        force bufferize anymore.
 
-            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited
-            bufferizer that a type can use. This might become deprecated
+        _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited
+        bufferizer that a type can use. This might become deprecated
 
-            stale_state (Bool): Marks the global state to be stale or not.
+        stale_state (Bool): Marks the global state to be stale or not.
     """
 
     _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
@@ -136,7 +136,7 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
 
     def update(self):
         """
-            Updates the global state of protobuf.
+        Updates the global state of protobuf.
         """
         if not self.stale_state:
             return self
@@ -393,7 +393,7 @@ def serialize(
 
 
 def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -> object:
-    """ This method can deserialize any object PySyft needs to send or store.
+    """This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
     of objects which PySyft has sent over the wire or stored. It includes three

@@ -70,6 +70,9 @@ class Protocol(AbstractSendable):
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the protocol and the pointers.
 
+    Specifically, a Protocol can contain a mix of ComputationAction and CommunicationAction and
+    acts as a cross-worker. Use Plan for pure mathematical operations.
+
     All arguments are optional.
 
     Args:
@@ -200,13 +203,11 @@ class Protocol(AbstractSendable):
         return self.__call__(*args_)
 
     def assign(self, role_id, worker):
-        """ Assign a worker to the specified role.
-        """
+        """Assign a worker to the specified role."""
         self.role_assignments.assign(role_id, worker)
 
     def assign_roles(self, worker_dict):
-        """ Assign worker values to correspondent key role.
-        """
+        """Assign worker values to correspondent key role."""
         for role_id, worker in worker_dict.items():
             self.role_assignments.assign(role_id, worker)
 

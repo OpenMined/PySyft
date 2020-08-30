@@ -8,11 +8,8 @@ from syft.frameworks.torch.he.fv.util.numth import get_primes
 
 
 class RNSTool:
-    """A class performing major operations required in the process of decryption
+    """A class to perform major operations required in the process of decryption
     in RNS variant of FV HE Scheme.
-
-    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk + ct2 * sk^2...]
-    we apply the decrypt_scale_and_round method of this class to get the plaintext object.
 
     Args:
         encryption_param (EncryptionParams): For extracting encryption parameters.
@@ -31,8 +28,6 @@ class RNSTool:
         # K*n*t*q^2<q*prod(B)*m_sk, where K takes into account cross terms when larger size
         # ciphertexts are used, and n is the "delta factor" for the ring. We reserve 32 bits
         # for K * n. Here the coeff modulus primes q_i are bounded to be
-        # SEAL_USER_MOD_BIT_COUNT_MAX (60) bits, and all primes in B and m_sk are
-        # SEAL_INTERNAL_MOD_BIT_COUNT (61) bits.
         total_coeff_bit_count = RNSBase(self.q).base_prod.bit_length()
 
         base_B_size = base_q_size
@@ -153,7 +148,7 @@ class RNSTool:
         return input
 
     def decrypt_scale_and_round(self, input):
-        """Perform the remaining procedure of decryptions process after getting the result of
+        """Perform the remaining procedure of decryption process after getting the result of
         [c0 + c1 * sk + c2 * sk^2 ...]_q.
 
         Args:

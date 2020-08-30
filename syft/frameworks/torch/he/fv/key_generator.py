@@ -7,9 +7,7 @@ from syft.frameworks.torch.he.fv.relin_keys import RelinKeys
 
 
 class KeyGenerator:
-    """It is used for generating matching secret key and public key.
-    Constructing a KeyGenerator requires only a Context class instance with valid
-    encryption parameters.
+    """Used to generates secret, public key and relinearization key.
 
     Args:
            context (Context): Context for extracting encryption parameters.
