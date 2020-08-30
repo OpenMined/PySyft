@@ -21,7 +21,37 @@ class FalconHelper:
         return image.unfold(kernel_size, padding)
 
     @staticmethod
-    def xor(value, other):
+    def xor(
+        value: Union[int, ReplicatedSharingTensor], other: Union[int, ReplicatedSharingTensor]
+    ) -> ReplicatedSharingTensor:
+        """
+        Compute the XOR value between value and other.
+        If value and other are both ints we should use the "^" operator.
+
+        Args:
+            value (ReplicatedSharingTensor or Int): RST with ring size of 2 or Int value in {0, 1}
+            other (ReplicatedSharingTensor or Int): RST with ring size of 2 or Int value in {0, 1}
+
+        Returns:
+            The XOR computation between value and other
+        """
+
+        if not any(isinstance(x, ReplicatedSharingTensor) for x in (value, other)):
+            raise ValueError("One of the arguments should be a RST")
+
+        if all((isinstance(x, ReplicatedSharingTensor) for x in (value, other))) and not all(
+            (x.ring_size == FalconHelper.XOR_EXPECTED_RING_SIZE for x in (value, other))
+        ):
+            raise ValueError("If both arguments are RST then they should be in ring size 2")
+
+        # Make sure we have a ReplicatedSharingTensor as value
+        if isinstance(value, int):
+            if 0 <= value <= 1:
+                return FalconHelper.xor(other, value)
+            else:
+                raise ValueError("The integer value should be in {0, 1}")
+
+>>>>>>> 97bd4cc7... Comments fix
         return value + other - (value * 2 * other)
 
     @staticmethod
@@ -45,10 +75,9 @@ class FalconHelper:
         """Select x share or y share depending on b
 
         Args:
-            x (ReplicatedSharingTensor): the first share to select
-            y (ReplicatedSharingTensor): the second share to select
-            b (ReplicatedSharingTensor): the bit to take into consideration
-                when selecting between x or y
+            x (ReplicatedSharingTensor): RST that will be selected if b reconstructed is 0
+            y (ReplicatedSharingTensor): RST that will be selected if b reconstructed is 1
+            b (ReplicatedSharingTensor): RST of a bit
 
         Return:
             x if b == 0 else y
@@ -83,8 +112,8 @@ class FalconHelper:
         """Performs the computation (-1)^beta * x
 
         Args:
-            x_share (ReplicatedSharingTensor): share to "evaluate"
-            beta_share (ReplicatedSharingTensor): the reconstructed value should be in {0, 1}
+            x (ReplicatedSharingTensor): RST to perform the computation on
+            beta (ReplicatedSharingTensor): the reconstructed value should be in {0, 1}
 
         Return:
             A RST that is (-1)^beta * x
