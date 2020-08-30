@@ -7,6 +7,7 @@ import terrascript.provider
 import terrascript.resource
 from utils.script import terraform_script
 from utils.notebook import terraform_notebook
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 
 
 class GoogleCloud:
@@ -147,6 +148,7 @@ class GoogleCloud:
 
         gridnetwork_ip = outputs[gridnetwork_name + "-ip"]["value"]
         pygrid_network_address = "=http://" + gridnetwork_ip if gridnetwork_ip else ""
+        host = "curl ifconfig.co" if gridnetwork_ip else "hostname -I"
 
         image = terrascript.data.google_compute_image(
             name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
@@ -167,7 +169,7 @@ class GoogleCloud:
                 docker pull openmined/grid-node:production;
                 docker run \
                 -e NODE_ID={name} \
-                -e HOST = "$(hostname -I)" \
+                -e HOST = "$({host})" \
                 -e PORT=80 \
                 -e NETWORK={pygrid_network_address} \
                 -e DATABASE_URL=sqlite:///databasenode.db \
@@ -203,11 +205,13 @@ class GoogleCloud:
             eviction_policy: "delete" to teardown the cluster after calling .sweep() else None
             apply: to call terraform apply at the end
         """
-        self.expose_port("pygrid", apply=False)
+        self.expose_port("pygrid", ports=[80, 3000], apply=False)
 
         with open("terraform.tfstate", "r") as out:
             outputs = json.load(out)["outputs"]
+
         gridnetwork_ip = outputs[reserve_ip_name + "-ip"]["value"]
+        pygrid_network_address = "http://" + gridnetwork_ip
 
         image = terrascript.data.google_compute_image(
             name + "container-optimized-os", family="cos-81-lts", project="cos-cloud",
@@ -221,18 +225,25 @@ class GoogleCloud:
             zone=zone,
             boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
             network_interface={"network": "default", "access_config": {"nat_ip": gridnetwork_ip}},
-            metadata_startup_script="""
+            metadata_startup_script=f"""
                 #!/bin/bash
                 sleep 30;
-                docker pull openmined/grid-network:production;
+                docker pull openmined/grid-network:production && \
                 docker run \
                 -e PORT=80 \
                 -e DATABASE_URL=sqlite:///databasenode.db \
-                --name gridnetwork -p 80:80 -d openmined/grid-network:production;""",
+                --name gridnetwork -p 80:80 -d openmined/grid-network:production;
+                docker pull openmined/grid-node:production;
+                docker run \
+                -e NODE_ID={name+"-network-node"} \
+                -e HOST="$(hostname -I)" \
+                -e PORT=3000 \
+                -e NETWORK={pygrid_network_address} \
+                -e DATABASE_URL=sqlite:///databasenode.db \
+                --name gridnode -p 3000:3000 -d openmined/grid-node:production;""",
         )
 
         # HOST environment variable is set to external IP address
-        pygrid_network_address = "http://" + gridnetwork_ip
         instance_template = terrascript.resource.google_compute_instance_template(
             name + "-template",
             name=name + "-template",
@@ -324,17 +335,49 @@ class Cluster:
         self.name = name
         self.provider = provider
         self.gridnetwork_ip = gridnetwork_ip
+        self.gridnetwork_node_ip = gridnetwork_ip + ":3000"
         self.master = name + "-master"
         self.cluster = name + "-cluster"
         self.template = name + "-template"
         self.eviction_policy = eviction_policy
+        self.network_node = None
         self.config = None
 
-    def sweep(self, apply=True):
+    def sweep(
+        self,
+        model,
+        hook,
+        model_id=None,
+        mpc=False,
+        allow_download=False,
+        allow_remote_inference=False,
+        apply=True,
+    ):
         """
         args:
+            model : A jit model or Syft Plan.
+            hook : A PySyft hook
+            model_id (str): An integer/string representing the model id.
+            If it isn't provided and the model is a Plan we use model.id,
+            if the model is a jit model we raise an exception.
+            allow_download (bool) : Allow to copy the model to run it locally.
+            allow_remote_inference (bool) : Allow to run remote inferences.
             apply: to call terraform apply at the end
         """
+        print("Connecting to netowrk-node.")
+        self.network_node = DataCentricFLClient(hook, self.gridnetwork_node_ip)
+        print("Sending model to node.")
+        self.network_node.serve_model(
+            model=model,
+            model_id=model_id,
+            mpc=mpc,
+            allow_download=allow_download,
+            allow_remote_inference=allow_remote_inference,
+        )
+        print("Model sent, disconnecting node now.")
+        self.network_node.close()
+        print("Node disconnected.")
+
         with open("main.tf.json", "r") as main_config:
             self.config = json.load(main_config)
 
