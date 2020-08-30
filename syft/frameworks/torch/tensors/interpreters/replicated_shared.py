@@ -36,18 +36,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     @staticmethod
-    def one_shares(players, ring_size, shape=(1,)):
-        return ReplicatedSharingTensor(
-            plain_text=torch.ones(shape, dtype=torch.int64), players=players, ring_size=ring_size
-        )
-
-    @staticmethod
-    def zero_shares(players, ring_size, shape=(1,)):
-        return ReplicatedSharingTensor(
-            plain_text=torch.zeros(shape, dtype=torch.int64), players=players, ring_size=ring_size
-        )
-
-    @staticmethod
     def __arrange_workers(workers):
         """ having local worker in index 0 saves one communication round"""
         if len(workers) != 3:
@@ -60,7 +48,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def generate_shares(self, plain_text, number_of_shares=3):
         shares = []
-        plain_text.long()
+        plain_text = torch.tensor(plain_text, dtype=torch.long)
         for _ in range(number_of_shares - 1):
             shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
         shares.append((plain_text - sum(shares)) % self.ring_size)

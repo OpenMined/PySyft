@@ -11,6 +11,18 @@ def test_sharing(workers):
     assert type(secret.child) == dict
 
 
+def test_share_float(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3.0, 7.0, 11.0])
+    secret = plain_text.share(bob, alice, james, protocol="falcon")
+
+    assert isinstance(secret, syft.ReplicatedSharingTensor)
+    assert type(secret.child) == dict
+
+    # Check the type is not changed
+    assert plain_text.dtype == torch.float32
+
+
 def test_reconstruction(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, -7, 11])

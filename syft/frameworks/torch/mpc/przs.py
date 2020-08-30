@@ -5,7 +5,7 @@ from syft.generic.utils import remote, allow_command
 import torch
 import syft
 
-MAX_LIMIT = 2 ** 32
+RING_SIZE = 2 ** 32
 ERR_MSG = "You must call PRZS.setup because the seeds where not shared between workers"
 
 
@@ -72,7 +72,7 @@ def _initialize_generators(cur_seed, prev_seed):
 
 
 @allow_command
-def _get_random_tensor(name_generator, shape, worker_id, high=MAX_LIMIT):
+def _get_random_tensor(name_generator, shape, worker_id, high=RING_SIZE):
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG
 
@@ -83,7 +83,7 @@ def _get_random_tensor(name_generator, shape, worker_id, high=MAX_LIMIT):
     return rand_elem
 
 
-def gen_alpha_3of3(worker, high=MAX_LIMIT):
+def gen_alpha_3of3(worker, high=RING_SIZE):
     if worker == syft.local_worker:
         func = _generate_alpha_3of3
     else:
@@ -92,7 +92,7 @@ def gen_alpha_3of3(worker, high=MAX_LIMIT):
     return func(worker.id, high)
 
 
-def gen_alpha_2of3(worker, high=MAX_LIMIT):
+def gen_alpha_2of3(worker, high=RING_SIZE):
     if worker == syft.local_worker:
         func = _generate_alpha_2of3
     else:
@@ -102,7 +102,7 @@ def gen_alpha_2of3(worker, high=MAX_LIMIT):
 
 
 @allow_command
-def _generate_alpha_3of3(worker_id, high=MAX_LIMIT):
+def _generate_alpha_3of3(worker_id, high=RING_SIZE):
     """
     Generate a random number (alpha) using the two generators
     * generator cur - represents a generator initialized with this worker (i) seed
@@ -122,7 +122,7 @@ def _generate_alpha_3of3(worker_id, high=MAX_LIMIT):
 
 
 @allow_command
-def _generate_alpha_2of3(worker_id, high=MAX_LIMIT):
+def _generate_alpha_2of3(worker_id, high=RING_SIZE):
     """
     Generate 2 random numbers (alpha_i, alpha_i-1) using the two generators
     * generator cur - represents a generator initialized with this worker (i) seed
@@ -145,7 +145,7 @@ def _generate_alpha_2of3(worker_id, high=MAX_LIMIT):
     return torch.tensor([alpha_cur.item(), alpha_prev.item()])
 
 
-def __get_next_elem(generator, high=MAX_LIMIT, shape=(1,)):
+def __get_next_elem(generator, high=RING_SIZE, shape=(1,)):
     tensor = torch.empty(shape, dtype=torch.long)
     return tensor.random_(0, high, generator=generator)
 
