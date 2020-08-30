@@ -6,7 +6,7 @@ from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
-    def __init__(self, plain_text=None, players=None, field=None, owner=None):
+    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
         super().__init__(owner=owner)
         self.ring_size = ring_size or 2 ** 32
         shares_map = self.__validate_input(plain_text, players)
@@ -36,15 +36,15 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares_map
 
     @staticmethod
-    def one_shares(players, field, shape=(1,)):
+    def one_shares(players, ring_size, shape=(1,)):
         return ReplicatedSharingTensor(
-            plain_text=torch.ones(shape, dtype=torch.int64), players=players, field=field
+            plain_text=torch.ones(shape, dtype=torch.int64), players=players, ring_size=ring_size
         )
 
     @staticmethod
-    def zero_shares(players, field, shape=(1,)):
+    def zero_shares(players, ring_size, shape=(1,)):
         return ReplicatedSharingTensor(
-            plain_text=torch.zeros(shape, dtype=torch.int64), players=players, field=field
+            plain_text=torch.zeros(shape, dtype=torch.int64), players=players, ring_size=ring_size
         )
 
     @staticmethod
@@ -62,8 +62,8 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares = []
         plain_text.long()
         for _ in range(number_of_shares - 1):
-            shares.append(torch.randint(high=self.field // 2, size=plain_text.shape))
-        shares.append((plain_text - sum(shares)) % self.field)
+            shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
+        shares.append((plain_text - sum(shares)) % self.ring_size)
         return shares
 
     @staticmethod
@@ -96,7 +96,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return pointers
 
     def __sum_shares(self, shares):
-        return sum(shares) % self.field
+        return sum(shares) % self.ring_size
 
     def __map_modular_to_real(self, mod_number):
         """In a modular ring, a number x is mapped to a negative
@@ -176,7 +176,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             return private_function(value, *args, **kwargs)
         else:
             raise ValueError(
-                "expected int, float, torch tensor, or ReplicatedSharingTensor"
+                "expected int, float, torch tensor, or ReplicatedSharingTensor "
                 "but got {}".format(type(value))
             )
 

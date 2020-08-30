@@ -5,7 +5,7 @@ from syft.generic.utils import remote, allow_command
 import torch
 import syft
 
-RING_SIZE = 2 ** 32
+MAX_LIMIT = 2 ** 32
 ERR_MSG = "You must call PRZS.setup because the seeds where not shared between workers"
 
 
@@ -72,37 +72,37 @@ def _initialize_generators(cur_seed, prev_seed):
 
 
 @allow_command
-def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
+def _get_random_tensor(name_generator, shape, worker_id, high=MAX_LIMIT):
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG
 
     generators = worker.crypto_store.przs.generators
 
     gen = generators[name_generator]
-    rand_elem = torch.randint(0, ring_size, shape, dtype=torch.long, generator=gen)
+    rand_elem = torch.randint(0, high, shape, dtype=torch.long, generator=gen)
     return rand_elem
 
 
-def gen_alpha_3of3(worker, ring_size=RING_SIZE):
+def gen_alpha_3of3(worker, high=MAX_LIMIT):
     if worker == syft.local_worker:
         func = _generate_alpha_3of3
     else:
         func = remote(_generate_alpha_3of3, location=worker)
 
-    return func(worker.id, ring_size)
+    return func(worker.id, high)
 
 
-def gen_alpha_2of3(worker, ring_size=RING_SIZE):
+def gen_alpha_2of3(worker, high=MAX_LIMIT):
     if worker == syft.local_worker:
         func = _generate_alpha_2of3
     else:
         func = remote(_generate_alpha_2of3, location=worker)
 
-    return func(worker.id, ring_size)
+    return func(worker.id, high)
 
 
 @allow_command
-def _generate_alpha_3of3(worker_id, ring_size=RING_SIZE):
+def _generate_alpha_3of3(worker_id, high=MAX_LIMIT):
     """
     Generate a random number (alpha) using the two generators
     * generator cur - represents a generator initialized with this worker (i) seed
@@ -117,12 +117,12 @@ def _generate_alpha_3of3(worker_id, ring_size=RING_SIZE):
     cur_gen = generators["cur"]
     prev_gen = generators["prev"]
 
-    alpha = __get_next_elem(cur_gen, ring_size) - __get_next_elem(prev_gen, ring_size)
+    alpha = __get_next_elem(cur_gen, high) - __get_next_elem(prev_gen, high)
     return alpha
 
 
 @allow_command
-def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
+def _generate_alpha_2of3(worker_id, high=MAX_LIMIT):
     """
     Generate 2 random numbers (alpha_i, alpha_i-1) using the two generators
     * generator cur - represents a generator initialized with this worker (i) seed
@@ -139,15 +139,15 @@ def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
     prev_gen = generators["prev"]
 
     alpha_cur, alpha_prev = (
-        __get_next_elem(cur_gen, ring_size),
-        __get_next_elem(prev_gen, ring_size),
+        __get_next_elem(cur_gen, high),
+        __get_next_elem(prev_gen, high),
     )
     return torch.tensor([alpha_cur.item(), alpha_prev.item()])
 
 
-def __get_next_elem(generator, ring_size=RING_SIZE, shape=(1,)):
+def __get_next_elem(generator, high=MAX_LIMIT, shape=(1,)):
     tensor = torch.empty(shape, dtype=torch.long)
-    return tensor.random_(0, ring_size, generator=generator)
+    return tensor.random_(0, high, generator=generator)
 
 
 PrimitiveStorage.register_component("przs", PRZS)
