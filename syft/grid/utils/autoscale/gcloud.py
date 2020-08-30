@@ -5,7 +5,11 @@ import terrascript
 import terrascript.data
 import terrascript.provider
 import terrascript.resource
+
+# syft dependencies
 from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
+
+# terraform utils
 from utils.script import terraform_script
 from utils.notebook import terraform_notebook
 
@@ -364,9 +368,9 @@ class Cluster:
             allow_remote_inference (bool) : Allow to run remote inferences.
             apply: to call terraform apply at the end
         """
-        print("Connecting to netowrk-node.")
+        # Connecting to netowrk-node
         self.network_node = DataCentricFLClient(hook, self.gridnetwork_node_ip)
-        print("Sending model to node.")
+        # Sending model to node
         self.network_node.serve_model(
             model=model,
             model_id=model_id,
@@ -374,9 +378,9 @@ class Cluster:
             allow_download=allow_download,
             allow_remote_inference=allow_remote_inference,
         )
-        print("Model sent, disconnecting node now.")
+        # Model sent, disconnecting node now
         self.network_node.close()
-        print("Node disconnected.")
+        # Node disconnected
 
         with open("main.tf.json", "r") as main_config:
             self.config = json.load(main_config)
