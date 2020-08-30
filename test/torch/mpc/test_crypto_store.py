@@ -39,7 +39,7 @@ def test_przs_alpha_3of3(workers):
 
     sum_values = sum(values)
 
-    assert sum_values.item() % MAX_LIMIT == 0
+    assert sum_values.item() % RING_SIZE == 0
 
 
 def test_przs_alpha_2of3(workers):
