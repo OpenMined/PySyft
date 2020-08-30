@@ -5,9 +5,9 @@ import terrascript
 import terrascript.data
 import terrascript.provider
 import terrascript.resource
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 from utils.script import terraform_script
 from utils.notebook import terraform_notebook
-from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 
 
 class GoogleCloud:
