@@ -1,8 +1,6 @@
 import syft
-import torch
 
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
-from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 
 
 def conv2d(filters: syft.ReplicatedSharingTensor, image, padding=0):

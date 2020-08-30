@@ -2,7 +2,6 @@ import pytest
 
 import torch
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
-from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 
 import itertools
 
