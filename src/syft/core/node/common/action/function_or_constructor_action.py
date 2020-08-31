@@ -96,7 +96,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: RunFunctionOrConstructorAction_PB) -> "RunFunctionOrConstructorAction":
+    def _proto2object(
+        proto: RunFunctionOrConstructorAction_PB,
+    ) -> "RunFunctionOrConstructorAction":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
