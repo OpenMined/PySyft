@@ -175,7 +175,6 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    @service_auth(root_only=True)
     def process(
         node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
     ) -> GetAllRequestsResponseMessage:

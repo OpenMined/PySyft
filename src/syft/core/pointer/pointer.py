@@ -232,7 +232,7 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request_access(
+    def request(
         self,
         request_name: str = "",
         reason: str = "",
