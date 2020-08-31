@@ -178,8 +178,8 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_map[players[0]][1],
         )
         shares_map[players[-1]] = (
-            operator(shares_map[players[-1]][-1], remote_plain_text[-1]),
-            shares_map[players[-1]][1],
+            shares_map[players[-1]][0],
+            operator(shares_map[players[-1]][1], remote_plain_text[-1]),
         )
         return ReplicatedSharingTensor().__set_shares_map(shares_map)
 
