@@ -1,8 +1,12 @@
 # stdlib
 import pydoc
 from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Type
 from typing import Union
-from nacl.signing import VerifyKey
+
+# third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
@@ -50,7 +54,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[Dict[Union[VerifyKey,All], Optional[UID]]] = {},
+        search_permissions: Optional[Dict[Union[VerifyKey, All], Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data

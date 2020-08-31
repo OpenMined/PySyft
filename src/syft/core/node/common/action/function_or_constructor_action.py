@@ -13,7 +13,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
-from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from ....store.storeable_object import StorableObject

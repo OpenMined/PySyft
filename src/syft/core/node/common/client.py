@@ -204,7 +204,7 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self,
-        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
+        msg: SyftMessage,
         route_index: int = 0,
     ) -> SyftMessage:
         route_index = route_index or self.default_route_index
@@ -231,9 +231,7 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
         self,
-        msg: Union[
-            SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-        ],
+        msg: SyftMessage,
         route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
@@ -377,6 +375,11 @@ class StoreClient:
             result.client = self.client
 
         return results
+
+    def __len__(self) -> int:
+        """Return the number of items in the object store we're allowed to know about"""
+
+        return len(self.store)
 
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):

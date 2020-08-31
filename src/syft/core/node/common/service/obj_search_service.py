@@ -207,7 +207,8 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
             if (
                 verify_key in obj.search_permissions.keys()
-                or verify_key == node.root_verify_key or contains_all_in_permissions
+                or verify_key == node.root_verify_key
+                or contains_all_in_permissions
             ):
 
                 ptr_type = obj2pointer_type(obj.data)
