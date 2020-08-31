@@ -112,10 +112,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        results: List[Pointer],
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, results: List[Pointer], address: Address, msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects
@@ -205,7 +202,8 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
             if (
                 verify_key in obj.search_permissions.keys()
-                or verify_key == node.root_verify_key or contains_all_in_permissions
+                or verify_key == node.root_verify_key
+                or contains_all_in_permissions
             ):
 
                 ptr_type = obj2pointer_type(obj.data)

@@ -188,9 +188,7 @@ class Client(AbstractNodeClient):
     # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
-        self,
-        msg: SyftMessage,
-        route_index: int = 0,
+        self, msg: SyftMessage, route_index: int = 0,
     ) -> SyftMessage:
         route_index = route_index or self.default_route_index
 
@@ -215,9 +213,7 @@ class Client(AbstractNodeClient):
     # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self,
-        msg: SyftMessage,
-        route_index: int = 0,
+        self, msg: SyftMessage, route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
 

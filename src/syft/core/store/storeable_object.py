@@ -51,7 +51,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[Dict[Union[VerifyKey,All], Optional[UID]]] = {},
+        search_permissions: Optional[Dict[Union[VerifyKey, All], Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data

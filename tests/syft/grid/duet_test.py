@@ -21,8 +21,10 @@ def test_duet_send_and_get() -> None:
 def test_duet_searchable_functionality() -> None:
     duet = sy.Duet(host="127.0.0.1", port=5001)
 
-    xp = th.tensor([1,2,3]).tag("some", "diabetes", "data").send(duet)
-    xp2 = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet, searchable=True)
+    xp = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet)
+    xp2 = (
+        th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet, searchable=True)
+    )
 
     guest = sy.Duet(domain_url="http://127.0.0.1:5001/")
 

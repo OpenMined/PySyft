@@ -17,10 +17,16 @@ from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
 
+
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
     @syft_decorator(typechecking=True)
     def __init__(
-        self, obj_id: UID, obj: object, address: Address, anyone_can_search_for_this: bool = False, msg_id: Optional[UID] = None
+        self,
+        obj_id: UID,
+        obj: object,
+        address: Address,
+        anyone_can_search_for_this: bool = False,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.obj_id = obj_id
@@ -50,7 +56,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                     if hasattr(self.obj, "description")
                     else ""
                 ),
-                search_permissions={All() : None} if self.anyone_can_search_for_this else {},
+                search_permissions={All(): None}
+                if self.anyone_can_search_for_this
+                else {},
                 read_permissions={
                     node.verify_key: node.id,
                     verify_key: None,  # we dont have the passed in sender's UID
@@ -65,7 +73,12 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         obj_ob = self.obj.serialize()  # type: ignore
         addr = self.address.serialize()
 
-        return SaveObjectAction_PB(obj_id=id_pb, obj=obj_ob, address=addr, anyone_can_search_for_this=self.anyone_can_search_for_this)
+        return SaveObjectAction_PB(
+            obj_id=id_pb,
+            obj=obj_ob,
+            address=addr,
+            anyone_can_search_for_this=self.anyone_can_search_for_this,
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -76,7 +89,12 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         addr = _deserialize(blob=proto.address)
         anyone_can_search_for_this = proto.anyone_can_search_for_this
 
-        return SaveObjectAction(obj_id=id, obj=obj, address=addr, anyone_can_search_for_this=anyone_can_search_for_this)
+        return SaveObjectAction(
+            obj_id=id,
+            obj=obj,
+            address=addr,
+            anyone_can_search_for_this=anyone_can_search_for_this,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
