@@ -13,7 +13,7 @@ from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from ....store.storeable_object import StorableObject
-
+from .....lib.python.primitive import isprimitive, PyPrimitive
 from ....common.serde.deserialize import _deserialize
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
@@ -40,33 +40,74 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         #  id on the object directly
         self.id_at_location = id_at_location
 
+    @staticmethod
+    def intersect_keys(
+        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
+    ) -> Dict[VerifyKey, UID]:
+        # FIXME duplicated in run_class_method_action.py
+        # get the intersection of the dict keys, the value is the request_id
+        # if the request_id is different for some reason we still want to keep it,
+        # so only intersect the keys and then copy those over from the main dict
+        # into a new one
+        if left is None:
+            return right
+        intersection = set(left.keys()).intersection(right.keys())
+        # left and right have the same keys
+        return {k: left[k] for k in intersection}
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        # TODO permissions
-        # TODO clean
         method = node.lib_ast(self.path)
+
+        result_read_permissions = None
 
         resolved_args = list()
         for arg in self.args:
-            if isinstance(arg, Pointer):
-                r_arg = node.store.get_object(id=arg.id_at_location)
-                resolved_args.append(r_arg.data)
-            else:
-                # TODO remove?
-                resolved_args.append(arg)
+            if not isinstance(arg, Pointer):
+                raise ValueError(
+                    f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                    f"Got {arg} of type {type(arg)}"
+                )
+
+            r_arg = node.store.get_object(id=arg.id_at_location)
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
+            )
+            resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            if isinstance(arg, Pointer):
-                r_arg = node.store.get_object(id=arg.id_at_location)
-                resolved_kwargs[arg_name] = r_arg.data
-            else:
-                # TODO remove?
-                resolved_kwargs[arg_name] = arg
+            if not isinstance(arg, Pointer):
+                raise ValueError(
+                    f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                    f"Got {arg} of type {type(arg)}"
+                )
+
+            r_arg = node.store.get_object(id=arg.id_at_location)
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
+            )
+            resolved_kwargs[arg_name] = r_arg.data
 
         result = method(*resolved_args, **resolved_kwargs)
 
+        if isprimitive(value=result):
+            # Wrap in a PyPrimitive
+            result = PyPrimitive(data=result, id=self.id_at_location)
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                result.id = self.id_at_location
+
         if not isinstance(result, StorableObject):
-            result = StorableObject(id=self.id_at_location, data=result)
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=(
+                    result_read_permissions
+                    if result_read_permissions is not None
+                    else {}
+                ),
+            )
 
         node.store.store(obj=result)
 
