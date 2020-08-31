@@ -33,6 +33,13 @@ def test_public_add(workers):
     assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
 
 
+def test_reversed_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = 1
+    assert ((y + x).reconstruct() == torch.Tensor([8, 5])).all()
+
+
 def test_private_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
@@ -47,6 +54,13 @@ def test_public_sub(workers):
     assert x.sub(y).reconstruct() == 4
 
 
+def test_reversed_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = 1
+    assert ((y - x).reconstruct() == torch.Tensor([-6, -3])).all()
+
+
 def test_add_with_operator(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
@@ -58,6 +72,12 @@ def test_public_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
     assert ((x * 2).reconstruct() == torch.Tensor([14, -8])).all()
+
+
+def test_reversed_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
+    assert ((2 * x).reconstruct() == torch.Tensor([14, -8])).all()
 
 
 def test_private_mul(workers):
@@ -98,7 +118,7 @@ def test_get_players(workers):
 
 def test_view(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
+    x = torch.rand([2, 1]).long().share(bob, alice, james, protocol="falcon")
     x = x.view([1, 2])
     assert x.shape == torch.Size([1, 2])
 

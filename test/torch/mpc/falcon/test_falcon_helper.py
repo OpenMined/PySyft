@@ -1,5 +1,5 @@
 import torch
-from syft.frameworks.torch.mpc.falcon.faclon_helper import FalconHelper
+from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
 
 def test_public_xor(workers):
