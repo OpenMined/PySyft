@@ -1,11 +1,8 @@
 # stdlib
 import pydoc
 from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-
-# third party
+from typing import Union
+from nacl.signing import VerifyKey
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
@@ -15,10 +12,7 @@ from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
-from ..common.storeable_object import AbstractStorableObject
-from ..common.uid import UID
+from ..common.group import All
 
 
 class StorableObject(AbstractStorableObject):
@@ -56,7 +50,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
+        search_permissions: Optional[Dict[Union[VerifyKey,All], Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data
