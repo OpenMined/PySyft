@@ -29,4 +29,6 @@ def test_duet_searchable_functionality() -> None:
     assert len(guest.store) == 1
     assert len(duet.store) == 2
 
+    assert guest.store[0].id_at_location == xp2.id_at_location
+
     duet.stop()
