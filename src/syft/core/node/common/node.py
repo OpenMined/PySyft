@@ -325,7 +325,7 @@ class Node(AbstractNode):
         if sy.VERBOSE:
             output = (
                 f"> {self.pprint} Signing {res_msg.pprint} with "
-                f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
             )
             print(output)
         return res_msg

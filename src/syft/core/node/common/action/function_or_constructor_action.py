@@ -1,8 +1,9 @@
 # external class imports
 from typing import Any
 from typing import Dict
-from typing import Tuple
 from typing import Optional
+from typing import Tuple
+from typing import Union
 from nacl.signing import VerifyKey
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -27,7 +28,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         path: str,
         args: Tuple[Any, ...],
         kwargs: Dict[Any, Any],
-        id_at_location: int,
+        id_at_location: UID,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
@@ -42,7 +43,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
+        left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
     ) -> Dict[VerifyKey, UID]:
         # FIXME duplicated in run_class_method_action.py
         # get the intersection of the dict keys, the value is the request_id
@@ -155,7 +156,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         return RunFunctionOrConstructorAction(
             path=proto.path,
-            args=[_deserialize(blob=x) for x in proto.args],
+            args=tuple(_deserialize(blob=x) for x in proto.args),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),

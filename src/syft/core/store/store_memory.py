@@ -2,6 +2,7 @@ from typing import Dict
 from typing import KeysView
 from typing import ValuesView
 from typing import Set
+from typing import Union
 
 
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -30,7 +31,7 @@ class MemoryStore(ObjectStore):
         self._search_engine = None
         self.post_init()
 
-    def get_object(self, id: UID) -> AbstractStorableObject:
+    def get_object(self, id: UID) -> Union[AbstractStorableObject, None]:
         return self._objects.get(id, None)
 
     def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
