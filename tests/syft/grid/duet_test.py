@@ -1,7 +1,5 @@
-# import syft as sy
-# from syft.grid.duet.request import RequestResponse, RequestMessage, RequestStatus
-# from syft.core.common import UID
-# import torch as th
+import syft as sy
+import torch as th
 
 
 # def test_request_message_creation() -> None:
@@ -44,17 +42,17 @@
 #     assert obj.request_id == new_obj.request_id
 
 
-# def test_duet_send_and_get() -> None:
-#     duet = sy.Duet(host="127.0.0.1", port=5001)
+def test_duet_send_and_get() -> None:
+    duet = sy.Duet(host="127.0.0.1", port=5001)
 
-#     x = th.tensor([1, 2, 3])
-#     xp = x.send(duet)
+    x = th.tensor([1, 2, 3])
+    xp = x.send(duet)
 
-#     assert xp.id_at_location == x.id
+    assert xp.id_at_location == x.id
 
-#     yp = xp + xp
+    yp = xp + xp
 
-#     y = yp.get()
-#     assert ((x + x) == y).all()
+    y = yp.get()
+    assert ((x + x) == y).all()
 
-#     duet.stop()
+    duet.stop()
