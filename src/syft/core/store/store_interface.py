@@ -140,7 +140,7 @@ class ObjectStore(ABC):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def get_object(self) -> None:
+    def get_object(self, id: UID) -> None:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
