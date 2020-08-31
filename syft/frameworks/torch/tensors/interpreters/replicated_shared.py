@@ -17,12 +17,13 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares_map: dict(worker i : (share_pointer i, share_pointer i+1)
         """
         if plain_text is not None and players:
-            if isinstance(plain_text, torch.Tensor):
+            if isinstance(plain_text, torch.LongTensor):
                 return self.__share_secret(plain_text, players)
             elif plain_text is ReplicatedSharingTensor:
                 return plain_text.child
             else:
-                raise ValueError(f" {type(plain_text)} is not supported")
+                dtype = plain_text.dtype if hasattr(plain_text, "dtype") else type(plain_text)
+                raise ValueError(f"expected torch.int64 but got {dtype} ")
         else:
             return None
 
@@ -102,6 +103,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__private_linear_operation(secret, add)
 
     __add__ = add
+    __radd__ = add
 
     def sub(self, value):
         return self.__switch_public_private(value, self.__public_sub, self.__private_sub)
@@ -114,6 +116,11 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     __sub__ = sub
 
+    def rsub(self, value):
+        return (self - value) * -1
+
+    __rsub__ = rsub
+
     def mul(self, value):
         return self.__switch_public_private(value, self.__public_mul, self.__private_mul)
 
@@ -124,6 +131,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.__private_multiplication_operation(secret, mul)
 
     __mul__ = mul
+    __rmul__ = mul
 
     def matmul(self, value):
         return self.__switch_public_private(value, self.__public_matmul, self.__private_matmul)

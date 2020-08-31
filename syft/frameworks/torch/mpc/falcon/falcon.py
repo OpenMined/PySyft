@@ -1,5 +1,5 @@
 import syft
-from .faclon_helper import FalconHelper
+from .falcon_helper import FalconHelper
 
 
 def conv2d(filters: syft.ReplicatedSharingTensor, image, padding=0):
