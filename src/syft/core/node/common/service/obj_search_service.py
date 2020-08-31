@@ -28,6 +28,7 @@ from ....common.serde.deserialize import _deserialize
 from ...abstract.node import AbstractNode
 from .....util import obj2pointer_type
 from ....io.address import Address
+from ....common.group import All
 from ....common.uid import UID
 
 
@@ -194,9 +195,17 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         results: List[Pointer] = list()
 
         for obj in node.store.get_objects_of_type(obj_type=object):
+
+            # if this tensor allows anyone to search for it, then one of its keys
+            # has an All() class in it.
+            contains_all_in_permissions = False
+            for key in obj.search_permissions.keys():
+                if isinstance(key, All):
+                    contains_all_in_permissions = True
+
             if (
                 verify_key in obj.search_permissions.keys()
-                or verify_key == node.root_verify_key
+                or verify_key == node.root_verify_key or contains_all_in_permissions
             ):
 
                 ptr_type = obj2pointer_type(obj.data)

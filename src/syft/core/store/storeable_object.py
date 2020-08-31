@@ -1,6 +1,7 @@
 import pydoc
 from typing import List, Optional, Type
 from typing import Dict
+from typing import Union
 from nacl.signing import VerifyKey
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -12,6 +13,7 @@ from ..common.uid import UID
 from ...util import get_fully_qualified_name
 from ..common.storeable_object import AbstractStorableObject
 from ...util import key_emoji
+from ..common.group import All
 
 
 class StorableObject(AbstractStorableObject):
@@ -49,7 +51,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
+        search_permissions: Optional[Dict[Union[VerifyKey,All], Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data
