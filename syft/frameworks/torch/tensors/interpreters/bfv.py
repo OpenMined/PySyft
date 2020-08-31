@@ -5,7 +5,6 @@ import torch as th
 
 from syft.generic.abstract.tensor import AbstractTensor
 
-from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook_args import (
     get_child,
     register_backward_func,
@@ -84,18 +83,6 @@ class BFVTensor(AbstractTensor):
         obj.child = data
         return obj
 
-        # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
-            "__add__", self, args, kwargs
-        )
-
-        # Send it to the appropriates class and get the response
-        response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
-
-        # Put back SyftTensor on the tensors found in the response
-        response = hook_args.hook_response("__add__", response, wrap_type=type(self))
-        return response
-
     def __sub__(self, *args, **kwargs):
         self.prepareEvaluator()
 
@@ -119,21 +106,27 @@ class BFVTensor(AbstractTensor):
         obj.child = data
         return obj
 
-        # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
-            "__add__", self, args, kwargs
-        )
-
-        # Send it to the appropriates class and get the response
-        response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
-
-        # Put back SyftTensor on the tensors found in the response
-        response = hook_args.hook_response("__add__", response, wrap_type=type(self))
-        return response
-
     def __mul__(self, *args, **kwargs):
-        print("custom mul called!")
-        pass
+        self.prepareEvaluator()
+
+        if not args[0].shape == self.child.shape:
+            raise ValueError(
+                f"Cannot multiply tensors of different shapes {args[0].shape} , {self.child.shape}"
+            )
+
+        args = args[0].flatten().tolist()
+
+        if isinstance(args[0], int):
+            args = [self.encoder.encode(x) for x in args]
+
+        child = self.child.flatten().tolist()
+
+        data = [self.evaluator.mul(x, y) for x, y in zip(child, args)]
+        data = np.array(data).reshape(self.child.shape)
+        obj = BFVTensor()
+        obj.context = self.context
+        obj.child = data
+        return obj
 
     def mm(self, *args, **kwargs):
         print("custom mm called!")

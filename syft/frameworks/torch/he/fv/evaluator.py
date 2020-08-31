@@ -148,7 +148,8 @@ class Evaluator:
 
         else:
             raise TypeError(
-                f"Multiplication Operation not supported between {type(op1)} and {type(op2)}"
+                "Multiplication Operation not supported between "
+                + f"{op1.__class__.__name__} and {op2.__class__.__name__}"
             )
 
     def _add_cipher_cipher(self, ct1, ct2):
