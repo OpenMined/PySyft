@@ -1,15 +1,21 @@
-from typing import Tuple
-from typing import Any
-
-try:
-    from typing import ForwardRef
-except ImportError:
-    # python 3.6
-    from typing import _ForwardRef as ForwardRef  # type: ignore
-
+# stdlib
 import inspect
 import typing
+from typing import Any
+from typing import Tuple
 
+# fixes python 3.6
+try:
+    # python 3.7+
+    # stdlib
+    from typing import ForwardRef
+except ImportError:
+    # python 3.6 fallback
+    # stdlib
+    from typing import _ForwardRef as ForwardRef  # type: ignore
+# end fixes python 3.6
+
+# third party
 from typeguard import typechecked
 
 SKIP_RETURN_TYPE_HINTS = {"__init__"}

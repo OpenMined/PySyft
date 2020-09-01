@@ -1,11 +1,16 @@
+# stdlib
 from dataclasses import asdict
 
-from syft.core.node.device.device_type.specs.gpu import GPU
-from syft.core.node.device.device_type.specs.cpu import CPU, CpuArchitectureTypes
-from syft.core.node.device.device_type.specs.network import Network
-from syft.core.node.device.device_type.specs.storage import DriveType, Drive, Storage
-from syft.core.node.device.device_type.specs.provider import Provider
+# syft absolute
 from syft.core.node.device.device_type.device_type import DeviceType
+from syft.core.node.device.device_type.specs.cpu import CPU
+from syft.core.node.device.device_type.specs.cpu import CpuArchitectureTypes
+from syft.core.node.device.device_type.specs.gpu import GPU
+from syft.core.node.device.device_type.specs.network import Network
+from syft.core.node.device.device_type.specs.provider import Provider
+from syft.core.node.device.device_type.specs.storage import Drive
+from syft.core.node.device.device_type.specs.storage import DriveType
+from syft.core.node.device.device_type.specs.storage import Storage
 
 
 def test_gpu_device_type() -> None:

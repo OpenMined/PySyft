@@ -1,12 +1,14 @@
-# external imports
+# stdlib
 import json
-from nacl.signing import SigningKey, VerifyKey
 
+# third party
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
-# syft imports
+# syft absolute
 import syft as sy
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft import ReprMessage
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.util import get_fully_qualified_name
 
 

@@ -1,6 +1,13 @@
+# stdlib
 import inspect
-from typing import List, Optional, Callable, Any, Dict, Tuple
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
+# syft relative
 from .typecheck import type_hints
 
 # this flag is set in syft.__init__.py

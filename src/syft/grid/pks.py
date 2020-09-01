@@ -2,9 +2,11 @@
 functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
+# third party
 from flask import Flask
 
-from syft.core.node.network.network import Network
+# syft relative
+from ..core.node.network.network import Network
 
 app = Flask(__name__)
 network = Network(name="ucsf-net")

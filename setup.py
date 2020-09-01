@@ -7,9 +7,13 @@
     PyScaffold helps you to put up the scaffold of your new Python project.
     Learn more under: https://pyscaffold.org/
 """
+
+# stdlib
 import sys
 
-from pkg_resources import VersionConflict, require
+# third party
+from pkg_resources import VersionConflict
+from pkg_resources import require
 from setuptools import setup
 
 try:

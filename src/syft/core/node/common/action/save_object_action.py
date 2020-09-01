@@ -1,30 +1,39 @@
-# external class imports
+# stdlib
 from typing import Optional
-from nacl.signing import VerifyKey
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports
-from ....common.uid import UID
-from ....io.address import Address
-from ...abstract.node import AbstractNode
-from .common import ImmediateActionWithoutReply
-from ....store.storeable_object import StorableObject
-from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+
+# syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
+from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import Serializable
+from ....common.uid import UID
+from ....io.address import Address
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
+from ....common.group import All
 
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
     @syft_decorator(typechecking=True)
     def __init__(
-        self, obj_id: UID, obj: object, address: Address, msg_id: Optional[UID] = None
+        self,
+        obj_id: UID,
+        obj: object,
+        address: Address,
+        anyone_can_search_for_this: bool = False,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.obj_id = obj_id
         self.obj = obj
+        self.anyone_can_search_for_this = anyone_can_search_for_this
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
@@ -49,6 +58,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                     if hasattr(self.obj, "description")
                     else ""
                 ),
+                search_permissions={All(): None}
+                if self.anyone_can_search_for_this
+                else {},
                 read_permissions={
                     node.verify_key: node.id,
                     verify_key: None,  # we dont have the passed in sender's UID
@@ -63,7 +75,12 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         obj_ob = self.obj.serialize()  # type: ignore
         addr = self.address.serialize()
 
-        return SaveObjectAction_PB(obj_id=id_pb, obj=obj_ob, address=addr)
+        return SaveObjectAction_PB(
+            obj_id=id_pb,
+            obj=obj_ob,
+            address=addr,
+            anyone_can_search_for_this=self.anyone_can_search_for_this,
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -72,8 +89,14 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         id = _deserialize(blob=proto.obj_id)
         obj = _deserialize(blob=proto.obj)
         addr = _deserialize(blob=proto.address)
+        anyone_can_search_for_this = proto.anyone_can_search_for_this
 
-        return SaveObjectAction(obj_id=id, obj=obj, address=addr)
+        return SaveObjectAction(
+            obj_id=id,
+            obj=obj,
+            address=addr,
+            anyone_can_search_for_this=anyone_can_search_for_this,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -24,7 +24,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="syft.core.node.common",
     syntax="proto3",
     serialized_options=None,
-    create_key=_descriptor._internal_create_key,
     serialized_pb=b"\n#proto/core/node/common/client.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x19proto/core/io/route.proto\"\xfe\x02\n\x06\x43lient\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x03 \x01(\t\x12'\n\x06routes\x18\x04 \x03(\x0b\x32\x17.syft.core.io.SoloRoute\x12\x13\n\x0bhas_network\x18\x05 \x01(\x08\x12/\n\x07network\x18\x06 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_domain\x18\x07 \x01(\x08\x12.\n\x06\x64omain\x18\x08 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_device\x18\t \x01(\x08\x12.\n\x06\x64\x65vice\x18\n \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x0e\n\x06has_vm\x18\x0b \x01(\x08\x12*\n\x02vm\x18\x0c \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationb\x06proto3",
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
@@ -40,7 +39,6 @@ _CLIENT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
-    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="obj_type",
@@ -59,7 +57,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="id",
@@ -78,7 +75,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="name",
@@ -97,7 +93,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="routes",
@@ -116,7 +111,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_network",
@@ -135,7 +129,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="network",
@@ -154,7 +147,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_domain",
@@ -173,7 +165,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="domain",
@@ -192,7 +183,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_device",
@@ -211,7 +201,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="device",
@@ -230,7 +219,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="has_vm",
@@ -249,7 +237,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="vm",
@@ -268,7 +255,6 @@ _CLIENT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

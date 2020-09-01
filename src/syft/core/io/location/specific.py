@@ -1,14 +1,16 @@
-# external class imports
-from google.protobuf.reflection import GeneratedProtocolMessageType
+# stdlib
 from typing import Optional
 
-# syft imports (sorted by length)
-from ...common.uid import UID
-from .location import Location
-from ...common.object import ObjectWithID
-from ...common.serde.deserialize import _deserialize
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
+from ...common.object import ObjectWithID
+from ...common.serde.deserialize import _deserialize
+from ...common.uid import UID
+from .location import Location
 
 
 class SpecificLocation(ObjectWithID, Location):

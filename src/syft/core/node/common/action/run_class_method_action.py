@@ -1,24 +1,24 @@
-# external class imports
+# stdlib
 from typing import Any
 from typing import Dict
-from typing import Tuple
 from typing import Optional
-from nacl.signing import VerifyKey
-from .common import ImmediateActionWithoutReply
+from typing import Tuple
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-# syft imports
-# from .....lib.python.primitive import isprimitive, PyPrimitive
-
-from ....common.uid import UID
-from ....io.address import Address
-from ...abstract.node import AbstractNode
-from ....store.storeable_object import StorableObject
-from ....common.serde.deserialize import _deserialize
+# syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
@@ -42,19 +42,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # this which is why i've put this super().__init__ down here
         super().__init__(address=address, msg_id=msg_id)
 
+    @staticmethod
     def intersect_keys(
-        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
+        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
     ) -> Dict[VerifyKey, UID]:
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
         # into a new one
         intersection = set(left.keys()).intersection(right.keys())
-        intersection_dict = {}
-        for k in intersection:
-            intersection_dict[k] = left[k]  # left and right have the same keys
-
-        return intersection_dict
+        # left and right have the same keys
+        return {k: left[k] for k in intersection}
 
     @property
     def pprint(self) -> str:
@@ -70,11 +68,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_args = list()
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
-
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
-
             resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
@@ -108,6 +104,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 data=result,
                 read_permissions=result_read_permissions,
             )
+
         node.store.store(obj=result)
 
     @syft_decorator(typechecking=True)

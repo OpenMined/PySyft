@@ -1,6 +1,8 @@
-from ..generic import ObjectConstructor
-
+# third party
 import torch as th
+
+# syft relative
+from ..generic import ObjectConstructor
 
 
 class LowercaseTensorConstructor(ObjectConstructor):

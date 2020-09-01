@@ -1,7 +1,7 @@
+# syft absolute
 import syft as sy
-
-from syft.core.io.address import Address
 from syft.core.common.uid import UID
+from syft.core.io.address import Address
 from syft.core.node.common.action.get_object_action import GetObjectAction
 
 
