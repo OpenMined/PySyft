@@ -44,11 +44,11 @@ class FalconHelper:
         ), "First argument should be a RST with ring size 2"
         assert any(
             [
-                isinstance(other, ReplicatedSharingTensor) and other.ring_size != 2,
+                isinstance(other, ReplicatedSharingTensor) and other.ring_size == 2,
                 isinstance(other, int) and other in {0, 1},
                 isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
             ]
-        ), "Second argument should be a RST (with ring size of 2) or integer/LongTensor with values {0, 1}"
+        ), "Second argument should be RST (with ring size of 2)/Integer/LongTensor values in {0, 1}"
 
         return value + other - 2 * value * other
 

@@ -6,21 +6,48 @@ from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 import itertools
 
 
-TEST_VALS = [(x, y, x ^ y) for x, y in itertools.product(torch.LongTensor([0, 1]), repeat=2)]
+TEST_VALS_TENSORS = [
+    (torch.LongTensor([0]), torch.LongTensor([0]), torch.LongTensor([0])),
+    (torch.LongTensor([0]), torch.LongTensor([1]), torch.LongTensor([1])),
+    (torch.LongTensor([1]), torch.LongTensor([0]), torch.LongTensor([1])),
+    (torch.LongTensor([1]), torch.LongTensor([1]), torch.LongTensor([0])),
+    (
+        torch.LongTensor([[0, 0], [1, 1]]),
+        torch.LongTensor([[0, 1], [0, 1]]),
+        torch.LongTensor([[0, 1], [1, 0]]),
+    ),
+]
+
+TEST_VALS_INTEGERS = [
+    (torch.LongTensor([0]), 0, torch.LongTensor([0])),
+    (torch.LongTensor([0]), 1, torch.LongTensor([1])),
+    (torch.LongTensor([1]), 0, torch.LongTensor([1])),
+    (torch.LongTensor([1]), 1, torch.LongTensor([0])),
+    (
+        torch.LongTensor([[0, 0], [1, 1]]),
+        0,
+        torch.LongTensor([[0, 0], [1, 1]]),
+    ),
+    (
+        torch.LongTensor([[0, 0], [1, 1]]),
+        1,
+        torch.LongTensor([[1, 1], [0, 0]]),
+    ),
+]
 
 
-@pytest.mark.parametrize("x, y, x_xor_y", TEST_VALS)
-def test_public_xor(x, y, x_xor_y, workers):
+@pytest.mark.parametrize("x_val, y, x_xor_y", TEST_VALS_TENSORS + TEST_VALS_INTEGERS)
+def test_public_xor(x_val, y, x_xor_y, workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = x.share(bob, alice, james, protocol="falcon", field=2)
+    x = x_val.share(bob, alice, james, protocol="falcon", field=2)
     assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
 
 
-@pytest.mark.parametrize("x, y, x_xor_y", TEST_VALS)
-def test_private_xor(x, y, x_xor_y, workers):
+@pytest.mark.parametrize("x_val, y_val, x_xor_y", TEST_VALS_TENSORS)
+def test_private_xor(x_val, y_val, x_xor_y, workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = x.share(bob, alice, james, protocol="falcon", field=2)
-    y = y.share(bob, alice, james, protocol="falcon", field=2)
+    x = x_val.share(bob, alice, james, protocol="falcon", field=2)
+    y = y_val.share(bob, alice, james, protocol="falcon", field=2)
     assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
 
 
