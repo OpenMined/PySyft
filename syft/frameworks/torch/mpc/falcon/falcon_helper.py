@@ -100,14 +100,14 @@ class FalconHelper:
     def determine_sign(
         x: ReplicatedSharingTensor, beta: ReplicatedSharingTensor
     ) -> ReplicatedSharingTensor:
-        """Performs the computation (-1)^beta * x
+        """ determines the sign of x,  positive if beta is 0 or negative if beta is 1
 
         Args:
             x (ReplicatedSharingTensor): RST to perform the computation on
             beta (ReplicatedSharingTensor): the reconstructed value should be in {0, 1}
 
         Return:
-            A RST that is (-1)^beta * x
+            returns x if beta=0, or -x if beta=1
         """
         ring_size = x.ring_size
         players = x.players
