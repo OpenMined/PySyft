@@ -3,7 +3,9 @@ import os
 from typing import Callable
 from multiprocessing import Process
 
-sys.path.append("../")
+import pytest
+
+sys.path.append("../apps/network/src")
 
 from apps.network.src.app import create_app as create_network
 from apps.node.src.app import create_app as create_domain
@@ -13,14 +15,13 @@ network_instances = [5000]
 domain_instances = [3000]
 worker_instances = [3001, 3002, 3003]
 
+
 def setup_node(method: Callable, port: int) -> None:
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
 
     app = method()
-    server = pywsgi.WSGIServer(
-        ('0.0.0.0', port), app, handler_class=WebSocketHandler
-    )
+    server = pywsgi.WSGIServer(("0.0.0.0", port), app, handler_class=WebSocketHandler)
 
     server.serve_forever()
 

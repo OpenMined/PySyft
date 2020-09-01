@@ -21,9 +21,11 @@ from geventwebsocket.websocket import Header
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
+from main.io.routes import *
+
 import config
 
-# Masking/Unmasking is a process used to guarantee some level of security 
+# Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
 # Since the masking process needs to iterate over the message payload,
 # the larger this message is, the longer it takes to process it.
@@ -33,36 +35,39 @@ Header.mask_payload = mask_payload_fast
 Header.unmask_payload = mask_payload_fast
 
 # Setup log
-logging.basicConfig(level=logging.DEBUG,
-                   format='[%(asctime)s]: {} %(levelname)s %(message)s'.format(os.getpid()),
-                   datefmt='%Y-%m-%d %H:%M:%S',
-                   handlers=[logging.StreamHandler()])
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s]: {} %(levelname)s %(message)s".format(os.getpid()),
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler()],
+)
 
 logger = logging.getLogger()
 
+
 def create_app() -> Flask:
-    """ This method creates a new Flask App instance and attach it with some HTTP/Websocket bluetprints.
-        PS: In order to keep modularity and reause, do not add any PyGrid logic here, this method should be as logic agnostic as possible.
-        :return: returns a Flask app instance.
-        :rtype: Flask
+    """This method creates a new Flask App instance and attach it with some HTTP/Websocket bluetprints.
+    PS: In order to keep modularity and reause, do not add any PyGrid logic here, this method should be as logic agnostic as possible.
+    :return: returns a Flask app instance.
+    :rtype: Flask
     """
-    logger.info(f'Starting app in {config.APP_ENV} environment')
+    logger.info(f"Starting app in {config.APP_ENV} environment")
 
     # Create Flask app instance
     app = Flask(__name__)
-    
-    app.config.from_object('config')
-    
+
+    app.config.from_object("config")
+
     # Bind websocket in Flask app instance
     sockets = Sockets(app)
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    # app.register_blueprint()
+    app.register_blueprint(duet, url_prefix=r"/data-centric/duet/")
 
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
-    
+
     # Send app instance
     return app

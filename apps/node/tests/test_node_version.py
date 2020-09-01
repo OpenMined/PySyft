@@ -1,8 +1,9 @@
 import sys
-sys.path.append('../')
+
+sys.path.append("../")
 
 from src import __version__
 
 
 def test_version():
-    assert __version__ == '0.3.0'
+    assert __version__ == "0.3.0"

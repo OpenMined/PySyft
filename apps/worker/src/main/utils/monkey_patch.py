@@ -1,6 +1,7 @@
 import numpy
 import math
 
+
 def mask_payload_fast(self, payload: bin) -> str:
     """Monkey patch geventwebsocket.websocket.Header.mask_payload(). Version
     currently in geventwebsocket does a very slow python for loop to mask the
