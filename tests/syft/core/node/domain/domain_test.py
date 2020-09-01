@@ -19,7 +19,7 @@ def test_domain_serde() -> None:
     _ = tensor.send(domain_1_client)
 
 
-def test_domain_request_access_pending() -> None:
+def test_domain_request_pending() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
 
@@ -28,14 +28,14 @@ def test_domain_request_access_pending() -> None:
 
     domain_2 = Domain(name="my domain")
 
-    data_ptr_domain_1.request_access(
+    data_ptr_domain_1.request(
         request_name="My Request", reason="I'd lke to see this pointer"
     )
 
     requested_object = data_ptr_domain_1.id_at_location
 
     # make request
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
         object_id=requested_object
     )
 
@@ -47,7 +47,7 @@ def test_domain_request_access_pending() -> None:
     assert RequestStatus.Pending == response
 
 
-def test_domain_request_access_denied() -> None:
+def test_domain_request_denied() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
 
@@ -56,14 +56,14 @@ def test_domain_request_access_denied() -> None:
 
     domain_2 = Domain(name="my domain")
 
-    data_ptr_domain_1.request_access(
+    data_ptr_domain_1.request(
         request_name="My Request", reason="I'd lke to see this pointer"
     )
 
     requested_object = data_ptr_domain_1.id_at_location
 
     # make request
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
         object_id=requested_object
     )
 
@@ -79,7 +79,7 @@ def test_domain_request_access_denied() -> None:
     assert RequestStatus.Rejected == response
 
 
-def test_domain_request_access_accepted() -> None:
+def test_domain_request_accepted() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
 
@@ -88,13 +88,13 @@ def test_domain_request_access_accepted() -> None:
 
     domain_2 = Domain(name="my domain")
 
-    data_ptr_domain_1.request_access(
+    data_ptr_domain_1.request(
         request_name="My Request", reason="I'd lke to see this pointer"
     )
 
     requested_object = data_ptr_domain_1.id_at_location
 
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
         object_id=requested_object
     )
 

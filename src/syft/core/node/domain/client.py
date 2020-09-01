@@ -78,7 +78,7 @@ class RequestQueueClient:
 class DomainClient(Client):
 
     domain: SpecificLocation
-    request_queue: RequestQueueClient
+    requests: RequestQueueClient
 
     def __init__(
         self,
@@ -102,7 +102,7 @@ class DomainClient(Client):
             verify_key=verify_key,
         )
 
-        self.request_queue = RequestQueueClient(client=self)
+        self.requests = RequestQueueClient(client=self)
         self.post_init()
 
     @property
