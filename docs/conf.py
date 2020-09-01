@@ -139,7 +139,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "syft"
-copyright = "2020, Andrew Trask"
+copyright = "2020, OpenMined Core Contributors"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
