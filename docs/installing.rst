@@ -204,3 +204,9 @@ If you'd like to run the full test suite, you may do so by running the following
     python setup.py test
 
 Congratulations! You have just installed PySyft on Mac OSX!
+
+Linux Installation
+==================
+
+Windows Installation
+====================
