@@ -208,5 +208,9 @@ Congratulations! You have just installed PySyft on Mac OSX!
 Linux Installation
 ==================
 
+TODO: Finish this!
+
 Windows Installation
 ====================
+
+TODO: Finish this!
