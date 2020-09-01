@@ -22,15 +22,16 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
-from .....util import obj2pointer_type
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.serde.deserialize import _deserialize
-from ....common.uid import UID
-from ....io.address import Address
-from ....pointer.pointer import Pointer
-from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
+from ....common.serde.deserialize import _deserialize
+from ...abstract.node import AbstractNode
+from ....pointer.pointer import Pointer
+from .....util import obj2pointer_type
+from ....io.address import Address
+from ....common.group import All
+from ....common.uid import UID
 
 
 @final
@@ -110,10 +111,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        results: List[Pointer],
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, results: List[Pointer], address: Address, msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects
@@ -193,9 +191,18 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         results: List[Pointer] = list()
 
         for obj in node.store.get_objects_of_type(obj_type=object):
+
+            # if this tensor allows anyone to search for it, then one of its keys
+            # has an All() class in it.
+            contains_all_in_permissions = False
+            for key in obj.search_permissions.keys():
+                if isinstance(key, All):
+                    contains_all_in_permissions = True
+
             if (
                 verify_key in obj.search_permissions.keys()
                 or verify_key == node.root_verify_key
+                or contains_all_in_permissions
             ):
 
                 ptr_type = obj2pointer_type(obj.data)

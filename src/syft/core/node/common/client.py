@@ -378,6 +378,11 @@ class StoreClient:
 
         return results
 
+    def __len__(self) -> int:
+        """Return the number of items in the object store we're allowed to know about"""
+
+        return len(self.store)
+
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):
             for obj in self.store:

@@ -19,6 +19,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from ..common.group import All
 
 
 class StorableObject(AbstractStorableObject):
@@ -56,7 +57,7 @@ class StorableObject(AbstractStorableObject):
         description: Optional[str] = "",
         tags: Optional[List[str]] = [],
         read_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[Dict[VerifyKey, Optional[UID]]] = {},
+        search_permissions: Optional[Dict[Union[VerifyKey, All], Optional[UID]]] = {},
     ):
         self.id = id
         self.data = data

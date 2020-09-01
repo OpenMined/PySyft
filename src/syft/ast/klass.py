@@ -54,9 +54,7 @@ class Class(Callable):
             different methods each time with a different internal attr_path_and_name variable."""
 
             def run_class_method(
-                __self: Any,
-                *args: Tuple[Any, ...],
-                **kwargs: Any,
+                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
             ) -> object:
                 # TODO: lookup actual return type instead of just guessing that it's identical
                 result = self.pointer_type(client=__self.client)
@@ -96,7 +94,7 @@ class Class(Callable):
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
-        def send(self: Any, client: Any) -> Pointer:
+        def send(self: Any, client: Any, searchable: bool = False) -> Pointer:
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
@@ -107,7 +105,10 @@ class Class(Callable):
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location, obj=self, address=client.address
+                obj_id=ptr.id_at_location,
+                obj=self,
+                address=client.address,
+                anyone_can_search_for_this=searchable,
             )
 
             # Step 3: send message
