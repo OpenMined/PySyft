@@ -1,16 +1,18 @@
-from typing import Optional
+# stdlib
 from typing import Any
+from typing import Optional
 
-# external class/method imports (sorted by length)
-from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports (sorted by length)
-from ...decorators.syft_decorator_impl import syft_decorator
+# syft absolute
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import Serializable
-from .uid import UID
 
-from google.protobuf.reflection import GeneratedProtocolMessageType
+# syft relative
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
+from .uid import UID
 
 
 class ObjectWithID(Serializable):

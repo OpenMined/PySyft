@@ -7,16 +7,20 @@ Table of Contents:
     - CLASS METHODS: tests for the use of MemoryStore's class methods
 """
 
-import torch as th
+# stdlib
 import re
+from typing import List
+from typing import Tuple
 
-from syft.core.store.storeable_object import StorableObject
-from syft.core.store.store_memory import MemoryStore
+# third party
+import torch as th
+
+# syft absolute
 from syft.core.common import UID
-from syft.core.store import ObjectStore
 from syft.core.common.object import ObjectWithID
-
-from typing import Tuple, List
+from syft.core.store import ObjectStore
+from syft.core.store.store_memory import MemoryStore
+from syft.core.store.storeable_object import StorableObject
 
 
 def generate_id_obj(

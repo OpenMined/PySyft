@@ -83,24 +83,27 @@ would have instructions for how to forward to a binary tree of other
 node, propagating the model to all node which asked for it.
 """
 
+# stdlib
 from typing import List
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from syft.core.common.message import (
-    SignedEventualSyftMessageWithoutReply,
-    SyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-    SignedImmediateSyftMessageWithoutReply,
-)
+# syft absolute
+import syft as sy
+from syft.core.common.message import SignedEventualSyftMessageWithoutReply
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessageWithoutReply
 
+# syft relative
+from ...decorators import syft_decorator
+from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ..common.object import ObjectWithID
 from .connection import ClientConnection
-from .virtual import VirtualClientConnection
 from .location import Location
 from .location import SpecificLocation
-from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
-from ...decorators import syft_decorator
-import syft as sy
+from .virtual import VirtualClientConnection
 
 
 class RouteSchema(ObjectWithID):

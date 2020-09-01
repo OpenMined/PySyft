@@ -1,23 +1,26 @@
+# stdlib
 from typing import List
 
-from ....common.message import ImmediateSyftMessageWithoutReply
-from .....proto.core.node.domain.service.request_answer_response_pb2 import (
-    RequestAnswerResponse as RequestAnswerResponse_PB,
-)
-from .request_message import RequestStatus
+# third party
+from nacl.signing import VerifyKey
 
-
-from ..... import serialize, deserialize
-from ....common import UID
-from ....io.address import Address
+# syft relative
+from ..... import deserialize
+from ..... import serialize
 from .....decorators import syft_decorator
-from ...abstract.node import AbstractNode
-from ....common.message import ImmediateSyftMessageWithReply
-from ...common.service.node_service import ImmediateNodeServiceWithReply
 from .....proto.core.node.domain.service.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
 )
-from nacl.signing import VerifyKey
+from .....proto.core.node.domain.service.request_answer_response_pb2 import (
+    RequestAnswerResponse as RequestAnswerResponse_PB,
+)
+from ....common import UID
+from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from ...common.service.node_service import ImmediateNodeServiceWithReply
+from .request_message import RequestStatus
 
 
 class RequestAnswerMessage(ImmediateSyftMessageWithReply):

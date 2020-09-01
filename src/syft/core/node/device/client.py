@@ -1,18 +1,21 @@
-# external class imports
-from typing_extensions import final
-from typing import Optional
+# stdlib
 from typing import List
+from typing import Optional
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from typing_extensions import final
 
-# syft imports
-from ...io.location import SpecificLocation
-from ....decorators import syft_decorator
+# syft absolute
 from syft.core.common.uid import UID
+
+# syft relative
+from ....decorators import syft_decorator
 from ...io.location import Location
-from ..common.client import Client
+from ...io.location import SpecificLocation
 from ...io.route import Route
+from ..common.client import Client
 
 
 @final

@@ -1,19 +1,21 @@
+# stdlib
 from typing import Any
-from typing import Optional
 from typing import List
+from typing import Optional
 from typing import Union
 
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...proto.lib.python.python_primitive_pb2 import PyPrimitive as PyPrimitive_PB
-
-from ...core.common.serde import _deserialize
-from ...core.common.serde import Serializable
-from ...decorators.syft_decorator_impl import syft_decorator
-
-from ...core.common.uid import UID
-
+# syft absolute
 from syft.core.store.storeable_object import StorableObject
+
+# syft relative
+from ...core.common.serde import Serializable
+from ...core.common.serde import _deserialize
+from ...core.common.uid import UID
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.lib.python.python_primitive_pb2 import PyPrimitive as PyPrimitive_PB
 from ...util import aggressive_set_attr
 
 

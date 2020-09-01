@@ -2,16 +2,18 @@
 functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
+# stdlib
 import binascii
-import pickle
 import json
+import pickle
 
-from flask import Flask, request
+# third party
+from flask import Flask
+from flask import request
 
-from syft.core.common.message import (
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-)
+# syft absolute
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.node.domain.domain import Domain
 
 app = Flask(__name__)

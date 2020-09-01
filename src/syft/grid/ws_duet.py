@@ -1,21 +1,20 @@
+# stdlib
 from typing import Optional
 
+# third party
+from nacl.signing import SigningKey
+
+# syft absolute
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
 from syft.core.common.uid import UID
 from syft.core.io.route import SoloRoute
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.domain.client import DomainClient
 from syft.core.node.domain.domain import Domain
 from syft.grid.connections.websocket_connection import WebsocketConnection
-
-from nacl.signing import SigningKey
-
-
-from syft.core.common.message import (
-    SyftMessage,
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-)
 
 
 class WSDuet(DomainClient):

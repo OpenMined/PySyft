@@ -1,20 +1,25 @@
-from typing import Any, List, Optional
-from typing import Set
+# stdlib
+from typing import Any
 from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-from ...common.uid import UID
-from ...io.address import Address
+# syft absolute
 from syft.core.io.location import Location
 from syft.decorators import syft_decorator
+
+# syft relative
+from ...common.message import SignedEventualSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
+from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.uid import UID
+from ...io.address import Address
 from ...store import ObjectStore
-from ...common.message import (
-    SignedImmediateSyftMessageWithoutReply,
-    SignedEventualSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
 
 
 class AbstractNode(Address):

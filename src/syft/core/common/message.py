@@ -1,22 +1,26 @@
+# stdlib
 import sys
-import syft as sy
+from typing import Generic
 from typing import Optional
 from typing import Type
 from typing import TypeVar
-from typing import Generic
 
-from nacl.signing import SigningKey, VerifyKey
-
-from nacl.exceptions import BadSignatureError
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.exceptions import BadSignatureError
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
-from syft.core.common.uid import UID
+# syft absolute
+import syft as sy
 from syft.core.common.object import ObjectWithID
+from syft.core.common.uid import UID
 from syft.core.io.address import Address
-
-from ...util import get_fully_qualified_name
-from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from syft.decorators.syft_decorator_impl import syft_decorator
+
+# syft relative
+from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
+from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
 
 # this generic type for SignedMessage

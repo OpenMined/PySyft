@@ -1,11 +1,16 @@
+# stdlib
 from typing import Union
-from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-    SyftMessage,
-)
+
+# third party
 from nacl.signing import VerifyKey
+
+# syft absolute
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
+
+# syft relative
 from ...abstract.node import AbstractNode
 
 

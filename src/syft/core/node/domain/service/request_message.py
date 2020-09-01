@@ -1,23 +1,29 @@
+# stdlib
+from enum import Enum
 from typing import List
 from typing import Optional
 
-from enum import Enum
+# third party
+from nacl.signing import VerifyKey
 
+# syft absolute
 from syft.core.node.domain.service.accept_or_deny_request_service import (
     AcceptOrDenyRequestMessage,
 )
-from ..... import serialize, deserialize
-from ....common import UID
+
+# syft relative
+from ..... import deserialize
+from ..... import serialize
+from .....decorators import syft_decorator
 from .....proto.core.node.domain.service.request_message_pb2 import (
     RequestMessage as RequestMessage_PB,
 )
-from ....io.address import Address
+from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....decorators import syft_decorator
+from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...abstract.node import AbstractNodeClient
-from nacl.signing import VerifyKey
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 
 
 class RequestStatus(Enum):

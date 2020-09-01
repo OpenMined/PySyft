@@ -1,32 +1,32 @@
-from typing import Tuple, Optional
-from flask import Flask
-
-from nacl.signing import SigningKey, VerifyKey
-
-from ...core.node.domain import Domain
-from ...core.node.domain import DomainClient
-
-from flask import request
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.io.location import SpecificLocation
-from syft.core.io.route import Route
-from .server import ServerThread
+# stdlib
 import sys
+import time
+from typing import Optional
+from typing import Tuple
 
+# third party
+from flask import Flask
+from flask import request
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 import requests
 
-from syft.core.io.connection import ClientConnection
-from syft.core.io.route import SoloRoute
-import time
-
+# syft absolute
 import syft as sy
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
+from syft.core.common.uid import UID
+from syft.core.io.address import Address
+from syft.core.io.connection import ClientConnection
+from syft.core.io.location import SpecificLocation
+from syft.core.io.route import Route
+from syft.core.io.route import SoloRoute
 
-from syft.core.common.message import (
-    SyftMessage,
-    SignedImmediateSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
+# syft relative
+from ...core.node.domain import Domain
+from ...core.node.domain import DomainClient
+from .server import ServerThread
 
 
 class GridHttpClientConnection(ClientConnection):

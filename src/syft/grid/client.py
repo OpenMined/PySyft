@@ -1,16 +1,19 @@
+# stdlib
 import binascii
 import json
 import pickle
 
+# third party
 import requests
 
+# syft absolute
 import syft as sy
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
 from syft.core.io.connection import ClientConnection
 from syft.core.io.route import SoloRoute
-from syft.core.common.message import SyftMessage
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
 
 
 class GridHttpClientConnection(ClientConnection):

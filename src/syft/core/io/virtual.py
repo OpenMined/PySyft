@@ -4,19 +4,17 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from typing_extensions import final
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import final
 
-from syft.core.common.message import (
-    SignedEventualSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
+# syft absolute
+from syft.core.common.message import SignedEventualSyftMessageWithoutReply
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
+# syft relative
 from ...decorators import syft_decorator
-from ..node.abstract.node import AbstractNode
-from .connection import ClientConnection, ServerConnection
-
 from ...proto.core.io.connection_pb2 import (
     VirtualClientConnection as VirtualClientConnection_PB,
 )
@@ -24,6 +22,9 @@ from ...proto.core.io.connection_pb2 import (
     VirtualServerConnection as VirtualServerConnection_PB,
 )
 from ..common.serde.deserialize import _deserialize
+from ..node.abstract.node import AbstractNode
+from .connection import ClientConnection
+from .connection import ServerConnection
 
 
 @final

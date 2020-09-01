@@ -1,6 +1,9 @@
-from .group import LocationGroup
-from ..location import Location
+# stdlib
 from typing import Set
+
+# syft relative
+from ..location import Location
+from .group import LocationGroup
 
 
 class SubscriptionBackedLocationGroup(LocationGroup):

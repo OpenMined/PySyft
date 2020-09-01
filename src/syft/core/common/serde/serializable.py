@@ -1,20 +1,21 @@
-# external class/method imports (sorted by length)
+# stdlib
+from typing import Any
+from typing import Dict
+from typing import Tuple
+from typing import Type
+from typing import Union
+
+# third party
 from google.protobuf import json_format
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from typing import Union
-from typing import Type
-from typing import Tuple
-from typing import Dict
-from typing import Any
 
 # Fixes python3.6
 # however API changed between versions so typing_extensions smooths this over:
 # https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
 from typing_extensions import GenericMeta as GenericM  # type: ignore
 
-
-# syft imports
+# syft relative
 from ....decorators import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
 from ....util import get_fully_qualified_name

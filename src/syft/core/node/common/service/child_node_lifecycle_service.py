@@ -1,24 +1,28 @@
-# external class imports
-from nacl.signing import VerifyKey
+# stdlib
 from typing import List
 from typing import Type
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+
+# syft absolute
+import syft as sy
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 
+# syft relative
+from .....decorators import syft_decorator
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
     RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
 )
-import syft as sy
-from .auth import service_auth
+from ....common.serde.deserialize import _deserialize
 from ....io.address import Address
-from .....decorators import syft_decorator
 from ....store.storeable_object import StorableObject
-from .heritage_update_service import HeritageUpdateMessage
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from ....common.serde.deserialize import _deserialize
+from .auth import service_auth
+from .heritage_update_service import HeritageUpdateMessage
 
 
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):

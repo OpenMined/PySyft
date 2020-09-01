@@ -1,22 +1,22 @@
-from syft.core.io.connection import BidirectionalConnection
+# stdlib
+import asyncio
 
+# third party
 import websockets
 from websockets.client import WebSocketClientProtocol
 
-import asyncio
-
+# syft absolute
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde import Serializable
-from syft.decorators.syft_decorator_impl import syft_decorator
+from syft.core.common.serde import _deserialize
+from syft.core.io.connection import BidirectionalConnection
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.client import Client
-from syft.core.common.serde import _deserialize
+from syft.decorators.syft_decorator_impl import syft_decorator
 
-from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-)
-
+# syft relative
 from ...core.node.domain.service import RequestService
 
 

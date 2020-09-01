@@ -1,21 +1,18 @@
-from typing import Optional
+# stdlib
 from typing import Any
-
-# external lib imports
+from typing import Optional
 import uuid
+from uuid import UUID as uuid_type
 
-# external class/method imports
-from syft.core.common.serde.serializable import Serializable
-
-# syft imports
-from ...proto.core.common.common_object_pb2 import UID as UID_PB
-from ...decorators import syft_decorator
-
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+from syft.core.common.serde.serializable import Serializable
 
-# resources
-from uuid import UUID as uuid_type
+# syft relative
+from ...decorators import syft_decorator
+from ...proto.core.common.common_object_pb2 import UID as UID_PB
 
 
 class UID(Serializable):

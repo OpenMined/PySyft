@@ -1,20 +1,22 @@
-# external class imports
+# stdlib
 from typing import Optional
-from nacl.signing import VerifyKey
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports
-from ....common.uid import UID
-from ....io.address import Address
-from ...abstract.node import AbstractNode
-from .common import ImmediateActionWithoutReply
-from ....store.storeable_object import StorableObject
-from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+
+# syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
+from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import Serializable
+from ....common.uid import UID
+from ....io.address import Address
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
 
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):

@@ -1,32 +1,24 @@
-# external class imports
-from typing import Optional
+# stdlib
 from typing import Any
 from typing import List
+from typing import Optional
 from typing import Union
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft imports (sorted by length)
+# syft absolute
 import syft as sy
-from ..io.location import Location
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
+
+# syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.io.address_pb2 import Address as Address_PB
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 from ...util import key_emoji as key_emoji_util
-
-# utility addresses
-# QUESTION: what is this? It breaks the __eq__ when checking
-# def message_is_for_me
-# return msg.address.device.id in (self.id, All(),) and msg.address.vm is None
-# in this case All is not an Address so the dunder throws an error due to the type
-# def __eq__(self, other: "Address") -> bool:
-# class All(object):
-#     def __repr__(self) -> str:
-#         return "All"
+from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import Serializable
+from ..io.location import Location
 
 
 class Unspecified(object):

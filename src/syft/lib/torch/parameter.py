@@ -1,18 +1,23 @@
+# stdlib
+from typing import List
 from typing import Optional
 from typing import Type
-from typing import List
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-from syft.proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
-from syft.lib.torch.tensor_util import protobuf_tensor_serializer
-from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
-from syft.core.store.storeable_object import StorableObject
-from ...util import aggressive_set_attr
-from ..generic import ObjectConstructor
-from ...core.common.uid import UID
-
 import torch as th
 from torch.nn import Parameter
+
+# syft absolute
+from syft.core.store.storeable_object import StorableObject
+from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
+from syft.lib.torch.tensor_util import protobuf_tensor_serializer
+from syft.proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
+
+# syft relative
+from ...core.common.uid import UID
+from ...util import aggressive_set_attr
+from ..generic import ObjectConstructor
 
 
 class ParameterConstructor(ObjectConstructor):

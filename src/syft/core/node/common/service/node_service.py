@@ -1,17 +1,19 @@
-# external class imports
-from nacl.signing import VerifyKey
+# stdlib
+from typing import Any
 from typing import List
 from typing import Type
-from typing import Any
 
-from syft.core.common.message import (
-    EventualSyftMessageWithoutReply,
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-    SignedMessageT,
-)
+# third party
+from nacl.signing import VerifyKey
+
+# syft absolute
+from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SignedMessageT
 from syft.decorators import syft_decorator
 
+# syft relative
 from ...abstract.node import AbstractNode
 
 

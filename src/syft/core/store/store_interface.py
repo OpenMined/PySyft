@@ -1,11 +1,17 @@
+# stdlib
 from abc import ABC
-from typing import Iterable, List, Type
+from typing import Iterable
+from typing import List
+from typing import Type
 
+# syft absolute
 import syft as sy
+
+# syft relative
 from ...decorators import syft_decorator
+from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 from .storeable_object import StorableObject
-from ..common.storeable_object import AbstractStorableObject
 
 
 class ObjectStore(ABC):

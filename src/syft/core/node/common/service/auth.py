@@ -1,13 +1,16 @@
+# stdlib
 from typing import Callable
 from typing import Optional
 
-# external class imports
+# third party
 from nacl.signing import VerifyKey
 
-# syft imports
+# syft absolute
+import syft as sy
+
+# syft relative
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
-import syft as sy
 
 
 class AuthorizationException(Exception):

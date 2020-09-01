@@ -1,16 +1,21 @@
-from typing import Optional
+# stdlib
 from typing import List
+from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-from ..generic import ObjectConstructor
-from syft.proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
-from syft.lib.torch.tensor_util import protobuf_tensor_serializer
-from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
-from syft.core.store.storeable_object import StorableObject
-from ...util import aggressive_set_attr
-from ...core.common.uid import UID
-
 import torch as th
+
+# syft absolute
+from syft.core.store.storeable_object import StorableObject
+from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
+from syft.lib.torch.tensor_util import protobuf_tensor_serializer
+from syft.proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+
+# syft relative
+from ...core.common.uid import UID
+from ...util import aggressive_set_attr
+from ..generic import ObjectConstructor
 
 
 class UppercaseTensorConstructor(ObjectConstructor):

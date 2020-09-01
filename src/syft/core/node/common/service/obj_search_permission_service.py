@@ -4,26 +4,28 @@
 # - Do sort imports by length
 # - Do group imports by where they come from
 
-# external class imports
+# stdlib
 from typing import List
-from typing import Type
 from typing import Optional
+from typing import Type
+
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft class imports
+# syft relative
+from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
-from .....decorators.syft_decorator_impl import syft_decorator
-from .node_service import ImmediateNodeServiceWithoutReply
 from ....common.serde.deserialize import _deserialize
-from ...abstract.node import AbstractNode
-from ....io.address import Address
 from ....common.uid import UID
+from ....io.address import Address
+from ...abstract.node import AbstractNode
 from .auth import service_auth
+from .node_service import ImmediateNodeServiceWithoutReply
 
 
 @final

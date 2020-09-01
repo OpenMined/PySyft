@@ -4,25 +4,28 @@ registers within a new Network or if a Device registers within
 a new Domain, all the other child node will need to know this
 information to populate complete addresses into their clients."""
 
-# external class imports
-from nacl.signing import VerifyKey
+# stdlib
 from typing import List
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+
+# syft absolute
+import syft as sy
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 
+# syft relative
+from .....decorators import syft_decorator
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
     HeritageUpdateMessage as HeritageUpdateMessage_PB,
 )
-
-import syft as sy
-from .auth import service_auth
-from ....io.address import Address
-from .....decorators import syft_decorator
-from ...abstract.node import AbstractNode
-from .node_service import ImmediateNodeServiceWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from .auth import service_auth
+from .node_service import ImmediateNodeServiceWithoutReply
 
 # TODO: change all message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name

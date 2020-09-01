@@ -1,17 +1,25 @@
+# stdlib
 import pydoc
-from typing import List, Optional, Type
 from typing import Dict
-from nacl.signing import VerifyKey
+from typing import List
+from typing import Optional
+from typing import Type
+
+# third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
+# syft absolute
+from syft.core.common.serde.deserialize import _deserialize
+
+# syft relative
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from syft.core.common.serde.deserialize import _deserialize
-from ..common.uid import UID
 from ...util import get_fully_qualified_name
-from ..common.storeable_object import AbstractStorableObject
 from ...util import key_emoji
+from ..common.storeable_object import AbstractStorableObject
+from ..common.uid import UID
 
 
 class StorableObject(AbstractStorableObject):

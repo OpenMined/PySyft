@@ -1,6 +1,8 @@
+# third party
 import torch as th
-from syft.core.node.domain import Domain
 
+# syft absolute
+from syft.core.node.domain import Domain
 from syft.core.node.domain.service import RequestStatus
 
 

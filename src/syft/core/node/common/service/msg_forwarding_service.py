@@ -1,21 +1,18 @@
-# external class imports
+# stdlib
 from typing import List
 from typing import Optional
 
+# syft absolute
 import syft as sy
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SignedMessageT
 
-from syft.core.common.message import (
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-    SignedMessageT,
-)
-
+# syft relative
 from .....decorators import syft_decorator
 from ...abstract.node import AbstractNode
-from .node_service import (
-    SignedNodeServiceWithReply,
-    SignedNodeServiceWithoutReply,
-)
+from .node_service import SignedNodeServiceWithReply
+from .node_service import SignedNodeServiceWithoutReply
 
 
 class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):

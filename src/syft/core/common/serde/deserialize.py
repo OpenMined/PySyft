@@ -1,11 +1,16 @@
-from typing import Union, cast
-from .serializable import Serializable
-from ....decorators.syft_decorator_impl import syft_decorator
-from google.protobuf.message import Message
-from google.protobuf import json_format
-from ....util import index_syft_by_module_name
+# stdlib
+from typing import Union
+from typing import cast
 
+# third party
+from google.protobuf import json_format
+from google.protobuf.message import Message
+
+# syft relative
+from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.util.json_message_pb2 import JsonMessage
+from ....util import index_syft_by_module_name
+from .serializable import Serializable
 
 
 @syft_decorator(typechecking=True)
