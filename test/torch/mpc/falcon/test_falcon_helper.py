@@ -3,8 +3,6 @@ import pytest
 import torch
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
-import itertools
-
 
 TEST_VALS_TENSORS = [
     (torch.LongTensor([0]), torch.LongTensor([0]), torch.LongTensor([0])),
