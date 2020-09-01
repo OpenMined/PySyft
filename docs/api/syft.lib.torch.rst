@@ -9,6 +9,14 @@ syft.lib.torch package
 Submodules
 ----------
 
+syft.lib.torch.allowlist module
+-------------------------------
+
+.. automodule:: syft.lib.torch.allowlist
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.lib.torch.lowercase\_tensor module
 ---------------------------------------
 
