@@ -4,7 +4,7 @@ set -e
 ./scripts/build_proto.sh
 
 # fix isort and format with black
-# isort src/**/*.py tests/**/*.py
+isort .
 black src tests
 pre-commit run --all-files
 bandit -r src -ll

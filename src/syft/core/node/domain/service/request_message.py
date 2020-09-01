@@ -1,23 +1,26 @@
+# stdlib
+from enum import Enum
 from typing import List
 from typing import Optional
 
-from enum import Enum
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-from syft.core.node.domain.service.accept_or_deny_request_service import (
-    AcceptOrDenyRequestMessage,
-)
-from ..... import serialize, deserialize
-from ....common import UID
+# syft relative
+from ..... import deserialize
+from ..... import serialize
+from .....decorators import syft_decorator
 from .....proto.core.node.domain.service.request_message_pb2 import (
     RequestMessage as RequestMessage_PB,
 )
-from ....io.address import Address
+from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....decorators import syft_decorator
+from ....io.address import Address
+from ....node.common.client import Client
 from ...abstract.node import AbstractNode
-from ...abstract.node import AbstractNodeClient
-from nacl.signing import VerifyKey
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
 
 
 class RequestStatus(Enum):
@@ -39,7 +42,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         request_name: str = "",
         request_description: str = "",
         request_id: UID = UID(),
-        owner_client_if_available: Optional[AbstractNodeClient] = None,
+        owner_client_if_available: Optional[Client] = None,
     ):
         super().__init__(address=address, msg_id=request_id)
         self.request_name = request_name
@@ -110,7 +113,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestMessage_PB
 
 

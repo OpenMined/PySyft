@@ -38,13 +38,15 @@ supported Python libs.
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
-
-
-import sys
+# stdlib
 from pathlib import Path
+import sys
 
-from pkg_resources import DistributionNotFound, get_distribution  # noqa: F401
+# third party
+from pkg_resources import DistributionNotFound  # noqa: F401
+from pkg_resources import get_distribution  # noqa: F401
 
+# syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
 
@@ -70,7 +72,8 @@ from syft.grid.ws_duet import WSDuet  # noqa: F401
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
 
-# PACKAGE IMPORTS
+# syft relative
+# Package Imports
 from . import lib  # noqa: F401
 
 # VERSIONING

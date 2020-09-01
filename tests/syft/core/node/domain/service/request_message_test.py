@@ -1,8 +1,15 @@
-from nacl.signing import SigningKey, VerifyKey
-from pytest import mark, raises
+# stdlib
 from unittest.mock import patch
 
-from syft import serialize, deserialize
+# third party
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+from pytest import mark
+from pytest import raises
+
+# syft absolute
+from syft import deserialize
+from syft import serialize
 from syft.core.common import UID
 from syft.core.io.address import Address
 from syft.core.node.domain import Domain

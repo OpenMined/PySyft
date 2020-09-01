@@ -1,32 +1,30 @@
-from typing import Tuple, Optional
-from flask import Flask
-
-from nacl.signing import SigningKey, VerifyKey
-
-from ...core.node.domain import Domain
-from ...core.node.domain import DomainClient
-
-from flask import request
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.io.location import SpecificLocation
-from syft.core.io.route import Route
-from .server import ServerThread
+# stdlib
 import sys
+import time
+from typing import Optional
+from typing import Tuple
 
+# third party
+from flask import Flask
+from flask import request
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 import requests
 
-from syft.core.io.connection import ClientConnection
-from syft.core.io.route import SoloRoute
-import time
-
+# syft absolute
 import syft as sy
 
-from syft.core.common.message import (
-    SyftMessage,
-    SignedImmediateSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
+# syft relative
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
+from ...core.common.uid import UID
+from ...core.io.connection import ClientConnection
+from ...core.io.location import SpecificLocation
+from ...core.io.route import SoloRoute
+from ...core.node.domain import Domain
+from ...core.node.domain import DomainClient
+from .server import ServerThread
 
 
 class GridHttpClientConnection(ClientConnection):
@@ -85,14 +83,18 @@ class Duet(DomainClient):
 
                 time.sleep(0.5)
 
-        address, name, route = self.get_client_params(domain_url=domain_url)
+        spec_location, name, route = self.get_client_params(domain_url=domain_url)
+        print("get client params", spec_location, type(spec_location))
+        # specific_location = address
 
         # dont start a node but connect to it instead
         if id is not None:
-            address = SpecificLocation(id=UID.from_string(value=id))
+            print("make one instead")
+            spec_location = SpecificLocation(id=UID.from_string(value=id))
 
+        print("creating duet with domain", type(spec_location), spec_location)
         super().__init__(
-            domain=address,
+            domain=spec_location,
             name=name,
             routes=[route],
             signing_key=self.signing_key,
@@ -105,16 +107,21 @@ class Duet(DomainClient):
 
     @property
     def id(self) -> UID:
-        return self.target_id
+        return self.target_id.id
 
-    def get_client_params(self, domain_url: str) -> Tuple[Address, str, Route]:
+    def get_client_params(
+        self, domain_url: str
+    ) -> Tuple[SpecificLocation, str, SoloRoute]:
         text = requests.get(domain_url).text
-        address, name, client_id = DomainClient.deserialize_client_metadata_from_node(
-            metadata=text
-        )
+        (
+            spec_location,
+            name,
+            client_id,
+        ) = DomainClient.deserialize_client_metadata_from_node(metadata=text)
+        print("deserialized meta data as ", type(spec_location))
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
-        route = SoloRoute(destination=client_id, connection=conn)
-        return address, name, route
+        route = SoloRoute(destination=spec_location, connection=conn)
+        return spec_location, name, route
 
     def start_server(self, host: str, port: int, root_key: VerifyKey) -> None:
         app = Flask(__name__)

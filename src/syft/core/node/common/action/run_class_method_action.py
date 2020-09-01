@@ -1,24 +1,26 @@
-# external class imports
+# stdlib
 from typing import Any
 from typing import Dict
-from typing import Tuple
 from typing import Optional
-from nacl.signing import VerifyKey
-from .common import ImmediateActionWithoutReply
+from typing import Tuple
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-# syft imports
-from .....lib.python.primitive import isprimitive, PyPrimitive
-
-from ....common.uid import UID
-from ....io.address import Address
-from ...abstract.node import AbstractNode
-from ....store.storeable_object import StorableObject
-from ....common.serde.deserialize import _deserialize
+# syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....lib.python.primitive import PyPrimitive
+from .....lib.python.primitive import isprimitive
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
