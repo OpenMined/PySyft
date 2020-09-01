@@ -2,6 +2,7 @@
 from typing import List
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -48,7 +49,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestAnswerMessage_PB
 
 
@@ -81,7 +82,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def get_protobuf_schema() -> type:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestAnswerResponse_PB
 
 

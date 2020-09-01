@@ -5,19 +5,17 @@ import asyncio
 import websockets
 from websockets.client import WebSocketClientProtocol
 
-# syft absolute
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde import Serializable
-from syft.core.common.serde import _deserialize
-from syft.core.io.connection import BidirectionalConnection
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.client import Client
-from syft.decorators.syft_decorator_impl import syft_decorator
-
 # syft relative
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.serde import Serializable
+from ...core.common.serde import _deserialize
+from ...core.io.connection import BidirectionalConnection
+from ...core.node.abstract.node import AbstractNode
+from ...core.node.common.client import Client
 from ...core.node.domain.service import RequestService
+from ...decorators.syft_decorator_impl import syft_decorator
 
 
 class WebsocketConnection(BidirectionalConnection):
@@ -138,13 +136,17 @@ class WebsocketConnection(BidirectionalConnection):
         if isinstance(request, RequestService):
 
             # Immediate message with reply
-            if isinstance(request, ImmediateSyftMessageWithReply):
-                reply = self.recv_immediate_msg_with_reply(msg=request)
+            if isinstance(request, SignedImmediateSyftMessageWithReply):  # type: ignore
+                reply = self.recv_immediate_msg_with_reply(msg=request)  # type: ignore
                 self.producer_pool.put(reply)
 
             # Immediate message without reply
-            elif isinstance(request, ImmediateSyftMessageWithoutReply):
-                self.recv_immediate_msg_without_reply(msg=request)
+            elif isinstance(request, SignedImmediateSyftMessageWithoutReply):  # type: ignore
+                # QUESTION: mypy says this code is unreachable
+                # it looks like the code expects a request can be a service
+                # serialized? Also how can the same request match these
+                # two nested different instance types?
+                self.recv_immediate_msg_without_reply(msg=request)  # type: ignore
 
             # Eventual message without reply
             else:
@@ -162,8 +164,8 @@ class WebsocketConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         """Executes/Replies requests instantly.
 
         :return: returns an instance of ImmediateSyftMessageWithReply
@@ -175,22 +177,22 @@ class WebsocketConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         """ Executes requests instantly. """
         self.node.recv_immediate_msg_without_reply(msg)
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """ Executes requests eventually. """
         self.node.recv_eventual_msg_without_reply(msg)
 
     @syft_decorator(typechecking=False)
     def send_immediate_msg_with_reply(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithReply:
         """Sends high priority messages and wait for their responses.
         :return: returns an instance of ImmediateSyftMessageWithReply.
         """
@@ -198,22 +200,22 @@ class WebsocketConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
-        self, msg: ImmediateSyftMessageWithoutReply
+        self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
         self.producer_pool.put_nowait(msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
         self.producer_pool.put(msg)
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(
-        self, msg: ImmediateSyftMessageWithReply
-    ) -> ImmediateSyftMessageWithReply:
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithReply:
         """ Send sync messages generically. """
 
         # To ensure the sequence of sending / receiving messages
@@ -236,7 +238,9 @@ class WebsocketConnection(BidirectionalConnection):
         async with websockets.connect(self.url + "/metadata") as websocket:
             await websocket.send("Hello!")
             response = await websocket.recv()
-            address, name, client_id = Client.deserialize_client_metadata_from_node(
-                response
-            )
-            self.metadata = (address, name, client_id)
+            (
+                spec_location,
+                name,
+                client_id,
+            ) = Client.deserialize_client_metadata_from_node(response)
+            self.metadata = (spec_location, name, client_id)

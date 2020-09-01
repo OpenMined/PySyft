@@ -4,13 +4,11 @@ from typing import Union
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-
 # syft relative
+from ....common.message import EventualSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
 
 

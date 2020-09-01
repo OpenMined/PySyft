@@ -13,12 +13,12 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
-from syft.core.common.object import ObjectWithID
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.decorators.syft_decorator_impl import syft_decorator
 
 # syft relative
+from ...core.common.object import ObjectWithID
+from ...core.common.uid import UID
+from ...core.io.address import Address
+from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize

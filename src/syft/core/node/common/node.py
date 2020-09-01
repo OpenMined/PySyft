@@ -24,19 +24,19 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SignedMessage
-from syft.core.common.message import SyftMessage
 
 # syft relative
 from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....util import get_subclasses
+from ...common.message import EventualSyftMessageWithoutReply
+from ...common.message import ImmediateSyftMessageWithReply
+from ...common.message import ImmediateSyftMessageWithoutReply
+from ...common.message import SignedEventualSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
+from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedMessage
+from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
@@ -239,10 +239,10 @@ class Node(AbstractNode):
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
-            solo = SoloRoute(destination=self.id, connection=conn_client)
+            solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
-            solo.name = f"Route ({self.name} <-> {self.name} Client)"
-            routes = [SoloRoute(destination=self.id, connection=conn_client)]
+            setattr(solo, "name", f"Route ({self.name} <-> {self.name} Client)")
+            routes = [solo]
 
         return self.client_type(
             name=self.name,
@@ -264,7 +264,7 @@ class Node(AbstractNode):
     def get_metadata_for_client(self) -> str:
         metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
 
-        metadata["address"] = self.target_id.json()
+        metadata["spec_location"] = self.target_id.json()
         metadata["name"] = self.name
         metadata["id"] = self.id.json()
 

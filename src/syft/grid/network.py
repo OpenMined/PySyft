@@ -8,8 +8,8 @@ import pickle
 # third party
 from flask import Flask
 
-# syft absolute
-from syft.core.node.network.network import Network
+# syft relative
+from ..core.node.network.network import Network
 
 app = Flask(__name__)
 

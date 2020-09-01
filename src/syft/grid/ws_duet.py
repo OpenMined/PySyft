@@ -4,17 +4,17 @@ from typing import Optional
 # third party
 from nacl.signing import SigningKey
 
-# syft absolute
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.common.uid import UID
-from syft.core.io.route import SoloRoute
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.domain.client import DomainClient
-from syft.core.node.domain.domain import Domain
-from syft.grid.connections.websocket_connection import WebsocketConnection
+# syft relative
+from ..core.common.message import EventualSyftMessageWithoutReply
+from ..core.common.message import ImmediateSyftMessageWithReply
+from ..core.common.message import ImmediateSyftMessageWithoutReply
+from ..core.common.message import SyftMessage
+from ..core.common.uid import UID
+from ..core.io.route import SoloRoute
+from ..core.node.abstract.node import AbstractNode
+from ..core.node.domain.client import DomainClient
+from ..core.node.domain.domain import Domain
+from ..grid.connections.websocket_connection import WebsocketConnection
 
 
 class WSDuet(DomainClient):
@@ -52,7 +52,7 @@ class WSDuet(DomainClient):
 
     @property
     def id(self) -> UID:
-        return self.target_id
+        return self.target_id.id
 
     def stop(self) -> None:
         self.__del__()

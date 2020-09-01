@@ -6,10 +6,8 @@ from typing import Union
 from packaging import version
 import torch
 
-# syft absolute
-from syft.ast.globals import Globals
-
 # syft relative
+from ...ast.globals import Globals
 from .allowlist import allowlist
 from .lowercase_tensor import LowercaseTensorConstructor
 from .parameter import ParameterConstructor

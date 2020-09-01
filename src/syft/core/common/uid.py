@@ -7,12 +7,10 @@ from uuid import UUID as uuid_type
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft.core.common.serde.serializable import Serializable
-
 # syft relative
 from ...decorators import syft_decorator
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
+from ..common.serde.serializable import Serializable
 
 
 class UID(Serializable):

@@ -14,7 +14,7 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
-from ..abstract.node import AbstractNodeClient
+from ..common.client import Client
 from ..common.node import Node
 from ..device import Device
 from ..device import DeviceClient
@@ -99,7 +99,7 @@ class Domain(Node):
 
     @syft_decorator(typechecking=True)
     def set_request_status(
-        self, message_request_id: UID, status: RequestStatus, client: AbstractNodeClient
+        self, message_request_id: UID, status: RequestStatus, client: Client
     ) -> bool:
         for req in self.requests:
             if req.request_id == message_request_id:

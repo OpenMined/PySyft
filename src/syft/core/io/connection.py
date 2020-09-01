@@ -1,12 +1,10 @@
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-
 # syft relative
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...decorators import syft_decorator
 
 

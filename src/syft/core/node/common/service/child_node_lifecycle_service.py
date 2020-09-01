@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Type
 
 # third party
@@ -8,15 +9,15 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
 
 # syft relative
 from .....decorators import syft_decorator
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
     RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
 )
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
@@ -31,7 +32,7 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         lookup_id: UID,
         child_node_client_address: Address,
         address: Address,
-        msg_id: UID = None,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.lookup_id = lookup_id

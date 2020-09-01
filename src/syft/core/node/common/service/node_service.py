@@ -6,14 +6,12 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SignedMessageT
-from syft.decorators import syft_decorator
-
 # syft relative
+from .....decorators import syft_decorator
+from ....common.message import EventualSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import SignedMessageT
 from ...abstract.node import AbstractNode
 
 

@@ -180,7 +180,7 @@ class Serializable(metaclass=MetaSerializable):
         raise NotImplementedError
 
     @staticmethod
-    def get_wrapped_type() -> None:
+    def get_wrapped_type() -> Type:
         """
         This static method returns the wrapped type, if the current class is
         a wrapper over an external object.

@@ -36,10 +36,7 @@ from .node_service import ImmediateNodeServiceWithReply
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
@@ -147,14 +144,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: ObjectSearchMessage_PB) -> "ObjectSearchMessage":
-        """Creates a ObjectSearchMessage from a protobuf
+    def _proto2object(proto: ObjectSearchReplyMessage_PB) -> "ObjectSearchReplyMessage":
+        """Creates a ObjectSearchReplyMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ObjectSearchMessage
-        :rtype: ObjectSearchMessage
+        :return: returns an instance of ObjectSearchReplyMessage
+        :rtype: ObjectSearchReplyMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()

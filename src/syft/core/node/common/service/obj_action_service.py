@@ -5,11 +5,9 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-
 # syft relative
 from .....decorators import syft_decorator
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import EventualNodeServiceWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply

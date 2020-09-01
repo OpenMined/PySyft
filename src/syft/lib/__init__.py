@@ -1,10 +1,6 @@
-# syft absolute
-# from syft.lib.numpy.__init__ import create_numpy_ast
-# syft absolute
-from syft.lib.torch.__init__ import create_torch_ast
-
 # syft relative
 from ..ast.globals import Globals
+from ..lib.torch import create_torch_ast
 
 
 # now we need to load the relevant frameworks onto the node

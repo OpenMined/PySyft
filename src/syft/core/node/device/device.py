@@ -8,13 +8,11 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft absolute
-from syft.core.common.uid import UID
-
 # syft relative
 from ....decorators import syft_decorator
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
+from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.node import Node

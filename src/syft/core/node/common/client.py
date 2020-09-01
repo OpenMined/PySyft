@@ -16,10 +16,6 @@ import pandas as pd
 
 # syft absolute
 import syft as sy
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.node.common.service.obj_search_service import ObjectSearchMessage
 
 # syft relative
 from ....core.pointer.pointer import Pointer
@@ -27,12 +23,21 @@ from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....util import get_fully_qualified_name
+from ...common.message import EventualSyftMessageWithoutReply
+from ...common.message import ImmediateSyftMessageWithReply
+from ...common.message import ImmediateSyftMessageWithoutReply
+from ...common.message import SignedEventualSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
+from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SyftMessage
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
+from ...io.virtual import VirtualClientConnection
+from ...node.common.service.obj_search_service import ObjectSearchMessage
 from ..abstract.node import AbstractNodeClient
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 
@@ -104,14 +109,14 @@ class Client(AbstractNodeClient):
     @staticmethod
     def deserialize_client_metadata_from_node(
         metadata: str,
-    ) -> Tuple[Location, str, Location]:
+    ) -> Tuple[SpecificLocation, str, UID]:
 
         m_dict = json.loads(metadata)
-        target_id = _deserialize(blob=m_dict["address"], from_json=True)
+        spec_location = _deserialize(blob=m_dict["spec_location"], from_json=True)
         name = m_dict["name"]
         id = _deserialize(blob=m_dict["id"], from_json=True)
 
-        return target_id, name, id
+        return spec_location, name, id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()
@@ -129,9 +134,19 @@ class Client(AbstractNodeClient):
         # WARNING: Gross hack
         route_index = self.default_route_index
         # this ID should be unique but persistent so that lookups are universal
-        self.routes[route_index].connection.server.node.in_memory_client_registry[
-            client.address.target_id.id
-        ] = client
+        route = self.routes[route_index]
+        if isinstance(route, SoloRoute):
+            connection = route.connection
+            if isinstance(connection, VirtualClientConnection):
+                connection.server.node.in_memory_client_registry[
+                    client.address.target_id.id
+                ] = client
+            else:
+                raise Exception(
+                    "Unable to save client reference without VirtualClientConnection"
+                )
+        else:
+            raise Exception("Unable to save client reference without SoloRoute")
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
@@ -189,12 +204,12 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self,
-        msg: SyftMessage,
+        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
         route_index: int = 0,
     ) -> SyftMessage:
         route_index = route_index or self.default_route_index
 
-        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+        if isinstance(msg, ImmediateSyftMessageWithReply):
             if sy.VERBOSE:
                 output = (
                     f"> {self.pprint} Signing {msg.pprint} with "
@@ -216,12 +231,14 @@ class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
         self,
-        msg: SyftMessage,
+        msg: Union[
+            SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
+        ],
         route_index: int = 0,
     ) -> None:
         route_index = route_index or self.default_route_index
 
-        if not issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+        if isinstance(msg, ImmediateSyftMessageWithoutReply):
             if sy.VERBOSE:
                 output = (
                     f"> {self.pprint} Signing {msg.pprint} with "
@@ -244,7 +261,9 @@ class Client(AbstractNodeClient):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
             print(output)
-        signed_msg = msg.sign(signing_key=self.signing_key)
+        signed_msg: SignedEventualSyftMessageWithoutReply = msg.sign(
+            signing_key=self.signing_key
+        )
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 

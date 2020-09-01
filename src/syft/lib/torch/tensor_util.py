@@ -1,8 +1,8 @@
 # third party
 import torch as th
 
-# syft absolute
-from syft.proto.lib.torch.tensor_pb2 import TensorData
+# syft relative
+from ...proto.lib.torch.tensor_pb2 import TensorData
 
 # Torch dtypes to string (and back) mappers
 TORCH_DTYPE_STR = {

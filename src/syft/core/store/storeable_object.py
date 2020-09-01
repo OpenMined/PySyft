@@ -10,14 +10,13 @@ from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.serde.deserialize import _deserialize
-
 # syft relative
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
+from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
@@ -160,7 +159,7 @@ class StorableObject(AbstractStorableObject):
         return self.data.serialize()  # type: ignore
 
     @staticmethod
-    def _data_proto2object(proto: Message) -> int:
+    def _data_proto2object(proto: Message) -> Serializable:
         return _deserialize(blob=proto)
 
     @staticmethod

@@ -9,19 +9,19 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.service.auth import service_auth
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
-from syft.proto.grid.service.signaling_service_pb2 import (
+# syft relative
+from ...core.common.message import ImmediateSyftMessageWithoutReply
+from ...core.common.serde.deserialize import _deserialize
+from ...core.common.uid import UID
+from ...core.io.address import Address
+from ...core.node.abstract.node import AbstractNode
+from ...core.node.common.service.auth import service_auth
+from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.grid.service.signaling_service_pb2 import (
     SignalingAnswerMessage as SignalingAnswerMessage_PB,
 )
-from syft.proto.grid.service.signaling_service_pb2 import (
+from ...proto.grid.service.signaling_service_pb2 import (
     SignalingOfferMessage as SignalingOfferMessage_PB,
 )
 

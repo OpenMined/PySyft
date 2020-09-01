@@ -6,6 +6,7 @@ information to populate complete addresses into their clients."""
 
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,15 +14,15 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
 
 # syft relative
 from .....decorators import syft_decorator
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
     HeritageUpdateMessage as HeritageUpdateMessage_PB,
 )
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .auth import service_auth
@@ -33,7 +34,10 @@ from .node_service import ImmediateNodeServiceWithoutReply
 
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, new_ancestry_address: Address, address: Address, msg_id: UID = None
+        self,
+        new_ancestry_address: Address,
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.new_ancestry_address = new_ancestry_address

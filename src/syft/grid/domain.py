@@ -11,10 +11,10 @@ import pickle
 from flask import Flask
 from flask import request
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.node.domain.domain import Domain
+# syft relative
+from ..core.common.message import ImmediateSyftMessageWithReply
+from ..core.common.message import ImmediateSyftMessageWithoutReply
+from ..core.node.domain.domain import Domain
 
 app = Flask(__name__)
 

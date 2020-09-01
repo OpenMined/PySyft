@@ -18,6 +18,7 @@ from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.uid import UID
 from ..io.location import Location
 
 
@@ -220,7 +221,7 @@ class Address(Serializable):
         return self._network
 
     @property
-    def network_id(self) -> Optional[Location]:
+    def network_id(self) -> Optional[UID]:
         network = self.network
         if network is not None:
             return network.id
@@ -247,7 +248,7 @@ class Address(Serializable):
         return self._domain
 
     @property
-    def domain_id(self) -> Optional[Location]:
+    def domain_id(self) -> Optional[UID]:
         domain = self.domain
         if domain is not None:
             return domain.id
@@ -273,7 +274,7 @@ class Address(Serializable):
         return self._device
 
     @property
-    def device_id(self) -> Optional[Location]:
+    def device_id(self) -> Optional[UID]:
         device = self.device
         if device is not None:
             return device.id
@@ -300,7 +301,7 @@ class Address(Serializable):
         return self._vm
 
     @property
-    def vm_id(self) -> Optional[Location]:
+    def vm_id(self) -> Optional[UID]:
         vm = self.vm
         if vm is not None:
             return vm.id

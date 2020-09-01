@@ -8,12 +8,14 @@ import requests
 
 # syft absolute
 import syft as sy
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.io.connection import ClientConnection
-from syft.core.io.route import SoloRoute
+
+# syft relative
+from ..core.common.message import EventualSyftMessageWithoutReply
+from ..core.common.message import ImmediateSyftMessageWithReply
+from ..core.common.message import ImmediateSyftMessageWithoutReply
+from ..core.common.message import SyftMessage
+from ..core.io.connection import ClientConnection
+from ..core.io.route import SoloRoute
 
 
 class GridHttpClientConnection(ClientConnection):
