@@ -35,7 +35,7 @@ def test_domain_request_pending() -> None:
     requested_object = data_ptr_domain_1.id_at_location
 
     # make request
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.request.get_request_id_from_object_id(
         object_id=requested_object
     )
 
@@ -63,7 +63,7 @@ def test_domain_request_denied() -> None:
     requested_object = data_ptr_domain_1.id_at_location
 
     # make request
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.request.get_request_id_from_object_id(
         object_id=requested_object
     )
 
@@ -94,7 +94,7 @@ def test_domain_request_accepted() -> None:
 
     requested_object = data_ptr_domain_1.id_at_location
 
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.request.get_request_id_from_object_id(
         object_id=requested_object
     )
 
