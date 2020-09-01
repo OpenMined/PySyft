@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ...decorators import syft_decorator
@@ -7,65 +8,6 @@ from .primitive_factory import PrimitiveFactory
 from ...core.common import UID
 from ...proto.lib.python.float_pb2 import Float as Float_PB
 from ... import serialize, deserialize
-
-from typing import Optional
-
-to_test = [
-    "as_integer_ratio",
-    "conjugate",
-    "fromhex",
-    "hex",
-    "imag",
-    "is_integer",
-    "real",
-]
-
-get_direct_inheritance = [
-    "__hash__",
-    "__trunc__",
-    "__repr__",
-]
-
-ID_PRESERVING_OPERATIONS = [
-    "__iadd__",
-    "__isub__",
-    "__imul__",
-    "__ifloordiv__",
-    "__idiv__",
-    "__itruediv__",
-    "__imod__",
-    "__ipow__",
-]
-
-ID_NONPRESERVING_OPERATIONS = [
-    "__abs__",
-    "__add__",
-    # '__bool__',
-    # '__divmod__',
-    # '__eq__',
-    # '__float__',
-    # '__ge__',
-    # '__gt__',
-    # '__int__',
-    # '__le__',
-    # '__lt__',
-    "__mod__",
-    "__mul__",
-    "__ne__",
-    "__neg__",
-    "__pow__",
-    "__radd__",
-    "__rdivmod__",
-    "__rfloordiv__",
-    "__rmod__",
-    "__rmul__",
-    "__round__",
-    "__rpow__",
-    "__rsub__",
-    "__rtruediv__",
-    "__sub__",
-    "__truediv__",
-]
 
 
 class Float(float, PyPrimitive):
@@ -99,24 +41,29 @@ class Float(float, PyPrimitive):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: Any) -> bool:
-        return super().__eq__(other)
+    def __eq__(self, other: Any) -> PyPrimitive:
+        result = super().__eq__(other)
+        return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ge__(self, other: Any) -> bool:
-        return self.__ge__(other)
+    def __ge__(self, other: Any) -> PyPrimitive:
+        result = super().__ge__(other)
+        return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __lt__(self, other: Any) -> bool:
-        return self.__lt__(other)
+    def __lt__(self, other: Any) -> PyPrimitive:
+        result = super().__lt__(other)
+        return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __le__(self, other: Any) -> bool:
-        return self.__le__(other)
+    def __le__(self, other: Any) -> PyPrimitive:
+        result = super().__le__(other)
+        return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __gt__(self, other: Any) -> bool:
-        return self.__gt__(other)
+    def __gt__(self, other: Any) -> PyPrimitive:
+        result = super().__gt__(other)
+        return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __repr__(self) -> str:
@@ -148,7 +95,7 @@ class Float(float, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __radd__(self, other: Any) -> PyPrimitive:
-        return Float(value=0.0)
+        return Float(value=other)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __sub__(self, other: Any) -> PyPrimitive:

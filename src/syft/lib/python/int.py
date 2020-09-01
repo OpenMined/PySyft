@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 from ...decorators import syft_decorator
@@ -14,18 +14,18 @@ from typing import Optional
 class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(
-        self, value: Any = None, base: Any = 10, id: Optional[UID] = None
+        cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
     ) -> int:
         if value is None:
             value = 0
 
         if isinstance(value, str):
-            return int.__new__(self, value, base)
+            return int.__new__(cls, value, base)
 
-        return int.__new__(self, value)
+        return int.__new__(cls, value)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None):
+    def __init__(self, value: Any = None, base: Any = 10, uid: Optional[UID] = None):
         if value is None:
             value = 0
 
@@ -34,20 +34,17 @@ class Int(int, PyPrimitive):
         if id is None:
             self._id = UID()
         else:
-            self._id = id
+            self._id = uid
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
         res = super().__add__(other)
-
-        if res is NotImplemented:
-            res = other.__radd__(self)
-
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __radd__(self, other: Any) -> PyPrimitive:
-        return self.__add__(other)
+        res = super().__radd__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __sub__(self, other: Any) -> PyPrimitive:
@@ -81,41 +78,29 @@ class Int(int, PyPrimitive):
         return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: Any) -> bool:
-        return super().__eq__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __div__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__div__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdiv__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__rdiv__(other)
+    def __eq__(self, other: Any) -> PyPrimitive:
+        res = super(Int, self).__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__mul__(self, other)
+        res = super().__mul__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rmul__(self, other: Any) -> PyPrimitive:
-        return self.__mul__(other)
+        res = super().__rmul__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
-        res = super(int, self).__div__(self, other)
+        res = super().__floordiv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __truediv__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__truediv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdiv__(self, other: Any) -> PyPrimitive:
-        return self.__div__(other)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
@@ -134,7 +119,8 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rmod__(self, other: Any) -> PyPrimitive:
-        return self.__mod__(other)
+        res = super().__rmod__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, other: Any) -> PyPrimitive:
@@ -143,7 +129,8 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rpow__(self, other: Any) -> PyPrimitive:
-        return self.__pow__(other)
+        res = super().__rpow__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __lshift__(self, other: Any) -> PyPrimitive:
@@ -152,16 +139,18 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rlshift__(self, other: Any) -> PyPrimitive:
-        return self.__lshift__(other)
+        res = super().__rlshift__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rshift__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__rshift__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rrshift__(self, other: Any) -> PyPrimitive:
-        return self.__rshift__(other)
+        res = super().__rrshift__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __and__(self, other: Any) -> PyPrimitive:
@@ -170,51 +159,48 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rand__(self, other: Any) -> PyPrimitive:
-        return self.__and__(other)
+        res = super().__rand__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __xor__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__xor__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rxor__(self, other: Any) -> PyPrimitive:
-        return self.__xor__(other)
+        res = super().__rxor__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __or__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__or__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        res = super().__or__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ror__(self, other: Any) -> Any:
-        return self.__or__(other)
+        res = super().__ror__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ge__(self, other: Any) -> bool:
-        return self.__ge__(other)
+    def __ge__(self, other: Any) -> PyPrimitive:
+        res = super().__ge__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __lt__(self, other: Any) -> bool:
-        return self.__lt__(other)
+    def __lt__(self, other: Any) -> PyPrimitive:
+        res = super().__lt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __le__(self, other: Any) -> bool:
-        return self.__le__(other)
+    def __le__(self, other: Any) -> PyPrimitive:
+        res = super().__le__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __gt__(self, other: Any) -> bool:
-        return self.__gt__(other)
-
-    @syft_decorator(typechecking=True)
-    def __repr__(self) -> str:
-        """Returns a human-readable version of the PyPrimitive
-
-        Return a human-readable representation of the PyPrimitive with brackets
-        so that it can be easily spotted when nested inside of the human-
-        readable representations of other objects."""
-
-        return f"<{type(self).__name__}:{self.id.value} {super(Int, self).__repr__()}>"
+    def __gt__(self, other: Any) -> PyPrimitive:
+        res = super().__gt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Int_PB:
@@ -231,48 +217,3 @@ class Int(int, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Int_PB
-
-    # @id.setter
-    # def id(self, value):
-    #     self._id = value
-
-
-#
-# class PyPrimitiveWrapper(StorableObject):
-#     def __init__(self, value: object):
-#         super().__init__(
-#             data=value,
-#             id=getattr(value, "id", UID()),
-#             tags=getattr(value, "tags", []),
-#             description=getattr(value, "description", ""),
-#         )
-#         self.value = value
-#
-#     def _data_object2proto(self) -> PyPrimitive_PB:
-#         return self.data._object2proto()
-#
-#     @staticmethod
-#     def _data_proto2object(proto: PyPrimitive_PB) -> PyPrimitive:
-#         return PyPrimitive._proto2object(proto)
-#
-#     @staticmethod
-#     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-#         return PyPrimitive_PB
-#
-#     @staticmethod
-#     def get_wrapped_type() -> type:
-#         return PyPrimitive
-#
-#     @staticmethod
-#     def construct_new_object(
-#         id: UID, data: StorableObject, tags: List[str], description: Optional[str]
-#     ) -> object:
-#         data._id = id
-#         data.tags = tags
-#         data.description = description
-#         return data
-#
-#
-# aggressive_set_attr(
-#     obj=PyPrimitive, name="serializable_wrapper_type", attr=PyPrimitiveWrapper
-# )

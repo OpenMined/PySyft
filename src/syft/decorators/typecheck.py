@@ -65,7 +65,7 @@ def type_hints(
         # iterate through every parameter passed in
         for idx, param_name in enumerate(literal_signature.parameters):
 
-            if idx == 0 and param_name == "self":
+            if idx == 0 and (param_name == "self" or param_name == "cls"):
                 max_arg_len += 1
                 continue
 
@@ -90,7 +90,7 @@ def type_hints(
         )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
-        if idx == 0 and param_name == "self":
+        if idx == 0 and (param_name == "self" or param_name == "cls"):
             continue
 
         if param_name not in solved_signature:

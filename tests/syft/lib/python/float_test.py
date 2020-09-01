@@ -335,210 +335,211 @@ def test_Float_mod():
     # In particular, check signs of zeros.
     mod = operator.mod
 
-    assert mod(-1.0, 1.0) == 0.0
-    assert mod(-1e-100, 1.0) == 1.0
-    assert mod(-0.0, 1.0) == 0.0
-    assert mod(0.0, 1.0) == 0.0
-    assert mod(1e-100, 1.0) == 1e-100
-    assert mod(1.0, 1.0) == 0.0
+    assert mod(Float(-1.0), Float(1.0)) == 0.0
+    assert mod(Float(-1e-100), Float(1.0)) == 1.0
+    assert mod(Float(-0.0), Float(1.0)) == 0.0
+    assert mod(Float(0.0), Float(1.0)) == 0.0
+    assert mod(Float(1e-100), Float(1.0)) == 1e-100
+    assert mod(Float(1.0), Float(1.0)) == 0.0
 
-    assert mod(-1.0, -1.0) == -0.0
-    assert mod(-1e-100, -1.0) == -1e-100
-    assert mod(-0.0, -1.0) == -0.0
-    assert mod(0.0, -1.0) == -0.0
-    assert mod(1e-100, -1.0) == -1.0
-    assert mod(1.0, -1.0) == -0.0
+    assert mod(Float(-1.0), Float(-1.0)) == -0.0
+    assert mod(Float(-1e-100), Float(-1.0)) == -1e-100
+    assert mod(Float(-0.0), Float(-1.0)) == -0.0
+    assert mod(Float(0.0), Float(-1.0)) == -0.0
+    assert mod(Float(1e-100), Float(-1.0)) == -1.0
+    assert mod(Float(1.0), Float(-1.0)) == -0.0
 
 
 def test_Float_pow():
     # test builtin pow and ** operator for IEEE 754 special cases.
-    # Special cases taken from section F.9.4.4 of the C99 specification
+    # Special cases taken from section F.Float(9.4).4 of the C99 specification
 
     for pow_op in pow, operator.pow:
         # x**NAN is NAN for any x except 1
         assert isnan(pow_op(-INF, NAN))
-        assert isnan(pow_op(-2.0, NAN))
-        assert isnan(pow_op(-1.0, NAN))
-        assert isnan(pow_op(-0.5, NAN))
-        assert isnan(pow_op(0.5, NAN))
-        assert isnan(pow_op(2.0, NAN))
+        assert isnan(pow_op(Float(Float(-2.0)), NAN))
+        assert isnan(pow_op(Float(-1.0), NAN))
+        assert isnan(pow_op(Float(-0.5), NAN))
+        assert isnan(pow_op(Float(0.5), NAN))
+        assert isnan(pow_op(Float(2.0), NAN))
         assert isnan(pow_op(INF, NAN))
         assert isnan(pow_op(NAN, NAN))
 
         # NAN**y is NAN for any y except +-0
         assert isnan(pow_op(NAN, -INF))
-        assert isnan(pow_op(NAN, -2.0))
-        assert isnan(pow_op(NAN, -1.0))
-        assert isnan(pow_op(NAN, -0.5))
-        assert isnan(pow_op(NAN, 0.5))
-        assert isnan(pow_op(NAN, 1.0))
-        assert isnan(pow_op(NAN, 2.0))
+        assert isnan(pow_op(NAN, Float(-2.0)))
+        assert isnan(pow_op(NAN, Float(-1.0)))
+        assert isnan(pow_op(NAN, Float(-0.5)))
+        assert isnan(pow_op(NAN, Float(0.5)))
+        assert isnan(pow_op(NAN, Float(1.0)))
+        assert isnan(pow_op(NAN, Float(2.0)))
         assert isnan(pow_op(NAN, INF))
 
         # (+-0)**y raises ZeroDivisionError for y a negative odd integer
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(-0.0, -1.0)
+            pow_op(Float(-0.0), Float(-1.0))
+
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(0.0, -1.0)
+            pow_op(Float(0.0), Float(-1.0))
 
         # (+-0)**y raises ZeroDivisionError for y finite and negative
         # but not an odd integer
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(-0.0, -2.0)
+            pow_op(Float(-0.0), Float(-2.0))
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(-0.0, -0.5)
+            pow_op(Float(-0.0), Float(-0.5))
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(0.0, -2.0)
+            pow_op(Float(0.0), Float(-2.0))
         with pytest.raises(ZeroDivisionError) as e:
-            pow_op(0.0, -0.5)
+            pow_op(Float(0.0), Float(-0.5))
 
         # (+-0)**y is +-0 for y a positive odd integer
-        assert pow_op(-0.0, 1.0) == -0.0
-        assert pow_op(0.0, 1.0) == 0.0
+        assert pow_op(Float(-0.0), Float(1.0)) == -0.0
+        assert pow_op(Float(0.0), Float(1.0)) == 0.0
 
         # (+-0)**y is 0 for y finite and positive but not an odd integer
-        assert pow_op(-0.0, 0.5) == 0.0
-        assert pow_op(-0.0, 2.0) == 0.0
-        assert pow_op(0.0, 0.5) == 0.0
-        assert pow_op(0.0, 2.0) == 0.0
+        assert pow_op(Float(-0.0), Float(0.5)) == 0.0
+        assert pow_op(Float(-0.0), Float(2.0)) == 0.0
+        assert pow_op(Float(0.0), Float(0.5)) == 0.0
+        assert pow_op(Float(0.0), Float(2.0)) == 0.0
 
         # (-1)**+-inf is 1
-        assert pow_op(-1.0, -INF) == 1.0
+        assert pow_op(Float(-1.0), -INF) == 1.0
 
         # 1**y is 1 for any y, even if y is an infinity or nan
-        assert pow_op(1.0, -INF) == 1.0
-        assert pow_op(1.0, -2.0) == 1.0
-        assert pow_op(1.0, -1.0) == 1.0
-        assert pow_op(1.0, -0.5) == 1.0
-        assert pow_op(1.0, -0.0) == 1.0
-        assert pow_op(1.0, 0.0) == 1.0
-        assert pow_op(1.0, 0.5) == 1.0
-        assert pow_op(1.0, 1.0) == 1.0
-        assert pow_op(1.0, 2.0) == 1.0
-        assert pow_op(1.0, INF) == 1.0
-        assert pow_op(1.0, NAN) == 1.0
+        assert pow_op(Float(1.0), -INF) == 1.0
+        assert pow_op(Float(1.0), Float(-2.0)) == 1.0
+        assert pow_op(Float(1.0), Float(-1.0)) == 1.0
+        assert pow_op(Float(1.0), Float(-0.5)) == 1.0
+        assert pow_op(Float(1.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(1.0), Float(0.0)) == 1.0
+        assert pow_op(Float(1.0), Float(0.5)) == 1.0
+        assert pow_op(Float(1.0), Float(1.0)) == 1.0
+        assert pow_op(Float(1.0), Float(2.0)) == 1.0
+        assert pow_op(Float(1.0), INF) == 1.0
+        assert pow_op(Float(1.0), NAN) == 1.0
 
         # x**+-0 is 1 for any x, even if x is a zero, infinity, or nan
-        assert pow_op(-INF, 0.0) == 1.0
-        assert pow_op(-2.0, 0.0) == 1.0
-        assert pow_op(-1.0, 0.0) == 1.0
-        assert pow_op(-0.5, 0.0) == 1.0
-        assert pow_op(-0.0, 0.0) == 1.0
-        assert pow_op(0.0, 0.0) == 1.0
-        assert pow_op(0.5, 0.0) == 1.0
-        assert pow_op(1.0, 0.0) == 1.0
-        assert pow_op(2.0, 0.0) == 1.0
-        assert pow_op(INF, 0.0) == 1.0
-        assert pow_op(NAN, 0.0) == 1.0
-        assert pow_op(-INF, -0.0) == 1.0
-        assert pow_op(-2.0, -0.0) == 1.0
-        assert pow_op(-1.0, -0.0) == 1.0
-        assert pow_op(-0.5, -0.0) == 1.0
-        assert pow_op(-0.0, -0.0) == 1.0
-        assert pow_op(0.0, -0.0) == 1.0
-        assert pow_op(0.5, -0.0) == 1.0
-        assert pow_op(1.0, -0.0) == 1.0
-        assert pow_op(2.0, -0.0) == 1.0
-        assert pow_op(INF, -0.0) == 1.0
-        assert pow_op(NAN, -0.0) == 1.0
+        assert pow_op(-INF, Float(0.0)) == 1.0
+        assert pow_op(Float(-2.0), Float(0.0)) == 1.0
+        assert pow_op(Float(-1.0), Float(0.0)) == 1.0
+        assert pow_op(Float(-0.5), Float(0.0)) == 1.0
+        assert pow_op(Float(-0.0), Float(0.0)) == 1.0
+        assert pow_op(Float(0.0), Float(0.0)) == 1.0
+        assert pow_op(Float(0.5), Float(0.0)) == 1.0
+        assert pow_op(Float(1.0), Float(0.0)) == 1.0
+        assert pow_op(Float(2.0), Float(0.0)) == 1.0
+        assert pow_op(INF, Float(0.0)) == 1.0
+        assert pow_op(NAN, Float(0.0)) == 1.0
+        assert pow_op(-INF, Float(-0.0)) == 1.0
+        assert pow_op(Float(-2.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(-1.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(-0.5), Float(-0.0)) == 1.0
+        assert pow_op(Float(-0.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(0.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(0.5), Float(-0.0)) == 1.0
+        assert pow_op(Float(1.0), Float(-0.0)) == 1.0
+        assert pow_op(Float(2.0), Float(-0.0)) == 1.0
+        assert pow_op(INF, Float(-0.0)) == 1.0
+        assert pow_op(NAN, Float(-0.0)) == 1.0
 
         # x**y defers to complex pow for finite negative x and
         # non-integral y.
-        assert type(pow_op(-2.0, -0.5)) == complex
-        assert type(pow_op(-2.0, 0.5)) == complex
-        assert type(pow_op(-1.0, -0.5)) == complex
-        assert type(pow_op(-1.0, 0.5)) == complex
-        assert type(pow_op(-0.5, -0.5)) == complex
-        assert type(pow_op(-0.5, 0.5)) == complex
+        assert isinstance(pow_op(Float(-2.0), Float(-0.5)), complex)
+        assert isinstance(pow_op(Float(-2.0), Float(0.5)), complex)
+        assert isinstance(pow_op(Float(-1.0), Float(-0.5)), complex)
+        assert isinstance(pow_op(-1.0, Float(0.5)), complex)
+        assert isinstance(pow_op(Float(-0.5), Float(-0.5)), complex)
+        assert isinstance(pow_op(Float(-0.5), Float(0.5)), complex)
 
         # x**-INF is INF for abs(x) < 1
-        assert pow_op(-0.5, -INF) == INF
-        assert pow_op(-0.0, -INF) == INF
-        assert pow_op(0.0, -INF) == INF
-        assert pow_op(0.5, -INF) == INF
+        assert pow_op(Float(-0.5), -INF) == INF
+        assert pow_op(Float(-0.0), -INF) == INF
+        assert pow_op(Float(0.0), -INF) == INF
+        assert pow_op(Float(0.5), -INF) == INF
 
         # x**-INF is 0 for abs(x) > 1
         assert pow_op(-INF, -INF) == 0.0
-        assert pow_op(-2.0, -INF) == 0.0
-        assert pow_op(2.0, -INF) == 0.0
+        assert pow_op(Float(-2.0), -INF) == 0.0
+        assert pow_op(Float(2.0), -INF) == 0.0
         assert pow_op(INF, -INF) == 0.0
 
         # x**INF is 0 for abs(x) < 1
-        assert pow_op(-0.5, INF) == 0.0
-        assert pow_op(-0.0, INF) == 0.0
-        assert pow_op(0.0, INF) == 0.0
-        assert pow_op(0.5, INF) == 0.0
+        assert pow_op(Float(-0.5), INF) == 0.0
+        assert pow_op(Float(-0.0), INF) == 0.0
+        assert pow_op(Float(0.0), INF) == 0.0
+        assert pow_op(Float(0.5), INF) == 0.0
 
         # x**INF is INF for abs(x) > 1
         assert pow_op(-INF, INF) == INF
-        assert pow_op(-2.0, INF) == INF
-        assert pow_op(2.0, INF) == INF
+        assert pow_op(Float(-2.0), INF) == INF
+        assert pow_op(Float(2.0), INF) == INF
         assert pow_op(INF, INF) == INF
 
         # (-INF)**y is -0.0 for y a negative odd integer
-        assert pow_op(-INF, -1.0) == -0.0
+        assert pow_op(-INF, Float(-1.0)) == -0.0
 
         # (-INF)**y is 0.0 for y negative but not an odd integer
-        assert pow_op(-INF, -0.5) == 0.0
-        assert pow_op(-INF, -2.0) == 0.0
+        assert pow_op(-INF, Float(-0.5)) == 0.0
+        assert pow_op(-INF, Float(-2.0)) == 0.0
 
         # (-INF)**y is -INF for y a positive odd integer
-        assert pow_op(-INF, 1.0) == -INF
+        assert pow_op(-INF, Float(1.0)) == -INF
 
         # (-INF)**y is INF for y positive but not an odd integer
-        assert pow_op(-INF, 0.5) == INF
-        assert pow_op(-INF, 2.0) == INF
+        assert pow_op(-INF, Float(0.5)) == INF
+        assert pow_op(-INF, Float(2.0)) == INF
 
         # INF**y is INF for y positive
-        assert pow_op(INF, 0.5) == INF
-        assert pow_op(INF, 1.0) == INF
-        assert pow_op(INF, 2.0) == INF
+        assert pow_op(INF, Float(0.5)) == INF
+        assert pow_op(INF, Float(1.0)) == INF
+        assert pow_op(INF, Float(2.0)) == INF
 
         # INF**y is 0.0 for y negative
-        assert pow_op(INF, -2.0) == 0.0
-        assert pow_op(INF, -1.0) == 0.0
-        assert pow_op(INF, -0.5) == 0.0
+        assert pow_op(INF, Float(-2.0)) == 0.0
+        assert pow_op(INF, Float(-1.0)) == 0.0
+        assert pow_op(INF, Float(-0.5)) == 0.0
 
         # basic checks not covered by the special cases above
-        assert pow_op(-2.0, -2.0) == 0.25
-        assert pow_op(-2.0, -1.0) == -0.5
-        assert pow_op(-2.0, -0.0) == 1.0
-        assert pow_op(-2.0, 0.0) == 1.0
-        assert pow_op(-2.0, 1.0) == -2.0
-        assert pow_op(-2.0, 2.0) == 4.0
-        assert pow_op(-1.0, -2.0) == 1.0
-        assert pow_op(-1.0, -1.0) == -1.0
-        assert pow_op(-1.0, -0.0) == 1.0
-        assert pow_op(-1.0, 0.0) == 1.0
-        assert pow_op(-1.0, 1.0) == -1.0
-        assert pow_op(-1.0, 2.0) == 1.0
-        assert pow_op(2.0, -2.0) == 0.25
-        assert pow_op(2.0, -1.0) == 0.5
-        assert pow_op(2.0, -0.0) == 1.0
-        assert pow_op(2.0, 0.0) == 1.0
-        assert pow_op(2.0, 1.0) == 2.0
-        assert pow_op(2.0, 2.0) == 4.0
+        assert pow_op(Float(-2.0), Float(-2.0)) == 0.25
+        assert pow_op(Float(-2.0), Float(-1.0)) == Float(-0.5)
+        assert pow_op(Float(-2.0), Float(-0.0)) == Float(1.0)
+        assert pow_op(Float(-2.0), Float(0.0)) == Float(1.0)
+        assert pow_op(Float(-2.0), Float(1.0)) == Float(-2.0)
+        assert pow_op(Float(-2.0), Float(2.0)) == Float(4.0)
+        assert pow_op(Float(-1.0), Float(-2.0)) == Float(1.0)
+        assert pow_op(Float(-1.0), Float(-1.0)) == Float(-1.0)
+        assert pow_op(Float(-1.0), Float(-0.0)) == Float(1.0)
+        assert pow_op(Float(-1.0), Float(0.0)) == Float(1.0)
+        assert pow_op(Float(-1.0), Float(1.0)) == Float(-1.0)
+        assert pow_op(Float(-1.0), Float(2.0)) == Float(1.0)
+        assert pow_op(Float(2.0), Float(-2.0)) == Float(0.25)
+        assert pow_op(Float(2.0), Float(-1.0)) == Float(0.5)
+        assert pow_op(Float(2.0), Float(-0.0)) == Float(1.0)
+        assert pow_op(Float(2.0), Float(0.0)) == Float(1.0)
+        assert pow_op(Float(2.0), Float(1.0)) == Float(2.0)
+        assert pow_op(Float(2.0), Float(2.0)) == Float(4.0)
 
         # 1 ** large and -1 ** large; some libms apparently
         # have problems with these
-        assert pow_op(1.0, -1e100) == 1.0
-        assert pow_op(1.0, 1e100) == 1.0
-        assert pow_op(-1.0, -1e100) == 1.0
-        assert pow_op(-1.0, 1e100) == 1.0
+        assert pow_op(Float(1.0), -1e100) == Float(1.0)
+        assert pow_op(Float(1.0), 1e100) == Float(1.0)
+        assert pow_op(Float(-1.0), -1e100) == Float(1.0)
+        assert pow_op(Float(-1.0), 1e100) == Float(1.0)
 
         # check sign for results that underflow to 0
-        assert pow_op(-2.0, -2000.0) == 0.0
-        assert type(pow_op(-2.0, -2000.5)) == complex
-        assert pow_op(-2.0, -2001.0) == -0.0
-        assert pow_op(2.0, -2000.0) == 0.0
-        assert pow_op(2.0, -2000.5) == 0.0
-        assert pow_op(2.0, -2001.0) == 0.0
-        assert pow_op(-0.5, 2000.0) == 0.0
-        assert type(pow_op(-0.5, 2000.5)) == complex
-        assert pow_op(-0.5, 2001.0) == -0.0
-        assert pow_op(0.5, 2000.0) == 0.0
-        assert pow_op(0.5, 2000.5) == 0.0
-        assert pow_op(0.5, 2001.0) == 0.0
+        assert pow_op(Float(-2.0), Float(-2000.0)) == Float(0.0)
+        assert isinstance(pow_op(Float(-2.0), Float(-2000.5)), complex)
+        assert pow_op(Float(-2.0), Float(-2001.0)) == Float(-0.0)
+        assert pow_op(Float(2.0), Float(-2000.0)) == Float(0.0)
+        assert pow_op(Float(2.0), Float(-2000.5)) == Float(0.0)
+        assert pow_op(Float(2.0), Float(-2001.0)) == Float(0.0)
+        assert pow_op(Float(-0.5), Float(2000.0)) == Float(0.0)
+        assert isinstance(pow_op(Float(-0.5), Float(2000.5)), complex)
+        assert pow_op(Float(-0.5), Float(2001.0)) == Float(-0.0)
+        assert pow_op(Float(0.5), Float(2000.0)) == Float(0.0)
+        assert pow_op(Float(0.5), Float(2000.5)) == Float(0.0)
+        assert pow_op(Float(0.5), Float(2001.0)) == Float(0.0)
 
 
 BE_DOUBLE_INF = b"\x7f\xf0\x00\x00\x00\x00\x00\x00"
@@ -650,14 +651,14 @@ def test_overflow():
 
 def test_previous_round_bugs():
     # particular cases that have occurred in bug reports
-    assert round(25.0, -1) == 20.0
-    assert round(35.0, -1) == 40.0
-    assert round(45.0, -1) == 40.0
-    assert round(55.0, -1) == 60.0
-    assert round(65.0, -1) == 60.0
-    assert round(75.0, -1) == 80.0
-    assert round(85.0, -1) == 80.0
-    assert round(95.0, -1) == 100.0
+    assert round(Float(25.0), -1) == Float(20.0)
+    assert round(Float(35.0), -1) == Float(40.0)
+    assert round(Float(45.0), -1) == Float(40.0)
+    assert round(Float(55.0), -1) == Float(60.0)
+    assert round(Float(65.0), -1) == Float(60.0)
+    assert round(Float(75.0), -1) == Float(80.0)
+    assert round(Float(85.0), -1) == Float(80.0)
+    assert round(Float(95.0), -1) == Float(100.0)
 
 
 def test_matches_Float_format():
