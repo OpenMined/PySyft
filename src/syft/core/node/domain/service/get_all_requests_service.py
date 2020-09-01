@@ -20,7 +20,6 @@ from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from ...abstract.node import AbstractNode
-from ...common.service.auth import service_auth
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_message import RequestMessage
 

@@ -7,7 +7,7 @@ from flask import Flask
 from werkzeug.serving import make_server
 
 # disable logging for werkzeug
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
 
