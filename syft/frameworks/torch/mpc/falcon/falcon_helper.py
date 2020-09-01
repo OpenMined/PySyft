@@ -100,7 +100,7 @@ class FalconHelper:
     def determine_sign(
         x: ReplicatedSharingTensor, beta: ReplicatedSharingTensor
     ) -> ReplicatedSharingTensor:
-        """ determines the sign of x,  positive if beta is 0 or negative if beta is 1
+        """determines the sign of x,  positive if beta is 0 or negative if beta is 1
 
         Args:
             x (ReplicatedSharingTensor): RST to perform the computation on

@@ -112,9 +112,13 @@ def test_determine_sign(beta, workers):
     expected_plaintext = (-1) ** beta * x
 
     if beta:
-        beta = torch.ones(size=shape, dtype=torch.long).share(*workers, protocol="falcon", field=ring_size)
+        beta = torch.ones(size=shape, dtype=torch.long).share(
+            *workers, protocol="falcon", field=ring_size
+        )
     else:
-        beta = torch.zeros(size=shape, dtype=torch.long).share(*workers, protocol="falcon", field=ring_size)
+        beta = torch.zeros(size=shape, dtype=torch.long).share(
+            *workers, protocol="falcon", field=ring_size
+        )
 
     plaintext = FalconHelper.determine_sign(x_shared, beta).reconstruct()
 
