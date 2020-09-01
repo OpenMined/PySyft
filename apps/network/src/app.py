@@ -63,7 +63,8 @@ def create_app() -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(duet, url_prefix=r"/data-centric/duet/")
+    app.register_blueprint(signaling, url_prefix=r"/signaling/")
+    app.register_blueprint(common, url_prefix=r"/")
 
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.

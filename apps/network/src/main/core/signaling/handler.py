@@ -1,7 +1,4 @@
 from typing import Optional, Union
-
-
-from syft.core.node.abstract.node import AbstractNode
 from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.io.address import Address
@@ -12,18 +9,10 @@ from syft.grid.services.signaling_service import (
 )
 
 
-class DuetHandler(object):
-    def __init__(self, node: AbstractNode):
-        self.node = node
+class SignalingHandler(object):
+    def __init__(self):
         self.offer_msgs = dict()
         self.answer_msgs = dict()
-
-    def register(
-        self, msg: Optional[Serializable] = None, bidirectional_conn: bool = False
-    ) -> str:
-        if bidirectional_conn:
-            pass
-        return self.node.get_metadata_for_client()
 
     def store_msg(self, msg: Serializable, bidirectional_conn: bool = False) -> None:
         _msg = _deserialize(blob=msg, from_json=True)
