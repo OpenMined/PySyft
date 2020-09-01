@@ -17,3 +17,11 @@
     finding_an_issue
     coding_standards
     joining_a_team
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   Module Reference <api/modules>
+   changelog
+   authors
+   license
