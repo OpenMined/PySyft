@@ -1,97 +1,51 @@
-import pytest
-
 import torch
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
 
-TEST_VALS_TENSORS = [
-    (torch.LongTensor([0]), torch.LongTensor([0]), torch.LongTensor([0])),
-    (torch.LongTensor([0]), torch.LongTensor([1]), torch.LongTensor([1])),
-    (torch.LongTensor([1]), torch.LongTensor([0]), torch.LongTensor([1])),
-    (torch.LongTensor([1]), torch.LongTensor([1]), torch.LongTensor([0])),
-    (
-        torch.LongTensor([[0, 0], [1, 1]]),
-        torch.LongTensor([[0, 1], [0, 1]]),
-        torch.LongTensor([[0, 1], [1, 0]]),
-    ),
-]
-
-TEST_VALS_INTEGERS = [
-    (torch.LongTensor([0]), 0, torch.LongTensor([0])),
-    (torch.LongTensor([0]), 1, torch.LongTensor([1])),
-    (torch.LongTensor([1]), 0, torch.LongTensor([1])),
-    (torch.LongTensor([1]), 1, torch.LongTensor([0])),
-    (
-        torch.LongTensor([[0, 0], [1, 1]]),
-        0,
-        torch.LongTensor([[0, 0], [1, 1]]),
-    ),
-    (
-        torch.LongTensor([[0, 0], [1, 1]]),
-        1,
-        torch.LongTensor([[1, 1], [0, 0]]),
-    ),
-]
-
-
-@pytest.mark.parametrize("x_val, y, x_xor_y", TEST_VALS_TENSORS + TEST_VALS_INTEGERS)
-def test_public_xor(x_val, y, x_xor_y, workers):
+def test_public_xor(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = x_val.share(bob, alice, james, protocol="falcon", field=2)
-    assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
+    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
+    y = torch.tensor([1])
+    a = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
+    b = torch.tensor([0])
+    assert (FalconHelper.xor(x, y).reconstruct() == torch.tensor(1)).all()
+    assert (FalconHelper.xor(x, b).reconstruct() == torch.tensor(0)).all()
+    assert (FalconHelper.xor(a, y).reconstruct() == torch.tensor(0)).all()
+    assert (FalconHelper.xor(a, b).reconstruct() == torch.tensor(1)).all()
 
 
-@pytest.mark.parametrize("x_val, y_val, x_xor_y", TEST_VALS_TENSORS)
-def test_private_xor(x_val, y_val, x_xor_y, workers):
+def test_private_xor(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = x_val.share(bob, alice, james, protocol="falcon", field=2)
-    y = y_val.share(bob, alice, james, protocol="falcon", field=2)
-    assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
+    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
+    y = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
+    assert (FalconHelper.xor(x, y).reconstruct() == torch.tensor(1)).all()
+    assert (FalconHelper.xor(x, x).reconstruct() == torch.tensor(0)).all()
+    assert (FalconHelper.xor(y, y).reconstruct() == torch.tensor(0)).all()
+    assert (FalconHelper.xor(y, x).reconstruct() == torch.tensor(1)).all()
 
 
-@pytest.mark.parametrize("bit_select", [0, 1])
-def test_select_share(bit_select, workers):
+def test_select_share(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     workers = [bob, alice, james]
 
-    x = torch.tensor([0, 1, 2])
-    x_shared = x.share(*workers, protocol="falcon")
+    x = torch.tensor([0, 1, 2]).share(*workers, protocol="falcon")
+    y = torch.tensor([-3, 0, 1]).share(*workers, protocol="falcon")
+    b_0 = torch.tensor(0).share(*workers, protocol="falcon", field=2)
+    b_1 = torch.tensor(1).share(*workers, protocol="falcon", field=2)
 
-    y = torch.tensor([-3, 0, 1])
-    y_shared = y.share(*workers, protocol="falcon")
-
-    b_shared = torch.tensor(bit_select).share(*workers, protocol="falcon", field=2)
-
-    plaintext = FalconHelper.select_share(b_shared, x_shared, y_shared).reconstruct()
-
-    if bit_select:
-        assert (plaintext == y).all()
-    else:
-        assert (plaintext == x).all()
+    assert (FalconHelper.select_shares(b_0, x, y).reconstruct() == torch.tensor([0, 1, 2])).all()
+    assert (FalconHelper.select_shares(b_1, x, y).reconstruct() == torch.tensor([-3, 0, 1])).all()
 
 
-@pytest.mark.parametrize("beta", [0, 1])
-def test_determine_sign(beta, workers):
+def test_determine_sign(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     workers = [bob, alice, james]
 
-    x = torch.tensor([-4, 5, 6])
-    x_shared = x.share(*workers, protocol="falcon")
+    x = torch.tensor([-4, 5, 6]).share(*workers, protocol="falcon")
+    beta_0 = torch.tensor(0).share(*workers, protocol="falcon", field=2)
+    beta_1 = torch.tensor(1).share(*workers, protocol="falcon", field=2)
 
-    ring_size = x_shared.ring_size
-    shape = x_shared.shape
-
-    expected_plaintext = (-1) ** beta * x
-
-    if beta:
-        beta = torch.ones(size=shape, dtype=torch.long).share(
-            *workers, protocol="falcon", field=ring_size
-        )
-    else:
-        beta = torch.zeros(size=shape, dtype=torch.long).share(
-            *workers, protocol="falcon", field=ring_size
-        )
-
-    plaintext = FalconHelper.determine_sign(x_shared, beta).reconstruct()
-
-    assert (expected_plaintext == plaintext).all()
+    assert (FalconHelper.determine_sign(x, beta_0).reconstruct() == torch.tensor([-4, 5, 6])).all()
+    assert (
+        FalconHelper.determine_sign(x, beta_1).reconstruct() == (-1 * torch.tensor([-4, 5, 6]))
+    ).all()

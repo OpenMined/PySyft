@@ -25,10 +25,9 @@ class FalconHelper:
 
     @staticmethod
     def xor(
-        value: ReplicatedSharingTensor, other: Union[int, ReplicatedSharingTensor, torch.LongTensor]
+        value: ReplicatedSharingTensor, other: Union[int, ReplicatedSharingTensor, torch.tensor]
     ) -> ReplicatedSharingTensor:
         assert value.ring_size == 2
-        assert other.ring_size or other in [0, 1]
         return value + other - 2 * value * other
 
     @classmethod
@@ -54,7 +53,7 @@ class FalconHelper:
         generates a random bit and and shares it in arbitrary number of ring_sizes
         return: list [random bit shared in ring_size i]
         """
-        bit = torch.randint(high=max(ring_sizes), size=[1])
+        bit = torch.randint(high=min(ring_sizes), size=[1])
         return [bit.share(*players, protocol="falcon", field=ring_size) for ring_size in ring_sizes]
 
     @staticmethod
