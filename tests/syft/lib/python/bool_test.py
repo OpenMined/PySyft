@@ -1,4 +1,3 @@
-import pytest
 from syft.lib.python.bool import Bool
 
 SyFalse = Bool(False)
