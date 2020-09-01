@@ -53,7 +53,9 @@ class Class(Callable):
             different methods each time with a different internal attr_path_and_name variable."""
 
             def run_class_method(
-                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
+                __self: Any,
+                *args: Tuple[Any, ...],
+                **kwargs: Any,
             ) -> object:
                 # TODO: lookup actual return type instead of just guessing that it's identical
                 result = self.pointer_type(client=__self.client)

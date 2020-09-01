@@ -476,7 +476,9 @@ _DICTCONTAINER = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[_DICTCONTAINER_DICTMAPPINGENTRY,],
+    nested_types=[
+        _DICTCONTAINER_DICTMAPPINGENTRY,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,

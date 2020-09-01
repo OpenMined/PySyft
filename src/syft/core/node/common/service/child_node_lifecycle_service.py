@@ -92,7 +92,8 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         """
         addr = msg.child_node_client_address
         obj_id = msg.lookup_id  # TODO: Fix, see above
-        node.store.store(obj=StorableObject(id=obj_id, data=addr,))
+        node.store.store(obj=StorableObject(id=obj_id, data=addr))
+
         if sy.VERBOSE:
             print(
                 (
