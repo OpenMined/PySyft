@@ -14,7 +14,10 @@ also be used as template for Python modules.
 
 Note: This skeleton file can be safely removed if not needed!
 """
+# stdlib
 from typing import List
+
+# third party
 import torch
 
 module_type = type(torch)

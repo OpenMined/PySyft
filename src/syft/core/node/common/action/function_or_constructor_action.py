@@ -1,16 +1,19 @@
-# external class imports
+# stdlib
 from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Union
+
+# third party
 from nacl.signing import VerifyKey
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports
+# syft relative
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
+from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from ....store.storeable_object import StorableObject

@@ -80,25 +80,26 @@ Example:
     response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
 
 """
-# external imports
+# stdlib
+from typing import Any
 from typing import List
 from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports
+# syft absolute
 import syft as sy
-from ..common.uid import UID
-from ..common.pointer import AbstractPointer
-from ..node.abstract.node import AbstractNode
-from ..common.serde.deserialize import _deserialize
-from ...decorators.syft_decorator_impl import syft_decorator
-from ..node.common.action.get_object_action import GetObjectAction
-from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from ..store.storeable_object import StorableObject
 
-# TODO: Fix circular import for Client interface
-# from ...core.node.common.client import Client
-from typing import Any
+# syft relative
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ..common.pointer import AbstractPointer
+from ..common.serde.deserialize import _deserialize
+from ..common.uid import UID
+from ..node.abstract.node import AbstractNode
+from ..node.common.action.get_object_action import GetObjectAction
+from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
@@ -268,6 +269,7 @@ class Pointer(AbstractPointer):
             This method should be usen when the remote data associated with the pointer wants to be
             downloaded locally (or use .get() on the pointer).
         """
+        # syft relative
         from ..node.domain.service import RequestMessage
 
         msg = RequestMessage(
@@ -294,6 +296,7 @@ class Pointer(AbstractPointer):
         :param request_id: The request on which you are querying the status.
         :type request_id: UID
         """
+        # syft relative
         from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(

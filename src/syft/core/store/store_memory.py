@@ -1,16 +1,18 @@
+# stdlib
 from typing import Dict
 from typing import KeysView
-from typing import ValuesView
 from typing import Set
 from typing import Union
+from typing import ValuesView
 
-
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...decorators import syft_decorator
-from ..common.uid import UID
+# syft relative
 from . import ObjectStore
+from ...decorators import syft_decorator
 from ..common.storeable_object import AbstractStorableObject
+from ..common.uid import UID
 
 
 class MemoryStore(ObjectStore):

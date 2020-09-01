@@ -1,7 +1,11 @@
+# syft relative
 from .device_type import DeviceType
-from .specs.cpu import CPU, CpuArchitectureTypes
+from .specs.cpu import CPU
+from .specs.cpu import CpuArchitectureTypes
 from .specs.provider import Provider
-from .specs.storage import Drive, DriveType, Storage
+from .specs.storage import Drive
+from .specs.storage import DriveType
+from .specs.storage import Storage
 
 mbp_storage = Storage([Drive(name="/", storage=256000, drive_type=DriveType.SSD)])
 mbp_cpu = CPU(

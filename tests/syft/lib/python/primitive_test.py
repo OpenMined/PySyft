@@ -1,14 +1,14 @@
-import sys
-import math
+# stdlib
 import json
-
+import math
+import sys
 import uuid
 
+# syft absolute
 import syft as sy
-
-from syft.lib.python.primitive import isprimitive
-from syft.lib.python.primitive import PyPrimitive
 from syft.core.common.uid import UID
+from syft.lib.python.primitive import PyPrimitive
+from syft.lib.python.primitive import isprimitive
 
 
 def get_uid() -> UID:

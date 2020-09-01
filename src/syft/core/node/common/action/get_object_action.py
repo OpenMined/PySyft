@@ -1,27 +1,26 @@
-# external class imports
+# stdlib
 from typing import Optional
-from nacl.signing import VerifyKey
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-# syft imports
-from ....common.message import ImmediateSyftMessageWithoutReply
+# syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from ....common.serde.deserialize import _deserialize
-from .common import ImmediateActionWithReply
-from ...abstract.node import AbstractNode
-from ....io.address import Address
-from ....common.uid import UID
-from ....store.storeable_object import StorableObject
-
-
-# syft proto imports
-from .....proto.core.node.common.action.get_object_pb2 import (
-    GetObjectResponseMessage as GetObjectResponseMessage_PB,
-)
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
+from .....proto.core.node.common.action.get_object_pb2 import (
+    GetObjectResponseMessage as GetObjectResponseMessage_PB,
+)
 from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithReply
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):

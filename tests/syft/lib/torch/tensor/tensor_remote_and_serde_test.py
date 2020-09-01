@@ -1,6 +1,9 @@
-import syft as sy
-import torch as th
+# third party
 import pytest
+import torch as th
+
+# syft absolute
+import syft as sy
 
 
 def test_torch_remote_tensor_register() -> None:
