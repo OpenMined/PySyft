@@ -23,7 +23,7 @@ class ReplicatedSharingTensor(AbstractTensor):
                 return plain_text.child
             else:
                 dtype = plain_text.dtype if hasattr(plain_text, "dtype") else type(plain_text)
-                raise ValueError(f"expected torch.int64 but got {dtype} ")
+                raise ValueError(f"Expected torch.(int64/long) but got {dtype}")
         else:
             return None
 

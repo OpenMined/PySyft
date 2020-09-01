@@ -1,3 +1,5 @@
+import pytest
+
 import syft
 import torch
 
@@ -14,13 +16,11 @@ def test_sharing(workers):
 def test_share_float(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3.0, 7.0, 11.0])
-    secret = plain_text.share(bob, alice, james, protocol="falcon")
 
-    assert isinstance(secret, syft.ReplicatedSharingTensor)
-    assert type(secret.child) == dict
+    with pytest.raises(ValueError) as e:
+        plain_text.share(bob, alice, james, protocol="falcon")
 
-    # Check the type is not changed
-    assert plain_text.dtype == torch.float32
+    assert str(e.value) == "Expected torch.(int64/long) but got torch.float32"
 
 
 def test_reconstruction(workers):
