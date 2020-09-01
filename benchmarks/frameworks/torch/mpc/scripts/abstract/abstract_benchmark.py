@@ -1,10 +1,11 @@
-import abc
+from abc import ABC
+from abc import abstractclassmethod
 
-from .workers_initialization import workers, hook
+from benchmarks.frameworks.torch.mpc.scripts.abstract.workers_initialization import workers, hook
 
 
-class AbstractBenchmark(metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+class AbstractBenchmark(ABC):
+    @abstractclassmethod
     def _benchmark(cls, method, prec_frac, workers, **kwargs):
         """Operation to benchmark
         NOTE: This function must be implemented.
@@ -16,7 +17,7 @@ class AbstractBenchmark(metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractclassmethod
+    @abstractclassmethod
     def _plot(cls, benchmark_data, worker, save_path):
         """Benchmark specific operations and store the results as images.
         NOTE: This function must be implemented.
