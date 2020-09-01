@@ -40,7 +40,7 @@ class FalconHelper:
         """
         return: x if b=0 | y if b=1
         """
-        c_2, c_l = cls.generate_random_bit(x.players, ring_sizes=[2, x.ring_size])
+        c_2, c_l = cls.__generate_random_bit(x.players, ring_sizes=[2, x.ring_size])
         b_xor_c = FalconHelper.xor(b, c_2).reconstruct()
         d = c_l * (1 - 2 * b_xor_c) + b_xor_c
 
@@ -48,7 +48,7 @@ class FalconHelper:
         return selected_val
 
     @staticmethod
-    def generate_random_bit(players: list, ring_sizes: list) -> list:
+    def __generate_random_bit(players: list, ring_sizes: list) -> list:
         """
         generates a random bit and and shares it in arbitrary number of ring_sizes
         return: list [random bit shared in ring_size i]
