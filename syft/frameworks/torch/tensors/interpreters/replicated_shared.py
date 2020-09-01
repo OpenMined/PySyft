@@ -23,7 +23,7 @@ class ReplicatedSharingTensor(AbstractTensor):
                 return plain_text.child
             else:
                 dtype = plain_text.dtype if hasattr(plain_text, "dtype") else type(plain_text)
-                raise ValueError(f"expected torch.int64 but got {dtype} ")
+                raise ValueError(f"Expected torch.(int64/long) but got {dtype}")
         else:
             return None
 
@@ -48,7 +48,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def generate_shares(self, plain_text, number_of_shares=3):
         shares = []
-        plain_text.long()
+        plain_text = torch.tensor(plain_text, dtype=torch.long)
         for _ in range(number_of_shares - 1):
             shares.append(torch.randint(high=self.ring_size // 2, size=plain_text.shape))
         shares.append((plain_text - sum(shares)) % self.ring_size)
@@ -164,7 +164,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             return private_function(value, *args, **kwargs)
         else:
             raise ValueError(
-                "expected int, float, torch tensor, or ReplicatedSharingTensor"
+                "expected int, float, torch tensor, or ReplicatedSharingTensor "
                 "but got {}".format(type(value))
             )
 
@@ -178,8 +178,8 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_map[players[0]][1],
         )
         shares_map[players[-1]] = (
-            operator(shares_map[players[-1]][-1], remote_plain_text[-1]),
-            shares_map[players[-1]][1],
+            shares_map[players[-1]][0],
+            operator(shares_map[players[-1]][1], remote_plain_text[-1]),
         )
         return ReplicatedSharingTensor().__set_shares_map(shares_map)
 

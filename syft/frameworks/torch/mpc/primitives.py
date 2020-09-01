@@ -51,7 +51,7 @@ class PrimitiveStorage:
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return FSS keys primitives
+        Return keys primitives
 
         Args:
             op (str): primitive type, should be fss_eq, fss_comp, mul or matmul

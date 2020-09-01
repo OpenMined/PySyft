@@ -1,5 +1,5 @@
 import torch
-import syft.frameworks.torch.mpc.falcon.falcon as falcon
+from syft.frameworks.torch.mpc.falcon import falcon
 
 
 def test_conv2d_public(workers):
