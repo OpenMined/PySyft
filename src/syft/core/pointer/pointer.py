@@ -18,12 +18,12 @@ There are two proper ways of receiving a pointer on some data:
 
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
-    1. Request access by calling .request_access().
+    1. Request access by calling .request().
     Example:
 
     .. code-block::
 
-        pointer_object.request_access(request_name = "Request name", reason = "Request reason")
+        pointer_object.request(request_name = "Request name", reason = "Request reason")
 
     2.1 - The data owner has to approve the request (check the domain node docs).
     2.2 - The data user checks if the request has been approved (check the domain node docs).
@@ -60,7 +60,7 @@ Example:
     domain_2 = Domain(name="Data user domain")
 
     # creating a request to access the data
-    data_ptr_domain_1.request_access(
+    data_ptr_domain_1.request(
         request_name="My Request", reason="I'd lke to see this pointer"
     )
 
@@ -233,7 +233,7 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request_access(
+    def request(
         self,
         request_name: str = "",
         reason: str = "",
@@ -257,7 +257,7 @@ class Pointer(AbstractPointer):
             data_ptr_domain_1 = tensor.send(domain_1_client)
 
             # requesting access to the pointer
-            data_ptr_domain_1.request_access(request_name="My Request", reason="Research project.")
+            data_ptr_domain_1.request(request_name="My Request", reason="Research project.")
 
         :param request_name: The title of the request that the data owner is going to see.
         :type request_name: str

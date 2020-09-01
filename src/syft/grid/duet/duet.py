@@ -84,12 +84,10 @@ class Duet(DomainClient):
                 time.sleep(0.5)
 
         spec_location, name, route = self.get_client_params(domain_url=domain_url)
-        print("get client params", spec_location, type(spec_location))
         # specific_location = address
 
         # dont start a node but connect to it instead
         if id is not None:
-            print("make one instead")
             spec_location = SpecificLocation(id=UID.from_string(value=id))
 
         print("creating duet with domain", type(spec_location), spec_location)
@@ -118,7 +116,7 @@ class Duet(DomainClient):
             name,
             client_id,
         ) = DomainClient.deserialize_client_metadata_from_node(metadata=text)
-        print("deserialized meta data as ", type(spec_location))
+
         conn = GridHttpClientConnection(base_url=domain_url, domain_id=client_id)
         route = SoloRoute(destination=spec_location, connection=conn)
         return spec_location, name, route
@@ -126,7 +124,7 @@ class Duet(DomainClient):
     def start_server(self, host: str, port: int, root_key: VerifyKey) -> None:
         app = Flask(__name__)
         domain = Domain(name="duet", verify_key=root_key)
-        print(f"Domain with Root Key: {domain.root_key}")
+        print(f"♫♫♫ > Domain with Root Key: {domain.root_key}")
 
         @app.route("/")
         def get_client() -> str:  # pylint: disable=unused-variable

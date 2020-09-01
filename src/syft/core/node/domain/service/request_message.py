@@ -67,6 +67,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def approve(self) -> None:
         self.accept()
 
+    def grant(self) -> None:
+        self.accept()
+
     def deny(self) -> None:
         if self.owner_client_if_available is not None:
             msg = AcceptOrDenyRequestMessage(
