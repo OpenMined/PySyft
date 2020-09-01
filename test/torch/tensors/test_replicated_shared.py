@@ -13,16 +13,6 @@ def test_sharing(workers):
     assert type(secret.child) == dict
 
 
-def test_share_float(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    plain_text = torch.tensor([3.0, 7.0, 11.0])
-
-    with pytest.raises(ValueError) as e:
-        plain_text.share(bob, alice, james, protocol="falcon")
-
-    assert str(e.value) == "Expected torch.(int64/long) but got torch.float32"
-
-
 def test_reconstruction(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, -7, 11])

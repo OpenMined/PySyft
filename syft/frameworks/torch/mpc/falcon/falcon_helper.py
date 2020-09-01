@@ -39,18 +39,16 @@ class FalconHelper:
             The XOR computation between value and other
         """
 
-        if not isinstance(value, ReplicatedSharingTensor) or value.ring_size != 2:
-            raise ValueError("First argument should be a RST with ring size 2")
-
-        if isinstance(other, ReplicatedSharingTensor) and other.ring_size != 2:
-            raise ValueError("Second argument should have ring size 2 if it has type RST")
-
-        if isinstance(other, int) and other not in {0, 1}:
-            raise ValueError("The integer value should be in {0, 1}")
-
-        if isinstance(other, torch.LongTensor):
-            if not ((other == 0) + (other == 1)).all():
-                raise ValueError("All values from Tensor should be in {0, 1}")
+        assert (
+            isinstance(value, ReplicatedSharingTensor) and value.ring_size == 2
+        ), "First argument should be a RST with ring size 2"
+        assert any(
+            [
+                isinstance(other, ReplicatedSharingTensor) and other.ring_size != 2,
+                isinstance(other, int) and other in {0, 1},
+                isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
+            ]
+        ), "Second argument should be a RST (with ring size of 2) or integer/LongTensor with values {0, 1}"
 
         return value + other - 2 * value * other
 
