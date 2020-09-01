@@ -19,9 +19,12 @@
     joining_a_team
 
 .. toctree::
-   :maxdepth: 1
-   :hidden:
-   Module Reference <api/modules>
-   changelog
-   authors
-   license
+    :maxdepth: 2
+    :caption: API Documentation
+
+    syft.ast <api/syft.ast>
+    syft.core <api/syft.core>
+    syft.decorators <api/syft.decorators>
+    syft.grid <api/syft.grid>
+    syft.lib <api/syft.lib>
+    syft.proto <api/syft.proto>
