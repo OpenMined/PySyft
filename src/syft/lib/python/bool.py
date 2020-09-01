@@ -6,7 +6,7 @@ from ...decorators import syft_decorator
 from .primitive_factory import PrimitiveFactory
 
 
-def dispatch_other(obj):
+def dispatch_other(obj: Any) -> bool:
     if isinstance(obj, Bool):
         return obj.value
     return obj
@@ -88,8 +88,8 @@ class Bool(PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__gt__(other))
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    def __hash__(self):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __hash__(self) -> int:
         return self.value.__hash__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)

@@ -5,33 +5,33 @@ SyFalse = Bool(False)
 SyTrue = Bool(True)
 
 
-def test_repr():
+def test_repr() -> None:
     assert repr(SyFalse) == "False"
     assert repr(SyTrue) == "True"
     assert eval(repr(SyFalse)) == SyFalse
     assert eval(repr(SyTrue)) == SyTrue
 
 
-def test_str():
+def test_str() -> None:
     assert str(SyFalse) == "False"
     assert str(SyTrue) == "True"
 
 
-def test_int():
+def test_int() -> None:
     assert int(SyFalse) == 0
     assert int(SyFalse) is not SyFalse
     assert int(SyTrue) == 1
     assert int(SyTrue) is not SyTrue
 
 
-def test_float():
+def test_float() -> None:
     assert float(SyFalse) == 0.0
     assert float(SyFalse) is not SyFalse
     assert float(SyTrue) == 1.0
     assert float(SyTrue) is not SyTrue
 
 
-def test_math():
+def test_math() -> None:
     assert +SyFalse == 0
     assert +SyFalse is not SyFalse
     assert -SyFalse == 0
@@ -144,7 +144,7 @@ def test_math():
     # assert not SyFalse is SyTrue
 
 
-def test_convert():
+def test_convert() -> None:
     assert Bool(10) == SyTrue
     assert Bool(1) == SyTrue
     assert Bool(-1) == SyTrue
@@ -153,47 +153,49 @@ def test_convert():
     assert Bool("") == SyFalse
     assert Bool() == SyFalse
 
-def test_format():
+
+def test_format() -> None:
     pass
-    #TODO: this should work
+    # TODO: this should work
     # assert "%d" % SyFalse == "0"
     # assert "%d" % SyTrue == "1"
     # assert "%x" % SyFalse == "0"
     # assert "%x" % SyTrue == "1"
 
 
-def test_hasattr():
+def test_hasattr() -> None:
     assert hasattr([], "append") == SyTrue
     assert hasattr([], "wobble") == SyFalse
 
 
-def test_callable():
+def test_callable() -> None:
     assert callable(len) == SyTrue
     assert callable(1) == SyFalse
 
 
-def test_isinstance():
+def test_isinstance() -> None:
     pass
-#     assert isinstance(SyTrue, bool) == SyTrue
-#     assert isinstance(SyFalse, bool) == SyTrue
-#     assert isinstance(SyTrue, int) == SyTrue
-#     assert isinstance(SyFalse, int) == SyTrue
-#     assert isinstance(1, bool) == SyFalse
-#     assert isinstance(0, bool) == SyFalse
+    # assert isinstance(SyTrue, bool) == SyTrue
+    # assert isinstance(SyFalse, bool) == SyTrue
+    # assert isinstance(SyTrue, int) == SyTrue
+    # assert isinstance(SyFalse, int) == SyTrue
+    # assert isinstance(1, bool) == SyFalse
+    # assert isinstance(0, bool) == SyFalse
 
 
-def test_issubclass():
-      pass
-      # TODO, this might be a good lead on how to make Bool feel more real, make Bool subclass int
-#     assert issubclass(bool, int) is SyTrue
-#     assert issubclass(int, bool) is SyFalse
+def test_issubclass() -> None:
+    pass
+    # TODO, this might be a good lead on how to make Bool feel more real, make Bool subclass int
+    # assert issubclass(bool, int) is SyTrue
+    # assert issubclass(int, bool) is SyFalse
 
 
-def test_contains():
+def test_contains() -> None:
     pass
     # TODO this should work
     # assert 1 in {} == SyFalse
     # assert 1 in {1: 1} == SyTrue
+
 
 #
 # def test_string(self):

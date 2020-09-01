@@ -31,10 +31,7 @@ class Int(int, PyPrimitive):
 
         int.__init__(value)
 
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = uid
+        self._id: UID = UID() if uid is None else uid
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
@@ -83,16 +80,6 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __mul__(self, other: Any) -> PyPrimitive:
-        res = super().__mul__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rmul__(self, other: Any) -> PyPrimitive:
-        res = super().__rmul__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
         res = super().__floordiv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -101,16 +88,6 @@ class Int(int, PyPrimitive):
     def __truediv__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__truediv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __floordiv__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__floordiv__(other)
-        return PrimitiveFactory.generate_primitive(res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __truediv__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__truediv__(other)
-        return PrimitiveFactory.generate_primitive(res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mod__(self, other: Any) -> PyPrimitive:

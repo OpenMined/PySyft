@@ -1,3 +1,4 @@
+from typing import Any
 import sys
 import pytest
 from syft.lib.python.int import Int
@@ -32,7 +33,7 @@ class IntSubclass(Int):
     pass
 
 
-def test_basic():
+def test_basic() -> None:
     assert Int(314) == 314
     assert Int(3.14) == 3
     # Check that conversion from float truncates towards zero
@@ -234,7 +235,7 @@ def test_basic():
     assert Int("1z141z5", 36) == 4294967297
 
 
-def test_underscores():
+def test_underscores() -> None:
     for lit in VALID_UNDERSCORE_LITERALS:
         if any(ch in lit for ch in ".eEjJ"):
             continue
@@ -260,7 +261,7 @@ def test_underscores():
         Int("100_")
 
 
-def test_small_Ints():
+def test_small_Ints() -> None:
     # Bug #3236: Return small longs from PyLong_FromString
     # TODO: These are not going to work if we use is, brainstorm for a workaround
     assert Int("10") == 10
@@ -269,11 +270,11 @@ def test_small_Ints():
     assert Int(b"-1") == -1
 
 
-def test_no_args():
+def test_no_args() -> None:
     assert Int() == 0
 
 
-def test_keyword_args():
+def test_keyword_args() -> None:
     # Test invoking Int() using keyword arguments.
     assert Int("100", base=2) == 4
     with pytest.raises(TypeError):
@@ -287,7 +288,7 @@ def test_keyword_args():
     #     Int( base=0)
 
 
-def test_Int_base_limits():
+def test_Int_base_limits() -> None:
     """Testing the supported limits of the Int() base parameter."""
     assert Int("0", 5) == 0
     with pytest.raises(ValueError):
@@ -305,7 +306,7 @@ def test_Int_base_limits():
         assert Int("0", base=base) == 0
 
 
-def test_Int_base_bad_types():
+def test_Int_base_bad_types() -> None:
     """Not Integer types are not valid bases; issue16772."""
     with pytest.raises(TypeError):
         Int("0", 5.5)
@@ -313,9 +314,9 @@ def test_Int_base_bad_types():
         Int("0", 5.0)
 
 
-def test_Int_base_indexable():
+def test_Int_base_indexable() -> None:
     class MyIndexable(object):
-        def __init__(self, value):
+        def __init__(self, value: Any):
             self.value = value
 
         def __index__(self):
@@ -332,7 +333,7 @@ def test_Int_base_indexable():
     assert Int("101", base=MyIndexable(36)) == 1 + 36 ** 2
 
 
-def test_Int_memoryview():
+def test_Int_memoryview() -> None:
     assert Int(memoryview(b"123")[1:3]) == 23
     assert Int(memoryview(b"123\x00")[1:3]) == 23
     assert Int(memoryview(b"123 ")[1:3]) == 23
@@ -340,12 +341,12 @@ def test_Int_memoryview():
     assert Int(memoryview(b"1234")[1:3]) == 23
 
 
-def test_string_float():
+def test_string_float() -> None:
     with pytest.raises(ValueError):
         Int("1.2")
 
 
-def test_Intconversion():
+def test_Intconversion() -> None:
     # Test __Int__()
     class ClassicMissingMethods:
         pass
@@ -448,7 +449,7 @@ def test_Intconversion():
                 Int(TruncReturnsBadInt())
 
 
-def test_Int_subclass_with_index():
+def test_Int_subclass_with_index() -> None:
     class MyIndex(Int):
         def __index__(self):
             return 42
@@ -464,7 +465,7 @@ def test_Int_subclass_with_index():
     assert Int(BadIndex()) == 0
 
 
-def test_Int_subclass_with_Int():
+def test_Int_subclass_with_Int() -> None:
     class MyInt(Int):
         def __Int__(self):
             return 42
@@ -485,7 +486,7 @@ def test_Int_subclass_with_Int():
     #     Int( my_Int)
 
 
-def test_Int_returns_Int_subclass():
+def test_Int_returns_Int_subclass() -> None:
     class BadIndex:
         def __index__(self):
             return True
@@ -543,7 +544,7 @@ def test_Int_returns_Int_subclass():
     # self.assertIs(type(n), Int)
 
 
-def test_error_message():
+def test_error_message() -> None:
     def check(s, base=None):
         with pytest.raises(ValueError) as cm:
             if base is None:

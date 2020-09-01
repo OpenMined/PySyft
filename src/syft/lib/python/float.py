@@ -118,25 +118,6 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __mul__(self, other: Any) -> PyPrimitive:
-        res = super().__mul__(self, other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rmul__(self, other: Any) -> PyPrimitive:
-        return self.__mul__(other)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __floordiv__(self, other: Any) -> PyPrimitive:
-        res = super().__floordiv__(self, other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __truediv__(self, other: Any) -> PyPrimitive:
-        res = super().__truediv__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __floordiv__(self, other: Any) -> PyPrimitive:
         res = super().__floordiv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
