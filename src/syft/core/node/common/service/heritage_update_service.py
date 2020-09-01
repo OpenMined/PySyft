@@ -4,25 +4,29 @@ registers within a new Network or if a Device registers within
 a new Domain, all the other child node will need to know this
 information to populate complete addresses into their clients."""
 
-# external class imports
-from nacl.signing import VerifyKey
+# stdlib
 from typing import List
+from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
+# syft absolute
+import syft as sy
 
+# syft relative
+from .....decorators import syft_decorator
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
     HeritageUpdateMessage as HeritageUpdateMessage_PB,
 )
-
-import syft as sy
-from .auth import service_auth
-from ....io.address import Address
-from .....decorators import syft_decorator
-from ...abstract.node import AbstractNode
-from .node_service import ImmediateNodeServiceWithoutReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from .auth import service_auth
+from .node_service import ImmediateNodeServiceWithoutReply
 
 # TODO: change all message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name
@@ -30,7 +34,10 @@ from ....common.serde.deserialize import _deserialize
 
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, new_ancestry_address: Address, address: Address, msg_id: UID = None
+        self,
+        new_ancestry_address: Address,
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.new_ancestry_address = new_ancestry_address

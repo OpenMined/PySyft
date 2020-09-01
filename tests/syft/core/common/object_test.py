@@ -10,17 +10,18 @@ Table of Contents:
 
 """
 
+# stdlib
 import json
-
-# external imports
 import uuid
+
+# third party
 import pytest
 
-# syft imports
+# syft absolute
 import syft as sy
 from syft.core.common import ObjectWithID
-from syft.util import get_subclasses
 from syft.core.common import UID
+from syft.util import get_subclasses
 
 # --------------------- INITIALIZATION ---------------------
 

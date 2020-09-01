@@ -1,4 +1,7 @@
+# stdlib
 from typing import Set
+
+# syft relative
 from ..location import Location
 
 

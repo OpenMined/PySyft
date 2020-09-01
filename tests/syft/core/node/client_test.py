@@ -1,3 +1,4 @@
+# syft absolute
 import syft as sy
 
 
@@ -7,10 +8,10 @@ def test_client_from_metadata() -> None:
 
     client_metadata = domain.get_metadata_for_client()
 
-    target_id, name, id = sy.DomainClient.deserialize_client_metadata_from_node(
+    spec_location, name, id = sy.DomainClient.deserialize_client_metadata_from_node(
         metadata=client_metadata
     )
 
-    assert domain.domain == target_id
+    assert domain.domain == spec_location
     assert name == "duet"
     assert id == domain.id

@@ -1,20 +1,21 @@
-from typing import Tuple
+# stdlib
+from typing import Any
 from typing import Callable as CallableT
-from typing import Union
 from typing import Optional
+from typing import Tuple
+from typing import Union
 
+# third party
+from google.protobuf.message import Message
+
+# syft relative
 from ..ast.callable import Callable
-from ..core.pointer.pointer import Pointer
-from ..core.node.common.action.run_class_method_action import RunClassMethodAction
-from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
-from google.protobuf.message import Message
+from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.save_object_action import SaveObjectAction
+from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
-
-# TODO: Fix circular import for Client interface
-# from ..core.node.common.client import Client
-from typing import Any
 
 
 class Class(Callable):

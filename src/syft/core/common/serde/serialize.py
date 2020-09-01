@@ -1,10 +1,14 @@
-from .serializable import Serializable
-from ....decorators.syft_decorator_impl import syft_decorator
-from google.protobuf.message import Message
+# stdlib
 from typing import Union
 
+# third party
+from google.protobuf.message import Message
 
-# QUESTION: Is runtime type checking the best idea here?
+# syft relative
+from ....decorators.syft_decorator_impl import syft_decorator
+from .serializable import Serializable
+
+
 @syft_decorator(typechecking=True)
 def _serialize(
     obj: object,

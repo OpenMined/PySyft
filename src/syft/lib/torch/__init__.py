@@ -1,11 +1,17 @@
-from packaging import version
+# stdlib
 from typing import Dict
 from typing import Union
+
+# third party
+from packaging import version
 import torch
 
+# syft relative
+from ...ast.globals import Globals
+from .allowlist import allowlist
 from .lowercase_tensor import LowercaseTensorConstructor
-from .uppercase_tensor import UppercaseTensorConstructor
 from .parameter import ParameterConstructor
+from .uppercase_tensor import UppercaseTensorConstructor
 
 __all__ = [
     "LowercaseTensorConstructor",
@@ -13,9 +19,6 @@ __all__ = [
     "ParameterConstructor",
 ]
 
-from syft.ast.globals import Globals
-
-from .allowlist import allowlist
 
 TORCH_VERSION = version.parse(torch.__version__)
 

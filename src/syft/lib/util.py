@@ -1,6 +1,10 @@
+# stdlib
 import inspect
 from types import ModuleType
-from typing import Union, Callable
+from typing import Callable
+from typing import Union
+
+# syft relative
 from ..decorators.syft_decorator_impl import syft_decorator
 
 

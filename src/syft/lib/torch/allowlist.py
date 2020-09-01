@@ -1,10 +1,13 @@
-from typing import Union
+# stdlib
 from typing import Dict
+from typing import Union
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 # SECTION - add the capital constructor
 allowlist["torch.Tensor"] = "torch.Tensor"
+# TODO here for testing purpose
+allowlist["torch.zeros_like"] = "torch.Tensor"
 
 # SECTION - Tensor methods which return a torch tensor object
 
