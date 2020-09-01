@@ -10,14 +10,14 @@ Table of Contents:
 """
 
 
-# external imports
-import uuid
+# stdlib
 import json
+import uuid
 
-# syft imports
-from syft.core.io.location.specific import SpecificLocation
-from syft.core.common.uid import UID
+# syft absolute
 import syft as sy
+from syft.core.common.uid import UID
+from syft.core.io.location.specific import SpecificLocation
 
 # --------------------- INITIALIZATION ---------------------
 

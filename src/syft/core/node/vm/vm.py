@@ -1,20 +1,21 @@
-# external classs imports
-from typing import Optional, Union
+# stdlib
+from typing import Optional
+from typing import Union
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# external decorators
 from typing_extensions import final
 
-# syft imports
-from ...io.location import SpecificLocation
-from ...common.message import SyftMessage, SignedMessage
+# syft relative
 from ....decorators import syft_decorator
-from .client import VirtualMachineClient
-from ...io.location import Location
-from ..common.node import Node
+from ...common.message import SignedMessage
+from ...common.message import SyftMessage
 from ...common.uid import UID
+from ...io.location import Location
+from ...io.location import SpecificLocation
+from ..common.node import Node
+from .client import VirtualMachineClient
 
 
 @final

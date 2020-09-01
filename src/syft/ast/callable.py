@@ -1,15 +1,18 @@
-from typing import Optional
-from typing import List
-from typing import Union
-from typing import Tuple
+# stdlib
 from typing import Any
 from typing import Callable as CallableT
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
+# syft relative
 from .. import ast
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
-from .util import module_type, unsplit
+from .util import module_type
+from .util import unsplit
 
 
 class Callable(ast.attribute.Attribute):

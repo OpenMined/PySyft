@@ -1,10 +1,12 @@
-# from .. import ast # CAUSES Circular import errors
-from typing import Union
+# stdlib
+from typing import Callable as CallableT
 from typing import List
 from typing import Optional
-from typing import Callable as CallableT
-from .module import Module
+from typing import Union
+
+# syft relative
 from .callable import Callable
+from .module import Module
 from .util import unsplit
 
 

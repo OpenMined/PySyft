@@ -1,20 +1,20 @@
-# external class imports
+# stdlib
 from typing import List
-from typing import Union
 from typing import Optional
+from typing import Union
+
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft imports
-from ...io.location import SpecificLocation
-from ...io.location import Location
-from ..common.client import Client
-from ...io.route import Route
-from ...common.uid import UID
-from .service import RequestMessage
-
-# lib imports
 import pandas as pd
+
+# syft relative
+from ...common.uid import UID
+from ...io.location import Location
+from ...io.location import SpecificLocation
+from ...io.route import Route
+from ..common.client import Client
+from .service import RequestMessage
 
 
 class RequestQueueClient:
@@ -23,6 +23,7 @@ class RequestQueueClient:
 
     @property
     def requests(self) -> List[RequestMessage]:
+        # syft absolute
         from syft.core.node.domain.service.get_all_requests_service import (
             GetAllRequestsMessage,
         )

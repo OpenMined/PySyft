@@ -10,15 +10,17 @@ Table of Contents:
 """
 
 
-# external imports
+# stdlib
 import uuid
+
+# third party
 import pytest
 
-# syft imports
-from syft.core.io.location.specific import SpecificLocation
+# syft absolute
+import syft as sy
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
-import syft as sy
+from syft.core.io.location.specific import SpecificLocation
 
 # --------------------- INITIALIZATION ---------------------
 

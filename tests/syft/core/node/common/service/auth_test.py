@@ -1,9 +1,10 @@
-import pytest
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import pytest
 
+# syft absolute
 import syft as sy
-
 from syft.core.node.common.service.auth import AuthorizationException
 from syft.core.node.common.service.auth import service_auth
 

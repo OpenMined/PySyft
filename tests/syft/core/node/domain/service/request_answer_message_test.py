@@ -1,13 +1,11 @@
+# syft absolute
+from syft import deserialize
+from syft import serialize
 from syft.core.common import UID
-
-from syft.core.node.domain.service import (
-    RequestStatus,
-    RequestAnswerResponse,
-    RequestAnswerMessage,
-)
-
 from syft.core.io.address import Address
-from syft import serialize, deserialize
+from syft.core.node.domain.service import RequestAnswerMessage
+from syft.core.node.domain.service import RequestAnswerResponse
+from syft.core.node.domain.service import RequestStatus
 
 
 def test_request_answer_message() -> None:

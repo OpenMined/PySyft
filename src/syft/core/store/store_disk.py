@@ -1,11 +1,14 @@
-from typing import Optional, List
+# stdlib
+from pathlib import Path
+import tempfile
+from typing import List
+from typing import Optional
+
+# third party
+from sqlitedict import SqliteDict
 from typing_extensions import Final
 
-import tempfile
-from pathlib import Path
-
-from sqlitedict import SqliteDict
-
+# syft relative
 from ...decorators import syft_decorator
 from ..common.uid import UID
 from .store_interface import ObjectStore

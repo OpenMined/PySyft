@@ -1,17 +1,24 @@
+# stdlib
 import pydoc
-from typing import List, Optional, Type
 from typing import Dict
-from nacl.signing import VerifyKey
+from typing import List
+from typing import Optional
+from typing import Type
+
+# third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
+# syft relative
 from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from syft.core.common.serde.deserialize import _deserialize
-from ..common.uid import UID
 from ...util import get_fully_qualified_name
-from ..common.storeable_object import AbstractStorableObject
 from ...util import key_emoji
+from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import Serializable
+from ..common.storeable_object import AbstractStorableObject
+from ..common.uid import UID
 
 
 class StorableObject(AbstractStorableObject):
@@ -152,7 +159,7 @@ class StorableObject(AbstractStorableObject):
         return self.data.serialize()  # type: ignore
 
     @staticmethod
-    def _data_proto2object(proto: Message) -> int:
+    def _data_proto2object(proto: Message) -> Serializable:
         return _deserialize(blob=proto)
 
     @staticmethod

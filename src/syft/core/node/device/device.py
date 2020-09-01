@@ -1,23 +1,26 @@
-# external class imports
-from typing import Dict, Optional, Union
-from typing_extensions import final
+# stdlib
+from typing import Dict
+from typing import Optional
+from typing import Union
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from typing_extensions import final
 
-# syft imports
-from .device_type.device_type import DeviceType
-from .device_type.unknown import unknown_device
-from ..vm.client import VirtualMachineClient
-from ...io.location import SpecificLocation
-from ...common.message import SyftMessage
-from ...common.message import SignedMessage
+# syft relative
 from ....decorators import syft_decorator
-from syft.core.common.uid import UID
+from ...common.message import SignedMessage
+from ...common.message import SyftMessage
+from ...common.uid import UID
 from ...io.location import Location
+from ...io.location import SpecificLocation
+from ..common.node import Node
+from ..vm.client import VirtualMachineClient
 from ..vm.vm import VirtualMachine
 from .client import DeviceClient
-from ..common.node import Node
+from .device_type.device_type import DeviceType
+from .device_type.unknown import unknown_device
 
 
 @final

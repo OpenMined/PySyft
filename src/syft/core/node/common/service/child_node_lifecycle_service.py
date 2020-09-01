@@ -1,24 +1,29 @@
-# external class imports
-from nacl.signing import VerifyKey
+# stdlib
 from typing import List
+from typing import Optional
 from typing import Type
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
+# syft absolute
+import syft as sy
 
+# syft relative
+from .....decorators import syft_decorator
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
     RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
 )
-import syft as sy
-from .auth import service_auth
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
 from ....io.address import Address
-from .....decorators import syft_decorator
 from ....store.storeable_object import StorableObject
-from .heritage_update_service import HeritageUpdateMessage
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from ....common.serde.deserialize import _deserialize
+from .auth import service_auth
+from .heritage_update_service import HeritageUpdateMessage
 
 
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
@@ -27,7 +32,7 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         lookup_id: UID,
         child_node_client_address: Address,
         address: Address,
-        msg_id: UID = None,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.lookup_id = lookup_id

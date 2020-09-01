@@ -1,19 +1,19 @@
+# stdlib
 from typing import Any
-from typing import Optional
 from typing import List
+from typing import Optional
 from typing import Union
 
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...proto.lib.python.python_primitive_pb2 import PyPrimitive as PyPrimitive_PB
-
-from ...core.common.serde import _deserialize
+# syft relative
 from ...core.common.serde import Serializable
-from ...decorators.syft_decorator_impl import syft_decorator
-
+from ...core.common.serde import _deserialize
 from ...core.common.uid import UID
-
-from syft.core.store.storeable_object import StorableObject
+from ...core.store.storeable_object import StorableObject
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.lib.python.python_primitive_pb2 import PyPrimitive as PyPrimitive_PB
 from ...util import aggressive_set_attr
 
 
@@ -380,10 +380,11 @@ class PyPrimitiveWrapper(StorableObject):
             tags=getattr(value, "tags", []),
             description=getattr(value, "description", ""),
         )
-        self.value = value
 
     def _data_object2proto(self) -> PyPrimitive_PB:
-        return self.data._object2proto()
+        _object2proto = getattr(self.data, "_object2proto", None)
+        if _object2proto is not None:
+            return _object2proto()
 
     @staticmethod
     def _data_proto2object(proto: PyPrimitive_PB) -> PyPrimitive:
@@ -399,9 +400,12 @@ class PyPrimitiveWrapper(StorableObject):
 
     @staticmethod
     def construct_new_object(
-        id: UID, data: StorableObject, tags: List[str], description: Optional[str]
-    ) -> object:
-        data._id = id
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
+        setattr(data, "_id", id)
         data.tags = tags
         data.description = description
         return data

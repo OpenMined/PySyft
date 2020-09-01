@@ -1,6 +1,9 @@
+# stdlib
+import threading
+
+# third party
 from flask import Flask
 from werkzeug.serving import make_server
-import threading
 
 
 class ServerThread(threading.Thread):
