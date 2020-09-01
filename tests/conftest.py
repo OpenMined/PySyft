@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import time
 from multiprocessing import Process
 
@@ -11,7 +10,7 @@ from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 
-from . import GRID_NETWORK_PORT, NETWORK_URL, IDS, PORTS
+from . import GRID_NETWORK_PORT, IDS, PORTS
 
 
 @pytest.fixture()
@@ -73,23 +72,6 @@ def setup_network(port: int) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def init_pygrid_instances(node_infos):
-    jobs = []
-
-    # Init Grid Nodes
-    for (node_id, port) in node_infos:
-        p = Process(target=setUpPyGrid, args=(port, node_id))
-        p.start()
-        time.sleep(2)
-        jobs.append(p)
-
-    yield
-
-    for job in jobs:
-        job.terminate()
-
-
-@pytest.fixture(scope="session", autouse=True)
 def init_network_instance():
 
     p = Process(target=setup_network, args=(int(GRID_NETWORK_PORT),))
@@ -99,6 +81,33 @@ def init_network_instance():
     yield
 
     p.terminate()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def init_node_instances(node_infos):
+    jobs = []
+
+    # Init Grid Nodes
+    for (node_id, port) in node_infos:
+        p = Process(target=setUpPyGrid, args=(port, node_id))
+        p.start()
+
+        import requests
+
+        requests.post(
+            os.path.join("http://localhost:" + GRID_NETWORK_PORT, "join"),
+            data=json.dumps(
+                {"node-id": node_id, "node-address": "http://localhost:" + port}
+            ),
+        )
+
+        time.sleep(2)
+        jobs.append(p)
+
+    yield
+
+    for job in jobs:
+        job.terminate()
 
 
 @pytest.fixture(scope="session", autouse=True)

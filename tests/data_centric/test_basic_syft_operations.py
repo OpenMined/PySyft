@@ -1,13 +1,14 @@
 import time
 import unittest
 from random import randint, sample
-from tests import IDS, PORTS, conftest, worker_ports
 
 import numpy as np
 import pytest
 import syft as sy
 import torch as th
 from torch.nn import functional as F
+
+from tests import IDS, PORTS, conftest, worker_ports
 
 hook = sy.TorchHook(th)
 
@@ -186,9 +187,9 @@ def test_connect_node(connected_node):
 
 def test_send_tensor(connected_node):
     x = th.tensor([1.0, 0.4])
-    x_s = x.send(connected_node["alice"])
+    x_s = x.send(connected_node["Alice"])
 
-    assert x_s.location.id == "alice"
+    assert x_s.location.id == "Alice"
     assert th.all(th.eq(x_s.get(), x))
 
 
@@ -199,8 +200,8 @@ def test_send_private_tensor(connected_node):
     _x = x.private_tensor(allowed_users=["user"])
 
     # Pointer to private tensor.
-    p_x = _x.send(connected_node["alice"], user="user")
-    assert p_x.location.id == "alice"
+    p_x = _x.send(connected_node["Alice"], user="user")
+    assert p_x.location.id == "Alice"
 
 
 def test_get_private_tensor(connected_node):
@@ -210,7 +211,7 @@ def test_get_private_tensor(connected_node):
     _x = x.private_tensor(allowed_users=["user"])
 
     # Pointer to private tensor.
-    p_x = _x.send(connected_node["alice"], user="user")
+    p_x = _x.send(connected_node["Alice"], user="user")
     with pytest.raises(sy.exceptions.GetNotPermittedError):
         p_x.get()
 
@@ -220,7 +221,7 @@ def test_send_tag_tensor(connected_node):
     description = "Tensor Description"
     x = th.tensor([[0.1, -4.3]]).tag(tag).describe(description)
 
-    x_s = x.send(connected_node["alice"])
+    x_s = x.send(connected_node["Alice"])
     x_s.child.garbage_collect_data = False
 
     assert x_s.description == description
@@ -228,14 +229,14 @@ def test_send_tag_tensor(connected_node):
 
 
 def test_move_tensor(connected_node):
-    alice, bob = connected_node["alice"], connected_node["bob"]
+    alice, bob = connected_node["Alice"], connected_node["Bob"]
     x = th.tensor([[-0.1, -1]])
 
     x_s = x.send(alice)
-    assert x_s.location.id == "alice"
+    assert x_s.location.id == "Alice"
 
     x_mv = x_s.move(bob)
-    assert x_mv.location.id == "bob"
+    assert x_mv.location.id == "Bob"
     assert th.all(th.eq(x_mv.get(), x))
 
 
@@ -262,8 +263,8 @@ def test_move_tensor(connected_node):
 def test_add_remote_tensors(x, y, connected_node):
     result = x + y
 
-    x_s = x.send(connected_node["alice"])
-    y_s = y.send(connected_node["alice"])
+    x_s = x.send(connected_node["Alice"])
+    y_s = y.send(connected_node["Alice"])
 
     result_s = x_s + y_s
     assert result_s.get().tolist() == result.tolist()
@@ -292,8 +293,8 @@ def test_add_remote_tensors(x, y, connected_node):
 def test_sub_remote_tensors(x, y, connected_node):
     result = x - y
 
-    x_s = x.send(connected_node["alice"])
-    y_s = y.send(connected_node["alice"])
+    x_s = x.send(connected_node["Alice"])
+    y_s = y.send(connected_node["Alice"])
 
     result_s = x_s - y_s
     assert result_s.get().tolist() == result.tolist()
@@ -322,8 +323,8 @@ def test_sub_remote_tensors(x, y, connected_node):
 def test_mul_remote_tensors(x, y, connected_node):
     result = x * y
 
-    x_s = x.send(connected_node["alice"])
-    y_s = y.send(connected_node["alice"])
+    x_s = x.send(connected_node["Alice"])
+    y_s = y.send(connected_node["Alice"])
 
     result_s = x_s * y_s
     assert result_s.get().tolist() == result.tolist()
@@ -352,8 +353,8 @@ def test_mul_remote_tensors(x, y, connected_node):
 def test_div_remote_tensors(x, y, connected_node):
     result = x / y
 
-    x_s = x.send(connected_node["bob"])
-    y_s = y.send(connected_node["bob"])
+    x_s = x.send(connected_node["Bob"])
+    y_s = y.send(connected_node["Bob"])
 
     result_s = x_s / y_s
     assert result_s.get().tolist() == result.tolist()
@@ -379,7 +380,7 @@ def test_div_remote_tensors(x, y, connected_node):
 def test_exp_remote_tensor(x, y, connected_node):
     result = x ** y
 
-    x_s = x.send(connected_node["bob"])
+    x_s = x.send(connected_node["Bob"])
     result_s = x_s ** y
     assert result_s.get().tolist() == result.tolist()
 
