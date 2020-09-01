@@ -16,7 +16,6 @@ from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from ....store.storeable_object import StorableObject
-from .....lib.python.primitive import isprimitive, PyPrimitive
 from ....common.serde.deserialize import _deserialize
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
@@ -92,14 +91,14 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
 
         result = method(*resolved_args, **resolved_kwargs)
-
-        if isprimitive(value=result):
-            # Wrap in a PyPrimitive
-            result = PyPrimitive(data=result, id=self.id_at_location)
-        else:
+        #TODO reintroduce new primitive logic
+        # if isprimitive(value=result):
+        #     # Wrap in a PyPrimitive
+        #     result = PyPrimitive(data=result, id=self.id_at_location)
+        # else:
             # TODO: overload all methods to incorporate this automatically
-            if hasattr(result, "id"):
-                result.id = self.id_at_location
+        if hasattr(result, "id"):
+            result.id = self.id_at_location
 
         if not isinstance(result, StorableObject):
             result = StorableObject(

@@ -403,7 +403,6 @@ def test_Float_containment() -> None:
         assert d == d
 
 
-@support.requires_IEEE_754
 def test_Float_mod() -> None:
     # Check behaviour of % operator for IEEE 754 special cases.
     # In particular, check signs of zeros.
