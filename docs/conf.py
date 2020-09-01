@@ -139,7 +139,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "syft"
-copyright = "2020, Andrew Trask"
+copyright = "2020, OpenMined Core Contributors"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -194,8 +194,8 @@ pygments_style = "sphinx"
 # a list of builtin themes.
 
 # html_theme = 'sphinx-theme-graphite'
-html_theme = "alabaster"
-#
+# html_theme = "alabaster"
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
