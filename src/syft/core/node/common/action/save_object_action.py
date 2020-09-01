@@ -17,6 +17,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from ....common.group import All
 
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):

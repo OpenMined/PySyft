@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from google.protobuf.message import Message

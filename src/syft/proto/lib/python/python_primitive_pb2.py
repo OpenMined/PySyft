@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     serialized_pb=b'\n\'proto/lib/python/python_primitive.proto\x12\x10syft.core.common\x1a%proto/core/common/common_object.proto"\xcb\x01\n\x0bPyPrimitive\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x32\n\x04type\x18\x02 \x01(\x0e\x32$.syft.core.common.PyPrimitive.PyType\x12\x0b\n\x03int\x18\x03 \x01(\x12\x12\r\n\x05\x66loat\x18\x04 \x01(\x01\x12\x0b\n\x03str\x18\x05 \x01(\t"<\n\x06PyType\x12\x08\n\x04NONE\x10\x00\x12\x08\n\x04\x42OOL\x10\x01\x12\x07\n\x03INT\x10\x02\x12\t\n\x05\x46LOAT\x10\x03\x12\n\n\x06STRING\x10\x04\x62\x06proto3',
-    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+    ],
 )
 
 
@@ -157,7 +159,9 @@ _PYPRIMITIVE = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[_PYPRIMITIVE_PYTYPE,],
+    enum_types=[
+        _PYPRIMITIVE_PYTYPE,
+    ],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
