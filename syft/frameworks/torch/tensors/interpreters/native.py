@@ -3,6 +3,8 @@ import weakref
 import warnings
 
 import torch
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 
 import syft
 from syft.generic.frameworks.hook import hook_args
@@ -189,7 +191,6 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_data
 
-    @property
     def grad_fn(self):
         if self.is_wrapper:
             return self.child.grad_fn
@@ -209,6 +210,20 @@ class TorchTensor(AbstractTensor):
             elif new_grad_fn is not None:
                 self.native_grad_fn = new_grad_fn
         return self
+
+    @property
+    def players(self):
+        if hasattr(self, "child") and isinstance(self.child, ReplicatedSharingTensor):
+            return self.child.players
+        raise ValueError('Only ReplicatedSharingTensors have property "players"')
+
+    @property
+    def ring_size(self):
+        if hasattr(self, "child") and isinstance(
+            self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
+        ):
+            return self.child.ring_size
+        raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
 
     @property
     def grad(self):
@@ -910,7 +925,6 @@ class TorchTensor(AbstractTensor):
             no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
             **kwargs (dict): kwargs to transmit to the fixed precision tensor
         """
-
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
 
@@ -974,11 +988,6 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
-        if protocol == "falcon":
-            shared_tensor = syft.ReplicatedSharingTensor(
-                self, owners, ring_size=field, owner=self.owner
-            )
-            return shared_tensor
         if self.has_child():
             chain = self.child
 
@@ -997,17 +1006,22 @@ class TorchTensor(AbstractTensor):
             if self.type() == "torch.FloatTensor":
                 raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
 
-            shared_tensor = (
-                syft.AdditiveSharingTensor(
-                    protocol=protocol,
-                    field=field,
-                    dtype=dtype,
-                    crypto_provider=crypto_provider,
-                    owner=self.owner,
+            if protocol == "falcon":
+                shared_tensor = syft.ReplicatedSharingTensor(
+                    self, owners, ring_size=field, owner=self.owner
                 )
-                .on(self.copy(), wrap=False)
-                .share_secret(*owners)
-            )
+            else:
+                shared_tensor = (
+                    syft.AdditiveSharingTensor(
+                        protocol=protocol,
+                        field=field,
+                        dtype=dtype,
+                        crypto_provider=crypto_provider,
+                        owner=self.owner,
+                    )
+                    .on(self.copy(), wrap=False)
+                    .share_secret(*owners)
+                )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
@@ -1198,3 +1212,8 @@ class TorchTensor(AbstractTensor):
                 "on a wrapper. Add NumpyTensor to the chain by hand if you want "
                 "this functionality.",
             )
+
+    def reconstruct(self):
+        if not isinstance(self.child, (ReplicatedSharingTensor, FixedPrecisionTensor)):
+            raise ValueError("reconstruct can only be called for RST and FPT")
+        return self.child.get()

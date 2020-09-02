@@ -231,3 +231,64 @@ def test_get_response():
     result = torch.Tensor._get_response("torch._test_func", t, {})
     delattr(torch, "_test_func")
     assert t == result
+
+
+def test_reconstruct(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3, -7, 11])
+
+    # test for RST
+    secret = plain_text.share(bob, alice, james, protocol="falcon", field=2 ** 5)
+    decryption = secret.reconstruct()
+    assert (plain_text == decryption).all()
+
+    # test for FPT
+    secret = plain_text.fix_prec().share(bob, alice, james, protocol="falcon", field=2 ** 20)
+    decryption = secret.reconstruct().float_prec()
+    assert (plain_text == decryption).all()
+
+    # exception test for AST
+    secret = plain_text.share(bob, alice, crypto_provider=james)
+    with pytest.raises(ValueError):
+        decryption = secret.reconstruct()
+
+    # exception test for native
+    with pytest.raises(ValueError):
+        decryption = secret.reconstruct()
+
+
+def test_ring_size(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3, -7, 11])
+    ring_size = 2 ** 20
+
+    # test for RST
+    secret = plain_text.share(bob, alice, james, protocol="falcon", field=ring_size)
+    assert secret.ring_size == ring_size
+
+    # test for (wrapper) > FPT > RST
+    secret = plain_text.fix_prec().share(bob, alice, james, protocol="falcon", field=ring_size)
+    assert secret.ring_size == ring_size
+
+    # exception test for AST
+    secret = plain_text.share(bob, alice, crypto_provider=james)
+    with pytest.raises(ValueError):
+        ring_size_ = secret.ring_size
+
+    # exception test for native
+    with pytest.raises(ValueError):
+        ring_size_ = plain_text.ring_size
+
+
+def test_players(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3, -7, 11])
+    ring_size = 2 ** 20
+
+    # test for RST
+    secret = plain_text.share(bob, alice, james, protocol="falcon", field=ring_size)
+    assert secret.players == [bob, alice, james]
+
+    # test for native
+    with pytest.raises(ValueError):
+        players = plain_text.players
