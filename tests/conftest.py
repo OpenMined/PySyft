@@ -61,7 +61,7 @@ def setup_network(port: int) -> None:
 
     """
 
-    from apps.network.src import create_app
+    from apps.network.src.app import create_app
 
     db_path = "sqlite:///:memory:"
     db_config = {"SQLALCHEMY_DATABASE_URI": db_path}

@@ -1,2 +1,2 @@
 #!/bin/bash
-python -m src "$@"
+exec poetry run python -m src "$@"

@@ -15,7 +15,7 @@ def test_join_grid_node_bad_request_key_error(client):
     assert result.get_json().get("message") == ("Invalid JSON format.")
 
 
-@patch("src.routes.network.network_manager")
+@patch("src.app.routes.network.network_manager")
 def test_join_grid_node_already_registered(mock_network_manager, client):
     """assert that the endpoint returns a 400 for an already registered
     node."""
@@ -27,7 +27,7 @@ def test_join_grid_node_already_registered(mock_network_manager, client):
     assert result.get_json().get("message") == "This ID has already been registered"
 
 
-@patch("src.routes.network.network_manager")
+@patch("src.app.routes.network.network_manager")
 def test_join_grid_node_internal_server_error(mock_network_manager, client):
     """assert that the endpoint returns a 500 for an unknown error
     condition."""

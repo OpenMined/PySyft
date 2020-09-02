@@ -5,7 +5,7 @@
 import argparse
 import os
 
-from . import create_app, raise_grid
+from .app import create_app, raise_grid
 
 parser = argparse.ArgumentParser(description="Run GridNetwork application.")
 parser._action_groups.pop()
