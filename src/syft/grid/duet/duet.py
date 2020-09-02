@@ -165,6 +165,7 @@ class Duet(DomainClient):
 
     def __del__(self) -> None:
         print("♫♫♫ > Ending duet...")
-        if self.server is not None:
-            self.server.shutdown()
+        server = getattr(self, "server", None)
+        if server is not None:
+            server.shutdown()
         print("♫♫♫ > Ended!")

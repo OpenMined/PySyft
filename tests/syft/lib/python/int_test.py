@@ -1,7 +1,13 @@
-from typing import Any
+# stdlib
 import sys
+from typing import Any
+
+# third party
 import pytest
-from syft.lib.python.int import Int
+
+# syft absolute
+# from syft.lib.python.int import Int
+from syft.lib.python.int import SyInt as Int
 
 VALID_UNDERSCORE_LITERALS = [
     "0_0_0",
@@ -548,13 +554,13 @@ def test_Int_subclass_with_Int() -> None:
         def __Int__(self):
             return 42.0
 
-    my_Int = MyInt(7)
+    # my_Int = MyInt(7)
     # TODO this should work
     # assert Int(my_Int) == 7
     # assert Int(my_Int) == 42
 
     # TODO this should work
-    my_Int = BadInt(7)
+    # my_Int = BadInt(7)
     # assert Int(my_Int) == 7
     # with pytest.raises(TypeError):
     #     Int( my_Int)
@@ -620,7 +626,7 @@ def test_Int_returns_Int_subclass() -> None:
 
 def test_error_message() -> None:
     def check(s, base=None):
-        with pytest.raises(ValueError) as cm:
+        with pytest.raises(ValueError):
             if base is None:
                 Int(s)
             else:
