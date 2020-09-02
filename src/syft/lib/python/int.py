@@ -71,14 +71,14 @@ class MetaSyInt(type):
 
         try:
             if isinstance(other, SyInt) or issubclass(type(other), SyInt):
-                return int(self._value) == int(other._value)
-            return int(self._value) == other
+                return int(self._value) == int(other._value)  # type: ignore
+            return int(self._value) == other  # type: ignore
         except Exception:
             return False
 
     @staticmethod
     def make_operand_method(op: str, symbol: str) -> Callable:
-        def run_operand(a: "MetaSyInt", b: Any) -> Union["MetaSyInt", bool]:
+        def run_operand(a: "SyInt", b: Any) -> Union["SyInt", bool]:
             # print("running hijacked operand", type(a), type(b), op)
             try:
                 method = getattr(a._value, op, None)
@@ -112,7 +112,7 @@ class MetaSyInt(type):
         method_type = type(method).__name__
         # print("binding method", op, method_type)
 
-        def run_method(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
+        def run_method(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
             # print(
             #     f"running super {op} with args: ",
             #     [type(a) for a in args],
@@ -161,12 +161,12 @@ class MetaSyInt(type):
                 setattr(
                     sy_meta_cls, k, MetaSyInt.debug_method(method=super_method, op=k)
                 )
-        return sy_meta_cls
+        return sy_meta_cls  # type: ignore
 
 
 class SyInt(PyPrimitive, metaclass=MetaSyInt):
     _value: int
-    _id: str
+    _id: UID
 
     def __init__(self, value: Any = 0, base: Any = 10) -> None:
         if isinstance(value, str):
@@ -220,14 +220,14 @@ class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
-    ) -> int:
+    ) -> "Int":
         if value is None:
             value = 0
 
         if isinstance(value, str):
-            return int.__new__(cls, value, base)
+            return int.__new__(cls, value, base)  # type: ignore
 
-        return int.__new__(cls, value)
+        return int.__new__(cls, value)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, base: Any = 10, uid: Optional[UID] = None):

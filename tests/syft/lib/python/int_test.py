@@ -1,6 +1,8 @@
 # stdlib
 import sys
 from typing import Any
+from typing import Optional
+from typing import Union
 
 # third party
 import pytest
@@ -134,7 +136,7 @@ def test_basic() -> None:
                 ss = prefix + sign + s
                 vv = v
                 if sign == "-" and v is not ValueError:
-                    vv = -v
+                    vv = -v  # type: ignore
                 try:
                     assert Int(ss) == vv
                 except ValueError:
@@ -399,7 +401,7 @@ def test_Int_base_indexable() -> None:
         def __init__(self, value: Any):
             self.value = value
 
-        def __index__(self):
+        def __index__(self) -> int:
             return self.value
 
     # Check out of range bases.
@@ -441,7 +443,7 @@ def test_Intconversion() -> None:
         Int(MissingMethods())
 
     class Foo0:
-        def __Int__(self):
+        def __Int__(self) -> int:
             return 42
 
     # TODO this should work
@@ -452,25 +454,25 @@ def test_Intconversion() -> None:
 
     for base in (object, Classic):
 
-        class IntOverridesTrunc(base):
-            def __Int__(self):
+        class IntOverridesTrunc(base):  # type: ignore
+            def __Int__(self) -> int:
                 return 42
 
-            def __trunc__(self):
+            def __trunc__(self) -> int:
                 return -12
 
         # TODO this should work
         # assert Int(IntOverridesTrunc()) == 42
 
-        class JustTrunc(base):
-            def __trunc__(self):
+        class JustTrunc(base):  # type: ignore
+            def __trunc__(self) -> int:
                 return 42
 
         # TODO this should work
         # assert Int(JustTrunc()) == 42
 
-        class ExceptionalTrunc(base):
-            def __trunc__(self):
+        class ExceptionalTrunc(base):  # type: ignore
+            def __trunc__(self) -> None:
                 1 / 0
 
         with pytest.raises(ZeroDivisionError):
@@ -478,35 +480,35 @@ def test_Intconversion() -> None:
 
         for trunc_result_base in (object, Classic):
 
-            class Index(trunc_result_base):
-                def __index__(self):
+            class Index(trunc_result_base):  # type: ignore
+                def __index__(self) -> int:
                     return 42
 
-            class TruncReturnsNonInt(base):
-                def __trunc__(self):
+            class TruncReturnsNonInt(base):  # type: ignore
+                def __trunc__(self) -> Index:
                     return Index()
 
             # TODO this should work
             # assert Int(TruncReturnsNonInt()) == 42
 
-            class Intable(trunc_result_base):
-                def __Int__(self):
+            class Intable(trunc_result_base):  # type: ignore
+                def __Int__(self) -> int:
                     return 42
 
-            class TruncReturnsNonIndex(base):
-                def __trunc__(self):
+            class TruncReturnsNonIndex(base):  # type: ignore
+                def __trunc__(self) -> Intable:
                     return Intable()
 
             # TODO this should work
             # assert Int(TruncReturnsNonInt()) == 42
 
-            class NonIntegral(trunc_result_base):
-                def __trunc__(self):
+            class NonIntegral(trunc_result_base):  # type: ignore
+                def __trunc__(self) -> "NonIntegral":
                     # Check that we avoid infinite recursion.
                     return NonIntegral()
 
-            class TruncReturnsNonIntegral(base):
-                def __trunc__(self):
+            class TruncReturnsNonIntegral(base):  # type: ignore
+                def __trunc__(self) -> NonIntegral:
                     return NonIntegral()
 
             try:
@@ -517,12 +519,12 @@ def test_Intconversion() -> None:
                 raise Exception("Failed to raise TypeError with %s")
 
             # Regression test for bugs.python.org/issue16060.
-            class BadInt(trunc_result_base):
-                def __Int__(self):
+            class BadInt(trunc_result_base):  # type: ignore
+                def __Int__(self) -> float:
                     return 42.0
 
-            class TruncReturnsBadInt(base):
-                def __trunc__(self):
+            class TruncReturnsBadInt(base):  # type: ignore
+                def __trunc__(self) -> BadInt:
                     return BadInt()
 
             with pytest.raises(TypeError):
@@ -531,11 +533,11 @@ def test_Intconversion() -> None:
 
 def test_Int_subclass_with_index() -> None:
     class MyIndex(Int):
-        def __index__(self):
+        def __index__(self) -> Int:
             return 42
 
     class BadIndex(Int):
-        def __index__(self):
+        def __index__(self) -> Int:
             return 42.0
 
     my_Int = MyIndex(7)
@@ -547,11 +549,11 @@ def test_Int_subclass_with_index() -> None:
 
 def test_Int_subclass_with_Int() -> None:
     class MyInt(Int):
-        def __Int__(self):
+        def __Int__(self) -> Int:
             return 42
 
     class BadInt(Int):
-        def __Int__(self):
+        def __Int__(self) -> Int:
             return 42.0
 
     # my_Int = MyInt(7)
@@ -568,31 +570,31 @@ def test_Int_subclass_with_Int() -> None:
 
 def test_Int_returns_Int_subclass() -> None:
     class BadIndex:
-        def __index__(self):
+        def __index__(self) -> bool:
             return True
 
     class BadIndex2(Int):
-        def __index__(self):
+        def __index__(self) -> bool:
             return True
 
     class BadInt:
-        def __Int__(self):
+        def __Int__(self) -> bool:
             return True
 
     class BadInt2(Int):
-        def __Int__(self):
+        def __Int__(self) -> bool:
             return True
 
     class TruncReturnsBadIndex:
-        def __trunc__(self):
+        def __trunc__(self) -> BadIndex:
             return BadIndex()
 
     class TruncReturnsBadInt:
-        def __trunc__(self):
+        def __trunc__(self) -> BadInt:
             return BadInt()
 
     class TruncReturnsIntSubclass:
-        def __trunc__(self):
+        def __trunc__(self) -> bool:
             return True
 
     # TODO: this should work
@@ -625,7 +627,7 @@ def test_Int_returns_Int_subclass() -> None:
 
 
 def test_error_message() -> None:
-    def check(s, base=None):
+    def check(s: Union[str, bytes], base: Optional[int] = None) -> None:
         with pytest.raises(ValueError):
             if base is None:
                 Int(s)

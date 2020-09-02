@@ -121,7 +121,7 @@ def test_math() -> None:
     # assert 0!=1 is   SyTrue
     # assert 0!=0 is   SyFalse
 
-    x = [1]
+    # x = [1]
     # TODO this sould work
     # assert x == x == SyTrue
     # assert x == x != SyFalse
