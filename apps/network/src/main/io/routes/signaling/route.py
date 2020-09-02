@@ -11,18 +11,19 @@ signaling = Blueprint("signaling", __name__)
 def save_webrtc_msg():
     try:
         msg = request.get_json()
-        
-        msg = _deserialize(blob=msg,from_json=True)
-        
+
+        msg = _deserialize(blob=msg, from_json=True)
+
         response = signaling_handler.push(msg=msg)
 
         if response:
             response = response.json()
-        
+
         return Response(status=200, response=response, mimetype="application/json")
     except Exception as e:
-        print("Exception: ",  str(e))
+        print("Exception: ", str(e))
         return Response(status=400, mimetype="application/json")
+
 
 @signaling.route("/pull", methods=["POST"])
 def consume_offer():
@@ -32,11 +33,11 @@ def consume_offer():
         msg = _deserialize(blob=msg, from_json=True)
 
         response = signaling_handler.pull(msg=msg)
-        
+
         if response:
             response = response.json()
-        
+
         return Response(status=200, response=response, mimetype="application/json")
     except Exception:
-        print("Exception: ". str(e))
+        print("Exception: ".str(e))
         return Response(status=400, mimetype="application/json")
