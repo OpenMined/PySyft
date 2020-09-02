@@ -1,39 +1,53 @@
 from typing import Optional, Union
 from syft.core.common.serde.serializable import Serializable
-from syft.core.common.serde.deserialize import _deserialize
+
 from syft.core.io.address import Address
 
 from syft.grid.services.signaling_service import (
     SignalingOfferMessage,
     SignalingAnswerMessage,
+    OfferPullRequestMessage,
+    AnswerPullRequestMessage
 )
 
+from ...storage.memory_storage import MemoryStorage
 
 class SignalingHandler(object):
+    
     def __init__(self):
-        self.offer_msgs = dict()
-        self.answer_msgs = dict()
+        self.offer_msgs = MemoryStorage()
+        self.answer_msgs = MemoryStorage()
 
-    def store_msg(self, msg: Serializable, bidirectional_conn: bool = False) -> None:
-        _msg = _deserialize(blob=msg, from_json=True)
+    def push(self, msg: Union[SignalingOfferMessage, SignalingAnswerMessage]) -> None:
+        if isinstance(msg, SignalingOfferMessage):
+            _map = self.offer_msgs
+        elif isinstance(msg, SignalingAnswerMessage):
+            _map = self.answer_msgs
+            
+        addr_map = _map.get(msg.address.name)
 
-        if isinstance(_msg, SignalingOfferMessage):
-            _queue = self.offer_msgs
-        elif isinstance(_msg, SignalingAnswerMessage):
-            _queue = self.answer_msgs
-        try:
-            _queue[_msg.address].append(_msg)
-        except KeyError:
-            _queue[_msg.address] = [_msg]
+        if addr_map:
+            addr_map[msg.reply_to] = msg
+        else:
+            _map.register(key=msg.address.name, value={ msg.reply_to.name : msg } )
 
-    def consume_offer(self, addr: Address) -> Union[SignalingOfferMessage, None]:
-        _addr = _deserialize(blob=addr, from_json=True)
+    def pull(
+            self,
+            msg: Union[OfferPullRequestMessage, AnswerPullRequestMessage]
+        ) -> Union[SignalingOfferMessage, SignalingAnswerMessage]:
+        if isinstance(msg, OfferPullRequestMessage):
+            return self._consume(msg=msg,queue=self.offer_msgs)
+        
+        elif isinstance(msg, AnswerPullRequestMessage):
+            return self._consume(msg=msg,queue=self.answer_msgs)
+        
+        return None
 
-        if _addr in self.offer_msgs and len(self.offer_msgs[_addr]) > 0:
-            return self.offer_msgs[_addr].pop(0)
-
-    def consume_answer(self, addr: Address) -> Union[SignalingAnswerMessage, None]:
-        _addr = _deserialize(blob=addr, from_json=True)
-
-        if _addr in self.answer_msgs and len(self.answer_msgs[_addr]) > 0:
-            return self.answer_msgs[_addr].pop(0)
+    def _consume(self,
+            msg: Union[OfferPullRequestMessage, AnswerPullRequestMessage],
+            queue: MemoryStorage
+        ) -> Union[SignalingOfferMessage, None]:
+        _addr_map = queue.get(msg.reply_to.name)
+        
+        if _addr_map:
+            return _addr_map.get(msg.address.name, None)
