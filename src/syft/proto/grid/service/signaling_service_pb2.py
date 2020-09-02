@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"x\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x04 \x01(\t"w\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x04 \x01(\tb\x06proto3',
+    serialized_pb=b"\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\"\xba\x01\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x17\n\x0ftarget_metadata\x18\x04 \x01(\t\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\xb9\x01\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x17\n\x0ftarget_metadata\x18\x04 \x01(\t\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\x91\x01\n\x17OfferPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\x92\x01\n\x18\x41nswerPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3",
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -82,12 +82,50 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
             name="payload",
             full_name="syft.grid.service.SignalingAnswerMessage.payload",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="target_metadata",
+            full_name="syft.grid.service.SignalingAnswerMessage.target_metadata",
+            index=3,
             number=4,
             type=9,
             cpp_type=9,
             label=1,
             has_default_value=False,
             default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.service.SignalingAnswerMessage.reply_to",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -106,8 +144,8 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=133,
-    serialized_end=253,
+    serialized_start=134,
+    serialized_end=320,
 )
 
 
@@ -161,12 +199,50 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
             name="payload",
             full_name="syft.grid.service.SignalingOfferMessage.payload",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="target_metadata",
+            full_name="syft.grid.service.SignalingOfferMessage.target_metadata",
+            index=3,
             number=4,
             type=9,
             cpp_type=9,
             label=1,
             has_default_value=False,
             default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.service.SignalingOfferMessage.reply_to",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -185,8 +261,166 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=255,
-    serialized_end=374,
+    serialized_start=323,
+    serialized_end=508,
+)
+
+
+_OFFERPULLREQUESTMESSAGE = _descriptor.Descriptor(
+    name="OfferPullRequestMessage",
+    full_name="syft.grid.service.OfferPullRequestMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.service.OfferPullRequestMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.service.OfferPullRequestMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.service.OfferPullRequestMessage.reply_to",
+            index=2,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=511,
+    serialized_end=656,
+)
+
+
+_ANSWERPULLREQUESTMESSAGE = _descriptor.Descriptor(
+    name="AnswerPullRequestMessage",
+    full_name="syft.grid.service.AnswerPullRequestMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.service.AnswerPullRequestMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.service.AnswerPullRequestMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.service.AnswerPullRequestMessage.reply_to",
+            index=2,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=659,
+    serialized_end=805,
 )
 
 _SIGNALINGANSWERMESSAGE.fields_by_name[
@@ -195,14 +429,40 @@ _SIGNALINGANSWERMESSAGE.fields_by_name[
 _SIGNALINGANSWERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALINGANSWERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALINGOFFERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_OFFERPULLREQUESTMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_OFFERPULLREQUESTMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_OFFERPULLREQUESTMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_ANSWERPULLREQUESTMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_ANSWERPULLREQUESTMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_ANSWERPULLREQUESTMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["SignalingAnswerMessage"] = _SIGNALINGANSWERMESSAGE
 DESCRIPTOR.message_types_by_name["SignalingOfferMessage"] = _SIGNALINGOFFERMESSAGE
+DESCRIPTOR.message_types_by_name["OfferPullRequestMessage"] = _OFFERPULLREQUESTMESSAGE
+DESCRIPTOR.message_types_by_name["AnswerPullRequestMessage"] = _ANSWERPULLREQUESTMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 SignalingAnswerMessage = _reflection.GeneratedProtocolMessageType(
@@ -226,6 +486,28 @@ SignalingOfferMessage = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(SignalingOfferMessage)
+
+OfferPullRequestMessage = _reflection.GeneratedProtocolMessageType(
+    "OfferPullRequestMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _OFFERPULLREQUESTMESSAGE,
+        "__module__": "proto.grid.service.signaling_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.service.OfferPullRequestMessage)
+    },
+)
+_sym_db.RegisterMessage(OfferPullRequestMessage)
+
+AnswerPullRequestMessage = _reflection.GeneratedProtocolMessageType(
+    "AnswerPullRequestMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _ANSWERPULLREQUESTMESSAGE,
+        "__module__": "proto.grid.service.signaling_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.service.AnswerPullRequestMessage)
+    },
+)
+_sym_db.RegisterMessage(AnswerPullRequestMessage)
 
 
 # @@protoc_insertion_point(module_scope)
