@@ -1,15 +1,21 @@
-from typing import Tuple
-from typing import Any
-
-try:
-    from typing import ForwardRef
-except ImportError:
-    # python 3.6
-    from typing import _ForwardRef as ForwardRef  # type: ignore
-
+# stdlib
 import inspect
 import typing
+from typing import Any
+from typing import Tuple
 
+# fixes python 3.6
+try:
+    # python 3.7+
+    # stdlib
+    from typing import ForwardRef
+except ImportError:
+    # python 3.6 fallback
+    # stdlib
+    from typing import _ForwardRef as ForwardRef  # type: ignore
+# end fixes python 3.6
+
+# third party
 from typeguard import typechecked
 
 SKIP_RETURN_TYPE_HINTS = {"__init__"}
@@ -65,7 +71,7 @@ def type_hints(
         # iterate through every parameter passed in
         for idx, param_name in enumerate(literal_signature.parameters):
 
-            if idx == 0 and param_name == "self":
+            if idx == 0 and (param_name == "self" or param_name == "cls"):
                 max_arg_len += 1
                 continue
 
@@ -90,7 +96,7 @@ def type_hints(
         )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
-        if idx == 0 and param_name == "self":
+        if idx == 0 and (param_name == "self" or param_name == "cls"):
             continue
 
         if param_name not in solved_signature:

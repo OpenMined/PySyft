@@ -1,12 +1,14 @@
-# external class imports
+# stdlib
 from typing import Optional
+
+# third party
 from nacl.signing import VerifyKey
 
-# syft imports
+# syft relative
+from ....common.uid import UID
+from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import EventualActionWithoutReply
-from ....io.address import Address
-from ....common.uid import UID
 
 
 class GarbageCollectObjectAction(EventualActionWithoutReply):

@@ -1,5 +1,8 @@
-import syft as sy
+# third party
 import torch as th
+
+# syft absolute
+import syft as sy
 
 
 def test_parameter_vm_remote_operation() -> None:

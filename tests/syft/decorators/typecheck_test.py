@@ -1,6 +1,13 @@
-from typing import Dict, List, Optional, Union
+# stdlib
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
+# third party
 import pytest
+
+# syft absolute
 from syft.decorators import syft_decorator
 
 

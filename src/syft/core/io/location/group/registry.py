@@ -1,6 +1,9 @@
+# stdlib
+from typing import Set
+
+# syft relative
 from ..location import Location
 from .group import LocationGroup
-from typing import Set
 
 
 class RegistryBackedLocationGroup(LocationGroup):

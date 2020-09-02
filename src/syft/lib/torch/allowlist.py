@@ -1,10 +1,13 @@
-from typing import Union
+# stdlib
 from typing import Dict
+from typing import Union
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 # SECTION - add the capital constructor
 allowlist["torch.Tensor"] = "torch.Tensor"
+# TODO here for testing purpose
+allowlist["torch.zeros_like"] = "torch.Tensor"
 
 # SECTION - Tensor methods which return a torch tensor object
 
@@ -591,7 +594,7 @@ allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
 # allowlist['torch.Tensor.type_as'] = #
 # allowlist['torch.Tensor.unbind'] = #
 # allowlist['torch.Tensor.unflatten'] = #
-# allowlist['torch.Tensor.unfold'] = #
+# allowlist["torch.Tensor.unfold"] = "torch.Tensor"
 # https://pytorch.org/docs/stable/nn.init.html#torch.nn.init.uniform_
 # allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
 allowlist["torch.Tensor.unique"] = "torch.Tensor"

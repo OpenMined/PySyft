@@ -1,10 +1,12 @@
-import syft as sy
-from syft.core.io.location import SpecificLocation
-from syft.core.io.address import Address
-from syft.core.common.uid import UID
-from syft.core.node.common.action.save_object_action import SaveObjectAction
-
+# third party
 import torch as th
+
+# syft absolute
+import syft as sy
+from syft.core.common.uid import UID
+from syft.core.io.address import Address
+from syft.core.io.location import SpecificLocation
+from syft.core.node.common.action.save_object_action import SaveObjectAction
 
 
 def test_save_object_action_serde() -> None:

@@ -1,16 +1,19 @@
-from typing import Optional
+# stdlib
 from typing import List
+from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-from ..generic import ObjectConstructor
-from syft.proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
-from syft.lib.torch.tensor_util import protobuf_tensor_serializer
-from syft.lib.torch.tensor_util import protobuf_tensor_deserializer
-from syft.core.store.storeable_object import StorableObject
-from ...util import aggressive_set_attr
-from ...core.common.uid import UID
-
 import torch as th
+
+# syft relative
+from ...core.common.uid import UID
+from ...core.store.storeable_object import StorableObject
+from ...lib.torch.tensor_util import protobuf_tensor_deserializer
+from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+from ...util import aggressive_set_attr
+from ..generic import ObjectConstructor
 
 
 class UppercaseTensorConstructor(ObjectConstructor):
@@ -72,8 +75,11 @@ class TorchTensorWrapper(StorableObject):
 
     @staticmethod
     def construct_new_object(
-        id: UID, data: StorableObject, tags: List[str], description: Optional[str]
-    ) -> object:
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
         data.id = id
         data.tags = tags
         data.description = description

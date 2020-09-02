@@ -1,16 +1,17 @@
-from typing import Callable
-from typing import Any
-from typing import Tuple
-from typing import Type
-from typing import Optional
-
-from .util import get_original_constructor_name
-from .util import copy_static_methods
-from .util import replace_classes_in_module
-from ..core.common.uid import UID
-
+# stdlib
 import inspect
 import sys
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Tuple
+from typing import Type
+
+# syft relative
+from ..core.common.uid import UID
+from .util import copy_static_methods
+from .util import get_original_constructor_name
+from .util import replace_classes_in_module
 
 
 class ObjectConstructor(object):

@@ -1,10 +1,11 @@
+# stdlib
 from typing import Optional
 
-# external class imports
+# third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft imports
+# syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID

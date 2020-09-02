@@ -1,24 +1,27 @@
+# stdlib
 from typing import List
+from typing import Optional
 
-from ...common.service.auth import service_auth
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+
+# syft relative
 from ..... import deserialize
-from ....common import UID
+from .....decorators import syft_decorator
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
 )
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsResponseMessage as GetAllRequestsResponseMessage_PB,
 )
-from .request_message import RequestMessage
-from typing import Optional
-from ....io.address import Address
-from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....decorators import syft_decorator
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....io.address import Address
 from ...abstract.node import AbstractNode
-from nacl.signing import VerifyKey
-from google.protobuf.reflection import GeneratedProtocolMessageType
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from .request_message import RequestMessage
 
 
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
@@ -175,7 +178,6 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    @service_auth(root_only=True)
     def process(
         node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
     ) -> GetAllRequestsResponseMessage:

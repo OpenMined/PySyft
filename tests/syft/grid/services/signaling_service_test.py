@@ -1,10 +1,8 @@
+# syft absolute
 import syft as sy
-
-from syft.grid.services.signaling_service import (
-    SignalingService,
-    SignalingAnswerMessage,
-    SignalingOfferMessage,
-)
+from syft.grid.services.signaling_service import SignalingAnswerMessage
+from syft.grid.services.signaling_service import SignalingOfferMessage
+from syft.grid.services.signaling_service import SignalingService
 
 
 def test_signaling_offer_message_serde() -> None:
