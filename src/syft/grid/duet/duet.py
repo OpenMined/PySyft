@@ -56,6 +56,8 @@ class GridHttpClientConnection(ClientConnection):
 
 
 class Duet(DomainClient):
+    server: Optional[ServerThread]
+
     def __init__(
         self,
         domain_url: Optional[str] = None,
@@ -163,5 +165,6 @@ class Duet(DomainClient):
 
     def __del__(self) -> None:
         print("♫♫♫ > Ending duet...")
-        self.server.shutdown()
+        if self.server is not None:
+            self.server.shutdown()
         print("♫♫♫ > Ended!")
