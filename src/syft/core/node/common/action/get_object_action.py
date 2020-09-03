@@ -24,6 +24,14 @@ from .common import ImmediateActionWithReply
 
 
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
+    """
+    GetObjectResponseMessages are the type of messages that are sent in reponse to a
+    :class:`GetObjectAction`. They contain the object that was asked for.
+
+    Attributes:
+         obj: the object being sent back to the asker.
+    """
+
     def __init__(
         self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
     ) -> None:
@@ -109,6 +117,17 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
 
 
 class GetObjectAction(ImmediateActionWithReply):
+    """
+    This kind of action is used when a Node wants to get an object located on another Node.
+
+    The Node receiving this action first check that the asker does have the permission to
+    fetch the object he asked for. If it's the case, a :class:`GetObjectResponseMessage`
+    containing the object is sent back to the asker.
+
+    Attributes:
+         obj_id: the id of the object asked for.
+    """
+
     def __init__(
         self,
         obj_id: UID,

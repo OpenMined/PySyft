@@ -24,6 +24,19 @@ from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
+    """
+    When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
+    a function defined by the action's path attribute and keep the returned value
+    in its store.
+
+    Attributes:
+         path: the dotted path to the function to call
+         args: args to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+         kwargs: kwargs to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+    """
+
     def __init__(
         self,
         path: str,
@@ -91,12 +104,12 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
 
         result = method(*resolved_args, **resolved_kwargs)
-        #TODO reintroduce new primitive logic
+        # TODO reintroduce new primitive logic
         # if isprimitive(value=result):
         #     # Wrap in a PyPrimitive
         #     result = PyPrimitive(data=result, id=self.id_at_location)
         # else:
-            # TODO: overload all methods to incorporate this automatically
+        # TODO: overload all methods to incorporate this automatically
         if hasattr(result, "id"):
             result.id = self.id_at_location
 
@@ -105,9 +118,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 id=self.id_at_location,
                 data=result,
                 read_permissions=(
-                    result_read_permissions
-                    if result_read_permissions is not None
-                    else {}
+                    result_read_permissions if result_read_permissions is not None else {}
                 ),
             )
 
