@@ -1,14 +1,6 @@
-# stdlib
-import logging
-import threading
-
-# third party
 from flask import Flask
 from werkzeug.serving import make_server
-
-# disable logging for werkzeug
-log = logging.getLogger("werkzeug")
-log.setLevel(logging.ERROR)
+import threading
 
 
 class ServerThread(threading.Thread):
