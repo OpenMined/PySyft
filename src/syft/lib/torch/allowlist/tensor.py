@@ -5,7 +5,6 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 
 # SECTION - add the capital constructor
 allowlist["torch.Tensor"] = "torch.Tensor"
-# allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
 
 # SECTION - Tensor methods which return a torch tensor object
 
@@ -602,12 +601,3 @@ allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.ones"] = "torch.Tensor"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
-# allowlist.add("torch.nn.Linear.parameters")
-# allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
-
-# SECTION - Parameter methods
-
-# allowlist["torch.nn.Parameter.t"] = "torch.nn.Parameter"
-# allowlist["torch.nn.Parameter.__abs__"] = "torch.nn.Parameter"
-allowlist["torch.nn.Parameter.__add__"] = "torch.Tensor"
-# allowlist["torch.nn.Parameter.__and__"] = "torch.nn.Parameter"

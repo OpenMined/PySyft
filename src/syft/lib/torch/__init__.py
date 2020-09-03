@@ -15,9 +15,12 @@ __all__ = [
 
 from syft.ast.globals import Globals
 
-from .allowlist import allowlist
+from .allowlist.tensor import allowlist as tensor_allowlist
+from .allowlist.parameter import allowlist as parameter_allowlist
 
 TORCH_VERSION = version.parse(torch.__version__)
+
+allowlist = {**tensor_allowlist, **parameter_allowlist}
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -43,9 +46,7 @@ def create_torch_ast() -> Globals:
     for method, return_type_name_or_dict in allowlist.items():
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
-            ast.add_path(
-                path=method, framework_reference=torch, return_type_name=return_type
-            )
+            ast.add_path(path=method, framework_reference=torch, return_type_name=return_type)
         else:
             print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
 

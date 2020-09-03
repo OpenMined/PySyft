@@ -31,8 +31,11 @@ tensor_type = type(th.tensor([1, 2, 3]))
 # for dtype in ["complex*", "q*"] (complex and quantized types)
 TYPES_EXCEPTIONS_PREFIX = ("complex", "q")
 
-TEST_TYPES = [e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)]
-TEST_TYPES = ["float16"]
+TEST_TYPES = [
+    e
+    for e in TORCH_STR_DTYPE.keys()
+    if not e.startswith(TYPES_EXCEPTIONS_PREFIX) and "int" not in e and e != "bool"
+]
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -52,7 +55,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
 BASIC_OPS = list()
 BASIC_OPS_RETURN_TYPE = {}
 for method, return_type_name_or_dict in allowlist.items():
-    if method.startswith("torch.nn.Parameter"):
+    if method.startswith("torch.nn.Parameter") and method != "torch.nn.Parameter":
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             method_name = method.split(".")[-1]
@@ -88,33 +91,7 @@ alice_client = alice.get_client()
 def is_expected_runtime_error(msg: str) -> bool:
     expected_msgs = {
         "not implemented for",
-        "two bool tensors is not supported.",
-        "ZeroDivisionError",
-        "not supported on",
-        "Can only calculate the mean of floating types",
-        "expected a tensor with 2 or more dimensions of floating types",
-        "only supports floating-point dtypes",
-        "invalid argument 1: A should be 2 dimensional at",
-        "invalid argument 1: expected a matrix at",
-        "Expected object of scalar type Long but got scalar type",
-        "expected total dims >= 2, but got total dims = 1",
-        "Integer division of tensors using div or / is no longer supported",
-        "result type Float can't be cast to the desired output type",
-        # py3.6 torch==1.6.0 "square" space typo "Longcan't" is correct
-        "result type Longcan't be cast to the desired output type Bool",
-        "inconsistent tensor size, expected tensor",
-        "size mismatch",
-        "1D tensors expected, got 2D",
-        "requested resize to",
-        "ger: Expected 1-D ",
-        "At least one of 'min' or 'max' must not be None",
-        "Boolean value of Tensor with more than one value is ambiguous",
-        "shape '[1]' is invalid for input of size",  # BASIC_METHOD_ARGS.append("[1]")
-        "Negation, the `-` operator, on a bool tensor is not supported",
-        "True division requires a floating output type, but got",
-        "vector and vector expected, got",  # torch==1.4.0 "ger"
-        "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
-        "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
+        "arguments don't support automatic differentiation, but one of the arguments requires grad",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -123,22 +100,8 @@ def is_expected_runtime_error(msg: str) -> bool:
 def is_expected_type_error(msg: str) -> bool:
     expected_msgs = {
         "received an invalid combination of arguments - got (), but expected",
-        "missing 1 required positional argument",
         "takes no arguments",
-        "is only implemented on",
-        "takes 0 positional arguments but",
-        "takes from 1 to 0 positional arguments but",
-        "argument after * must be an iterable, not int",
-        "must be Number, not Tensor",
-        "flatten(): argument 'start_dim' (position 1) must be int, not Tensor",
-        "diagonal(): argument 'offset' (position 1) must be int, not Tensor",
-        "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor",
-        "(position 1) must be int, not Tensor",
-        "received an invalid combination of arguments",
-        "pinverse(): argument 'rcond' (position 1) must be float, not Tensor",
-        "must be bool, not Tensor",
-        "nonzero() takes from 1 to 0 positional arguments but",
-        "transpose_() missing 2 required positional argument",  # "transpose_"
+        "argument after * must be an iterable",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -160,6 +123,14 @@ def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
 
 
+expected_exception: Dict[Type, Callable[[str], bool]] = {
+    RuntimeError: is_expected_runtime_error,
+    TypeError: is_expected_type_error,
+    ValueError: is_expected_value_error,
+    IndexError: is_expected_index_error,
+}
+
+
 @pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
 def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
     tensor_type: str, op_name: str, self_tensor: List, _args: str
@@ -170,10 +141,20 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
 
     # Step 3: Create the object we're going to call a method on
     # NOTE: we need a second copy because some methods mutate tensor before we send
-    self_tensor, self_tensor_copy = (
-        th.nn.Parameter(th.tensor(self_tensor, dtype=t_type)),
-        th.nn.Parameter(th.tensor(self_tensor, dtype=t_type)),
-    )
+    try:
+        self_tensor, self_tensor_copy = (
+            th.nn.Parameter(th.tensor(self_tensor, dtype=t_type)),
+            th.nn.Parameter(th.tensor(self_tensor, dtype=t_type)),
+        )
+    except (RuntimeError, TypeError, ValueError, IndexError) as e:
+        msg = repr(e)
+
+        if type(e) in expected_exception and expected_exception[type(e)](msg):
+            print("skipped")
+            return
+        else:
+            print(msg)
+            raise e
 
     # Copy the UID over so that its easier to see they are supposed to be the same obj
     self_tensor_copy.id = self_tensor.id  # type: ignore
@@ -200,13 +181,6 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         args = [False]
     else:
         args = _args
-
-    expected_exception: Dict[Type, Callable[[str], bool]] = {
-        RuntimeError: is_expected_runtime_error,
-        TypeError: is_expected_type_error,
-        ValueError: is_expected_value_error,
-        IndexError: is_expected_index_error,
-    }
 
     # Step 4: Get the method we're going to call
     target_op_method = getattr(self_tensor, op_name)
