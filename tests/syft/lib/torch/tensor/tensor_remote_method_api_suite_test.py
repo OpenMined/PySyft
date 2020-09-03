@@ -125,7 +125,6 @@ def is_expected_runtime_error(msg: str) -> bool:
 
 def is_expected_type_error(msg: str) -> bool:
     expected_msgs = {
-        "received an invalid combination of arguments - got (), but expected",
         "missing 1 required positional argument",
         "takes no arguments",
         "is only implemented on",
