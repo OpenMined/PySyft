@@ -20,9 +20,7 @@ class Module(ast.attribute.Attribute):
     """A module which contains other modules or callables."""
 
     def add_attr(
-        self,
-        attr_name: str,
-        attr: Optional[Union[Callable, CallableT]],
+        self, attr_name: str, attr: Optional[Union[Callable, CallableT]],
     ) -> None:
         self.__setattr__(attr_name, attr)
         if attr is not None:

@@ -91,12 +91,12 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
 
         result = method(*resolved_args, **resolved_kwargs)
-        #TODO reintroduce new primitive logic
+        # TODO reintroduce new primitive logic
         # if isprimitive(value=result):
         #     # Wrap in a PyPrimitive
         #     result = PyPrimitive(data=result, id=self.id_at_location)
         # else:
-            # TODO: overload all methods to incorporate this automatically
+        # TODO: overload all methods to incorporate this automatically
         if hasattr(result, "id"):
             result.id = self.id_at_location
 
