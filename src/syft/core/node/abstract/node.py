@@ -1,20 +1,23 @@
-from typing import Any, List, Optional
-from typing import Set
+# stdlib
+from typing import Any
 from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
+# syft relative
+from ....decorators import syft_decorator
+from ...common.message import SignedEventualSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
+from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.uid import UID
 from ...io.address import Address
-from syft.core.io.location import Location
-from syft.decorators import syft_decorator
+from ...io.location import Location
 from ...store import ObjectStore
-from ...common.message import (
-    SignedImmediateSyftMessageWithoutReply,
-    SignedEventualSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
 
 
 class AbstractNode(Address):
@@ -96,9 +99,4 @@ class AbstractNodeClient(Address):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
-
-    def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
-    ) -> None:
         raise NotImplementedError

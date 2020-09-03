@@ -10,11 +10,20 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    syft.core.common.serde
 
 Submodules
 ----------
+
+syft.core.common.group module
+-----------------------------
+
+.. automodule:: syft.core.common.group
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 syft.core.common.lazy\_structures module
 ----------------------------------------

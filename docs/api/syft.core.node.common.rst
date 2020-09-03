@@ -10,6 +10,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    syft.core.node.common.action
    syft.core.node.common.service

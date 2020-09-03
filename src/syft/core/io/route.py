@@ -83,24 +83,28 @@ would have instructions for how to forward to a binary tree of other
 node, propagating the model to all node which asked for it.
 """
 
+# stdlib
 from typing import List
+from typing import Union
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from syft.core.common.message import (
-    SignedEventualSyftMessageWithoutReply,
-    SyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-    SignedImmediateSyftMessageWithoutReply,
-)
+# syft absolute
+import syft as sy
 
+# syft relative
+from ...decorators import syft_decorator
+from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
+from ..common.message import SignedEventualSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
+from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.object import ObjectWithID
+from .connection import BidirectionalConnection
 from .connection import ClientConnection
-from .virtual import VirtualClientConnection
 from .location import Location
 from .location import SpecificLocation
-from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
-from ...decorators import syft_decorator
-import syft as sy
+from .virtual import VirtualClientConnection
 
 
 class RouteSchema(ObjectWithID):
@@ -148,11 +152,17 @@ class Route(ObjectWithID):
 
 
 class SoloRoute(Route):
-    def __init__(self, destination: Location, connection: ClientConnection) -> None:
+    def __init__(
+        self,
+        destination: Location,
+        connection: Union[ClientConnection, BidirectionalConnection],
+    ) -> None:
         super().__init__(schema=RouteSchema(destination=destination))
         self.connection = connection
 
-    def send_immediate_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+    def send_immediate_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithoutReply
+    ) -> None:
         if sy.VERBOSE:
             print(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)

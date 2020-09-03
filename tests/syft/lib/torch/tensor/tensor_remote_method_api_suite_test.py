@@ -4,23 +4,25 @@ called from the syft package. We then permute this list over all tensor
 types and ensure that they can be executed in a remote environment.
 """
 
-from packaging import version
+# stdlib
 from itertools import product
-from typing import List
 from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Type
 from typing import Union
-from typing import Callable
+
+# third party
+from packaging import version
 import pytest
-
-from syft.lib.torch import allowlist
-from syft.core.pointer.pointer import Pointer
-from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
-from syft.lib.python.primitive import isprimitive
-
-import syft as sy
 import torch as th
+
+# syft absolute
+import syft as sy
+from syft.core.pointer.pointer import Pointer
+from syft.lib.torch import allowlist
+from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 
 TORCH_VERSION = version.parse(th.__version__)
 
@@ -227,11 +229,9 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
     except (RuntimeError, TypeError, ValueError, IndexError) as e:
         msg = repr(e)
-
         if type(e) in expected_exception and expected_exception[type(e)](msg):
             valid_torch_command = False
         else:
-            print(msg)
             raise e
 
     # Step 6: If the command is valid, continue testing
@@ -269,30 +269,32 @@ def test_all_allowlisted_tensor_methods_work_remotely_on_all_types(
 
         try:
             # TODO: We should detect tensor vs primitive in a more reliable way
+            # TODO: adapt to the new primitive
             # set all NaN to 0
-            if isprimitive(value=target_result):
-                # check that it matches functionally
-                assert local_result == target_result
-                # unbox the real value for type comparison below
-                local_result = local_result.data
-            else:
-                # type(target_result) == torch.Tensor
+            # if isprimitive(value=target_result):
+            #     # check that it matches functionally
+            #     assert local_result == target_result
+            #     # unbox the real value for type comparison below
+            #     local_result = local_result.data
+            # else:
 
-                # Set all NaN to 0
-                # If we have two tensors like
-                # local = [Nan, 0, 1] and remote = [0, Nan, 1]
-                # those are not equal
-                # Tensor.isnan was added in torch 1.6
-                # so we need to do torch.isnan(tensor)
-                nan_mask = th.isnan(local_result)
+            # type(target_result) == torch.Tensor
 
-                # Use the same mask for local and target
-                local_result[nan_mask] = 0
-                target_result[nan_mask] = 0
+            # Set all NaN to 0
+            # If we have two tensors like
+            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+            # those are not equal
+            # Tensor.isnan was added in torch 1.6
+            # so we need to do torch.isnan(tensor)
+            nan_mask = th.isnan(local_result)
 
-                # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
-                # using Syft pointers to communicate with remote torch objects
-                assert (local_result == target_result).all()
+            # Use the same mask for local and target
+            local_result[nan_mask] = 0
+            target_result[nan_mask] = 0
+
+            # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
+            # using Syft pointers to communicate with remote torch objects
+            assert (local_result == target_result).all()
 
             # make sure the return types match
             assert type(local_result) == type(target_result)

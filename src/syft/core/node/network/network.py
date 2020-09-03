@@ -1,19 +1,22 @@
-# external class imports
-from typing import Optional, Union
+# stdlib
+from typing import Optional
+from typing import Union
 
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft imports (sorted by length)
+# syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ...common.message import SignedMessage
+from ...common.message import SyftMessage
+from ...common.uid import UID
+from ...io.location import Location
 from ...io.location import SpecificLocation
-from ...common.message import SyftMessage, SignedMessage
+from ..common.node import Node
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
-from ...io.location import Location
 from .client import NetworkClient
-from ..common.node import Node
-from ...common.uid import UID
 
 
 class Network(Node):

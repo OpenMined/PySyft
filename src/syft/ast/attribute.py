@@ -1,16 +1,14 @@
+# stdlib
+from abc import ABC
+from typing import Any
+from typing import Callable as CallableT
 from typing import Dict
-from typing import Union
 from typing import List
 from typing import Optional
-from typing import Callable as CallableT
+from typing import Union
 
-from abc import ABC
-
+# syft relative
 from .. import ast
-
-# TODO: Fix circular import for Client interface
-# from ..core.node.common.client import Client
-from typing import Any
 
 
 class Attribute(ABC):

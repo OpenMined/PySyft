@@ -1,9 +1,13 @@
+# stdlib
 import inspect
-from typing import Tuple
 from typing import Any
 from typing import Callable
+from typing import Tuple
 
+# third party
 import pytest
+
+# syft absolute
 from syft.decorators import syft_decorator
 
 

@@ -1,4 +1,8 @@
-from typing import Callable, Any, Dict, Set
+# stdlib
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Set
 
 
 class LazyDict:

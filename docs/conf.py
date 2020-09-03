@@ -8,13 +8,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# stdlib
 import inspect
 import os
+from pathlib import Path
 import shutil
 import sys
-from pathlib import Path
-from typing import Dict
 from typing import Any
+from typing import Dict
 
 dir_name = inspect.getfile(inspect.currentframe())  # type: ignore
 __location__ = os.path.join(os.getcwd(), os.path.dirname(dir_name))
@@ -33,8 +34,10 @@ sys.path.insert(0, os.path.join(__location__, "../src"))
 # Additionally it helps us to avoid running apidoc manually
 
 try:  # for Sphinx >= 1.7
+    # third party
     from sphinx.ext import apidoc
 except ImportError:
+    # third party
     from sphinx import apidoc
 
 output_dir = os.path.join(__location__, "api")
@@ -45,8 +48,9 @@ except FileNotFoundError:
     pass
 
 try:
-    import sphinx
+    # third party
     from pkg_resources import parse_version
+    import sphinx
 
     # found this --module-first here shorturl.at/iDKNW
     cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir} --module-first"
@@ -107,6 +111,7 @@ def skip(
 
 # To configure AutoStructify
 def setup(app: Any) -> None:
+    # third party
     from recommonmark.transform import AutoStructify
 
     app.add_config_value(
@@ -134,7 +139,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "syft"
-copyright = "2020, Andrew Trask"
+copyright = "2020, OpenMined Core Contributors"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -189,8 +194,8 @@ pygments_style = "sphinx"
 # a list of builtin themes.
 
 # html_theme = 'sphinx-theme-graphite'
-html_theme = "alabaster"
-#
+# html_theme = "alabaster"
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -203,6 +208,7 @@ html_theme_path = ["_themes/"]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 try:
+    # syft absolute
     from syft import __version__ as version
 except ImportError:
     pass

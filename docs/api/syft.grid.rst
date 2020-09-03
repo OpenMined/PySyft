@@ -10,8 +10,11 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
+   syft.grid.connections
    syft.grid.duet
+   syft.grid.services
 
 Submodules
 ----------
@@ -52,6 +55,14 @@ syft.grid.pks module
 --------------------
 
 .. automodule:: syft.grid.pks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.grid.ws\_duet module
+-------------------------
+
+.. automodule:: syft.grid.ws_duet
    :members:
    :undoc-members:
    :show-inheritance:

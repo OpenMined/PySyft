@@ -1,11 +1,18 @@
-from typing import Optional
-from typing import List
-from typing import Union
+# stdlib
 from typing import Callable as CallableT
+from typing import List
+from typing import Optional
+from typing import Union
+
+# syft relative
 from .. import ast
 from ..ast.callable import Callable
-from .util import builtin_func_type, class_type, func_type, module_type, unsplit
 from ..lib.generic import ObjectConstructor
+from .util import builtin_func_type
+from .util import class_type
+from .util import func_type
+from .util import module_type
+from .util import unsplit
 
 
 class Module(ast.attribute.Attribute):

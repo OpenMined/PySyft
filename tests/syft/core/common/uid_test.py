@@ -9,18 +9,19 @@ Table of Contents:
 
 """
 
+# stdlib
 import json
-
-# external imports
-import pytest
 import uuid
 
-# syft imports
+# third party
+import pytest
+
+# syft absolute
 import syft as sy
 from syft.core.common import UID
+from syft.core.common.serde import _deserialize
+from syft.core.common.serde import _serialize
 from syft.core.common.uid import uuid_type
-from syft.core.common.serde import _serialize, _deserialize
-
 
 # --------------------- INITIALIZATION ---------------------
 

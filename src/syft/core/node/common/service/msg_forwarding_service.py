@@ -1,27 +1,28 @@
-# external class imports
+# stdlib
 from typing import List
 from typing import Optional
 
+# syft absolute
 import syft as sy
 
-from syft.core.common.message import (
-    ImmediateSyftMessageWithoutReply,
-    ImmediateSyftMessageWithReply,
-    SignedMessageT,
-)
-
+# syft relative
 from .....decorators import syft_decorator
+from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import SignedImmediateSyftMessageWithReply
+from ....common.message import SignedImmediateSyftMessageWithoutReply
+from ....common.message import SignedMessageT
 from ...abstract.node import AbstractNode
-from .node_service import (
-    SignedNodeServiceWithReply,
-    SignedNodeServiceWithoutReply,
-)
+from .node_service import SignedNodeServiceWithReply
+from .node_service import SignedNodeServiceWithoutReply
 
 
 class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SignedMessageT) -> Optional[SignedMessageT]:
+    def process(
+        node: AbstractNode, msg: SignedImmediateSyftMessageWithoutReply
+    ) -> Optional[SignedMessageT]:
         addr = msg.address
         if sy.VERBOSE:
             print(f"> Forwarding WithoutReply {msg.pprint} to {addr.target_emoji()}")
@@ -71,7 +72,9 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
 class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
-    def process(node: AbstractNode, msg: SignedMessageT) -> SignedMessageT:
+    def process(
+        node: AbstractNode, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
         # def process(
         #     node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
         # ) -> SignedMessageT:

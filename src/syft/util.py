@@ -1,15 +1,19 @@
+# stdlib
+from random import randint
 from typing import List
 from typing import Union
-from random import randint
 
+# third party
+from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
+# syft absolute
 # breaking convention here because index_globals needs
 # the full syft name to be present.
-import syft  # noqa: F401
-from forbiddenfruit import curse
+import syft
 
+# syft relative
 from .decorators.syft_decorator_impl import syft_decorator
 
 

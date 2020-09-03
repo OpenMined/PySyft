@@ -4,40 +4,40 @@
 # - Do sort imports by length
 # - Do group imports by where they come from
 
-# external class imports
+# stdlib
 from typing import List
-from typing import Type
 from typing import Optional
+from typing import Type
+
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft class imports
+# syft relative
+from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
 )
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
-from ....pointer.pointer import Pointer
-from ....common.message import ImmediateSyftMessageWithoutReply
-from .....decorators.syft_decorator_impl import syft_decorator
 from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from .node_service import ImmediateNodeServiceWithReply
 from ....common.serde.deserialize import _deserialize
 from ...abstract.node import AbstractNode
+from ....pointer.pointer import Pointer
 from .....util import obj2pointer_type
 from ....io.address import Address
+from ....common.group import All
 from ....common.uid import UID
 
 
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
@@ -145,14 +145,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: ObjectSearchMessage_PB) -> "ObjectSearchMessage":
-        """Creates a ObjectSearchMessage from a protobuf
+    def _proto2object(proto: ObjectSearchReplyMessage_PB) -> "ObjectSearchReplyMessage":
+        """Creates a ObjectSearchReplyMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ObjectSearchMessage
-        :rtype: ObjectSearchMessage
+        :return: returns an instance of ObjectSearchReplyMessage
+        :rtype: ObjectSearchReplyMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -194,9 +194,18 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         results: List[Pointer] = list()
 
         for obj in node.store.get_objects_of_type(obj_type=object):
+
+            # if this tensor allows anyone to search for it, then one of its keys
+            # has an All() class in it.
+            contains_all_in_permissions = False
+            for key in obj.search_permissions.keys():
+                if isinstance(key, All):
+                    contains_all_in_permissions = True
+
             if (
                 verify_key in obj.search_permissions.keys()
                 or verify_key == node.root_verify_key
+                or contains_all_in_permissions
             ):
 
                 ptr_type = obj2pointer_type(obj.data)

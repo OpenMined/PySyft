@@ -1,30 +1,30 @@
-# external class imports
+# stdlib
+from typing import List
 from typing import Optional
 from typing import Union
-from typing import List
+
+# third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft imports
+# syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ...common.message import SyftMessage, SignedMessage
-from ...io.location import SpecificLocation
-from ..device import Device, DeviceClient
-from ...io.location import Location
-from .client import DomainClient
-from ..common.node import Node
+from ...common.message import SignedMessage
+from ...common.message import SyftMessage
 from ...common.uid import UID
-from ..abstract.node import AbstractNodeClient
-
-
-from .service import (
-    RequestAnswerMessageService,
-    RequestService,
-    RequestStatus,
-    RequestMessage,
-)
-from .service.get_all_requests_service import GetAllRequestsService
+from ...io.location import Location
+from ...io.location import SpecificLocation
+from ..common.client import Client
+from ..common.node import Node
+from ..device import Device
+from ..device import DeviceClient
+from .client import DomainClient
+from .service import RequestAnswerMessageService
+from .service import RequestMessage
+from .service import RequestService
+from .service import RequestStatus
 from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
+from .service.get_all_requests_service import GetAllRequestsService
 
 
 class Domain(Node):
@@ -99,7 +99,7 @@ class Domain(Node):
 
     @syft_decorator(typechecking=True)
     def set_request_status(
-        self, message_request_id: UID, status: RequestStatus, client: AbstractNodeClient
+        self, message_request_id: UID, status: RequestStatus, client: Client
     ) -> bool:
         for req in self.requests:
             if req.request_id == message_request_id:
