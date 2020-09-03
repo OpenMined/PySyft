@@ -2,7 +2,6 @@
 import syft as sy
 from syft.grid.services.signaling_service import SignalingAnswerMessage
 from syft.grid.services.signaling_service import SignalingOfferMessage
-from syft.grid.services.signaling_service import SignalingService
 
 
 def test_signaling_offer_message_serde() -> None:
@@ -33,16 +32,3 @@ def test_signaling_answer_message_serde() -> None:
     assert msg.payload == msg2.payload
     assert msg2.payload == "Test Payload"
     assert msg == msg2
-
-
-def test_signaling_service() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
-    bob_vm.immediate_services_without_reply.append(SignalingService)
-    bob_vm._register_services()  # re-register all services including SignalingService
-    bob_vm_client = bob_vm.get_root_client()
-
-    bob_vm_client.send_immediate_msg_without_reply(
-        msg=SignalingAnswerMessage(address=bob_vm.address, payload="Test Payload")
-    )
-
-    # TODO add some asserts here that verify something happened
