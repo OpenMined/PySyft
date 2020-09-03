@@ -39,7 +39,9 @@ TYPES_EXCEPTIONS_PREFIX = ("complex", "q")
 TEST_TYPES = [
     e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)
 ]
-TEST_TYPES = ["float16"]
+
+# only float types
+TEST_TYPES = [ttype for ttype in TEST_TYPES if "float" in ttype]
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -59,11 +61,12 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
 BASIC_OPS = list()
 BASIC_OPS_RETURN_TYPE = {}
 for method, return_type_name_or_dict in allowlist.items():
-    if method.startswith("torch.nn.Parameter"):
+    if method.startswith("torch.Tensor."):
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             method_name = method.split(".")[-1]
             BASIC_OPS.append(method_name)
+            method_name = method_name.replace("torch.Tensor.", "torch.nn.Parameter.")
             BASIC_OPS_RETURN_TYPE[method_name] = return_type
         else:
             print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
@@ -122,6 +125,14 @@ def is_expected_runtime_error(msg: str) -> bool:
         "vector and vector expected, got",  # torch==1.4.0 "ger"
         "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
         "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
+        # torch.nn.Parameter on _ in-place operations
+        "a leaf Variable that requires grad has been used in an in-place operation",
+        (
+            "arguments don't support automatic differentiation, but one of the "
+            + "arguments requires grad"
+        ),
+        "cannot resize variables that require grad",
+        "Only Tensors of floating point dtype can require gradients",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -138,14 +149,26 @@ def is_expected_type_error(msg: str) -> bool:
         "argument after * must be an iterable, not int",
         "must be Number, not Tensor",
         "flatten(): argument 'start_dim' (position 1) must be int, not Tensor",
+        "flatten(): argument 'start_dim' (position 1) must be int, not OriginalConstructorSubclass",
         "diagonal(): argument 'offset' (position 1) must be int, not Tensor",
+        "diagonal(): argument 'offset' (position 1) must be int, not OriginalConstructorSubclass",
+        "argument 'diagonal' (position 1) must be int, not OriginalConstructorSubclass",
+        "argument 'min' (position 1) must be Number, not OriginalConstructorSubclass",
+        "argument 'max' (position 1) must be Number, not OriginalConstructorSubclass",
         "eig(): argument 'eigenvectors' (position 1) must be bool, not Tensor",
         "(position 1) must be int, not Tensor",
         "received an invalid combination of arguments",
         "pinverse(): argument 'rcond' (position 1) must be float, not Tensor",
+        "pinverse(): argument 'rcond' (position 1) must be float, not OriginalConstructorSubclass",
         "must be bool, not Tensor",
         "nonzero() takes from 1 to 0 positional arguments but",
-        "transpose_() missing 2 required positional argument",  # "transpose_"
+        "transpose_() missing 2 required positional argument",  # "transpose_",
+        "norm(): argument 'p' (position 2) must be Number, not OriginalConstructorSubclass",
+        "argument 'dim' (position 1) must be int, not OriginalConstructorSubclass",
+        "argument 'return_inverse' must be bool, not OriginalConstructorSubclass",
+        "argument 'sorted' must be bool, not OriginalConstructorSubclass",
+        "argument 'dim0' (position 1) must be int, not OriginalConstructorSubclass",
+        "argument 'k' (position 1) must be int, not OriginalConstructorSubclass",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
