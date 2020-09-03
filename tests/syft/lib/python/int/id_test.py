@@ -4,7 +4,7 @@ test_int = Int(10)
 other = Int(2)
 
 python_int = 10
-other = 2
+
 
 def test_id_abs():
     res = test_int.__abs__()
