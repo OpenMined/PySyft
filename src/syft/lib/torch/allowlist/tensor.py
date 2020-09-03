@@ -26,7 +26,9 @@ allowlist["torch.Tensor.__and__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__delitem__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__dict__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.__dir__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
-allowlist["torch.Tensor.__div__"] = {  # exists in 1.4.0 but causes fatal exception on non floats
+allowlist[
+    "torch.Tensor.__div__"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
@@ -234,11 +236,15 @@ allowlist["torch.Tensor.diagonal"] = "torch.Tensor"
 # allowlist['torch.Tensor.digamma_'] = #
 # allowlist['torch.Tensor.dim'] = #
 # allowlist['torch.Tensor.dist'] = #
-allowlist["torch.Tensor.div"] = {  # exists in 1.4.0 but causes fatal exception on non floats
+allowlist[
+    "torch.Tensor.div"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
-allowlist["torch.Tensor.div_"] = {  # exists in 1.4.0 but causes fatal exception on non floats
+allowlist[
+    "torch.Tensor.div_"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
@@ -454,11 +460,15 @@ allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
 # allowlist['torch.Tensor.reinforce'] = #
 allowlist["torch.Tensor.relu"] = "torch.Tensor"
 allowlist["torch.Tensor.relu_"] = "torch.Tensor"
-allowlist["torch.Tensor.remainder"] = {  # exists in 1.4.0 but causes fatal exception on non floats
+allowlist[
+    "torch.Tensor.remainder"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
-allowlist["torch.Tensor.remainder_"] = {  # exists in 1.4.0 but causes fatal exception on non floats
+allowlist[
+    "torch.Tensor.remainder_"
+] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }

@@ -214,7 +214,9 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
         if args is not None:
-            argsp = [arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args]
+            argsp = [
+                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
+            ]
         else:
             argsp = None  # type:ignore
 
@@ -269,7 +271,10 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
             assert type(local_result) == type(target_result)
 
             # make sure the return type matches the specified allowlist return type
-            assert full_name_with_qualname(type(local_result)) == BASIC_OPS_RETURN_TYPE[op_name]
+            assert (
+                full_name_with_qualname(type(local_result))
+                == BASIC_OPS_RETURN_TYPE[op_name]
+            )
 
         except RuntimeError as e:
             msg = repr(e)
