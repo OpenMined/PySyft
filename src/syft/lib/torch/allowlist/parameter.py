@@ -1,5 +1,6 @@
-from typing import Union
+# stdlib
 from typing import Dict
+from typing import Union
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 

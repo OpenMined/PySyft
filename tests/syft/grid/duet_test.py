@@ -1,5 +1,8 @@
-import syft as sy
+# third party
 import torch as th
+
+# syft absolute
+import syft as sy
 
 
 def test_duet_send_and_get() -> None:

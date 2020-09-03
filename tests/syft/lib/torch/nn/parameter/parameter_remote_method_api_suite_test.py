@@ -4,22 +4,25 @@ called from the syft package. We then permute this list over all tensor
 types and ensure that they can be executed in a remote environment.
 """
 
-from packaging import version
+# stdlib
 from itertools import product
-from typing import List
 from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Type
 from typing import Union
-from typing import Callable
+
+# third party
+from packaging import version
 import pytest
-
-from syft.lib.torch import allowlist
-from syft.core.pointer.pointer import Pointer
-from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
-
-import syft as sy
 import torch as th
+
+# syft absolute
+import syft as sy
+from syft.core.pointer.pointer import Pointer
+from syft.lib.torch import allowlist
+from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 
 TORCH_VERSION = version.parse(th.__version__)
 
@@ -31,7 +34,9 @@ tensor_type = type(th.tensor([1, 2, 3]))
 TYPES_EXCEPTIONS_PREFIX = ("complex", "q")
 
 TEST_TYPES = [
-    e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX) and "float" in e
+    e
+    for e in TORCH_STR_DTYPE.keys()
+    if not e.startswith(TYPES_EXCEPTIONS_PREFIX) and "float" in e
 ]
 
 
@@ -246,7 +251,9 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
         if args is not None:
-            argsp = [arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args]
+            argsp = [
+                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
+            ]
         else:
             argsp = None  # type:ignore
 
@@ -302,14 +309,17 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
             assert type(local_result) == type(target_result)
 
             # make sure the return type matches the specified allowlist return type
-            assert full_name_with_qualname(type(local_result)) == BASIC_OPS_RETURN_TYPE[op_name]
+            assert (
+                full_name_with_qualname(type(local_result))
+                == BASIC_OPS_RETURN_TYPE[op_name]
+            )
 
         except RuntimeError as e:
             msg = repr(e)
             # some types can't set Nans to 0 or do the final check
             if (
                 "not implemented for" not in msg
-                and "a leaf Variable that requires grad is being used in an in-place operation" # TODO why?
+                and "a leaf Variable that requires grad is being used in an in-place operation"  # TODO why?
                 not in msg
             ):
                 raise e
