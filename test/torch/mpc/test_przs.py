@@ -1,6 +1,16 @@
 from syft.frameworks.torch.mpc.przs import PRZS, get_random
 
 
+def test_generate_seeds(workers):
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+    players = [bob, alice, james]
+    seed_map = PRZS.generate_and_share_seeds(players)
+    assert type(seed_map is dict)
+    assert list(seed_map.keys()) == [bob, alice, james]
+    assert seed_map[bob][0].location is seed_map[bob][1].location is bob
+    assert seed_map[bob][0].get() == seed_map[alice][1].get()
+
+
 def test_get_random_number(workers):
     alice, bob, james = (
         workers["alice"],

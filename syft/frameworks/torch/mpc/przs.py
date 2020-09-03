@@ -1,17 +1,47 @@
-from collections import defaultdict
 from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.generic.utils import remote, allow_command
 
 import torch
 import syft
 
-RING_SIZE = 2 ** 32
-ERR_MSG = "You must call PRZS.setup because the seeds where not shared between workers"
-
 
 class PRZS:
     def __init__(self):
         self.generators = {}
+
+    ring_size = 2 ** 32
+
+    @classmethod
+    def setup(cls, players):
+        seed_map = cls.generate_and_share_seeds(players)
+        for worker, seeds in seed_map.items():
+            if worker == syft.local_worker:
+                initialize_generators = _initialize_generators
+            else:
+                initialize_generators = remote(_initialize_generators, location=worker)
+            initialize_generators(*seeds)
+
+    @classmethod
+    def generate_and_share_seeds(cls, players):
+        """
+        Returns: dict {player i: seed i, seed i-1}
+        """
+        local_seeds = []
+        remote_seeds = []
+        number_of_players = len(players)
+        for i in range(number_of_players):
+            if players[i] == syft.local_worker:
+                local_seed = players[i].torch.randint(high=cls.ring_size, size=[1])
+                remote_seed = local_seed.send(players[(i + 1) % number_of_players])
+            else:
+                local_seed = players[i].remote.torch.randint(high=cls.ring_size, size=[1])
+                remote_seed = local_seed.copy().move(players[(i + 1) % number_of_players])
+            local_seeds.append(local_seed)
+            remote_seeds.append(remote_seed)
+        return {
+            players[i]: (local_seeds[i], remote_seeds[(i - 1) % number_of_players])
+            for i in range(number_of_players)
+        }
 
     @property
     def generators(self):
@@ -21,42 +51,9 @@ class PRZS:
     def generators(self, generators):
         self.__generators = generators
 
-    @staticmethod
-    def setup(workers):
-        seed_max = 2 ** 32
-        paired_workers = list(zip(workers, workers[1:]))
-        paired_workers.append((workers[-1], workers[0]))
 
-        workers_ptr = defaultdict(dict)
-
-        for cur_worker, next_worker in paired_workers:
-            if cur_worker == syft.local_worker:
-                ptr = cur_worker.torch.randint(-seed_max, seed_max - 1, size=(1,))
-                ptr_next = ptr.send(next_worker)
-            else:
-                ptr = cur_worker.remote.torch.randint(-seed_max, seed_max - 1, size=(1,))
-                ptr_next = ptr.copy().move(next_worker)
-
-            workers_ptr[cur_worker]["cur_seed"] = ptr
-            workers_ptr[next_worker]["prev_seed"] = ptr_next
-
-        for worker, seeds in workers_ptr.items():
-            cur_seed = seeds["cur_seed"]
-            prev_seed = seeds["prev_seed"]
-            if worker == syft.local_worker:
-                func = _initialize_generators
-            else:
-                func = remote(_initialize_generators, location=worker)
-            func(cur_seed, prev_seed)
-
-
-def get_random(name_generator, shape, worker):
-    if worker == syft.local_worker:
-        func = _get_random_tensor(name_generator, shape, worker.id)
-    else:
-        func = remote(_get_random_tensor, location=worker)
-
-    return func(name_generator, shape, worker.id)
+RING_SIZE = 2 ** 32
+ERR_MSG = "You must call PRZS.setup because the seeds where not shared between workers"
 
 
 @allow_command
@@ -71,6 +68,15 @@ def _initialize_generators(cur_seed, prev_seed):
     worker.crypto_store.przs.generators = {"cur": cur_generator, "prev": prev_generator}
 
 
+def get_random(name_generator, shape, worker):
+    if worker == syft.local_worker:
+        func = _get_random_tensor(name_generator, shape, worker.id)
+    else:
+        func = remote(_get_random_tensor, location=worker)
+
+    return func(name_generator, shape, worker.id)
+
+
 @allow_command
 def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
     worker = syft.local_worker.get_worker(worker_id)
@@ -79,7 +85,7 @@ def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
     generators = worker.crypto_store.przs.generators
 
     gen = generators[name_generator]
-    rand_elem = torch.randint(0, ring_size, shape, dtype=torch.long, generator=gen)
+    rand_elem = torch.randint(high=ring_size, size=shape, generator=gen, dtype=torch.long)
     return rand_elem
 
 
