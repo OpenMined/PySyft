@@ -6,7 +6,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
@@ -18,16 +17,21 @@ from ...core.node.abstract.node import AbstractNode
 from ...core.node.common.service.auth import service_auth
 from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.grid.service.signaling_service_pb2 import (
-    SignalingOfferMessage as SignalingOfferMessage_PB,
-    SignalingAnswerMessage as SignalingAnswerMessage_PB,
-    OfferPullRequestMessage as OfferPullRequestMessage_PB,
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
+)
+from ...proto.grid.service.signaling_service_pb2 import (
+    OfferPullRequestMessage as OfferPullRequestMessage_PB,
+)
+from ...proto.grid.service.signaling_service_pb2 import (
+    SignalingAnswerMessage as SignalingAnswerMessage_PB,
+)
+from ...proto.grid.service.signaling_service_pb2 import (
+    SignalingOfferMessage as SignalingOfferMessage_PB,
 )
 
 
 @final
 class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
-    
     def __init__(
         self,
         address: Address,
@@ -45,7 +49,7 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
+        :rtype: OfferPullRequestMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -60,13 +64,13 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(proto: OfferPullRequestMessage_PB) -> "OfferPullRequestMessage":
-        """Creates a SignalingOfferMessage from a protobuf
+        """Creates a OfferPullRequestMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
         :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
+        :rtype: OfferPullRequestMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -120,7 +124,7 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
+        :rtype: AnswerPullRequestMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -135,13 +139,13 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(proto: AnswerPullRequestMessage_PB) -> "AnswerPullRequestMessage":
-        """Creates a SignalingOfferMessage from a protobuf
+        """Creates a AnswerPullRequestMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
+        :return: returns an instance of AnswerPullRequestMessage
+        :rtype: AnswerPullRequestMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -262,13 +266,13 @@ class SignalingOfferMessage(ImmediateSyftMessageWithReply):
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
     def __init__(
-            self, 
-            address: Address,
-            payload: str,
-            target_metadata: str,
-            reply_to: Address,
-            msg_id: Optional[UID] = None,
-        ):
+        self,
+        address: Address,
+        payload: str,
+        target_metadata: str,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         # TODO: implement content
         self.payload = payload
@@ -295,7 +299,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
             address=self.address.serialize(),
             payload=self.payload,
             target_metadata=self.target_metadata,
-            reply_to=self.reply_to.serialize()
+            reply_to=self.reply_to.serialize(),
         )
 
     @staticmethod
@@ -318,7 +322,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithReply):
             address=_deserialize(blob=proto.address),
             payload=proto.payload,
             target_metadata=proto.target_metadata,
-            reply_to=_deserialize(blob=proto.reply_to)
+            reply_to=_deserialize(blob=proto.reply_to),
         )
 
     @staticmethod
