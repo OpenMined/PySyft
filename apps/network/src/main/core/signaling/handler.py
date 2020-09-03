@@ -1,3 +1,4 @@
+import copy
 from typing import Optional, Union
 from syft.core.common.serde.serializable import Serializable
 
@@ -50,4 +51,4 @@ class SignalingHandler(object):
         _addr_map = queue.get(msg.reply_to.name)
 
         if _addr_map:
-            return _addr_map.get(msg.address.name, None)
+            return _addr_map.pop(msg.address.name, None)
