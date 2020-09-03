@@ -6,21 +6,21 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
 # syft relative
-from ....common.uid import UID
-from ....io.address import Address
-from ....pointer.pointer import Pointer
-from ...abstract.node import AbstractNode
-from .common import ImmediateActionWithoutReply
-from ....store.storeable_object import StorableObject
-from ....common.serde.deserialize import _deserialize
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ....pointer.pointer import Pointer
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .common import ImmediateActionWithoutReply
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
@@ -118,7 +118,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 id=self.id_at_location,
                 data=result,
                 read_permissions=(
-                    result_read_permissions if result_read_permissions is not None else {}
+                    result_read_permissions
+                    if result_read_permissions is not None
+                    else {}
                 ),
             )
 
