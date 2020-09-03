@@ -78,7 +78,7 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     @property
     def url(self) -> str:
-        """ Get Node URL Address.
+        """Get Node URL Address.
 
         Returns:
             address (str) : Node's address.
@@ -92,7 +92,7 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     @property
     def models(self) -> list:
-        """ Get models stored at remote node.
+        """Get models stored at remote node.
 
         Returns:
             models (List) : List of models stored in this node.
@@ -102,7 +102,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return self._return_bool_result(response, RESPONSE_MSG.MODELS)
 
     def _update_node_reference(self, new_id: str):
-        """ Update worker references changing node id references at hook structure.
+        """Update worker references changing node id references at hook structure.
 
         Args:
             new_id (str) : New worker ID.
@@ -112,7 +112,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         self.hook.local_worker._known_workers[new_id] = self
 
     def _parse_address(self, address: str) -> tuple:
-        """ Parse Address string to define secure flag and split into host and port.
+        """Parse Address string to define secure flag and split into host and port.
 
         Args:
             address (str) : Adress of remote worker.
@@ -122,7 +122,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return (secure, url.hostname, url.port)
 
     def _get_node_infos(self) -> str:
-        """ Get Node ID from remote node worker
+        """Get Node ID from remote node worker
 
         Returns:
             node_id (str) : node id used by remote worker.
@@ -141,7 +141,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return response.get(RESPONSE_MSG.NODE_ID, None)
 
     def _forward_json_to_websocket_server_worker(self, message: dict) -> dict:
-        """ Prepare/send a JSON message to a remote node and receive the response.
+        """Prepare/send a JSON message to a remote node and receive the response.
 
         Args:
             message (dict) : message payload.
@@ -152,7 +152,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return json.loads(self.ws.recv())
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
-        """ Send a bin message to a remote node and receive the response.
+        """Send a bin message to a remote node and receive the response.
 
         Args:
             message (bytes) : message payload.
@@ -199,7 +199,7 @@ class DataCentricFLClient(WebsocketClientWorker):
             raise RuntimeError("Something went wrong.")
 
     def connect_nodes(self, node) -> dict:
-        """ Connect two remote workers between each other.
+        """Connect two remote workers between each other.
 
         Args:
             node (WebsocketFederatedClient) : Node that will be connected with this remote worker.
@@ -221,7 +221,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         allow_download: bool = False,
         allow_remote_inference: bool = False,
     ):
-        """ Hosts the model and optionally serve it using a Socket / Rest API.
+        """Hosts the model and optionally serve it using a Socket / Rest API.
         Args:
             model : A jit model or Syft Plan.
             model_id (str): An integer/string representing the model id.
@@ -283,7 +283,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return self._return_bool_result(json.loads(response))
 
     def run_remote_inference(self, model_id, data):
-        """ Run a dataset inference using a remote model.
+        """Run a dataset inference using a remote model.
         Args:
             model_id (str) : Model ID.
             data (Tensor) : dataset to be inferred.
@@ -303,7 +303,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         return self._return_bool_result(response, RESPONSE_MSG.INFERENCE_RESULT)
 
     def delete_model(self, model_id: str) -> bool:
-        """ Delete a model previously registered.
+        """Delete a model previously registered.
         Args:
             model_id (String) : ID of the model that will be deleted.
         Returns:

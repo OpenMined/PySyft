@@ -90,8 +90,7 @@ class AsinBackward(GradFunc):
 
 
 class LogBackward(GradFunc):
-    """Log backward gradient class
-    """
+    """Log backward gradient class"""
 
     def __init__(self, self_):
         super().__init__(self, self_)
@@ -103,8 +102,7 @@ class LogBackward(GradFunc):
 
 
 class ExpBackward(GradFunc):
-    """Exp backward gradient class
-    """
+    """Exp backward gradient class"""
 
     def __init__(self, self_):
         super().__init__(self, self_)

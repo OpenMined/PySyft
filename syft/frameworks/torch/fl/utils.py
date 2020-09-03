@@ -110,7 +110,7 @@ def accuracy(pred_softmax, target):
 
 
 def create_gaussian_mixture_toy_data(nr_samples: int):  # pragma: no cover
-    """ Create a simple toy data for binary classification
+    """Create a simple toy data for binary classification
 
     The data is drawn from two normal distributions
     target = 1: mu = 2, sigma = 1

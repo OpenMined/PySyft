@@ -104,10 +104,10 @@ def gen_alpha_2of3(worker, ring_size=RING_SIZE):
 @allow_command
 def _generate_alpha_3of3(worker_id, ring_size=RING_SIZE):
     """
-        Generate a random number (alpha) using the two generators
-        * generator cur - represents a generator initialized with this worker (i) seed
-        * generator prev - represents a generator initialized with
-                    the previous worker (i-1) seed
+    Generate a random number (alpha) using the two generators
+    * generator cur - represents a generator initialized with this worker (i) seed
+    * generator prev - represents a generator initialized with
+                the previous worker (i-1) seed
     """
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG
@@ -124,11 +124,11 @@ def _generate_alpha_3of3(worker_id, ring_size=RING_SIZE):
 @allow_command
 def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
     """
-        Generate 2 random numbers (alpha_i, alpha_i-1) using the two generators
-        * generator cur - represents a generator initialized with this worker (i) seed
-                    and it generates alpha_i
-        * generator prev - represents a generator initialized with
-                    the previous worker (i-1) seed and it generates alpha_i-1
+    Generate 2 random numbers (alpha_i, alpha_i-1) using the two generators
+    * generator cur - represents a generator initialized with this worker (i) seed
+                and it generates alpha_i
+    * generator prev - represents a generator initialized with
+                the previous worker (i-1) seed and it generates alpha_i-1
     """
     worker = syft.local_worker.get_worker(worker_id)
     assert worker.crypto_store.przs.generators, ERR_MSG

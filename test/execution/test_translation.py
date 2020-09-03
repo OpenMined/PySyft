@@ -36,8 +36,7 @@ def mnist_example():
     model = Net()
 
     def set_model_params(module, params_list, start_param_idx=0):
-        """ Set params list into model recursively
-        """
+        """Set params list into model recursively"""
         param_idx = start_param_idx
 
         for name, param in module._parameters.items():
@@ -51,11 +50,11 @@ def mnist_example():
         return param_idx
 
     def softmax_cross_entropy_with_logits(logits, targets, batch_size):
-        """ Calculates softmax entropy
-            Args:
-                * logits: (NxC) outputs of dense layer
-                * targets: (NxC) one-hot encoded labels
-                * batch_size: value of N, temporarily required because Plan cannot trace .shape
+        """Calculates softmax entropy
+        Args:
+            * logits: (NxC) outputs of dense layer
+            * targets: (NxC) one-hot encoded labels
+            * batch_size: value of N, temporarily required because Plan cannot trace .shape
         """
         # numstable logsoftmax
         norm_logits = logits - logits.max()

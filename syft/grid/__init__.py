@@ -9,9 +9,9 @@ _registered_peer = None
 
 
 def register(**kwargs):
-    """ Add this process as a new peer registering it in the grid network.
-        Returns:
-            peer: Peer Network instance.
+    """Add this process as a new peer registering it in the grid network.
+    Returns:
+        peer: Peer Network instance.
     """
     global _registered_peer
 

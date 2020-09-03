@@ -38,7 +38,7 @@ class ModelCentricFLClient:
         self.ws = websocket.create_connection(**args_)
 
     def _send_msg(self, message: dict) -> dict:
-        """ Prepare/send a JSON message to a PyGrid server and receive the response.
+        """Prepare/send a JSON message to a PyGrid server and receive the response.
 
         Args:
             message (dict) : message payload.
