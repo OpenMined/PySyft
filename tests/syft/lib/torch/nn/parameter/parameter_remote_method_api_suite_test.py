@@ -4,23 +4,27 @@ called from the syft package. We then permute this list over all tensor
 types and ensure that they can be executed in a remote environment.
 """
 
-from packaging import version
+# stdlib
 from itertools import product
-from typing import List
 from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Type
 from typing import Union
-from typing import Callable
-import pytest
 
-from syft.lib.torch import allowlist
+# third party
+from packaging import version
+import pytest
+import torch as th
+
+# syft absolute
+import syft as sy
 from syft.core.pointer.pointer import Pointer
+from syft.lib.torch import allowlist
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.python.primitive import isprimitive
 
-import syft as sy
-import torch as th
 
 TORCH_VERSION = version.parse(th.__version__)
 
