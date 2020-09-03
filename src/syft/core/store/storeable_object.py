@@ -16,11 +16,11 @@ from ...decorators import syft_decorator
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
+from ..common.group import All
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ..common.group import All
 
 
 class StorableObject(AbstractStorableObject):
