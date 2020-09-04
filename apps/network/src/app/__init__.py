@@ -1,8 +1,10 @@
 """This package set up the app and server."""
 
+import json
 import os
 
-from flask import Blueprint, Flask
+from flask import Blueprint, Flask, Response
+from flask_lambda import FlaskLambda
 from flask_migrate import Migrate
 from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
@@ -13,7 +15,7 @@ from sqlalchemy_utils.functions import database_exists
 # Set routes/events
 ws = Blueprint(r"ws", __name__)
 http = Blueprint(r"http", __name__)
-# Set db client instance
+
 db = SQLAlchemy()
 
 from . import utils  # isort:skip
@@ -140,3 +142,56 @@ def raise_grid(host: str, port: int, **kwargs):
     server = pywsgi.WSGIServer((host, port), app, handler_class=WebSocketHandler)
     server.serve_forever()
     return app, server
+
+
+def create_lambda_app() -> FlaskLambda:
+    """Create Flask Lambda app for deploying on AWS.
+
+    Returns:
+        app (Flask): flask application
+    """
+
+    database_name = os.environ.get("DB_NAME")
+    cluster_arn = os.environ.get("DB_CLUSTER_ARN")
+    secret_arn = os.environ.get("DB_SECRET_ARN")
+    secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET_KEY)
+
+    app = FlaskLambda(__name__)
+    app.config.from_mapping(
+        DEBUG=False,
+        SECRET_KEY=secret_key,
+        SQLALCHEMY_DATABASE_URI=f"mysql+auroradataapi://:@/{database_name}",
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "connect_args": dict(aurora_cluster_arn=cluster_arn, secret_arn=secret_arn)
+        },
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+
+    # Add a test route
+    @http.route("/test-deployment/")
+    def test():
+        return Response(
+            json.dumps({"message": "Serverless deployment successful"}),
+            status=200,
+            mimetype="application/json",
+        )
+
+    app.register_blueprint(http, url_prefix=r"/")
+
+    # Setup database
+    global db
+    db.init_app(app)
+
+    s = app.app_context().push()  # Push the app into context
+
+    try:
+        db.Model.metadata.create_all(
+            db.engine, checkfirst=False
+        )  # Create database tables
+        seed_db()  # Seed the database
+    except Exception as e:
+        print("Error", e)
+
+    db.session.commit()
+
+    return app

@@ -64,3 +64,18 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+#Ignore terraform build files
+/deploy/*/builds/
+
+
+# --- Ignore files/folders in lambda-layer directories ---
+
+# Ignore temporary requirements.txt files
+/deploy/*/*/requirements.txt
+
+# Ignore temporary installed dependencies
+/deploy/*/*/python
+
+# Ignore zipped packages
+/deploy/*/*/*.zip

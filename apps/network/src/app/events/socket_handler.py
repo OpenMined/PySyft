@@ -12,7 +12,7 @@ class Singleton(type):
 
 
 class SocketHandler(metaclass=Singleton):
-    """Socket Handler is a sigleton class used to handle/manage websocket
+    """Socket Handler is a singleton class used to handle/manage websocket
     connections."""
 
     def __init__(self):
