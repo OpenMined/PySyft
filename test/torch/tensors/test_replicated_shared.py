@@ -101,6 +101,14 @@ def test_private_matmul(workers):
     assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
 
 
+def test_inject(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor(1).share(bob, alice, james, protocol="falcon", field=2)
+    x_injected = x.inject_bit(2 ** 5)
+    assert (x_injected.reconstruct() == x.reconstruct()).all()
+    assert x_injected.ring_size == 2 ** 5
+
+
 def test_get_shape(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([[1, 2], [3, 4]])

@@ -144,6 +144,14 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     __matmul__ = matmul
 
+    def inject_bit(self, A):
+        """
+        change the ring_size of a shared bit from 2 to A
+        """
+        assert self.ring_size == 2
+        a = ReplicatedSharingTensor(torch.tensor(1), self.players, A)
+        return a.mul(self)
+
     def view(self, *args, **kwargs):
         return self.__apply_to_shares(torch.Tensor.view, *args, *kwargs)
 
@@ -181,7 +189,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_map[players[-1]][0],
             operator(shares_map[players[-1]][1], remote_plain_text[-1]),
         )
-        return ReplicatedSharingTensor().__set_shares_map(shares_map)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(shares_map)
 
     def __private_linear_operation(self, secret, operator):
         x, y = self.__get_shares_map(), secret.__get_shares_map()
@@ -190,7 +198,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             player: (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
             for player in players
         }
-        return ReplicatedSharingTensor().__set_shares_map(z)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(z)
 
     def __public_multiplication_operation(self, plain_text, operator):
         players = self.__get_players()
@@ -203,7 +211,7 @@ class ReplicatedSharingTensor(AbstractTensor):
                 operator(shares_map[player][0], plain_text_map[player]),
                 operator(shares_map[player][1], plain_text_map[player]),
             )
-        return ReplicatedSharingTensor().__set_shares_map(shares_map)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(shares_map)
 
     def __private_multiplication_operation(self, secret, operator):
         x, y = self.__get_shares_map(), secret.__get_shares_map()
@@ -216,7 +224,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         ]
         z = self.__add_noise(z)
         z = self.__reshare(z, players)
-        return ReplicatedSharingTensor().__set_shares_map(z)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(z)
 
     @staticmethod
     def __add_noise(shares):
