@@ -1,8 +1,10 @@
 # stdlib
-from collections import UserList
+from collections import UserString
+import string
 from typing import Any
-from typing import List as TypeList
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,20 +15,35 @@ from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
-from ...proto.lib.python.list_pb2 import List as List_PB
+from ...proto.lib.python.string_pb2 import String as String_PB
 from ...util import aggressive_set_attr
+from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
 
-class List(UserList, PyPrimitive):
+class String(UserString, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, uid: Optional[UID] = None):
+    def __init__(self, value: Any = None, id: Optional[UID] = None):
         if value is None:
-            value = []
+            value = ""
 
-        UserList.__init__(self, value)
+        UserString.__init__(self, value)
 
-        self._id: UID = UID() if uid is None else uid
+        self._id: UID = id if id else UID()
+
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def split(
+        self, separator: Union[str, UserString] = string.whitespace, maxsplit: int = -1
+    ) -> PyPrimitive:
+        res = self.split(separator, maxsplit)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def rsplit(
+        self, separator: Union[str, UserString] = string.whitespace, maxsplit: int = -1
+    ) -> PyPrimitive:
+        res = self.rsplit(separator, maxsplit)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @property
     def id(self) -> UID:
@@ -40,24 +57,21 @@ class List(UserList, PyPrimitive):
         return self._id
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> List_PB:
-        id_ = serialize(obj=self.id)
-        data = [serialize(obj=element) for element in self.data]
-        return List_PB(id=id_, data=data)
+    def _object2proto(self) -> String_PB:
+        return String_PB(data=self.data, id=serialize(obj=self.id))
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: List_PB) -> "List":
-        id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element) for element in proto.data]
-        return List(value=value, uid=id_)
+    def _proto2object(proto: String_PB) -> "String":
+        str_id: UID = deserialize(blob=proto.id)
+        return String(value=proto.data, id=str_id)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return List_PB
+        return String_PB
 
 
-class ListWrapper(StorableObject):
+class StringWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -67,28 +81,29 @@ class ListWrapper(StorableObject):
         )
         self.value = value
 
-    def _data_object2proto(self) -> List_PB:
+    def _data_object2proto(self) -> String_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        return _object2proto
+        if _object2proto:
+            return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: List_PB) -> "ListWrapper":
-        return List._proto2object(proto=proto)
+    def _data_proto2object(proto: String_PB) -> "StringWrapper":
+        return String._proto2object(proto=proto)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return List_PB
+        return String_PB
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return List
+        return String
 
     @staticmethod
     def construct_new_object(
         id: UID,
         data: StorableObject,
         description: Optional[str],
-        tags: Optional[TypeList[str]],
+        tags: Optional[List[str]],
     ) -> StorableObject:
         setattr(data, "_id", id)
         data.tags = tags
@@ -96,4 +111,4 @@ class ListWrapper(StorableObject):
         return data
 
 
-aggressive_set_attr(obj=List, name="serializable_wrapper_type", attr=ListWrapper)
+aggressive_set_attr(obj=String, name="serializable_wrapper_type", attr=StringWrapper)

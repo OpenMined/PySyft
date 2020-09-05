@@ -39,7 +39,7 @@ class Int(int, PyPrimitive):
 
         int.__init__(value)
 
-        self._id: UID = UID() if id is None else id
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
@@ -288,6 +288,7 @@ class Int(int, PyPrimitive):
         return int_pb
 
     @staticmethod
+    @syft_decorator(typechecking=True)
     def _proto2object(proto: Int_PB) -> "Int":
         # if hasattr(proto, "id_at_location"):
         int_id: UID = deserialize(blob=proto.id_at_location)
@@ -322,7 +323,7 @@ class IntWrapper(StorableObject):
 
     @staticmethod
     def _data_proto2object(proto: Int_PB) -> "IntWrapper":
-        return Int._proto2object(proto)
+        return Int._proto2object(proto=proto)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:

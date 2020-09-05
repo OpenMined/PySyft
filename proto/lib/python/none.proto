@@ -5,5 +5,5 @@ import "proto/core/common/common_object.proto";
 
 
 message None {
-    syft.core.common.UID id_at_location = 2;
+    syft.core.common.UID id = 2;
 }

@@ -20,22 +20,19 @@ from .primitive_interface import PyPrimitive
 
 class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __new__(self, value: Any = None, id: Optional[UID] = None) -> "Float":
+    def __new__(self, value: Any = None, uid: Optional[UID] = None) -> "Float":
         if value is None:
             value = 0.0
         return float.__new__(self, value)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Any = None, uid: Optional[UID] = None):
         if value is None:
             value = 0.0
 
         float.__init__(value)
 
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = id
+        self._id = uid if uid else UID()
 
     @property
     def id(self) -> UID:
