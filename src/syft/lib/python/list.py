@@ -1,13 +1,18 @@
+# stdlib
 from collections import UserList
 from typing import Any
+from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...decorators import syft_decorator
-from .primitive_interface import PyPrimitive
+# syft relative
+from ... import deserialize
+from ... import serialize
 from ...core.common import UID
-from ... import serialize, deserialize
-
-from typing import Optional
+from ...decorators import syft_decorator
+from ...proto.lib.python.list_pb2 import List as List_PB
+from .primitive_interface import PyPrimitive
 
 
 class List(UserList, PyPrimitive):
@@ -31,23 +36,19 @@ class List(UserList, PyPrimitive):
         """
         return self._id
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def __eq__(self, other: Any) -> PyPrimitive:
-    #     res = super(Int, self).__eq__(other)
-    #     return PrimitiveFactory.generate_primitive(value=res)
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> List_PB:
+        id_ = serialize(obj=self.id)
+        data = [serialize(obj=element) for element in self.data]
+        return List_PB(id=id_, data=data)
 
-    # @syft_decorator(typechecking=True)
-    # def _object2proto(self) -> Int_PB:
-    #     int_pb = Int_PB()
-    #     int_pb.data = self
-    #     int_pb.id.CopyFrom(serialize(self.id))
-    #     return int_pb
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def _proto2object(proto: List_PB) -> "List":
+        id_: UID = deserialize(blob=proto.id)
+        value = [deserialize(blob=element) for element in proto.data]
+        return List(value=value, uid=id_)
 
-    # @staticmethod
-    # def _proto2object(proto: Int_PB) -> "Int":
-    #     int_id: UID = deserialize(blob=proto.id)
-    #     return Int(value=proto.data, id=int_id)
-
-    # @staticmethod
-    # def get_protobuf_schema() -> GeneratedProtocolMessageType:
-    #     return Int_PB
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return List_PB

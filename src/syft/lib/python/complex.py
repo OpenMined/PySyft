@@ -1,8 +1,12 @@
-from typing import Any, Optional
+# stdlib
+from typing import Any
+from typing import Optional
 
+# syft relative
 from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
+
 
 # TODO - actually make all of this work
 class Complex(complex, PyPrimitive):

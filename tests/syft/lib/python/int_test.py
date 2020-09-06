@@ -1,6 +1,11 @@
-from typing import Any
+# stdlib
 import sys
+from typing import Any
+
+# third party
 import pytest
+
+# syft absolute
 from syft.lib.python.int import Int
 
 VALID_UNDERSCORE_LITERALS = [
