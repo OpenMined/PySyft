@@ -12,6 +12,7 @@ from .complex import Complex
 from .float import Float
 from .int import Int
 from .list import List
+from .none import SyNone  # noqa: F401
 from .string import String
 
 

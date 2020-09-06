@@ -15,6 +15,7 @@ from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
+from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
 
@@ -100,3 +101,4 @@ class ListWrapper(StorableObject):
 
 
 aggressive_set_attr(obj=List, name="serializable_wrapper_type", attr=ListWrapper)
+PrimitiveFactory.register_primitive(python_primitive=list, syft_primitive=List)

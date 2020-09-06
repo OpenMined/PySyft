@@ -360,3 +360,4 @@ class FloatWrapper(StorableObject):
 
 
 aggressive_set_attr(obj=Float, name="serializable_wrapper_type", attr=FloatWrapper)
+PrimitiveFactory.register_primitive(python_primitive=float, syft_primitive=Float)

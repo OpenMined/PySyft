@@ -201,3 +201,4 @@ class ComplexWrapper(StorableObject):
 
 
 aggressive_set_attr(obj=Complex, name="serializable_wrapper_type", attr=ComplexWrapper)
+PrimitiveFactory.register_primitive(python_primitive=complex, syft_primitive=Complex)

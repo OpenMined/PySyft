@@ -943,7 +943,7 @@ def test_invalid_inputs() -> None:
     ]
     for x in invalid_inputs:
         try:
-            _ = fromHex(x)
+            fromHex(x)
         except ValueError:
             pass
         else:

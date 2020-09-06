@@ -100,7 +100,7 @@ def type_hints(
 
         if param_name not in solved_signature:
             raise AttributeError(
-                f"Argument types not annotated, please provide typing to all argument types for"
+                f"Argument types not annotated, please provide typing to all argument types for "
                 f"function {decorated.__qualname__}."
             )
 

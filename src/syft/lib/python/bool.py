@@ -370,3 +370,4 @@ class BoolWrapper(StorableObject):
 
 
 aggressive_set_attr(obj=Bool, name="serializable_wrapper_type", attr=BoolWrapper)
+PrimitiveFactory.register_primitive(python_primitive=bool, syft_primitive=Bool)

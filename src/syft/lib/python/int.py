@@ -428,3 +428,4 @@ class IntWrapper(StorableObject):
 
 
 aggressive_set_attr(obj=Int, name="serializable_wrapper_type", attr=IntWrapper)
+PrimitiveFactory.register_primitive(python_primitive=int, syft_primitive=Int)
