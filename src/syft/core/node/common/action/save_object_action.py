@@ -18,6 +18,7 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
+from ....common.group import All
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import Serializable
 from ....common.uid import UID
@@ -25,7 +26,6 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from ....common.group import All
 
 
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):

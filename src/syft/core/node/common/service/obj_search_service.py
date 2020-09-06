@@ -23,13 +23,10 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
 from .....util import obj2pointer_type
+from ....common.group import All
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
-from ...abstract.node import AbstractNode
-from .....util import obj2pointer_type
-from ....io.address import Address
-from ....common.group import All
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer

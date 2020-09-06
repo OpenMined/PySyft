@@ -1,3 +1,4 @@
+# syft relative
 from .primitive_interface import PyPrimitive
 
 

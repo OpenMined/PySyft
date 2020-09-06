@@ -1,14 +1,18 @@
+# stdlib
 from typing import Any
+from typing import Optional
+
+# third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-from ...decorators import syft_decorator
-from .primitive_interface import PyPrimitive
-from .primitive_factory import PrimitiveFactory
+# syft relative
+from ... import deserialize
+from ... import serialize
 from ...core.common import UID
+from ...decorators import syft_decorator
 from ...proto.lib.python.int_pb2 import Int as Int_PB
-from ... import serialize, deserialize
-
-from typing import Optional
+from .primitive_factory import PrimitiveFactory
+from .primitive_interface import PyPrimitive
 
 
 class Int(int, PyPrimitive):
