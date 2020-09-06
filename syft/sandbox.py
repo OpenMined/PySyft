@@ -59,37 +59,20 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
 
             return data, target
 
-        def load_tf(dataset_name, *tags):
+        def load_tf(func, *tags):
             num_of_records = 10000
             """Int: num_of_records variable is a  configurable limit for the cifar10 and fashion_mnist datasets.
                        since it is a huge dataset and it requires a lot of memory resources
                        """
-            if dataset_name == "cifar10":
-                (
-                    (train_images, train_labels),
-                    (test_images, test_labels),
-                ) = datasets.cifar10.load_data()
-            else:
-                (
-                    (train_images, train_labels),
-                    (test_images, test_labels),
-                ) = datasets.fashion_mnist.load_data()
+            ((train_images, train_labels), (test_images, test_labels),) = func()
             data = np.concatenate([train_images, test_images])
             target = np.concatenate([train_labels, test_labels])
 
             data = data[0:num_of_records]
             target = target[0:num_of_records]
 
-            data = (
-                torch.IntTensor(data)
-                .tag(*(list(tags) + ["#data"] + [dataset_name]))
-                .describe(dataset_name)
-            )
-            target = (
-                torch.IntTensor(target)
-                .tag(*(list(tags) + ["#target"] + [dataset_name]))
-                .describe(dataset_name)
-            )
+            data = torch.IntTensor(data).tag(*(list(tags) + ["#data"])).describe(tags[0][1:])
+            target = torch.IntTensor(target).tag(*(list(tags) + ["#target"])).describe(tags[0][1:])
 
             return data, target
 
@@ -174,10 +157,10 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         if verbose:
             print("\tLoading datasets from TensorFlow datasets...")
             print("\t\t- MNIST Dataset")
-        fashion_mnist = load_tf("fashion_mnist")
+        fashion_mnist = load_tf(datasets.fashion_mnist.load_data, *["#fashion_mnist"])
         if verbose:
             print("\t\t- cifar10 Dataset")
-        cifar10 = load_tf("cifar10")
+        cifar10 = load_tf(datasets.cifar10.load_data, *["#cifar10"])
 
         workers = [bob, theo, jason, alice, andy, jon]
 
