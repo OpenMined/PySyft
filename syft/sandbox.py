@@ -60,10 +60,10 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
             return data, target
 
         def load_tf(dataset_name, *tags):
-            """ num_of_records variable is a  configurable limit for the cifar dataset.
-            since it is a huge dataset and it requires a lot of memory resources
-            """
             num_of_records = 10000
+            """Int: num_of_records variable is a  configurable limit for the cifar10 and fashion_mnist datasets.
+                       since it is a huge dataset and it requires a lot of memory resources
+                       """
             if dataset_name == "cifar10":
                 (
                     (train_images, train_labels),
