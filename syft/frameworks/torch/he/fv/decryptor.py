@@ -63,7 +63,10 @@ class Decryptor:
             for i in range(len(coeff_modulus)):
                 phase[i] = poly_add_mod(
                     poly_mul_mod(
-                        encrypted[j][i], secret_key_list[j - 1][i], coeff_modulus[i], coeff_count,
+                        encrypted[j][i],
+                        secret_key_list[j - 1][i],
+                        coeff_modulus[i],
+                        coeff_count,
                     ),
                     phase[i],
                     coeff_modulus[i],

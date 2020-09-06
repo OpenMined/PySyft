@@ -4,12 +4,16 @@ import syft.grid.autoscale.utils.gcloud_configurations as configs
 
 
 NEW = gcloud.GoogleCloud(
-    credentials="/usr/terraform.json", project_id="project", region=configs.Region.us_central1,
+    credentials="/usr/terraform.json",
+    project_id="project",
+    region=configs.Region.us_central1,
 )
 
 # create a grid network instance and then add nodes to it one by one
 NEW.create_gridnetwork(
-    name="new-network", machine_type=configs.MachineType.f1_micro, zone=configs.Zone.us_central1_a,
+    name="new-network",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
 )
 
 # add node to created grid network

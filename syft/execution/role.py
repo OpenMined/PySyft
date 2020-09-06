@@ -90,13 +90,11 @@ class Role(SyftSerializable):
             return obj
 
     def register_input(self, arg_):
-        """ Takes input argument for this role and generate placeholder.
-        """
+        """Takes input argument for this role and generate placeholder."""
         self.input_placeholder_ids += (self._store_placeholders(arg_).value,)
 
     def register_inputs(self, args_):
-        """ Takes input arguments for this role and generate placeholders.
-        """
+        """Takes input arguments for this role and generate placeholders."""
         # TODO Should we be able to rebuild?
         def traversal_function(obj):
             if obj.id.value not in self.placeholders:
@@ -108,13 +106,11 @@ class Role(SyftSerializable):
         self.input_placeholder_ids = tuple(self.input_placeholder_ids)
 
     def register_output(self, result):
-        """ Takes output tensor for this role and generate placeholder.
-        """
+        """Takes output tensor for this role and generate placeholder."""
         self.output_placeholder_ids += (self._store_placeholders(result).value,)
 
     def register_outputs(self, results):
-        """ Takes output tensors for this role and generate placeholders.
-        """
+        """Takes output tensors for this role and generate placeholders."""
 
         def traversal_function(obj):
             if obj.id.value not in self.placeholders:
@@ -127,8 +123,7 @@ class Role(SyftSerializable):
         self.output_placeholder_ids = tuple(self.output_placeholder_ids)
 
     def register_action(self, traced_action, action_type):
-        """ Build placeholders and store action.
-        """
+        """Build placeholders and store action."""
         command, response = traced_action
         command_placeholder_ids = self._store_placeholders(command)
         return_placeholder_ids = None
@@ -149,7 +144,7 @@ class Role(SyftSerializable):
         self.placeholders[tensor.id] = placeholder
 
     def reset(self):
-        """ Remove the trace actions on this Role to make it possible to build
+        """Remove the trace actions on this Role to make it possible to build
         a Plan or a Protocol several times.
         """
         self.actions = []
@@ -162,8 +157,7 @@ class Role(SyftSerializable):
         }
 
     def execute(self):
-        """ Make the role execute all its actions.
-        """
+        """Make the role execute all its actions."""
         for action in self.actions:
             self._execute_action(action)
 
@@ -174,8 +168,7 @@ class Role(SyftSerializable):
         return tuple(p.child for p in output_placeholders)
 
     def load(self, tensor):
-        """ Load tensors used in a protocol from worker's local store
-        """
+        """Load tensors used in a protocol from worker's local store"""
         # TODO mock for now, load will use worker's store in a future work
         if self.tracing:
             return PlaceHolder.create_from(tensor, role=self, tracing=True)
@@ -183,13 +176,11 @@ class Role(SyftSerializable):
             return tensor
 
     def load_state(self):
-        """ Load tensors used in a protocol from worker's local store
-        """
+        """Load tensors used in a protocol from worker's local store"""
         return self.state.read()
 
     def instantiate_inputs(self, args_):
-        """ Takes input arguments for this role and generate placeholders.
-        """
+        """Takes input arguments for this role and generate placeholders."""
 
         def traversal_function(obj):
             placeholder = input_placeholders.pop(0)
@@ -202,8 +193,7 @@ class Role(SyftSerializable):
         Role.nested_object_traversal(args_, traversal_function, FrameworkTensor)
 
     def _execute_action(self, action):
-        """ Build placeholders and store action.
-        """
+        """Build placeholders and store action."""
         cmd, _self, args_, kwargs_, return_values = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method

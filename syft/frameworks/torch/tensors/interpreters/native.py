@@ -36,8 +36,7 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**63-1 is not fun with precision tensors.
-    """
+    """Dealing with integers > 2**63-1 is not fun with precision tensors."""
     return 63
 
 
@@ -684,7 +683,7 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        """This function returns will return True if it isn't a PrivateTensor, otherwise it will
         return the result of PrivateTensor's allow method.
 
             Args:
@@ -907,8 +906,8 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
         if protocol == "falcon":
-            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
-                self, owners
+            shared_tensor = syft.ReplicatedSharingTensor(
+                self, owners, ring_size=field, owner=self.owner
             )
             return shared_tensor
         if self.has_child():

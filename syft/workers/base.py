@@ -223,8 +223,7 @@ class BaseWorker(AbstractWorker):
         del self._known_workers[worker_id]
 
     def remove_worker_from_local_worker_registry(self):
-        """Removes itself from the registry of hook.local_worker.
-        """
+        """Removes itself from the registry of hook.local_worker."""
         self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
 
     def load_data(self, data: List[Union[FrameworkTensorType, AbstractTensor]]) -> None:

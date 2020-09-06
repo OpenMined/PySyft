@@ -41,7 +41,10 @@ class IntegerEncoder:
         Returns:
             A PlainText object containing the integer value.
         """
-
+        if not isinstance(value, int):
+            raise ValueError(
+                f"BFV scheme only works with integer values, whereas provided{type(value).__name__}"
+            )
         coeff_index = 0
         if value < 0:
             # negative value.

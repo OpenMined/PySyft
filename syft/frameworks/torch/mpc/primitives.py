@@ -51,7 +51,7 @@ class PrimitiveStorage:
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return FSS keys primitives
+        Return keys primitives
 
         Args:
             op (str): primitive type, should be fss_eq, fss_comp, mul or matmul
@@ -151,7 +151,11 @@ class PrimitiveStorage:
                 )
 
     def provide_primitives(
-        self, op: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
+        self,
+        op: str,
+        workers: List[AbstractWorker],
+        n_instances: int = 10,
+        **kwargs,
     ):
         """Build n_instances of crypto primitives of the different crypto_types given and
         send them to some workers.
