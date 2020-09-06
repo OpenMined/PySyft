@@ -156,7 +156,7 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         linnerud = load_sklearn(load_linnerud)
         if verbose:
             print("\tLoading datasets from TensorFlow datasets...")
-            print("\t\t- MNIST Dataset")
+            print("\t\t- fashion_mnist Dataset")
         fashion_mnist = load_tf(datasets.fashion_mnist.load_data, *["#fashion_mnist"])
         if verbose:
             print("\t\t- cifar10 Dataset")
