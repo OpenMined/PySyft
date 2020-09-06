@@ -61,7 +61,7 @@ jobs:
           pip install bandit
           bandit -r src -ll
 
-      - name: Run tests
+      - name: Run normal tests without coverage
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
@@ -69,7 +69,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
-          pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
+          pytest -k "not test_all_allowlisted" --cov-fail-under 0
 
   python-linting:
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
 
       - uses: pre-commit/action@v2.0.0
 
-      - name: Run tests with coverage
+      - name: Run lint checks
         run: |
           set -e
           pip install -r requirements.txt
@@ -161,11 +161,11 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Run tests with coverage
+      - name: Check coverage
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+          pytest -k "not test_all_allowlisted"
 
   python-allowlist:
     runs-on: ubuntu-latest
@@ -214,7 +214,7 @@ jobs:
           pip install torch==$TORCH_VERSION
           pip install -r requirements.txt
           pip install -e .
-          pytest -k "test_all_allowlisted_tensor_methods_work_remotely_on_all_types" --cov-fail-under 0
+          pytest -k "test_all_allowlisted" --cov-fail-under 0
 
   python-nb-examples:
     runs-on: ubuntu-latest
@@ -254,7 +254,7 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Run notebook examples
+      - name: Run notebook API examples
         run: |
           pip install -r requirements.txt
           pip install -e .
