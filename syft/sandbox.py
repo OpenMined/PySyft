@@ -1,4 +1,6 @@
 import importlib
+from tensorflow.keras import datasets
+import numpy as np
 
 from syft.frameworks.torch.hook.hook import TorchHook
 from syft.workers.virtual import VirtualWorker
@@ -8,6 +10,7 @@ from syft.exceptions import DependencyError
 
 
 def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
+
     """There's some boilerplate stuff that most people who are
     just playing around would like to have. This will create
     that for you"""
@@ -52,6 +55,40 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
                     *(list(tags) + ["#target"] + dataset["DESCR"].split("\n")[0].lower().split(" "))
                 )
                 .describe(dataset["DESCR"])
+            )
+
+            return data, target
+
+        def load_tf(dataset_name, *tags):
+            """ num_of_records variable is a  configurable limit for the cifar dataset.
+            since it is a huge dataset and it requires a lot of memory resources
+            """
+            num_of_records = 10000
+            if dataset_name == "cifar10":
+                (
+                    (train_images, train_labels),
+                    (test_images, test_labels),
+                ) = datasets.cifar10.load_data()
+            else:
+                (
+                    (train_images, train_labels),
+                    (test_images, test_labels),
+                ) = datasets.fashion_mnist.load_data()
+            data = np.concatenate([train_images, test_images])
+            target = np.concatenate([train_labels, test_labels])
+
+            data = data[0:num_of_records]
+            target = target[0:num_of_records]
+
+            data = (
+                torch.IntTensor(data)
+                .tag(*(list(tags) + ["#data"] + [dataset_name]))
+                .describe(dataset_name)
+            )
+            target = (
+                torch.IntTensor(target)
+                .tag(*(list(tags) + ["#target"] + [dataset_name]))
+                .describe(dataset_name)
             )
 
             return data, target
@@ -134,6 +171,13 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         if verbose:
             print("\t\t- Linnerud Dataset")
         linnerud = load_sklearn(load_linnerud)
+        if verbose:
+            print("\tLoading datasets from TensorFlow datasets...")
+            print("\t\t- MNIST Dataset")
+        fashion_mnist = load_tf("fashion_mnist")
+        if verbose:
+            print("\t\t- cifar10 Dataset")
+        cifar10 = load_tf("cifar10")
 
         workers = [bob, theo, jason, alice, andy, jon]
 
@@ -154,8 +198,14 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         distribute_dataset(linnerud[0], workers)
         distribute_dataset(linnerud[1], workers)
 
-    if verbose:
-        print("\tCollecting workers into a VirtualGrid...")
+        distribute_dataset(fashion_mnist[0], workers)
+        distribute_dataset(fashion_mnist[1], workers)
+        distribute_dataset(cifar10[0], workers)
+        distribute_dataset(cifar10[1], workers)
+
+        if verbose:
+            print("\tCollecting workers into a VirtualGrid...")
+
     _grid = PrivateGridNetwork(*gbs["workers"])
     gbs["grid"] = _grid
 
