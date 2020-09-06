@@ -52,16 +52,5 @@ def test_przs_alpha_2of3(workers):
     workers_vals = [alice, bob, james]
     PRZS.setup(workers_vals)
 
-    values = [gen_alpha_2of3(worker).get() for worker in workers_vals]
-
-    """
-        Worker i holds (alpha_i, and alpha_i-1)
-        Here we do:
-        ((alpha_i, alpha_i-1), (alpha_i+1, alpha_i))
-    """
-    paired_values = zip(values, [*values[1:], values[0]])
-    for alphas_worker_cur, alphas_worker_next in paired_values:
-        alpha_cur, _ = alphas_worker_cur
-        _, alpha_prev = alphas_worker_next
-
-        assert alpha_cur == alpha_prev
+    values = [gen_alpha_2of3(worker) for worker in workers_vals]
+    assert (values[0][0].get() == values[1][1].get()).all()

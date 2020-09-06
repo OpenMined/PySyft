@@ -24,7 +24,7 @@ class PRZS:
     @classmethod
     def generate_and_share_seeds(cls, players):
         """
-        Returns: dict {player i: seed i, seed i-1}
+        Returns: dict {player i: seed i, seed i+1}
         """
         local_seeds = []
         remote_seeds = []
@@ -148,7 +148,7 @@ def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
         __get_next_elem(cur_gen, ring_size),
         __get_next_elem(prev_gen, ring_size),
     )
-    return torch.tensor([alpha_cur.item(), alpha_prev.item()])
+    return torch.tensor(alpha_cur.item()), torch.tensor(alpha_prev.item())
 
 
 def __get_next_elem(generator, ring_size=RING_SIZE, shape=(1,)):

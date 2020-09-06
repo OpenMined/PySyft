@@ -2,20 +2,16 @@ from operator import add, sub, mul
 import torch
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
-from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
+from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3, gen_alpha_2of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
     def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
         super().__init__(owner=owner)
         self.ring_size = ring_size or 2 ** 32
-        shares_map = self.__validate_input(plain_text, players)
-        self.child = shares_map
+        self.child = self.__validate_input(plain_text, players)
 
     def __validate_input(self, plain_text, players):
-        """
-        shares_map: dict(worker i : (share_pointer i, share_pointer i+1)
-        """
         if plain_text is not None and players:
             if isinstance(plain_text, torch.LongTensor):
                 return self.__share_secret(plain_text, players)
@@ -144,6 +140,20 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     __matmul__ = matmul
 
+    def pow(self, power):
+        if power < 0:
+            raise ValueError("Negative integer powers are not allowed.")
+
+        base, result = self, 1
+        while power > 0:
+            if power % 2 == 1:
+                result = result * base
+            power = power // 2
+            base = base * base
+        return result
+
+    __pow__ = pow
+
     def inject_bit(self, A):
         """
         change the ring_size of a shared bit from 2 to A
@@ -151,6 +161,11 @@ class ReplicatedSharingTensor(AbstractTensor):
         assert self.ring_size == 2
         a = ReplicatedSharingTensor(torch.tensor(1), self.players, A)
         return a.mul(self)
+
+    def rand_(self):
+        players = self.__get_players()
+        shares_map = {player: gen_alpha_2of3(player, self.ring_size) for player in players}
+        self.__set_shares_map(shares_map)
 
     def view(self, *args, **kwargs):
         return self.__apply_to_shares(torch.Tensor.view, *args, *kwargs)
@@ -261,6 +276,9 @@ class ReplicatedSharingTensor(AbstractTensor):
         return list(self.__get_shares_map().keys())
 
     def __get_shares_map(self):
+        """
+        shares_map: dict(worker i : (share_pointer i, share_pointer i+1)
+        """
         return self.child
 
     def __set_shares_map(self, shares_map):

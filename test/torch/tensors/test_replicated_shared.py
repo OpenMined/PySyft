@@ -101,6 +101,12 @@ def test_private_matmul(workers):
     assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
 
 
+def test_power(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
+    assert ((x ** 2).reconstruct() == torch.tensor([[1, 4], [9, 16]])).all()
+
+
 def test_inject(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor(1).share(bob, alice, james, protocol="falcon", field=2)
@@ -129,6 +135,13 @@ def test_view(workers):
     x = torch.rand([2, 1]).long().share(bob, alice, james, protocol="falcon")
     x = x.view([1, 2])
     assert x.shape == torch.Size([1, 2])
+
+
+def test_rand_(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon")
+    x.rand_()
+    assert type(x.reconstruct()) is torch.Tensor
 
 
 # corner cases
