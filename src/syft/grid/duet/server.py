@@ -1,6 +1,6 @@
 # stdlib
-import threading
 import logging
+import threading
 
 # third party
 from flask import Flask
