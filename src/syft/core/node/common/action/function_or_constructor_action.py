@@ -24,6 +24,19 @@ from .common import ImmediateActionWithoutReply
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
+    """
+    When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
+    a function defined by the action's path attribute and keep the returned value
+    in its store.
+
+    Attributes:
+         path: the dotted path to the function to call
+         args: args to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+         kwargs: kwargs to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+    """
+
     def __init__(
         self,
         path: str,
