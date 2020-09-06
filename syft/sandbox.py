@@ -63,8 +63,8 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
             num_of_records = 10000
             """Int: num_of_records is a configurable limit for the cifar10
                 and fashion_mnist datasets.
-                since it is a huge dataset and it requires a lot of memory resources
-                       """
+                since it is a huge dataset and it requires a lot of memory resources"""
+
             ((train_images, train_labels), (test_images, test_labels),) = func()
             data = np.concatenate([train_images, test_images])
             target = np.concatenate([train_labels, test_labels])
