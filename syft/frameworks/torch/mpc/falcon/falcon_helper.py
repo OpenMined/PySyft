@@ -63,7 +63,7 @@ class FalconHelper:
         """
         return: x if beta = 0 | -x if beta = 1
         """
-        return (1 - beta * 2) * x
+        return x * (1 - beta * 2)
 
     @staticmethod
     def private_compare_preprocess(players, p=7, k=10):
