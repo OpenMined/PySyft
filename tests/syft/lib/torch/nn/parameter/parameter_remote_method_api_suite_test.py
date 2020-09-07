@@ -119,6 +119,9 @@ def is_expected_runtime_error(msg: str) -> bool:
         "the derivative for 'other' is not implemented",
         "is only supported for integer type tensors",
         "INTERNAL ASSERT FAILED",
+        "vector and vector expected, got",  # torch==1.4.0 "ger"
+        "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
+        "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
