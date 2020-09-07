@@ -77,6 +77,16 @@ class FalconHelper:
         return {"beta": [beta, beta_p], "m": m}
 
     @staticmethod
+    def digitise(value: torch.Tensor, reverse=False):
+        digits = []
+        while value > 0:
+            digits.append(value % 10)
+            value = value // 10
+        if not reverse:
+            digits.reverse()
+        return digits
+
+    @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
             return public_function(value, *args, **kwargs)

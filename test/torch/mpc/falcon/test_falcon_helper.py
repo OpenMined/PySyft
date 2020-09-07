@@ -49,3 +49,12 @@ def test_determine_sign(workers):
     assert (
         FalconHelper.determine_sign(x, beta_1).reconstruct() == (-1 * torch.tensor([-4, 5, 6]))
     ).all()
+
+
+def test_digitise():
+    x = torch.tensor([12345])
+    digits = FalconHelper.digitise(x)
+    reversed_digits = FalconHelper.digitise(x, True)
+    assert type(digits) is list
+    assert (digits[0] == torch.tensor(1)).all()
+    assert (reversed_digits[0] == torch.tensor(5)).all()
