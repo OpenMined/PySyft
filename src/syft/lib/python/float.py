@@ -17,10 +17,10 @@ from .primitive_interface import PyPrimitive
 
 class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __new__(self, value: Any = None, id: Optional[UID] = None) -> float:
+    def __new__(self, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:
             value = 0.0
-        return float.__new__(self, value)
+        return float.__new__(self, value)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, id: Optional[UID] = None):
@@ -81,7 +81,7 @@ class Float(float, PyPrimitive):
         Float_pb.id.CopyFrom(serialize(self.id))
         return Float_pb
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
     @staticmethod

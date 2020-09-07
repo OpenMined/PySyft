@@ -19,14 +19,14 @@ class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
-    ) -> int:
+    ) -> "Int":
         if value is None:
             value = 0
 
         if isinstance(value, str):
-            return int.__new__(cls, value, base)
+            return int.__new__(cls, value, base)  # type: ignore
 
-        return int.__new__(cls, value)
+        return int.__new__(cls, value)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, base: Any = 10, uid: Optional[UID] = None):
