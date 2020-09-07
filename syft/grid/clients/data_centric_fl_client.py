@@ -11,6 +11,9 @@ from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 
 class DataCentricFLClient(WebsocketClientWorker):
@@ -284,3 +287,18 @@ class DataCentricFLClient(WebsocketClientWorker):
 
     def __str__(self) -> str:
         return f"<Federated Worker id:{self.id}>"
+
+    @staticmethod
+    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
+        return BaseWorker.simplify(_worker, worker)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
+        detailed = BaseWorker.detail(worker, worker_tuple)
+
+        if isinstance(detailed, int):
+            result = VirtualWorker(id=detailed, hook=worker.hook)
+        else:
+            result = detailed
+
+        return result
