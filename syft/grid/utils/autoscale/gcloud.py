@@ -404,7 +404,7 @@ class Cluster:
             allow_remote_inference (bool) : Allow to run remote inferences.
             apply: to call terraform apply at the end
         """
-        print("Connecting to netowrk-node")
+        print("Connecting to network-node")
         self.network_node = DataCentricFLClient(hook, self.gridnetwork_node_ip)
         print("Sending model to node")
         self.network_node.serve_model(
