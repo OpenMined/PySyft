@@ -36,9 +36,7 @@ tensor_type = type(th.tensor([1, 2, 3]))
 # for dtype in ["complex*", "q*"] (complex and quantized types)
 TYPES_EXCEPTIONS_PREFIX = ("complex", "q")
 
-TEST_TYPES = [
-    e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)
-]
+TEST_TYPES = [e for e in TORCH_STR_DTYPE.keys() if not e.startswith(TYPES_EXCEPTIONS_PREFIX)]
 
 # only float types
 TEST_TYPES = [ttype for ttype in TEST_TYPES if "float" in ttype]
@@ -114,7 +112,7 @@ def is_expected_runtime_error(msg: str) -> bool:
         "At least one of 'min' or 'max' must not be None",
         "Boolean value of Tensor with more than one value is ambiguous",
         "shape '[1]' is invalid for input of size",
-        # "a leaf Variable that requires grad has been used in an in-place operation",
+        "a leaf Variable that requires grad has been used in an in-place operation",
         "a leaf Variable that requires grad is being used in an in-place operation",
         "the derivative for 'other' is not implemented",
         "INTERNAL ASSERT FAILED",
@@ -247,9 +245,7 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
         if args is not None:
-            argsp = [
-                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
-            ]
+            argsp = [arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args]
         else:
             argsp = None  # type:ignore
 
@@ -305,18 +301,14 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
             assert type(local_result) == type(target_result)
 
             # make sure the return type matches the specified allowlist return type
-            assert (
-                full_name_with_qualname(type(local_result))
-                == BASIC_OPS_RETURN_TYPE[op_name]
-            )
+            assert full_name_with_qualname(type(local_result)) == BASIC_OPS_RETURN_TYPE[op_name]
 
         except RuntimeError as e:
             msg = repr(e)
             # some types can't set Nans to 0 or do the final check
             if (
                 "not implemented for" not in msg
-                and "a leaf Variable that requires grad is being used in an in-place operation"  # TODO why?
-                not in msg
+                and "a leaf Variable that requires grad" not in msg  # TODO why?
             ):
                 raise e
 
