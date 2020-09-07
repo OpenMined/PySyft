@@ -19,16 +19,16 @@ class PrimitiveFactory:
         from .int import Int
         from .none import SyNone
 
-        if type(value) is int:
+        if isinstance(value, int):
             return Int(value=value)
 
-        if type(value) is float:
+        if isinstance(value, float):
             return Float(value=value)
 
-        if type(value) is bool:
+        if isinstance(value, bool):
             return Bool(value=value)
 
-        if type(value) is complex:
+        if isinstance(value, complex):
             return Complex(value=value)
 
         return SyNone()
