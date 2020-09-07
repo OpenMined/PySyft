@@ -35,11 +35,11 @@ pip install terrascript
 
 ### Set Up Budget Alerts (important)
 
-Before you start to spin-up instances we encourace to set a budget alert on GCP to avoid suprise costs.
+Before you start to spin-up instances, we encourage to set a budget alert on GCP to avoid surprise costs.
 
 [Setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
 
-### Spin-up Instances using the follwoing commands:-
+### Spin-up Instances using the following commands:-
 
 You can find sample code in ```test.py```  and  ```test.ipynb```
 
@@ -114,10 +114,18 @@ c1 = instance_name.create_cluster(
 - Run a parameter sweep to figure out the best parameters using:
 
 ```python
-c1.sweep()
+c1.sweep(
+    model,
+    hook,
+    model_id="new_model",
+    mpc=False,
+    allow_download=False,
+    allow_remote_inference=False,
+    apply=True,
+)
 ```
 
-- Destroy the created instances using:
+- Destroy all the created resources using:
 
 ```python
 instance_name.destroy()
