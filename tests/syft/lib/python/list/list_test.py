@@ -3,15 +3,19 @@ Tests copied from cpython test suite:
 https://github.com/python/cpython/blob/3.8/Lib/test/list_tests.py
 """
 
-import sys
+# stdlib
 from functools import cmp_to_key
+import sys
+from typing import Any
+from typing import List as ListT
 import unittest
 
+# syft absolute
 from syft.lib.python.list import List
 
 
 class CommonTest(unittest.TestCase):
-    def test_init(self):
+    def test_init(self) -> None:
         # Iterable arg is optional
         self.assertEqual(List([]), List())
 
@@ -30,21 +34,21 @@ class CommonTest(unittest.TestCase):
         self.assertNotEqual(id(a), id(b))
         self.assertEqual(a, b)
 
-    def test_getitem_error(self):
-        a = []
+    def test_getitem_error(self) -> None:
+        a = List([])
         msg = "list indices must be integers or slices"
         with self.assertRaisesRegex(TypeError, msg):
             a["a"]
 
-    def test_setitem_error(self):
-        a = []
+    def test_setitem_error(self) -> None:
+        a = List([])
         msg = "list indices must be integers or slices"
         with self.assertRaisesRegex(TypeError, msg):
             a["a"] = "python"
 
-    def test_repr(self):
-        l0 = []
-        l2 = [0, 1, 2]
+    def test_repr(self) -> None:
+        l0: ListT[int] = []
+        l2: ListT[int] = [0, 1, 2]
         a0 = List(l0)
         a2 = List(l2)
 
@@ -59,13 +63,13 @@ class CommonTest(unittest.TestCase):
         self.assertEqual(str(a2), "[0, 1, 2, [...], 3]")
         self.assertEqual(repr(a2), "[0, 1, 2, [...], 3]")
 
-    def test_repr_deep(self):
+    def test_repr_deep(self) -> None:
         a = List([])
         for i in range(sys.getrecursionlimit() + 100):
             a = List([a])
         self.assertRaises(RecursionError, repr, a)
 
-    def test_set_subscript(self):
+    def test_set_subscript(self) -> None:
         a = List(range(20))
         self.assertRaises(ValueError, a.__setitem__, slice(0, 10, 0), [1, 2, 3])
         self.assertRaises(TypeError, a.__setitem__, slice(0, 10), 1)
@@ -74,10 +78,12 @@ class CommonTest(unittest.TestCase):
         a[slice(2, 10, 3)] = [1, 2, 3]
         self.assertEqual(
             a,
-            List([0, 1, 1, 3, 4, 2, 6, 7, 3, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+            List(
+                [0, 1, 1, 3, 4, 2, 6, 7, 3, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+            ),
         )
 
-    def test_reversed(self):
+    def test_reversed(self) -> None:
         a = List(range(20))
         r = reversed(a)
         self.assertEqual(list(r), List(range(19, -1, -1)))
@@ -86,7 +92,7 @@ class CommonTest(unittest.TestCase):
         # Bug 3689: make sure list-reversed-iterator doesn't have __len__
         self.assertRaises(TypeError, len, reversed([1, 2, 3]))
 
-    def test_setitem(self):
+    def test_setitem(self) -> None:
         a = List([0, 1])
         a[0] = 0
         a[1] = 100
@@ -123,7 +129,7 @@ class CommonTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, msg):
             a["a"] = "python"
 
-    def test_delitem(self):
+    def test_delitem(self) -> None:
         a = List([0, 1])
         del a[1]
         self.assertEqual(a, [0])
@@ -145,8 +151,8 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, a.__delitem__)
 
-    def test_setslice(self):
-        l = [0, 1]
+    def test_setslice(self) -> None:
+        l = [0, 1]  # noqa: E741
         a = List(l)
 
         for i in range(-3, 4):
@@ -191,7 +197,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, a.__setitem__)
 
-    def test_delslice(self):
+    def test_delslice(self) -> None:
         a = List([0, 1])
         del a[1:2]
         del a[0:1]
@@ -232,7 +238,7 @@ class CommonTest(unittest.TestCase):
         del a[:]
         self.assertEqual(a, List([]))
 
-    def test_append(self):
+    def test_append(self) -> None:
         a = List([])
         a.append(0)
         a.append(1)
@@ -241,7 +247,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, a.append)
 
-    def test_extend(self):
+    def test_extend(self) -> None:
         a1 = List([0])
         a2 = List((0, 1))
         a = a1[:]
@@ -263,20 +269,20 @@ class CommonTest(unittest.TestCase):
 
         # overflow test. issue1621
         class CustomIter:
-            def __iter__(self):
+            def __iter__(self) -> "CustomIter":
                 return self
 
-            def __next__(self):
+            def __next__(self) -> Any:
                 raise StopIteration
 
-            def __length_hint__(self):
+            def __length_hint__(self) -> int:
                 return sys.maxsize
 
         a = List([1, 2, 3, 4])
         a.extend(CustomIter())
         self.assertEqual(a, [1, 2, 3, 4])
 
-    def test_insert(self):
+    def test_insert(self) -> None:
         a = List([0, 1, 2])
         a.insert(0, -2)
         a.insert(1, -1)
@@ -291,7 +297,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, a.insert)
 
-    def test_pop(self):
+    def test_pop(self) -> None:
         a = List([-1, 0, 1])
         a.pop()
         self.assertEqual(a, [-1, 0])
@@ -304,7 +310,7 @@ class CommonTest(unittest.TestCase):
         self.assertRaises(TypeError, a.pop, 42, 42)
         a = List([0, 10, 20, 30, 40])
 
-    def test_remove(self):
+    def test_remove(self) -> None:
         a = List([0, 0, 1])
         a.remove(1)
         self.assertEqual(a, [0, 0])
@@ -321,7 +327,7 @@ class CommonTest(unittest.TestCase):
             pass
 
         class BadCmp:
-            def __eq__(self, other):
+            def __eq__(self, other: Any) -> bool:
                 if other == 2:
                     raise BadExc()
                 return False
@@ -330,7 +336,7 @@ class CommonTest(unittest.TestCase):
         self.assertRaises(BadExc, a.remove, BadCmp())
 
         class BadCmp2:
-            def __eq__(self, other):
+            def __eq__(self, other: Any) -> bool:
                 raise BadExc()
 
         d = List("abcdefghcij")
@@ -349,7 +355,7 @@ class CommonTest(unittest.TestCase):
             # verify that original order and values are retained.
             self.assertIs(x, y)
 
-    def test_index(self):
+    def test_index(self) -> None:
         u = List([0, 1])
         self.assertEqual(u.index(0), 0)
         self.assertEqual(u.index(1), 1)
@@ -370,7 +376,7 @@ class CommonTest(unittest.TestCase):
             pass
 
         class BadCmp:
-            def __eq__(self, other):
+            def __eq__(self, other: Any) -> bool:
                 if other == 2:
                     raise BadExc()
                 return False
@@ -398,10 +404,10 @@ class CommonTest(unittest.TestCase):
 
         # Test modifying the list during index's iteration
         class EvilCmp:
-            def __init__(self, victim):
+            def __init__(self, victim: Any) -> None:
                 self.victim = victim
 
-            def __eq__(self, other):
+            def __eq__(self, other: Any) -> bool:
                 del self.victim[:]
                 return False
 
@@ -410,7 +416,7 @@ class CommonTest(unittest.TestCase):
         # This used to seg fault before patch #1005778
         self.assertRaises(ValueError, a.index, None)
 
-    def test_reverse(self):
+    def test_reverse(self) -> None:
         u = List([-2, -1, 0, 1, 2])
         u2 = u[:]
         u.reverse()
@@ -420,7 +426,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, u.reverse, 42)
 
-    def test_clear(self):
+    def test_clear(self) -> None:
         u = List([2, 3, 4])
         u.clear()
         self.assertEqual(u, [])
@@ -437,7 +443,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, u.clear, None)
 
-    def test_copy(self):
+    def test_copy(self) -> None:
         u = List([1, 2, 3])
         v = u.copy()
         self.assertEqual(v, [1, 2, 3])
@@ -461,7 +467,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, u.copy, None)
 
-    def test_sort(self):
+    def test_sort(self) -> None:
         u = List([1, 0])
         u.sort()
         self.assertEqual(u, [0, 1])
@@ -472,7 +478,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, u.sort, 42, 42)
 
-        def revcmp(a, b):
+        def revcmp(a: Any, b: Any) -> int:
             if a == b:
                 return 0
             elif a < b:
@@ -484,7 +490,7 @@ class CommonTest(unittest.TestCase):
         self.assertEqual(u, List([2, 1, 0, -1, -2]))
 
         # The following dumps core in unpatched Python 1.5:
-        def myComparison(x, y):
+        def myComparison(x: Any, y: Any) -> int:
             xmod, ymod = x % 3, y % 7
             if xmod == ymod:
                 return 0
@@ -498,7 +504,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, z.sort, 2)
 
-        def selfmodifyingComparison(x, y):
+        def selfmodifyingComparison(x: Any, y: Any) -> int:
             z.append(1)
             if x == y:
                 return 0
@@ -511,12 +517,12 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, z.sort, 42, 42, 42, 42)
 
-    def test_slice(self):
+    def test_slice(self) -> None:
         u = List("spam")
         u[:2] = "h"
         self.assertEqual(u, list("ham"))
 
-    def test_iadd(self):
+    def test_iadd(self) -> None:
         u = List([0, 1])
         u += List()
         self.assertEqual(u, List([0, 1]))
@@ -540,7 +546,7 @@ class CommonTest(unittest.TestCase):
 
         self.assertRaises(TypeError, u.__iadd__, None)
 
-    def test_imul(self):
+    def test_imul(self) -> None:
         u = List([0, 1])
         u *= 3
         self.assertEqual(u, List([0, 1, 0, 1, 0, 1]))
@@ -552,7 +558,7 @@ class CommonTest(unittest.TestCase):
         s *= 10
         self.assertEqual(id(s), oldid)
 
-    def test_extendedslicing(self):
+    def test_extendedslicing(self) -> None:
         #  subscript
         a = List([0, 1, 2, 3, 4])
 
@@ -591,17 +597,17 @@ class CommonTest(unittest.TestCase):
         self.assertEqual(a, List([0, 1, 1, 3, 2, 5, 3, 7, 4, 9]))
         # test issue7788
         a = List(range(10))
-        del a[9 :: 1 << 333]
+        del a[9 :: 1 << 333]  # noqa: E203
 
-    def test_constructor_exception_handling(self):
+    def test_constructor_exception_handling(self) -> None:
         # Bug #1242657
         class F(object):
-            def __iter__(self):
+            def __iter__(self) -> "F":
                 raise KeyboardInterrupt
 
         self.assertRaises(KeyboardInterrupt, list, F())
 
-    def test_exhausted_iterator(self):
+    def test_exhausted_iterator(self) -> None:
         a = List([1, 2, 3])
         exhit = iter(a)
         empit = iter(a)

@@ -1,10 +1,12 @@
+# third party
 import torch as th
 
+# syft absolute
 from syft.lib.python.list import List
 from syft.proto.lib.python.list_pb2 import List as List_PB
 
 
-def test_serde():
+def test_serde() -> None:
     t1 = th.tensor([1, 2])
     t2 = th.tensor([1, 3])
 

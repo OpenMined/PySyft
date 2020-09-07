@@ -1,7 +1,8 @@
+# third party
 import torch as th
 
+# syft absolute
 from syft.lib.python.list import List
-
 
 t1 = th.tensor([1, 2])
 t2 = th.tensor([1, 3])
@@ -15,7 +16,7 @@ python_l1 = [t1, t2]
 python_l2 = [t3, t4]
 
 
-def test_id_add():
+def test_id_add() -> None:
     res = l1 + l2
     py_res = python_l1 + python_l2
 
