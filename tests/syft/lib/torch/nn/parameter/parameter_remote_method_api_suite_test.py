@@ -117,6 +117,7 @@ def is_expected_runtime_error(msg: str) -> bool:
         "a leaf Variable that requires grad has been used in an in-place operation",
         "a leaf Variable that requires grad is being used in an in-place operation",
         "the derivative for 'other' is not implemented",
+        "is only supported for integer type tensors",
         "INTERNAL ASSERT FAILED",
     }
 
