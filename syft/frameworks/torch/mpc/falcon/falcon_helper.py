@@ -66,6 +66,17 @@ class FalconHelper:
         return (1 - beta * 2) * x
 
     @staticmethod
+    def private_compare_preprocess(players, p=7, k=10):
+        beta = torch.randint(high=1, size=[1]).share(*players, protocol="falcon", field=2)
+        beta_p = beta.inject_bit(p)
+        m = []
+        for _ in range(k):
+            m_i = torch.tensor([0]).share(*players, protocol="falcon", field=p).rand_()
+            if ((m_i ** (p - 1)).reonsturct() == torch.tensor([1])).all():
+                m.append(m_i)
+        return {"beta": [beta, beta_p], "m": m}
+
+    @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
         if isinstance(value, (int, float, torch.Tensor, syft.FixedPrecisionTensor)):
             return public_function(value, *args, **kwargs)

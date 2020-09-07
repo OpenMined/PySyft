@@ -141,9 +141,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     __matmul__ = matmul
 
     def pow(self, power):
-        if power < 0:
-            raise ValueError("Negative integer powers are not allowed.")
-
+        assert power > 0
         base, result = self, 1
         while power > 0:
             if power % 2 == 1:
@@ -164,7 +162,11 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def rand_(self):
         players = self.__get_players()
-        shares_map = {player: gen_alpha_2of3(player, self.ring_size) for player in players}
+        shares_map = {}
+        for player in players:
+            random_shares = gen_alpha_2of3(player, self.ring_size // 2)
+            wrapped_shares = (random_shares[0].wrap(), random_shares[1].wrap())
+            shares_map[player] = wrapped_shares
         self.__set_shares_map(shares_map)
 
     def view(self, *args, **kwargs):
@@ -298,8 +300,9 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def __str__(self):
         type_name = type(self).__name__
-        out = f"[" f"{type_name}]"
-        if self.child is not None:
-            for v in self.child.values():
-                out += "\n\t-> " + str(v)
+        out = f"[" f"{type_name}] \n"
+        out += "players: "
+        for player in self.players:
+            out += f"{str(player.id)} ,"
+        out = out[:-1]
         return out
