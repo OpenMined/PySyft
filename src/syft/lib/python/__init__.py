@@ -5,15 +5,15 @@ from typing import Tuple
 
 # syft relative
 from ...ast.globals import Globals
-from ...ast.module import Module
 from ...ast.klass import Class
-from .int import Int
+from ...ast.module import Module
 from .bool import Bool
 from .float import Float
+from .int import Int
 from .list import List
 
 
-def get_parent(path: str, root: Module) -> Module:
+def get_parent(path: str, root: Any) -> Module:
     parent = root
     for step in path.split(".")[:-1]:
         parent = parent.attrs[step]
@@ -36,7 +36,7 @@ def add_modules(ast: Globals, modules: TypeList[str]) -> None:
         )
 
 
-def add_primitives(ast: Globals, primitives: TypeList[Tuple[str, Any]]):
+def add_primitives(ast: Globals, primitives: TypeList[Tuple[str, Any]]) -> None:
     for primitive, ref in primitives:
         parent = get_parent(primitive, ast)
         attr_name = primitive.rsplit(".", 1)[-1]

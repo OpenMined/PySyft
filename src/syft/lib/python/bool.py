@@ -198,7 +198,9 @@ class Bool(PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rfloordiv__(self, other: Any) -> PyPrimitive:
         other = dispatch_other(other)
-        return PrimitiveFactory.generate_primitive(value=self.value.__rfloordiv__(other))
+        return PrimitiveFactory.generate_primitive(
+            value=self.value.__rfloordiv__(other)
+        )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rlshift__(self, other: Any) -> PyPrimitive:
