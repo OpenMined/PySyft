@@ -13,8 +13,12 @@ from .primitive_interface import PyPrimitive
 class Complex(complex, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(self, real: Any = None, imag: Any = None, id: Optional[UID] = None) -> "Complex":
-        if isinstance(real, str) or imag is None:
+        if real is None:
+            return complex.__new__(self)  # type: ignore
+        if imag is None:
             return complex.__new__(self, real=real)  # type: ignore
+        if isinstance(real, str):
+            raise TypeError("Complex() can't take second arg if first is a string")
         return complex.__new__(self, real=real, imag=imag)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -24,94 +28,94 @@ class Complex(complex, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, x: complex) -> "Complex":
-        result = super().__add__(x)
+        result = complex.__add__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __sub__(self, x: complex) -> "Complex":
-        result = super().__sub__(x)
+        result = complex.__sub__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, x: complex) -> "Complex":
-        result = super().__mul__(x)
+        result = complex.__mul__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, x: complex) -> "Complex":
-        result = super().__pow__(x)
+        result = complex.__pow__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __truediv__(self, x: complex) -> "Complex":
-        result = super().__truediv__(x)
+        result = complex.__truediv__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __radd__(self, x: complex) -> "Complex":
-        result = super().__radd__(x)
+        result = complex.__radd__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rsub__(self, x: complex) -> "Complex":
-        result = super().__rsub__(x)
+        result = complex.__rsub__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rmul__(self, x: complex) -> "Complex":
-        result = super().__rmul__(x)
+        result = complex.__rmul__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rpow__(self, x: complex) -> "Complex":
-        result = super().__rpow__(x)
+        result = complex.__rpow__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rtruediv__(self, x: complex) -> "Complex":
-        result = super().__rtruediv__(x)
+        result = complex.__rtruediv__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, x: object) -> PyPrimitive:
-        result = super().__eq__(x)
+        result = complex.__eq__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, x: object) -> PyPrimitive:
-        result = super().__ne__(x)
+        result = complex.__ne__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __neg__(self) -> "Complex":
-        result = super().__neg__()
+        result = complex.__neg__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pos__(self) -> "Complex":
-        result = super().__pos__()
+        result = complex.__pos__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
     # @syft_decorator(typechecking=True, prohibit_args=False)
     # def __str__(self) -> PyPrimitive:
     #     ...
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __complex__(self) -> "Complex":
-        result = super().__complex__()
-        return PrimitiveFactory.generate_primitive(value=result)
+    # @syft_decorator(typechecking=True, prohibit_args=False)
+    # def __complex__(self) -> "Complex":
+    #     result = complex.__complex__()
+    #     return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __abs__(self) -> PyPrimitive:
-        result = super().__abs__()
+        result = complex.__abs__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __hash__(self) -> PyPrimitive:
-        result = super().__hash__()
+        result = complex.__hash__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __bool__(self) -> PyPrimitive:
-        result = super().__bool__()
-        return PrimitiveFactory.generate_primitive(value=result)
+    def __bool__(self) -> bool:
+        # NOTE we return a real bool here, not a syft Bool
+        return complex.__bool__(self)
