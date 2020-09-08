@@ -1,18 +1,7 @@
-# stdlib
-from typing import List
-from typing import Optional
-
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
 
 # syft relative
-from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
-from ...lib.torch.tensor_util import protobuf_tensor_deserializer
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
-from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
-from ...util import aggressive_set_attr
 from ..generic import ObjectConstructor
 
 
@@ -33,10 +22,3 @@ class GeneratorConstructor(ObjectConstructor):
 
 # Step 3: create constructor and install it in the library
 GeneratorConstructor().install_inside_library()
-
-# generator_type = type(th.Generator(device='cpu'))
-# b = torch.
-
-# aggressive_set_attr(
-#     obj=torch_tensor_type, name="serializable_wrapper_type", attr=TorchTensorWrapper
-# )

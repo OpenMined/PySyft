@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 
 # third party
@@ -9,8 +10,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
+from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.int_pb2 import Int as Int_PB
+from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
@@ -187,14 +190,65 @@ class Int(int, PyPrimitive):
     def _object2proto(self) -> Int_PB:
         int_pb = Int_PB()
         int_pb.data = self
-        int_pb.id.CopyFrom(serialize(self.id))
+        int_pb.id_at_location.CopyFrom(serialize(obj=self.id))
         return int_pb
 
     @staticmethod
     def _proto2object(proto: Int_PB) -> "Int":
-        int_id: UID = deserialize(blob=proto.id)
-        return Int(value=proto.data, id=int_id)
+        # if hasattr(proto, "id_at_location"):
+        int_id: UID = deserialize(blob=proto.id_at_location)
+        # else:
+        #     # when the wrapper type is used
+        #     int_id: UID = deserialize(blob=proto.id)
+
+        de_int = Int(value=proto.data)
+        de_int._id = int_id  # can't use uid=int_id for some reason
+
+        return de_int
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Int_PB
+
+
+class IntWrapper(StorableObject):
+    def __init__(self, value: object):
+        super().__init__(
+            data=value,
+            id=getattr(value, "id", UID()),
+            tags=getattr(value, "tags", []),
+            description=getattr(value, "description", ""),
+        )
+        self.value = value
+
+    def _data_object2proto(self) -> Int_PB:
+        _object2proto = getattr(self.data, "_object2proto", None)
+        if _object2proto is not None:
+            return _object2proto()
+
+    @staticmethod
+    def _data_proto2object(proto: Int_PB) -> "IntWrapper":
+        return Int._proto2object(proto)
+
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Int_PB
+
+    @staticmethod
+    def get_wrapped_type() -> type:
+        return Int
+
+    @staticmethod
+    def construct_new_object(
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
+        setattr(data, "_id", id)
+        data.tags = tags
+        data.description = description
+        return data
+
+
+aggressive_set_attr(obj=Int, name="serializable_wrapper_type", attr=IntWrapper)
