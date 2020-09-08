@@ -315,10 +315,7 @@ class Bool(PyPrimitive):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Bool_PB:
-        bool_pb = Bool_PB()
-        bool_pb.data = self
-        bool_pb.id_at_location.CopyFrom(serialize(obj=self.id))
-        return bool_pb
+        return Bool_PB(id_at_location=serialize(obj=self.id), data=self)
 
     @staticmethod
     def _proto2object(proto: Bool_PB) -> "Bool":

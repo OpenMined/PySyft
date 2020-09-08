@@ -7,8 +7,9 @@ from typing import Tuple
 from ...ast.globals import Globals
 from ...ast.module import Module
 from ...ast.klass import Class
-from .bool import Bool
 from .int import Int
+from .bool import Bool
+from .float import Float
 
 
 def get_parent(path: str, root: Module) -> Module:
@@ -59,8 +60,9 @@ def create_python_ast() -> Globals:
         "syft.lib.python",
     ]
     primitives = [
-        ("syft.lib.python.Int", Int),
         ("syft.lib.python.Bool", Bool),
+        ("syft.lib.python.Int", Int),
+        ("syft.lib.python.Float", Float),
     ]
 
     add_modules(ast, modules)
