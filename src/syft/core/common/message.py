@@ -57,12 +57,33 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
 
 
 class SyftMessage(AbstractMessage):
+    """
+    SyftMessages are an abstraction that represent information that is sent between 2 actors.
+    In Syft, a lot of things are done by sending a message from a :class:`Client` to a :class:`Node`.
+    This class cannot be used as is: to get some useful objects, we need to derive from it. For instance,
+    :class:`Action`s inherit from :class:`SyftMessage`.
+    There are many types of SyftMessage which boil down to whether or not they are Sync or Async,
+    and whether or not they expect a response.
+
+    Attributes:
+        address: the :class:`Address` to which the message needs to be delivered.
+    """
+
     def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
         self.address = address
         super().__init__(id=msg_id)
         self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
+        """Method used to sign a SyftMessage and get a :class:`SignedMessage`.
+
+        Args:
+            signing_key: The key to use to sign the SyftMessage.
+
+        Returns:
+            A :class:`SignedMessage`
+
+        """
         if sy.VERBOSE:
             print(
                 f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
@@ -83,6 +104,18 @@ class SyftMessage(AbstractMessage):
 
 
 class SignedMessage(SyftMessage):
+    """
+    SignedMessages are :class:`SyftMessage`s that have been signed by someone.
+    In addition to what has a :class:`SyftMessage`, they have a signature, a verify key
+    and a :meth:`is_valid` property that are here to check that the message was really
+    signed and sent by the verify key owner.
+
+    Attributes:
+        obj_type (string): the string representation of the type of the original message.
+        signature (bytes): the signature of the message.
+        verify_key (VerifyKey): the signer's public key with which the signature can be verified.
+        serialized_message: the serialized original message.
+    """
 
     obj_type: str
     signature: bytes
