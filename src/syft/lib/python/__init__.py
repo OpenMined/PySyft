@@ -7,6 +7,7 @@ from typing import Tuple
 from ...ast.globals import Globals
 from ...ast.module import Module
 from ...ast.klass import Class
+from .bool import Bool
 from .int import Int
 
 
@@ -57,7 +58,10 @@ def create_python_ast() -> Globals:
         "syft.lib",
         "syft.lib.python",
     ]
-    primitives = [("syft.lib.python.Int", Int)]
+    primitives = [
+        ("syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool", Bool),
+    ]
 
     add_modules(ast, modules)
     add_primitives(ast, primitives)

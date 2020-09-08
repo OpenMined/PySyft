@@ -40,6 +40,17 @@ class Int(int, PyPrimitive):
 
         self._id: UID = UID() if uid is None else uid
 
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
         res = super().__add__(other)
@@ -69,17 +80,6 @@ class Int(int, PyPrimitive):
     def __rmul__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__rmul__(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> PyPrimitive:
