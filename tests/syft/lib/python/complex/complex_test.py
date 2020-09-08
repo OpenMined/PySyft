@@ -515,8 +515,9 @@ class ComplexTest(unittest.TestCase):
                 return None
 
         self.assertEqual(Complex(complex0(1j)), 42j)
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(Complex(complex1(1j)), 2j)
+        # Only deprecated from python 3.7
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertEqual(Complex(complex1(1j)), 2j)
         self.assertRaises(TypeError, Complex, complex2(1j))
 
     # @support.requires_IEEE_754
