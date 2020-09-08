@@ -28,11 +28,7 @@ class Float(float, PyPrimitive):
             value = 0.0
 
         float.__init__(value)
-
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = id
+        self._id = id or UID()
 
     @property
     def id(self) -> UID:
@@ -151,39 +147,27 @@ class Float(float, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __iadd__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__add__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__add__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __isub__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__sub__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__sub__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __imul__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mul__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mul__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ifloordiv__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__floordiv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__floordiv__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __itruediv__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__truediv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__truediv__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __imod__(self, other: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mod__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mod__(other), id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ipow__(self, other: Any) -> PyPrimitive:

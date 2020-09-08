@@ -29,6 +29,6 @@ class PrimitiveFactory:
             return Bool(value=value)
 
         if isinstance(value, complex):
-            return Complex(value=value)
+            return Complex(real=value.real, imag=value.imag)
 
         return SyNone()
