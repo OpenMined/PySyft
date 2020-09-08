@@ -5,7 +5,7 @@ import syft as sy
 
 def test_copy_on_remote():
     """
-        Tests the correctness of copying a remote model.
+    Tests the correctness of copying a remote model.
     """
     data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
     model = nn.Linear(2, 1)

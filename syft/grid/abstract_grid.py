@@ -54,7 +54,7 @@ class AbstractGrid(ABC):
                     node_j.connect_nodes(node_i)
 
     def _check_node_type(self, grid_workers: List[Any], node_type: Any) -> bool:
-        """ Private method used to verify if workers used by grid network are exactly what we expect.
+        """Private method used to verify if workers used by grid network are exactly what we expect.
 
         Returns:
             result : Boolean result.

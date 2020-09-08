@@ -1,6 +1,8 @@
+from hashlib import blake2b
+
+
 class EncryptionParams:
-    """A class for holding all the encryption parameters at one place for easy accessing
-    by any component of scheme.
+    """A class to hold the encryption parameters for easy access by any component of scheme.
 
     Attribute:
         poly_modulus: The polynomial modulus directly affects the number of coefficients in
@@ -40,6 +42,7 @@ class EncryptionParams:
         self.param_id = self.compute_parms_id()
 
     def compute_parms_id(self):
-        # TODO: use hash function here.
         param_data = [self.poly_modulus, *self.coeff_modulus, self.plain_modulus]
-        return " ".join(str(x) for x in param_data)
+        param_str = " ".join(str(x) for x in param_data).encode()
+        hash_id = blake2b(param_str).hexdigest()
+        return hash_id

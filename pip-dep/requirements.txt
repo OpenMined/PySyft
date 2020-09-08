@@ -16,7 +16,7 @@ RestrictedPython~=5.0
 requests-toolbelt==0.9.1
 shaloop==0.2.1-alpha.11
 scipy~=1.4.1
-syft-proto~=0.5.1
+syft-proto~=0.5.2
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0

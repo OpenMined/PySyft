@@ -638,13 +638,11 @@ class AdditiveSharingTensor(AbstractTensor):
         return self._private_mul(other, "matmul")
 
     def mm(self, *args, **kwargs):
-        """Multiplies two tensors matrices together
-        """
+        """Multiplies two tensors matrices together"""
         return self.matmul(*args, **kwargs)
 
     def __matmul__(self, *args, **kwargs):
-        """Multiplies two tensors matrices together
-        """
+        """Multiplies two tensors matrices together"""
         return self.matmul(*args, **kwargs)
 
     def __itruediv__(self, *args, **kwargs):
@@ -817,7 +815,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         @overloaded.function
         def roll(tensor_shares, shifts, **kwargs):
-            """ Return a tensor where values are cyclically shifted compared to the original one.
+            """Return a tensor where values are cyclically shifted compared to the original one.
             For instance, torch.roll([1, 2, 3], 1) returns torch.tensor([3, 1, 2]).
             In **kwargs should be dims, an argument to tell along which dimension the tensor should
             be rolled. If dims is None, the tensor is flattened, rolled, and restored to its

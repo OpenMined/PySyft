@@ -57,7 +57,7 @@ class BaseDataset(AbstractSendable):
         return data_elem, self.targets[index]
 
     def transform(self, transform):
-        """ Allows a transform to be applied on given dataset.
+        """Allows a transform to be applied on given dataset.
 
         Args:
             transform: The transform to be applied on the data
@@ -253,7 +253,7 @@ class BaseDataset(AbstractSendable):
 
         Returns:
            Protobuf schema for BaseDataset.
-       """
+        """
         return BaseDatasetPB
 
 

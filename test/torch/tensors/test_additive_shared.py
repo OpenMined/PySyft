@@ -41,6 +41,7 @@ def test_share_get(workers, protocol, dtype, n_workers):
 
     t = torch.tensor([1, 2, 3])
     x = t.share(*share_holders[:n_workers], **kwargs)
+    assert t.dtype == x.dtype
     x = x.get()
 
     assert (x == t).all()
@@ -339,7 +340,10 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "mul", args, n_instances=5, shapes=[((4,), (4,)), ((1,), (3,))],
+            "mul",
+            args,
+            n_instances=5,
+            shapes=[((4,), (4,)), ((1,), (3,))],
         )
 
     t = torch.tensor([1, 2, 3, 4])
@@ -401,7 +405,10 @@ def test_matmul(workers, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "matmul", args, n_instances=1, shapes=[((2, 2), (2, 2))],
+            "matmul",
+            args,
+            n_instances=1,
+            shapes=[((2, 2), (2, 2))],
         )
 
     m = torch.tensor([[1, 2], [3, 4.0]])

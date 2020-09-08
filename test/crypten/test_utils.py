@@ -57,8 +57,8 @@ def test_pack_crypten_model():
 
 def test_pack_typerror_crypten_model():
     """
-        Testing if we throw an error when trying to unpack an encrypted model,
-        we should be able to unpack models that are not encrypted
+    Testing if we throw an error when trying to unpack an encrypted model,
+    we should be able to unpack models that are not encrypted
     """
     dummy_input = th.rand(1, 28 * 28)
     expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)

@@ -179,7 +179,12 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
             sy.local_worker.async_dispatch(
                 workers=locations,
                 commands=[
-                    (full_name(spdz_compute), None, (th.LongTensor([i]), delta, epsilon, op), {},)
+                    (
+                        full_name(spdz_compute),
+                        None,
+                        (th.LongTensor([i]), delta, epsilon, op),
+                        {},
+                    )
                     for i in [0, 1]
                 ],
                 return_value=False,

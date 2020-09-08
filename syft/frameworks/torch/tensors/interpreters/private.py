@@ -21,7 +21,7 @@ class PrivateTensor(AbstractTensor):
         parents: Tuple[str] = (),
         command: str = None,
     ):
-        """ Initialize a Private tensor, which manages permissions restricting get operations.
+        """Initialize a Private tensor, which manages permissions restricting get operations.
 
         Args:
             owner (BaseWorker, optional): A BaseWorker object to specify the worker on which
@@ -44,13 +44,13 @@ class PrivateTensor(AbstractTensor):
         self.command = command
 
     def get_class_attributes(self):
-        """ Specify all the attributes need to build a wrapper correctly when returning
+        """Specify all the attributes need to build a wrapper correctly when returning
         a response.
         """
         return {"allowed_users": self.allowed_users}
 
     def allow(self, user) -> bool:
-        """ Overwrite native's allowed to verify if a specific user is allowed to get this tensor.
+        """Overwrite native's allowed to verify if a specific user is allowed to get this tensor.
 
         Args:
             user (object): user to be verified.
@@ -65,10 +65,10 @@ class PrivateTensor(AbstractTensor):
             raise SendNotPermittedError()
 
     def register_credentials(self, users: List[str]) -> "PrivateTensor":
-        """ Register a new user credential(s) into the list of allowed users to get this tensor.
+        """Register a new user credential(s) into the list of allowed users to get this tensor.
 
-            Args:
-                users (list): Credential(s) to be registered.
+        Args:
+            users (list): Credential(s) to be registered.
         """
         if not hasattr(self, "allowed_users"):
             self.allowed_users = ()

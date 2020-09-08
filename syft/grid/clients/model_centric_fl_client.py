@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 import binascii
 import websocket
@@ -9,6 +10,8 @@ from syft.serde import protobuf
 
 from syft.grid.exceptions import GridError
 from syft_proto.execution.v1.state_pb2 import State as StatePB
+
+from syft.workers.abstract import AbstractWorker
 
 TIMEOUT_INTERVAL = 60
 
@@ -35,7 +38,7 @@ class ModelCentricFLClient:
         self.ws = websocket.create_connection(**args_)
 
     def _send_msg(self, message: dict) -> dict:
-        """ Prepare/send a JSON message to a PyGrid server and receive the response.
+        """Prepare/send a JSON message to a PyGrid server and receive the response.
 
         Args:
             message (dict) : message payload.
@@ -133,3 +136,57 @@ class ModelCentricFLClient:
         }
         serialized_model = self._send_http_req("GET", "/model-centric/retrieve-model", params)
         return self._unserialize(serialized_model, StatePB)
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, model_centric_fl_client: "ModelCentricFLClient") -> tuple:
+
+        # Simplify the attributes for ModelCentricFLClient
+        address = json.dumps(model_centric_fl_client.address)
+        id = json.dumps(model_centric_fl_client.id)
+        secure = json.dumps(model_centric_fl_client.secure)
+
+        return (address, id, secure)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, client_tuple: tuple) -> "ModelCentricFLClient":
+
+        address, id, secure = client_tuple
+
+        # detail client attributes
+        address = json.loads(address)
+        id = json.loads(id)
+        secure = json.loads(secure)
+
+        Client = ModelCentricFLClient(address, id, secure)
+
+        return Client
+
+    @staticmethod
+    def get_msgpack_code() -> Dict[str, int]:
+        """This is the implementation of the `get_msgpack_code()`
+        method required by PySyft's SyftSerializable class.
+        It provides a code for msgpack if the type is not present in proto.json.
+        The returned object should be similar to:
+        {
+            "code": int value,
+            "forced_code": int value
+        }
+        Both keys are optional, the common and right way would be to add only the "code" key.
+        Returns:
+            dict: A dict with the "code" and/or "forced_code" keys.
+        """
+
+        # If a msgpack code is not already generated, then generate one
+        # the code is hash of class name
+        if not hasattr(ModelCentricFLClient, "proto_id"):
+            ModelCentricFLClient.proto_id = sy.serde.msgpack.serde.msgpack_code_generator(
+                ModelCentricFLClient.__qualname__
+            )
+
+        code_dict = {}
+        code_dict["code"] = ModelCentricFLClient.proto_id
+        code_dict["forced_code"] = sy.serde.msgpack.serde.msgpack_code_generator(
+            ModelCentricFLClient.__qualname__ + "forced"
+        )
+
+        return code_dict

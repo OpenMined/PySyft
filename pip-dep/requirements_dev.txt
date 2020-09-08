@@ -4,6 +4,7 @@ bumpversion>=0.5.3
 coverage>=4.5.3
 interrogate>=1.1.4
 ipykernel>=5.1.0
+matplotlib~=3.1.1
 mypy>=0.711
 pre-commit>=1.16.1
 pyopenssl>=19.0.0
