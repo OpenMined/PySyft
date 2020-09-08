@@ -1,7 +1,17 @@
 import pytest
-from src.app.main.users import Role
+from src.app.main.database import Role
 
 from .presets.role import role_metrics
+
+
+@pytest.fixture
+def cleanup(database):
+    yield
+    try:
+        database.session.query(Role).delete()
+        database.session.commit()
+    except:
+        database.session.rollback()
 
 
 @pytest.mark.parametrize(
@@ -25,6 +35,7 @@ def test_create_model_object(
     can_edit_roles,
     can_manage_infrastructure,
     database,
+    cleanup,
 ):
 
     new_role = Role(

@@ -23,3 +23,24 @@ class Role(BaseModel):
             f"can_edit_roles: {self.can_edit_roles}, "
             f"can_manage_infrastructure: {self.can_manage_infrastructure}>"
         )
+
+
+def create_role(
+    name,
+    can_triage_jobs,
+    can_edit_settings,
+    can_create_users,
+    can_create_groups,
+    can_edit_roles,
+    can_manage_infrastructure,
+):
+    new_role = Role(
+        name=name,
+        can_triage_jobs=can_triage_jobs,
+        can_edit_settings=can_edit_settings,
+        can_create_users=can_create_users,
+        can_create_groups=can_create_groups,
+        can_edit_roles=can_edit_roles,
+        can_manage_infrastructure=can_manage_infrastructure,
+    )
+    return new_role

@@ -29,6 +29,7 @@ sqlalchemy_utils = "^0.36.8"
 numpy = "^1.18.5"
 wsaccel = "^0.6.2"
 papermill = "~=2.0.0"
+bcrypt = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
 aiounittest = "^1.4.0"

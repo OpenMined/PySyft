@@ -1,14 +1,24 @@
 import pytest
-from src.app.main.users import User
+from src.app.main.database import User
 
 from .presets.user import user_metrics
+
+
+@pytest.fixture
+def cleanup(database):
+    yield
+    try:
+        database.session.query(User).delete()
+        database.session.commit()
+    except:
+        database.session.rollback()
 
 
 @pytest.mark.parametrize(
     ("email", "hashed_password", "salt", "private_key", "role"), user_metrics,
 )
 def test_create_user_object(
-    email, hashed_password, salt, private_key, role, database,
+    email, hashed_password, salt, private_key, role, database, cleanup
 ):
     new_user = User(
         email=email,

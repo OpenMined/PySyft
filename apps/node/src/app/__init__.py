@@ -33,7 +33,7 @@ class BaseModel(db.Model, AllFeaturesMixin):
 
 
 # Tables must be created after db has been created
-from .main.users import Role
+from .main.database import Role
 
 
 def set_database_config(app, test_config=None, verbose=False):
