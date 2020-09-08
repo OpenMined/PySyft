@@ -3,12 +3,15 @@ Tests copied from cpython test suite:
 https://github.com/python/cpython/blob/3.8/Lib/test/test_complex.py
 """
 
+# stdlib
+from math import atan2
+from math import copysign
+from math import isnan
+import operator
+from random import random
 import unittest
 
-from random import random
-from math import atan2, isnan, copysign
-import operator
-
+# syft absolute
 from syft.lib.python.complex import Complex
 
 INF = float("inf")
@@ -423,10 +426,18 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(ValueError, Complex, "1e++1ej")
         self.assertRaises(ValueError, Complex, ")1+2j(")
         self.assertRaisesRegex(
-            TypeError, "first argument must be a string or a number, not 'dict'", Complex, {1: 2}, 1
+            TypeError,
+            "first argument must be a string or a number, not 'dict'",
+            Complex,
+            {1: 2},
+            1,
         )
         self.assertRaisesRegex(
-            TypeError, "second argument must be a number, not 'dict'", Complex, 1, {1: 2}
+            TypeError,
+            "second argument must be a number, not 'dict'",
+            Complex,
+            1,
+            {1: 2},
         )
         # the following three are accepted by Python 2.6
         self.assertRaises(ValueError, Complex, "1..1j")
@@ -742,10 +753,18 @@ class ComplexTest(unittest.TestCase):
         self.assertEqual(format(1.5 + 3j, "20.2f"), "          1.50+3.00j")
         self.assertEqual(format(1.5 + 3j, ">20.2f"), "          1.50+3.00j")
         self.assertEqual(format(1.5 + 3j, "<20.2f"), "1.50+3.00j          ")
-        self.assertEqual(format(1.5e20 + 3j, "<20.2f"), "150000000000000000000.00+3.00j")
-        self.assertEqual(format(1.5e20 + 3j, ">40.2f"), "          150000000000000000000.00+3.00j")
-        self.assertEqual(format(1.5e20 + 3j, "^40,.2f"), "  150,000,000,000,000,000,000.00+3.00j  ")
-        self.assertEqual(format(1.5e21 + 3j, "^40,.2f"), " 1,500,000,000,000,000,000,000.00+3.00j ")
+        self.assertEqual(
+            format(1.5e20 + 3j, "<20.2f"), "150000000000000000000.00+3.00j"
+        )
+        self.assertEqual(
+            format(1.5e20 + 3j, ">40.2f"), "          150000000000000000000.00+3.00j"
+        )
+        self.assertEqual(
+            format(1.5e20 + 3j, "^40,.2f"), "  150,000,000,000,000,000,000.00+3.00j  "
+        )
+        self.assertEqual(
+            format(1.5e21 + 3j, "^40,.2f"), " 1,500,000,000,000,000,000,000.00+3.00j "
+        )
         self.assertEqual(
             format(1.5e21 + 3000j, ",.2f"), "1,500,000,000,000,000,000,000.00+3,000.00j"
         )
@@ -784,7 +803,7 @@ class ComplexTest(unittest.TestCase):
             self.assertRaises(ValueError, (1.5 + 0.5j).__format__, t)
 
         # make sure everything works in ''.format()
-        self.assertEqual("*{0:.3f}*".format(3.14159 + 2.71828j), "*3.142+2.718j*")
+        self.assertEqual(f"*{3.14159 + 2.71828j:.3f}*", "*3.142+2.718j*")
 
         # issue 3382
         self.assertEqual(format(Complex(NAN, NAN), "f"), "nan+nanj")
