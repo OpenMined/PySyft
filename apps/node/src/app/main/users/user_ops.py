@@ -1,28 +1,29 @@
 import logging
-from secrets import token_hex
+from datetime import datetime, timedelta
 from json import dumps, loads
 from json.decoder import JSONDecodeError
-from datetime import datetime, timedelta
+from secrets import token_hex
 
 import jwt
-from bcrypt import hashpw, checkpw, gensalt
-from syft.codes import RESPONSE_MSG
-from flask import request, Response
+from bcrypt import checkpw, gensalt, hashpw
+from flask import Response
 from flask import current_app as app
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import request
+from syft.codes import RESPONSE_MSG
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from ..core.exceptions import (
-    PyGridError,
-    UserNotFoundError,
-    RoleNotFoundError,
-    GroupNotFoundError,
-    AuthorizationError,
-    MissingRequestKeyError,
-    InvalidCredentialsError,
-)
 from ... import db
 from .. import main_routes
-from ..database import Role, User, UserGroup, Group
+from ..core.exceptions import (
+    AuthorizationError,
+    GroupNotFoundError,
+    InvalidCredentialsError,
+    MissingRequestKeyError,
+    PyGridError,
+    RoleNotFoundError,
+    UserNotFoundError,
+)
+from ..database import Group, Role, User, UserGroup
 
 
 def salt_and_hash_password(password, rounds):
@@ -39,27 +40,27 @@ def identify_user(private_key):
     if private_key is None:
         raise MissingRequestKeyError
 
-    usr = db.session.query(User).filter_by(private_key=private_key).one_or_none()
-    if usr is None:
+    user = db.session.query(User).filter_by(private_key=private_key).one_or_none()
+    if user is None:
         raise UserNotFoundError
 
-    usr_role = db.session.query(Role).get(usr.role)
-    if usr_role is None:
+    user_role = db.session.query(Role).get(user.role)
+    if user_role is None:
         raise RoleNotFoundError
 
-    return usr, usr_role
+    return user, user_role
 
 
 def signup_user(private_key, email, password, role):
-    usr_role = None
-    usr = None
+    user_role = None
+    user = None
 
     try:
-        usr, usr_role = identify_user(private_key)
+        user, user_role = identify_user(private_key)
     except Exception as e:
         logging.warning("Existing user could not be linked")
 
-    if private_key is not None and (usr is None or usr_role is None):
+    if private_key is not None and (user is None or user_role is None):
         raise InvalidCredentialsError
 
     private_key = token_hex(32)
@@ -78,7 +79,7 @@ def signup_user(private_key, email, password, role):
             private_key=private_key,
             role=role,
         )
-    elif role is not None and usr_role is not None and usr_role.can_create_users:
+    elif role is not None and user_role is not None and user_role.can_create_users:
         if db.session.query(Role).get(role) is None:
             raise RoleNotFoundError
         new_user = User(
@@ -110,15 +111,15 @@ def signup_user(private_key, email, password, role):
 def login_user(private_key, email, password):
     password = password.encode("UTF-8")
 
-    usr = User.query.filter_by(email=email, private_key=private_key).first()
-    if usr is None:
+    user = User.query.filter_by(email=email, private_key=private_key).first()
+    if user is None:
         raise InvalidCredentialsError
 
-    hashed = usr.hashed_password.encode("UTF-8")
-    salt = usr.salt.encode("UTF-8")
+    hashed = user.hashed_password.encode("UTF-8")
+    salt = user.salt.encode("UTF-8")
 
     if checkpw(password, salt + hashed):
-        token = jwt.encode({"id": usr.id}, app.config["SECRET_KEY"])
+        token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
         token = token.decode("UTF-8")
         return token
     else:
@@ -126,11 +127,11 @@ def login_user(private_key, email, password):
 
 
 def get_all_users(current_user, private_key):
-    usr_role = Role.query.get(current_user.role)
-    if usr_role is None:
+    user_role = Role.query.get(current_user.role)
+    if user_role is None:
         raise RoleNotFoundError
 
-    if not usr_role.can_triage_jobs:
+    if not user_role.can_triage_jobs:
         raise AuthorizationError
 
     users = User.query.all()
@@ -138,11 +139,11 @@ def get_all_users(current_user, private_key):
 
 
 def get_specific_user(current_user, private_key, user_id):
-    usr_role = Role.query.get(current_user.role)
-    if usr_role is None:
+    user_role = Role.query.get(current_user.role)
+    if user_role is None:
         raise RoleNotFoundError
 
-    if not usr_role.can_triage_jobs:
+    if not user_role.can_triage_jobs:
         raise AuthorizationError
 
     user = User.query.get(user_id)
@@ -152,13 +153,13 @@ def get_specific_user(current_user, private_key, user_id):
     return user
 
 
-def change_usr_email(current_user, private_key, email, user_id):
-    usr_role = db.session.query(Role).get(current_user.role)
+def change_user_email(current_user, private_key, email, user_id):
+    user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not usr_role.can_create_users:
+    if user_id != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     if edited_user is None:
         raise UserNotFoundError
@@ -169,17 +170,17 @@ def change_usr_email(current_user, private_key, email, user_id):
     return edited_user
 
 
-def change_usr_role(current_user, private_key, role, user_id):
+def change_user_role(current_user, private_key, role, user_id):
     if user_id == 1:  # can't change Owner
         raise AuthorizationError
 
-    usr_role = db.session.query(Role).get(current_user.role)
+    user_role = db.session.query(Role).get(current_user.role)
     owner_role = db.session.query(User).get(1).id
     edited_user = db.session.query(User).get(user_id)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not usr_role.can_create_users:
+    if user_id != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     # Only Owners can create other Owners
     if role == owner_role and current_user.id != owner_role:
@@ -193,13 +194,13 @@ def change_usr_role(current_user, private_key, role, user_id):
     return edited_user
 
 
-def change_usr_password(current_user, private_key, password, user_id):
-    usr_role = db.session.query(Role).get(current_user.role)
+def change_user_password(current_user, private_key, password, user_id):
+    user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not usr_role.can_create_users:
+    if user_id != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     if edited_user is None:
         raise UserNotFoundError
@@ -212,28 +213,28 @@ def change_usr_password(current_user, private_key, password, user_id):
     return edited_user
 
 
-def change_usr_groups(current_user, private_key, groups, user_id):
-    usr_role = db.session.query(Role).get(current_user.role)
+def change_user_groups(current_user, private_key, groups, user_id):
+    user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not usr_role.can_create_users:
+    if user_id != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     if edited_user is None:
         raise UserNotFoundError
 
     query = db.session().query
-    usr_groups = query(UserGroup).filter_by(user=user_id).all()
+    user_groups = query(UserGroup).filter_by(user=user_id).all()
 
-    for group in usr_groups:
+    for group in user_groups:
         db.session.delete(group)
 
     for new_group in groups:
         if query(Group.id).filter_by(id=new_group).scalar() is None:
             raise GroupNotFoundError
-        new_usrgroup = UserGroup(user=user_id, group=new_group)
-        db.session.add(new_usrgroup)
+        new_usergroup = UserGroup(user=user_id, group=new_group)
+        db.session.add(new_usergroup)
 
     db.session.commit()
 
@@ -241,12 +242,12 @@ def change_usr_groups(current_user, private_key, groups, user_id):
 
 
 def delete_user(current_user, private_key, user_id):
-    usr_role = db.session.query(Role).get(current_user.role)
+    user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not usr_role.can_create_users:
+    if user_id != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     if edited_user is None:
         raise UserNotFoundError
@@ -258,11 +259,11 @@ def delete_user(current_user, private_key, user_id):
 
 
 def search_users(current_user, private_key, filters, group):
-    usr_role = db.session.query(Role).get(current_user.role)
+    user_role = db.session.query(Role).get(current_user.role)
 
-    if usr_role is None:
+    if user_role is None:
         raise RoleNotFoundError
-    if not usr_role.can_triage_jobs:
+    if not user_role.can_triage_jobs:
         raise AuthorizationError
 
     query = db.session().query(User)

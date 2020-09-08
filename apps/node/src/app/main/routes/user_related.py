@@ -1,41 +1,42 @@
-from secrets import token_hex
+from datetime import datetime, timedelta
 from json import dumps, loads
 from json.decoder import JSONDecodeError
-from datetime import datetime, timedelta
+from secrets import token_hex
 
 import jwt
-from bcrypt import hashpw, checkpw, gensalt
-from syft.codes import RESPONSE_MSG
-from flask import request, Response
+from bcrypt import checkpw, gensalt, hashpw
+from flask import Response
 from flask import current_app as app
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import request
+from syft.codes import RESPONSE_MSG
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from ..core.exceptions import (
-    PyGridError,
-    UserNotFoundError,
-    RoleNotFoundError,
-    GroupNotFoundError,
-    AuthorizationError,
-    MissingRequestKeyError,
-    InvalidCredentialsError,
-)
 from ... import db
 from .. import main_routes
-from ..database import Role, User, UserGroup, Group
+from ..auth import error_handler, token_required_factory
+from ..core.exceptions import (
+    AuthorizationError,
+    GroupNotFoundError,
+    InvalidCredentialsError,
+    MissingRequestKeyError,
+    PyGridError,
+    RoleNotFoundError,
+    UserNotFoundError,
+)
+from ..database import Group, Role, User, UserGroup
 from ..database.utils import *
 from ..users.user_ops import (
-    signup_user,
-    login_user,
+    change_user_email,
+    change_user_groups,
+    change_user_password,
+    change_user_role,
+    delete_user,
     get_all_users,
     get_specific_user,
-    change_usr_email,
-    change_usr_role,
-    change_usr_password,
-    change_usr_groups,
-    delete_user,
+    login_user,
     search_users,
+    signup_user,
 )
-from ..auth import token_required_factory, error_handler
 
 
 def get_token(*args, **kwargs):
@@ -56,7 +57,7 @@ token_required = token_required_factory(get_token, format_result)
 @main_routes.route("/users", methods=["POST"])
 def signup_user_route():
     def route_logic():
-        private_key = usr = usr_role = None
+        private_key = user = user_role = None
         private_key = request.headers.get("private-key")
         data = loads(request.data)
         password = data.get("password")
@@ -149,7 +150,7 @@ def get_specific_user_route(current_user, user_id):
 
 @main_routes.route("/users/<user_id>/email", methods=["PUT"])
 @token_required
-def change_usr_email_route(current_user, user_id):
+def change_user_email_route(current_user, user_id):
     def route_logic(current_user, user_id):
         user_id = int(user_id)
         data = loads(request.data)
@@ -161,7 +162,7 @@ def change_usr_email_route(current_user, user_id):
         if private_key != current_user.private_key:
             raise InvalidCredentialsError
 
-        user = change_usr_email(current_user, private_key, email, user_id)
+        user = change_user_email(current_user, private_key, email, user_id)
         user = expand_user_object(user)
         response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
         return response_body
@@ -175,7 +176,7 @@ def change_usr_email_route(current_user, user_id):
 
 @main_routes.route("/users/<user_id>/role", methods=["PUT"])
 @token_required
-def change_usr_role_route(current_user, user_id):
+def change_user_role_route(current_user, user_id):
     def route_logic(current_user, user_id):
         user_id = int(user_id)
         data = loads(request.data)
@@ -187,7 +188,7 @@ def change_usr_role_route(current_user, user_id):
         if private_key != current_user.private_key:
             raise InvalidCredentialsError
 
-        edited_user = change_usr_role(current_user, private_key, role, user_id)
+        edited_user = change_user_role(current_user, private_key, role, user_id)
         edited_user = expand_user_object(edited_user)
         response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
         return response_body
@@ -201,7 +202,7 @@ def change_usr_role_route(current_user, user_id):
 
 @main_routes.route("/users/<user_id>/password", methods=["PUT"])
 @token_required
-def change_usr_password_role(current_user, user_id):
+def change_user_password_role(current_user, user_id):
     def route_logic(current_user, user_id):
         user_id = int(user_id)
         data = loads(request.data)
@@ -213,7 +214,7 @@ def change_usr_password_role(current_user, user_id):
         if private_key != current_user.private_key:
             raise InvalidCredentialsError
 
-        edited_user = change_usr_password(current_user, private_key, password, user_id)
+        edited_user = change_user_password(current_user, private_key, password, user_id)
         edited_user = expand_user_object(edited_user)
 
         response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
@@ -228,7 +229,7 @@ def change_usr_password_role(current_user, user_id):
 
 @main_routes.route("/users/<user_id>/groups", methods=["PUT"])
 @token_required
-def change_usr_groups_route(current_user, user_id):
+def change_user_groups_route(current_user, user_id):
     def route_logic(current_user, user_id):
         user_id = int(user_id)
         data = loads(request.data)
@@ -240,7 +241,7 @@ def change_usr_groups_route(current_user, user_id):
         if private_key != current_user.private_key:
             raise InvalidCredentialsError
 
-        edited_user = change_usr_groups(current_user, private_key, groups, user_id)
+        edited_user = change_user_groups(current_user, private_key, groups, user_id)
         edited_user = expand_user_object(edited_user)
         response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
         return response_body

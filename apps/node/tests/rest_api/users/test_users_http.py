@@ -1,10 +1,9 @@
 from json import dumps, loads
 
-from flask import current_app as app
-from bcrypt import checkpw
-import pytest
 import jwt
-
+import pytest
+from bcrypt import checkpw
+from flask import current_app as app
 from src.app.main.database import *
 
 JSON_DECODE_ERR_MSG = (
@@ -60,13 +59,13 @@ def cleanup(database):
 # POST USER
 
 
-def test_post_role_usr_data_no_key(client):
+def test_post_role_user_data_no_key(client):
     result = client.post("/users", data="{bad", content_type="application/json")
     assert result.status_code == 400
     assert result.get_json()["error"] == JSON_DECODE_ERR_MSG
 
 
-def test_post_usr_bad_data_with_key(client, database, cleanup):
+def test_post_user_bad_data_with_key(client, database, cleanup):
     new_role = create_role(*owner_role)
     new_user = create_user(*user1)
     database.session.add(new_role)
@@ -74,7 +73,7 @@ def test_post_usr_bad_data_with_key(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     result = client.post(
         "/users", data="{bad", headers=headers, content_type="application/json"
@@ -83,7 +82,7 @@ def test_post_usr_bad_data_with_key(client, database, cleanup):
     assert result.get_json()["error"] == JSON_DECODE_ERR_MSG
 
 
-def test_post_first_usr_success(client, database, cleanup):
+def test_post_first_user_success(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -104,7 +103,7 @@ def test_post_first_usr_success(client, database, cleanup):
     assert result.get_json()["user"]["email"] == "someemail@email.com"
 
 
-def test_post_first_usr_missing_role(client, database, cleanup):
+def test_post_first_user_missing_role(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_user = create_user(*user1)
@@ -119,7 +118,7 @@ def test_post_first_usr_missing_role(client, database, cleanup):
     assert result.get_json()["error"] == "Role ID not found!"
 
 
-def test_post_usr_with_role(client, database, cleanup):
+def test_post_user_with_role(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -130,7 +129,7 @@ def test_post_usr_with_role(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
 
     payload = {
@@ -151,7 +150,7 @@ def test_post_usr_with_role(client, database, cleanup):
     assert result.get_json()["user"]["email"] == "someemail@email.com"
 
 
-def test_post_usr_invalid_key(client, database, cleanup):
+def test_post_user_invalid_key(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -161,9 +160,7 @@ def test_post_usr_invalid_key(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "alasthiskeyisntvalid",
-    }
+    headers = {"private_key": "alasthiskeyisntvalid"}
 
     payload = {
         "email": "someemail@email.com",
@@ -179,7 +176,7 @@ def test_post_usr_invalid_key(client, database, cleanup):
     assert result.get_json()["error"] == "Invalid credentials!"
 
 
-def test_post_usr_with_missing_role(client, database, cleanup):
+def test_post_user_with_missing_role(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -190,7 +187,7 @@ def test_post_usr_with_missing_role(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
 
     payload = {
@@ -207,7 +204,7 @@ def test_post_usr_with_missing_role(client, database, cleanup):
     assert result.get_json()["error"] == "Role ID not found!"
 
 
-def test_login_usr_valid_credentials(client, database, cleanup):
+def test_login_user_valid_credentials(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -224,7 +221,7 @@ def test_login_usr_valid_credentials(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "tech@gibberish.com", "password": "&UP!SN!;J4Mx;+A]"}
     result = client.post(
@@ -242,7 +239,7 @@ def test_login_usr_valid_credentials(client, database, cleanup):
     assert content["id"] == 1
 
 
-def test_login_usr_invalid_key(client, database, cleanup):
+def test_login_user_invalid_key(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -252,9 +249,7 @@ def test_login_usr_invalid_key(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "imaninvalidkeyalright",
-    }
+    headers = {"private_key": "imaninvalidkeyalright"}
     payload = {"email": "tech@gibberish.com", "password": "&UP!SN!;J4Mx;+A]"}
     result = client.post(
         "/users/login",
@@ -267,7 +262,7 @@ def test_login_usr_invalid_key(client, database, cleanup):
     assert result.get_json()["error"] == "Invalid credentials!"
 
 
-def test_login_usr_missing_key(client, database, cleanup):
+def test_login_user_missing_key(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -286,7 +281,7 @@ def test_login_usr_missing_key(client, database, cleanup):
     assert result.get_json()["error"] == "Missing request key!"
 
 
-def test_login_usr_invalid_email(client, database, cleanup):
+def test_login_user_invalid_email(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -297,7 +292,7 @@ def test_login_usr_invalid_email(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "perhaps@perhaps.com", "password": "&UP!SN!;J4Mx;+A]"}
     result = client.post(
@@ -311,7 +306,7 @@ def test_login_usr_invalid_email(client, database, cleanup):
     assert result.get_json()["error"] == "Invalid credentials!"
 
 
-def test_login_usr_invalid_password(client, database, cleanup):
+def test_login_user_invalid_password(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -328,7 +323,7 @@ def test_login_usr_invalid_password(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "tech@gibberish.com", "password": "@123456notmypassword"}
     result = client.post(
@@ -426,7 +421,7 @@ def test_get_users_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     result = client.get("/users", headers=headers, content_type="application/json")
 
@@ -540,7 +535,7 @@ def test_get_one_user_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     result = client.get("/users/1", headers=headers, content_type="application/json")
 
@@ -719,7 +714,7 @@ def test_put_other_user_email_missing_token(client, database, cleanup):
     assert database.session.query(User).get(2).email == "anemail@anemail.com"
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "brandnew@brandnewemail.com"}
     result = client.put(
@@ -988,7 +983,7 @@ def test_put_other_user_role_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"role": 1}
     result = client.put(
@@ -1396,7 +1391,7 @@ def test_put_user_password_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     new_password = "BrandNewPassword123"
     payload = {"password": new_password}
@@ -1615,9 +1610,9 @@ def test_put_other_user_groups_success(client, database, cleanup):
 
     database.session.commit()
 
-    usr_groups = database.session.query(UserGroup).filter_by(user=2).all()
-    assert len(usr_groups) == 1
-    assert usr_groups[0].group == 1
+    user_groups = database.session.query(UserGroup).filter_by(user=2).all()
+    assert len(user_groups) == 1
+    assert user_groups[0].group == 1
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
@@ -1631,7 +1626,7 @@ def test_put_other_user_groups_success(client, database, cleanup):
         data=dumps(payload),
         content_type="application/json",
     )
-    usr_groups = database.session.query(UserGroup).filter_by(user=2).all()
+    user_groups = database.session.query(UserGroup).filter_by(user=2).all()
 
     assert result.status_code == 200
 
@@ -1640,9 +1635,9 @@ def test_put_other_user_groups_success(client, database, cleanup):
     assert result.get_json()["user"]["groups"][0]["id"] == 2
     assert result.get_json()["user"]["groups"][1]["id"] == 3
 
-    assert len(usr_groups) == 2
-    assert usr_groups[0].group == 2
-    assert usr_groups[1].group == 3
+    assert len(user_groups) == 2
+    assert user_groups[0].group == 2
+    assert user_groups[1].group == 3
 
 
 def test_put_user_groups_missing_key(client, database, cleanup):
@@ -1675,7 +1670,7 @@ def test_put_user_groups_missing_key(client, database, cleanup):
         data=dumps(payload),
         content_type="application/json",
     )
-    usr_groups = database.session.query(UserGroup).filter_by(user=2).all()
+    user_groups = database.session.query(UserGroup).filter_by(user=2).all()
 
     assert result.status_code == 400
     assert result.get_json()["error"] == "Missing request key!"
@@ -1702,7 +1697,7 @@ def test_put_user_groups_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"groups": [2, 3]}
     result = client.put(
@@ -1865,9 +1860,9 @@ def test_put_own_user_groups_success(client, database, cleanup):
 
     database.session.commit()
 
-    usr_groups = database.session.query(UserGroup).filter_by(user=3).all()
-    assert len(usr_groups) == 1
-    assert usr_groups[0].group == 2
+    user_groups = database.session.query(UserGroup).filter_by(user=3).all()
+    assert len(user_groups) == 1
+    assert user_groups[0].group == 2
 
     token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
     headers = {
@@ -1881,7 +1876,7 @@ def test_put_own_user_groups_success(client, database, cleanup):
         data=dumps(payload),
         content_type="application/json",
     )
-    usr_groups = database.session.query(UserGroup).filter_by(user=3).all()
+    user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
     assert result.status_code == 200
 
@@ -1889,8 +1884,8 @@ def test_put_own_user_groups_success(client, database, cleanup):
     assert len(result.get_json()["user"]["groups"]) == 1
     assert result.get_json()["user"]["groups"][0]["id"] == 1
 
-    assert len(usr_groups) == 1
-    assert usr_groups[0].group == 1
+    assert len(user_groups) == 1
+    assert user_groups[0].group == 1
 
 
 def test_put_other_user_groups_missing_user(client, database, cleanup):
@@ -1981,7 +1976,7 @@ def test_put_user_groups_missing_group(client, database, cleanup):
         data=dumps(payload),
         content_type="application/json",
     )
-    usr_groups = database.session.query(UserGroup).filter_by(user=3).all()
+    user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
     assert result.status_code == 404
     assert result.get_json()["error"] == "Group ID not found!"
@@ -2054,7 +2049,7 @@ def test_delete_user_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     result = client.delete("/users/2", headers=headers, content_type="application/json")
 
@@ -2167,7 +2162,7 @@ def test_delete_own_user_success(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     result = client.delete("/users/3", headers=headers, content_type="application/json")
-    usr_groups = database.session.query(UserGroup).filter_by(user=3).all()
+    user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
     assert result.status_code == 200
     assert database.session.query(User).get(3) is None
@@ -2417,7 +2412,7 @@ def test_search_users_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "anemail@anemail.com"}
     result = client.post(

@@ -7,14 +7,14 @@ from syft.codes import REQUEST_MSG
 
 from .. import ws
 from ..core.codes import *
+from ..core.codes import USER_EVENTS
 from .data_centric.control_events import *
 from .data_centric.model_events import *
 from .data_centric.syft_events import *
 from .model_centric.control_events import *
 from .model_centric.fl_events import *
-from .user_related import *
-from ..core.codes import USER_EVENTS
 from .socket_handler import SocketHandler
+from .user_related import *
 
 # Websocket events routes
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.
@@ -29,10 +29,10 @@ routes = {
     USER_EVENTS.GET_ALL_USERS: get_all_users_socket,
     USER_EVENTS.GET_SPECIFIC_USER: get_specific_user_socket,
     USER_EVENTS.SEARCH_USERS: search_users_socket,
-    USER_EVENTS.PUT_EMAIL: change_usr_email_socket,
-    USER_EVENTS.PUT_PASSWORD: change_usr_password_socket,
-    USER_EVENTS.PUT_ROLE: change_usr_role_socket,
-    USER_EVENTS.PUT_GROUPS: change_usr_groups_socket,
+    USER_EVENTS.PUT_EMAIL: change_user_email_socket,
+    USER_EVENTS.PUT_PASSWORD: change_user_password_socket,
+    USER_EVENTS.PUT_ROLE: change_user_role_socket,
+    USER_EVENTS.PUT_GROUPS: change_user_groups_socket,
     USER_EVENTS.DELETE_USER: delete_user_socket,
     REQUEST_MSG.GET_ID: get_node_infos,
     REQUEST_MSG.CONNECT_NODE: connect_grid_nodes,
