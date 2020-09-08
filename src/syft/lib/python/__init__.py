@@ -1,6 +1,6 @@
 # stdlib
 from typing import Any
-from typing import List
+from typing import List as TypeList
 from typing import Tuple
 
 # syft relative
@@ -10,6 +10,7 @@ from ...ast.klass import Class
 from .int import Int
 from .bool import Bool
 from .float import Float
+from .list import List
 
 
 def get_parent(path: str, root: Module) -> Module:
@@ -19,7 +20,7 @@ def get_parent(path: str, root: Module) -> Module:
     return parent
 
 
-def add_modules(ast: Globals, modules: List[str]) -> None:
+def add_modules(ast: Globals, modules: TypeList[str]) -> None:
     for module in modules:
         parent = get_parent(module, ast)
         attr_name = module.rsplit(".", 1)[-1]
@@ -35,7 +36,7 @@ def add_modules(ast: Globals, modules: List[str]) -> None:
         )
 
 
-def add_primitives(ast: Globals, primitives: List[Tuple[str, Any]]):
+def add_primitives(ast: Globals, primitives: TypeList[Tuple[str, Any]]):
     for primitive, ref in primitives:
         parent = get_parent(primitive, ast)
         attr_name = primitive.rsplit(".", 1)[-1]
@@ -63,6 +64,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Bool", Bool),
         ("syft.lib.python.Int", Int),
         ("syft.lib.python.Float", Float),
+        ("syft.lib.python.List", List),
     ]
 
     add_modules(ast, modules)

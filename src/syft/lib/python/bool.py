@@ -318,6 +318,7 @@ class Bool(PyPrimitive):
         return Bool_PB(id_at_location=serialize(obj=self.id), data=self)
 
     @staticmethod
+    @syft_decorator(typechecking=True)
     def _proto2object(proto: Bool_PB) -> "Bool":
         return Bool(id=deserialize(blob=proto.id_at_location), value=proto.data)
 
@@ -343,7 +344,7 @@ class BoolWrapper(StorableObject):
 
     @staticmethod
     def _data_proto2object(proto: Bool_PB) -> "BoolWrapper":
-        return Bool._proto2object(proto)
+        return Bool._proto2object(proto=proto)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
