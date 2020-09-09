@@ -1,11 +1,12 @@
 # stdlib
-from typing import Union, Optional
 from abc import ABC
+from typing import Optional
+from typing import Union
 
 # syft relative
+from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
-from ...core.common import UID
 
 
 class PrimitiveFactory(ABC):
@@ -33,4 +34,5 @@ class PrimitiveFactory(ABC):
         if type(value) is complex:
             return Complex(value=value, id=id)
 
-        return SyNone()
+        none: SyNone = SyNone()
+        return none
