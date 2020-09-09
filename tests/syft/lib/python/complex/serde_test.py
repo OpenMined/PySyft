@@ -5,7 +5,7 @@ from syft.proto.lib.python.complex_pb2 import Complex as Complex_PB
 
 
 def test_serde() -> None:
-    syft_complex = Complex(True)
+    syft_complex = Complex("2+3j")
 
     serialized = syft_complex._object2proto()
 
@@ -22,7 +22,7 @@ def test_send() -> None:
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
-    syft_complex = Complex(5)
+    syft_complex = Complex("2+3j")
     ptr = syft_complex.send(alice_client)
     # Check pointer type
     assert ptr.__class__.__name__ == "ComplexPointer"
