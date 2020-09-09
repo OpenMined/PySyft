@@ -22,6 +22,20 @@ from .common import ImmediateActionWithoutReply
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
+    """
+    When executing a RunClassMethodAction, a :class:`Node` will run a method defined
+    by the action's path attribute on the object pointed at by _self and keep the returned
+    value in its store.
+
+    Attributes:
+         path: the dotted path to the method to call
+         _self: a pointer to the object which the method should be applied to.
+         args: args to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+         kwargs: kwargs to pass to the function. They should be pointers to objects
+            located on the :class:`Node` that will execute the action.
+    """
+
     def __init__(
         self,
         path: str,

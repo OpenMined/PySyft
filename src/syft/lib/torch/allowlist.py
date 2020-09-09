@@ -329,7 +329,7 @@ allowlist["torch.Tensor.int"] = "torch.Tensor"
 # allowlist['torch.Tensor.is_contiguous'] = #
 # allowlist['torch.Tensor.is_cuda'] = #
 # allowlist['torch.Tensor.is_distributed'] = #
-allowlist["torch.Tensor.is_floating_point"] = "builtins.bool"
+# allowlist["torch.Tensor.is_floating_point"] = "builtins.bool"
 # allowlist['torch.Tensor.is_leaf'] = #
 # allowlist['torch.Tensor.is_mkldnn'] = #
 # allowlist['torch.Tensor.is_nonzero'] = #
@@ -615,5 +615,12 @@ allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.ones"] = "torch.Tensor"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 # allowlist.add("torch.nn.Linear.parameters")
-allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
-allowlist["torch.nn.parameter.Parameter.__add__"] = "torch.nn.parameter.Parameter"
+
+
+# SECTION - Parameter methods
+# allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
+# allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
+# allowlist["torch.nn.Parameter.t"] = "torch.nn.Parameter"
+# allowlist["torch.nn.Parameter.__abs__"] = "torch.nn.Parameter"
+# allowlist["torch.nn.Parameter.__add__"] = "torch.Tensor"
+# allowlist["torch.nn.Parameter.__and__"] = "torch.nn.Parameter"
