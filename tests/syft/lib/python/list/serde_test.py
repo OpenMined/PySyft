@@ -2,6 +2,7 @@
 import torch as th
 
 # syft absolute
+import syft as sy
 from syft.lib.python.list import List
 from syft.proto.lib.python.list_pb2 import List as List_PB
 
@@ -20,5 +21,23 @@ def test_serde() -> None:
 
     assert isinstance(deserialized, List)
     assert deserialized.id == syft_list.id
-    for deserialized_el, original_el in zip(deserialized, [t1, t2]):
+    for deserialized_el, original_el in zip(deserialized, syft_list):
         assert (deserialized_el == original_el).all()
+
+
+def test_send() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    t1 = th.tensor([1, 2])
+    t2 = th.tensor([1, 3])
+
+    syft_list = List([t1, t2])
+    ptr = syft_list.send(alice_client)
+    # Check pointer type
+    assert ptr.__class__.__name__ == "ListPointer"
+
+    # Check that we can get back the object
+    res = ptr.get()
+    for res_el, original_el in zip(res, syft_list):
+        assert (res_el == original_el).all()
