@@ -496,17 +496,30 @@ class FixedPrecisionTensor(AbstractTensor):
         Returns:
             Reciprocal of `self`
         """
+        method = method.lower()
 
-        if method.lower() == "nr":
+        if method == "nr":
             new_self = self.modulus()
             result = 3 * (0.5 - new_self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * new_self
             return result * self.signum()
-        elif method.lower() == "division":
+        elif method == "newton":
+            # it is assumed here that input values are taken in [-20, 20]
+            x = None
+            C = 20
+            for i in range(80):
+                if x is not None:
+                    y = C + 1 - self * (x * x)
+                    x = y * x / C
+                else:
+                    y = C + 1 - self
+                    x = y / C
+            return x
+        elif method == "division":
             ones = self * 0 + 1
             return ones / self
-        elif method.lower() == "log":
+        elif method == "log":
             new_self = self.modulus()
             return (-new_self.log()).exp() * self.signum()
         else:
