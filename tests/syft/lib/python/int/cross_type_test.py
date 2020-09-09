@@ -1,5 +1,9 @@
+# third party
 import pytest
+
+# syft absolute
 from syft.lib.python.int import Int
+
 binop = [
     "__add__",
     "__and__",
@@ -47,8 +51,9 @@ def test_api_sanity_check():
 
 
 @pytest.mark.parametrize("op", binop)
-@pytest.mark.parametrize("py_obj", [42, 42.5, "42", True, False, None,
-                                    42 + 5j, [42], {42: 42}])
+@pytest.mark.parametrize(
+    "py_obj", [42, 42.5, "42", True, False, None, 42 + 5j, [42], {42: 42}]
+)
 def test_api_int(op, py_obj):
     sy_int = Int(42)
     func_py = getattr(py_obj, op)
@@ -79,4 +84,4 @@ def test_api_int(op, py_obj):
     if any([pypy_err, sysy_err, pysy_err, sypy_err]):
         assert pypy_err == sysy_err == pysy_err == sypy_err
     else:
-        assert pypy  == sysy == pysy == sypy
+        assert pypy == sysy == pysy == sypy

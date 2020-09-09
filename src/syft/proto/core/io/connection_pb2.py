@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1eproto/core/io/connection.proto\x12\x0csyft.core.io\x1a\x1bproto/core/io/address.proto">\n\x17VirtualServerConnection\x12#\n\x04node\x18\x01 \x01(\x0b\x32\x15.syft.core.io.Address"P\n\x17VirtualClientConnection\x12\x35\n\x06server\x18\x01 \x01(\x0b\x32%.syft.core.io.VirtualServerConnectionb\x06proto3',
-    dependencies=[proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
+    ],
 )
 
 

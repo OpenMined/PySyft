@@ -7,7 +7,6 @@ from typing import Union
 from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
-from ...core.common import UID
 
 
 class PrimitiveFactory(ABC):

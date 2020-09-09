@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1bproto/core/io/address.proto\x12\x0csyft.core.io\x1a\x1cproto/core/io/location.proto"\xb3\x02\n\x07\x41\x64\x64ress\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x13\n\x0bhas_network\x18\x03 \x01(\x08\x12/\n\x07network\x18\x04 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_domain\x18\x05 \x01(\x08\x12.\n\x06\x64omain\x18\x06 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x12\n\nhas_device\x18\x07 \x01(\x08\x12.\n\x06\x64\x65vice\x18\x08 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x0e\n\x06has_vm\x18\t \x01(\x08\x12*\n\x02vm\x18\n \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationb\x06proto3',
-    dependencies=[proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,
+    ],
 )
 
 

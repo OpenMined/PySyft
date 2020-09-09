@@ -121,11 +121,6 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ceil__(self) -> PyPrimitive:
-        res = super().__ceil__()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> PyPrimitive:
         res = super().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -353,13 +348,14 @@ class Int(int, PyPrimitive):
         # TODO add this
         pass
 
-    def real(self):
+    def real(self) -> int:
         # TODO add this
         pass
 
     def to_bytes(self, length: int, byteorder: str, *, signed: bool = ...) -> bytes:
         # TODO add this
         pass
+
 
 class IntWrapper(StorableObject):
     def __init__(self, value: object):
