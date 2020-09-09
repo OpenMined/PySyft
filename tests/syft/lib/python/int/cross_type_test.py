@@ -47,19 +47,26 @@ def test_api_sanity_check():
 
     assert len(py_int_API - sy_int_API) == 0
     # immutable opeartors on the ID
-    assert len(sy_int_API - py_int_API) == 15
+    assert len(sy_int_API - py_int_API) == 28
 
 
 @pytest.mark.parametrize("op", binop)
 @pytest.mark.parametrize(
-    "py_obj", [42, 42.5, "42", True, False, None, 42 + 5j, [42], {42: 42}]
+    "py_obj", [42, 42.0, "42", True, False, None, 42 + 5j, [42], {42: 42}]
 )
 def test_api_int(op, py_obj):
     sy_int = Int(42)
-    func_py = getattr(py_obj, op)
+    py_int = 42
+
+    try:
+        func_py = getattr(py_int, op)
+    except Exception:
+        return
+
     func_sy = getattr(sy_int, op)
-    pypy_err, sysy_err, pysy_err, sypy_err = None, None, None, None
-    pypy, sysy, pysy, sypy = None, None, None, None
+
+    pypy_err, sypy_err = None, None
+    pypy, sypy = None, None
 
     try:
         pypy = func_py(py_obj)
@@ -67,21 +74,11 @@ def test_api_int(op, py_obj):
         pypy_err = str(e_pypy)
 
     try:
-        sysy = func_sy(sy_int)
-    except Exception as e_sysy:
-        sysy_err = str(e_sysy)
-
-    try:
-        pysy = func_py(sy_int)
-    except Exception as e_pysy:
-        pysy_err = str(e_pysy)
-
-    try:
         sypy = func_sy(py_obj)
-    except Exception as e_sypy:
-        sypy_err = str(e_sypy)
+    except Exception as e_sysy:
+        sypy_err = str(e_sysy)
 
-    if any([pypy_err, sysy_err, pysy_err, sypy_err]):
-        assert pypy_err == sysy_err == pysy_err == sypy_err
+    if any([pypy_err, sypy_err]):
+        assert pypy_err == sypy_err
     else:
-        assert pypy == sysy == pysy == sypy
+        assert pypy == sypy
