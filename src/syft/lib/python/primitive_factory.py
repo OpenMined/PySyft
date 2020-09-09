@@ -22,14 +22,14 @@ class PrimitiveFactory(ABC):
         from .int import Int
         from .none import SyNone
 
+        if isinstance(value, bool):
+            return Bool(value=value, id=id)
+
         if isinstance(value, int):
             return Int(value=value, id=id)
 
         if isinstance(value, float):
             return Float(value=value, id=id)
-
-        if isinstance(value, bool):
-            return Bool(value=value, id=id)
 
         if isinstance(value, complex):
             return Complex(real=value.real, imag=value.imag, id=id)
