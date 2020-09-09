@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 
 # third party
@@ -9,8 +10,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
+from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.float_pb2 import Float as Float_PB
+from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
@@ -45,6 +48,9 @@ class Float(float, PyPrimitive):
         """
         return self._id
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> PyPrimitive:
         result = super().__eq__(other)
@@ -73,25 +79,6 @@ class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __repr__(self) -> str:
         return super().__repr__()
-
-    @syft_decorator(typechecking=True)
-    def _object2proto(self) -> Float_PB:
-        Float_pb = Float_PB()
-        Float_pb.data = self
-        Float_pb.id.CopyFrom(serialize(self.id))
-        return Float_pb
-
-    def __hash__(self) -> int:
-        return super().__hash__()
-
-    @staticmethod
-    def _proto2object(proto: Float_PB) -> "Float":
-        Float_id: UID = deserialize(blob=proto.id)
-        return Float(value=proto.data, id=Float_id)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Float_PB
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
@@ -190,3 +177,61 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive(
             value=super().__pow__(other), id=self.id
         )
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Float_PB:
+        return Float_PB(
+            id_at_location=serialize(obj=self.id),
+            data=self,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Float_PB) -> "Float":
+        return Float(value=proto.data, id=deserialize(blob=proto.id_at_location))
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Float_PB
+
+
+class FloatWrapper(StorableObject):
+    def __init__(self, value: object):
+        super().__init__(
+            data=value,
+            id=getattr(value, "id", UID()),
+            tags=getattr(value, "tags", []),
+            description=getattr(value, "description", ""),
+        )
+        self.value = value
+
+    def _data_object2proto(self) -> Float_PB:
+        _object2proto = getattr(self.data, "_object2proto", None)
+        if _object2proto is not None:
+            return _object2proto()
+
+    @staticmethod
+    def _data_proto2object(proto: Float_PB) -> "FloatWrapper":
+        return Float._proto2object(proto)
+
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Float_PB
+
+    @staticmethod
+    def get_wrapped_type() -> type:
+        return Float
+
+    @staticmethod
+    def construct_new_object(
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
+        setattr(data, "_id", id)
+        data.tags = tags
+        data.description = description
+        return data
+
+
+aggressive_set_attr(obj=Float, name="serializable_wrapper_type", attr=FloatWrapper)
