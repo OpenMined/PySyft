@@ -1,11 +1,12 @@
 from typing import Union, Optional
+from abc import ABC
 
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
 from ...core.common import UID
 
 
-class PrimitiveFactory:
+class PrimitiveFactory(ABC):
     @staticmethod
     @syft_decorator(typechecking=True)
     def generate_primitive(
