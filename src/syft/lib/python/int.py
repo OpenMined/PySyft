@@ -318,7 +318,7 @@ class IntWrapper(StorableObject):
 
     def _data_object2proto(self) -> Int_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod

@@ -32,11 +32,17 @@ class Bool(PyPrimitive):
             value = False
 
         self.value = bool(value)
+        self._id: UID = id if id else UID()
 
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = id
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __abs__(self) -> PyPrimitive:
@@ -268,17 +274,6 @@ class Bool(PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__xor__(other))
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
     # @syft_decorator(typechecking=True, prohibit_args=False)
     # def as_integer_ratio():
     #     return PrimitiveFactory.generate_primitive(value=self.value.as_integer_ratio())
@@ -341,7 +336,7 @@ class BoolWrapper(StorableObject):
 
     def _data_object2proto(self) -> Bool_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod

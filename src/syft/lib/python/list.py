@@ -20,13 +20,13 @@ from .primitive_interface import PyPrimitive
 
 class List(UserList, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, uid: Optional[UID] = None):
+    def __init__(self, value: Any = None, id: Optional[UID] = None):
         if value is None:
             value = []
 
         UserList.__init__(self, value)
 
-        self._id: UID = UID() if uid is None else uid
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
@@ -69,7 +69,8 @@ class ListWrapper(StorableObject):
 
     def _data_object2proto(self) -> List_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        return _object2proto
+        if _object2proto:
+            return _object2proto()
 
     @staticmethod
     def _data_proto2object(proto: List_PB) -> "ListWrapper":

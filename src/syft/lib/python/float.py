@@ -20,19 +20,19 @@ from .primitive_interface import PyPrimitive
 
 class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __new__(self, value: Any = None, uid: Optional[UID] = None) -> "Float":
+    def __new__(self, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:
             value = 0.0
         return float.__new__(self, value)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, uid: Optional[UID] = None):
+    def __init__(self, value: Any = None, id: Optional[UID] = None):
         if value is None:
             value = 0.0
 
         float.__init__(value)
 
-        self._id = uid if uid else UID()
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
@@ -203,7 +203,7 @@ class FloatWrapper(StorableObject):
 
     def _data_object2proto(self) -> Float_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod
