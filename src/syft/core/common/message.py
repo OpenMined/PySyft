@@ -58,8 +58,8 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
 
 class SyftMessage(AbstractMessage):
     """
-    SyftMessages are an abstraction that represent information that is sent between 2 actors.
-    In Syft, a lot of things are done by sending a message from a :class:`Client` to a :class:`Node`.
+    SyftMessages are an abstraction that represent information that is sent between a :class:`Client`
+    and a :class:`Node`. In Syft's decentralized setup, we can easily see why SyftMessages are so important.
     This class cannot be used as is: to get some useful objects, we need to derive from it. For instance,
     :class:`Action`s inherit from :class:`SyftMessage`.
     There are many types of SyftMessage which boil down to whether or not they are Sync or Async,
@@ -75,7 +75,10 @@ class SyftMessage(AbstractMessage):
         self.post_init()
 
     def sign(self, signing_key: SigningKey) -> SignedMessageT:
-        """Method used to sign a SyftMessage and get a :class:`SignedMessage`.
+        """
+        It's important for all messages to be able to prove who they were sent from.
+        This method endows every message with the ability for someone to "sign" (with a hash of the message)
+        as the sender of the message so that someone else, at a later date, can verify the sender.
 
         Args:
             signing_key: The key to use to sign the SyftMessage.
@@ -85,9 +88,7 @@ class SyftMessage(AbstractMessage):
 
         """
         if sy.VERBOSE:
-            print(
-                f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
-            )
+            print(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
         signed_message = signing_key.sign(self.serialize(to_binary=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -260,8 +261,6 @@ class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
 
     signed_type = SignedImmediateSyftMessageWithReply
 
-    def __init__(
-        self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
-    ) -> None:
+    def __init__(self, reply_to: Address, address: Address, msg_id: Optional[UID] = None) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
