@@ -1067,8 +1067,8 @@ class TorchTensor(AbstractTensor):
 
         else:
             raise NotImplementedError(
-                f"Currently the .encrypt() method only supports Paillier Homomorphic "
-                "Encryption and Secure Multi-Party Computation, but {protocol} was given"
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                f"Encryption and Secure Multi-Party Computation, but {protocol} was given"
             )
 
     def decrypt(self, inplace=False, **kwargs):

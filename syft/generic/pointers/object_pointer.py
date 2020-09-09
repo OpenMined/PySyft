@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
 import weakref
+from websocket._exceptions import WebSocketConnectionClosedException
 
 import syft
 from syft import exceptions
@@ -342,7 +343,7 @@ class ObjectPointer(AbstractSendable):
             if self.point_to_attr is None:
                 try:
                     self.owner.garbage(self.id_at_location, self.location)
-                except BrokenPipeError:
+                except (BrokenPipeError, WebSocketConnectionClosedException):
                     pass
 
     def _create_attr_name_string(self, attr_name):
