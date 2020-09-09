@@ -23,7 +23,7 @@ repos:
     rev: v0.782
     hooks:
       - id: mypy
-        exclude: src/syft/proto
+        exclude: ^(src/syft/proto|tests/syft/lib/python)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

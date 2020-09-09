@@ -1,5 +1,8 @@
-from typing import Union, Optional
+# stdlib
+from typing import Optional
+from typing import Union
 
+# syft relative
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
 from ...core.common import UID
@@ -11,11 +14,12 @@ class PrimitiveFactory:
     def generate_primitive(
         value: Union[int, float, bool, complex, None], id: Optional[UID] = None
     ) -> PyPrimitive:
-        from .int import Int
-        from .none import SyNone
-        from .float import Float
+        # syft relative
         from .bool import Bool
         from .complex import Complex
+        from .float import Float
+        from .int import Int
+        from .none import SyNone
 
         if type(value) is int:
             return Int(value=value, id=id)

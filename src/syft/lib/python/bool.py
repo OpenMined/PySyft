@@ -1,9 +1,13 @@
-from typing import Any, Optional, Tuple
+# stdlib
+from typing import Any
+from typing import Optional
+from typing import Tuple
 
-from .primitive_interface import PyPrimitive
+# syft relative
 from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_factory import PrimitiveFactory
+from .primitive_interface import PyPrimitive
 
 
 def dispatch_other(obj: Any) -> bool:
