@@ -88,7 +88,9 @@ class SyftMessage(AbstractMessage):
 
         """
         if sy.VERBOSE:
-            print(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+            print(
+                f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
+            )
         signed_message = signing_key.sign(self.serialize(to_binary=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -261,6 +263,8 @@ class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
 
     signed_type = SignedImmediateSyftMessageWithReply
 
-    def __init__(self, reply_to: Address, address: Address, msg_id: Optional[UID] = None) -> None:
+    def __init__(
+        self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
+    ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
