@@ -82,6 +82,11 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
+    def __rtruediv__(self, other: Any) -> PyPrimitive:
+        res = super().__rtruediv__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, other: Any) -> PyPrimitive:
         res = super(Int, self).__mul__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -129,12 +134,12 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __truediv__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__truediv__(other)
+        res = super().__truediv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __mod__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__mod__(other)
+        res = super().__mod__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -144,7 +149,7 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, other: Any) -> PyPrimitive:
-        res = super(Int, self).__pow__(other)
+        res = super().__pow__(other)
         return PrimitiveFactory.generate_primitive(res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -160,6 +165,11 @@ class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rlshift__(self, other: Any) -> PyPrimitive:
         res = super().__rlshift__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __round__(self) -> PyPrimitive:
+        res = super().__round__()
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -272,6 +282,15 @@ class Int(int, PyPrimitive):
     def __hash__(self) -> PyPrimitive:
         return PrimitiveFactory.generate_primitive(value=super().__hash__())
 
+    # add tests
+    @syft_decorator(typechecking=True)
+    def __neg__(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=super().__neg__())
+
+    @syft_decorator(typechecking=True)
+    def __pos__(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=super().__pos__())
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Int_PB:
         int_pb = Int_PB()
@@ -287,3 +306,36 @@ class Int(int, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Int_PB
+
+    # def as_integer_ratio(self) -> Tuple[int, Literal[1]]:
+    #     #TODO add this
+    #     pass
+
+    def bit_length(self) -> int:
+        # TODO add this
+        pass
+
+    def denominator(self) -> int:
+        # TODO add this
+        pass
+
+    # def from_bytes(cls, bytes: Union[Iterable[int], SupportsBytes], byteorder: str, *,
+    #                signed: bool = ...) -> int:
+    #     #TODO add this
+    #     pass
+
+    def imag(self) -> int:
+        # TODO add this
+        pass
+
+    def numerator(self) -> int:
+        # TODO add this
+        pass
+
+    def real(self):
+        # TODO add this
+        pass
+
+    def to_bytes(self, length: int, byteorder: str, *, signed: bool = ...) -> bytes:
+        # TODO add this
+        pass
