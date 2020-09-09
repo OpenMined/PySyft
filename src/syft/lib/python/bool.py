@@ -1,11 +1,20 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 from typing import Tuple
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
 # syft relative
+from ... import deserialize
+from ... import serialize
 from ...core.common import UID
+from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
+from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
+from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
@@ -28,6 +37,17 @@ class Bool(PyPrimitive):
             self._id = UID()
         else:
             self._id = id
+
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __abs__(self) -> PyPrimitive:
@@ -259,6 +279,17 @@ class Bool(PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__xor__(other))
 
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
+
     # @syft_decorator(typechecking=True, prohibit_args=False)
     # def as_integer_ratio():
     #     return PrimitiveFactory.generate_primitive(value=self.value.as_integer_ratio())
@@ -294,3 +325,59 @@ class Bool(PyPrimitive):
     # @syft_decorator(typechecking=True, prohibit_args=False)
     # def to_bytes():
     #     return PrimitiveFactory.generate_primitive(value=self.value.to_bytes())
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Bool_PB:
+        return Bool_PB(id_at_location=serialize(obj=self.id), data=self)
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def _proto2object(proto: Bool_PB) -> "Bool":
+        return Bool(id=deserialize(blob=proto.id_at_location), value=proto.data)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Bool_PB
+
+
+class BoolWrapper(StorableObject):
+    def __init__(self, value: object):
+        super().__init__(
+            data=value,
+            id=getattr(value, "id", UID()),
+            tags=getattr(value, "tags", []),
+            description=getattr(value, "description", ""),
+        )
+        self.value = value
+
+    def _data_object2proto(self) -> Bool_PB:
+        _object2proto = getattr(self.data, "_object2proto", None)
+        if _object2proto is not None:
+            return _object2proto()
+
+    @staticmethod
+    def _data_proto2object(proto: Bool_PB) -> "BoolWrapper":
+        return Bool._proto2object(proto=proto)
+
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Bool_PB
+
+    @staticmethod
+    def get_wrapped_type() -> type:
+        return Bool
+
+    @staticmethod
+    def construct_new_object(
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
+        setattr(data, "_id", id)
+        data.tags = tags
+        data.description = description
+        return data
+
+
+aggressive_set_attr(obj=Bool, name="serializable_wrapper_type", attr=BoolWrapper)
