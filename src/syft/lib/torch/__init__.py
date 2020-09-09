@@ -9,6 +9,7 @@ import torch
 # syft relative
 from ...ast.globals import Globals
 from .allowlist import allowlist
+from .generator import GeneratorConstructor
 from .lowercase_tensor import LowercaseTensorConstructor
 from .parameter import ParameterConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
@@ -17,6 +18,7 @@ __all__ = [
     "LowercaseTensorConstructor",
     "UppercaseTensorConstructor",
     "ParameterConstructor",
+    "GeneratorConstructor",
 ]
 
 
@@ -53,7 +55,6 @@ def create_torch_ast() -> Globals:
             print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
 
     for klass in ast.classes:
-
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_serialization_methods()
