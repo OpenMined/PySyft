@@ -1030,11 +1030,11 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if protocol.lower() in ("mpc", "snn", "fss"):
-            if protocol.lower() == "mpc":
+        protocol = protocol.lower()
+
+        if protocol in {"mpc", "snn", "fss"}:
+            if protocol == "mpc":
                 protocol = "snn"
-            else:
-                protocol = protocol.lower()
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
             requires_grad = kwargs.pop("requires_grad", False)
@@ -1056,7 +1056,7 @@ class TorchTensor(AbstractTensor):
                 self.fix_prec_(**kwargs_fix_prec).share_(*workers, **kwargs_share)
                 return self
 
-        elif protocol.lower() == "paillier":
+        elif protocol == "paillier":
             public_key = kwargs.get("public_key")
 
             x = self.copy()
