@@ -13,9 +13,10 @@ UserString instances should behave similar to builtin string objects.
 import unittest
 
 # third party
-import string_tests_utils as string_tests
+import string_test_utils as string_tests
 
 # syft absolute
+from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
 
@@ -31,10 +32,16 @@ class UserStringTest(
     # can't cope with arguments propagated to UserString
     # (and we don't test with subclasses)
     def checkequal(self, result, object, methodname, *args, **kwargs):
+        type_result = type(PrimitiveFactory.generate_primitive(value=result))
+
         result = self.fixtype(result)
         object = self.fixtype(object)
         # we don't fix the arguments, because UserString can't cope with it
         realresult = getattr(object, methodname)(*args, **kwargs)
+
+        type_realresult = type(realresult)
+
+        self.assertEqual(type_result, type_realresult)
         self.assertEqual(result, realresult)
 
     def checkraises(self, exc, obj, methodname, *args):
