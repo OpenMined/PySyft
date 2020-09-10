@@ -69,7 +69,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
-          pytest -k "not test_all_allowlisted" --cov-fail-under 0
+          pytest -m fast --cov-fail-under 0
 
   python-linting:
     runs-on: ubuntu-latest
@@ -165,9 +165,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pytest -k "not test_all_allowlisted"
+          pytest -m fast
 
-  python-allowlist:
+  python-slow-tests:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 24
@@ -214,7 +214,7 @@ jobs:
           pip install torch==$TORCH_VERSION
           pip install -r requirements.txt
           pip install -e .
-          pytest -k "test_all_allowlisted" --cov-fail-under 0
+          pytest -m slow --cov-fail-under 0
 
   python-nb-examples:
     runs-on: ubuntu-latest

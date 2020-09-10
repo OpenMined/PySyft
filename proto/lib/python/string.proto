@@ -4,7 +4,7 @@ package syft.lib.python;
 import "proto/core/common/common_object.proto";
 
 
-message Int {
-    int64 data = 1;
+message String {
+    string data = 1;
     syft.core.common.UID id = 2;
 }

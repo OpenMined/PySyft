@@ -8,8 +8,7 @@ isort .
 black src tests
 pre-commit run --all-files
 bandit -r src -ll
-pytest -k "not test_all_allowlist"
-# python setup.py test
+pytest -m fast
 
 # run API documentation test notebooks
 ./scripts/nb_test.sh

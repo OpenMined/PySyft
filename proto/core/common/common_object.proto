@@ -6,10 +6,6 @@ message CommonObject {
   syft.core.common.ObjectWithID object_with_id_object = 2;
 }
 
-message ObjectWithID {
-  syft.core.common.UID id = 2;
-}
+message ObjectWithID { syft.core.common.UID id = 1; }
 
-message UID {
-  bytes value = 2;
-}
+message UID { bytes value = 1; }

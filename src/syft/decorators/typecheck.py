@@ -80,7 +80,6 @@ def type_hints(
             # Thus, the way this check works is to return an error if we find an argument which
             # isn't in kwargs and isn't "self".
             if param_name not in kwargs and len(args) > max_arg_len:
-
                 raise AttributeError(
                     f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
                     f"Please pass in all arguments as kwargs when coding/using PySyft."
