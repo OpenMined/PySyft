@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -79,9 +80,15 @@ class Class(Callable):
             return run_class_method
 
         attrs = {}
+        props: List[str] = []
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
 
+            # if the Method.is_property == True
+            # we need to add this attribute name into the props list
+            is_property = getattr(attr, "is_property", False)
+            if is_property:
+                props.append(attr_name)
             # QUESTION: Could path_and_name be None?
             # It seems as though attrs can contain
             # Union[Callable, CallableT]
@@ -91,8 +98,23 @@ class Class(Callable):
             if attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
+        def ga(__self: Any, name: str) -> Any:
+            # we need to override the __getattribute__ of our Pointer class
+            # so that if you ever access a property on a Pointer it will not just
+            # get the wrapped run_class_method but also execute it immediately
+            # object.__getattribute__ is the way we prevent infinite recursion
+            attr = object.__getattribute__(__self, name)
+
+            # if the attr key name is in the props list from above then we know
+            # we should execute it immediately and return the result
+            if name in props:
+                return attr()
+
+            return attr
+
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
+        setattr(klass_pointer, "__getattribute__", ga)
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:

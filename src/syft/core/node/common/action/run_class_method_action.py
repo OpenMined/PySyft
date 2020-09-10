@@ -95,7 +95,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
+        if type(method).__name__ == "getset_descriptor":
+            # we have a detached class property so we need the __get__ descriptor
+            result = method.__get__(resolved_self.data)
+        else:
+            # we have a callable
+            result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
         # if isprimitive(value=result):
         #     # Wrap in a PyPrimitive

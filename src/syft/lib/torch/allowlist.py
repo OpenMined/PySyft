@@ -13,7 +13,7 @@ allowlist["torch.zeros_like"] = "torch.Tensor"
 
 # TODO: T is a property and requires detecting properties and supporting them in
 # run_class_method_action.py
-# allowlist['torch.Tensor.T'] = #
+allowlist["torch.Tensor.T"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
 allowlist["torch.Tensor.__abs__"] = "torch.Tensor"
 allowlist["torch.Tensor.__add__"] = "torch.Tensor"
