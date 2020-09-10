@@ -628,5 +628,5 @@ allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 # MNIST
 allowlist["torch.manual_seed"] = "torch.Generator"
 allowlist["torch.Generator"] = "torch.Generator"
-allowlist["torch.Generator.get_state"] = "torch.Tensor"  # Probably dont want this?
-allowlist["torch.Generator.set_state"] = "torch.Generator"  # Probably dont want this?
+allowlist["torch.Generator.get_state"] = "torch.Tensor"
+allowlist["torch.Generator.set_state"] = "torch.Generator"

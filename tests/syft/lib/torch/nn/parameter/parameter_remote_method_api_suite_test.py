@@ -226,15 +226,22 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
     # Step 5: Test to see whether this method and arguments combination is valid
     # in normal PyTorch. If it this is an invalid combination, abort the test
     try:
+        is_property = False
         # if this is a valid method for this type in torch
-        valid_torch_command = True
-        if args is not None:
-            target_result = target_op_method(*args)
-        else:
-            target_result = target_op_method()
+        if type(target_op_method).__name__ in ["builtin_function_or_method", "method"]:
+            valid_torch_command = True
+            if args is not None:
+                target_result = target_op_method(*args)
+            else:
+                target_result = target_op_method()
 
-        if target_result == NotImplemented:
-            valid_torch_command = False
+            if target_result == NotImplemented:
+                valid_torch_command = False
+        else:
+            # we have a property and already have its value
+            is_property = True
+            valid_torch_command = True
+            target_result = target_op_method
 
     except (RuntimeError, TypeError, ValueError, IndexError) as e:
         msg = repr(e)
@@ -251,7 +258,7 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # Step 7: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
-        if args is not None:
+        if args is not None and not is_property:
             argsp = [
                 arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
             ]
@@ -265,10 +272,14 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         assert op_method
 
         # Step 10: Execute the method remotely
-        if argsp is not None:
-            result = op_method(*argsp)
+        if not is_property:
+            if argsp is not None:
+                result = op_method(*argsp)
+            else:
+                result = op_method()  # type:ignore
         else:
-            result = op_method()  # type:ignore
+            # we already have the result
+            result = op_method
 
         # Step 11: Ensure the method returned a pointer
         assert isinstance(result, Pointer)
