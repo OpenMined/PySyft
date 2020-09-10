@@ -1,5 +1,6 @@
 # stdlib
 from collections import UserString
+import sys
 from typing import Any
 from typing import List
 from typing import Optional
@@ -155,9 +156,11 @@ class String(UserString, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=True)
     def isascii(self) -> PyPrimitive:
-        # Got mypy issues saying that isascii is not defined in superclass
-        res = self.data.isascii()
-        return PrimitiveFactory.generate_primitive(value=res)
+        if sys.version_info >= (3, 7):
+            res = self.data.isascii()
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            raise AttributeError("'String' object has no attribute 'isascii'")
 
     @syft_decorator(typechecking=True, prohibit_args=True)
     def isalpha(self) -> PyPrimitive:
@@ -218,6 +221,11 @@ class String(UserString, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return String_PB
+
+    # fixes __rmod__ in python <= 3.7
+    # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
+    def __rmod__(self, template: Union[PyPrimitive, str]) -> PyPrimitive:
+        return self.__class__(str(template) % self)
 
 
 class StringWrapper(StorableObject):

@@ -5,16 +5,18 @@ https://github.com/python/cpython/blob/3.8/Lib/test/string_tests.py
 Common tests shared by test_unicode, test_userstring and test_bytes.
 """
 
-# stdlib
-
-# stdlib
 # TODO after adding the list
 # from collections import UserList
+
+# stdlib
 import string
 import struct
 import sys
 from test import support
 import unittest
+
+# third party
+import pytest
 
 
 class Sequence:
@@ -118,6 +120,7 @@ class BaseTest:
         args = self.fixtype(args)
         getattr(obj, methodname)(*args)
 
+    @pytest.mark.slow
     def test_find(self):
 
         self.checkequal(0, "abcdefghiabc", "find", "abc")
@@ -176,6 +179,7 @@ class BaseTest:
                 if loc != -1:
                     self.assertEqual(i[loc : loc + len(j)], j)  # noqa: E203
 
+    @pytest.mark.slow
     def test_rfind(self):
         self.checkequal(9, "abcdefghiabc", "rfind", "abc")
         self.checkequal(12, "abcdefghiabc", "rfind", "")
@@ -935,19 +939,23 @@ class BaseTest:
         self.checkraises(TypeError, "abc", "isalnum", 42)
 
     def test_isascii(self):
-        self.checkequal(True, "", "isascii")
-        self.checkequal(True, "\x00", "isascii")
-        self.checkequal(True, "\x7f", "isascii")
-        self.checkequal(True, "\x00\x7f", "isascii")
-        self.checkequal(False, "\x80", "isascii")
-        self.checkequal(False, "\xe9", "isascii")
-        # bytes.isascii() and bytearray.isascii() has optimization which
-        # check 4 or 8 bytes at once.  So check some alignments.
-        for p in range(8):
-            self.checkequal(True, " " * p + "\x7f", "isascii")
-            self.checkequal(False, " " * p + "\x80", "isascii")
-            self.checkequal(True, " " * p + "\x7f" + " " * 8, "isascii")
-            self.checkequal(False, " " * p + "\x80" + " " * 8, "isascii")
+        if sys.version_info >= (3, 7):
+            self.checkequal(True, "", "isascii")
+            self.checkequal(True, "\x00", "isascii")
+            self.checkequal(True, "\x7f", "isascii")
+            self.checkequal(True, "\x00\x7f", "isascii")
+            self.checkequal(False, "\x80", "isascii")
+            self.checkequal(False, "\xe9", "isascii")
+            # bytes.isascii() and bytearray.isascii() has optimization which
+            # check 4 or 8 bytes at once.  So check some alignments.
+            for p in range(8):
+                self.checkequal(True, " " * p + "\x7f", "isascii")
+                self.checkequal(False, " " * p + "\x80", "isascii")
+                self.checkequal(True, " " * p + "\x7f" + " " * 8, "isascii")
+                self.checkequal(False, " " * p + "\x80" + " " * 8, "isascii")
+        else:
+            with pytest.raises(AttributeError):
+                self.checkequal(True, "", "isascii")
 
     def test_isdigit(self):
         self.checkequal(False, "", "isdigit")
@@ -1020,12 +1028,26 @@ class CommonTest(BaseTest):
             hash(b)
         self.assertEqual(hash(a), hash(b))
 
+    # fixes python <= 3.7
+    # https://github.com/python/cpython/commit/b015fc86f7b1f35283804bfee788cce0a5495df7
     def test_capitalize_nonascii(self):
         # check that titlecased chars are lowered correctly
         # \u1ffc is the titlecased char
-        self.checkequal(
-            "\u1ffc\u1ff3\u1ff3\u1ff3", "\u1ff3\u1ff3\u1ffc\u1ffc", "capitalize"
-        )
+        # \u03a9\u0399
+        if sys.version_info >= (3, 8):
+            # a, b, capitalize
+            # ῼῳῳῳ, ῳῳῼῼ, capitalize
+            self.checkequal(
+                "\u1ffc\u1ff3\u1ff3\u1ff3", "\u1ff3\u1ff3\u1ffc\u1ffc", "capitalize"
+            )
+        else:
+            # a, b, capitalize
+            # ΩΙῳῳῳ, ῳῳῼῼ, capitalize
+            self.checkequal(
+                "\u03a9\u0399\u1ff3\u1ff3\u1ff3",
+                "\u1ff3\u1ff3\u1ffc\u1ffc",
+                "capitalize",
+            )
         # check with cased non-letter chars
         self.checkequal(
             "\u24c5\u24e8\u24e3\u24d7\u24de\u24dd",

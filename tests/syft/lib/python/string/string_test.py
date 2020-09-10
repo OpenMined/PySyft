@@ -8,15 +8,14 @@ UserString is a wrapper around the native builtin string type.
 UserString instances should behave similar to builtin string objects.
 """
 
-
 # stdlib
+import sys
 import unittest
 
 # third party
-import string_test_utils as string_tests
+import string_utils_test as string_tests
 
 # syft absolute
-from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
 
@@ -32,16 +31,11 @@ class UserStringTest(
     # can't cope with arguments propagated to UserString
     # (and we don't test with subclasses)
     def checkequal(self, result, object, methodname, *args, **kwargs):
-        type_result = type(PrimitiveFactory.generate_primitive(value=result))
-
         result = self.fixtype(result)
         object = self.fixtype(object)
         # we don't fix the arguments, because UserString can't cope with it
         realresult = getattr(object, methodname)(*args, **kwargs)
 
-        type_realresult = type(realresult)
-
-        self.assertEqual(type_result, type_realresult)
         self.assertEqual(result, realresult)
 
     def checkraises(self, exc, obj, methodname, *args):
@@ -68,16 +62,22 @@ class UserStringTest(
         str3 = ustr3("TEST")
         self.assertEqual(fmt2 % str3, "value is TEST")
 
+    # added as a regression test in 3.8
+    # https://github.com/python/cpython/commit/2cb82d2a88710b0af10b9d9721a9710ecc037e72
     def test_encode_default_args(self):
-        self.checkequal(b"hello", "hello", "encode")
-        # Check that encoding defaults to utf-8
-        self.checkequal(b"\xf0\xa3\x91\x96", "\U00023456", "encode")
-        # Check that errors defaults to 'strict'
-        self.checkraises(UnicodeError, "\ud800", "encode")
+        if sys.version_info >= (3, 8):
+            self.checkequal(b"hello", "hello", "encode")
+            # Check that encoding defaults to utf-8
+            self.checkequal(b"\xf0\xa3\x91\x96", "\U00023456", "encode")
+            # Check that errors defaults to 'strict'
+            self.checkraises(UnicodeError, "\ud800", "encode")
 
+    # added as a regression test in 3.8
+    # https://github.com/python/cpython/commit/2cb82d2a88710b0af10b9d9721a9710ecc037e72
     def test_encode_explicit_none_args(self):
-        self.checkequal(b"hello", "hello", "encode", None, None)
-        # Check that encoding defaults to utf-8
-        self.checkequal(b"\xf0\xa3\x91\x96", "\U00023456", "encode", None, None)
-        # Check that errors defaults to 'strict'
-        self.checkraises(UnicodeError, "\ud800", "encode", None, None)
+        if sys.version_info >= (3, 8):
+            self.checkequal(b"hello", "hello", "encode", None, None)
+            # Check that encoding defaults to utf-8
+            self.checkequal(b"\xf0\xa3\x91\x96", "\U00023456", "encode", None, None)
+            # Check that errors defaults to 'strict'
+            self.checkraises(UnicodeError, "\ud800", "encode", None, None)
