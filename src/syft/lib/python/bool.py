@@ -312,12 +312,12 @@ class Bool(PyPrimitive):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Bool_PB:
-        return Bool_PB(id_at_location=serialize(obj=self.id), data=self)
+        return Bool_PB(id=serialize(obj=self.id), data=self)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(id=deserialize(blob=proto.id_at_location), value=proto.data)
+        return Bool(id=deserialize(blob=proto.id), value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

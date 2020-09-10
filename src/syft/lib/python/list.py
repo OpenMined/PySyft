@@ -50,7 +50,9 @@ class List(UserList, PyPrimitive):
     def _proto2object(proto: List_PB) -> "List":
         id_: UID = deserialize(blob=proto.id)
         value = [deserialize(blob=element) for element in proto.data]
-        return List(value=value, uid=id_)
+        new_list = List(value=value)
+        new_list._id = id_
+        return new_list
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

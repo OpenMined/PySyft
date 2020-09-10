@@ -178,13 +178,13 @@ class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Float_PB:
         return Float_PB(
-            id_at_location=serialize(obj=self.id),
+            id=serialize(obj=self.id),
             data=self,
         )
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=deserialize(blob=proto.id_at_location))
+        return Float(value=proto.data, id=deserialize(blob=proto.id))
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
