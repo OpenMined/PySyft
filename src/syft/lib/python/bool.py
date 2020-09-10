@@ -32,18 +32,13 @@ class Bool(PyPrimitive):
             value = False
 
         self.value = bool(value)
-
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = id
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
         """We reveal PyPrimitive.id as a property to discourage users and
         developers of Syft from modifying .id attributes after an object
         has been initialized.
-
         :return: returns the unique id of the object
         :rtype: UID
         """
@@ -317,12 +312,12 @@ class Bool(PyPrimitive):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Bool_PB:
-        return Bool_PB(id_at_location=serialize(obj=self.id), data=self)
+        return Bool_PB(id=serialize(obj=self.id), data=self)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(id=deserialize(blob=proto.id_at_location), value=proto.data)
+        return Bool(id=deserialize(blob=proto.id), value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -341,7 +336,7 @@ class BoolWrapper(StorableObject):
 
     def _data_object2proto(self) -> Bool_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod

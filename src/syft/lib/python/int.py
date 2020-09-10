@@ -44,7 +44,7 @@ class Int(int, PyPrimitive):
 
         int.__init__(value)
 
-        self._id: UID = UID() if id is None else id
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
@@ -338,16 +338,13 @@ class Int(int, PyPrimitive):
     def _object2proto(self) -> Int_PB:
         int_pb = Int_PB()
         int_pb.data = self
-        int_pb.id_at_location.CopyFrom(serialize(obj=self.id))
+        int_pb.id.CopyFrom(serialize(obj=self.id))
         return int_pb
 
     @staticmethod
+    @syft_decorator(typechecking=True)
     def _proto2object(proto: Int_PB) -> "Int":
-        # if hasattr(proto, "id_at_location"):
-        int_id: UID = deserialize(blob=proto.id_at_location)
-        # else:
-        #     # when the wrapper type is used
-        #     int_id: UID = deserialize(blob=proto.id)
+        int_id: UID = deserialize(blob=proto.id)
 
         de_int = Int(value=proto.data)
         de_int._id = int_id  # can't use uid=int_id for some reason
@@ -404,12 +401,12 @@ class IntWrapper(StorableObject):
 
     def _data_object2proto(self) -> Int_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod
     def _data_proto2object(proto: Int_PB) -> "IntWrapper":
-        return Int._proto2object(proto)
+        return Int._proto2object(proto=proto)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:

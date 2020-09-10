@@ -361,7 +361,8 @@ def test_is_integer() -> None:
     assert not Float("inf").is_integer()
 
 
-def test_Floatasratio() -> None:
+@pytest.mark.slow
+def test_floatasratio() -> None:
     for f, ratio in [
         (0.875, (7, 8)),
         (-0.875, (-7, 8)),

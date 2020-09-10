@@ -171,6 +171,7 @@ def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
 def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
     tensor_type: str, op_name: str, self_tensor: List, _args: str

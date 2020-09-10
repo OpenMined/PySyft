@@ -22,8 +22,4 @@ class Complex(complex, PyPrimitive):
             value = 0.0
 
         complex.__init__(value)
-
-        if id is None:
-            self._id = UID()
-        else:
-            self._id = id
+        self._id = id if id else UID()
