@@ -13,8 +13,9 @@ class PrimitiveFactory(ABC):
     @staticmethod
     @syft_decorator(typechecking=True)
     def generate_primitive(
-        value: Union[int, float, bool, complex, None], id: Optional[UID] = None
-    ) -> PyPrimitive:
+        value: Union[int, float, bool, complex, None, type(NotImplemented)],  # type: ignore
+        id: Optional[UID] = None,
+    ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
         # syft relative
         from .bool import Bool
         from .complex import Complex
@@ -33,6 +34,9 @@ class PrimitiveFactory(ABC):
 
         if type(value) is complex:
             return Complex(value=value, id=id)
+
+        if value is NotImplemented:
+            return value
 
         none: SyNone = SyNone()
         return none
