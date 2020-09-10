@@ -75,9 +75,7 @@ class Callable(ast.attribute.Attribute):
                 if isinstance(attr_ref, module_type):
                     raise Exception("Module cannot be attr of callable.")
                 else:
-                    is_property = False
-                    if type(attr_ref).__name__ == "getset_descriptor":
-                        is_property = True
+                    is_property = type(attr_ref).__name__ == "getset_descriptor"
 
                     self.attrs[path[index]] = ast.method.Method(
                         name=path[index],
