@@ -199,7 +199,7 @@ class WebsocketClientWorker(BaseWorker):
         name, target, args_, kwargs_ = message
 
         # Close the existing websocket connection in order to open a asynchronous connection
-        #self.close()
+        self.close()
         try:
             message = TensorCommandMessage.computation(
                 name, target, args_, kwargs_, return_ids, return_value
@@ -210,7 +210,7 @@ class WebsocketClientWorker(BaseWorker):
             ret_val = None
             return_ids = e.ids_generated
         # Reopen the standard connection
-        #self.connect()
+        self.connect()
 
         if ret_val is None or type(ret_val) == bytes:
             responses = []
@@ -244,7 +244,7 @@ class WebsocketClientWorker(BaseWorker):
 
         # Close the existing websocket connection in order to open a asynchronous connection
         # This code is not tested with secure connections (wss protocol).
-        #self.close()
+        self.close()
         async with websockets.connect(
             self.url, timeout=self.timeout, max_size=None, ping_timeout=self.timeout
         ) as websocket:
@@ -258,7 +258,7 @@ class WebsocketClientWorker(BaseWorker):
             await websocket.recv()  # returned value will be None, so don't care
 
         # Reopen the standard connection
-        #self.connect()
+        self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
         msg = ObjectRequestMessage(return_ids[0], None, "")
