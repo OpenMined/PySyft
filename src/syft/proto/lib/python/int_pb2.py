@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1aproto/lib/python/int.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"B\n\x03Int\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x03\x12-\n\x0eid_at_location\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b'\n\x1aproto/lib/python/int.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"6\n\x03Int\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x03\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -59,8 +59,8 @@ _INT = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="id_at_location",
-            full_name="syft.lib.python.Int.id_at_location",
+            name="id",
+            full_name="syft.lib.python.Int.id",
             index=1,
             number=2,
             type=11,
@@ -87,11 +87,11 @@ _INT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=86,
-    serialized_end=152,
+    serialized_end=140,
 )
 
 _INT.fields_by_name[
-    "id_at_location"
+    "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 DESCRIPTOR.message_types_by_name["Int"] = _INT
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

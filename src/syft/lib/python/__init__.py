@@ -12,6 +12,7 @@ from .complex import Complex
 from .float import Float
 from .int import Int
 from .list import List
+from .string import String
 
 
 def get_parent(path: str, root: Any) -> Module:
@@ -67,6 +68,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int", Int),
         ("syft.lib.python.Float", Float),
         ("syft.lib.python.List", List),
+        ("syft.lib.python.String", String),
     ]
 
     add_modules(ast, modules)

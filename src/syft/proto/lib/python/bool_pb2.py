@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/python/bool.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"C\n\x04\x42ool\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x08\x12-\n\x0eid_at_location\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b'\n\x1bproto/lib/python/bool.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"7\n\x04\x42ool\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x08\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -59,8 +59,8 @@ _BOOL = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="id_at_location",
-            full_name="syft.lib.python.Bool.id_at_location",
+            name="id",
+            full_name="syft.lib.python.Bool.id",
             index=1,
             number=2,
             type=11,
@@ -87,11 +87,11 @@ _BOOL = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=87,
-    serialized_end=154,
+    serialized_end=142,
 )
 
 _BOOL.fields_by_name[
-    "id_at_location"
+    "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 DESCRIPTOR.message_types_by_name["Bool"] = _BOOL
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

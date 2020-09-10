@@ -31,7 +31,8 @@ class Float(float, PyPrimitive):
             value = 0.0
 
         float.__init__(value)
-        self._id = id or UID()
+
+        self._id: UID = id if id else UID()
 
     @property
     def id(self) -> UID:
@@ -177,13 +178,13 @@ class Float(float, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Float_PB:
         return Float_PB(
-            id_at_location=serialize(obj=self.id),
+            id=serialize(obj=self.id),
             data=self,
         )
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=deserialize(blob=proto.id_at_location))
+        return Float(value=proto.data, id=deserialize(blob=proto.id))
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -202,7 +203,7 @@ class FloatWrapper(StorableObject):
 
     def _data_object2proto(self) -> Float_PB:
         _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto is not None:
+        if _object2proto:
             return _object2proto()
 
     @staticmethod
