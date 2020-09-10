@@ -167,7 +167,7 @@ jobs:
           pip install -e .
           pytest -m fast
 
-  python-allowlist:
+  python-slow-tests:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 24

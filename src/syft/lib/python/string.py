@@ -157,7 +157,7 @@ class String(UserString, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=True)
     def isascii(self) -> PyPrimitive:
         if sys.version_info >= (3, 7):
-            res = self.data.isascii()
+            res = super().isascii()  # type: ignore
             return PrimitiveFactory.generate_primitive(value=res)
         else:
             raise AttributeError("'String' object has no attribute 'isascii'")
