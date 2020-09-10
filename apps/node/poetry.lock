@@ -400,6 +400,17 @@ version = "0.9.3"
 Flask = "*"
 
 [[package]]
+category = "dev"
+description = "Python3.6+ module to make Flask compatible with AWS Lambda"
+name = "flask-lambda-python36"
+optional = false
+python-versions = "*"
+version = "0.1.0"
+
+[package.dependencies]
+Flask = ">=0.10"
+
+[[package]]
 category = "main"
 description = "User session management for Flask"
 name = "flask-login"
@@ -1921,7 +1932,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "4635e1ec37a2b4a72ce735b4854ee7f9edeb44187815934b30bcdfc650e303e8"
+content-hash = "2725d4adb82b36319bde09b3c19ddf9b8f9f374df35026e4badfb41a6c5489a9"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -2235,6 +2246,9 @@ flask-cors = [
 flask-executor = [
     {file = "Flask-Executor-0.9.3.tar.gz", hash = "sha256:a36ae8304f0f26c7b0b5341c9faf8e524c4035fb14b5100302400fed1245cec2"},
     {file = "Flask_Executor-0.9.3-py3-none-any.whl", hash = "sha256:31a3a04bc2e4828ee3b6bd58aba6939c0aeec94ddab455ccc76993d20b281bb1"},
+]
+flask-lambda-python36 = [
+    {file = "flask_lambda_python36-0.1.0-py36-none-any.whl", hash = "sha256:d7a7ccef0ea6a2bc68d3a589bd7e8a58cff7dccfc8818cf06f40b4dedfb20552"},
 ]
 flask-login = [
     {file = "Flask-Login-0.5.0.tar.gz", hash = "sha256:6d33aef15b5bcead780acc339464aae8a6e28f13c90d8b1cf9de8b549d1c0b4b"},

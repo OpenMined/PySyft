@@ -43,6 +43,7 @@ flake8 = "^3.8.3"
 flake8-comprehensions = "^3.2.3"
 papermill = "~=2.0.0"
 jupyter = "~=1.0.0"
+flask-lambda-python36 = "~=0.1.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
