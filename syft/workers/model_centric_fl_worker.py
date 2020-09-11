@@ -6,8 +6,8 @@ import websocket
 import requests
 from timeit import timeit
 import random
-
 import syft as sy
+from uuid import uuid4
 from syft.serde import protobuf
 from syft.grid.exceptions import GridError
 
@@ -180,6 +180,7 @@ class ModelCentricFLWorker:
     def authenticate(self, auth_token, model_name, model_version):
         message = {
             "type": "model-centric/authenticate",
+            "request_key": str(uuid4()),
             "data": {
                 "auth_token": auth_token,
                 "model_name": model_name,
@@ -192,6 +193,7 @@ class ModelCentricFLWorker:
     def cycle_request(self, worker_id, model_name, model_version, speed_info):
         message = {
             "type": "model-centric/cycle-request",
+            "request_key": str(uuid4()),
             "data": {
                 "worker_id": worker_id,
                 "model": model_name,
@@ -234,6 +236,7 @@ class ModelCentricFLWorker:
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
             "type": "model-centric/report",
+            "request_key": str(uuid4()),
             "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
         }
         return self._send_msg(params)
