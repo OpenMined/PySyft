@@ -21,11 +21,12 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft.core.pointer.pointer import Pointer
+from syft.lib.python.primitive_factory import PrimitiveFactory
+from syft.lib.python.primitive_factory import isprimitive
+from syft.lib.python.primitive_interface import PyPrimitive
 from syft.lib.torch import allowlist
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
-
-# from syft.lib.python.primitive import isprimitive
-
+from syft.lib.util import full_name_with_qualname
 
 TORCH_VERSION = version.parse(th.__version__)
 
@@ -84,9 +85,8 @@ BASIC_METHOD_ARGS.append("[0]")
 BASIC_METHOD_ARGS.append("[1]")
 BASIC_METHOD_ARGS.append("0")
 BASIC_METHOD_ARGS.append("1")
-
-# BASIC_METHOD_ARGS.append("True") #TODO: can't call .serialize() on bool
-# BASIC_METHOD_ARGS.append("False") #TODO: can't call .serialize() on bool
+BASIC_METHOD_ARGS.append("True")
+BASIC_METHOD_ARGS.append("False")
 
 TEST_DATA = list(product(TEST_TYPES, BASIC_OPS, BASIC_SELF_TENSORS, BASIC_METHOD_ARGS))
 
@@ -122,6 +122,10 @@ def is_expected_runtime_error(msg: str) -> bool:
         "vector and vector expected, got",  # torch==1.4.0 "ger"
         "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
         "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
+        "only Tensors of floating point dtype can require gradients",
+        "std and var only support floating-point dtypes",
+        "Subtraction, the `-` operator, with a bool tensor is not supported",
+        "a leaf Variable that requires grad is being used in an in-place operation",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -150,6 +154,11 @@ def is_expected_type_error(msg: str) -> bool:
         "argument 'sorted' must be bool",
         "argument 'return_inverse' must be bool",
         "received an invalid combination of arguments",
+        "(position 1) must be Tensor, not",
+        "(position 1) must be bool",
+        "__bool__ should return bool, returned Bool",
+        "argument 'return_inverse' must be bool",
+        "argument 'sorted' must be bool, not",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
@@ -165,10 +174,6 @@ def is_expected_index_error(msg: str) -> bool:
     expected_msgs = {"Dimension out of range"}
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
-
-
-def full_name_with_qualname(klass: type) -> str:
-    return f"{klass.__module__}.{klass.__qualname__}"
 
 
 @pytest.mark.slow
@@ -190,28 +195,33 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
     # Copy the UID over so that its easier to see they are supposed to be the same obj
     self_tensor_copy.id = self_tensor.id  # type: ignore
 
-    # TODO: This needs to be enforced to something more specific
-    args: Any
+    args: List[Any] = []
 
     # Step 4: Create the arguments we're going to pass the method on
     if _args == "None":
-        args = None
+        args = []
     elif _args == "self":
-        args = [th.nn.Parameter(self_tensor)]
+        args = [self_tensor]
     elif _args == "0":
-        args = 0
+        args = [PrimitiveFactory.generate_primitive(value=0)]
     elif _args == "1":
-        args = 1
+        args = [PrimitiveFactory.generate_primitive(value=1)]
     elif _args == "[0]":
         args = [th.nn.Parameter(th.tensor([0], dtype=t_type))]
     elif _args == "[1]":
         args = [th.nn.Parameter(th.tensor([1], dtype=t_type))]
     elif _args == "True":
-        args = [True]
+        args = [PrimitiveFactory.generate_primitive(value=True)]
     elif _args == "False":
-        args = [False]
+        args = [PrimitiveFactory.generate_primitive(value=False)]
     else:
-        args = _args
+        args = [_args]
+
+    try:
+        _ = len(args)
+    except Exception as e:
+        err = f"Args must be iterable so it can be spread with * into the method. {e}"
+        raise Exception(err)
 
     expected_exception: Dict[Type, Callable[[str], bool]] = {
         RuntimeError: is_expected_runtime_error,
@@ -228,19 +238,15 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
     try:
         is_property = False
         # if this is a valid method for this type in torch
+        valid_torch_command = True
         if type(target_op_method).__name__ in ["builtin_function_or_method", "method"]:
-            valid_torch_command = True
-            if args is not None:
-                target_result = target_op_method(*args)
-            else:
-                target_result = target_op_method()
+            target_result = target_op_method(*args)
 
             if target_result == NotImplemented:
                 valid_torch_command = False
         else:
             # we have a property and already have its value
             is_property = True
-            valid_torch_command = True
             target_result = target_op_method
 
     except (RuntimeError, TypeError, ValueError, IndexError) as e:
@@ -258,28 +264,24 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # Step 7: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
-        if args is not None and not is_property:
+        argsp: List[Any] = []
+        if len(args) > 0 and not is_property:
             argsp = [
                 arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
             ]
-        else:
-            argsp = None  # type:ignore
 
         # Step 8: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)
 
         # Step 9: make sure the method exists
-        assert op_method
+        assert op_method is not None
 
         # Step 10: Execute the method remotely
-        if not is_property:
-            if argsp is not None:
-                result = op_method(*argsp)
-            else:
-                result = op_method()  # type:ignore
-        else:
+        if is_property:
             # we already have the result
             result = op_method
+        else:
+            result = op_method(*argsp)
 
         # Step 11: Ensure the method returned a pointer
         assert isinstance(result, Pointer)
@@ -290,39 +292,39 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # Step 13: If there are NaN values, set them to 0 (this is normal for division by 0)
 
         try:
-            # TODO: We should detect tensor vs primitive in a more reliable way
-            # set all NaN to 0
-            # if isprimitive(value=target_result):
-            #     # check that it matches functionally
-            #     assert local_result == target_result
-            #     # unbox the real value for type comparison below
-            #     local_result = local_result.data
-            # else:
+            if isprimitive(value=target_result) or issubclass(
+                type(local_result), PyPrimitive
+            ):
+                # check that it matches functionally
+                assert local_result == target_result
 
-            # type(target_result) == torch.Tensor
+                # convert target_result for type comparison below
+                target_result = PrimitiveFactory.generate_primitive(value=target_result)
+            else:
+                # type(target_result) == torch.Tensor
 
-            # Set all NaN to 0
-            # If we have two tensors like
-            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
-            # those are not equal
-            # Tensor.isnan was added in torch 1.6
-            # so we need to do torch.isnan(tensor)
-            nan_mask = th.isnan(local_result)
+                # Set all NaN to 0
+                # If we have two tensors like
+                # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+                # those are not equal
+                # Tensor.isnan was added in torch 1.6
+                # so we need to do torch.isnan(tensor)
+                nan_mask = th.isnan(local_result)
 
-            # Use the same mask for local and target
-            local_result[nan_mask] = 0
-            target_result[nan_mask] = 0
+                # Use the same mask for local and target
+                local_result[nan_mask] = 0
+                target_result[nan_mask] = 0
 
-            # Step 14: Ensure we got the same result locally (using normal pytorch)
-            # as we did remotely using Syft pointers to communicate with remote torch objects
-            assert (local_result == target_result).all()
+                # Step 14: Ensure we got the same result locally (using normal pytorch) as we did remotely
+                # using Syft pointers to communicate with remote torch objects
+                assert (local_result == target_result).all()
 
             # make sure the return types match
             assert type(local_result) == type(target_result)
 
             # make sure the return type matches the specified allowlist return type
             assert (
-                full_name_with_qualname(type(local_result))
+                full_name_with_qualname(klass=type(local_result))
                 == BASIC_OPS_RETURN_TYPE[op_name]
             )
 

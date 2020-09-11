@@ -25,9 +25,14 @@ def dispatch_other(obj: Any) -> bool:
     return obj
 
 
-class Bool(PyPrimitive):
+class Bool(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = False, id: Optional[UID] = None):
+    def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
+        value = bool(value)
+        return int.__new__(cls, value)  # type: ignore
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __init__(self, value: Any = None, id: Optional[UID] = None):
         if value is None:
             value = False
 

@@ -9,6 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
@@ -102,13 +103,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             # we have a callable
             result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
 
-        # if isprimitive(value=result):
-        #     # Wrap in a PyPrimitive
-        #     result = PyPrimitive(data=result, id=self.id_at_location)
-        # else:
-        # TODO: overload all methods to incorporate this automatically
-        if hasattr(result, "id"):
-            result.id = self.id_at_location
+        # to avoid circular imports
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a PyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=self.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                result.id = self.id_at_location
 
         # QUESTION: There seems to be return value tensors that have no id
         # and get auto wrapped? So is this code not correct?
