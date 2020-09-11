@@ -1170,6 +1170,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (
             _simplify(tensor.id),
             _simplify(tensor.field),
+            _simplify(tensor.protocol),
             tensor.dtype.encode("utf-8"),
             _simplify(tensor.crypto_provider.id),
             chain,
@@ -1191,7 +1192,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         _detail = lambda x: sy.serde.msgpack.serde._detail(worker, x)
 
-        tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
+        tensor_id, field, protocol, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
 
         crypto_provider = _detail(crypto_provider)
 
@@ -1199,6 +1200,7 @@ class AdditiveSharingTensor(AbstractTensor):
             owner=worker,
             id=_detail(tensor_id),
             field=_detail(field),
+            protocol=_detail(protocol),
             dtype=dtype.decode("utf-8"),
             crypto_provider=worker.get_worker(crypto_provider),
         )
