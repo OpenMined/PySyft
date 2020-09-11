@@ -1,7 +1,7 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -22,10 +22,7 @@ from .primitive_interface import PyPrimitive
 class Complex(complex, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(
-        self,
-        real: Optional[Union[int, float, str]] = None,
-        imag: Optional[Union[int, float, str]] = None,
-        id: Optional[UID] = None,
+        self, real: Any = None, imag: Any = None, id: Optional[UID] = None
     ) -> "Complex":
         if real is None:
             return complex.__new__(self)
@@ -36,12 +33,7 @@ class Complex(complex, PyPrimitive):
         return complex.__new__(self, real=real, imag=imag)  # type: ignore
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(
-        self,
-        real: Optional[Union[int, float, str]] = None,
-        imag: Optional[Union[int, float, str]] = None,
-        id: Optional[UID] = None,
-    ):
+    def __init__(self, real: Any = None, imag: Any = None, id: Optional[UID] = None):
         complex.__init__(self)
         self._id = id or UID()
 
