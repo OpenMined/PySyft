@@ -1,40 +1,54 @@
-from .. import ast
+# stdlib
+from typing import Any
+from typing import Callable as CallableT
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
-from .util import unsplit
-from .util import module_type
-from ..core.nodes.common.action.function_or_constructor_action import (
+# syft relative
+from .. import ast
+from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
+from .util import module_type
+from .util import unsplit
 
 
 class Callable(ast.attribute.Attribute):
+    client: Optional[Any]
 
     """A method, function, or constructor which can be directly executed"""
 
-    def __call__(self, *args, return_callable=False, **kwargs):
+    def __call__(
+        self,
+        *args: Tuple[Any, ...],
+        return_callable: bool = False,
+        **kwargs: Any,
+    ) -> Optional[Union["Callable", CallableT]]:
 
-        if self.client is not None and return_callable == False:
+        if (
+            hasattr(self, "client")
+            and self.client is not None
+            and return_callable is False
+        ):
             print(f"call {self.path_and_name} on client {self.client}")
-
-            path_and_name = "torch.zeros"
-            args = [2, 3]
-            kwargs = {}
-
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
-            ptr = return_tensor_type_pointer_type(location=self.client)
+            ptr = return_tensor_type_pointer_type(client=self.client)
 
-            msg = RunFunctionOrConstructorAction(
-                path=path_and_name,
-                args=args,
-                kwargs=kwargs,
-                id_at_location=ptr.id_at_location,
-                address=self.client.address,
-            )
+            if self.path_and_name is not None:
+                msg = RunFunctionOrConstructorAction(
+                    path=self.path_and_name,
+                    args=args,
+                    kwargs=kwargs,
+                    id_at_location=ptr.id_at_location,
+                    address=self.client.address,
+                )
 
-            self.client.send_immediate_msg_without_reply(msg=msg)
-            return ptr
+                self.client.send_immediate_msg_without_reply(msg=msg)
+                return ptr
 
         path = kwargs["path"]
         index = kwargs["index"]
@@ -45,10 +59,12 @@ class Callable(ast.attribute.Attribute):
             return self.ref
         else:
             return self.attrs[path[index]](
-                path, index + 1, return_callable=return_callable
+                path=path, index=index + 1, return_callable=return_callable
             )
 
-    def add_path(self, path, index, return_type_name=None):
+    def add_path(
+        self, path: List[str], index: int, return_type_name: Optional[str] = None
+    ) -> None:
 
         self.return_type_name = return_type_name
 

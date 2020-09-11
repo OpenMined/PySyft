@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package syft.grid.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message SignalingAnswerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string payload = 4;
+}
+
+message SignalingOfferMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string payload = 4;
+}

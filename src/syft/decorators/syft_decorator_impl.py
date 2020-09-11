@@ -1,6 +1,13 @@
-from __future__ import annotations
-
+# stdlib
 import inspect
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+
+# syft relative
 from .typecheck import type_hints
 
 # this flag is set in syft.__init__.py
@@ -8,17 +15,19 @@ LONG_TYPECHECK_STACK_TRACES = None
 
 
 def syft_decorator(
-    typechecking=False,
-    enforce_policies=False,
-    syft_logger=False,
-    other_decorators: list = None,
-):
-    def decorator(function):
+    typechecking: bool = False,
+    prohibit_args: bool = True,
+    enforce_policies: bool = False,
+    syft_logger: bool = False,
+    other_decorators: Optional[List] = None,
+) -> Callable:
+    def decorator(function: Callable) -> Callable:
 
         if typechecking:
-            function = type_hints(function)
 
-        def wrapper(*args, **kwargs):
+            function = type_hints(function, prohibit_args=prohibit_args)
+
+        def wrapper(*args: Tuple[Any], **kwargs: Dict[Any, Any]) -> Callable:
 
             return function(*args, **kwargs)
             # try:
@@ -26,9 +35,8 @@ def syft_decorator(
             # except Exception as e:
             #     if LONG_TYPECHECK_STACK_TRACES:
             #         raise e
-            #     # Truncate stacktrace concerned with the
-            #     # type checking decorator so that the
-            #     # true problem is easier to see
+            #     # Truncate stacktrace concerned with the type checking decorator
+            #     # so that the true problem is easier to see
             #     raise Exception(str(e))
 
         if other_decorators:
@@ -42,7 +50,7 @@ def syft_decorator(
         wrapper.__module__ = function.__module__
 
         old_signature = inspect.signature(function)
-        wrapper.__signature__ = old_signature
+        wrapper.__signature__ = old_signature  # type: ignore
 
         return wrapper
 

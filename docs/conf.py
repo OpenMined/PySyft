@@ -8,14 +8,17 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import os
-import sys
+# stdlib
 import inspect
+import os
+from pathlib import Path
 import shutil
+import sys
+from typing import Any
+from typing import Dict
 
-__location__ = os.path.join(
-    os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe()))
-)
+dir_name = inspect.getfile(inspect.currentframe())  # type: ignore
+__location__ = os.path.join(os.getcwd(), os.path.dirname(dir_name))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -31,8 +34,10 @@ sys.path.insert(0, os.path.join(__location__, "../src"))
 # Additionally it helps us to avoid running apidoc manually
 
 try:  # for Sphinx >= 1.7
+    # third party
     from sphinx.ext import apidoc
 except ImportError:
+    # third party
     from sphinx import apidoc
 
 output_dir = os.path.join(__location__, "api")
@@ -43,8 +48,9 @@ except FileNotFoundError:
     pass
 
 try:
-    import sphinx
+    # third party
     from pkg_resources import parse_version
+    import sphinx
 
     # found this --module-first here shorturl.at/iDKNW
     cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir} --module-first"
@@ -56,7 +62,7 @@ try:
 
     apidoc.main(args)
 except Exception as e:
-    print("Running `sphinx-apidoc` failed!\n{}".format(e))
+    print(f"Running `sphinx-apidoc` failed!\n{e}")
 
 # -- General configuration -----------------------------------------------------
 
@@ -83,15 +89,29 @@ extensions.append("recommonmark")
 templates_path = ["_templates"]
 
 # override autodoc defaults to skip/not skip certain methods
-def skip(app, what, name, obj, would_skip, options):
+def skip(
+    app: Any, what: Any, name: str, obj: Any, would_skip: bool, options: Any
+) -> bool:
     if name == "__init__":
         return False
     if name == "__hash__":
         return False
+    if name == "__eq__":
+        return False
+    if name == "_proto2object":
+        return False
+    if name == "_object2proto":
+        return False
+    if name == "_serialize":
+        return False
+    if name == "_deserialize":
+        return False
     return would_skip
 
+
 # To configure AutoStructify
-def setup(app):
+def setup(app: Any) -> None:
+    # third party
     from recommonmark.transform import AutoStructify
 
     app.add_config_value(
@@ -114,19 +134,19 @@ source_suffix = [".rst", ".md"]
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
+# The main toctree document.
 master_doc = "index"
 
 # General information about the project.
-project = u"syft"
-copyright = u"2020, Andrew Trask"
+project = "syft"
+copyright = "2020, OpenMined Core Contributors"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = ""  # Is set by calling `setup.py docs`
+default_version = ""  # Is set by calling `setup.py docs`
 # The full version, including alpha/beta/rc tags.
 release = ""  # Is set by calling `setup.py docs`
 
@@ -164,7 +184,7 @@ pygments_style = "sphinx"
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
 
-# If true, keep warnings as "system old_message" paragraphs in the built documents.
+# If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
 
 
@@ -174,16 +194,13 @@ pygments_style = "sphinx"
 # a list of builtin themes.
 
 # html_theme = 'sphinx-theme-graphite'
-html_theme = "alabaster"
-
+# html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "sidebar_width": "300px",
-    "page_width": "1200px",
-}
+html_theme_options = {"sidebar_width": "300px"}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ["_themes/"]
@@ -191,11 +208,12 @@ html_theme_path = ["_themes/"]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 try:
+    # syft absolute
     from syft import __version__ as version
 except ImportError:
     pass
 else:
-    release = version
+    release = default_version
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
@@ -215,7 +233,7 @@ else:
 html_static_path = ["_static"]
 
 # sort methods by source order
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -264,7 +282,7 @@ htmlhelp_basename = "syft-doc"
 
 # -- Options for LaTeX output --------------------------------------------------
 
-latex_elements = {
+latex_elements: Dict[str, str] = {
     # The paper size ('letterpaper' or 'a4paper').
     # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
@@ -276,7 +294,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "user_guide.tex", u"syft Documentation", u"Andrew Trask", "manual"),
+    ("index", "user_guide.tex", "syft Documentation", "Andrew Trask", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

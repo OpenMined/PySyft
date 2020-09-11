@@ -1,21 +1,22 @@
+# stdlib
+from typing import Any
+from typing import Optional
 import uuid
-from typing import final
-from syft.proto import ProtoUID
-from syft.decorators.syft_decorator_impl import syft_decorator
-uuid_type = type(uuid.uuid4())
+from uuid import UUID as uuid_type
 
-@final
-class AbstractUID(object):
-    """This exists to allow us to typecheck on the UID object
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 
-    |
-
-    """
+# syft relative
+from ...decorators import syft_decorator
+from ...proto.core.common.common_object_pb2 import UID as UID_PB
+from ..common.serde.serializable import Serializable
 
 
-@final
-class UID(AbstractUID):
-    """This object creates a unique ID for every object in the Syft
+class UID(Serializable):
+    """A unique ID for every Syft object.
+
+    This object creates a unique ID for every object in the Syft
     ecosystem. This ID is guaranteed to be unique for the node on
     which it is initialized and is very likely to be unique across
     the whole ecosystem (because it is long and randomly generated).
@@ -27,68 +28,23 @@ class UID(AbstractUID):
 
     There is no other way in Syft to create an ID for any object.
 
-        - **parameters**, **types**, **return** and **return types**::
-
-            :param arg1: description
-            :param arg2: description
-            :type arg1: type description
-            :type arg1: type description
-            :return: return description
-            :rtype: the return type description
-
-        - and to provide sections such as **Example** using the double commas syntax::
-
-              :Example:
-
-              followed by a blank line !
-
-        which appears as follow:
-
-        :Example:
-
-        followed by a blank line
-
-        - Finally special sections such as **See Also**, **Warnings**, **Notes**
-          use the sphinx syntax (*paragraph directives*)::
-
-              .. seealso:: blabla
-              .. warnings also:: blabla
-              .. note:: blabla
-              .. todo:: blabla
-
-        .. note::
-            There are many other Info fields but they may be redundant:
-                * param, parameter, arg, argument, key, keyword: Description of a
-                  parameter.
-                * type: Type of a parameter.
-                * raises, raise, except, exception: That (and when) a specific
-                  exception is raised.
-                * var, ivar, cvar: Description of a variable.
-                * returns, return: Description of the return value.
-                * rtype: Return type.
-
-        .. note::
-            There are many other directives such as versionadded, versionchanged,
-            rubric, centered, ... See the sphinx documentation for more details.
-
-        Here below is the results of the :func:`function1` docstring.
-
-
-    |
-
-
     """
 
+    value: uuid_type
+
     @syft_decorator(typechecking=True)
-    def __init__(self, value: uuid_type = None):
-        """This initializes the object. Normal use for this object is
+    def __init__(self, value: Optional[uuid_type] = None):
+        """Initializes the internal id using the uuid package.
+
+        This initializes the object. Normal use for this object is
         to initialize the constructor with value==None because you
         want to initialize with a novel ID. The only major exception
         is deserialization, wherein a UID object is created with a
         specific id value.
 
-        :param value: if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
-        :type value: uuid.uuid4(), optional
+        :param value: if you want to initialize an object with a specific UID, pass it
+                      in here. This is normally only used during deserialization.
+        :type value: uuid.uuid4, optional
         :return: returns the initialized object
         :rtype: UID
 
@@ -96,40 +52,41 @@ class UID(AbstractUID):
 
             from syft.core.common.uid import UID
             my_id = UID()
-            print(my_id.value)
-
-        .. code-block:: bash
-
-            >>> 8d744978-327b-4126-a644-cb90bcadd35e
-
-        |
-
         """
+        # checks to make sure you've set a proto_type
+        super().__init__()
 
         # if value is not set - create a novel and unique ID.
         if value is None:
 
             # for more info on how this UUID is generated:
-            # https://docs.python.org/2/library/uuid.html
+            # https://docs.python.org/3/library/uuid.html
             value = uuid.uuid4()
 
         # save the ID's value. Note that this saves the uuid value
         # itself instead of saving the
         self.value = value
 
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def from_string(value: str) -> "UID":
+        try:
+            return UID(value=uuid.UUID(value))
+        except Exception as e:
+            print(f"Unable to convert {value} to UUID. {e}")
+            raise e
+
     @syft_decorator(typechecking=True)
     def __hash__(self) -> int:
-        """A very common use of UID objects is as a key in a dictionary
+        """Hashes the UID for use in dictionaries and sets
+
+        A very common use of UID objects is as a key in a dictionary
         or database. The object must be able to be hashed in order to
         be used in this way. We take the 128-bit int representation of the
         value.
 
-        :param value (uuid): if you want to initialize an object with a specific UID, pass it in here. This is normally only used during deserialization.
-        :param arg2: description
-        :type arg1: type description
-        :type arg1: type description
-        :return: return description
-        :rtype: the return type description
+        :return: returns a hash of the object
+        :rtype: int
 
         .. note::
             Note that this probably gets further hashed into a shorter
@@ -138,35 +95,123 @@ class UID(AbstractUID):
         .. note::
             Note that we assume that any collisions will be very rare and
             detected by the ObjectStore class in Syft.
-
-    |
-
-    """
-
+        """
 
         return self.value.int
 
-    @syft_decorator(typechecking=True)
-    def __eq__(self, other: AbstractUID) -> bool:
-        """This checks to see whether this UID is equal to another UID by
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __eq__(self, other: Any) -> bool:
+        """Checks to see if two UIDs are the same using the internal object
+
+        This checks to see whether this UID is equal to another UID by
         comparing whether they have the same .value objects. These objects
         come with their own __eq__ function which we assume to be correct.
 
-    |
+        :param other: this is the other ID to be compared with
+        :type other: Any (note this must be Any or __eq__ fails on other types)
+        :return: returns True/False based on whether the objcts are the same
+        :rtype: bool
+        """
 
-    """
-
-        if isinstance(other, UID):
+        try:
             return self.value == other.value
+        except Exception:
+            return False
 
-        return False
+    @syft_decorator(typechecking=True)
+    def __repr__(self) -> str:
+        """Returns a human-readable version of the ID
 
-    def __repr__(self):
+        Return a human-readable representation of the UID with brackets
+        so that it can be easily spotted when nested inside of the human-
+        readable representations of other objects."""
+
         return f"<UID:{self.value}>"
 
-    def serialize(self):
-        return ProtoUID(value=self.value.bytes)
+    @syft_decorator(typechecking=True)
+    def char_emoji(self, hex_chars: str) -> str:
+        base = ord("\U0001F642")
+        hex_base = ord("0")
+        code = 0
+        for char in hex_chars:
+            offset = ord(char)
+            code += offset - hex_base
+        return chr(base + code)
+
+    @syft_decorator(typechecking=True)
+    def string_emoji(self, string: str, length: int, chunk: int) -> str:
+        output = []
+        part = string[-length:]
+        while len(part) > 0:
+            part, end = part[:-chunk], part[-chunk:]
+            output.append(self.char_emoji(hex_chars=end))
+        return "".join(output)
+
+    @syft_decorator(typechecking=True)
+    def emoji(self) -> str:
+        return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
+
+    @syft_decorator(typechecking=True)
+    def repr_short(self) -> str:
+        """Returns a SHORT human-readable version of the ID
+
+        Return a SHORT human-readable version of the ID which
+        makes it print nicer when embedded (often alongside other
+        UID objects) within other object __repr__ methods."""
+
+        return f"..{str(self.value)[-5:]}"
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> UID_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: ProtoUID
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+
+        return UID_PB(value=self.value.bytes)
 
     @staticmethod
-    def deserialize(proto_uid: ProtoUID) -> AbstractUID:
-        return UID(value=uuid.UUID(bytes=proto_uid.value))
+    @syft_decorator(typechecking=True)
+    def _proto2object(proto: UID_PB) -> "UID":
+        """Creates a UID from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of UID
+        :rtype: UID
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+        return UID(value=uuid.UUID(bytes=proto.value))
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+        return UID_PB

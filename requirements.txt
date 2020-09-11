@@ -15,13 +15,24 @@
 # numpy==1.13.3
 # scipy==1.0
 #
-forbiddenfruit>=0.1.3
-torch>=1.5
-typeguard
-pyscaffold[all]
+bandit
 black
-<<<<<<< HEAD
+dataclasses # backport to python 3.6
+flake8
 flask
-=======
+forbiddenfruit>=0.1.3
+isort
+nbconvert
+pandas
+protobuf
 pyjwt
->>>>>>> b4f274703d9e46e74d992b1c3c96480bd401c230
+PyNaCl
+pyscaffold[all]
+pytest
+pytest-cov
+requests
+sqlitedict
+torch>=1.4
+typeguard
+typing-extensions # backport to older python 3
+websockets

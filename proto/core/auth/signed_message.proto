@@ -1,0 +1,12 @@
+syntax = "proto3";
+package syft.core.auth;
+
+import "proto/core/common/common_object.proto";
+
+message SignedMessage {
+  syft.core.common.UID msg_id = 1;
+  string obj_type = 2;
+  bytes signature = 3;
+  bytes verify_key = 4;
+  bytes message = 5;
+}

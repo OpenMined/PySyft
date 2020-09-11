@@ -14,7 +14,10 @@ also be used as template for Python modules.
 
 Note: This skeleton file can be safely removed if not needed!
 """
+# stdlib
+from typing import List
 
+# third party
 import torch
 
 module_type = type(torch)
@@ -23,7 +26,7 @@ builtin_func_type = type(torch.ones)
 class_type = type(func_type)
 
 
-def unsplit(list_of_things, separator="."):
+def unsplit(list_of_things: List[str], separator: str = ".") -> str:
     out = ""
     for thing in list_of_things:
         out += thing + separator

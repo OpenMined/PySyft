@@ -1,40 +1,58 @@
-import requests
-from syft.core.io.connection import ClientConnection
-import syft as sy
-from syft.core.io.route import SoloRoute
+# stdlib
 import binascii
-import pickle
 import json
+import pickle
+
+# third party
+import requests
+
+# syft absolute
+import syft as sy
+
+# syft relative
+from ..core.common.message import EventualSyftMessageWithoutReply
+from ..core.common.message import ImmediateSyftMessageWithReply
+from ..core.common.message import ImmediateSyftMessageWithoutReply
+from ..core.common.message import SyftMessage
+from ..core.io.connection import ClientConnection
+from ..core.io.route import SoloRoute
 
 
 class GridHttpClientConnection(ClientConnection):
-    def __init__(self, base_url):
+    def __init__(self, base_url: str) -> None:
         self.base_url = base_url
 
-    def send_immediate_msg_with_reply(self, msg):
+    def send_immediate_msg_with_reply(
+        self, msg: ImmediateSyftMessageWithReply
+    ) -> object:
         reply = self.send_msg(msg)
-        return pickle.loads(binascii.unhexlify(json.loads(reply.text)["data"]))
+        binary = binascii.unhexlify(json.loads(reply.text)["data"])
+        return pickle.loads(binary)  # nosec # TODO make less insecure
 
-    def send_immediate_msg_without_reply(self, msg):
+    def send_immediate_msg_without_reply(
+        self, msg: ImmediateSyftMessageWithoutReply
+    ) -> None:
         self.send_msg(msg)
 
-    def send_eventual_msg_without_reply(self, msg):
+    def send_eventual_msg_without_reply(
+        self, msg: EventualSyftMessageWithoutReply
+    ) -> None:
         self.send_msg(msg)
 
-    def send_msg(self, msg):
+    def send_msg(self, msg: SyftMessage) -> requests.Response:
         data = pickle.dumps(msg).hex()
         r = requests.post(url=self.base_url + "recv", json={"data": data})
         return r
 
 
-def connect(domain_url="http://localhost:5000/"):
-
-    client_metadata = pickle.loads(binascii.unhexlify(requests.get(domain_url).text))
+def connect(domain_url: str = "http://localhost:5000/") -> sy.DomainClient:
+    binary = binascii.unhexlify(requests.get(domain_url).text)
+    client_metadata = pickle.loads(binary)  # nosec # TODO make less insecure
 
     conn = GridHttpClientConnection(base_url=domain_url)
     address = client_metadata["address"]
     name = client_metadata["name"]
     id = client_metadata["id"]
-    route = SoloRoute(source=None, destination=id, connection=conn)
+    route = SoloRoute(destination=id, connection=conn)
     client = sy.DomainClient(address=address, name=name, routes=[route])
     return client

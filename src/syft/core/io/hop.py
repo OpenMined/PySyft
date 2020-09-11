@@ -1,6 +1,7 @@
 """This represents the communication "edge" connecting two
 Locations in a route. """
 
+# syft relative
 from .location import Location
 
 

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib;
+
+import "proto/lib/numpy/tensor.proto";
+
+message LibObject {
+    syft.lib.numpy.TensorProto numpy_tensor = 1;
+}

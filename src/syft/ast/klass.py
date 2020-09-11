@@ -1,68 +1,172 @@
-from .. import ast
-from ..core import pointer as ptr
-from ..core.nodes.common.action.save_object_action import SaveObjectAction
-from ..core.nodes.common.action.run_class_method_action import RunClassMethodAction
+# stdlib
+from typing import Any
+from typing import Callable as CallableT
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
-from forbiddenfruit import curse
+# third party
+from google.protobuf.message import Message
+
+# syft relative
+from ..ast.callable import Callable
+from ..core.common.serde.serializable import Serializable
+from ..core.common.serde.serialize import _serialize
+from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.save_object_action import SaveObjectAction
+from ..core.pointer.pointer import Pointer
+from ..util import aggressive_set_attr
 
 
-class Class(ast.callable.Callable):
+class Class(Callable):
 
     ""
 
-    def __init__(self, name, path_and_name, ref, return_type_name):
+    def __init__(
+        self,
+        name: Optional[str],
+        path_and_name: Optional[str],
+        ref: Union[Callable, CallableT],
+        return_type_name: Optional[str],
+    ):
         super().__init__(name, path_and_name, ref, return_type_name=return_type_name)
-        self.pointer_name = self.path_and_name + "Pointer"
+        if self.path_and_name is not None:
+            self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Class:{self.name}>"
 
     @property
-    def pointer_type(self):
+    def pointer_type(self) -> Union[Callable, CallableT]:
         return getattr(self, self.pointer_name)
 
-    def create_pointer_class(self):
-        def run_class_method(attr, attr_path_and_name, __self, args, kwargs):
-            # TODO: lookup actual return type instead of just guessing that it's identical
-            result = getattr(self, self.pointer_name)(location=__self.location)
+    def create_pointer_class(self) -> None:
+        def get_run_class_method(
+            attr_path_and_name: str,
+        ) -> object:  # TODO: tighten to return Callable
+            """It might seem hugely un-necessary to have these methods nested in this way.
+            However, it has to do with ensuring that the scope of attr_path_and_name is local
+            and not global. If we do not put a get_run_class_method around run_class_method then
+            each run_class_method will end up referencing the same attr_path_and_name variable
+            and all methods will actually end up calling the same method. However, if we return
+            the function object itself then it includes the current attr_path_and_name as an internal
+            variable and when we call get_run_class_method multiple times it returns genuinely
+            different methods each time with a different internal attr_path_and_name variable."""
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=__self,
-                args=args,
-                kwargs=kwargs,
-                id_at_location=result.id_at_location,
-                address=__self.location.address,
-            )
-            __self.location.send_immediate_msg_without_reply(msg=cmd)
+            def run_class_method(
+                __self: Any,
+                *args: Tuple[Any, ...],
+                **kwargs: Any,
+            ) -> object:
+                # TODO: lookup actual return type instead of just guessing that it's identical
+                result = self.pointer_type(client=__self.client)
 
-            return result
+                # QUESTION can the id_at_location be None?
+                result_id_at_location = getattr(result, "id_at_location", None)
+                if result_id_at_location is not None:
+                    cmd = RunClassMethodAction(
+                        path=attr_path_and_name,
+                        _self=__self,
+                        args=args,
+                        kwargs=kwargs,
+                        id_at_location=result_id_at_location,
+                        address=__self.client.address,
+                    )
+                    __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+                return result
+
+            return run_class_method
 
         attrs = {}
         for attr_name, attr in self.attrs.items():
-            attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(
-                attr, attr.path_and_name, _self, args, kwargs
-            )
+            attr_path_and_name = getattr(attr, "path_and_name", None)
 
-        klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
+            # QUESTION: Could path_and_name be None?
+            # It seems as though attrs can contain
+            # Union[Callable, CallableT]
+            # where Callable is ast.callable.Callable
+            # where CallableT is typing.Callable == any function, method, lambda
+            # so we have to check for path_and_name
+            if attr_path_and_name is not None:
+                attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
+        klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+        setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
 
-    def create_send_method(outer_self):
-        def send(self, location):
+    def create_send_method(outer_self: Any) -> None:
+        def send(self: Any, client: Any, searchable: bool = False) -> Pointer:
             # Step 1: create pointer which will point to result
-            ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
-
-            # Step 2: create old_message which contains object to send
-            obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location, obj=self, address=location.address
+            ptr = getattr(outer_self, outer_self.pointer_name)(
+                client=client,
+                id_at_location=self.id,
+                tags=self.tags if hasattr(self, "tags") else list(),
+                description=self.description if hasattr(self, "description") else "",
             )
 
-            # Step 3: send old_message
-            location.send_immediate_msg_without_reply(msg=obj_msg)
+            # Step 2: create message which contains object to send
+            obj_msg = SaveObjectAction(
+                obj_id=ptr.id_at_location,
+                obj=self,
+                address=client.address,
+                anyone_can_search_for_this=searchable,
+            )
+
+            # Step 3: send message
+            client.send_immediate_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer
             return ptr
 
         # using curse because Numpy tries to lock down custom attributes
-        curse(outer_self.ref, "send", send)
+        aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
+
+    def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
+        def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
+            self.tags = list(tags)
+            return self
+
+        # using curse because Numpy tries to lock down custom attributes
+        aggressive_set_attr(obj=outer_self.ref, name="tag", attr=tag)
+
+        def describe(self: Any, description: str) -> object:
+            self.description = description
+            # QUESTION: Is this supposed to return self?
+            # WHY? Chaining?
+            return self
+
+        # using curse because Numpy tries to lock down custom attributes
+        aggressive_set_attr(obj=outer_self.ref, name="describe", attr=describe)
+
+    def create_serialization_methods(outer_self) -> None:
+        def serialize(  # type: ignore
+            self,
+            to_proto: bool = True,
+            to_json: bool = False,
+            to_binary: bool = False,
+            to_hex: bool = False,
+        ) -> Union[str, bytes, Message]:
+            return _serialize(
+                obj=self,
+                to_proto=to_proto,
+                to_json=to_json,
+                to_binary=to_binary,
+                to_hex=to_hex,
+            )
+
+        aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_json", attr=Serializable.to_json
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="json", attr=Serializable.json)
+        aggressive_set_attr(
+            obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
+        )
+        aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
+        aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
+        aggressive_set_attr(obj=outer_self.ref, name="hex", attr=Serializable.hex)

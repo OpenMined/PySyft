@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib;
+
+import "proto/lib/numpy/tensor.proto";
+//import "proto/lib/torch/tensor.proto";
+
+message GenericTensor {
+    syft.lib.numpy.TensorProto numpy_tensor = 1;
+}

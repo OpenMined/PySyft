@@ -1,0 +1,21 @@
+syntax = "proto3";
+package syft.core.io;
+
+import "proto/core/io/location.proto";
+
+message Address {
+  string name = 1;
+  string obj_type = 2;
+
+  bool has_network = 3;
+  syft.core.io.SpecificLocation network = 4;
+
+  bool has_domain = 5;
+  syft.core.io.SpecificLocation domain = 6;
+
+  bool has_device = 7;
+  syft.core.io.SpecificLocation device = 8;
+
+  bool has_vm = 9;
+  syft.core.io.SpecificLocation vm = 10;
+}

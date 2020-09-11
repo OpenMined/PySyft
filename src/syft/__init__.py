@@ -16,7 +16,7 @@ truly polyglot. Syft "core" functionality includes the following modules:
 
 * :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly
 control.
-* :py:mod:`syft.core.old_message` - APIs for serializing messages sent between Client and Node
+* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Node
 classes.
 * :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Node
 * :py:mod:`syft.core.store` - Server side API for referring to object storage on a node
@@ -24,8 +24,8 @@ classes.
 
 Syft "python" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library common syntax tree using a white\
-list of methods
+* :py:mod:`syft.ast` - code generates external library common syntax tree using an
+allowlist list of methods
 * :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive
 use of kwargs.
 * :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for
@@ -36,20 +36,45 @@ supported Python libs.
     this can create future complications with lower level languages calling
     higher level ones.
 
-To begin your education in Syft, continue to the :py:mod:`syft.core.nodes.vm.vm` module...
+To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
+# stdlib
+from pathlib import Path
+import sys
 
+# third party
+from pkg_resources import DistributionNotFound  # noqa: F401
+from pkg_resources import get_distribution  # noqa: F401
 
+# syft absolute
 # ASTRACT OBJECT IMPORTS
-from syft.core import common
+from syft.core import common  # noqa: F401
 
-# CONVENIENCE FUNCTIONS
-from .decorators import type_hints  # noqa: F401
+# Convenience Methods
+from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
+from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
+from syft.core.node.device.device import Device  # noqa: F401
+from syft.core.node.device.device import DeviceClient  # noqa: F401
+from syft.core.node.domain.domain import Domain  # noqa: F401
+from syft.core.node.domain.domain import DomainClient  # noqa: F401
+from syft.core.node.network.network import Network  # noqa: F401
+from syft.core.node.network.network import NetworkClient  # noqa: F401
 
-from pkg_resources import get_distribution, DistributionNotFound  # noqa: F401
+# Convenience Constructors
+from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
+from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 
+# Convenience Functions
+from syft.decorators import type_hints  # noqa: F401
+from syft.grid.duet.duet import Duet  # noqa: F401
+from syft.grid.ws_duet import WSDuet  # noqa: F401
 
-# PACKAGE IMPORTS
+# Convenience Objects
+from syft.lib import lib_ast  # noqa: F401
+
+# syft relative
+# Package Imports
 from . import lib  # noqa: F401
 
 # VERSIONING
@@ -62,35 +87,10 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
-from syft.core.nodes.vm.vm import VirtualMachine
-from syft.core.nodes.vm.vm import VirtualMachineClient
-from syft.core.nodes.device.device import Device
-from syft.core.nodes.device.device import DeviceClient
-from syft.core.nodes.domain.domain import Domain
-from syft.core.nodes.domain.domain import DomainClient
-from syft.core.nodes.network.network import Network
-from syft.core.nodes.network.network import NetworkClient
+sys.path.append(str(Path(__file__)))
 
-from syft.core.nodes.common.service.repr_service import ReprMessage
-from syft.lib import lib_ast
-
-# def get_client(host="127.0.0.1", port="5000"):
-#     res = requests.get(f"http://{host}:{port}/")
-#     client = pickle.loads(bytes.fromhex(res.text))
-#     return client
 
 # LIBRARY CONFIG
 
-# When you pass in an argument which is of the incorrect type,
-# do you want the long or abbreviated stack trace?
-
-import syft as sy
-
-
-def LONG_TYPECHECK_STACK_TRACES(setting=None):
-    if setting is not None:
-        sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES = setting
-    return sy.decorators.syft_decorator_impl.LONG_TYPECHECK_STACK_TRACES
-
-
-LONG_TYPECHECK_STACK_TRACES(True)
+# do you want verbose logging to help with debugging?
+VERBOSE = True

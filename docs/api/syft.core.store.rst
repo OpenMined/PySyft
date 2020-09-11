@@ -6,21 +6,45 @@ syft.core.store package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   syft.core.store.storeable
-
 Submodules
 ----------
 
-syft.core.store.store module
-----------------------------
+syft.core.store.metastore\_interface module
+-------------------------------------------
 
-.. automodule:: syft.core.store.store
+.. automodule:: syft.core.store.metastore_interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.store.store\_disk module
+----------------------------------
+
+.. automodule:: syft.core.store.store_disk
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.store.store\_interface module
+---------------------------------------
+
+.. automodule:: syft.core.store.store_interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.store.store\_memory module
+------------------------------------
+
+.. automodule:: syft.core.store.store_memory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.store.storeable\_object module
+----------------------------------------
+
+.. automodule:: syft.core.store.storeable_object
    :members:
    :undoc-members:
    :show-inheritance:

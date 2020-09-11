@@ -2,4 +2,4 @@
 Contributors
 ============
 
-* Andrew Trask <andrew@openmined.org>
+* OpenMined Core Contributors <andrew@openmined.org>

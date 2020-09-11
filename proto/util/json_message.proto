@@ -1,0 +1,7 @@
+syntax = "proto3";
+package syft.util;
+
+message JsonMessage {
+  string obj_type = 1;
+  string content = 2;
+}

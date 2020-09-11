@@ -2,23 +2,25 @@
 functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
+# stdlib
+import pickle
+
+# third party
 from flask import Flask
 
-app = Flask(__name__)
+# syft relative
+from ..core.node.network.network import Network
 
-from syft.core.nodes.network.network import Network
-import pickle
+app = Flask(__name__)
 
 network = Network(name="ucsf-net")
 
 
 @app.route("/")
-def get_client():
-
+def get_client() -> str:
     client = network.get_client()
-
     return pickle.dumps(client).hex()
 
 
-def run():
+def run() -> None:
     app.run()
