@@ -36,8 +36,7 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**63-1 is not fun with precision tensors.
-    """
+    """Dealing with integers > 2**63-1 is not fun with precision tensors."""
     return 63
 
 
@@ -57,9 +56,6 @@ class TorchTensor(AbstractTensor):
 
     origin = None
     id_at_origin = None
-
-    def has_child(self):
-        return hasattr(self, "child")
 
     def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
         """
@@ -423,7 +419,7 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-        Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid errors.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
@@ -480,7 +476,7 @@ class TorchTensor(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            if self.has_child() and isinstance(self.child, PointerTensor):
                 self.child.garbage_collect_data = False
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
@@ -617,7 +613,7 @@ class TorchTensor(AbstractTensor):
 
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.mid_get()
@@ -628,7 +624,7 @@ class TorchTensor(AbstractTensor):
 
         TODO: make this kind of message forwarding generic?
         """
-        if not hasattr(self, "child"):
+        if not self.has_child():
             raise InvalidTensorForRemoteGet(self)
 
         self.child.remote_get()
@@ -687,7 +683,7 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        """This function returns will return True if it isn't a PrivateTensor, otherwise it will
         return the result of PrivateTensor's allow method.
 
             Args:
@@ -909,6 +905,11 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if protocol == "falcon":
+            shared_tensor = syft.ReplicatedSharingTensor(
+                self, owners, ring_size=field, owner=self.owner
+            )
+            return shared_tensor
         if self.has_child():
             chain = self.child
 
@@ -936,14 +937,14 @@ class TorchTensor(AbstractTensor):
                     owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
-                .init_shares(*owners)
+                .share_secret(*owners)
             )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
 
         if not no_wrap:
-            shared_tensor = shared_tensor.wrap()
+            shared_tensor = shared_tensor.wrap(type=self.dtype)
 
         return shared_tensor
 

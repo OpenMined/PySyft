@@ -33,6 +33,7 @@ If different compressions are required, the worker can override the function app
 from collections import OrderedDict
 import inspect
 from dataclasses import dataclass
+import hashlib
 
 import syft
 import msgpack as msgpack_lib
@@ -44,10 +45,11 @@ from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
 
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
-from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
+from syft.generic.abstract.syft_serializable import SyftSerializable, get_msgpack_subclasses
 from syft.serde.msgpack.proto import proto_type_info
 
 if dependency_check.torch_available:
@@ -81,7 +83,7 @@ class MetaMsgpackGlobalState(type):
 @dataclass
 class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
     """
-        Global msgpack state. This should become deprecated soon.
+    Global msgpack state. This should become deprecated soon.
     """
 
     _OBJ_SIMPLIFIER_AND_DETAILERS = []
@@ -159,7 +161,11 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
         )
 
         self._OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
-        self._EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+        self._EXCEPTION_SIMPLIFIER_AND_DETAILERS = [
+            GetNotPermittedError,
+            ResponseSignatureError,
+            EmptyCryptoPrimitiveStoreError,
+        ]
 
         self.stale_state = False
 
@@ -512,6 +518,18 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return _detail_field(obj[0], val)
     else:
         return obj
+
+
+def msgpack_code_generator(class_name: str) -> int:
+    """Generates and returns a unique msgpack code.
+    Args:
+    class_name: The name of class for which the msgpack code is required.
+    Returns:
+        An integer to serve as a msgpack serialization code.
+    """
+
+    # the code Msgpack is generated as the hash of class name(first 8 digit of hash being used)
+    return int(hashlib.sha256(class_name.encode("utf-8")).hexdigest(), 16) % (10 ** 8)
 
 
 msgpack_global_state = MsgpackGlobalState()

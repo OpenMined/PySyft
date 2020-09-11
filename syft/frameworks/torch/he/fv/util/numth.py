@@ -4,11 +4,11 @@ from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 
 
 def is_prime(value, num_rounds=40):
-    """Check for the integer if it probably prime.
+    """Check for the integer if it is probably a prime number.
     Not intrested in strictly checking for prime.
 
     Returns:
-        True if it is sufficiently prime no else False.
+        True, if it is probably prime number else False.
     """
     # First check the simplest cases.
     if value < 2:

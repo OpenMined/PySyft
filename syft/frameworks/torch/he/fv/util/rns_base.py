@@ -5,8 +5,7 @@ from syft.frameworks.torch.he.fv.util.operations import invert_mod
 
 
 class RNSBase:
-    """A model class for creating basic blocks required in RNSTools class with
-    pre-computed attributes.
+    """Generate RNSBase object with pre-computed values required in RNSTools class.
 
     Args:
         base: A list of Base values.

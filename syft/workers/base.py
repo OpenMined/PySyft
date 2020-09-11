@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+import asyncio
 import logging
 import time
 from typing import List
@@ -162,11 +163,10 @@ class BaseWorker(AbstractWorker):
             self.framework = hook.framework
             if hasattr(hook, "torch"):
                 self.torch = self.framework
-                self.remote = Remote(self, "torch")
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
-                self.remote = Remote(self, "tensorflow")
 
+        self.remote = Remote(self, sy.framework.ALIAS)
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
@@ -223,8 +223,7 @@ class BaseWorker(AbstractWorker):
         del self._known_workers[worker_id]
 
     def remove_worker_from_local_worker_registry(self):
-        """Removes itself from the registry of hook.local_worker.
-        """
+        """Removes itself from the registry of hook.local_worker."""
         self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
 
     def load_data(self, data: List[Union[FrameworkTensorType, AbstractTensor]]) -> None:
@@ -480,6 +479,16 @@ class BaseWorker(AbstractWorker):
         if delay > max_delay or current_size > max_size:
             self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
             trash[location.id] = (time.time(), [])
+
+    async def async_dispatch(self, workers, commands, return_value=False):
+        """Asynchronously send commands to several workers"""
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command, return_value=return_value)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
 
     def send_command(
         self,
@@ -758,7 +767,7 @@ class BaseWorker(AbstractWorker):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self.object_store.get_obj(idx, None)
+        return self.object_store.get_obj(idx)
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """

@@ -214,5 +214,5 @@ class PointerDataset(ObjectPointer):
 
         Returns:
            Protobuf schema for PointerDataset.
-       """
+        """
         return PointerDatasetPB

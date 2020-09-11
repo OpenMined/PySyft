@@ -2,8 +2,10 @@ from collections import defaultdict
 from typing import List
 
 import numpy as np
+import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.frameworks.torch.mpc.beaver import build_triple
 from syft.workers.abstract import AbstractWorker
 
 
@@ -12,6 +14,8 @@ class PrimitiveStorage:
     Used by normal workers to store crypto primitives
     Used by crypto providers to build crypto primitives
     """
+
+    _known_components = {}
 
     def __init__(self, owner: AbstractWorker):
         """
@@ -26,18 +30,28 @@ class PrimitiveStorage:
         """
         self.fss_eq: list = []
         self.fss_comp: list = []
+        self.mul: dict = defaultdict(list)
+        self.matmul: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
             "fss_eq": self.build_fss_keys(op="eq"),
             "fss_comp": self.build_fss_keys(op="comp"),
+            "mul": self.build_triples(op="mul"),
+            "matmul": self.build_triples(op="matmul"),
         }
 
         self.force_preprocessing = False
+        for name, component in PrimitiveStorage._known_components.items():
+            setattr(self, name, component())
+
+    @staticmethod
+    def register_component(name, cls):
+        PrimitiveStorage._known_components[name] = cls
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return FSS keys primitives
+        Return keys primitives
 
         Args:
             op (str): primitive type, should be fss_eq, fss_comp, mul or matmul
@@ -51,7 +65,38 @@ class PrimitiveStorage:
         """
         primitive_stack = getattr(self, op)
 
-        if op in {"fss_eq", "fss_comp"}:
+        if op in {"mul", "matmul"}:
+            shapes = kwargs.get("shapes")
+            dtype = kwargs.get("dtype")
+            torch_dtype = kwargs.get("torch_dtype")
+            field = kwargs.get("field")
+            config = (shapes, dtype, torch_dtype, field)
+            primitive_stack = primitive_stack[config]
+            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            if available_instances >= n_instances:
+                keys = []
+                for i, prim in enumerate(primitive_stack):
+                    if n_instances == 1:
+                        keys.append(prim[0])
+                        if remove:
+                            primitive_stack[i] = prim[1:]
+                    else:
+                        keys.append(prim[:n_instances])
+                        if remove:
+                            primitive_stack[i] = prim[n_instances:]
+                return keys
+            else:
+                if self._owner.verbose:
+                    print(
+                        f"Autogenerate: "
+                        f'"{op}", '
+                        f"[({str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})], "
+                        f"n_instances={n_instances}"
+                    )
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                )
+        elif op in {"fss_eq", "fss_comp"}:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = []
@@ -106,7 +151,11 @@ class PrimitiveStorage:
                 )
 
     def provide_primitives(
-        self, op: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
+        self,
+        op: str,
+        workers: List[AbstractWorker],
+        n_instances: int = 10,
+        **kwargs,
     ):
         """Build n_instances of crypto primitives of the different crypto_types given and
         send them to some workers.
@@ -145,7 +194,16 @@ class PrimitiveStorage:
             assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
             current_primitives = getattr(self, op)
-            if op in ("fss_eq", "fss_comp"):
+            if op in {"mul", "matmul"}:
+                for params, primitive_triple in primitives:
+                    if params not in current_primitives or len(current_primitives[params]) == 0:
+                        current_primitives[params] = primitive_triple
+                    else:
+                        for i, primitive in enumerate(primitive_triple):
+                            current_primitives[params][i] = th.cat(
+                                (current_primitives[params][i], primitive)
+                            )
+            elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0:
                     setattr(self, op, list(primitives))
                 else:
@@ -172,12 +230,6 @@ class PrimitiveStorage:
         """
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
-        if op == "eq":
-            fss_class = sy.frameworks.torch.mpc.fss.DPF
-        elif op == "comp":
-            fss_class = sy.frameworks.torch.mpc.fss.DIF
-        else:
-            raise ValueError(f"type_op {op} not valid")
 
         n = sy.frameworks.torch.mpc.fss.n
 
@@ -185,9 +237,42 @@ class PrimitiveStorage:
             assert (
                 n_party == 2
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
-            alpha, s_00, s_01, *CW = fss_class.keygen(n_values=n_instances)
+            alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.fss.keygen(n_values=n_instances, op=op)
             # simulate sharing TODO clean this
             mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys
+
+    def build_triples(self, op: str):
+        """
+        The builder to generate beaver triple for multiplication or matrix multiplication
+        """
+
+        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
+            assert n_party == 2, (
+                "Only 2 workers supported for the moment. "
+                "Please fill an issue if you have an urgent need."
+            )
+            shapes = kwargs["shapes"]  # should be a list of pairs of shapes
+            if not isinstance(shapes, list):
+                # if shapes was not given a list, we check that it is a pair of two shapes,
+                # the one of x and y
+                assert len(shapes) == 2
+                shapes = [shapes]
+
+            # get params and set default values
+            dtype = kwargs.get("dtype", "long")
+            torch_dtype = kwargs.get("torch_dtype", th.int64)
+            field = kwargs.get("field", 2 ** 64)
+
+            primitives_worker = [[] for _ in range(n_party)]
+            for shape in shapes:
+                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
+                config = (shape, dtype, torch_dtype, field)
+                for primitives, shares in zip(primitives_worker, shares_worker):
+                    primitives.append((config, shares))
+
+            return primitives_worker
+
+        return build_separate_triples

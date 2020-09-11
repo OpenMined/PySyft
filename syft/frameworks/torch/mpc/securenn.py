@@ -84,12 +84,12 @@ def flip(x, dim, dtype):
     return x.index_select(dim, indices)
 
 
-def _random_common_bit(*workers):
+def _random_common_bit(*workers, dtype):
     """
     Return a bit chosen by a worker and sent to all workers,
     in the form of a MultiPointerTensor
     """
-    pointer = torch.tensor([1]).send(workers[0], **no_wrap).random_(2)
+    pointer = torch.tensor([1], dtype=dtype).send(workers[0], **no_wrap).random_(2)
     pointers = [pointer]
     for worker in workers[1:]:
         pointers.append(pointer.copy().move(worker))
@@ -135,7 +135,7 @@ def _shares_of_zero(size, field, dtype, crypto_provider, *workers):
 
 
 def select_share(alpha_sh, x_sh, y_sh):
-    """ Performs select share protocol
+    """Performs select share protocol
     If the bit alpha_sh is 0, x_sh is returned
     If the bit alpha_sh is 1, y_sh is returned
 
@@ -282,6 +282,7 @@ def msb(a_sh):
     crypto_provider = a_sh.crypto_provider
     L = a_sh.field + 1  # field of a is L - 1
     dtype = get_dtype(L)
+    torch_dtype = get_torch_dtype(L)
     input_shape = a_sh.shape
     a_sh = a_sh.reshape(-1)
 
@@ -290,8 +291,8 @@ def msb(a_sh):
     # https://eprint.iacr.org/2018/442.pdf
 
     # Common Randomness
-    beta = _random_common_bit(*workers)
     u = _shares_of_zero(1, L, dtype, crypto_provider, *workers)
+    beta = _random_common_bit(*workers, dtype=torch_dtype)
 
     # 1)
     x = torch.tensor(a_sh.shape).random_(get_max_val_field(L - 1))
@@ -323,7 +324,10 @@ def msb(a_sh):
 
     # 7)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)], dtype=torch_dtype).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     gamma = beta_prime_sh + (j * beta) - (2 * beta * beta_prime_sh)
 
@@ -495,6 +499,7 @@ def relu_deriv(a_sh):
     crypto_provider = a_sh.crypto_provider
     L = a_sh.field
     dtype = get_dtype(L)
+    torch_dtype = get_torch_dtype(L)
     # Common randomness
     u = _shares_of_zero(1, L, dtype, crypto_provider, *workers)
 
@@ -509,7 +514,10 @@ def relu_deriv(a_sh):
 
     # 4)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)], dtype=torch_dtype).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     gamma_sh = j - alpha_sh + u
     return gamma_sh
@@ -543,7 +551,7 @@ def relu(a_sh):
 # In division, bit_len_max is set to Q_BITS // 2 to avoid overflow problems (multiplying by
 # 2**64 would almost always lead to overflow).
 def division(x_sh, y_sh, bit_len_max=None):
-    """ Performs division of encrypted numbers
+    """Performs division of encrypted numbers
 
     Args:
         x_sh, y_sh (AdditiveSharingTensor): the private tensors on which the op applies
@@ -601,7 +609,7 @@ def division(x_sh, y_sh, bit_len_max=None):
 
 
 def maxpool(x_sh):
-    """ Compute MaxPool: returns fresh shares of the max value in the input tensor
+    """Compute MaxPool: returns fresh shares of the max value in the input tensor
     and the index of this value in the flattened tensor
 
     Args:
@@ -656,7 +664,7 @@ def maxpool(x_sh):
 
 
 def maxpool_deriv(x_sh):
-    """ Compute derivative of MaxPool
+    """Compute derivative of MaxPool
 
     Args:
         x_sh (AdditiveSharingTensor): the private tensor on which the op applies
@@ -758,7 +766,10 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
                         a_sh[
-                            batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1],
+                            batch,
+                            channel,
+                            r_in : r_in + kernel[0],
+                            c_in : c_in + kernel[1],
                         ].child
                     )
                     res.append(m.wrap())

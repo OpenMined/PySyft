@@ -65,10 +65,16 @@ from syft.workers.virtual import VirtualWorker  # noqa: E402,F401
 from syft.workers.websocket_client import WebsocketClientWorker  # noqa: E402,F401
 from syft.workers.websocket_server import WebsocketServerWorker  # noqa: E402,F401
 
+# Register PRZS such that all workers have the allowed commands from the przs file
+import syft.frameworks.torch.mpc.przs  # noqa: E402,F401
+
 # Import Syft's Public Tensor Types
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor  # noqa: E402,F401
 from syft.frameworks.torch.tensors.interpreters.additive_shared import (  # noqa: E402,F401
     AdditiveSharingTensor,
+)
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import (  # noqa: E402,F401
+    ReplicatedSharingTensor,
 )
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor  # noqa: E402,F401
 from syft.frameworks.torch.tensors.interpreters.precision import (  # noqa: E402,F401
@@ -118,6 +124,7 @@ __all__.extend(
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
+        "ReplicatedSharingTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
         "PointerTensor",
