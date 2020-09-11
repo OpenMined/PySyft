@@ -330,7 +330,10 @@ allowlist["torch.Tensor.is_cuda"] = "syft.lib.python.bool.Bool"
 # allowlist['torch.Tensor.is_distributed'] = #
 # allowlist["torch.Tensor.is_floating_point"] = "syft.lib.python.bool.Bool"
 allowlist["torch.Tensor.is_leaf"] = "syft.lib.python.bool.Bool"
-allowlist["torch.Tensor.is_meta"] = "syft.lib.python.bool.Bool"
+allowlist["torch.Tensor.is_meta"] = {
+    "return_type": "syft.lib.python.bool.Bool",
+    "min_version": "1.6.0",
+}
 allowlist["torch.Tensor.is_mkldnn"] = "syft.lib.python.bool.Bool"
 # allowlist['torch.Tensor.is_nonzero'] = #
 # allowlist['torch.Tensor.is_pinned'] = #
