@@ -667,7 +667,7 @@ class TorchTensor(AbstractTensor):
                 return tensor
 
         if inplace:
-            self.set_(tensor)
+            self.set_(tensor.native_type(self.dtype))
             if hasattr(tensor, "child"):
                 self.child = tensor.child
             else:
@@ -990,15 +990,26 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, protocol="mpc", **kwargs):
+    def encrypt(self, protocol="mpc", inplace=False, **kwargs):
         """
         This method will encrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
+            protocol (str): Currently supports the following crypto protocols:
+                - 'snn' for SecureNN
+                - 'fss' for Function Secret Sharing (see AriaNN paper)
+                - 'mpc' (Multi Party Computation) defaults to most standard protocol,
+                    currently 'snn'
+                - 'paillier' for Paillier Homomorphic Encryption
+
+            inplace (bool): compute the operation inplace (default is False)
+
             **kwargs:
+                With respect to Fixed Precision accepts:
+                    precision_fractional (int)
+                    dtype (str)
+
                 With Respect to MPC accepts:
                     workers (list): Parties involved in the sharing of the Tensor
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
@@ -1019,22 +1030,33 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if protocol.lower() == "mpc":
+        protocol = protocol.lower()
+
+        if protocol in {"mpc", "snn", "fss"}:
+            if protocol == "mpc":
+                protocol = "snn"
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
             requires_grad = kwargs.pop("requires_grad", False)
             no_wrap = kwargs.pop("no_wrap", False)
+            dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
-
-            x_shared = self.fix_prec(**kwargs_fix_prec).share(
-                *workers,
+            kwargs_share = dict(
                 crypto_provider=crypto_provider,
                 requires_grad=requires_grad,
                 no_wrap=no_wrap,
+                protocol=protocol,
+                dtype=dtype,
             )
-            return x_shared
 
-        elif protocol.lower() == "paillier":
+            if not inplace:
+                x_shared = self.fix_prec(**kwargs_fix_prec).share(*workers, **kwargs_share)
+                return x_shared
+            else:
+                self.fix_prec_(**kwargs_fix_prec).share_(*workers, **kwargs_share)
+                return self
+
+        elif protocol == "paillier":
             public_key = kwargs.get("public_key")
 
             x = self.copy()
@@ -1046,15 +1068,16 @@ class TorchTensor(AbstractTensor):
         else:
             raise NotImplementedError(
                 "Currently the .encrypt() method only supports Paillier Homomorphic "
-                "Encryption and Secure Multi-Party Computation"
+                f"Encryption and Secure Multi-Party Computation, but {protocol} was given"
             )
 
-    def decrypt(self, **kwargs):
+    def decrypt(self, inplace=False, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
+            inplace (bool): compute the operation inplace (default is False)
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1075,9 +1098,13 @@ class TorchTensor(AbstractTensor):
             warnings.warn("protocol should no longer be used in decrypt")
 
         if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
-            x_encrypted = self.copy()
-            x_decrypted = x_encrypted.get().float_prec()
-            return x_decrypted
+            if not inplace:
+                x_encrypted = self.copy()
+                x_decrypted = x_encrypted.get().float_prec()
+                return x_decrypted
+            else:
+                self.get_().float_prec_()
+                return self
 
         elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace

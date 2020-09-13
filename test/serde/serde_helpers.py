@@ -537,6 +537,7 @@ def make_additivesharingtensor(**kwargs):
         )
         assert detailed.id == original.id
         assert detailed.field == original.field
+        assert detailed.protocol == original.protocol
         assert detailed.child.keys() == original.child.keys()
         return True
 
@@ -552,6 +553,7 @@ def make_additivesharingtensor(**kwargs):
                     (CODE[str], (str(ast.field).encode("utf-8"),))
                     if ast.field == 2 ** 64
                     else ast.field,  # (int or str) field
+                    (CODE[str], (str(ast.protocol).encode("utf-8"),)),  # (str) protocol
                     ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(

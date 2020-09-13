@@ -667,9 +667,9 @@ class TorchHook(FrameworkHook):
 
         def module_move_(nn_self, destination):
 
-            params = list(nn_self.parameters())
-            for p in params:
-                p.move_(destination)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.move_(destination)
 
         self.torch.nn.Module.move = module_move_
 
@@ -706,6 +706,34 @@ class TorchHook(FrameworkHook):
 
         self.torch.nn.Module.get_ = module_get_
         self.torch.nn.Module.get = module_get_
+
+        def module_encrypt_(nn_self, **kwargs):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.encrypt(inplace=True, **kwargs)
+
+            return nn_self
+
+        self.torch.nn.Module.encrypt_ = module_encrypt_
+        self.torch.nn.Module.encrypt = module_encrypt_
+
+        def module_decrypt_(nn_self):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.decrypt(inplace=True)
+
+            return nn_self
+
+        self.torch.nn.Module.decrypt_ = module_decrypt_
+        self.torch.nn.Module.decrypt = module_decrypt_
 
         def module_share_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""
