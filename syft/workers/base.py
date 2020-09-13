@@ -186,9 +186,6 @@ class BaseWorker(AbstractWorker):
         """
         return self.object_store.get_obj(obj_id)
 
-    def register_obj(self, obj):
-        self.object_store.register_obj(self, obj)
-
     def clear_objects(self, return_self: bool = True):
         """Removes all objects from the object storage.
 
