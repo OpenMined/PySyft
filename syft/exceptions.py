@@ -98,7 +98,7 @@ class TensorsNotCollocatedException(Exception):
         if isinstance(tensor_a, sy.PointerTensor) and isinstance(tensor_b, sy.PointerTensor):
             message = (
                 f"You tried to call {attr} involving two tensors which are not on the same machine!"
-                " One tensor is on {tensor_a.location} while the other is on {tensor_b.location}."
+                f" One tensor is on {tensor_a.location} while the other is on {tensor_b.location}."
                 " Use a combination of .move(), .get(), and/or .send()"
                 " to co-locate them to the same machine."
             )
@@ -106,17 +106,17 @@ class TensorsNotCollocatedException(Exception):
             message = (
                 f"You tried to call {attr} involving two tensors where one tensor is actually"
                 " located on another machine (is a PointerTensor). Call .get() on a"
-                " the PointerTensor or .send({tensor_b.location.id}) on the other tensor.\n"
-                "Tensor A: {tensor_a}\n"
-                "Tensor B: {tensor_b}"
+                f" the PointerTensor or .send({tensor_b.location.id}) on the other tensor.\n"
+                f"Tensor A: {tensor_a}\n"
+                f"Tensor B: {tensor_b}"
             )
         elif isinstance(tensor_b, sy.PointerTensor):
             message = (
                 f"You tried to call {attr} involving two tensors where one tensor is actually"
                 " located on another machine (is a PointerTensor). Call .get() on a"
-                " the PointerTensor or .send({tensor_a.location.id}) on the other tensor.\n"
-                "Tensor A: {tensor_a}\n"
-                "Tensor B: {tensor_b}"
+                f" the PointerTensor or .send({tensor_a.location.id}) on the other tensor.\n"
+                f"Tensor A: {tensor_a}\n"
+                f"Tensor B: {tensor_b}"
             )
         else:
             message = (
