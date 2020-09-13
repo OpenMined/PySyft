@@ -25,17 +25,17 @@ class PrimitiveFactory(ABC):
         from .none import SyNone
         from .string import String
 
-        if type(value) is int:
-            return Int(value=value, id=id)
-
-        if type(value) is float:
-            return Float(value=value, id=id)
-
-        if type(value) is bool:
+        if isinstance(value, bool):
             return Bool(value=value, id=id)
 
-        if type(value) is complex:
-            return Complex(value=value, id=id)
+        if isinstance(value, int):
+            return Int(value=value, id=id)
+
+        if isinstance(value, float):
+            return Float(value=value, id=id)
+
+        if isinstance(value, complex):
+            return Complex(real=value.real, imag=value.imag, id=id)
 
         if type(value) is complex:
             return String(value=value, id=id)
