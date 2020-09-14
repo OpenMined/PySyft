@@ -1,5 +1,7 @@
 # stdlib
+from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -42,8 +44,8 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         address: Address,
         target_peer: Address,
         host_peer: Address,
+        reply_to: Address,
         msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.target_peer = target_peer
@@ -125,8 +127,8 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         address: Address,
         target_peer: Address,
         host_peer: Address,
+        reply_to: Address,
         msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.target_peer = target_peer
@@ -407,7 +409,9 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SignalingRequestsNotFound_PB) -> "SignalingAnswerMessage":
+    def _proto2object(
+        proto: SignalingRequestsNotFound_PB,
+    ) -> "SignalingRequestsNotFound":
         """Creates a SignalingAnswerMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -455,13 +459,10 @@ class PushSignalingService(ImmediateNodeServiceWithoutReply):
         msg: Union[SignalingOfferMessage, SignalingAnswerMessage],
         verify_key: VerifyKey,
     ) -> None:
-        print("[PUSH] Salvando mensagem [ ", type(msg), "]")
-        print("host_peer: ", msg.host_peer)
-        print("target_peer: ", msg.target_peer)
-        node.signaling_msgs[msg.id] = msg
+        node.in_memory_client_registry[msg.id] = msg
 
     @staticmethod
-    def message_handler_types() -> Union[SignalingOfferMessage, SignalingAnswerMessage]:
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
         return [SignalingOfferMessage, SignalingAnswerMessage]
 
 
@@ -475,10 +476,6 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
     ) -> Union[
         SignalingOfferMessage, SignalingAnswerMessage, SignalingRequestsNotFound
     ]:
-        print("[Pull] Resgatando mensagem [ ", type(msg), "]")
-        print("host_peer: ", msg.host_peer.name)
-        print("target_peer: ", msg.target_peer.name)
-        
         _pull_push_mapping = {
             OfferPullRequestMessage: SignalingOfferMessage,
             AnswerPullRequestMessage: SignalingAnswerMessage,
@@ -489,19 +486,19 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
             and push_msg.host_peer.name == msg.target_peer.name
             and isinstance(push_msg, _pull_push_mapping[type(msg)])
         )
-        
-        results = list(filter(sig_requests_for_me, node.signaling_msgs.values()))
-        
+
+        results = list(
+            filter(sig_requests_for_me, node.in_memory_client_registry.values())
+        )
+
         if results:
             msg = results.pop(0)  # FIFO
-            return node.signaling_msgs.pop(
+            return node.in_memory_client_registry.pop(
                 msg.id
             )  # Retrieve and remove it from storage
         else:
             return SignalingRequestsNotFound(address=msg.reply_to)
 
     @staticmethod
-    def message_handler_types() -> Union[
-        OfferPullRequestMessage, AnswerPullRequestMessage
-    ]:
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [OfferPullRequestMessage, AnswerPullRequestMessage]

@@ -14,7 +14,7 @@ from syft.grid.services.signaling_service import SignalingOfferMessage
 from syft.grid.services.signaling_service import SignalingRequestsNotFound
 
 
-def get_preset_nodes() -> Tuple[Node]:
+def get_preset_nodes() -> Tuple[Node, Node, Node]:
     om_network = sy.Network(name="OpenMined")
     om_network.immediate_services_without_reply.append(PushSignalingService)
     om_network.immediate_services_with_reply.append(PullSignalingService)
@@ -121,7 +121,7 @@ def test_push_offer_signaling_service() -> None:
     )
     om_network_client.send_immediate_msg_without_reply(msg=offer_msg)
 
-    assert om_network.signaling_msgs.pop(offer_msg.id) == offer_msg
+    assert om_network.in_memory_client_registry.pop(offer_msg.id) == offer_msg
 
 
 def test_push_answer_signaling_service() -> None:
@@ -137,7 +137,7 @@ def test_push_answer_signaling_service() -> None:
     )
     om_network_client.send_immediate_msg_without_reply(msg=ans_msg)
 
-    assert om_network.signaling_msgs.pop(ans_msg.id) == ans_msg
+    assert om_network.in_memory_client_registry.pop(ans_msg.id) == ans_msg
 
 
 def test_pull_offer_signaling_service() -> None:
@@ -153,7 +153,7 @@ def test_pull_offer_signaling_service() -> None:
     )
     om_network_client.send_immediate_msg_without_reply(msg=offer_msg)
 
-    assert om_network.signaling_msgs.get(offer_msg.id) == offer_msg
+    assert om_network.in_memory_client_registry.get(offer_msg.id) == offer_msg
 
     offer_pull_req = OfferPullRequestMessage(
         address=om_network.address,
@@ -165,7 +165,6 @@ def test_pull_offer_signaling_service() -> None:
     response = om_network_client.send_immediate_msg_with_reply(msg=offer_pull_req)
 
     assert response == offer_msg
-    assert len(om_network.signaling_msgs) == 0
 
 
 def test_pull_answer_signaling_service() -> None:
@@ -181,7 +180,7 @@ def test_pull_answer_signaling_service() -> None:
     )
     om_network_client.send_immediate_msg_without_reply(msg=answer_msg)
 
-    assert om_network.signaling_msgs.get(answer_msg.id) == answer_msg
+    assert om_network.in_memory_client_registry.get(answer_msg.id) == answer_msg
 
     ans_pull_req = AnswerPullRequestMessage(
         address=om_network.address,
@@ -193,7 +192,6 @@ def test_pull_answer_signaling_service() -> None:
     response = om_network_client.send_immediate_msg_with_reply(msg=ans_pull_req)
 
     assert response == answer_msg
-    assert len(om_network.signaling_msgs) == 0
 
 
 def test_not_found_pull_offer_requests_signaling_service() -> None:
