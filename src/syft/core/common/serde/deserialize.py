@@ -81,8 +81,7 @@ def _deserialize(
         obj_type = type(blob).schema2type  # type: ignore
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
-    except KeyError:
-
+    except AttributeError:
         raise TypeError(
             """You tried to deserialize an unsupported type. This can be caused by
             several reasons. Either you are actively writing Syft code and forgot
