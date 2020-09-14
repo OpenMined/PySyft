@@ -12,7 +12,7 @@ from syft.core.common.serde.serializable import Serializable
 from syft.core.io.connection import ClientConnection
 
 
-class HTTPClient(ClientConnection):
+class HTTPConnection(ClientConnection):
     def __init__(self, url: str) -> None:
         self.base_url = url
 
