@@ -222,7 +222,7 @@ run the following command.
     git clone https://github.com/OpenMined/PySyft.git
     cd PySyft
     ls
-    
+
 You should now see the current folder directory of PySyft, matching what you see
 at https://github.com/OpenMined/PySyft. Something like the following:
 
@@ -232,7 +232,7 @@ at https://github.com/OpenMined/PySyft. Something like the following:
     AUTHORS.rst      LICENSE.txt      __pycache__      examples         scripts          src
     CHANGELOG.rst    README.md        build            proto            setup.cfg        tests
     CONTRIBUTING.md  __init__.py      docs             requirements.txt setup.py         untitled.md
-    
+
 Step 2 - Check Python Version
 -----------------------------
 
@@ -317,7 +317,7 @@ which if you simply copy pasted the line above, the environment name was "my_syf
 
     You will need to activate this my_syft_env environment whenever you want to use syft,
     unless of course you install syft in another environment.
-    
+
 Step 4 - Install Dependencies
 -----------------------------
 
@@ -344,7 +344,7 @@ it by installing the latest version.
 .. code:: console
 
     pip install torch -U
-    
+
 Step 5 - Install PySyft
 -----------------------
 
@@ -362,7 +362,7 @@ If you don't want this fanciness you can also run the good ole fashioned setup.p
 .. code:: python
 
     python setup.py install
-    
+
 Step 6 - Run Light Tests
 ------------------------
 
