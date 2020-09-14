@@ -5,6 +5,8 @@ import torch as th
 import syft as sy
 from syft.core.node.common.service.obj_search_permission_service import (
     ImmediateObjectSearchPermissionUpdateService,
+)
+from syft.core.node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 
@@ -49,7 +51,10 @@ def test_object_search_permissons_update_execute_add() -> None:
         node=bob_phone, msg=msg, verify_key=bob_phone.verify_key
     )
 
-    assert bob_phone.store[ptr.id_at_location].search_permissions[bob_phone.verify_key] == msg.id
+    assert (
+        bob_phone.store[ptr.id_at_location].search_permissions[bob_phone.verify_key]
+        == msg.id
+    )
 
 
 def test_object_search_permissons_update_execute_remove() -> None:
@@ -71,4 +76,7 @@ def test_object_search_permissons_update_execute_remove() -> None:
         node=bob_phone, msg=msg, verify_key=bob_phone.verify_key
     )
 
-    assert bob_phone.verify_key not in bob_phone.store[ptr.id_at_location].search_permissions
+    assert (
+        bob_phone.verify_key
+        not in bob_phone.store[ptr.id_at_location].search_permissions
+    )

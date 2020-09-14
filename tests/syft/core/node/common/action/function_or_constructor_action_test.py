@@ -17,8 +17,11 @@ def test_run_function_or_constructor_action_serde() -> None:
     alice_client = alice.get_client()
 
     path = "torch.Tensor.add"
-    args = (th.tensor([1, 2, 3]).send(alice_client), th.tensor([4, 5, 5]).send(alice_client))
-    kwargs = {}
+    args = (
+        th.tensor([1, 2, 3]).send(alice_client),
+        th.tensor([4, 5, 5]).send(alice_client),
+    )
+    kwargs = {}  # type: ignore
     id_at_location = UID()
     msg_id = UID()
 
