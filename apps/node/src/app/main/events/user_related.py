@@ -118,7 +118,7 @@ def get_all_users_socket(current_user: User, message: dict) -> str:
 @token_required
 def get_specific_user_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         private_key = message.get("private-key")
         if private_key is None:
             raise MissingRequestKeyError
@@ -139,7 +139,7 @@ def get_specific_user_socket(current_user: User, message: dict) -> str:
 @token_required
 def change_user_email_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         email = message.get("email")
         private_key = message.get("private-key")
 
@@ -161,7 +161,7 @@ def change_user_email_socket(current_user: User, message: dict) -> str:
 @token_required
 def change_user_role_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         role = message.get("role")
         private_key = message.get("private-key")
 
@@ -183,7 +183,7 @@ def change_user_role_socket(current_user: User, message: dict) -> str:
 @token_required
 def change_user_password_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         password = message.get("password")
         private_key = message.get("private-key")
 
@@ -206,7 +206,7 @@ def change_user_password_socket(current_user: User, message: dict) -> str:
 @token_required
 def change_user_groups_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         groups = message.get("groups")
         private_key = message.get("private-key")
 
@@ -228,7 +228,7 @@ def change_user_groups_socket(current_user: User, message: dict) -> str:
 @token_required
 def delete_user_socket(current_user: User, message: dict) -> str:
     def route_logic(current_user: User, message: dict) -> dict:
-        user_id = message.get("user-id")
+        user_id = message.get("id")
         private_key = message.get("private-key")
 
         if private_key is None:

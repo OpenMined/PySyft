@@ -38,6 +38,8 @@ def token_required_factory(get_token, format_result):
             try:
                 data = jwt.decode(token, app.config["SECRET_KEY"], algorithms="HS256")
                 current_user = User.query.get(data["id"])
+                if current_user is None:
+                    raise UserNotFoundError
             except Exception as e:
                 status_code = 403  # Unauthorized
                 response_body[RESPONSE_MSG.ERROR] = str(InvalidCredentialsError())

@@ -46,6 +46,14 @@ class USER_EVENTS(object):
     LOGIN_USER = "login-user"
 
 
+class ROLE_EVENTS(object):
+    CREATE_ROLE = "create-role"
+    GET_ROLE = "get-role"
+    GET_ALL_ROLES = "get-all-roles"
+    PUT_ROLE = "put-role"
+    DELETE_ROLE = "delete-role"
+
+
 class CYCLE(object):
     STATUS = "status"
     KEY = "request_key"
