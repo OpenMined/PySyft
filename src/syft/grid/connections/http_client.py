@@ -13,8 +13,8 @@ from syft.core.io.connection import ClientConnection
 
 
 class HTTPClient(ClientConnection):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, url: str) -> None:
+        self.base_url = url
 
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -39,6 +39,5 @@ class HTTPClient(ClientConnection):
         r = requests.post(url=self.base_url, json=json_msg)
         return r
 
-    def _get_metadata(self, url: str) -> str:
-        self.base_url = url
-        return requests.get(url + "/metadata").text
+    def _get_metadata(self) -> str:
+        return requests.get(self.base_url + "/metadata").text

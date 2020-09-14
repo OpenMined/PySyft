@@ -41,10 +41,10 @@ from nacl.signing import SigningKey
 # syft relative
 from ..core.io.address import Address
 from ..core.io.route import SoloRoute
+from ..core.node.common.client import Client
 from ..core.node.domain.client import DomainClient
 from ..core.node.domain.domain import Domain
 from ..decorators.syft_decorator_impl import syft_decorator
-from .clients.network_client import GridNetworkClient
 
 # PySyft internal source code
 from .connections.webrtc import WebRTCConnection
@@ -59,7 +59,7 @@ class Duet(DomainClient):
         self,
         node: Domain,
         address: Address,
-        network_client: GridNetworkClient,
+        signaling_client: Client,
         offer: bool = True,
     ):
         # Generate a signing key
@@ -92,7 +92,7 @@ class Duet(DomainClient):
         # Client used to exchange signaling messages in order to establish a connection
         # NOTE: In the future it may be a good idea to modularize this client to make
         # it pluggable using different connection protocols.
-        self.network_client = network_client
+        self.signaling_client = signaling_client
 
         # If this peer will not start the signaling process
         if not offer:
@@ -101,10 +101,10 @@ class Duet(DomainClient):
             # This will trigger the pull async task to be check signaling notifications
             self._pull_msg_queue.put_nowait(
                 OfferPullRequestMessage(
-                    address=self.network_client.address,
+                    address=self.signaling_client.address,
                     target_peer=address,
                     host_peer=self.node.address,
-                    reply_to=self.network_client.address,
+                    reply_to=self.signaling_client.address,
                 )
             )
         else:
@@ -187,7 +187,7 @@ class Duet(DomainClient):
 
                 # If self.push_msg_queue.get() returned a message (SignalingOfferMessage,SignalingAnswerMessage)
                 # send it to the signaling server.
-                self.network_client.send_immediate_msg_without_reply(msg=msg)
+                self.signaling_client.send_immediate_msg_without_reply(msg=msg)
         except Exception as e:
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
@@ -205,7 +205,7 @@ class Duet(DomainClient):
 
                 # If self.push_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)
                 # send it to the signaling server.
-                _response = self.network_client.send_immediate_msg_with_reply(msg=msg)
+                _response = self.signaling_client.send_immediate_msg_with_reply(msg=msg)
 
                 task = None
                 # If Signaling Offer Message was found
@@ -245,7 +245,7 @@ class Duet(DomainClient):
 
         # Creates a PySyft's SignalingOfferMessage
         signaling_offer = SignalingOfferMessage(
-            address=self.network_client.address,  # Target's address
+            address=self.signaling_client.address,  # Target's address
             payload=payload,  # Offer Payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
             target_peer=address,
@@ -258,10 +258,10 @@ class Duet(DomainClient):
         # Create/enqueue a new AnswerPullRequest in order to wait for signaling response.
         self._pull_msg_queue.put_nowait(
             AnswerPullRequestMessage(
-                address=self.network_client.address,
+                address=self.signaling_client.address,
                 target_peer=address,
                 host_peer=self.node.address,
-                reply_to=self.network_client.address,
+                reply_to=self.signaling_client.address,
             )
         )
 
@@ -280,7 +280,7 @@ class Duet(DomainClient):
 
         # Create a new SignalingAnswerMessage
         signaling_answer = SignalingAnswerMessage(
-            address=self.network_client.address,
+            address=self.signaling_client.address,
             payload=payload,  # Signaling answer payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
             target_peer=msg.host_peer,  # Remote Node Address

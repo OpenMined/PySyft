@@ -48,5 +48,8 @@ def process_network_msgs() -> str:
 
 def run() -> None:
     global network
-    print("Network sign key: ", network.signing_key.encode(encoder=HexEncoder))
+    print("====================================")
+    print("========== NODE ROOT KEY ===========")
+    print("====================================")
+    print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
     app.run()
