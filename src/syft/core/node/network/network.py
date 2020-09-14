@@ -50,6 +50,8 @@ class Network(Node):
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
+        
+        self.signaling_msgs = dict()  # type: ignore
 
         self._register_services()
         self.post_init()
