@@ -1,4 +1,5 @@
 class MSG_FIELD:
+    REQUEST_ID = "request_id"
     TYPE = "type"
     DATA = "data"
     WORKER_ID = "worker_id"

@@ -1,6 +1,6 @@
 import binascii
 import json
-from uuid import UUID
+from uuid import uuid4
 
 import aiounittest
 import pytest
@@ -161,7 +161,9 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         """ 2 - Authentication Request """
 
         # "model-centric/authenticate" request body
+        request_id = str(uuid4())
         auth_msg = {
+            "request_id": request_id,
             "type": "model-centric/authenticate",
             "data": {"model_name": "my-federated-model", "model_version": "0.1.0"},
         }
@@ -172,6 +174,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
             response["data"]["error"],
             "Authentication is required, please pass an 'auth_token'.",
         )
+        self.assertEqual(response["request_id"], request_id)
         worker_id = response["data"].get("worker_id", None)
         self.assertIsNone(worker_id)
 
@@ -181,6 +184,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         self.assertEqual(
             response["data"]["error"], "The 'auth_token' you sent is invalid."
         )
+        self.assertEqual(response["request_id"], request_id)
         worker_id = response["data"].get("worker_id", None)
         self.assertIsNone(worker_id)
 
@@ -190,6 +194,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         ] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.yYhP2xosmpuyV5aoT8mz7GFESzq3hKSy-CRWC-vYOIU"
         response = await send_ws_message(auth_msg)
         self.assertEqual(response["data"]["status"], "success")
+        self.assertEqual(response["request_id"], request_id)
         worker_id = response["data"].get("worker_id", None)
         self.assertIsNotNone(worker_id)
 
@@ -199,6 +204,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         ] = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.e30.jOleZNk89aGMWhWVpV8UYul94y7rxBJAg4HnhY72y-DrLfxfhnR8b31FOMUcngxcw-N4MaSz5fulYFSTBt9NwIWWDUeAo0MqNMK-M6RRoxYd35k8SHNTIRAk0KnybKHMnTC4Qay3plXcu3FfMpOkX8Relpb8SUO3T1_B6RFqgNPO_l4KlmtXnxXgeFC86qF8b7fFCo8U1UKVUEbqw4JUCW5OmDnSmGxmb9felzASzuM5sO5MOkksuQ0DGVoi6AadhXQ5zB7k2Mj4fjJH7XyauHeuB2xjNM0jhoeR_DAoztvVEW5qx9fu2JfOiM6ZsBguCL7uKg1h1bQq278btHROpA"
         response = await send_ws_message(auth_msg)
         self.assertEqual(response["data"]["status"], "success")
+        self.assertEqual(response["request_id"], request_id)
         worker_id = response["data"].get("worker_id", None)
         self.assertIsNotNone(worker_id)
 
@@ -213,11 +219,17 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
             "upload": 23.7,
         }
 
-        message = {"type": "model-centric/cycle-request", "data": req_cycle_msg}
+        request_id = str(uuid4())
+        message = {
+            "type": "model-centric/cycle-request",
+            "request_id": request_id,
+            "data": req_cycle_msg,
+        }
 
         # Send worker authentication message
         response = await send_ws_message(message)
         self.assertEqual(response["data"]["status"], "accepted")
+        self.assertEqual(response["request_id"], request_id)
 
         response_fields = [
             "request_key",
@@ -269,9 +281,10 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         # Send host_training message
         await send_ws_message(host_training_message)
-
+        request_id = str(uuid4())
         auth_msg = {
             "type": "model-centric/authenticate",
+            "request_id": request_id,
             "data": {"model_name": "my-federated-model-2", "model_version": "0.1.0"},
         }
 
@@ -281,11 +294,14 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         requires_speed_test = response["data"].get("requires_speed_test")
 
         self.assertIsNotNone(worker_id)
+        self.assertEqual(response["request_id"], request_id)
         self.assertTrue(requires_speed_test)
 
         # Speed must be required in cycle-request
+        request_id = str(uuid4())
         cycle_req = {
             "type": "model-centric/cycle-request",
+            "request_id": request_id,
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-2",
@@ -294,11 +310,14 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         }
         response = await send_ws_message(cycle_req)
         self.assertIsNotNone(response["data"].get("error"))
+        self.assertEqual(response["request_id"], request_id)
         self.assertEqual(response["data"].get("status"), "rejected")
 
         # Should accept into cycle if all speed fields are sent
+        request_id = str(uuid4())
         cycle_req = {
             "type": "model-centric/cycle-request",
+            "request_id": request_id,
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-2",
@@ -310,6 +329,7 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         }
         response = await send_ws_message(cycle_req)
         self.assertIsNone(response["data"].get("error"))
+        self.assertEqual(response["request_id"], request_id)
         self.assertEqual(response["data"].get("status"), "accepted")
 
     async def test_requires_speed_test_false(self):
@@ -347,23 +367,26 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         # Send host_training message
         await send_ws_message(host_training_message)
-
+        request_id = str(uuid4())
         auth_msg = {
             "type": "model-centric/authenticate",
+            "request_id": request_id,
             "data": {"model_name": "my-federated-model-3", "model_version": "0.1.0"},
         }
 
         response = await send_ws_message(auth_msg)
-
         worker_id = response["data"].get("worker_id", None)
         requires_speed_test = response["data"].get("requires_speed_test")
 
         self.assertIsNotNone(worker_id)
         self.assertFalse(requires_speed_test)
+        self.assertEqual(response["request_id"], request_id)
 
         # Speed is not required in cycle-request
+        request_id = str(uuid4())
         cycle_req = {
             "type": "model-centric/cycle-request",
+            "request_id": request_id,
             "data": {
                 "worker_id": worker_id,
                 "model": "my-federated-model-3",
@@ -372,4 +395,5 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         }
         response = await send_ws_message(cycle_req)
         self.assertIsNone(response["data"].get("error"))
+        self.assertEqual(response["request_id"], request_id)
         self.assertEqual(response["data"].get("status"), "accepted")

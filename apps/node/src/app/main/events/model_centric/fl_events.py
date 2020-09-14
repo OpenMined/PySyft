@@ -138,6 +138,7 @@ def authenticate(message: dict, socket=None) -> str:
         response : String response to the client
     """
     data = message.get("data")
+    request_id = message.get("request_id")
     response = {}
 
     try:
@@ -161,6 +162,7 @@ def authenticate(message: dict, socket=None) -> str:
 
     response = {
         MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.AUTHENTICATE,
+        MSG_FIELD.REQUEST_ID: request_id,
         MSG_FIELD.DATA: response,
     }
     return json.dumps(response)
@@ -177,6 +179,7 @@ def cycle_request(message: dict, socket=None) -> str:
         response : String response to the client
     """
     data = message[MSG_FIELD.DATA]
+    request_id = message[MSG_FIELD.REQUEST_ID]
     response = {}
 
     try:
@@ -229,6 +232,7 @@ def cycle_request(message: dict, socket=None) -> str:
 
     response = {
         MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.CYCLE_REQUEST,
+        MSG_FIELD.REQUEST_ID: request_id,
         MSG_FIELD.DATA: response,
     }
     return json.dumps(response)
@@ -246,6 +250,7 @@ def report(message: dict, socket=None) -> str:
         response : String response to the client
     """
     data = message[MSG_FIELD.DATA]
+    request_id = message[MSG_FIELD.REQUEST_ID]
     response = {}
 
     try:
@@ -266,6 +271,7 @@ def report(message: dict, socket=None) -> str:
 
     response = {
         MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.REPORT,
+        MSG_FIELD.REQUEST_ID: request_id,
         MSG_FIELD.DATA: response,
     }
     return json.dumps(response)
