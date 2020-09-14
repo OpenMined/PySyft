@@ -6,15 +6,17 @@ production (that's the *actual* grid's job)."""
 # third party
 from flask import Flask
 from flask import request
+from nacl.encoding import HexEncoder
 
-# syft absolute
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.node.network.network import Network
-from syft.grid.services.signaling_service import PullSignalingService
-from syft.grid.services.signaling_service import PushSignalingService
+# syft relative
+from ..core.common.message import SignedImmediateSyftMessageWithReply
 
+# relative absolute
+from ..core.common.message import SignedImmediateSyftMessageWithoutReply
+from ..core.common.serde.deserialize import _deserialize
+from ..core.node.network.network import Network
+from ..grid.services.signaling_service import PullSignalingService
+from ..grid.services.signaling_service import PushSignalingService
 
 app = Flask(__name__)
 
@@ -31,7 +33,7 @@ def get_metadata() -> str:
 
 
 @app.route("/", methods=["POST"])
-def process_network_msgs():
+def process_network_msgs() -> str:
     json_msg = request.get_json()
     obj_msg = _deserialize(blob=json_msg, from_json=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
@@ -43,6 +45,8 @@ def process_network_msgs():
         network.recv_eventual_msg_without_reply(msg=obj_msg)
     return ""
 
-def run() -> None:
-    app.run()
 
+def run() -> None:
+    global network
+    print("Network sign key: ", network.signing_key.encode(encoder=HexEncoder))
+    app.run()

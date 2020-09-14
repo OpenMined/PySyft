@@ -44,7 +44,7 @@ from ..core.io.route import SoloRoute
 from ..core.node.domain.client import DomainClient
 from ..core.node.domain.domain import Domain
 from ..decorators.syft_decorator_impl import syft_decorator
-from .connections.http_client import HTTPClient
+from .clients.network_client import GridNetworkClient
 
 # PySyft internal source code
 from .connections.webrtc import WebRTCConnection
@@ -59,7 +59,7 @@ class Duet(DomainClient):
         self,
         node: Domain,
         address: Address,
-        network_client: HTTPClient,
+        network_client: GridNetworkClient,
         offer: bool = True,
     ):
         # Generate a signing key
@@ -120,7 +120,7 @@ class Duet(DomainClient):
 
         # This attribute will be setted during the signaling messages exchange,
         # and used to create a SoloRoute for the both sides.
-        self._client_metadata = None
+        self._client_metadata = ""
 
         # Start async tasks and wait until one of them finishes.
         # As mentioned before, these tasks can be finished by two reasons:
@@ -132,7 +132,7 @@ class Duet(DomainClient):
         if self._client_metadata:
             # Deserialize client's metadata in order to obtain
             # PySyft's location structure
-            (  # type: ignore
+            (
                 spec_location,
                 name,
                 client_id,
@@ -151,7 +151,7 @@ class Duet(DomainClient):
                 signing_key=self.signing_key,
                 verify_key=self.verify_key,
             )
-            self.connection._client_address = self.address
+            self.connection._client_address = self.address  # type: ignore
         # If client_metada is None, then an exception occurred during the process
         # The exception has been caught and saved in self._exception
         else:
@@ -225,7 +225,7 @@ class Duet(DomainClient):
                 if task:
                     # Execute task using the received message.
                     await task(msg=_response)
-                
+
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
         except Exception as e:
