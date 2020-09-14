@@ -70,24 +70,3 @@ async def test_consumer_request() -> None:
     msg_bin = signed_msg.to_binary()
 
     await webrtc_node.consumer(msg=msg_bin)
-
-
-@pytest.mark.asyncio
-async def test_consumer_response() -> None:
-    test_domain = Domain(name="test")
-    domain_client = test_domain.get_client()
-
-    webrtc_node = WebRTCConnection(node=test_domain)
-
-    msg = ReprMessage(address=domain_client.address)
-    signing_key = SigningKey.generate()
-    test_domain.root_verify_key = signing_key.verify_key
-    signed_msg = msg.sign(signing_key=signing_key)
-
-    msg_bin = signed_msg.to_binary()
-
-    await webrtc_node.consumer(msg=msg_bin)
-
-    # recv_msg = await webrtc_node.consumer_pool.get()
-
-    # assert recv_msg == msg
