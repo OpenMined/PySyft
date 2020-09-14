@@ -29,6 +29,7 @@ pyjwt
 PyNaCl
 pyscaffold[all]
 pytest
+pytest-asyncio
 pytest-cov
 requests
 sqlitedict
