@@ -273,6 +273,8 @@ class CUDALongTensor(object):
             else:
                 x_enc_span.unsqueeze_(1)
 
+        print(x_enc_span.shape)
+        print(y_enc_span.shape)
         z_encoded = torch.matmul(x_enc_span, y_enc_span, *args, **kwargs)
 
         if remove_x:
