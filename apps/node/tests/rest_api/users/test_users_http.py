@@ -9,9 +9,9 @@ from src.app.main.database import *
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
 )
-owner_role = ("Owner", True, True, True, True, True, True)
-user_role = ("User", False, False, False, False, False, False)
-admin_role = ("Administrator", True, True, True, True, False, False)
+owner_role = ("Owner", True, True, True, True, True, True, True)
+user_role = ("User", False, False, False, False, False, False, False)
+admin_role = ("Administrator", True, True, True, True, False, False, True)
 
 user1 = (
     "tech@gibberish.com",

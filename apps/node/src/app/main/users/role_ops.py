@@ -17,18 +17,6 @@ from ..database import Role, User
 from ... import BaseModel, db
 
 
-# def identify_user(private_key):
-#    usr = db.session.query(User).filter_by(private_key=private_key).one_or_none()
-#    if usr is None:
-#        raise UserNotFoundError
-#
-#    usr_role = db.session.query(Role).get(usr.role)
-#    if usr_role is None:
-#        raise RoleNotFoundError
-#
-#    return usr, usr_role
-
-
 def create_role(current_user, private_key, role_fields):
     user_role = db.session.query(Role).get(current_user.role)
 

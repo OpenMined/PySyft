@@ -28,6 +28,7 @@ expected_fields = (
     "can_create_groups",
     "can_edit_roles",
     "can_manage_infrastructure",
+    "can_upload_data",
 )
 
 

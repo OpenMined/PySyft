@@ -11,15 +11,15 @@ payload = (
     '{"name": "mario mario", "can_triage_requests": false,'
     '"can_edit_settings": false, "can_create_users": true,'
     '"can_create_groups": true, "can_edit_roles": false,'
-    '"can_manage_infrastructure": false}'
+    '"can_manage_infrastructure": false, "can_upload_data": false}'
 )
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
 )
-owner_role = ("Owner", True, True, True, True, True, True)
-admin_role = ("Administrator", True, True, True, True, False, False)
-user_role = ("User", False, False, False, False, False, False)
-officer_role = ("Compliance Officer", True, False, False, False, False, False)
+owner_role = ("Owner", True, True, True, True, True, True, True)
+admin_role = ("Administrator", True, True, True, True, False, False, True)
+user_role = ("User", False, False, False, False, False, False, False)
+officer_role = ("Compliance Officer", True, False, False, False, False, False, False)
 user_1 = (
     "tech@gibberish.com",
     "BDEB6E8EE39B6C70835993486C9E65DC",

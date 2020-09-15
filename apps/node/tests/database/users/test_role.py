@@ -23,6 +23,7 @@ def cleanup(database):
         "can_create_groups",
         "can_edit_roles",
         "can_manage_infrastructure",
+        "can_upload_data",
     ),
     role_metrics,
 )
@@ -34,6 +35,7 @@ def test_create_model_object(
     can_create_groups,
     can_edit_roles,
     can_manage_infrastructure,
+    can_upload_data,
     database,
     cleanup,
 ):
@@ -46,6 +48,7 @@ def test_create_model_object(
         can_create_groups=can_create_groups,
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
+        can_upload_data=can_upload_data,
     )
     database.session.add(new_role)
     database.session.commit()
