@@ -2,7 +2,7 @@ import torch as th
 from typing import Tuple
 
 import syft as sy
-
+from .spdz import CUDALongTensor
 
 def build_triple(
     op: str,
@@ -50,7 +50,11 @@ def build_triple(
             c = cmd(a, b)
             a = a.reshape(*shape)
     else:
-        c = cmd(a, b)
+        #c = cmd(a, b)
+        a = CUDALongTensor(a)
+        b = CUDALongTensor(b)
+        c = CUDALongTensor.matmul(a, b)
+        c = c._tensor.cpu()
 
     helper = sy.AdditiveSharingTensor(field=field)
 
