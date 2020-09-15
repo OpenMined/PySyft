@@ -698,6 +698,7 @@ def slice(x, j, slice_size):
 
 
 def triple_mat_mul(core_id, delta, epsilon, a, b):
+    print("triple_mat_mul")
     cmd = th.matmul
     delta = CUDALongTensor(delta)
     epsilon = CUDALongTensor(epsilon)
@@ -736,6 +737,8 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         torch_dtype=torch_dtype,
         field=field,
     )
+
+    print('spdz_compute', op)
 
     if op == "matmul":
 
