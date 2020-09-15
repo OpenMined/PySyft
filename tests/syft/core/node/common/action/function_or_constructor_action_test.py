@@ -16,22 +16,18 @@ def test_run_function_or_constructor_action_serde() -> None:
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
-    path = "torch.Tensor.add"
     args = (
         th.tensor([1, 2, 3]).send(alice_client),
         th.tensor([4, 5, 5]).send(alice_client),
     )
-    kwargs = {}  # type: ignore
-    id_at_location = UID()
-    msg_id = UID()
 
     msg = RunFunctionOrConstructorAction(
-        path=path,
+        path="torch.Tensor.add",
         args=args,
-        kwargs=kwargs,
-        id_at_location=id_at_location,
+        kwargs={},
+        id_at_location=UID(),
         address=alice_client.address,
-        msg_id=msg_id,
+        msg_id=UID(),
     )
 
     blob = msg.serialize()

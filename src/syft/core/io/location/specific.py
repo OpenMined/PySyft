@@ -28,7 +28,8 @@ class SpecificLocation(ObjectWithID, Location):
 
     @property
     def pprint(self) -> str:
-        return f"{self.icon} {self.name} ({self.class_name})@{self.id.emoji()}"
+        output = f"{self.icon} {self.name} ({self.class_name})@{self.id.emoji()}"
+        return output
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SpecificLocation_PB:
