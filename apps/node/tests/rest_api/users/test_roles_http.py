@@ -8,7 +8,7 @@ from src.app.main.core.exceptions import PyGridError
 from src.app.main.database import Role, User, create_role, create_user, model_to_json
 
 payload = (
-    '{"name": "mario mario", "can_triage_jobs": false,'
+    '{"name": "mario mario", "can_triage_requests": false,'
     '"can_edit_settings": false, "can_create_users": true,'
     '"can_create_groups": true, "can_edit_roles": false,'
     '"can_manage_infrastructure": false}'

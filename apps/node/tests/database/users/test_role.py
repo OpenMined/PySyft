@@ -17,7 +17,7 @@ def cleanup(database):
 @pytest.mark.parametrize(
     (
         "name",
-        "can_triage_jobs",
+        "can_triage_requests",
         "can_edit_settings",
         "can_create_users",
         "can_create_groups",
@@ -28,7 +28,7 @@ def cleanup(database):
 )
 def test_create_model_object(
     name,
-    can_triage_jobs,
+    can_triage_requests,
     can_edit_settings,
     can_create_users,
     can_create_groups,
@@ -40,7 +40,7 @@ def test_create_model_object(
 
     new_role = Role(
         name=name,
-        can_triage_jobs=can_triage_jobs,
+        can_triage_requests=can_triage_requests,
         can_edit_settings=can_edit_settings,
         can_create_users=can_create_users,
         can_create_groups=can_create_groups,

@@ -131,7 +131,7 @@ def get_all_users(current_user, private_key):
     if user_role is None:
         raise RoleNotFoundError
 
-    if not user_role.can_triage_jobs:
+    if not user_role.can_triage_requests:
         raise AuthorizationError
 
     users = User.query.all()
@@ -143,7 +143,7 @@ def get_specific_user(current_user, private_key, user_id):
     if user_role is None:
         raise RoleNotFoundError
 
-    if not user_role.can_triage_jobs:
+    if not user_role.can_triage_requests:
         raise AuthorizationError
 
     user = User.query.get(user_id)
@@ -263,7 +263,7 @@ def search_users(current_user, private_key, filters, group):
 
     if user_role is None:
         raise RoleNotFoundError
-    if not user_role.can_triage_jobs:
+    if not user_role.can_triage_requests:
         raise AuthorizationError
 
     query = db.session().query(User)

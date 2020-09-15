@@ -10,7 +10,7 @@ from src.app.main.database import Role, User, create_role, create_user, model_to
 
 role = {
     "name": "mario mario",
-    "can_triage_jobs": False,
+    "can_triage_requests": False,
     "can_edit_settings": False,
     "can_create_users": True,
     "can_create_groups": True,

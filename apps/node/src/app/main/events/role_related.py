@@ -22,7 +22,7 @@ from ... import BaseModel, db
 
 expected_fields = (
     "name",
-    "can_triage_jobs",
+    "can_triage_requests",
     "can_edit_settings",
     "can_create_users",
     "can_create_groups",

@@ -6,7 +6,7 @@ class Role(BaseModel):
 
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     name = db.Column(db.String())
-    can_triage_jobs = db.Column(db.Boolean())
+    can_triage_requests = db.Column(db.Boolean())
     can_edit_settings = db.Column(db.Boolean())
     can_create_users = db.Column(db.Boolean())
     can_create_groups = db.Column(db.Boolean())
@@ -16,7 +16,7 @@ class Role(BaseModel):
     def __str__(self):
         return (
             f"<Role id: {self.id}, name: {self.name}, "
-            f"can_triage_jobs: {self.can_triage_jobs}, "
+            f"can_triage_requests: {self.can_triage_requests}, "
             f"can_edit_settings: {self.can_edit_settings}, "
             f"can_create_users: {self.can_create_users}, "
             f"can_create_groups: {self.can_create_groups}, "
@@ -27,7 +27,7 @@ class Role(BaseModel):
 
 def create_role(
     name,
-    can_triage_jobs,
+    can_triage_requests,
     can_edit_settings,
     can_create_users,
     can_create_groups,
@@ -36,7 +36,7 @@ def create_role(
 ):
     new_role = Role(
         name=name,
-        can_triage_jobs=can_triage_jobs,
+        can_triage_requests=can_triage_requests,
         can_edit_settings=can_edit_settings,
         can_create_users=can_create_users,
         can_create_groups=can_create_groups,
