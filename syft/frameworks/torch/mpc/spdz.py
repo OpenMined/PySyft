@@ -273,8 +273,6 @@ class CUDALongTensor(object):
             else:
                 x_enc_span.unsqueeze_(1)
 
-        print(x_enc_span.shape)
-        print(y_enc_span.shape)
         z_encoded = torch.matmul(x_enc_span, y_enc_span, *args, **kwargs)
 
         if remove_x:
@@ -703,8 +701,8 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
     cmd = th.matmul
     delta = CUDALongTensor(delta)
     epsilon = CUDALongTensor(epsilon)
-    a = CUDALongTensor(b)
-    b = CUDALongTensor(delta)
+    a = CUDALongTensor(a)
+    b = CUDALongTensor(b)
     delta_b = CUDALongTensor.matmul(delta, b)
     a_epsilon = CUDALongTensor.matmul(a, epsilon)
     delta_epsilon = CUDALongTensor.matmul(delta, epsilon)
