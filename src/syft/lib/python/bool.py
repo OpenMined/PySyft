@@ -183,7 +183,7 @@ class Bool(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __repr__(self) -> str:
-        return self.value.__repr__()
+        return bool(self.value).__repr__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rdivmod__(self, other: Any) -> Tuple[PyPrimitive, PyPrimitive]:
@@ -256,9 +256,9 @@ class Bool(int, PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__rxor__(other))
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def __str__(self):
-    #     return PrimitiveFactory.generate_primitive(value=self.value.__str__())
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __str__(self) -> str:
+        return bool(self.value).__str__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __sub__(self, other: Any) -> PyPrimitive:
