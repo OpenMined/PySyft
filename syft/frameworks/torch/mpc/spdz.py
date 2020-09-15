@@ -739,26 +739,28 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
 
     if op == "matmul":
 
-        batch_size = delta.shape[0]
+        # batch_size = delta.shape[0]
+        #
+        # multiprocessing_args = []
+        # slice_size = math.ceil(batch_size / N_CORES)
+        # for core_id in range(N_CORES):
+        #     process_args = (
+        #         core_id,
+        #         slice(delta, core_id, slice_size),
+        #         epsilon,
+        #         slice(a, core_id, slice_size),
+        #         b,
+        #     )
+        #     multiprocessing_args.append(process_args)
+        # p = multiprocessing.Pool()
+        # partitions = p.starmap(triple_mat_mul, multiprocessing_args)
+        # p.close()
+        # partitions = sorted(partitions, key=lambda k: k[0])
+        # delta_b = th.cat([partition[1] for partition in partitions])
+        # a_epsilon = th.cat([partition[2] for partition in partitions])
+        # delta_epsilon = th.cat([partition[3] for partition in partitions])
 
-        multiprocessing_args = []
-        slice_size = math.ceil(batch_size / N_CORES)
-        for core_id in range(N_CORES):
-            process_args = (
-                core_id,
-                slice(delta, core_id, slice_size),
-                epsilon,
-                slice(a, core_id, slice_size),
-                b,
-            )
-            multiprocessing_args.append(process_args)
-        p = multiprocessing.Pool()
-        partitions = p.starmap(triple_mat_mul, multiprocessing_args)
-        p.close()
-        partitions = sorted(partitions, key=lambda k: k[0])
-        delta_b = th.cat([partition[1] for partition in partitions])
-        a_epsilon = th.cat([partition[2] for partition in partitions])
-        delta_epsilon = th.cat([partition[3] for partition in partitions])
+        _, delta_b, a_epsilon, delta_epsilon = triple_mat_mul(1, delta, epsilon, a, b)
     else:
         cmd = getattr(th, op)
 
