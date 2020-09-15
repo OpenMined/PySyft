@@ -51,9 +51,9 @@ def build_triple(
             a = a.reshape(*shape)
     else:
         #c = cmd(a, b)
-        a = CUDALongTensor(a)
-        b = CUDALongTensor(b)
-        c = CUDALongTensor.matmul(a, b)
+        a_ = CUDALongTensor(a)
+        b_ = CUDALongTensor(b)
+        c = CUDALongTensor.matmul(a_, b_)
         c = c._tensor.cpu()
 
     helper = sy.AdditiveSharingTensor(field=field)
