@@ -2,7 +2,7 @@ import torch as th
 from typing import Tuple
 
 import syft as sy
-from .spdz import CUDALongTensor
+from .cuda import CUDALongTensor
 
 def build_triple(
     op: str,
