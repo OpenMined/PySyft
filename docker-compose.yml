@@ -65,7 +65,7 @@ services:
       - 5003:5003
 
   jupyter:
-    image: openmined/pysyft-notebook
+    image: openmined/pysyft-notebook:3852ca9e78d5163b52776b231f469e32e6c8be01  # syft 0.2.9
     depends_on:
       - 'dan'
     ports:
