@@ -4,6 +4,7 @@ from typing import Tuple
 import syft as sy
 from .cuda import CUDALongTensor
 
+
 def build_triple(
     op: str,
     shape: Tuple[th.Size, th.Size],
@@ -50,11 +51,11 @@ def build_triple(
             c = cmd(a, b)
             a = a.reshape(*shape)
     else:
-        #c = cmd(a, b)
+        # c = cmd(a, b)
         a_ = CUDALongTensor(a)
         b_ = CUDALongTensor(b)
         c = CUDALongTensor.matmul(a_, b_)
-        c = c._tensor.cpu()
+        c = c._tensor
 
     helper = sy.AdditiveSharingTensor(field=field)
 

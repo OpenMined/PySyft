@@ -341,7 +341,7 @@ class AdditiveSharingTensor(AbstractTensor):
             random_type: the torch type shares should be encoded in (use the smallest possible)
                 given the choice of mod"
         """
-        random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
+        random_type = torch.cuda.LongTensor if random_type == torch.int64 else torch.cuda.IntTensor
         if not isinstance(secret, random_type):
             secret = secret.type(random_type)
 

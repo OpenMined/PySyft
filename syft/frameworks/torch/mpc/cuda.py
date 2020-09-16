@@ -27,11 +27,11 @@ HANDLED_FUNCTIONS = {}
 
 class CUDALongTensor(object):
     """
-        A wrapper class for `torch.cuda.LongTensor`. When performing operations that are
-        currently not supported for `torch.cuda.LongTensor` (e.g `matmul`, `conv2d`), it will
-        convert the underlying LongTensor into DoubleTensor and convert the computed
-        result back to a LongTensor. The computed result will be the same as the original
-        expected result.
+    A wrapper class for `torch.cuda.LongTensor`. When performing operations that are
+    currently not supported for `torch.cuda.LongTensor` (e.g `matmul`, `conv2d`), it will
+    convert the underlying LongTensor into DoubleTensor and convert the computed
+    result back to a LongTensor. The computed result will be the same as the original
+    expected result.
     """
 
     __BITS = torch.iinfo(torch.long).bits
@@ -62,9 +62,7 @@ class CUDALongTensor(object):
         """
 
         device = "cuda" if device is None else device
-        assert device.startswith(
-            "cuda"
-        ), "Cannot specify a non-cuda device for CUDALongTensor"
+        assert device.startswith("cuda"), "Cannot specify a non-cuda device for CUDALongTensor"
 
         self._tensor = None
         if data is None:
@@ -89,9 +87,7 @@ class CUDALongTensor(object):
             if isinstance(result, list):
                 return [CUDALongTensor(t) if torch.is_tensor(t) else t for t in result]
             if isinstance(result, tuple):
-                return tuple(
-                    CUDALongTensor(t) if torch.is_tensor(t) else t for t in result
-                )
+                return tuple(CUDALongTensor(t) if torch.is_tensor(t) else t for t in result)
             return result
         return HANDLED_FUNCTIONS[func](*args, **kwargs)
 
@@ -158,9 +154,7 @@ class CUDALongTensor(object):
         bks = CUDALongTensor.__BLOCK_SIZE
         nb = CUDALongTensor.__N_BLOCKS
 
-        x_block = CUDALongTensor.stack(
-            [(x >> (bks * i)) & (2 ** bks - 1) for i in range(nb)]
-        )
+        x_block = CUDALongTensor.stack([(x >> (bks * i)) & (2 ** bks - 1) for i in range(nb)])
 
         return x_block.double()
 
@@ -200,12 +194,8 @@ class CUDALongTensor(object):
 
         c_z = c_out if op in ["conv1d", "conv2d"] else c_in
 
-        z_encoded = getattr(torch, op)(
-            x_enc_span, y_enc_span, *args, **kwargs, groups=nb2
-        )
-        z_encoded = z_encoded.reshape(bs, nb2, c_z, *z_encoded.size()[2:]).transpose_(
-            0, 1
-        )
+        z_encoded = getattr(torch, op)(x_enc_span, y_enc_span, *args, **kwargs, groups=nb2)
+        z_encoded = z_encoded.reshape(bs, nb2, c_z, *z_encoded.size()[2:]).transpose_(0, 1)
 
         return CUDALongTensor.__decode_as_int64(z_encoded)
 
@@ -266,30 +256,22 @@ class CUDALongTensor(object):
     @staticmethod
     @implements(torch.conv1d)
     def conv1d(input, weight, *args, **kwargs):
-        return CUDALongTensor.__patched_conv_ops(
-            "conv1d", input, weight, *args, **kwargs
-        )
+        return CUDALongTensor.__patched_conv_ops("conv1d", input, weight, *args, **kwargs)
 
     @staticmethod
     @implements(torch.conv_transpose1d)
     def conv_transpose1d(input, weight, *args, **kwargs):
-        return CUDALongTensor.__patched_conv_ops(
-            "conv_transpose1d", input, weight, *args, **kwargs
-        )
+        return CUDALongTensor.__patched_conv_ops("conv_transpose1d", input, weight, *args, **kwargs)
 
     @staticmethod
     @implements(torch.conv2d)
     def conv2d(input, weight, *args, **kwargs):
-        return CUDALongTensor.__patched_conv_ops(
-            "conv2d", input, weight, *args, **kwargs
-        )
+        return CUDALongTensor.__patched_conv_ops("conv2d", input, weight, *args, **kwargs)
 
     @staticmethod
     @implements(torch.conv_transpose2d)
     def conv_transpose2d(input, weight, *args, **kwargs):
-        return CUDALongTensor.__patched_conv_ops(
-            "conv_transpose2d", input, weight, *args, **kwargs
-        )
+        return CUDALongTensor.__patched_conv_ops("conv_transpose2d", input, weight, *args, **kwargs)
 
     @staticmethod
     @implements(torch.nn.functional.avg_pool2d)
@@ -308,9 +290,7 @@ class CUDALongTensor(object):
 
         z_enc = z_encoded.reshape(nb, bs, *z_encoded.shape[1:]).long()
 
-        z = torch.zeros(
-            (nb, bs, *z_encoded.shape[1:]), device=x.device, dtype=torch.long
-        )
+        z = torch.zeros((nb, bs, *z_encoded.shape[1:]), device=x.device, dtype=torch.long)
         z += z_enc << torch.tensor([bks * i for i in range(nb)], device=x.device).view(
             nb, *([1] * nb)
         )

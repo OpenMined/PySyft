@@ -63,7 +63,7 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
     delta_b = CUDALongTensor.matmul(delta, b)
     a_epsilon = CUDALongTensor.matmul(a, epsilon)
     delta_epsilon = CUDALongTensor.matmul(delta, epsilon)
-    return core_id, delta_b._tensor.cpu(), a_epsilon._tensor.cpu(), delta_epsilon._tensor.cpu()
+    return core_id, delta_b._tensor, a_epsilon._tensor, delta_epsilon._tensor
 
 
 # share level
@@ -94,7 +94,7 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         field=field,
     )
 
-    print('spdz_compute', op)
+    print("spdz_compute", op)
 
     if op == "matmul":
 
