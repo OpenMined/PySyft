@@ -89,7 +89,7 @@ class FalconHelper:
         c_2 = c.share(*players, protocol="falcon", field=2)
         c_L = c.share(*players, protocol="falcon", field=ring_size)
 
-        xor_b_c = FalconHelper.xor(b, c_2).reconstruct()
+        xor_b_c = FalconHelper.xor(b, c_2)
         d = c_L * (1 - 2 * xor_b_c) + xor_b_c
 
         selected_val = (y - x) * d + x
