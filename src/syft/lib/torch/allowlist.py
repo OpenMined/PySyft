@@ -624,9 +624,9 @@ allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 
 # SECTION - Parameter methods
 # torch.nn.Parameter is a subclass of torch.Tensor
-# we need the main contstructor Class but everything else is
-# automatically added in the create_torch_ast function by duplicating everything
-# listed / supported for torch.Tensor
+# However, we still need the constructor Class to be listed here. Everything else is
+# automatically added in create_torch_ast function by doing:
+# method = method.replace("torch.Tensor.", "torch.nn.Parameter.")
 allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
 
 
