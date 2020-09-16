@@ -7,9 +7,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SyftMessage
 from syft.core.io.connection import ClientConnection
-
-# syft relative
-from ...decorators.syft_decorator_impl import syft_decorator
+from syft.decorators.syft_decorator_impl import syft_decorator
 
 
 class HTTPConnection(ClientConnection):
