@@ -404,7 +404,8 @@ allowlist["torch.Tensor.matmul"] = "torch.Tensor"
 # allowlist['torch.Tensor.matrix_power'] = #
 # allowlist["torch.Tensor.max"] = "torch.Tensor" # some issues
 allowlist["torch.Tensor.mean"] = "torch.Tensor"
-allowlist["torch.Tensor.median"] = "torch.Tensor"
+# allowlist["torch.median"] = # "torch.Tensor"  # requires torch.return_types.median
+# allowlist["torch.Tensor.median"] = # "torch.Tensor"  # requires torch.return_types.median
 # allowlist["torch.Tensor.min"] = "torch.Tensor" # some issues
 allowlist["torch.Tensor.mm"] = "torch.Tensor"
 # allowlist['torch.Tensor.mode'] = #
@@ -425,11 +426,11 @@ allowlist["torch.Tensor.ne_"] = "torch.Tensor"
 allowlist["torch.Tensor.neg"] = "torch.Tensor"
 allowlist["torch.Tensor.neg_"] = "torch.Tensor"
 # allowlist['torch.Tensor.nelement'] = #
-allowlist["torch.Tensor.new"] = "torch.Tensor"
+# allowlist["torch.Tensor.new"] = # "torch.Tensor" # deprecated and returns random values
 # allowlist['torch.Tensor.new_empty'] = #
 # allowlist['torch.Tensor.new_full'] = #
 # allowlist['torch.Tensor.new_ones'] = #
-# allowlist['torch.Tensor.new_tensor'] = #
+allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
 # allowlist['torch.Tensor.new_zeros'] = #
 allowlist["torch.Tensor.nonzero"] = "torch.Tensor"
 allowlist["torch.Tensor.norm"] = "torch.Tensor"
@@ -619,16 +620,15 @@ allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.ones"] = "torch.Tensor"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
-# allowlist.add("torch.nn.Linear.parameters")
 
 
 # SECTION - Parameter methods
-# allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
-# allowlist["torch.nn.parameter.Parameter"] = "torch.nn.parameter.Parameter"
-# allowlist["torch.nn.Parameter.t"] = "torch.nn.Parameter"
-# allowlist["torch.nn.Parameter.__abs__"] = "torch.nn.Parameter"
-# allowlist["torch.nn.Parameter.__add__"] = "torch.Tensor"
-# allowlist["torch.nn.Parameter.__and__"] = "torch.nn.Parameter"
+# torch.nn.Parameter is a subclass of torch.Tensor
+# we need the main contstructor Class but everything else is
+# automatically added in the create_torch_ast function by duplicating everything
+# listed / supported for torch.Tensor
+allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
+
 
 # MNIST
 allowlist["torch.manual_seed"] = "torch.Generator"

@@ -120,8 +120,8 @@ def is_expected_runtime_error(msg: str) -> bool:
         "Negation, the `-` operator, on a bool tensor is not supported",
         "True division requires a floating output type, but got",
         "vector and vector expected, got",  # torch==1.4.0 "ger"
-        "cbitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
-        "cbitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
+        "bitor is only supported for integer type tensors",  # torch==1.4.0 "__or__"
+        "bitand is only supported for integer type tensors",  # torch==1.4.0 "__and__"
         "only Tensors of floating point dtype can require gradients",
         "std and var only support floating-point dtypes",
         "Subtraction, the `-` operator, with a bool tensor is not supported",
@@ -155,6 +155,7 @@ def is_expected_type_error(msg: str) -> bool:
         "argument 'return_inverse' must be bool",
         "__bool__ should return bool, returned Bool",
         "argument 'sorted' must be bool, not",
+        "got NotImplementedType instead",
     }
 
     return any(expected_msg in msg for expected_msg in expected_msgs)
