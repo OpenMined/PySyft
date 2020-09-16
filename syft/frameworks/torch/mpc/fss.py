@@ -193,7 +193,7 @@ def mask_builder(x1, x2, op):
     # Keep the primitive in store as we use it after
     # you actually get a share of alpha
     alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
-    r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
+    r = x + th.tensor(alpha.astype(np.int64), device="cuda").reshape(x.shape)
     return r
 
 
@@ -239,8 +239,8 @@ def eq_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
-    return th.tensor(result_share)
+    result_share = DPF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
+    return th.tensor(result_share, device="cuda")
 
 
 # process level
@@ -255,10 +255,10 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+    result_share = DIF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
 
     dtype_options = {None: th.long, "int": th.int32, "long": th.long}
-    result = th.tensor(result_share, dtype=dtype_options[dtype])
+    result = th.tensor(result_share, dtype=dtype_options[dtype], device="cuda")
     if core_id is None:
         return result
     else:
