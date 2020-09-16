@@ -1,6 +1,7 @@
 from abstract.approx_benchmark import ApproxBenchmark
 from benchmark_sample_data import benchmark_data_sigmoid
 
+
 class SigmoidBenchmark(ApproxBenchmark):
     @staticmethod
     def _target_operation(tensor, method=None):
