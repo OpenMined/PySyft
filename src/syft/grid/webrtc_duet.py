@@ -7,7 +7,7 @@ channel in order to allow two different users to
 estabilish a direct connection with high-quality
 Real-time Communication using private addresses.
 
-    The most common example showing how does it
+    The most common example showing how it
 can be used is the notebook demo example:
 
     Two different jupyter/collab notebooks in
