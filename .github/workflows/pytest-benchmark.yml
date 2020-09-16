@@ -1,0 +1,52 @@
+name: Pytest-benchmark
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  benchmark:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v1.1.2
+      id: cache-reqs
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
+    - name: Install PySyft dependencies
+      run: |
+        sudo apt-get update
+        python -m pip install --upgrade pip
+        hash -r
+        pip3 install -r pip-dep/requirements.txt
+        pip3 install -r pip-dep/requirements_dev.txt
+        pip3 install -r pip-dep/requirements_udacity.txt
+        pip3 install -r pip-dep/requirements_notebooks.txt
+        python setup.py install
+    - name: Run benchmark
+      run: |
+        pytest benchmarks/frameworks/torch/mpc/pytest-benchmark/bench.py --benchmark-json pytest_benchmark_output.json
+    - name: Store benchmark result
+      uses: rhysd/github-action-benchmark@v1
+      with:
+        name: Python Benchmark with pytest-benchmark
+        tool: 'pytest'
+        output-file-path: pytest_benchmark_output.json
+        # Use personal access token instead of GITHUB_TOKEN due to https://github.community/t5/GitHub-Actions/Github-action-not-triggering-gh-pages-upon-push/td-p/26869/highlight/false
+        github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+        auto-push: true
+        # Show alert with commit comment on detecting possible performance regression
+        alert-threshold: '200%'
+        comment-on-alert: true
+        fail-on-alert: true
