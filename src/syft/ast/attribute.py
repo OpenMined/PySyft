@@ -20,6 +20,7 @@ class Attribute(ABC):
         path_and_name: Optional[str] = None,
         ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
         return_type_name: Optional[str] = None,
+        is_property: bool = False,
     ):
         self.name = name  # __add__
         self.path_and_name = path_and_name  # torch.Tensor.__add__
@@ -28,6 +29,7 @@ class Attribute(ABC):
             str, Union[ast.callable.Callable, CallableT]
         ] = {}  # any attrs of __add__ ... is none in this case
         self.return_type_name = return_type_name
+        self.is_property = is_property
 
     def set_client(self, client: Any) -> None:
         self.client = client

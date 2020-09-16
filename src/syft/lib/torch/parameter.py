@@ -34,6 +34,9 @@ class ParameterConstructor(ObjectConstructor):
 # Step 3: create constructor and install it in the library
 ParameterConstructor().install_inside_library()
 
+torch_tensor = th.tensor([1.0, 2.0, 3.0])
+torch_parameter_type = type(th.nn.parameter.Parameter(torch_tensor))
+
 
 class PyTorchParameterWrapper(StorableObject):
     def __init__(self, value: object):
@@ -42,10 +45,6 @@ class PyTorchParameterWrapper(StorableObject):
             id=getattr(value, "id", UID()),
             tags=getattr(value, "tags", []),
             description=getattr(value, "description", ""),
-        )
-        print(
-            "Wrapped torch.nn.parameter.Parameter with id:"
-            + str(getattr(value, "id", ""))
         )
         self.value = value
 
@@ -74,7 +73,7 @@ class PyTorchParameterWrapper(StorableObject):
 
     @staticmethod
     def get_wrapped_type() -> Type:
-        return Parameter
+        return torch_parameter_type
 
     @staticmethod
     def construct_new_object(
@@ -90,7 +89,7 @@ class PyTorchParameterWrapper(StorableObject):
 
 
 aggressive_set_attr(
-    obj=th.nn.parameter.Parameter,
+    obj=torch_parameter_type,
     name="serializable_wrapper_type",
     attr=PyTorchParameterWrapper,
 )

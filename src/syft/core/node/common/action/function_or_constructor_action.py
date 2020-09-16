@@ -10,6 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
@@ -104,14 +105,17 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
 
         result = method(*resolved_args, **resolved_kwargs)
-        # TODO reintroduce new primitive logic
-        # if isprimitive(value=result):
-        #     # Wrap in a PyPrimitive
-        #     result = PyPrimitive(data=result, id=self.id_at_location)
-        # else:
-        # TODO: overload all methods to incorporate this automatically
-        if hasattr(result, "id"):
-            result.id = self.id_at_location
+
+        # to avoid circular imports
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a PyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=self.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                result.id = self.id_at_location
 
         if not isinstance(result, StorableObject):
             result = StorableObject(
