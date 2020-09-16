@@ -2,10 +2,10 @@
 Install PySyft
 **************
 
-This page shows how to install Syft version 0.3.0. As this software is currently in alpha,
-there are changes happening every day. Thus, the best way to install PySyft is to build
-it from source. Each of the tutorials below describe how to build PySyft from source
-within each respective operating system.
+This page shows how to install Syft version 0.3.0. As this software is currently in
+alpha, there are changes happening every day. Thus, the best way to install PySyft is
+to build it from source. Each of the tutorials below describe how to build PySyft from
+source within each respective operating system.
 
 If you get stuck anywhere in this tutorial, please `join OpenMined's slack <https://slack.openmined.org>`_
 and ask a question in the channel called `#topic_beginner_questions <https://openmined.slack.com/archives/C6DEWA4FR>`_.
@@ -60,9 +60,9 @@ are running one of these versions. Run the following:
     > python --version
     Python 3.8.1
 
-If the version printed underneath your command is less than 3.6, then you MUST use anaconda
-in the next step (which is recommended anyway). Technically, you could try to upgrade your
-version of python but fair warning... e're be dragons.
+If the version printed underneath your command is less than 3.6, then you MUST use
+anaconda in the next step (which is recommended anyway). Technically, you could try to
+upgrade your version of python but fair warning... e're be dragons.
 
 
 Step 3 - Setup Environment
@@ -72,19 +72,21 @@ I'm sure you're tempted to skip this step. Word from the wise...
 `Don't skip this step.
 <https://twitter.com/iamtrask/status/1300854373296332809>`_
 
-You are about to install a library with lots of complex dependencies. You don't want to break
-something on your computer because you're installing PySyft. And vice versa, you don't want
-to later break your PySyft install when installing some other tool later! Friends don't
-let friends build libraries from source without using a virtual environment.
+You are about to install a library with lots of complex dependencies. You don't want to
+break something on your computer because you're installing PySyft. And vice versa, you
+don't want to later break your PySyft install when installing some other tool later!
+Friends don't let friends build libraries from source without using a virtual
+environment.
 
 And since PySyft uses (and will use more and more) non-python dependencies, the best
-virtual environment to use for PySyft is conda. Note, if you're tempted to use virtualenv
-instead, `read this warning <https://twitter.com/shreyshahi/status/1300855906742140928>`_.
+virtual environment to use for PySyft is conda. Note, if you're tempted to use
+virtualenv instead, `read this warning <https://twitter.com/shreyshahi/status/1300855906742140928>`_.
 
 Step 3.1 - Install Conda
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-First, let's see if you have conda installed! Type "conda" into your Terminal app and hit enter.
+First, let's see if you have conda installed! Type "conda" into your Terminal app and
+hit enter.
 
 .. code:: console
 
@@ -103,15 +105,15 @@ First, let's see if you have conda installed! Type "conda" into your Terminal ap
                      file (/Users/atrask/.condarc) by default.
         create       Create a new conda environment from a list of specified
 
-If calling "conda" doesn't return something like this, then you need to install conda. Just
-follow the `installation instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_
+If calling "conda" doesn't return something like this, then you need to install conda.
+Just follow the `installation instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_
 and you'll be fine.
 
 Step 3.2 - Create conda Env
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Now, we want to create a conda virtual environment with the latest verison of Python supported
-by syft which, at the time of writing, is 3.8.
+Now, we want to create a conda virtual environment with the latest verison of Python
+supported by syft which, at the time of writing, is 3.8.
 
 .. code:: console
 
@@ -123,8 +125,9 @@ Then follow the instructions it gives you to create your environment.
 Step 3.3 - Activate Conda Env
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To activate the environment you created in the last step, simply enter `activate <environment name>`
-which if you simply copy pasted the line above, the environment name was "my_syft_env".
+To activate the environment you created in the last step, simply enter
+`activate <environment name>` which if you simply copy pasted the line above, the
+environment name was "my_syft_env".
 
 .. code:: console
 
@@ -132,32 +135,32 @@ which if you simply copy pasted the line above, the environment name was "my_syf
 
 .. note::
 
-    You will need to activate this my_syft_env environment whenever you want to use syft,
-    unless of course you install syft in another environment.
+    You will need to activate this my_syft_env environment whenever you want to use
+    syft, unless of course you install syft in another environment.
 
 
 Step 4 - Install Dependencies
 -----------------------------
 
-Assuming you're still in the base directory of PySyft (as you came to be in step 1), you can
-now install the dependencies that PySyft relies on using the following command:
+Assuming you're still in the base directory of PySyft (as you came to be in step 1),
+you can now install the dependencies that PySyft relies on using the following command:
 
 .. code:: console
 
     pip install -r requirements.txt
 
-This should install all the libraries you need for PySyft. Just in case, let's make sure
-you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or later. Open
-up a python shell (by running `python` in your Terminal client) and then execute the following
-python code.
+This should install all the libraries you need for PySyft. Just in case, let's make
+sure you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or
+later. Open up a python shell (by running `python` in your Terminal client) and then
+execute the following python code.
 
 .. code:: python
 
     import torch
     print(torch.__version__)
 
-As long as this reads 1.3 or later, you should be good. If it's 1.3 or earlier, then upgrade
-it by installing the latest version.
+As long as this reads 1.3 or later, you should be good. If it's 1.3 or earlier, then
+upgrade it by installing the latest version.
 
 .. code:: console
 
@@ -166,16 +169,17 @@ it by installing the latest version.
 Step 5 - Install PySyft
 -----------------------
 
-You are now ready to install PySyft! We recommend the following just in case you later decide
-you want to help edit the codebase.
+You are now ready to install PySyft! We recommend the following just in case you later
+decide you want to help edit the codebase.
 
 .. code:: python
 
     pip install -e .
 
-This will create a permanent pointer from the PySyft code to your conda VM. That means that if
-you make any changes to the code you won't have to re-install PySyft to be able to use them!
-If you don't want this fanciness you can also run the good ole fashioned setup.py install.
+This will create a permanent pointer from the PySyft code to your conda VM. That means
+that if you make any changes to the code you won't have to re-install PySyft to be able
+to use them! If you don't want this fanciness you can also run the good ole fashioned
+setup.py install.
 
 .. code:: python
 
@@ -184,9 +188,9 @@ If you don't want this fanciness you can also run the good ole fashioned setup.p
 Step 6 - Run Light Tests
 ------------------------
 
-At the time of writing, we have quite a few unit tests but most of them are simply testing
-the PyTorch runtime. To run the abbreviated set of tests (and make sure your installation
-is happy), run the following.
+At the time of writing, we have quite a few unit tests but most of them are simply
+testing the PyTorch runtime. To run the abbreviated set of tests (and make sure your
+installation is happy), run the following.
 
 .. code:: python
 
