@@ -3,6 +3,7 @@ import inspect
 import sys
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Type
@@ -10,6 +11,7 @@ from typing import Type
 # syft relative
 from ..core.common.uid import UID
 from .util import copy_static_methods
+from .util import full_name_with_qualname
 from .util import get_original_constructor_name
 from .util import replace_classes_in_module
 
@@ -125,7 +127,6 @@ class ObjectConstructor(object):
             )
 
     def install_id_attribute(self, original_constructor: Type) -> Type:
-
         if (
             inspect.isclass(original_constructor)
             or self.constructor_produces_type is not None
@@ -136,20 +137,34 @@ class ObjectConstructor(object):
             else:
                 type_to_subclass = original_constructor
 
+            def id_get(__self: Any) -> UID:
+                return __self.__id
+
+            def id_set(__self: Any, new_id: UID) -> None:
+                __self.__id = new_id
+
+            id_property = property(fget=id_get, fset=id_set)
+
             try:
                 # if you are allowed to subclass this type
+                attrs: Dict[str, Any] = {}
+                attrs["__name__"] = type_to_subclass.__name__
 
-                class OriginalConstructorSubclass(type_to_subclass):  # type: ignore
+                new_class_name = (
+                    f"syft.proxy.{full_name_with_qualname(klass=type_to_subclass)}"
+                )
+                parts = new_class_name.split(".")
+                name = parts.pop(-1)
+                attrs["__module__"] = ".".join(parts)
+                attrs["id"] = id_property
 
-                    __name__ = type_to_subclass.__name__
-
-                    @property
-                    def id(self) -> UID:
-                        return self.__id
-
-                    @id.setter
-                    def id(self, new_id: UID) -> None:
-                        self.__id = new_id
+                # this is the equiv of:
+                #   class new_class_name(type_to_subclass): **attrs
+                OriginalConstructorSubclass = type(
+                    name,
+                    (type_to_subclass,),
+                    attrs,
+                )
 
                 original_constructor = OriginalConstructorSubclass
 
@@ -158,14 +173,7 @@ class ObjectConstructor(object):
             # for more on this, see discussion:
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
             except TypeError:
-
-                def id_get(self: Any) -> UID:
-                    return self.__id
-
-                def id_set(self: Any, new_id: UID) -> None:
-                    self.__id = new_id
-
-                original_constructor.id = property(fget=id_get, fset=id_set)
+                original_constructor.id = id_property
 
         return original_constructor
 

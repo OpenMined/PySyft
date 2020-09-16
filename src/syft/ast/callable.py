@@ -32,7 +32,6 @@ class Callable(ast.attribute.Attribute):
             and self.client is not None
             and return_callable is False
         ):
-            print(f"call {self.path_and_name} on client {self.client}")
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
@@ -76,9 +75,12 @@ class Callable(ast.attribute.Attribute):
                 if isinstance(attr_ref, module_type):
                     raise Exception("Module cannot be attr of callable.")
                 else:
+                    is_property = type(attr_ref).__name__ == "getset_descriptor"
+
                     self.attrs[path[index]] = ast.method.Method(
                         name=path[index],
                         path_and_name=unsplit(path[: index + 1]),
                         ref=attr_ref,
                         return_type_name=return_type_name,
+                        is_property=is_property,
                     )

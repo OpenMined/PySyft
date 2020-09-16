@@ -115,3 +115,8 @@ def replace_classes_in_module(
             setattr(module, attr_name, to_class)
 
     recursive_update(module)
+
+
+@syft_decorator(typechecking=True)
+def full_name_with_qualname(klass: type) -> str:
+    return f"{klass.__module__}.{klass.__qualname__}"

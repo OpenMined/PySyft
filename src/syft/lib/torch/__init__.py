@@ -51,6 +51,13 @@ def create_torch_ast() -> Globals:
             ast.add_path(
                 path=method, framework_reference=torch, return_type_name=return_type
             )
+            # add all the torch.nn.Parameter hooks
+            if method.startswith("torch.Tensor."):
+                method = method.replace("torch.Tensor.", "torch.nn.Parameter.")
+                return_type = return_type.replace("torch.Tensor", "torch.nn.Parameter")
+                ast.add_path(
+                    path=method, framework_reference=torch, return_type_name=return_type
+                )
         else:
             print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
 

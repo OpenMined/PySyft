@@ -20,7 +20,7 @@ from .primitive_interface import PyPrimitive
 
 class List(UserList, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
         if value is None:
             value = []
 
