@@ -3,7 +3,7 @@ Define benchmark tests
 """
 
 from workers_initialization import workers, hook
-from benchmark_functions import sigmoid
+from pytest_benchmark_functions import sigmoid
 
 # Initialize workers globally for the tests
 worker = workers(hook())
