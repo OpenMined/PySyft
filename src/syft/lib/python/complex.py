@@ -48,6 +48,10 @@ class Complex(complex, PyPrimitive):
         """
         return self._id
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> complex:
+        return complex(self)
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, x: complex) -> "Complex":
         result = complex.__add__(self, x)

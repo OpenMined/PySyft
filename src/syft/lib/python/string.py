@@ -32,6 +32,10 @@ class String(UserString, PyPrimitive):
 
         self._id: UID = id if id else UID()
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> str:
+        return str(self)
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(
         self,

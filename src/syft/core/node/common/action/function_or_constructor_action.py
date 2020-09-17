@@ -104,7 +104,24 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        result = method(*resolved_args, **resolved_kwargs)
+        # when we call original constructors like torch.device we will get errors
+        # that the types are not supported because the checks are done in C
+        # this ensures that any SyPrimitives are upcasted before being passed in
+        upcasted_args = []
+        upcasted_kwargs = {}
+        for arg in resolved_args:
+            if issubclass(type(arg), lib.python.primitive_interface.PyPrimitive):
+                upcasted_args.append(arg.upcast())
+            else:
+                upcasted_args.append(arg)
+
+        for k, arg in resolved_kwargs.items():
+            if issubclass(type(arg), lib.python.primitive_interface.PyPrimitive):
+                upcasted_kwargs[k] = arg.upcast()
+            else:
+                upcasted_kwargs[k] = arg
+
+        result = method(*upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):

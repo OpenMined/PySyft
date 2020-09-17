@@ -25,6 +25,9 @@ def isprimitive(value: Any) -> bool:
 
 
 class PrimitiveFactory(ABC):
+    def upcast(self) -> Union[int, float, bool, complex, list, str, None]:
+        raise NotImplementedError
+
     @staticmethod
     @syft_decorator(typechecking=True)
     def generate_primitive(

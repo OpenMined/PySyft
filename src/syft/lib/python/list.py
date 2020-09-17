@@ -39,6 +39,10 @@ class List(UserList, PyPrimitive):
         """
         return self._id
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> list:
+        return list(self)
+
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)

@@ -16,6 +16,19 @@ from .util import get_original_constructor_name
 from .util import replace_classes_in_module
 
 
+class CWrapper:
+    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[Any, Any]) -> None:
+        self._wrapped = self._original_constructor(*args, **kwargs)
+
+    def __getattribute__(self, name: str) -> Any:
+        # intercept any getter and proxy everything except the following through to the
+        # self._wrapper reference
+        if name in ["id", "_original_constructor", "_wrapped"]:
+            return object.__getattribute__(self, name)
+
+        return self._wrapped.__getattribute__(name)
+
+
 class ObjectConstructor(object):
     """Syft allows for the extension and remote execution of a range of python libraries. As such,
     a common need is the ability to modify library-specific constructors of objects.
@@ -158,13 +171,26 @@ class ObjectConstructor(object):
                 attrs["__module__"] = ".".join(parts)
                 attrs["id"] = id_property
 
-                # this is the equiv of:
-                #   class new_class_name(type_to_subclass): **attrs
-                OriginalConstructorSubclass = type(
-                    name,
-                    (type_to_subclass,),
-                    attrs,
-                )
+                try:
+                    OriginalConstructorSubclass = type(
+                        name,
+                        (type_to_subclass,),
+                        attrs,
+                    )
+                except TypeError:
+                    # TypeError: type 'x' is not an acceptable base type
+                    # Sometimes we cant set attributes of built-in/extension type so we
+                    # have a dummy c wrapper which we can inherit from and will proxy
+                    # the constructor and all the calls through
+
+                    # we need the original constructor so we can wrap it
+                    attrs["_original_constructor"] = original_constructor
+
+                    OriginalConstructorSubclass = type(
+                        name,
+                        (CWrapper,),
+                        attrs,
+                    )
 
                 original_constructor = OriginalConstructorSubclass
 
@@ -173,6 +199,7 @@ class ObjectConstructor(object):
             # for more on this, see discussion:
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
             except TypeError:
+                # try setting the id property
                 original_constructor.id = id_property
 
         return original_constructor
@@ -181,7 +208,7 @@ class ObjectConstructor(object):
         """Copies current object constructor to original_<constructor_name>
 
         Since all instances of ObjectConstructor are overloading an existing constructor within a library, we
-        must first copy th original constructor (called the the "original" constructor) to a consistent location,
+        must first copy the original constructor (called the "original" constructor) to a consistent location,
         as determined by the 'get_original_constructor_name' utility method.
         """
 

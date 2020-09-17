@@ -9,16 +9,18 @@ import torch
 # syft relative
 from ...ast.globals import Globals
 from .allowlist import allowlist
+from .device import DeviceConstructor
 from .generator import GeneratorConstructor
 from .lowercase_tensor import LowercaseTensorConstructor
 from .parameter import ParameterConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
 
 __all__ = [
-    "LowercaseTensorConstructor",
-    "UppercaseTensorConstructor",
-    "ParameterConstructor",
+    "DeviceConstructor",
     "GeneratorConstructor",
+    "LowercaseTensorConstructor",
+    "ParameterConstructor",
+    "UppercaseTensorConstructor",
 ]
 
 
