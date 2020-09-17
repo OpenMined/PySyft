@@ -18,6 +18,7 @@
 bandit
 black
 dataclasses # backport to python 3.6
+doc8
 flake8
 flask
 forbiddenfruit>=0.1.3

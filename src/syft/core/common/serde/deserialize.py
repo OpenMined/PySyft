@@ -81,14 +81,13 @@ def _deserialize(
         obj_type = type(blob).schema2type  # type: ignore
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
-    except KeyError:
-
+    except AttributeError:
         raise TypeError(
-            """You tried to deserialize an unsupported type. This can be caused by
-            several reasons. Either you are actively writing Syft code and forgot
-            to create one, or you are trying to deserialize an object which was
-            serialized using a different version of Syft and the object you tried
-            to deserialize is not supported in this version."""
+            "You tried to deserialize an unsupported type. This can be caused by "
+            "several reasons. Either you are actively writing Syft code and forgot "
+            "to create one, or you are trying to deserialize an object which was "
+            "serialized using a different version of Syft and the object you tried "
+            "to deserialize is not supported in this version."
         )
 
     return obj_type._proto2object(proto=blob)
