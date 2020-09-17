@@ -70,6 +70,14 @@ def test_to_string() -> None:
     assert obj.__repr__() == "<SpecificLocation:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
 
 
+def test_pprint() -> None:
+    """Tests that SpecificLocation generates a pretty representation."""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = SpecificLocation(id=uid, name="location")
+    assert obj.pprint == "📌 location (SpecificLocation)@<UID:🙍🛖>"
+
+
 # --------------------- SERDE ---------------------
 
 
