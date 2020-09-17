@@ -9,7 +9,7 @@ class Role(db.Model):
     can_edit_settings = db.Column(db.Boolean())
     can_create_users = db.Column(db.Boolean())
     can_edit_roles = db.Column(db.Boolean())
-    can_manage_roles = db.Column(db.Boolean())
+    can_manage_nodes = db.Column(db.Boolean())
 
     def __str__(self):
         return (
@@ -17,5 +17,5 @@ class Role(db.Model):
             f"can_edit_settings: {self.can_edit_settings}, "
             f"can_create_users: {self.can_create_users}, "
             f"can_edit_roles: {self.can_edit_roles}, "
-            f"can_manage_roles: {self.can_manage_roles}>"
+            f"can_manage_nodes: {self.can_manage_nodes}>"
         )

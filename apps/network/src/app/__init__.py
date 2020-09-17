@@ -73,7 +73,7 @@ def seed_db():
         can_edit_settings=False,
         can_create_users=False,
         can_edit_roles=False,
-        can_manage_roles=False,
+        can_manage_nodes=False,
     )
     db.session.add(new_user)
     new_user = Role(
@@ -81,7 +81,7 @@ def seed_db():
         can_edit_settings=True,
         can_create_users=True,
         can_edit_roles=True,
-        can_manage_roles=True,
+        can_manage_nodes=True,
     )
     db.session.add(new_user)
 
