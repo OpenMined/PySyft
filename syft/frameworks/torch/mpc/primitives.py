@@ -61,10 +61,23 @@ class PrimitiveStorage:
                 # We're selecting on the last dimension of the tensor because it's simpler for
                 # generating those primitives in crypto protocols
                 # th.narrow(dim, index_start, length)
-                keys.append(th.narrow(prim, -1, 0, n_instances))
-                if remove:
-                    length = prim.shape[-1] - n_instances
-                    primitive_stack[i] = th.narrow(prim, -1, n_instances, length)
+                if isinstance(prim, tuple):
+                    ps = []
+                    left_ps = []
+                    for p in prim:
+                        ps.append(th.narrow(p, -1, 0, n_instances))
+                        if remove:
+                            length = p.shape[-1] - n_instances
+                            left_ps.append(th.narrow(p, -1, n_instances, length))
+                    
+                    keys.append(tuple(ps))
+                    if remove:
+                        primitive_stack[i] = tuple(left_ps)
+                else:
+                    keys.append(th.narrow(prim, -1, 0, n_instances))
+                    if remove:
+                        length = prim.shape[-1] - n_instances
+                        primitive_stack[i] = th.narrow(prim, -1, n_instances, length)
 
             return keys
         else:
@@ -122,9 +135,17 @@ class PrimitiveStorage:
                     if len(current_primitives[i]) == 0:
                         current_primitives[i] = primitive
                     else:
-                        current_primitives[i] = th.cat(
-                            (current_primitives[i], primitive), dim=len(primitive.shape) - 1
-                        )
+                        if isinstance(current_primitives[i], tuple):
+                            new_prims = []
+                            for cur_prim, prim in zip(current_primitives[i], primitive):
+                                new_prims.append(
+                                    th.cat((cur_prim, prim), dim=len(prim.shape) - 1)
+                                )
+                            current_primitives[i] = tuple(new_prims)
+                        else:
+                             current_primitives[i] = th.cat(
+                                (current_primitives[i], primitive), dim=len(primitive.shape) - 1
+                            )
 
     def build_fss_keys(self, type_op):
         """
