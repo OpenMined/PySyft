@@ -15,6 +15,7 @@ import shaloop
 import multiprocessing
 import asyncio
 import rustfss
+import os
 
 import torch as th
 import syft as sy
@@ -26,6 +27,7 @@ from syft.generic.utils import remote
 
 λ = 127  # security parameter
 n = 32  # bit precision
+N = 4  # byte precision
 λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
 assert λs == 2
 
@@ -41,8 +43,16 @@ EQ = 0
 COMP = 1
 
 # number of processes
-N_CORES = max(4, multiprocessing.cpu_count())
-MULTI_LIMIT = 50_000
+# N_CORES = max(4, multiprocessing.cpu_count() - 2)
+
+N_CORES = 4
+
+
+# Cheap way?
+os.environ["RAYON_NUM_THREADS"] = str(N_CORES)
+
+# MULTI_LIMIT = 50_000
+MULTI_LIMIT = 1e12
 
 
 def keygen(n_values, op):
@@ -53,44 +63,50 @@ def keygen(n_values, op):
         n_values (int): number of primitives to generate
         op (str): eq or comp <=> DPF or DIF
     """
+    print(f"Run keygen op {op}, {n_values} values.")
+
     if op == "eq":
         return DPF.keygen(n_values=n_values)
     elif op == "comp":
-        if n_values > MULTI_LIMIT:
-            multiprocessing_args = []
-            slice_size = math.ceil(n_values / N_CORES)
-            for j in range(N_CORES):
-                n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
-                process_args = (n_instances,)  # TODO add a seed element for the PRG?
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(DIF.keygen, multiprocessing_args)
-            p.close()
-            list_items = [[] for _ in range(len(partitions[0]))]
-            for idx, partition in enumerate(partitions):
-                for i, item in enumerate(partition):
-                    if isinstance(item, tuple):
-                        if len(list_items[i]) == 0:
-                            list_items[i] = [[] for _ in range(len(item))]
-                        for j, it in enumerate(item):
-                            list_items[i][j].append(it)
-                    else:
-                        list_items[i].append(item)
+        return DIF.keygen(n_values=n_values)
 
-            primitives = []
-            for items in list_items:
-                if isinstance(items[0], np.ndarray):
-                    primitive = concat(*items, axis=-1)
-                    primitives.append(primitive)
-                else:
-                    list_primitives = []
-                    for its in items:
-                        list_primitives.append(concat(*its, axis=-1))
-                    primitives.append(tuple(list_primitives))
+        #  Multiprocessing in Rust instead.
 
-            return primitives
-        else:
-            return DIF.keygen(n_values)
+        # if n_values > MULTI_LIMIT:
+        #     multiprocessing_args = []
+        #     slice_size = math.ceil(n_values / N_CORES)
+        #     for j in range(N_CORES):
+        #         n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
+        #         process_args = (n_instances,)  # TODO add a seed element for the PRG?
+        #         multiprocessing_args.append(process_args)
+        #     p = multiprocessing.Pool()
+        #     partitions = p.starmap(DIF.keygen, multiprocessing_args)
+        #     p.close()
+        #     list_items = [[] for _ in range(len(partitions[0]))]
+        #     for idx, partition in enumerate(partitions):
+        #         for i, item in enumerate(partition):
+        #             if isinstance(item, tuple):
+        #                 if len(list_items[i]) == 0:
+        #                     list_items[i] = [[] for _ in range(len(item))]
+        #                 for j, it in enumerate(item):
+        #                     list_items[i][j].append(it)
+        #             else:
+        #                 list_items[i].append(item)
+
+        #     primitives = []
+        #     for items in list_items:
+        #         if isinstance(items[0], np.ndarray):
+        #             primitive = concat(*items, axis=-1)
+        #             primitives.append(primitive)
+        #         else:
+        #             list_primitives = []
+        #             for its in items:
+        #                 list_primitives.append(concat(*its, axis=-1))
+        #             primitives.append(tuple(list_primitives))
+
+        #     return primitives
+        # else:
+        #     return DIF.keygen(n_values)
     else:
         raise ValueError
 
@@ -110,6 +126,8 @@ def fss_op(x1, x2, op="eq"):
     Returns:
         shares of the comparison
     """
+
+    print(f"Calling fss_op on {x1.shape}, for op {op}. Let coord: {x1[0]}")
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
@@ -134,14 +152,17 @@ def fss_op(x1, x2, op="eq"):
     ]
 
     try:
+        print("Getting shares.")
         shares = []
         for i, location in enumerate(locations):
             share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
             shares.append(share)
     except EmptyCryptoPrimitiveStoreError as e:
+        print("Couldn't get shares (empty store).")
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
         sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        print(f"Asked new primitives, and retry the same. Let coord: {x1[0]}")
         return fss_op(x1, x2, op)
 
     # async has a cost which is too expensive for this command
@@ -184,6 +205,7 @@ def fss_op(x1, x2, op="eq"):
 # share level
 @allow_command
 def mask_builder(x1, x2, op):
+    print(f"Mask builder on shape {x1.shape} for op {op}")
     if not isinstance(x1, int):
         worker = x1.owner
         numel = x1.numel()
@@ -193,7 +215,10 @@ def mask_builder(x1, x2, op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
     # you actually get a share of alpha
-    alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
+    # alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
+
+    keys = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
+    alpha = np.frombuffer(np.ascontiguousarray(keys[:, 0:N]), dtype=np.uint32)
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r
 
@@ -204,43 +229,52 @@ def evaluate(b, x_masked, op, dtype):
     if op == "eq":
         return eq_evaluate(b, x_masked)
     elif op == "comp":
-        numel = x_masked.numel()
-        if numel > MULTI_LIMIT:
-            # print('MULTI EVAL', numel, x_masked.owner)
-            owner = x_masked.owner
-            multiprocessing_args = []
-            original_shape = x_masked.shape
-            x_masked = x_masked.reshape(-1)
-            slice_size = math.ceil(numel / N_CORES)
-            for j in range(N_CORES):
-                x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
-                x_masked_slice.owner = owner
-                process_args = (b, x_masked_slice, owner.id, j, j * slice_size, dtype)
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(comp_evaluate, multiprocessing_args)
-            p.close()
-            partitions = sorted(partitions, key=lambda k: k[0])
-            partitions = [partition[1] for partition in partitions]
-            result = th.cat(partitions)
+        return comp_evaluate(b, x_masked, dtype=dtype)
 
-            # Burn the primitives (copies of the workers were sent)
-            owner.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=True)
+        # numel = x_masked.numel()
 
-            return result.reshape(*original_shape)
-        else:
-            # print('EVAL', numel)
-            return comp_evaluate(b, x_masked, dtype=dtype)
+        # if numel > MULTI_LIMIT:
+        #     # print('MULTI EVAL', numel, x_masked.owner)
+        #     owner = x_masked.owner
+        #     multiprocessing_args = []
+        #     original_shape = x_masked.shape
+        #     x_masked = x_masked.reshape(-1)
+        #     slice_size = math.ceil(numel / N_CORES)
+        #     for j in range(N_CORES):
+        #         x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
+        #         x_masked_slice.owner = owner
+        #         process_args = (b, x_masked_slice, owner.id, j, j * slice_size, dtype)
+        #         multiprocessing_args.append(process_args)
+        #     p = multiprocessing.Pool()
+        #     partitions = p.starmap(comp_evaluate, multiprocessing_args)
+        #     p.close()
+        #     partitions = sorted(partitions, key=lambda k: k[0])
+        #     partitions = [partition[1] for partition in partitions]
+        #     result = th.cat(partitions)
+
+        #     # Burn the primitives (copies of the workers were sent)
+        #     owner.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=True)
+
+        #     return result.reshape(*original_shape)
+        # else:
+        #     # print('EVAL', numel)
+        #     return comp_evaluate(b, x_masked, dtype=dtype)
     else:
         raise ValueError
 
 
 # process level
 def eq_evaluate(b, x_masked):
-    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+    # alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+    #     op="fss_eq", n_instances=x_masked.numel(), remove=True
+    # )
+    # result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+
+    keys = x_masked.owner.crypto_store.get_keys(
         op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+    result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), keys)
+
     return th.tensor(result_share)
 
 
@@ -253,10 +287,15 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
         _ = x_masked.owner.crypto_store.get_keys(
             op="fss_comp", n_instances=burn_offset, remove=True
         )
-    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+    # alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+    #     op="fss_comp", n_instances=x_masked.numel(), remove=True
+    # )
+    # result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+
+    keys = x_masked.owner.crypto_store.get_keys(
         op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+    result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), keys)
 
     dtype_options = {None: th.long, "int": th.int32, "long": th.long}
     result = th.tensor(result_share, dtype=dtype_options[dtype])
@@ -279,11 +318,11 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        return rustfss.eq.keygen(n_values=n_values)
+        return rustfss.eq.keygen(n_values=n_values, n_threads=N_CORES)
 
     @staticmethod
     def eval(b, x, k_b):
-        return rustfss.eq.eval(b, x, k_b)
+        return rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
 
     @staticmethod
     def py_keygen(n_values=1):
@@ -345,11 +384,12 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        return rustfss.le.keygen(n_values=n_values)
+        return rustfss.le.keygen(n_values=n_values, n_threads=N_CORES)
 
     @staticmethod
     def eval(b, x, k_b):
-        return rustfss.le.eval(b, x, k_b)
+        print(f" Run eval on types {b}, {x.dtype}, {k_b.dtype}")
+        return rustfss.le.eval(b, x, k_b, n_threads=N_CORES)
 
     @staticmethod
     def py_keygen(n_values=1):

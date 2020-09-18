@@ -94,19 +94,20 @@ class PrimitiveStorage:
                         f"[({str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})], "
                         f"n_instances={n_instances}"
                     )
-                # print("get keys beaver failure")
-                # raise Exception("Une exception de gitan beaver.")
 
                 raise EmptyCryptoPrimitiveStoreError(
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
         elif op in {"fss_eq", "fss_comp"}:
-            # print(f"Primitive stack: {primitive_stack}")
+            # print(f"Primitive stack: {primitive_stack}\n op {op}")
             # Primitive stack is a list of keys arrays (2d numpy u8 arrays).
             # TODO: should we get the most relevant stack? Generation/consumption algo.
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
 
             if available_instances >= n_instances:
+                print(
+                    f"Got {n_instances} keys for op {op} from the stack which had {available_instances} keys."
+                )
                 keys = primitive_stack[0][0:n_instances]
                 if remove:
                     primitive_stack[0] = primitive_stack[0][n_instances:]
@@ -158,8 +159,6 @@ class PrimitiveStorage:
                         f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
                         f"n_instances={n_instances}"
                     )
-                # print("get keys fss failure")
-                # raise Exception("Une exception de gitan.")
                 raise EmptyCryptoPrimitiveStoreError(
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
@@ -172,7 +171,7 @@ class PrimitiveStorage:
 
         Args:
             op (str): type of primitive (fss_eq, etc)
-            workers (AbstractWorker): recipients for those primitive
+            workers (AbstractWorker): recipients for those primitives
             n_instances (int): how many of them are needed
             **kwargs: any parameters needed for the primitive builder
         """
@@ -184,7 +183,7 @@ class PrimitiveStorage:
 
         t = time.time()
         primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
-        print(f"Builder returned {n_instances} primitives in {time.time() - t}.")
+        # print(f"Builder returned {n_instances} primitives in {time.time() - t}.")
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -195,7 +194,7 @@ class PrimitiveStorage:
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
             self._owner.send_msg(worker_message, worker)
-            print(f"Message sent {n_instances} primitives to {worker} in {time.time() - t}.")
+            # print(f"Message sent {n_instances} primitives to {worker} in {time.time() - t}.")
 
     def add_primitives(self, types_primitives: dict):
         """
@@ -220,16 +219,14 @@ class PrimitiveStorage:
             elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0:
                     setattr(self, op, [primitives])
-                    print("Len 0")
+                    current_primitives = getattr(self, op)
+
                 else:
-                    # TODO: array friendly. Why are we merging primitives?
-                    print(f"Current primitives: {current_primitives}")
-                    print(f"New prims: {primitives}")
+                    # TODO: on the fly -> should not be used.
+                    print("Appending primitives.")
 
                     # current_primitives = np.concatenate(current_primitives, primitives)
                     current_primitives.append(primitives)
-
-                    print(f"After adding to store: {current_primitives}")
 
                 #         for i, primitive in enumerate(primitives):
                 #             if len(current_primitives[i]) == 0:
