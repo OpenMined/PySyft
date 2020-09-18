@@ -65,8 +65,6 @@ class Callable(ast.attribute.Attribute):
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:
 
-        self.return_type_name = return_type_name
-
         if index < len(path):
             if path[index] not in self.attrs:
 

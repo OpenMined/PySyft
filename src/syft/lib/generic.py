@@ -23,7 +23,14 @@ class CWrapper:
     def __getattribute__(self, name: str) -> Any:
         # intercept any getter and proxy everything except the following through to the
         # self._wrapper reference
-        if name in ["id", "_original_constructor", "_wrapped"]:
+        if name in [
+            "id",
+            "_id",
+            "_original_constructor",
+            "_wrapped",
+            "__name__",
+            "__class__",
+        ]:
             return object.__getattribute__(self, name)
 
         return self._wrapped.__getattribute__(name)
@@ -151,10 +158,10 @@ class ObjectConstructor(object):
                 type_to_subclass = original_constructor
 
             def id_get(__self: Any) -> UID:
-                return __self.__id
+                return __self._id
 
             def id_set(__self: Any, new_id: UID) -> None:
-                __self.__id = new_id
+                __self._id = new_id
 
             id_property = property(fget=id_get, fset=id_set)
 
@@ -172,11 +179,33 @@ class ObjectConstructor(object):
                 attrs["id"] = id_property
 
                 try:
+
                     OriginalConstructorSubclass = type(
                         name,
                         (type_to_subclass,),
                         attrs,
                     )
+
+                    # TODO Fix this better
+                    # torch.nn.Parameter.__repr__ throws an exception after we install
+                    # our library, so we can catch it and just return something
+                    org_repr = OriginalConstructorSubclass.__repr__
+
+                    def make_repr(org_repr: Callable) -> Callable:
+                        def try_repr(self: Any) -> str:
+                            try:
+                                return org_repr(self)
+                            except Exception as e:  # noqa: F841
+                                # uncomment to see the issue
+                                # print("Exception on __repr__", e)
+                                return str(type(self).__name__)
+
+                        return try_repr
+
+                    setattr(
+                        OriginalConstructorSubclass, "__repr__", make_repr(org_repr)
+                    )
+
                 except TypeError:
                     # TypeError: type 'x' is not an acceptable base type
                     # Sometimes we cant set attributes of built-in/extension type so we
