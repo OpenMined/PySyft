@@ -3,6 +3,7 @@ from math import isinf
 from math import isnan
 import operator
 import random
+import sys
 import time
 
 # third party
@@ -288,7 +289,6 @@ def test_Float_with_comma() -> None:
     assert Float("  25.e-1  ") == 2.5
 
 
-@pytest.mark.xfail
 def test_Floatconversion() -> None:
     # Make sure that calls to __float__() work properly
     class Foo1(object):
@@ -330,16 +330,20 @@ def test_Floatconversion() -> None:
     with pytest.raises(TypeError):
         time.sleep(Foo5())
 
-    class MyIndex:
-        def __init__(self, value):
-            self.value = value
+    # using __index__ in init was added in python 3.8
+    # https://github.com/python/cpython/commit/bdbad71b9def0b86433de12cecca022eee91bd9f
+    if sys.version_info >= (3, 8):
 
-        def __index__(self):
-            return self.value
+        class MyIndex:
+            def __init__(self, value):
+                self.value = value
 
-    assert Float(MyIndex(42)) == 42.0
-    with pytest.raises(OverflowError):
-        Float(MyIndex(2 ** 2000))
+            def __index__(self):
+                return self.value
+
+        assert Float(MyIndex(42)) == 42.0
+        with pytest.raises(OverflowError):
+            Float(MyIndex(2 ** 2000))
 
     class MyInt:
         def __int__(self):
