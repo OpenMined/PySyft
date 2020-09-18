@@ -1,5 +1,6 @@
 # stdlib
 from abc import ABC
+from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -7,6 +8,20 @@ from typing import Union
 from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
+
+
+def isprimitive(value: Any) -> bool:
+    if not issubclass(type(value), PyPrimitive) and type(value) in [
+        int,
+        float,
+        bool,
+        complex,
+        list,
+        str,
+        None,
+    ]:
+        return True
+    return False
 
 
 class PrimitiveFactory(ABC):

@@ -21,5 +21,10 @@ class ServerThread(threading.Thread):
     def run(self) -> None:
         self.srv.serve_forever()
 
+    def __del__(self) -> None:
+        self.shutdown()
+
     def shutdown(self) -> None:
-        self.srv.shutdown()
+        srv = getattr(self, "srv", None)
+        if srv is not None:
+            srv.shutdown()
