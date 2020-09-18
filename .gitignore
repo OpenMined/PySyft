@@ -20,4 +20,4 @@ docs/_modules
 .coverage
 .vscode/
 **/pip-wheel-metadata
-
+.ropeproject/

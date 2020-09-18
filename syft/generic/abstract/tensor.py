@@ -5,10 +5,9 @@ import syft as sy
 from syft.generic.abstract.object import _apply_args  # noqa: F401
 from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.abstract.object import initialize_object
-from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractTensor(AbstractSendable, SyftSerializable):
+class AbstractTensor(AbstractSendable):
     def __init__(
         self,
         id: int = None,
@@ -18,6 +17,9 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         child=None,
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
+
+    def has_child(self):
+        return hasattr(self, "child")
 
     def wrap(self, register=True, type=None, **kwargs):
         """Wraps the class inside an empty object of class `type`.
@@ -89,7 +91,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         cloned_tensor.id = self.id
         cloned_tensor.owner = self.owner
 
-        if hasattr(self, "child") and self.child is not None:
+        if self.has_child() and self.child is not None:
             cloned_tensor.child = self.child.clone()
 
         return cloned_tensor
@@ -98,7 +100,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         """
         Forward to Additive Shared Tensor the call to refresh shares
         """
-        if hasattr(self, "child"):
+        if self.has_child():
             self.child = self.child.refresh()
             return self
         else:
@@ -111,7 +113,7 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
     def __len__(self) -> int:
         """Alias .shape[0] with len(), helpful for pointers"""
         try:
-            if hasattr(self, "child") and not isinstance(self.child, dict):
+            if self.has_child() and not isinstance(self.child, dict):
                 return self.child.shape[0]
             else:
                 return self.shape[0]

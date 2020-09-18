@@ -41,6 +41,7 @@ def test_share_get(workers, protocol, dtype, n_workers):
 
     t = torch.tensor([1, 2, 3])
     x = t.share(*share_holders[:n_workers], **kwargs)
+    assert t.dtype == x.dtype
     x = x.get()
 
     assert (x == t).all()
@@ -319,82 +320,138 @@ def test_sub(workers):
     assert (z.get().float_prec() == torch.tensor([3.0, 5.0, -1.0])).all()
 
 
-def test_mul(workers):
+@pytest.mark.parametrize("dtype", ["int", "long"])
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+@pytest.mark.parametrize("force_preprocessing", [True, False])
+def test_mul(workers, dtype, protocol, force_preprocessing):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james, charlie = (
-        workers["bob"],
+
+    me, alice, bob, charlie, crypto_provider = (
+        workers["me"],
         workers["alice"],
-        workers["james"],
+        workers["bob"],
         workers["charlie"],
+        workers["james"],
     )
 
     # 2 workers
+    args = (alice, bob)
+    kwargs = dict(dtype=dtype, protocol=protocol, crypto_provider=crypto_provider)
+
+    if force_preprocessing:
+        me.crypto_store.provide_primitives(
+            "mul",
+            args,
+            n_instances=5,
+            shapes=[((4,), (4,)), ((1,), (3,))],
+        )
+
     t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, crypto_provider=james)
+    x = t.share(*args, **kwargs)
     y = x * x
     assert (y.get() == (t * t)).all()
 
-    # 3 workers
-    t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, charlie, crypto_provider=james)
-    y = x * x
-    assert (y.get() == (t * t)).all()
+    # TODO 3 workers not supported for the moment
+    # t = torch.tensor([1, 2, 3, 4])
+    # x = t.share(bob, alice, charlie, crypto_provider=crypto_provider)
+    # y = x * x
+    # assert (y.get() == (t * t)).all()
 
     # with fixed precision
-    x = torch.tensor([1, -2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
-    y = torch.tensor([-1, 2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    args = (alice, bob)
+    x = torch.tensor([1, -2, -3, 4.0]).fix_prec(dtype=dtype).share(*args, **kwargs)
+    y = torch.tensor([-1, 2, -3, 4.0]).fix_prec(dtype=dtype).share(*args, **kwargs)
     y = (x * y).get().float_prec()
 
     assert (y == torch.tensor([-1, -4, 9, 16.0])).all()
 
     # with non-default fixed precision
     t = torch.tensor([1, 2, 3, 4.0])
-    x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
+    x = t.fix_prec(dtype=dtype, precision_fractional=2).share(*args, **kwargs)
     y = (x * x).get().float_prec()
 
     assert (y == (t * t)).all()
 
     # with FPT>torch.tensor
-    t = torch.tensor([1.0, -2.0, 3.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
-    y = t.fix_prec()
+    t = torch.tensor([1.0, -2.0, 3.0, 4])
+    x = t.fix_prec(dtype=dtype).share(*args, **kwargs)
+    y = t.fix_prec(dtype=dtype)
 
     z = (x * y).get().float_prec()
 
     assert (z == (t * t)).all()
 
-    # with dtype int
-    x = (
-        torch.tensor([1, -2, -3, 4.0])
-        .fix_prec(dtype="int")
-        .share(bob, alice, crypto_provider=james)
-    )
-    y = (
-        torch.tensor([-1, 2, -3, 4.0])
-        .fix_prec(dtype="int")
-        .share(bob, alice, crypto_provider=james)
-    )
+    # different shapes
+    x = torch.tensor([2.0]).fix_prec(dtype=dtype).share(*args, **kwargs)
+    y = torch.tensor([2.0, -3.0, 1]).fix_prec(dtype=dtype).share(*args, **kwargs)
     z = x * y
-    assert (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
+    assert (z.get().float_prec() == torch.tensor([4.0, -6, 2])).all()
 
 
-def test_public_mul(workers):
-    bob, alice, james, charlie = (
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+@pytest.mark.parametrize("force_preprocessing", [True, False])
+def test_matmul(workers, protocol, force_preprocessing):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    me, bob, alice, charlie, crypto_provider = (
+        workers["me"],
         workers["bob"],
         workers["alice"],
-        workers["james"],
         workers["charlie"],
+        workers["james"],
     )
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+
+    if force_preprocessing:
+        me.crypto_store.provide_primitives(
+            "matmul",
+            args,
+            n_instances=1,
+            shapes=[((2, 2), (2, 2))],
+        )
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(*args, **kwargs)
+    y = (x @ x).get().float_prec()
+
+    assert (y == (m @ m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(*args, **kwargs)
+    y = m.fix_prec()
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
+    z = (y @ x).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_public_mul(workers, protocol):
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
     for y in [0, 1]:
         t = torch.tensor([-3.1, 1.0])
-        x = t.fix_prec().share(alice, bob, crypto_provider=james)
+        x = t.fix_prec().share(*args, **kwargs)
         z = (x * y).get().float_prec()
         assert (z == (t * y)).all()
 
     for t_y in [torch.tensor([1.0]), torch.tensor([0.0]), torch.tensor([0.0, 2.1])]:
         t_x = torch.tensor([-3.1, 1])
-        x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+        x = t_x.fix_prec().share(*args, **kwargs)
         y = t_y.fix_prec()
         z = x * y
         z = z.get().float_prec()
@@ -403,18 +460,18 @@ def test_public_mul(workers):
     # with dtype int
     t_x = torch.tensor([-3.1, 1])
     t_y = torch.tensor([0.0, 2.1])
-    x = t_x.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
+    x = t_x.fix_prec(dtype="int").share(*args, **kwargs)
     y = t_y.fix_prec(dtype="int")
     z = x * y
     z = z.get().float_prec()
     assert (z == t_x * t_y).all()
 
-    # 3 workers
-    t = torch.tensor([-3.1, 1.0])
-    x = t.fix_prec().share(alice, bob, charlie, crypto_provider=james)
-    y = 1
-    z = (x * y).get().float_prec()
-    assert (z == (t * y)).all()
+    # TODO 3 workers
+    # t = torch.tensor([-3.1, 1.0])
+    # x = t.fix_prec().share(alice, bob, charlie, crypto_provider=crypto_provider)
+    # y = 1
+    # z = (x * y).get().float_prec()
+    # assert (z == (t * y)).all()
 
 
 def test_div(workers):
@@ -546,36 +603,22 @@ def test_roll(workers):
     assert (res2.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
 
 
-def test_matmul(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_mm(workers, protocol):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    me, bob, alice, charlie, crypto_provider = (
+        workers["me"],
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
 
-    m = torch.tensor([[1, 2], [3, 4.0]])
-    x = m.fix_prec().share(bob, alice, crypto_provider=james)
-    y = (x @ x).get().float_prec()
-
-    assert (y == (m @ m)).all()
-
-    # with FPT>torch.tensor
-    m = torch.tensor([[1, 2], [3, 4.0]])
-    x = m.fix_prec().share(bob, alice, crypto_provider=james)
-    y = m.fix_prec()
-
-    z = (x @ y).get().float_prec()
-
-    assert (z == (m @ m)).all()
-
-    z = (y @ x).get().float_prec()
-
-    assert (z == (m @ m)).all()
-
-
-def test_mm(workers):
-    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
     t = torch.tensor([[1, 2], [3, 4.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
 
     # Using the method
     y = (x.mm(x)).get().float_prec()
@@ -587,7 +630,7 @@ def test_mm(workers):
 
     # with FPT>torch.tensor
     t = torch.tensor([[1, 2], [3, 4.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     y = t.fix_prec()
 
     # Using the method
@@ -676,11 +719,6 @@ def test_eq(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
-
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
@@ -701,7 +739,8 @@ def test_eq(workers, protocol):
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
-def test_comp(workers, protocol):
+@pytest.mark.parametrize("force_preprocessing", [True, False])
+def test_comp(workers, protocol, force_preprocessing):
     me, alice, bob, crypto_provider = (
         workers["me"],
         workers["alice"],
@@ -709,12 +748,8 @@ def test_comp(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
-        )
+    if force_preprocessing:
+        me.crypto_store.provide_primitives("fss_comp", [alice, bob], n_instances=50)
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -773,30 +808,51 @@ def test_max(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
-        )
-
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
-    t = torch.tensor([3, 1.0, 2])
+    t = torch.tensor([3, 1.0, -2])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([3.0])
 
-    t = torch.tensor([3, 4.0])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([4.0])
 
-    t = torch.tensor([3, 4.0, 5, 2])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
-    max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([5.0])
+    max_value = x.max(dim=0).get().float_prec()
+    assert (max_value == t.max(dim=0)[0]).all()
+
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_min(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    t = torch.tensor([3, 1.0, -2])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min().get().float_prec()
+    assert min_value == torch.tensor([-2.0])
+
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min().get().float_prec()
+    assert min_value == torch.tensor([1.0])
+
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    min_value = x.min(dim=0).get().float_prec()
+    assert (min_value == t.min(dim=0)[0]).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
@@ -807,13 +863,6 @@ def test_argmax(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -833,7 +882,7 @@ def test_argmax(workers, protocol):
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([2.0])
 
-    # no dim=
+    # no dim
     t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax().get().float_prec()
@@ -845,6 +894,70 @@ def test_argmax(workers, protocol):
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
 
+    # one_hot=True
+    t = torch.tensor([[3, 4.2, 6.0, 1.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    one_hot = x.argmax(one_hot=True).get().float_prec()
+    assert (one_hot == torch.tensor([0.0, 0.0, 1.0, 0.0])).all()
+
+    # keepdim=True
+    t = torch.tensor([[4.1, 3, 2.1], [2.1, 4.1, 0.9]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmax(dim=1, keepdim=True).get().float_prec()
+    assert (ids.long() == torch.argmax(t, dim=1, keepdim=True)).all()
+
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_argmin(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(*args, **kwargs)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([1.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(*args, **kwargs)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([0.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(*args, **kwargs)
+    idx = x.argmin().get().float_prec()
+    assert idx == torch.tensor([3.0])
+
+    # no dim
+    t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin().get().float_prec()
+    assert ids.long() == torch.argmin(t)
+
+    # dim=1
+    t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin(dim=1).get().float_prec()
+    assert (ids.long() == torch.argmin(t, dim=1)).all()
+
+    # one_hot=True
+    t = torch.tensor([3, 4.2, 6.0, 1.0])
+    x = t.fix_prec().share(*args, **kwargs)
+    one_hot = x.argmin(one_hot=True).get().float_prec()
+    assert (one_hot == torch.tensor([0.0, 0.0, 0, 1.0])).all()
+
+    # keepdim=True
+    t = torch.tensor([[4.1, 3, 2.1], [2.1, 4.1, 0.9]])
+    x = t.fix_prec().share(*args, **kwargs)
+    ids = x.argmin(dim=1, keepdim=True).get().float_prec()
+    assert (ids.long() == torch.argmin(t, dim=1, keepdim=True)).all()
+
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_max_pool2d(workers, protocol):
@@ -855,33 +968,8 @@ def test_max_pool2d(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
-
     args = (alice, bob)
     kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
-
-    if protocol == "fss":
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=1000
-        )
-        # me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=2000)
-        # me.crypto_store.provide_primitives(
-        #     ["beaver"],
-        #     [alice, bob],
-        #     n_instances=2,
-        #     beaver={
-        #         "op_shapes": [
-        #             ("mul", torch.Size([3, 7, 4, 2]), torch.Size([3, 7, 4, 2])),
-        #             ("mul", torch.Size([3, 7, 4]), torch.Size([3, 7, 4])),
-        #             ("mul", torch.Size([3, 7, 1, 9]), torch.Size([3, 7, 1, 9])),
-        #         ]
-        #     },
-        # )
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
@@ -908,13 +996,6 @@ def test_avg_pool2d(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = dict(crypto_provider=crypto_provider, protocol="fss")

@@ -63,17 +63,7 @@ def batch_norm(
         mean = running_mean
         var = running_var
 
-    x = None
-
-    C = 20
-
-    for i in range(80):
-        if x is not None:
-            y = C + 1 - var * (x * x)
-            x = y * x / C
-        else:
-            y = C + 1 - var
-            x = y / C
+    x = var.reciprocal(method="newton")
 
     normalized = x * (input - mean)
     result = normalized * weight + bias

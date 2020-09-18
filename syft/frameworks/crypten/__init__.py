@@ -41,7 +41,7 @@ def get_worker_from_rank(rank: int, cid: int = None) -> BaseWorker:
 
 
 def load(tag: str, src: int, **kwargs):
-    """ TODO: Think of a method to keep the serialized models at the workers that are part of the
+    """TODO: Think of a method to keep the serialized models at the workers that are part of the
     computation in such a way that the worker that started the computation do not know what
     model architecture is used
 

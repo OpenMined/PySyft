@@ -7,7 +7,7 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
-from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.execution.translation.threepio import PlanTranslatorTfjs
 
@@ -537,6 +537,7 @@ def make_additivesharingtensor(**kwargs):
         )
         assert detailed.id == original.id
         assert detailed.field == original.field
+        assert detailed.protocol == original.protocol
         assert detailed.child.keys() == original.child.keys()
         return True
 
@@ -552,6 +553,7 @@ def make_additivesharingtensor(**kwargs):
                     (CODE[str], (str(ast.field).encode("utf-8"),))
                     if ast.field == 2 ** 64
                     else ast.field,  # (int or str) field
+                    (CODE[str], (str(ast.protocol).encode("utf-8"),)),  # (str) protocol
                     ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
@@ -1372,6 +1374,53 @@ def make_virtual_worker(**kwargs):
     ]
 
 
+# This should be enabled in future when we have a running Pygrid Node for testing
+"""
+# syft.workers.virtual.VirtualWorker
+def make_data_centric_fl_client(**kwargs):
+    data_centric_fl_client = DataCentricFLClient(
+        hook=kwargs["workers"]["serde_worker"].hook, address="http://0.0.0.0:5001", id="test_bob"
+    )
+
+    return [
+        {
+            "value": data_centric_fl_client,
+            "simplified": (
+                CODE[syft.grid.clients.data_centric_fl_client.DataCentricFLClient],
+                (
+                    json.dumps(data_centric_fl_client.address),
+                    json.dumps(data_centric_fl_client.id),
+                    json.dumps(data_centric_fl_client.is_client_worker),
+                    json.dumps(data_centric_fl_client.log_msgs),
+                    json.dumps(data_centric_fl_client.verbose),
+                    json.dumps(data_centric_fl_client.encoding),
+                    json.dumps(data_centric_fl_client.timeout),
+                ),
+            ),
+        },
+    ]
+
+
+# syft.workers.virtual.VirtualWorker
+def make_model_centric_fl_client(**kwargs):
+    model_centric_fl_client = ModelCentricFLClient(address="http://0.0.0.0:5001", id="test_bob")
+
+    return [
+        {
+            "value": model_centric_fl_client,
+            "simplified": (
+                CODE[syft.grid.clients.model_centric_fl_client.ModelCentricFLClient],
+                (
+                    json.dumps(model_centric_fl_client.address),
+                    json.dumps(model_centric_fl_client.id),
+                    json.dumps(model_centric_fl_client.secure),
+                ),
+            ),
+        }
+    ]
+"""
+
+
 # syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor
 def make_autogradtensor(**kwargs):
 
@@ -2038,6 +2087,44 @@ def make_responsesignatureerror(**kwargs):
                     ),  # (str) traceback
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], err.get_attributes()
+                    ),  # (dict) attributes
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.exceptions.EmptyCryptoPrimitiveStoreError
+def make_emptycryptoprimitivestoreerror(**kwargs):
+    try:
+        raise syft.exceptions.EmptyCryptoPrimitiveStoreError()
+    except syft.exceptions.EmptyCryptoPrimitiveStoreError as e:
+        err = e
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.exceptions.EmptyCryptoPrimitiveStoreError
+        assert (
+            traceback.format_tb(detailed.__traceback__)[-1]
+            == traceback.format_tb(original.__traceback__)[-1]
+        )
+        assert detailed.kwargs_ == original.kwargs_
+        return True
+
+    return [
+        {
+            "value": err,
+            "simplified": (
+                CODE[syft.exceptions.EmptyCryptoPrimitiveStoreError],
+                (
+                    (CODE[str], (b"EmptyCryptoPrimitiveStoreError",)),  # (str) __name__
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"],
+                        "Traceback (most recent call last):\n"
+                        + "".join(traceback.format_tb(err.__traceback__)),
+                    ),  # (str) traceback
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], {"kwargs_": err.kwargs_}
                     ),  # (dict) attributes
                 ),
             ),

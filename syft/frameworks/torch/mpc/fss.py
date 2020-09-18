@@ -9,22 +9,27 @@ Useful papers are:
 
 Note that the protocols are quite different in aspect from those papers
 """
-import hashlib
+import math
+import numpy as np
+import shaloop
+import multiprocessing
+import asyncio
 
 import torch as th
 import syft as sy
-import math
-import numpy as np
+
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.generic.utils import allow_command
+from syft.generic.utils import remote
+
 
 import torchcsprng as csprng
 
-
 λ = 127  # security parameter
-n = 32  # 8  # 32  # bit precision
+n = 32  # bit precision
 λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
 assert λs == 2
-
-#dtype = th.int32
 
 no_wrap = {"no_wrap": True}
 
@@ -33,121 +38,230 @@ EQ = 0
 COMP = 1
 
 
-def initialize_crypto_plans(worker):
+def full_name(f):
+    return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
+
+
+def keygen(n_values, op):
     """
-    This is called manually for the moment, to build the plan used to perform
-    Function Secret Sharing on a specific worker.
+    Run FSS keygen in parallel to accelerate the offline part of the protocol
+
+    Args:
+        n_values (int): number of primitives to generate
+        op (str): eq or comp <=> DPF or DIF
     """
-    eq_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, "eq"),
-        owner=worker,
-        tags=["#fss_eq_plan_1"],
-        is_built=True,
-    )
-    worker.register_obj(eq_plan_1)
-    eq_plan_2 = sy.Plan(
-        forward_func=eq_eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
-    )
-    worker.register_obj(eq_plan_2)
+    if op == "eq":
+        return DPF.keygen(n_values=n_values)
+    elif op == "comp":
+        if n_values > MULTI_LIMIT:
+            multiprocessing_args = []
+            slice_size = math.ceil(n_values / N_CORES)
+            for j in range(N_CORES):
+                n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
+                process_args = (n_instances,)  # TODO add a seed element for the PRG?
+                multiprocessing_args.append(process_args)
+            p = multiprocessing.Pool()
+            partitions = p.starmap(DIF.keygen, multiprocessing_args)
+            p.close()
+            list_items = [[] for _ in range(len(partitions[0]))]
+            for idx, partition in enumerate(partitions):
+                for i, item in enumerate(partition):
+                    if isinstance(item, tuple):
+                        if len(list_items[i]) == 0:
+                            list_items[i] = [[] for _ in range(len(item))]
+                        for j, it in enumerate(item):
+                            list_items[i][j].append(it)
+                    else:
+                        list_items[i].append(item)
 
-    comp_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, "comp"),
-        owner=worker,
-        tags=["#fss_comp_plan_1"],
-        is_built=True,
-    )
-    worker.register_obj(comp_plan_1)
-    comp_plan_2 = sy.Plan(
-        forward_func=comp_eval_plan, owner=worker, tags=["#fss_comp_plan_2"], is_built=True
-    )
-    worker.register_obj(comp_plan_2)
+            primitives = []
+            for items in list_items:
+                if isinstance(items[0], np.ndarray):
+                    primitive = concat(*items, axis=-1)
+                    primitives.append(primitive)
+                else:
+                    list_primitives = []
+                    for its in items:
+                        list_primitives.append(concat(*its, axis=-1))
+                    primitives.append(tuple(list_primitives))
+
+            return primitives
+        else:
+            return DIF.keygen(n_values)
+    else:
+        raise ValueError
 
 
-def request_run_plan(worker, plan_tag, location, return_value, args=(), kwargs={}):
-    response_ids = (sy.ID_PROVIDER.pop(),)
-    args = (args, response_ids)
-
-    response = worker.send_command(
-        cmd_name="run",
-        target=plan_tag,
-        recipient=location,
-        return_ids=response_ids,
-        return_value=return_value,
-        kwargs_=kwargs,
-        args_=args,
-    )
-    return response
-
-
-def fss_op(x1, x2, type_op="eq"):
+def fss_op(x1, x2, op="eq"):
     """
     Define the workflow for a binary operation using Function Secret Sharing
 
     Currently supported operand are = & <=, respectively corresponding to
-    type_op = 'eq' and 'comp'
+    op = 'eq' and 'comp'
 
     Args:
         x1: first AST
         x2: second AST
-        type_op: type of operation to perform, should be 'eq' or 'comp'
+        op: type of operation to perform, should be 'eq' or 'comp'
 
     Returns:
         shares of the comparison
     """
+    if isinstance(x1, sy.AdditiveSharingTensor):
+        locations = x1.locations
+        class_attributes = x1.get_class_attributes()
+    else:
+        locations = x2.locations
+        class_attributes = x2.get_class_attributes()
 
-    me = sy.local_worker
-    locations = x1.locations
+    dtype = class_attributes.get("dtype")
+    asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
-    shares = []
-    for location in locations:
-        args = (x1.child[location.id], x2.child[location.id])
-        share = request_run_plan(
-            me, f"#fss_{type_op}_plan_1", location, return_value=True, args=args
+    workers_args = [
+        (
+            x1.child[location.id]
+            if isinstance(x1, sy.AdditiveSharingTensor)
+            else (x1 if i == 0 else 0),
+            x2.child[location.id]
+            if isinstance(x2, sy.AdditiveSharingTensor)
+            else (x2 if i == 0 else 0),
+            op,
         )
-        shares.append(share)
+        for i, location in enumerate(locations)
+    ]
+
+    try:
+        shares = []
+        for i, location in enumerate(locations):
+            share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
+            shares.append(share)
+    except EmptyCryptoPrimitiveStoreError as e:
+        if sy.local_worker.crypto_store.force_preprocessing:
+            raise
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        return fss_op(x1, x2, op)
+
+    # async has a cost which is too expensive for this command
+    # shares = asyncio.run(sy.local_worker.async_dispatch(
+    #     workers=locations,
+    #     commands=[
+    #         (full_name(mask_builder), None, workers_args[i], {})
+    #         for i in [0, 1]
+    #     ],
+    #     return_value=True
+    # ))
 
     mask_value = sum(shares) % 2 ** n
 
-    shares = []
-    for i, location in enumerate(locations):
-        args = (th.tensor([i], device="cuda").int(), mask_value)
-        share = request_run_plan(
-            me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args
+    for location, share in zip(locations, shares):
+        location.de_register_obj(share)
+        del share
+
+    workers_args = [(th.IntTensor([i]), mask_value, op, dtype) for i in range(2)]
+    if not asynchronous:
+        shares = []
+        for i, location in enumerate(locations):
+            share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
+            shares.append(share)
+    else:
+        print("async")
+        shares = asyncio.run(
+            sy.local_worker.async_dispatch(
+                workers=locations,
+                commands=[(full_name(evaluate), None, workers_args[i], {}) for i in [0, 1]],
+            )
         )
-        shares.append(share)
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
-    response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
+    response = sy.AdditiveSharingTensor(shares, **class_attributes)
     return response
 
 
 # share level
-def mask_builder(x1, x2, type_op):
+@allow_command
+def mask_builder(x1, x2, op):
+    if not isinstance(x1, int):
+        worker = x1.owner
+        numel = x1.numel()
+    else:
+        worker = x2.owner
+        numel = x2.numel()
     x = x1 - x2
     # Keep the primitive in store as we use it after
-    alpha, s_0, *CW = x1.owner.crypto_store.get_keys(
-        f"fss_{type_op}", n_instances=x1.numel(), remove=False
-    )
-    return x + alpha.reshape(x.shape)
+    # you actually get a share of alpha
+    alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
+    r = x + th.tensor(alpha.astype(np.int64), device="cuda").reshape(x.shape)
+    return r
 
 
 # share level
-def eq_eval_plan(b, x_masked):
-    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="fss_eq", n_instances=x_masked.numel(), remove=True
-    )
-    result_share = DPF.eval(b, x_masked, s_0, *CW)
-    return result_share
+@allow_command
+def evaluate(b, x_masked, op, dtype):
+    if op == "eq":
+        return eq_evaluate(b, x_masked)
+    elif op == "comp":
+        numel = x_masked.numel()
+        if numel > MULTI_LIMIT:
+            # print('MULTI EVAL', numel, x_masked.owner)
+            owner = x_masked.owner
+            multiprocessing_args = []
+            original_shape = x_masked.shape
+            x_masked = x_masked.reshape(-1)
+            slice_size = math.ceil(numel / N_CORES)
+            for j in range(N_CORES):
+                x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
+                x_masked_slice.owner = owner
+                process_args = (b, x_masked_slice, owner.id, j, j * slice_size, dtype)
+                multiprocessing_args.append(process_args)
+            p = multiprocessing.Pool()
+            partitions = p.starmap(comp_evaluate, multiprocessing_args)
+            p.close()
+            partitions = sorted(partitions, key=lambda k: k[0])
+            partitions = [partition[1] for partition in partitions]
+            result = th.cat(partitions)
+
+            # Burn the primitives (copies of the workers were sent)
+            owner.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=True)
+
+            return result.reshape(*original_shape)
+        else:
+            # print('EVAL', numel)
+            return comp_evaluate(b, x_masked, dtype=dtype)
+    else:
+        raise ValueError
 
 
-# share level
-def comp_eval_plan(b, x_masked):
+# process level
+def eq_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="fss_comp", n_instances=x_masked.numel(), remove=True
+        op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DIF.eval(b, x_masked, s_0, *CW)
-    return result_share
+    result_share = DPF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
+    return th.tensor(result_share, device="cuda")
+
+
+# process level
+def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype=None):
+    if owner_id is not None:
+        x_masked.owner = x_masked.owner.get_worker(owner_id)
+
+    if burn_offset > 0:
+        _ = x_masked.owner.crypto_store.get_keys(
+            op="fss_comp", n_instances=burn_offset, remove=True
+        )
+    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+        op="fss_comp", n_instances=x_masked.numel(), remove=True
+    )
+    result_share = DIF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
+
+    dtype_options = {None: th.long, "int": th.int32, "long": th.long}
+    result = th.tensor(result_share, dtype=dtype_options[dtype], device="cuda")
+    if core_id is None:
+        return result
+    else:
+        return core_id, result
+
 
 
 def eq(x1, x2):
@@ -161,14 +275,10 @@ def le(x1, x2):
 class DPF:
     """Distributed Point Function - used for equality"""
 
-    def __init__(self):
-        pass
-
     @staticmethod
     def keygen(n_values=1):
         alpha = th.randint(0, 2 ** n, (n_values,), dtype=th.long, device="cuda")
         beta = th.tensor([1], device="cuda")
-
         α = bit_decomposition(alpha)
         s, t, CW = (
             Array(n + 1, 2, λs, n_values),
@@ -195,10 +305,8 @@ class DPF:
                 dual_state = [g0, g1][b] ^ (t[i, b] * CWi)
                 state = multi_dim_filter(dual_state, α[i])
                 s[i + 1, b], t[i + 1, b] = split(state, (EQ, λs, 1))
-
         CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
         CW_n = CW_n.type(th.long)
-
         return (alpha, s[0][0], s[0][1], *_CW, CW_n)
 
     eval_t = (np.array([[-42, -42]]*n).T).tolist()
@@ -223,10 +331,7 @@ class DPF:
 
 
 class DIF:
-    """Distributed Interval Function - used for comparison <="""
-
-    def __init__(self):
-        pass
+    """Distributed Point Function - used for comparison"""
 
     @staticmethod
     def keygen(n_values=1):
@@ -358,7 +463,6 @@ def uncompress(_CWi, op=EQ):
 
 def Array(*shape):
     return th.empty(shape, dtype=th.long, device="cuda")
-
 
 bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
 
@@ -508,28 +612,3 @@ def H(seed, idx=0):
     valuebits[1, 4] = buffer[7]
     valuebits[1, 5] = last_bit
     return valuebits
-
-def H_old(seed):
-    print(seed.shape, seed.dtype)
-    assert seed.shape[0] == λ
-    seed_t = seed.t().tolist()
-    gen_list = []
-    for seed_bit in seed_t:
-        enc_str = str(seed_bit).encode()
-        h = hashlib.sha3_256(enc_str)
-        r = h.digest()
-        binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
-        gen_list.append(list(map(int, binary_str)))
-
-    r =  th.tensor(gen_list, dtype=th.uint8).t()
-    print(r.shape, r.dtype)
-    return r
-
-def H_middleold(seed):
-    seed = seed.cuda()
-    urandom_gen = csprng.create_const_generator(key)
-    mask = th.empty(2 + (2 * (λ + 1)), seed.shape[1], dtype=th.uint8, device='cuda').random_(generator=urandom_gen)
-    repl_seed = seed.repeat(3, 1)[0:2 + (2 * (λ + 1))]
-    #print(repl_seed.shape, mask.shape)
-    return (mask + repl_seed).cpu()
-

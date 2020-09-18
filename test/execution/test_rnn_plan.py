@@ -94,7 +94,7 @@ class CustomGru(nn.Module):
 
 def test_rnn_plan_example():
     """
-    Prepares simple static federated learning training plan example that use an RNN.
+    Prepares simple model-centric federated learning training plan example that use an RNN.
     """
     # Disable translators
     Plan._build_translators = []
@@ -238,7 +238,13 @@ def test_rnn_plan_example():
 
     # Original forward func (Torch autograd)
     loss_torch, acc_torch, *params_torch = train(
-        data, initial_hidden, targets, lr, batch_size, sequence_length, model_state,
+        data,
+        initial_hidden,
+        targets,
+        lr,
+        batch_size,
+        sequence_length,
+        model_state,
     )
 
     # Traced forward func (traced autograd)

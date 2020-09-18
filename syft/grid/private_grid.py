@@ -10,7 +10,7 @@ from typing import Union
 
 import syft
 from syft.grid.abstract_grid import AbstractGrid
-from syft.grid.clients.dynamic_fl_client import DynamicFLClient
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 from syft.execution.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
@@ -19,10 +19,10 @@ class PrivateGridNetwork(AbstractGrid):
     def __init__(self, *workers):
         super().__init__()
         self.workers = list(workers)
-        self._connect_all_nodes(self.workers, DynamicFLClient)
+        self._connect_all_nodes(self.workers, DataCentricFLClient)
 
     def search(self, *query) -> Dict[Any, Any]:
-        """ Searches over a collection of workers, returning pointers to the results
+        """Searches over a collection of workers, returning pointers to the results
         grouped by worker.
 
         Args:
@@ -50,7 +50,7 @@ class PrivateGridNetwork(AbstractGrid):
         allow_download: bool = False,
         n_replica: int = 1,
     ):
-        """ Choose some node(s) on grid network to host a unencrypted / encrypted model.
+        """Choose some node(s) on grid network to host a unencrypted / encrypted model.
 
         Args:
             model: Model to be hosted.
@@ -64,7 +64,7 @@ class PrivateGridNetwork(AbstractGrid):
             NotImplementedError: If workers used by grid network aren't grid nodes.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, DynamicFLClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         if n_replica > len(self.workers):
@@ -86,7 +86,7 @@ class PrivateGridNetwork(AbstractGrid):
                 self._host_encrypted_model(model)
 
     def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False) -> torch.Tensor:
-        """ Search for a specific model registered on grid network, if found,
+        """Search for a specific model registered on grid network, if found,
         It will run inference.
 
         Args:
@@ -100,7 +100,7 @@ class PrivateGridNetwork(AbstractGrid):
             RuntimeError: If model id not found.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, DynamicFLClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         if not mpc:
@@ -112,8 +112,8 @@ class PrivateGridNetwork(AbstractGrid):
 
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["DynamicFLClient", Tuple["DynamicFLClient"]]:
-        """ Search for node host from a specific model registered on grid network, if found,
+    ) -> Union["DataCentricFLClient", Tuple["DataCentricFLClient"]]:
+        """Search for node host from a specific model registered on grid network, if found,
         It will return the frist host/ set of hosts that contains the desired model.
 
         Args:
@@ -128,7 +128,7 @@ class PrivateGridNetwork(AbstractGrid):
         """
 
         # If workers used by grid network aren't grid nodes.
-        if not self._check_node_type(self.workers, DynamicFLClient):
+        if not self._check_node_type(self.workers, DataCentricFLClient):
             raise NotImplementedError
 
         # Search for non mpc models.
@@ -141,7 +141,7 @@ class PrivateGridNetwork(AbstractGrid):
             return self._query_encrypted_model_hosts(id)
 
     def _host_encrypted_model(self, model, n_shares: int = 4):
-        """ This method wiil choose some grid nodes at grid network to host an encrypted model.
+        """This method wiil choose some grid nodes at grid network to host an encrypted model.
 
         Args:
             model: Model to be hosted.
@@ -183,8 +183,8 @@ class PrivateGridNetwork(AbstractGrid):
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def _query_encrypted_model_hosts(self, id: str) -> Tuple["DynamicFLClient"]:
-        """ Search for an encrypted model and return its mpc nodes.
+    def _query_encrypted_model_hosts(self, id: str) -> Tuple["DataCentricFLClient"]:
+        """Search for an encrypted model and return its mpc nodes.
 
         Args:
             id: Model's ID.
@@ -224,7 +224,7 @@ class PrivateGridNetwork(AbstractGrid):
             raise RuntimeError("Model ID not found!")
 
     def _run_unencrypted_inference(self, id: str, data) -> torch.Tensor:
-        """ Search for a plain-text model registered on grid network, if found,
+        """Search for a plain-text model registered on grid network, if found,
         It will run inference.
 
         Args:
@@ -243,7 +243,7 @@ class PrivateGridNetwork(AbstractGrid):
             raise RuntimeError("Model not found on Grid Network!")
 
     def _run_encrypted_inference(self, id: str, data) -> torch.Tensor:
-        """ Search for an encrypted model and perform inference.
+        """Search for an encrypted model and perform inference.
 
         Args:
             model_id: Model's ID.

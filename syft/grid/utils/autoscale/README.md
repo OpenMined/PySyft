@@ -35,11 +35,11 @@ pip install terrascript
 
 ### Set Up Budget Alerts (important)
 
-Before you start to spin-up instances we encourace to set a budget alert on GCP to avoid suprise costs.
+Before you start to spin-up instances, we encourage to set a budget alert on GCP to avoid surprise costs.
 
 [Setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
 
-### Spin-up Instances using the follwoing commands:-
+### Spin-up Instances using the following commands:-
 
 You can find sample code in ```test.py```  and  ```test.ipynb```
 
@@ -49,7 +49,7 @@ You can find sample code in ```test.py```  and  ```test.ipynb```
 import syft.grid.autoscale.utils.gcloud_configurations as configs
 ```
 
-- Initialize using :
+- Initialize using:
 
 ```python
 
@@ -60,7 +60,13 @@ instance_name = gcloud.GoogleCloud(
 )
 ```
 
-- Create Instnaces using :
+- Reserve IP address using:
+
+```python
+instance_name.reserve_ip("grid")
+```
+
+- Create Instances using:
 
 ```python
 instance_name.compute_instance(
@@ -71,26 +77,55 @@ instance_name.compute_instance(
 )
 ```
 
-- Create Clusters using :
+- Create PyGrid Network instance using:
+
+```python
+instance_name.create_gridnetwork(
+    name="new-network",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+)
+```
+
+- Create PyGrid Node instance using:
+
+```python
+instance_name.create_gridnode(
+    name="new-node",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    gridnetwork_name="new-network",
+)
+```
+
+- Create Clusters using:
 
 ```python
 c1 = instance_name.create_cluster(
     name="my-cluster1",
     machine_type=configs.MachineType.f1_micro,
     zone=configs.Zone.us_central1_a,
-    image_family=configs.ImageFamily.ubuntu_2004_lts,
+    reserve_ip_name="grid"
     target_size=3,
     eviction_policy="delete",
 )
 ```
 
-- Run a parameter sweep to figure out the best parameters using :
+- Run a parameter sweep to figure out the best parameters using:
 
 ```python
-c1.sweep()
+c1.sweep(
+    model,
+    hook,
+    model_id="new_model",
+    mpc=False,
+    allow_download=False,
+    allow_remote_inference=False,
+    apply=True,
+)
 ```
 
-- Destroy the created instances using :
+- Destroy all the created resources using:
 
 ```python
 instance_name.destroy()

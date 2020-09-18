@@ -16,6 +16,8 @@ from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as P
 
 from syft.exceptions import RemoteObjectFoundError
 
+import torch
+
 
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
@@ -103,7 +105,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     @property
     def shape(self):
-        """ This method returns the shape of the data being pointed to.
+        """This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
         case, then it requests the shape information from the remote object
@@ -151,7 +153,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             enough remote error handling yet to do anything better."""
             return True
 
-    def clone(self):
+    def clone(self, memory_format=torch.preserve_format):
         """
         Clone should keep ids unchanged, contrary to copy.
         We make the choice that a clone action is local, and can't affect
@@ -275,7 +277,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return ptr
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
-        """ Request the worker where the tensor being pointed to belongs to send it to destination.
+        """Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
         Args:

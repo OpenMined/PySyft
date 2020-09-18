@@ -1,5 +1,5 @@
 from urllib.parse import urlparse
-from syft.workers.static_fl_worker import StaticFLWorker
+from syft.workers.model_centric_fl_worker import ModelCentricFLWorker
 from syft.federated.fl_job import FLJob
 
 
@@ -10,7 +10,11 @@ class FLClient:
         self.worker_id = None
 
         url_fragments = urlparse(url)
-        self.grid_worker = StaticFLWorker(id="", address=url_fragments.netloc, secure=not verbose,)
+        self.grid_worker = ModelCentricFLWorker(
+            id="",
+            address=url_fragments.netloc,
+            secure=not verbose,
+        )
 
     def new_job(self, model_name, model_version) -> FLJob:
         if self.worker_id is None:

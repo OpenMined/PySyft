@@ -25,15 +25,15 @@ class WebRTCConnection(threading.Thread, BaseWorker):
     REMOTE_REQUEST = b"02"
 
     def __init__(self, grid_descriptor, worker, destination, connections, conn_type):
-        """ Create a new webrtc peer connection.
+        """Create a new webrtc peer connection.
 
-            Args:
-                grid_descriptor: Grid network's websocket descriptor to forward webrtc
-                                connection request.
-                worker: Virtual Worker that represents this peer.
-                destination: Destination Peer ID.
-                connections: Peer connection descriptors.
-                conn_type: Connection responsabilities this peer should provide. (offer, answer)
+        Args:
+            grid_descriptor: Grid network's websocket descriptor to forward webrtc
+                            connection request.
+            worker: Virtual Worker that represents this peer.
+            destination: Destination Peer ID.
+            connections: Peer connection descriptors.
+            conn_type: Connection responsabilities this peer should provide. (offer, answer)
         """
         threading.Thread.__init__(self)
         BaseWorker.__init__(self, hook=sy.hook, id=destination)
@@ -51,15 +51,15 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         self.connections = connections
 
     def _send_msg(self, message: bin, location=None):
-        """ Add a new syft operation on the request_pool to be processed asynchronously.
+        """Add a new syft operation on the request_pool to be processed asynchronously.
 
-            Args:
-                message : Binary Syft message.
-                location : peer location (This parameter should be preserved to keep the
-                BaseWorker compatibility, but we do not use it.)
+        Args:
+            message : Binary Syft message.
+            location : peer location (This parameter should be preserved to keep the
+            BaseWorker compatibility, but we do not use it.)
 
-            Returns:
-                response_message: Binary Syft response message.
+        Returns:
+            response_message: Binary Syft response message.
         """
         self._request_pool.put(WebRTCConnection.HOST_REQUEST + message)
 
@@ -70,15 +70,15 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         return self._response_pool.get()
 
     def _recv_msg(self, message: bin):
-        """ Called when someone call syft function locally eg. tensor.send(node)
+        """Called when someone call syft function locally eg. tensor.send(node)
 
-            PS: This method should be synchronized to keep the compatibility with Syft
-            internal operations.
-            Args:
-                message: Binary Syft message.
+        PS: This method should be synchronized to keep the compatibility with Syft
+        internal operations.
+        Args:
+            message: Binary Syft message.
 
-            Returns:
-                response_message : Binary syft response message.
+        Returns:
+            response_message : Binary syft response message.
         """
         if self.available:
             return self._send_msg(message)
@@ -87,11 +87,11 @@ class WebRTCConnection(threading.Thread, BaseWorker):
 
     # Running async all time
     async def send(self, channel):
-        """ Async method that will listen peer remote's requests and put it into the
-            request_pool queue to be processed.
+        """Async method that will listen peer remote's requests and put it into the
+        request_pool queue to be processed.
 
-            Args:
-                channel: Connection channel used by the peers.
+        Args:
+            channel: Connection channel used by the peers.
         """
         while self.available:
             if not self._request_pool.empty():
@@ -100,12 +100,12 @@ class WebRTCConnection(threading.Thread, BaseWorker):
 
     # Running async all time
     def process_msg(self, message, channel):
-        """ Process syft messages forwarding them to the peer virtual worker and put the
-            response into the response_pool queue to be delivered async.
+        """Process syft messages forwarding them to the peer virtual worker and put the
+        response into the response_pool queue to be delivered async.
 
-            Args:
-                message: Binary syft message.
-                channel: Connection channel used by the peers.
+        Args:
+            message: Binary syft message.
+            channel: Connection channel used by the peers.
         """
         if message[:2] == WebRTCConnection.HOST_REQUEST:
             try:
@@ -120,12 +120,12 @@ class WebRTCConnection(threading.Thread, BaseWorker):
             self._response_pool.put(message[2:])
 
     def search(self, query):
-        """ Node's dataset search method overwrite.
+        """Node's dataset search method overwrite.
 
-            Args:
-                query: Query used to search by the desired dataset tag.
-            Returns:
-                query_response: Return the peer's response.
+        Args:
+            query: Query used to search by the desired dataset tag.
+        Returns:
+            query_response: Return the peer's response.
         """
         message = SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
@@ -155,11 +155,11 @@ class WebRTCConnection(threading.Thread, BaseWorker):
 
     # OFFER
     async def _set_offer(self, pc, signaling):
-        """ Private method used to set up an offer to estabilish a new webrtc connection.
+        """Private method used to set up an offer to estabilish a new webrtc connection.
 
-            Args:
-                pc: Peer Connection  descriptor
-                signaling: Webrtc signaling instance.
+        Args:
+            pc: Peer Connection  descriptor
+            signaling: Webrtc signaling instance.
         """
         await signaling.connect()
         channel = pc.createDataChannel("chat")
@@ -194,11 +194,11 @@ class WebRTCConnection(threading.Thread, BaseWorker):
 
     # ANSWER
     async def _run_answer(self, pc, signaling):
-        """ Private method used to set up an answer to estabilish a new webrtc connection.
+        """Private method used to set up an answer to estabilish a new webrtc connection.
 
-            Args:
-                pc: Peer connection.
-                signaling: Webrtc signaling instance.
+        Args:
+            pc: Peer connection.
+            signaling: Webrtc signaling instance.
         """
         await signaling.connect()
 
@@ -215,14 +215,14 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         await self.consume_signaling(pc, signaling)
 
     async def consume_signaling(self, pc, signaling):
-        """ Consume signaling to go through all the webrtc connection protocol.
+        """Consume signaling to go through all the webrtc connection protocol.
 
-            Args:
-                pc: Peer Connection.
-                signaling: Webrtc signaling instance.
-            Exception:
-                ConnectionClosedException: Exception used to finish this connection
-                and close this thread.
+        Args:
+            pc: Peer Connection.
+            signaling: Webrtc signaling instance.
+        Exception:
+            ConnectionClosedException: Exception used to finish this connection
+            and close this thread.
         """
         # Async keep-alive connection thread
         while self.available:

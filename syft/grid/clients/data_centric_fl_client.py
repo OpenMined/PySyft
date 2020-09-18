@@ -11,9 +11,12 @@ from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 
-class DynamicFLClient(WebsocketClientWorker):
+class DataCentricFLClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(
@@ -71,7 +74,7 @@ class DynamicFLClient(WebsocketClientWorker):
 
     @property
     def url(self) -> str:
-        """ Get Node URL Address.
+        """Get Node URL Address.
 
         Returns:
             address (str) : Node's address.
@@ -85,7 +88,7 @@ class DynamicFLClient(WebsocketClientWorker):
 
     @property
     def models(self) -> list:
-        """ Get models stored at remote node.
+        """Get models stored at remote node.
 
         Returns:
             models (List) : List of models stored in this node.
@@ -95,7 +98,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return self._return_bool_result(response, RESPONSE_MSG.MODELS)
 
     def _update_node_reference(self, new_id: str):
-        """ Update worker references changing node id references at hook structure.
+        """Update worker references changing node id references at hook structure.
 
         Args:
             new_id (str) : New worker ID.
@@ -105,7 +108,7 @@ class DynamicFLClient(WebsocketClientWorker):
         self.hook.local_worker._known_workers[new_id] = self
 
     def _parse_address(self, address: str) -> tuple:
-        """ Parse Address string to define secure flag and split into host and port.
+        """Parse Address string to define secure flag and split into host and port.
 
         Args:
             address (str) : Adress of remote worker.
@@ -115,7 +118,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return (secure, url.hostname, url.port)
 
     def _get_node_infos(self) -> str:
-        """ Get Node ID from remote node worker
+        """Get Node ID from remote node worker
 
         Returns:
             node_id (str) : node id used by remote worker.
@@ -134,7 +137,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return response.get(RESPONSE_MSG.NODE_ID, None)
 
     def _forward_json_to_websocket_server_worker(self, message: dict) -> dict:
-        """ Prepare/send a JSON message to a remote node and receive the response.
+        """Prepare/send a JSON message to a remote node and receive the response.
 
         Args:
             message (dict) : message payload.
@@ -145,7 +148,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return json.loads(self.ws.recv())
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
-        """ Send a bin message to a remote node and receive the response.
+        """Send a bin message to a remote node and receive the response.
 
         Args:
             message (bytes) : message payload.
@@ -165,7 +168,7 @@ class DynamicFLClient(WebsocketClientWorker):
             raise RuntimeError("Something went wrong.")
 
     def connect_nodes(self, node) -> dict:
-        """ Connect two remote workers between each other.
+        """Connect two remote workers between each other.
 
         Args:
             node (WebsocketFederatedClient) : Node that will be connected with this remote worker.
@@ -187,8 +190,7 @@ class DynamicFLClient(WebsocketClientWorker):
         allow_download: bool = False,
         allow_remote_inference: bool = False,
     ):
-        """ Hosts the model and optionally serve it using a Socket / Rest API.
-
+        """Hosts the model and optionally serve it using a Socket / Rest API.
         Args:
             model : A jit model or Syft Plan.
             model_id (str): An integer/string representing the model id.
@@ -250,8 +252,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return self._return_bool_result(json.loads(response))
 
     def run_remote_inference(self, model_id, data):
-        """ Run a dataset inference using a remote model.
-
+        """Run a dataset inference using a remote model.
         Args:
             model_id (str) : Model ID.
             data (Tensor) : dataset to be inferred.
@@ -271,8 +272,7 @@ class DynamicFLClient(WebsocketClientWorker):
         return self._return_bool_result(response, RESPONSE_MSG.INFERENCE_RESULT)
 
     def delete_model(self, model_id: str) -> bool:
-        """ Delete a model previously registered.
-
+        """Delete a model previously registered.
         Args:
             model_id (String) : ID of the model that will be deleted.
         Returns:
@@ -284,3 +284,18 @@ class DynamicFLClient(WebsocketClientWorker):
 
     def __str__(self) -> str:
         return f"<Federated Worker id:{self.id}>"
+
+    @staticmethod
+    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
+        return BaseWorker.simplify(_worker, worker)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
+        detailed = BaseWorker.detail(worker, worker_tuple)
+
+        if isinstance(detailed, int):
+            result = VirtualWorker(id=detailed, hook=worker.hook)
+        else:
+            result = detailed
+
+        return result

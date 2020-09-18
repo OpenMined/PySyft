@@ -11,14 +11,12 @@ class Decryptor:
 
     Args:
         context (Context): Context for extracting encryption parameters.
-        secret_key: A secret key from same pair of keys(secretkey or publickey) used in encryptor.
+        secret_key_list: A list to store secret key powers.
     """
 
     def __init__(self, context, secret_key):
-        self._context = context
-        self._coeff_modulus = context.param.coeff_modulus
-        self._coeff_count = context.param.poly_modulus
-        self._secret_key_array = [secret_key.data]
+        self.context = context
+        self.secret_key_list = [secret_key.data]
 
     def decrypt(self, encrypted):
         """Decrypts the encrypted ciphertext objects.
@@ -29,12 +27,13 @@ class Decryptor:
         Returns:
             A PlainText object containing the decrypted result.
         """
+        context_data = self.context.context_data_map[encrypted.param_id]
 
         # Calculate [c0 + c1 * sk + c2 * sk^2 ...]_q
-        temp_product_modq = self._mul_ct_sk(copy.deepcopy(encrypted.data))
+        temp_product_modq = self._mul_ct_sk(copy.deepcopy(encrypted))
 
         # Divide scaling variant using BEHZ FullRNS techniques
-        result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)
+        result = context_data.rns_tool.decrypt_scale_and_round(temp_product_modq)
 
         # removing leading zeroes in plaintext representation.
         plain_coeff_count = get_significant_count(result)
@@ -52,22 +51,26 @@ class Decryptor:
         Returns:
             A 2-dim list containing result of [c0 + c1 * sk + c2 * sk^2 ...]_q.
         """
+        context_data = self.context.context_data_map[encrypted.param_id]
+        coeff_modulus = context_data.param.coeff_modulus
+        coeff_count = context_data.param.poly_modulus
+        encrypted = encrypted.data
         phase = encrypted[0]
 
-        secret_key_array = self._get_sufficient_sk_power(len(encrypted) - 1)
+        secret_key_list = self._get_sufficient_sk_power(len(encrypted) - 1)
 
         for j in range(1, len(encrypted)):
-            for i in range(len(self._coeff_modulus)):
+            for i in range(len(coeff_modulus)):
                 phase[i] = poly_add_mod(
                     poly_mul_mod(
                         encrypted[j][i],
-                        secret_key_array[j - 1][i],
-                        self._coeff_modulus[i],
-                        self._coeff_count,
+                        secret_key_list[j - 1][i],
+                        coeff_modulus[i],
+                        coeff_count,
                     ),
                     phase[i],
-                    self._coeff_modulus[i],
-                    self._coeff_count,
+                    coeff_modulus[i],
+                    coeff_count,
                 )
         return phase
 
@@ -80,19 +83,21 @@ class Decryptor:
         Returns:
             A 2-dim list having secretkey powers.
         """
+        param = self.context.context_data_map[self.context.key_param_id].param
+        coeff_modulus = param.coeff_modulus
+        coeff_count = param.poly_modulus
+        if max_power == len(self.secret_key_list):
+            return self.secret_key_list
 
-        if max_power == len(self._secret_key_array):
-            return self._secret_key_array
-
-        while len(self._secret_key_array) < max_power:
-            sk_extra_power = [0] * len(self._coeff_modulus)
-            for i in range(len(self._coeff_modulus)):
+        while len(self.secret_key_list) < max_power:
+            sk_extra_power = [0] * len(coeff_modulus)
+            for i in range(len(coeff_modulus)):
                 sk_extra_power[i] = poly_mul_mod(
-                    self._secret_key_array[-1][i],
-                    self._secret_key_array[0][i],
-                    self._coeff_modulus[i],
-                    self._coeff_count,
+                    self.secret_key_list[-1][i],
+                    self.secret_key_list[0][i],
+                    coeff_modulus[i],
+                    coeff_count,
                 )
-            self._secret_key_array.append(sk_extra_power)
+            self.secret_key_list.append(sk_extra_power)
 
-        return self._secret_key_array
+        return self.secret_key_list

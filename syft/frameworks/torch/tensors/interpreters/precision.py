@@ -160,9 +160,26 @@ class FixedPrecisionTensor(AbstractTensor):
             return self
 
     @overloaded.method
-    def add(self, _self, other):
-        """Add two fixed precision tensors together.
+    def mod(self, _self, divisor):
         """
+        Define the modulo operation over object instances.
+        """
+        if isinstance(divisor, (int, float)):
+            scaled_divisor = int(divisor * self.base ** self.precision_fractional)
+            if isinstance(_self, AdditiveSharingTensor):
+                return getattr(_self, "mod")(scaled_divisor)
+            else:
+                return getattr(_self, "fmod")(scaled_divisor)
+
+        response = getattr(_self, "fmod")(divisor)
+
+        return response
+
+    __mod__ = mod
+
+    @overloaded.method
+    def add(self, _self, other):
+        """Add two fixed precision tensors together."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "add")(scaled_int)
@@ -193,16 +210,14 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     def __iadd__(self, other):
-        """Add two fixed precision tensors together.
-        """
+        """Add two fixed precision tensors together."""
         self.child = self.add(other).child
 
         return self
 
     @overloaded.method
     def sub(self, _self, other):
-        """Subtracts a fixed precision tensor from another one.
-        """
+        """Subtracts a fixed precision tensor from another one."""
         if isinstance(other, (int, float)):
             scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "sub")(scaled_int)
@@ -381,6 +396,9 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             power (int): the exponent supposed to be an integer > 0
         """
+        if power < 0:
+            raise RuntimeError("Negative integer powers are not allowed.")
+
         base = self
 
         result = None
@@ -447,9 +465,65 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
-    def reciprocal(self):
-        ones = self * 0 + 1
-        return ones / self
+    def signum(self):
+        """
+        Calculation of signum function for a given tensor
+        """
+        sgn = (self > 0) - (self < 0)
+        return sgn
+
+    def modulus(self):
+        """
+        Calculation of modulus for a given tensor
+        """
+        return self.signum() * self
+
+    def reciprocal(self, method="NR", nr_iters=10):
+        r"""
+        Calculate the reciprocal using the algorithm specified in the method args.
+        Ref: https://github.com/facebookresearch/CrypTen
+
+        Args:
+            method:
+            'NR' : `Newton-Raphson`_ method computes the reciprocal using iterations
+                    of :math:`x_{i+1} = (2x_i - self * x_i^2)` and uses
+                    :math:`3*exp(-(x-.5)) + 0.003` as an initial guess by default
+            'log' : Computes the reciprocal of the input from the observation that:
+                    :math:`x^{-1} = exp(-log(x))`
+
+            nr_iters:
+                Number of iterations for `Newton-Raphson`
+        Returns:
+            Reciprocal of `self`
+        """
+        method = method.lower()
+
+        if method == "nr":
+            new_self = self.modulus()
+            result = 3 * (0.5 - new_self).exp() + 0.003
+            for i in range(nr_iters):
+                result = 2 * result - result * result * new_self
+            return result * self.signum()
+        elif method == "newton":
+            # it is assumed here that input values are taken in [-20, 20]
+            x = None
+            C = 20
+            for i in range(80):
+                if x is not None:
+                    y = C + 1 - self * (x * x)
+                    x = y * x / C
+                else:
+                    y = C + 1 - self
+                    x = y / C
+            return x
+        elif method == "division":
+            ones = self * 0 + 1
+            return ones / self
+        elif method == "log":
+            new_self = self.modulus()
+            return (-new_self.log()).exp() * self.signum()
+        else:
+            raise ValueError(f"Invalid method {method} given for reciprocal function")
 
     # Approximations:
     def inverse(self, iterations=8):
@@ -510,7 +584,7 @@ class FixedPrecisionTensor(AbstractTensor):
         x = tensor * sign
         ones = tensor * 0 + 1
         half = ones.div(2)
-        result = (ones + (-ones * x).exp()).reciprocal()
+        result = (ones + (-ones * x).exp()).reciprocal(method="division")
         return (result - half) * sign + half
 
     @staticmethod
@@ -557,7 +631,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return tanh_approx.div(2) + 0.5
 
-    def sigmoid(tensor, method="exp"):
+    def sigmoid(tensor, method="chebyshev"):
         """
         Approximates the sigmoid function using a given method
 
@@ -687,6 +761,16 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __eq__ = eq
 
+    @overloaded.method
+    def argmax(self, _self, **kwargs):
+        result = _self.argmax(**kwargs)
+        return result.long() * self.base ** self.precision_fractional
+
+    @overloaded.method
+    def argmin(self, _self, **kwargs):
+        result = _self.argmin(**kwargs)
+        return result.long() * self.base ** self.precision_fractional
+
     def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu
@@ -704,6 +788,11 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     @overloaded.module
     def torch(module):
+        def fmod(self, other):
+            return self.__mod__(other)
+
+        module.fmod = fmod
+
         def add(self, other):
             return self.__add__(other)
 
@@ -863,6 +952,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 dtype == self.dtype
             ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
+        kwargs.pop("no_wrap", None)
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 
@@ -940,14 +1030,14 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def bufferize(worker, prec_tensor):
         """
-         This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
+        This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
 
-          Args:
-             prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
+         Args:
+            prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
 
-          Returns:
-             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
-         """
+         Returns:
+            proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+        """
         proto_prec_tensor = FixedPrecisionTensorPB()
         syft.serde.protobuf.proto.set_protobuf_id(proto_prec_tensor.id, prec_tensor.id)
         proto_prec_tensor.field = str(prec_tensor.field)
@@ -968,14 +1058,14 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def unbufferize(worker, proto_prec_tensor):
         """
-            This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
+        This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
 
-            Args:
-                proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
-                deserialized.
+        Args:
+            proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
+            deserialized.
 
-            Returns:
-                tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
+        Returns:
+            tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
         """
         proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_prec_tensor.id)
 
@@ -1001,10 +1091,10 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for FixedPrecisionTensor.
+        Returns the protobuf schema used for FixedPrecisionTensor.
 
-            Returns:
-                Protobuf schema for FixedPrecisionTensor.
+        Returns:
+            Protobuf schema for FixedPrecisionTensor.
         """
         return FixedPrecisionTensorPB
 

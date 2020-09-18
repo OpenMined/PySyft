@@ -13,11 +13,14 @@ class memorize(dict):
     def __init__(self, func):
         self.func = func
 
-    def __call__(self, *args):
-        return self[args]
+    def __call__(self, *args, **kwargs):
+        key = (args, tuple(sorted(kwargs.items())))
+        return self[key]
 
     def __missing__(self, key):
-        result = self[key] = self.func(*key)
+        args, kwargs = key
+        kwargs = {k: v for k, v in kwargs}
+        result = self[key] = self.func(*args, **kwargs)
         return result
 
 
@@ -37,7 +40,7 @@ def remote(func, location):
     if isinstance(location, str):
         location = worker.get_worker(location)
 
-    def remote_exec(*args, return_value=False, return_arity=1, multiprocessing=False, **kwargs):
+    def remote_exec(*args, return_value=False, return_arity=1, **kwargs):
 
         response_ids = tuple(sy.ID_PROVIDER.pop() for _ in range(return_arity))
 
