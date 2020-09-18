@@ -109,37 +109,24 @@ class PrimitiveStorage:
                 for i, prim in enumerate(primitive_stack):
                     # We're selecting on the last dimension of the tensor because it's simpler for
                     # generating those primitives in crypto protocols
-                    # [:] ~ [slice(None)]
-                    # [:1] ~ [slice(1)]
-                    # [1:] ~ [slice(1, None)]
-                    # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
+                    # th.narrow(dim, index_start, length)
                     if isinstance(prim, tuple):
-
                         ps = []
                         left_ps = []
                         for p in prim:
-                            n_dim = len(p.shape)
-                            get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                            remaining_slice = tuple(
-                                [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                            )
-                            ps.append(p[get_slice])
+                            ps.append(th.narrow(p, -1, 0, n_instances))
                             if remove:
-                                left_ps.append(p[remaining_slice])
+                                length = p.shape[-1] - n_instances
+                                left_ps.append(th.narrow(p, -1, n_instances, length))
 
                         keys.append(tuple(ps))
                         if remove:
                             primitive_stack[i] = tuple(left_ps)
                     else:
-                        n_dim = len(prim.shape)
-                        get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                        remaining_slice = tuple(
-                            [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                        )
-
-                        keys.append(prim[get_slice])
+                        keys.append(th.narrow(prim, -1, 0, n_instances))
                         if remove:
-                            primitive_stack[i] = prim[remaining_slice]
+                            length = prim.shape[-1] - n_instances
+                            primitive_stack[i] = th.narrow(prim, -1, n_instances, length)
 
                 return keys
             else:
@@ -223,13 +210,12 @@ class PrimitiveStorage:
                                 new_prims = []
                                 for cur_prim, prim in zip(current_primitives[i], primitive):
                                     new_prims.append(
-                                        np.concatenate((cur_prim, prim), axis=len(prim.shape) - 1)
+                                        th.cat((cur_prim, prim), dim=len(prim.shape) - 1)
                                     )
                                 current_primitives[i] = tuple(new_prims)
                             else:
-                                current_primitives[i] = np.concatenate(
-                                    (current_primitives[i], primitive),
-                                    axis=len(primitive.shape) - 1,
+                                 current_primitives[i] = th.cat(
+                                    (current_primitives[i], primitive), dim=len(primitive.shape) - 1
                                 )
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
@@ -247,7 +233,7 @@ class PrimitiveStorage:
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
             alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.fss.keygen(n_values=n_instances, op=op)
             # simulate sharing TODO clean this
-            mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)
+            mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys

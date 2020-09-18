@@ -17,11 +17,14 @@ import asyncio
 
 import torch as th
 import syft as sy
+
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
+
+import torchcsprng as csprng
 
 λ = 127  # security parameter
 n = 32  # bit precision
@@ -30,18 +33,13 @@ assert λs == 2
 
 no_wrap = {"no_wrap": True}
 
-
-def full_name(f):
-    return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
-
-
 # internal codes
 EQ = 0
 COMP = 1
 
-# number of processes
-N_CORES = max(4, multiprocessing.cpu_count())
-MULTI_LIMIT = 50_000
+
+def full_name(f):
+    return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
 
 
 def keygen(n_values, op):
@@ -265,6 +263,7 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
         return core_id, result
 
 
+
 def eq(x1, x2):
     return fss_op(x1, x2, "eq")
 
@@ -278,8 +277,8 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
-        beta = np.array([1])
+        alpha = th.randint(0, 2 ** n, (n_values,), dtype=th.long, device="cuda")
+        beta = th.tensor([1], device="cuda")
         α = bit_decomposition(alpha)
         s, t, CW = (
             Array(n + 1, 2, λs, n_values),
@@ -288,7 +287,7 @@ class DPF:
         )
         _CW = []
         s[0] = randbit(shape=(2, λ, n_values))
-        t[0] = np.array([[0, 1]] * n_values).T
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.long, device="cuda").t()
         for i in range(0, n):
             g0 = G(s[i, 0])
             g1 = G(s[i, 1])
@@ -306,14 +305,14 @@ class DPF:
                 dual_state = [g0, g1][b] ^ (t[i, b] * CWi)
                 state = multi_dim_filter(dual_state, α[i])
                 s[i + 1, b], t[i + 1, b] = split(state, (EQ, λs, 1))
-
         CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
-        CW_n = CW_n.astype(np.int64)
+        CW_n = CW_n.type(th.long)
         return (alpha, s[0][0], s[0][1], *_CW, CW_n)
 
+    eval_t = (np.array([[-42, -42]]*n).T).tolist()
     @staticmethod
     def eval(b, x, *k_b):
-        x = x.astype(np.uint64)
+        x = x.long()
         original_shape = x.shape
         x = x.reshape(-1)
         n_values = x.shape[0]
@@ -328,7 +327,7 @@ class DPF:
             s[i + 1], t[i + 1] = split(state, (EQ, λs, 1))
 
         flat_result = (-1) ** b * (t[n].squeeze() * _CWn + convert(s[n]))
-        return flat_result.astype(np.int64).reshape(original_shape)
+        return flat_result.type(th.long).reshape(original_shape)
 
 
 class DIF:
@@ -336,8 +335,9 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
+        alpha = th.randint(0, 2 ** n, (n_values,), dtype=th.long, device="cuda")
         α = bit_decomposition(alpha)
+        
         s, σ, t, τ, CW, CW_leaf = (
             Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, λs, n_values),
@@ -348,7 +348,7 @@ class DIF:
         )
         _CW = []
         s[0] = randbit(shape=(2, λ, n_values))
-        t[0] = np.array([[0, 1]] * n_values).T
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.long).t()
 
         for i in range(0, n):
             h0 = H(s[i, 0], 0)
@@ -380,15 +380,15 @@ class DIF:
                         1 - convert(σ[i + 1, 0]) + convert(σ[i + 1, 1]) - (1 - α[i])
                     )
 
-        CW_leaf[n] = (-1) ** t[n, 1] * (1 - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_leaf[n] = (-1) ** t[n, 1] #* (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
-        CW_leaf = CW_leaf.astype(np.int32)
+        CW_leaf = CW_leaf.type(th.long)
 
         return (alpha, s[0][0], s[0][1], *_CW, CW_leaf)
 
     @staticmethod
     def eval(b, x, *k_b):
-        x = x.astype(np.uint64)
+        x = x.long()
         original_shape = x.shape
         x = x.reshape(-1)
         n_values = x.shape[0]
@@ -401,7 +401,7 @@ class DIF:
             Array(n + 1, n_values),
         )
         s[0], *_CW, CW_leaf = k_b
-        CW_leaf = CW_leaf.astype(np.int64)
+        CW_leaf = CW_leaf.type(th.long)
         t[0] = b
 
         for i in range(0, n):
@@ -412,11 +412,11 @@ class DIF:
             out[i] = (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
 
         # Last node, the other σ is also a leaf
-        out[n] = (-1) ** b * (t[n].squeeze() * CW_leaf[n] + convert(s[n]))
+        out[n] = (-1) ** b * (t[n].squeeze() * CW_leaf[n])# + convert(s[n]))
 
-        return out.sum(axis=0).astype(np.int64).reshape(original_shape)
+        return out.sum(dim=0).type(th.long).reshape(original_shape)
 
-
+    
 def compress(CWi, alpha_i, op=EQ):
     """Compression technique which reduces the size of the CWi by dropping some
     non-necessary randomness.
@@ -425,14 +425,14 @@ def compress(CWi, alpha_i, op=EQ):
     """
     if op == EQ:
         sL, tL, sR, tR = split(CWi, (op, λs, 1, λs, 1))
-        return (tL.astype(np.bool), tR.astype(np.bool), (1 - alpha_i) * sR + alpha_i * sL)
+        return (tL.type(th.bool), tR.type(th.bool), (1 - alpha_i) * sR + alpha_i * sL)
     else:
         σL, τL, sL, tL, σR, τR, sR, tR = split(CWi, (op, λs, 1, λs, 1, λs, 1, λs, 1))
         return (
-            τL.astype(np.bool),
-            tL.astype(np.bool),
-            τR.astype(np.bool),
-            tR.astype(np.bool),
+            τL.type(th.bool),
+            tL.type(th.bool),
+            τR.type(th.bool),
+            tR.type(th.bool),
             alpha_i * σR + (1 - alpha_i) * σL,
             (1 - alpha_i) * sR + alpha_i * sL,
         )
@@ -444,144 +444,44 @@ def uncompress(_CWi, op=EQ):
     if op == EQ:
         CWi = concat(
             _CWi[2],
-            _CWi[0].reshape(1, -1).astype(np.uint64),
+            _CWi[0].reshape(1, -1).type(th.long),
             _CWi[2],
-            _CWi[1].reshape(1, -1).astype(np.uint64),
+            _CWi[1].reshape(1, -1).type(th.long),
         ).reshape(2, 3, -1)
     else:
         CWi = concat(
             _CWi[4],
-            _CWi[0].reshape(1, -1).astype(np.uint64),
+            _CWi[0].reshape(1, -1).type(th.long),
             _CWi[5],
-            _CWi[1].reshape(1, -1).astype(np.uint64),
+            _CWi[1].reshape(1, -1).type(th.long),
             _CWi[4],
-            _CWi[2].reshape(1, -1).astype(np.uint64),
+            _CWi[2].reshape(1, -1).type(th.long),
             _CWi[5],
-            _CWi[3].reshape(1, -1).astype(np.uint64),
+            _CWi[3].reshape(1, -1).type(th.long),
         ).reshape(2, 6, -1)
     return CWi
 
-
 def Array(*shape):
-    return np.empty(shape, dtype=np.uint64)
+    return th.empty(shape, dtype=th.long, device="cuda")
 
+bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
 
 def bit_decomposition(x):
-    x = x.astype(np.uint32)
-    n_values = x.shape[0]
-    x = x.reshape(-1, 1).view(np.uint8)
-    x = x.reshape(n_values, 4, 1)
-    x = x >> np.arange(8, dtype=np.uint8)
-    x = x & 0b1
-    x = np.flip(x.reshape(n_values, -1)[:, :n], axis=1).T
-    return x
-
+    x = x.unsqueeze(-1)
+    z = bit_pow_n & x
+    z = z.t()
+    return (z > 0).to(th.uint8)
 
 def randbit(shape):
     assert len(shape) == 3
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
-    randvalues = np.random.randint(0, 2 ** 64, size=shape_with_bytes, dtype=np.uint64)
-    randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
+    randvalues = th.randint(-2 ** 63, 2 ** 63 - 1, shape_with_bytes, dtype=th.long, device="cuda")
+    #randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
     return randvalues
 
-
 def concat(*args, **kwargs):
-    return np.concatenate(args, **kwargs)
-
-
-def split_last_bit(buffer):
-    # Numbers are on 64 bits
-    return buffer & 0b1111111111111111111111111111111111111111111111111111111111111110, buffer & 0b1
-
-
-def G(seed):
-    """Pseudo Random Generator λ -> 2(λ + 1)"""
-
-    assert len(seed.shape) == 2
-    n_values = seed.shape[1]
-    assert seed.shape[0] == λs
-    x = seed
-    x = x.T
-    dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
-    x2 = x.view(dtype=dt1)
-    x = x2["uint8"].reshape(*x.shape[:-1], -1)
-
-    assert x.shape == (n_values, 2 * 8)
-
-    out = np.empty((n_values, 4 * 8), dtype=np.uint8)
-
-    shaloop.sha256_loop_func(x, out)
-
-    buffer = out.view(np.uint64).T
-
-    valuebits = np.empty((2, 3, n_values), dtype=np.uint64)
-
-    # [λ, 1, λ, 1]
-    # [λ - 64, 64, 1, λ - 64, 64, 1]
-    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
-    valuebits[0, 1] = buffer[1]
-    valuebits[0, 2] = last_bit
-    valuebits[1, 0], last_bit = split_last_bit(buffer[2])
-    valuebits[1, 1] = buffer[3]
-    valuebits[1, 2] = last_bit
-
-    return valuebits
-
-
-empty_dict = {}
-
-
-def H(seed, idx=0):
-    """
-    Pseudo Random Generator λ -> 4(λ + 1)
-
-    idx is here to allow not reusing the same empty dict. Otherwise in key generation
-    h0 is erased by h1
-    """
-
-    assert len(seed.shape) == 2
-    n_values = seed.shape[1]
-    assert seed.shape[0] == λs
-    x = seed
-    x = x.T
-    dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
-    x2 = x.view(dtype=dt1)
-    x = x2["uint8"].reshape(*x.shape[:-1], -1)
-
-    assert x.shape == (n_values, 2 * 8)
-
-    if (n_values, idx) not in empty_dict:
-        # 64 bytes are needed to store a sha512
-        empty_dict[(n_values, idx)] = (
-            np.empty((n_values, 64), dtype=np.uint8),
-            np.empty((2, 6, n_values), dtype=np.uint64),
-        )
-
-    out, valuebits = empty_dict[(n_values, idx)]
-
-    shaloop.sha512_loop_func(x, out)
-
-    buffer = out.view(np.uint64).T  # is of size 8 * 64 bits
-
-    # [λ, 1, λ, 1, λ, 1, λ, 1]
-    # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
-
-    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
-    valuebits[0, 1] = buffer[1]
-    valuebits[0, 2] = last_bit
-    valuebits[0, 3], last_bit = split_last_bit(buffer[2])
-    valuebits[0, 4] = buffer[3]
-    valuebits[0, 5] = last_bit
-    valuebits[1, 0], last_bit = split_last_bit(buffer[4])
-    valuebits[1, 1] = buffer[5]
-    valuebits[1, 2] = last_bit
-    valuebits[1, 3], last_bit = split_last_bit(buffer[6])
-    valuebits[1, 4] = buffer[7]
-    valuebits[1, 5] = last_bit
-
-    return valuebits
-
+    return th.cat(args, **kwargs)
 
 split_helpers = {
     (EQ, 2, 1): lambda x: (x[:2], x[2]),
@@ -603,23 +503,20 @@ split_helpers = {
 def split(list_, idx):
     return split_helpers[idx](list_)
 
-
 ones_dict2 = {}
 
-
 def SwitchTableDPF(s, α_i):
-    one = np.ones((1, s.shape[1]), dtype=np.uint64)
+    one = th.ones((1, s.shape[1]), device="cuda").type(th.long)
     s_one = concat(s, one)
-
+    
     if s_one.shape not in ones_dict2:
-        ones_dict2[s_one.shape] = np.ones((1, *s_one.shape), dtype=np.uint64)
+        ones_dict2[s_one.shape] = th.ones((1, *s_one.shape), dtype=th.long, device="cuda")
+    
     ones = ones_dict2[s_one.shape]
-    pad = (α_i * ones).astype(np.uint64)
+    pad = (α_i * ones).type(th.long)
     pad = concat(1 - pad, pad, axis=0)
     Table = pad * s_one
-
     return Table
-
 
 def SwitchTableDIF(s, σ, α_i):
     leafTable = SwitchTableDPF(σ, 1 - α_i)
@@ -633,11 +530,85 @@ def multi_dim_filter(τ, idx):
     filtered_τ = (1 - idx) * τ[0] + idx * τ[1]
     return filtered_τ
 
-
 def convert(x):
     """
     convert a multi dim big tensor to a "random" single tensor
     """
     # Select the 31st least significant bits
     r = x[-1] & 0b1111_1111_1111_1111_1111_1111_1111_111
-    return r.astype(np.int64)
+    return r.type(th.long)
+
+# PRG
+
+
+#TODO
+key = th.tensor([224,  28,  13, 108,  97,  35, 195, 240,  14, 221, 233, 215,   0,  67,
+        174, 129], dtype=th.uint8)
+
+def split_last_bit(buffer):
+    # Numbers are on 64 bits signed
+    return buffer.abs(), (buffer>=0)
+
+def G(seed):
+    #print('G', seed.shape)
+    assert len(seed.shape) == 2
+    n_values = seed.shape[1]
+    assert seed.shape[0] == λs
+    
+    seed = seed#.cuda()
+    urandom_gen = csprng.create_const_generator(key)
+    mask = th.empty(2*λs, n_values, dtype=th.long, device='cuda').random_(generator=urandom_gen)
+    repl_seed = seed.repeat(2, 1)
+    #print('mask, repl_seed', mask.shape, repl_seed.shape)
+    buffer = (mask + repl_seed)
+    valuebits = th.empty(2, 3, n_values, dtype=th.long, device='cuda')
+    
+    # [λ, 1, λ, 1]
+    # [λ - 64, 64, 1, λ - 64, 64, 1]
+    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
+    valuebits[0, 1] = buffer[1]
+    valuebits[0, 2] = last_bit
+    valuebits[1, 0], last_bit = split_last_bit(buffer[2])
+    valuebits[1, 1] = buffer[3]
+    valuebits[1, 2] = last_bit
+    
+    return valuebits
+
+empty_dict = {}
+
+def H(seed, idx=0):
+    """
+    Pseudo Random Generator λ -> 4(λ + 1)
+
+    idx is here to allow not reusing the same empty dict. Otherwise in key generation
+    h0 is erased by h1
+    """
+    assert len(seed.shape) == 2
+    n_values = seed.shape[1]
+    assert seed.shape[0] == λs
+    
+    seed = seed#.cuda()
+    urandom_gen = csprng.create_const_generator(key)
+    mask = th.empty(4*λs, n_values, dtype=th.long, device='cuda').random_(generator=urandom_gen)
+    repl_seed = seed.repeat(4, 1)
+    #print('mask, repl_seed', mask.shape, repl_seed.shape)
+    buffer = (mask + repl_seed)
+    valuebits = th.empty(2, 6, n_values, dtype=th.long, device='cuda')
+    
+
+    # [λ, 1, λ, 1, λ, 1, λ, 1]
+    # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
+
+    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
+    valuebits[0, 1] = buffer[1]
+    valuebits[0, 2] = last_bit
+    valuebits[0, 3], last_bit = split_last_bit(buffer[2])
+    valuebits[0, 4] = buffer[3]
+    valuebits[0, 5] = last_bit
+    valuebits[1, 0], last_bit = split_last_bit(buffer[4])
+    valuebits[1, 1] = buffer[5]
+    valuebits[1, 2] = last_bit
+    valuebits[1, 3], last_bit = split_last_bit(buffer[6])
+    valuebits[1, 4] = buffer[7]
+    valuebits[1, 5] = last_bit
+    return valuebits
