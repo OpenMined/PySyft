@@ -145,7 +145,7 @@ class PrimitiveStorage:
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
             alpha, s_00, s_01, *CW = fss_class.keygen(n_values=n_instances)
             # simulate sharing TODO clean this
-            mask = th.randint(0, 2 ** n, alpha.shape)
+            mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys
@@ -155,9 +155,9 @@ class PrimitiveStorage:
         assert (
             n_party == 2
         ), f"build_xor_add_couple is only implemented for 2 workers, {n_party} were provided."
-        r = th.randint(2, size=(n_instances,))
-        mask1 = th.randint(2, size=(n_instances,))
-        mask2 = th.randint(2, size=(n_instances,))
+        r = th.randint(2, size=(n_instances,), device="cuda")
+        mask1 = th.randint(2, size=(n_instances,), device="cuda")
+        mask2 = th.randint(2, size=(n_instances,), device="cuda")
 
         return [(r ^ mask1, r - mask2), (mask1, mask2)]
 

@@ -416,6 +416,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
     current_type, obj = _simplify_field(obj)
 
+
     if current_type in msgpack_global_state.simplifiers:
         result = (
             msgpack_global_state.simplifiers[current_type][0],

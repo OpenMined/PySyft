@@ -14,6 +14,8 @@ import hashlib
 import torch as th
 import syft as sy
 
+import torchcsprng as csprng
+
 
 λ = 110  # 6  # 110 or 63  # security parameter
 n = 32  # 8  # 32  # bit precision
@@ -108,7 +110,7 @@ def fss_op(x1, x2, type_op="eq"):
 
     shares = []
     for i, location in enumerate(locations):
-        args = (th.IntTensor([i]), mask_value)
+        args = (th.tensor([i], device="cuda").int(), mask_value)
         share = request_run_plan(
             me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args
         )
@@ -132,7 +134,7 @@ def fss_op(x1, x2, type_op="eq"):
                 "#xor_add_2",
                 location,
                 return_value=False,
-                args=(th.IntTensor([i]), masked_value),
+                args=(th.tensor([i], device="cuda").int(), masked_value),
             )
             shares[location.id] = share
     else:
@@ -200,8 +202,8 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        beta = th.tensor([1], dtype=dtype)
-        alpha = th.randint(0, 2 ** n, (n_values,))
+        beta = th.tensor([1], dtype=dtype, device="cuda")
+        alpha = th.randint(0, 2 ** n, (n_values,), device="cuda")
 
         α = bit_decomposition(alpha)
         s, t, CW = (
@@ -210,7 +212,7 @@ class DPF:
             Array(n, 2 * (λ + 1), n_values),
         )
         s[0] = randbit(size=(2, λ, n_values))
-        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8).t()
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8, device="cuda").t()
         for i in range(0, n):
             g0 = G(s[i, 0])
             g1 = G(s[i, 1])
@@ -263,7 +265,7 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.randint(0, 2 ** n, (n_values,))
+        alpha = th.randint(0, 2 ** n, (n_values,), device="cuda")
         α = bit_decomposition(alpha)
         s, t, CW = (
             Array(n + 1, 2, λ, n_values),
@@ -318,7 +320,7 @@ class DIF:
 
 
 # PRG
-def G(seed):
+def G_old(seed):
     assert seed.shape[0] == λ
     seed_t = seed.t().tolist()
     gen_list = []
@@ -332,7 +334,21 @@ def G(seed):
     return th.tensor(gen_list, dtype=th.uint8).t()
 
 
-def H(seed):
+#TODO
+key = th.tensor([224,  28,  13, 108,  97,  35, 195, 240,  14, 221, 233, 215,   0,  67,
+        174, 129], dtype=th.uint8)
+
+def G(seed):
+    seed = seed#.cuda()
+    urandom_gen = csprng.create_const_generator(key)
+    mask = th.empty((2 * (λ + 1)), seed.shape[1], dtype=th.bool, device='cuda').random_(generator=urandom_gen).type(th.uint8)
+    repl_seed = seed.repeat(3, 1)[0:(2 * (λ + 1))]
+    r = ((mask + repl_seed) % 2)#.cpu()
+    return r
+
+
+def H_old(seed):
+    print(seed.shape, seed.dtype)
     assert seed.shape[0] == λ
     seed_t = seed.t().tolist()
     gen_list = []
@@ -343,19 +359,29 @@ def H(seed):
         binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
         gen_list.append(list(map(int, binary_str)))
 
-    return th.tensor(gen_list, dtype=th.uint8).t()
+    r =  th.tensor(gen_list, dtype=th.uint8).t()
+    print(r.shape, r.dtype)
+    return r
+
+def H(seed):
+    seed = seed.cuda()
+    urandom_gen = csprng.create_const_generator(key)
+    mask = th.empty(2 + (2 * (λ + 1)), seed.shape[1], dtype=th.uint8, device='cuda').random_(generator=urandom_gen)
+    repl_seed = seed.repeat(3, 1)[0:2 + (2 * (λ + 1))]
+    #print(repl_seed.shape, mask.shape)
+    return (mask + repl_seed).cpu()
 
 
 def Convert(bits):
-    bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).unsqueeze(-1).to(th.long)
+    bit_pow_lambda = th.flip(2 ** th.arange(λ, device="cuda"), (0,)).unsqueeze(-1).to(th.long)
     return (bits.to(th.long) * bit_pow_lambda).sum(dim=0).to(dtype)
 
 
 def Array(*shape):
-    return th.empty(shape, dtype=th.uint8)
+    return th.empty(shape, dtype=th.uint8, device="cuda")
 
 
-bit_pow_n = th.flip(2 ** th.arange(n), (0,))
+bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
 
 
 def bit_decomposition(x):
@@ -366,7 +392,7 @@ def bit_decomposition(x):
 
 
 def randbit(size):
-    return th.randint(2, size=size)
+    return th.randint(2, size=size, device="cuda")
 
 
 def concat(*args, **kwargs):
@@ -376,26 +402,40 @@ def concat(*args, **kwargs):
 def split(x, idx):
     return th.split(x, idx)
 
+ones_dict2 = {}
 
 def TruthTableDPF(s, α_i):
-    one = th.ones((1, s.shape[1])).to(th.uint8)
+    one = th.ones((1, s.shape[1]), device="cuda").to(th.uint8)
     s_one = concat(s, one)
-    Table = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    
+    if s_one.shape not in ones_dict2:
+        ones_dict2[s_one.shape] = th.ones((1, *s_one.shape), dtype=th.uint8, device="cuda")
+    
+    ones = ones_dict2[s_one.shape]
+    pad = (α_i * ones).type(th.uint8)
+    pad = concat(1 - pad, pad, axis=0)
+    Table = pad * s_one
+    return Table.reshape(-1, Table.shape[2])
+
+def TruthTableDPF_old(s, α_i):
+    one = th.ones((1, s.shape[1]), device="cuda").to(th.uint8)
+    s_one = concat(s, one)
+    Table = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8, device="cuda")
     for j, el in enumerate(α_i):
         Table[el.item(), :, j] = s_one[:, j]
     return Table.reshape(-1, Table.shape[2])
 
 
 def TruthTableDIF(s, α_i):
-    leafTable = th.zeros((2, 1, len(α_i)), dtype=th.uint8)
+    leafTable = th.zeros((2, 1, len(α_i)), dtype=th.uint8, device="cuda")
     # TODO optimize: just put alpha on first line
     leaf_value = α_i
     for j, el in enumerate(α_i):
         leafTable[(1 - el).item(), 0, j] = leaf_value[j]
 
-    one = th.ones((1, s.shape[1])).to(th.uint8)
+    one = th.ones((1, s.shape[1]), device="cuda").to(th.uint8)
     s_one = concat(s, one)
-    nextTable = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    nextTable = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8, device="cuda")
     for j, el in enumerate(α_i):
         nextTable[el.item(), :, j] = s_one[:, j]
 
