@@ -459,7 +459,8 @@ class PushSignalingService(ImmediateNodeServiceWithoutReply):
         msg: Union[SignalingOfferMessage, SignalingAnswerMessage],
         verify_key: VerifyKey,
     ) -> None:
-        node.in_memory_client_registry[msg.id] = msg
+        # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+        node.signaling_msgs[msg.id] = msg
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
@@ -487,13 +488,14 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
             and isinstance(push_msg, _pull_push_mapping[type(msg)])
         )
 
-        results = list(
-            filter(sig_requests_for_me, node.in_memory_client_registry.values())
-        )
+        # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+        results = list(filter(sig_requests_for_me, node.signaling_msgs.values()))
 
         if results:
             msg = results.pop(0)  # FIFO
-            return node.in_memory_client_registry.pop(
+
+            # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+            return node.signaling_msgs.pop(
                 msg.id
             )  # Retrieve and remove it from storage
         else:

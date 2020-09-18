@@ -230,6 +230,8 @@ class Node(AbstractNode):
         self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
         self.in_memory_client_registry = {}
+        # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+        self.signaling_msgs = {}
 
     @property
     def icon(self) -> str:
