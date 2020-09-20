@@ -2,7 +2,7 @@
 from collections import UserDict
 from typing import Any
 from typing import Dict as TypeDict
-from typing import Optional, TypeVar, Generic
+from typing import Optional, Mapping
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -20,7 +20,7 @@ from .primitive_interface import PyPrimitive
 
 class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
+    def __init__(self, value: Optional[Mapping[Any, Any]] = None, id: Optional[UID] = None):
         if value is None:
             value = {}
 
@@ -91,7 +91,7 @@ class DictWrapper(StorableObject):
         id: UID,
         data: StorableObject,
         description: Optional[str],
-        tags: Optional[TypeDict[str]],
+        tags: Optional[TypeDict[str, str]],
     ) -> StorableObject:
         setattr(data, "_id", id)
         data.tags = tags
