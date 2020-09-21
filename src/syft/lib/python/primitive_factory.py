@@ -10,16 +10,12 @@ from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
 
 
+primitives = [int, float, bool, complex, list, str, None]
+PrimitiveType = Union[int, float, bool, complex, list, str, None]
+
+
 def isprimitive(value: Any) -> bool:
-    if not issubclass(type(value), PyPrimitive) and type(value) in [
-        int,
-        float,
-        bool,
-        complex,
-        list,
-        str,
-        None,
-    ]:
+    if not issubclass(type(value), PyPrimitive) and type(value) in primitives:
         return True
     return False
 
@@ -28,7 +24,7 @@ class PrimitiveFactory(ABC):
     @staticmethod
     @syft_decorator(typechecking=True)
     def generate_primitive(
-        value: Union[int, float, bool, complex, list, str, None, type(NotImplemented)],  # type: ignore
+        value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
     ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
         # syft relative
@@ -39,6 +35,9 @@ class PrimitiveFactory(ABC):
         from .list import List
         from .none import SyNone
         from .string import String
+
+        if isinstance(value, PyPrimitive):
+            return value
 
         if isinstance(value, bool):
             return Bool(value=value, id=id)
@@ -52,7 +51,7 @@ class PrimitiveFactory(ABC):
         if isinstance(value, complex):
             return Complex(real=value.real, imag=value.imag, id=id)
 
-        if type(value) is complex:
+        if isinstance(value, complex):
             return String(value=value, id=id)
 
         if type(value) is list:
@@ -60,6 +59,7 @@ class PrimitiveFactory(ABC):
 
         if type(value) is str:
             return String(value=value, id=id)
+
         if value is NotImplemented:
             return value
 
