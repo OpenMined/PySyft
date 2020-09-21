@@ -55,6 +55,14 @@ class ROLE_EVENTS(object):
     DELETE_ROLE = "delete-role"
 
 
+class GROUP_EVENTS(object):
+    CREATE_GROUP = "create-group"
+    GET_GROUP = "get-group"
+    GET_ALL_GROUPS = "get-all-groups"
+    PUT_GROUP = "put-group"
+    DELETE_GROUP = "delete-group"
+
+
 class CYCLE(object):
     STATUS = "status"
     KEY = "request_key"

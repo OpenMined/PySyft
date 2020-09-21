@@ -85,8 +85,6 @@ def delete_role(current_user, role_id):
         raise RoleNotFoundError
     if not user_role.can_edit_roles:
         raise AuthorizationError
-    if not user_role.can_edit_roles:
-        raise AuthorizationError
 
     role = db.session.query(Role).get(role_id)
     if role is None:
