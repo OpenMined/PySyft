@@ -1,13 +1,13 @@
 # third party
 import requests
 
-# syft absolute
-import syft as sy
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.io.connection import ClientConnection
-from syft.decorators.syft_decorator_impl import syft_decorator
+# syft relative
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
+from ...core.common.serde.deserialize import _deserialize
+from ...core.io.connection import ClientConnection
+from ...decorators.syft_decorator_impl import syft_decorator
 
 
 class HTTPConnection(ClientConnection):
@@ -21,22 +21,19 @@ class HTTPConnection(ClientConnection):
     ) -> SignedImmediateSyftMessageWithoutReply:
         """Sends high priority messages and wait for their responses.
 
-        NOTE: Mandatory abstract method.
-
-        This method aims to implement
-        a HTTP version of the
+        This method implements a HTTP version of the
         ClientConnection.send_immediate_msg_with_reply
 
         :return: returns an instance of SignedImmediateSyftMessageWithReply.
-        :rtype: SignedImmediateSyftMessageWithReply
+        :rtype: SignedImmediateSyftMessageWithoutReply
         """
 
         # Serializes SignedImmediateSyftMessageWithReply in json format
         # and send it using HTTP protocol
-        blob = self.__send_msg(msg=msg).text
+        blob = self._send_msg(msg=msg).text
 
         # Deserialize node's response
-        response = sy.deserialize(blob=blob, from_json=True)
+        response = _deserialize(blob=blob, from_json=True)
 
         # Return SignedImmediateSyftMessageWithoutReply
         return response
@@ -47,16 +44,13 @@ class HTTPConnection(ClientConnection):
     ) -> None:
         """Sends high priority messages without waiting for their reply.
 
-        NOTE: Mandatory abstract method.
-
-        This method aims to implement
-        a HTTP version of the
+        This method implements a HTTP version of the
         ClientConnection.send_immediate_msg_without_reply
 
         """
-        # Serializes SignedImmediateSyftMessageWithReply in json format
+        # Serializes SignedImmediateSyftMessageWithoutReply in json format
         # and send it using HTTP protocol
-        self.__send_msg(msg=msg)
+        self._send_msg(msg=msg)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -64,25 +58,22 @@ class HTTPConnection(ClientConnection):
     ) -> None:
         """Sends low priority messages without waiting for their reply.
 
-        NOTE: Mandatory abstract method.
-
-        This method aims to implement
-        a HTTP version of the
+        This method implements a HTTP version of the
         ClientConnection.send_eventual_msg_without_reply
         """
-        # Serializes SignedImmediateSyftMessageWithReply in json format
+        # Serializes SignedImmediateSyftMessageWithoutReply in json format
         # and send it using HTTP protocol
-        self.__send_msg(msg=msg)
+        self._send_msg(msg=msg)
 
     @syft_decorator(typechecking=True)
-    def __send_msg(self, msg: SyftMessage) -> requests.Response:
+    def _send_msg(self, msg: SyftMessage) -> requests.Response:
         """Serializes Syft messages in json format and send it using HTTP protocol.
 
-        NOTE: Auxiliar method to provide code modularity and reuse
-        This will avoid code duplication.
+        NOTE: Auxiliary method to avoid code duplication and modularity.
 
-        :return: returns response body in string format (serialized syft message).
-        :rtype: str
+        :return: returns requests.Response object containing a JSON serialized
+        SyftMessage
+        :rtype: requests.Response
         """
         # Serialize SyftMessage object
         json_msg = msg.json()
@@ -90,15 +81,15 @@ class HTTPConnection(ClientConnection):
         # Perform HTTP request using base_url as a root address
         r = requests.post(url=self.base_url, json=json_msg)
 
-        # Return request's response body (serialized
-        # syft msg sent by the other peer)
+        # Return request's response object
+        # r.text provides the response body as a str
         return r
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> str:
         """Request Node's metadata
 
-        :return: returns  node metadata.
+        :return: returns node metadata
         :rtype: str
         """
         return requests.get(self.base_url + "/metadata").text

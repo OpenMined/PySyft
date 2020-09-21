@@ -77,12 +77,10 @@ Signaling Steps:
 """
 
 # stdlib
-# Python std libs
 import asyncio
 from typing import Union
 
 # third party
-# WebRTC lib
 from aiortc import RTCDataChannel
 from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
@@ -90,7 +88,6 @@ from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
 
 # syft relative
-# Syft internal source code
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply

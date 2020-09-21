@@ -2,6 +2,7 @@
 functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
+
 # stdlib
 import binascii
 import json
@@ -11,10 +12,10 @@ import pickle
 from flask import Flask
 from flask import request
 
-# syft relative
-from ..core.common.message import ImmediateSyftMessageWithReply
-from ..core.common.message import ImmediateSyftMessageWithoutReply
-from ..core.node.domain.domain import Domain
+# syft absolute
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.node.domain.domain import Domain
 
 app = Flask(__name__)
 
@@ -48,3 +49,6 @@ def recv() -> str:
 
 def run() -> None:
     app.run()
+
+
+run()
