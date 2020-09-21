@@ -468,6 +468,12 @@ class PushSignalingService(ImmediateNodeServiceWithoutReply):
 
 
 class PullSignalingService(ImmediateNodeServiceWithReply):
+
+    _pull_push_mapping = {
+        OfferPullRequestMessage: SignalingOfferMessage,
+        AnswerPullRequestMessage: SignalingAnswerMessage,
+    }
+
     @staticmethod
     @service_auth(root_only=True)
     def process(
@@ -477,15 +483,11 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
     ) -> Union[
         SignalingOfferMessage, SignalingAnswerMessage, SignalingRequestsNotFound
     ]:
-        _pull_push_mapping = {
-            OfferPullRequestMessage: SignalingOfferMessage,
-            AnswerPullRequestMessage: SignalingAnswerMessage,
-        }
 
         sig_requests_for_me = (
             lambda push_msg: push_msg.target_peer.name == msg.host_peer.name
             and push_msg.host_peer.name == msg.target_peer.name
-            and isinstance(push_msg, _pull_push_mapping[type(msg)])
+            and isinstance(push_msg, PullSignalingService._pull_push_mapping[type(msg)])
         )
 
         # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
