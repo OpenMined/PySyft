@@ -299,6 +299,7 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
 
     dtype_options = {None: th.long, "int": th.int32, "long": th.long}
     result = th.tensor(result_share, dtype=dtype_options[dtype])
+    print(f"Returning result: {type(result)}, shape {result.shape}.")
     if core_id is None:
         return result
     else:
@@ -322,7 +323,11 @@ class DPF:
 
     @staticmethod
     def eval(b, x, k_b):
-        return rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
+        # x = x.astype(np.uint64)
+        # original_shape = x.shape
+        result = rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
+        # return result.astype(np.int64).reshape(original_shape)
+        return result
 
     @staticmethod
     def py_keygen(n_values=1):
