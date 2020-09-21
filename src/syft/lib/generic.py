@@ -10,30 +10,11 @@ from typing import Type
 
 # syft relative
 from ..core.common.uid import UID
+from .cwrapper import CWrapperFactory
 from .util import copy_static_methods
 from .util import full_name_with_qualname
 from .util import get_original_constructor_name
 from .util import replace_classes_in_module
-
-
-class CWrapper:
-    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[Any, Any]) -> None:
-        self._wrapped = self._original_constructor(*args, **kwargs)
-
-    def __getattribute__(self, name: str) -> Any:
-        # intercept any getter and proxy everything except the following through to the
-        # self._wrapper reference
-        if name in [
-            "id",
-            "_id",
-            "_original_constructor",
-            "_wrapped",
-            "__name__",
-            "__class__",
-        ]:
-            return object.__getattribute__(self, name)
-
-        return self._wrapped.__getattribute__(name)
 
 
 class ObjectConstructor(object):
@@ -165,71 +146,60 @@ class ObjectConstructor(object):
 
             id_property = property(fget=id_get, fset=id_set)
 
+            # if you are allowed to subclass this type
+            attrs: Dict[str, Any] = {}
+            attrs["__name__"] = type_to_subclass.__name__
+
+            new_class_name = (
+                f"syft.proxy.{full_name_with_qualname(klass=type_to_subclass)}"
+            )
+            parts = new_class_name.split(".")
+            name = parts.pop(-1)
+            attrs["__module__"] = ".".join(parts)
+            attrs["id"] = id_property
+
             try:
-                # if you are allowed to subclass this type
-                attrs: Dict[str, Any] = {}
-                attrs["__name__"] = type_to_subclass.__name__
-
-                new_class_name = (
-                    f"syft.proxy.{full_name_with_qualname(klass=type_to_subclass)}"
+                OriginalConstructorSubclass = type(
+                    name,
+                    (type_to_subclass,),
+                    attrs,
                 )
-                parts = new_class_name.split(".")
-                name = parts.pop(-1)
-                attrs["__module__"] = ".".join(parts)
-                attrs["id"] = id_property
 
-                try:
+                # TODO Fix this better
+                # torch.nn.Parameter.__repr__ throws an exception after we install
+                # our library, so we can catch it and just return something
+                org_repr = OriginalConstructorSubclass.__repr__
 
-                    OriginalConstructorSubclass = type(
-                        name,
-                        (type_to_subclass,),
-                        attrs,
-                    )
+                def make_repr(org_repr: Callable) -> Callable:
+                    def try_repr(self: Any) -> str:
+                        try:
+                            return org_repr(self)
+                        except Exception as e:  # noqa: F841
+                            # uncomment to see the issue
+                            # print("Exception on __repr__", e)
+                            return str(type(self).__name__)
 
-                    # TODO Fix this better
-                    # torch.nn.Parameter.__repr__ throws an exception after we install
-                    # our library, so we can catch it and just return something
-                    org_repr = OriginalConstructorSubclass.__repr__
+                    return try_repr
 
-                    def make_repr(org_repr: Callable) -> Callable:
-                        def try_repr(self: Any) -> str:
-                            try:
-                                return org_repr(self)
-                            except Exception as e:  # noqa: F841
-                                # uncomment to see the issue
-                                # print("Exception on __repr__", e)
-                                return str(type(self).__name__)
-
-                        return try_repr
-
-                    setattr(
-                        OriginalConstructorSubclass, "__repr__", make_repr(org_repr)
-                    )
-
-                except TypeError:
-                    # TypeError: type 'x' is not an acceptable base type
-                    # Sometimes we cant set attributes of built-in/extension type so we
-                    # have a dummy c wrapper which we can inherit from and will proxy
-                    # the constructor and all the calls through
-
-                    # we need the original constructor so we can wrap it
-                    attrs["_original_constructor"] = original_constructor
-
-                    OriginalConstructorSubclass = type(
-                        name,
-                        (CWrapper,),
-                        attrs,
-                    )
-
-                original_constructor = OriginalConstructorSubclass
+                setattr(OriginalConstructorSubclass, "__repr__", make_repr(org_repr))
 
             # If this raises 'TypeError: type <> is not an acceptable base type'
             # then it's a special class of which Python cannot subtype
             # for more on this, see discussion:
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
             except TypeError:
-                # try setting the id property
-                original_constructor.id = id_property
+                # Sometimes we cant set attributes of built-in/extension type so we
+                # have a light CWrapper which we can inherit from and will proxy
+                # the constructor and all the calls through to.
+
+                # we need the original constructor so we can wrap it
+                # attrs["_original_constructor"] = original_constructor
+
+                OriginalConstructorSubclass = CWrapperFactory(
+                    shadow_type=original_constructor
+                )
+
+            original_constructor = OriginalConstructorSubclass
 
         return original_constructor
 
