@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import List
-from typing import NewType
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -19,9 +18,8 @@ from ...proto.lib.python.int_pb2 import Int as Int_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
-
-NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type: ignore
-SyPrimitiveRet = NewType("SyPrimitiveRet", Union[PyPrimitive, NotImplementedType])  # type: ignore
+from .util import NotImplementedType
+from .util import SyPrimitiveRet
 
 
 class Int(int, PyPrimitive):
