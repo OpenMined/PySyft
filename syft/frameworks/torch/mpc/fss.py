@@ -45,7 +45,7 @@ COMP = 1
 # number of processes
 # N_CORES = max(4, multiprocessing.cpu_count() - 2)
 
-N_CORES = 4
+N_CORES = max(4, multiprocessing.cpu_count())
 
 
 # Cheap way?
@@ -63,8 +63,6 @@ def keygen(n_values, op):
         n_values (int): number of primitives to generate
         op (str): eq or comp <=> DPF or DIF
     """
-    print(f"Run keygen op {op}, {n_values} values.")
-
     if op == "eq":
         return DPF.keygen(n_values=n_values)
     elif op == "comp":
@@ -127,7 +125,7 @@ def fss_op(x1, x2, op="eq"):
         shares of the comparison
     """
 
-    print(f"Calling fss_op on {x1.shape}, for op {op}. Let coord: {x1[0]}")
+    # print(f"Calling fss_op on {x1.shape}, for op {op}. Let coord: {x1[0]}")
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
@@ -152,17 +150,14 @@ def fss_op(x1, x2, op="eq"):
     ]
 
     try:
-        print("Getting shares.")
         shares = []
         for i, location in enumerate(locations):
             share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
             shares.append(share)
     except EmptyCryptoPrimitiveStoreError as e:
-        print("Couldn't get shares (empty store).")
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
         sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
-        print(f"Asked new primitives, and retry the same. Let coord: {x1[0]}")
         return fss_op(x1, x2, op)
 
     # async has a cost which is too expensive for this command
@@ -205,7 +200,7 @@ def fss_op(x1, x2, op="eq"):
 # share level
 @allow_command
 def mask_builder(x1, x2, op):
-    print(f"Mask builder on shape {x1.shape} for op {op}")
+    # print(f"Mask builder on shape {x1.shape} for op {op}")
     if not isinstance(x1, int):
         worker = x1.owner
         numel = x1.numel()
@@ -299,7 +294,7 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
 
     dtype_options = {None: th.long, "int": th.int32, "long": th.long}
     result = th.tensor(result_share, dtype=dtype_options[dtype])
-    print(f"Returning result: {type(result)}, shape {result.shape}.")
+    # print(f"Returning result: {type(result)}, shape {result.shape}.")
     if core_id is None:
         return result
     else:
@@ -324,10 +319,11 @@ class DPF:
     @staticmethod
     def eval(b, x, k_b):
         # x = x.astype(np.uint64)
-        # original_shape = x.shape
-        result = rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
-        # return result.astype(np.int64).reshape(original_shape)
-        return result
+        original_shape = x.shape
+        x = x.reshape(-1)
+        flat_result = rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
+        return flat_result.astype(np.int64).reshape(original_shape)
+        # return result
 
     @staticmethod
     def py_keygen(n_values=1):
@@ -393,8 +389,11 @@ class DIF:
 
     @staticmethod
     def eval(b, x, k_b):
-        print(f" Run eval on types {b}, {x.dtype}, {k_b.dtype}")
-        return rustfss.le.eval(b, x, k_b, n_threads=N_CORES)
+        # x = x.astype(np.uint64)
+        original_shape = x.shape
+        x = x.reshape(-1)
+        flat_result = rustfss.le.eval(b, x, k_b, n_threads=N_CORES)
+        return flat_result.astype(np.int64).reshape(original_shape)
 
     @staticmethod
     def py_keygen(n_values=1):

@@ -105,9 +105,9 @@ class PrimitiveStorage:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
 
             if available_instances >= n_instances:
-                print(
-                    f"Got {n_instances} keys for op {op} from the stack which had {available_instances} keys."
-                )
+                # print(
+                #     f"Got {n_instances} keys for op {op} from the stack which had {available_instances} keys."
+                # )
                 keys = primitive_stack[0][0:n_instances]
                 if remove:
                     primitive_stack[0] = primitive_stack[0][n_instances:]
@@ -223,14 +223,8 @@ class PrimitiveStorage:
 
                 else:
                     # TODO: on the fly -> should not be used.
-                    print(f"Appending primitives. We already have {len(current_primitives)}")
-                    print(f"Curr: {current_primitives}. Shape {current_primitives[0].shape}")
                     # current_primitives = np.concatenate(current_primitives, primitives)
                     current_primitives.append(primitives)
-
-                    print(
-                        f"Now we have {len(current_primitives)}. Get check getattre {len( getattr(self, op))}."
-                    )
 
                 #         for i, primitive in enumerate(primitives):
                 #             if len(current_primitives[i]) == 0:
