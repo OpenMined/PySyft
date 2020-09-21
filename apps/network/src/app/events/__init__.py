@@ -1,8 +1,9 @@
 import json
 
 from .. import ws
-from ..codes import GRID_EVENTS
+from ..codes import GRID_EVENTS, USER_EVENTS
 from .network import *
+from .user_related import *
 from .socket_handler import SocketHandler
 
 socket_handler = SocketHandler()
@@ -11,6 +12,15 @@ routes = {
     GRID_EVENTS.JOIN: register_node,
     GRID_EVENTS.MONITOR_ANSWER: update_node,
     GRID_EVENTS.FORWARD: forward,
+    USER_EVENTS.SIGNUP_USER: signup_user_socket,
+    USER_EVENTS.LOGIN_USER: login_user_socket,
+    USER_EVENTS.GET_ALL_USERS: get_all_users_socket,
+    USER_EVENTS.GET_SPECIFIC_USER: get_specific_user_socket,
+    USER_EVENTS.SEARCH_USERS: search_users_socket,
+    USER_EVENTS.PUT_EMAIL: change_user_email_socket,
+    USER_EVENTS.PUT_PASSWORD: change_user_password_socket,
+    USER_EVENTS.PUT_ROLE: change_user_role_socket,
+    USER_EVENTS.DELETE_USER: delete_user_socket,
 }
 
 

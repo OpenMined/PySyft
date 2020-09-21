@@ -20,6 +20,8 @@ Flask-Migrate = "^2.5.3"
 sqlalchemy_utils = "^0.36.8"
 flask-lambda-python36 = "^0.1.0"
 sqlalchemy-aurora-data-api = "^0.2.0"
+bcrypt = "^3.2.0"
+PyJWT = "^1.7.1"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"

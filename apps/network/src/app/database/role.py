@@ -19,3 +19,16 @@ class Role(db.Model):
             f"can_edit_roles: {self.can_edit_roles}, "
             f"can_manage_nodes: {self.can_manage_nodes}>"
         )
+
+
+def create_role(
+    name, can_edit_settings, can_create_users, can_edit_roles, can_manage_nodes,
+):
+    new_role = Role(
+        name=name,
+        can_edit_settings=can_edit_settings,
+        can_create_users=can_create_users,
+        can_edit_roles=can_edit_roles,
+        can_manage_nodes=can_manage_nodes,
+    )
+    return new_role

@@ -20,7 +20,7 @@ db = SQLAlchemy()
 
 from . import utils  # isort:skip
 from . import routes, events  # isort:skip
-from .users import Role  # isort:skip
+from .database import Role  # isort:skip
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 __version__ = "0.1.0"

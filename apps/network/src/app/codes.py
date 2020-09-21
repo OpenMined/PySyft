@@ -11,6 +11,18 @@ class NODE_EVENTS:
     WEBRTC_ANSWER = "webrtc-answer"
 
 
+class USER_EVENTS(object):
+    GET_ALL_USERS = "list-users"
+    GET_SPECIFIC_USER = "list-user"
+    SEARCH_USERS = "search-users"
+    PUT_EMAIL = "put-email"
+    PUT_PASSWORD = "put-password"
+    PUT_ROLE = "put-role"
+    DELETE_USER = "delete-user"
+    SIGNUP_USER = "signup-user"
+    LOGIN_USER = "login-user"
+
+
 class MSG_FIELD:
     TYPE = "type"
     FROM = "from"
