@@ -1,41 +1,37 @@
 """
 PySyft Duet (WebRTC)
 
-    This class aims to implement the PySyft Duet
-concept by using WebRTC protocol as a connection
-channel in order to allow two different users to
-estabilish a direct connection with high-quality
-Real-time Communication using private addresses.
+This class aims to implement the PySyft Duet concept by using WebRTC protocol as a
+connection channel in order to allow two different users to establish a direct
+connection with high-quality Real-time Communication using private addresses.
 
-    The most common example showing how it
-can be used is the notebook demo example:
+The most common example showing how it can be used is the notebook demo example:
 
-    Two different jupyter/collab notebooks in
-different machines using private addresses behind
-routers, proxies and firewalls can connect to
-each other using a full-duplex channel in order
-to perform machine learning and data science tasks,
-working as a client and server at the same time.
+Two different jupyter / collab notebooks in different machines using private addresses
+behind routers, proxies and firewalls can connect to each other using a full-duplex
+channel in order to perform machine learning and data science tasks, working as a client
+and server at the same time.
 
-PS 1: You'll need a signaling server running somewhere.
-If you don't know any public address running this service, or
-want to set up your own signaling network you can use PyGrid's network app.
+PS 1: You need a signaling server running somewhere.
+If you don't know any public address running this service, or want to set up your own
+signaling network you can use PyGrid's network app.
 
-PS 2: The PyGrid's dev/master branches are still supporting PySyft 0.2.x,
+For local development you can run:
+$ python src/syft/grid/example_nodes/network.py
+
+PS 2: The PyGrid's dev / main branches are still supporting PySyft 0.2.x,
 To use this feature you must use the pygrid_0.3.0 branch.
 (https://github.com/OpenMined/PyGrid/tree/pygrid_0.3.0)
 
-You can get more details about all this process,
-in the syft/grid/connections/webrtc.py source code.
+You can get more details about all this process, in the syft/grid/connections/webrtc.py
+source code.
 """
 
 # stdlib
-# Python std libs
 import asyncio
 import weakref
 
 # third party
-# Extended libs
 from nacl.signing import SigningKey
 
 # syft relative
@@ -45,8 +41,6 @@ from ..core.node.common.client import Client
 from ..core.node.domain.client import DomainClient
 from ..core.node.domain.domain import Domain
 from ..decorators.syft_decorator_impl import syft_decorator
-
-# PySyft internal source code
 from .connections.webrtc import WebRTCConnection
 from .services.signaling_service import AnswerPullRequestMessage
 from .services.signaling_service import OfferPullRequestMessage

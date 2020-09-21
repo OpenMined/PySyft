@@ -1,13 +1,13 @@
 # third party
 import requests
 
-# syft absolute
-import syft as sy
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.io.connection import ClientConnection
-from syft.decorators.syft_decorator_impl import syft_decorator
+# syft relative
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
+from ...core.common.serde.deserialize import _deserialize
+from ...core.io.connection import ClientConnection
+from ...decorators.syft_decorator_impl import syft_decorator
 
 
 class HTTPConnection(ClientConnection):
@@ -33,7 +33,7 @@ class HTTPConnection(ClientConnection):
         blob = self._send_msg(msg=msg).text
 
         # Deserialize node's response
-        response = sy.deserialize(blob=blob, from_json=True)
+        response = _deserialize(blob=blob, from_json=True)
 
         # Return SignedImmediateSyftMessageWithoutReply
         return response
