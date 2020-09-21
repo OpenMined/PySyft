@@ -67,6 +67,7 @@ class TorchAttributes(FrameworkAttributes):
             "get_num_threads",
             "get_rng_state",
             "has_names",
+            "has_torch_function",
             "int",
             "int16",
             "int32",

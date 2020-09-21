@@ -659,7 +659,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Still no solution to perform a real division on a additive shared tensor
         # without a heavy crypto protocol.
         # For now, the solution works in most cases when the tensor is shared between 2 workers
-        return {worker: share / divisor for worker, share in shares.items()}
+        return {worker: share // divisor for worker, share in shares.items()}
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):
@@ -708,7 +708,7 @@ class AdditiveSharingTensor(AbstractTensor):
             sum_value = share.sum(**kwargs)
             if m is None:
                 m = share.numel() // sum_value.numel()
-            result[worker] = sum_value / m
+            result[worker] = sum_value // m
 
         return result
 
@@ -1100,6 +1100,7 @@ class AdditiveSharingTensor(AbstractTensor):
             the response of the function command
         """
         cmd_name, _, args_, kwargs_ = command
+        
 
         # Check that the function has not been overwritten
         cmd = None

@@ -781,7 +781,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 numel = self.shape[dim]
             else:
                 numel = self.numel()
-            return mean * numel / (numel - 1)
+            return mean * numel // (numel - 1)
         else:
             return mean
 

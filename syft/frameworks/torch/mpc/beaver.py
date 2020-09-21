@@ -4,6 +4,8 @@ from typing import Tuple
 import syft as sy
 from .cuda import CUDALongTensor
 
+import torchcsprng as csprng
+generator = csprng.create_random_device_generator('/dev/urandom')
 
 def build_triple(
     op: str,
@@ -31,31 +33,40 @@ def build_triple(
     left_shape, right_shape = shape
     cmd = getattr(th, op)
     low_bound, high_bound = -(field // 2), (field - 1) // 2
-    a = th.randint(low_bound, high_bound, (n_instances, *left_shape), dtype=torch_dtype)
-    b = th.randint(low_bound, high_bound, (n_instances, *right_shape), dtype=torch_dtype)
+    a = th.empty(
+        n_instances, *left_shape, dtype=torch_dtype, device='cuda'
+    ).random_(low_bound, high_bound, generator=generator)
+    b = th.empty(
+        n_instances, *right_shape, dtype=torch_dtype, device='cuda'
+    ).random_(low_bound, high_bound, generator=generator)
 
-    if op == "mul" and b.numel() == a.numel():
-        # examples:
-        #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
-        #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
-        if len(a.shape) == len(b.shape):
+    if op == "mul":
+        if b.numel() == a.numel():
+            # examples:
+            #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
+            #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
+            if len(a.shape) == len(b.shape):
+                c = cmd(a, b)
+            elif len(a.shape) > len(b.shape):
+                shape = b.shape
+                b = b.reshape_as(a)
+                c = cmd(a, b)
+                b = b.reshape(*shape)
+            else:  # len(a.shape) < len(b.shape):
+                shape = a.shape
+                a = a.reshape_as(b)
+                c = cmd(a, b)
+                a = a.reshape(*shape)
+        else:
             c = cmd(a, b)
-        elif len(a.shape) > len(b.shape):
-            shape = b.shape
-            b = b.reshape_as(a)
-            c = cmd(a, b)
-            b = b.reshape(*shape)
-        else:  # len(a.shape) < len(b.shape):
-            shape = a.shape
-            a = a.reshape_as(b)
-            c = cmd(a, b)
-            a = a.reshape(*shape)
-    else:
-        # c = cmd(a, b)
+    elif op in {"matmul", "conv2d"}:
+        cmd = getattr(CUDALongTensor, op)
         a_ = CUDALongTensor(a)
         b_ = CUDALongTensor(b)
-        c = CUDALongTensor.matmul(a_, b_)
+        c = cmd(a_, b_)
         c = c._tensor
+    else:
+        raise ValueError
 
     helper = sy.AdditiveSharingTensor(field=field)
 

@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import List
 
-import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
@@ -32,6 +31,7 @@ class PrimitiveStorage:
         self.fss_comp: list = []
         self.mul: dict = defaultdict(list)
         self.matmul: dict = defaultdict(list)
+        self.conv2d: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -39,6 +39,7 @@ class PrimitiveStorage:
             "fss_comp": self.build_fss_keys(op="comp"),
             "mul": self.build_triples(op="mul"),
             "matmul": self.build_triples(op="matmul"),
+            "conv2d": self.build_triples(op="conv2d"),
         }
 
         self.force_preprocessing = False
@@ -65,7 +66,7 @@ class PrimitiveStorage:
         """
         primitive_stack = getattr(self, op)
 
-        if op in {"mul", "matmul"}:
+        if op in {"mul", "matmul", "conv2d"}:
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
             torch_dtype = kwargs.get("torch_dtype")
@@ -189,7 +190,7 @@ class PrimitiveStorage:
             assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
             current_primitives = getattr(self, op)
-            if op in {"mul", "matmul"}:
+            if op in {"mul", "matmul", "conv2d"}:
                 for params, primitive_triple in primitives:
                     if params not in current_primitives or len(current_primitives[params]) == 0:
                         current_primitives[params] = primitive_triple

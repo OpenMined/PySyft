@@ -10,7 +10,6 @@ Useful papers are:
 Note that the protocols are quite different in aspect from those papers
 """
 import math
-import numpy as np
 import shaloop
 import multiprocessing
 import asyncio
@@ -25,6 +24,7 @@ from syft.generic.utils import remote
 
 
 import torchcsprng as csprng
+generator = csprng.create_random_device_generator('/dev/urandom')
 
 λ = 127  # security parameter
 n = 32  # bit precision
@@ -36,6 +36,9 @@ no_wrap = {"no_wrap": True}
 # internal codes
 EQ = 0
 COMP = 1
+
+# number of processes
+N_CORES = max(4, multiprocessing.cpu_count())
 
 
 def full_name(f):
@@ -53,41 +56,7 @@ def keygen(n_values, op):
     if op == "eq":
         return DPF.keygen(n_values=n_values)
     elif op == "comp":
-        if n_values > MULTI_LIMIT:
-            multiprocessing_args = []
-            slice_size = math.ceil(n_values / N_CORES)
-            for j in range(N_CORES):
-                n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
-                process_args = (n_instances,)  # TODO add a seed element for the PRG?
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(DIF.keygen, multiprocessing_args)
-            p.close()
-            list_items = [[] for _ in range(len(partitions[0]))]
-            for idx, partition in enumerate(partitions):
-                for i, item in enumerate(partition):
-                    if isinstance(item, tuple):
-                        if len(list_items[i]) == 0:
-                            list_items[i] = [[] for _ in range(len(item))]
-                        for j, it in enumerate(item):
-                            list_items[i][j].append(it)
-                    else:
-                        list_items[i].append(item)
-
-            primitives = []
-            for items in list_items:
-                if isinstance(items[0], np.ndarray):
-                    primitive = concat(*items, axis=-1)
-                    primitives.append(primitive)
-                else:
-                    list_primitives = []
-                    for its in items:
-                        list_primitives.append(concat(*its, axis=-1))
-                    primitives.append(tuple(list_primitives))
-
-            return primitives
-        else:
-            return DIF.keygen(n_values)
+        return DIF.keygen(n_values)
     else:
         raise ValueError
 
@@ -157,7 +126,7 @@ def fss_op(x1, x2, op="eq"):
         location.de_register_obj(share)
         del share
 
-    workers_args = [(th.IntTensor([i]), mask_value, op, dtype) for i in range(2)]
+    workers_args = [(th.tensor([i], device="cuda").int(), mask_value, op, dtype) for i in range(2)]
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
@@ -191,7 +160,7 @@ def mask_builder(x1, x2, op):
     # Keep the primitive in store as we use it after
     # you actually get a share of alpha
     alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
-    r = x + th.tensor(alpha.astype(np.int64), device="cuda").reshape(x.shape)
+    r = x + alpha.type(th.long).reshape(x.shape)
     return r
 
 
@@ -201,33 +170,7 @@ def evaluate(b, x_masked, op, dtype):
     if op == "eq":
         return eq_evaluate(b, x_masked)
     elif op == "comp":
-        numel = x_masked.numel()
-        if numel > MULTI_LIMIT:
-            # print('MULTI EVAL', numel, x_masked.owner)
-            owner = x_masked.owner
-            multiprocessing_args = []
-            original_shape = x_masked.shape
-            x_masked = x_masked.reshape(-1)
-            slice_size = math.ceil(numel / N_CORES)
-            for j in range(N_CORES):
-                x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
-                x_masked_slice.owner = owner
-                process_args = (b, x_masked_slice, owner.id, j, j * slice_size, dtype)
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(comp_evaluate, multiprocessing_args)
-            p.close()
-            partitions = sorted(partitions, key=lambda k: k[0])
-            partitions = [partition[1] for partition in partitions]
-            result = th.cat(partitions)
-
-            # Burn the primitives (copies of the workers were sent)
-            owner.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=True)
-
-            return result.reshape(*original_shape)
-        else:
-            # print('EVAL', numel)
-            return comp_evaluate(b, x_masked, dtype=dtype)
+        return comp_evaluate(b, x_masked, dtype=dtype)
     else:
         raise ValueError
 
@@ -237,31 +180,20 @@ def eq_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DPF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
-    return th.tensor(result_share, device="cuda")
+    return DPF.eval(b, x_masked, s_0, *CW)
 
 
 # process level
-def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype=None):
-    if owner_id is not None:
-        x_masked.owner = x_masked.owner.get_worker(owner_id)
-
-    if burn_offset > 0:
-        _ = x_masked.owner.crypto_store.get_keys(
-            op="fss_comp", n_instances=burn_offset, remove=True
-        )
+def comp_evaluate(b, x_masked,  dtype=None):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DIF.eval(b.cpu().numpy().item(), x_masked.cpu().numpy(), s_0, *CW)
+    result = DIF.eval(b, x_masked, s_0, *CW)
 
-    dtype_options = {None: th.long, "int": th.int32, "long": th.long}
-    result = th.tensor(result_share, dtype=dtype_options[dtype], device="cuda")
-    if core_id is None:
-        return result
-    else:
-        return core_id, result
-
+    #dtype_options = {None: th.long, "int": th.int32, "long": th.long}
+    #result = th.tensor(result, dtype=dtype_options[dtype], device="cuda")
+    
+    return result
 
 
 def eq(x1, x2):
@@ -277,7 +209,7 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.randint(0, 2 ** n, (n_values,), dtype=th.long, device="cuda")
+        alpha = th.empty(n_values, dtype=th.long, device='cuda').random_(0, 2**n, generator=generator)
         beta = th.tensor([1], device="cuda")
         α = bit_decomposition(alpha)
         s, t, CW = (
@@ -309,7 +241,6 @@ class DPF:
         CW_n = CW_n.type(th.long)
         return (alpha, s[0][0], s[0][1], *_CW, CW_n)
 
-    eval_t = (np.array([[-42, -42]]*n).T).tolist()
     @staticmethod
     def eval(b, x, *k_b):
         x = x.long()
@@ -335,7 +266,7 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.randint(0, 2 ** n, (n_values,), dtype=th.long, device="cuda")
+        alpha = th.empty(n_values, dtype=th.long, device='cuda').random_(0, 2**n, generator=generator)
         α = bit_decomposition(alpha)
         
         s, σ, t, τ, CW, CW_leaf = (
@@ -348,7 +279,7 @@ class DIF:
         )
         _CW = []
         s[0] = randbit(shape=(2, λ, n_values))
-        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.long).t()
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.long, device="cuda").t()
 
         for i in range(0, n):
             h0 = H(s[i, 0], 0)
@@ -393,28 +324,29 @@ class DIF:
         x = x.reshape(-1)
         n_values = x.shape[0]
         x = bit_decomposition(x)
-        s, σ, t, τ, out = (
+        s, σ, t, τ = (
             Array(n + 1, λs, n_values),
             Array(n + 1, λs, n_values),
             Array(n + 1, 1, n_values),
             Array(n + 1, 1, n_values),
-            Array(n + 1, n_values),
         )
         s[0], *_CW, CW_leaf = k_b
         CW_leaf = CW_leaf.type(th.long)
         t[0] = b
+        
+        out = 0
 
         for i in range(0, n):
             CWi = uncompress(_CW[i], op=COMP)
             dual_state = H(s[i]) ^ (t[i] * CWi)
             state = multi_dim_filter(dual_state, x[i])
             σ[i + 1], τ[i + 1], s[i + 1], t[i + 1] = split(state, (COMP, λs, 1, λs, 1))
-            out[i] = (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
+            out += (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
 
         # Last node, the other σ is also a leaf
-        out[n] = (-1) ** b * (t[n].squeeze() * CW_leaf[n])# + convert(s[n]))
+        out += (-1) ** b * (t[n].squeeze() * CW_leaf[n])# + convert(s[n]))
 
-        return out.sum(dim=0).type(th.long).reshape(original_shape)
+        return out.type(th.long).reshape(original_shape)
 
     
 def compress(CWi, alpha_i, op=EQ):
@@ -476,7 +408,8 @@ def randbit(shape):
     assert len(shape) == 3
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
-    randvalues = th.randint(-2 ** 63, 2 ** 63 - 1, shape_with_bytes, dtype=th.long, device="cuda")
+    randvalues = th.empty(*shape_with_bytes, dtype=th.long, device='cuda').random_(-2**63, 2**63-1, generator=generator)
+    #randvalues = th.randint(-2 ** 63, 2 ** 63 - 1, shape_with_bytes, dtype=th.long, device="cuda")
     #randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
     return randvalues
 

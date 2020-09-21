@@ -6,6 +6,7 @@ import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
+import time
 
 
 def linear(*args):
@@ -127,27 +128,31 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     # We want to get relative positions of values in the input tensor that are used
     # by one filter convolution.
     # It basically is the position of the values used for the top left convolution.    
+    
     pixels = np.zeros((nb_channels_in, nb_rows_kernel, nb_cols_kernel))\
-        + np.array(range(nb_channels_in)).reshape(-1, 1, 1)*  nb_rows_in * nb_cols_in \
+        + np.array(range(nb_channels_in)).reshape(-1, 1, 1) * nb_rows_in * nb_cols_in \
         + np.array(range(nb_rows_kernel)).reshape(1, -1, 1) * nb_cols_in * dilation[0] \
         + np.array(range(nb_cols_kernel)).reshape(1, 1, -1) * dilation[1]
     pattern_ind = pixels.astype("long").reshape(-1)
-
     # The image tensor is reshaped for the matrix multiplication:
     # on each row of the new tensor will be the input values used for each filter convolution
     # We will get a matrix [[in values to compute out value 0],
     #                       [in values to compute out value 1],
     #                       ...
     #                       [in values to compute out value nb_rows_out*nb_cols_out]]
+    
     im_flat = input.reshape(batch_size, -1)
     im_reshaped = []
+    t1 = time.time()
     for cur_row_out in range(nb_rows_out):
         for cur_col_out in range(nb_cols_out):
             # For each new output value, we just need to shift the receptive field
             offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
-            tmp = list(pattern_ind + offset)
-            im_reshaped.append(im_flat[:, tmp])
+            im_reshaped.append(im_flat[:, pattern_ind + offset])
+    print('*', time.time() - t1)
+    t1 = time.time()
     im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
+    print('**', time.time() - t1)
 
     # The convolution kernels are also reshaped for the matrix multiplication
     # We will get a matrix [[weights for out channel 0],
