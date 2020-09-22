@@ -98,6 +98,9 @@ from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNode
+from ..node.common.action.garbage_collect_object_action import (
+    GarbageCollectObjectAction,
+)
 from ..node.common.action.get_object_action import GetObjectAction
 from ..store.storeable_object import StorableObject
 
@@ -305,3 +308,12 @@ class Pointer(AbstractPointer):
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 
         return response.status
+
+    def __del__(self) -> None:
+        # Create the delete message
+        msg = GarbageCollectObjectAction(
+            obj_id=self.id_at_location, address=self.client.address
+        )
+
+        # Send the message
+        self.client.send_eventual_msg_without_reply(msg=msg)
