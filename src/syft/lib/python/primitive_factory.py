@@ -9,7 +9,6 @@ from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
 
-
 primitives = [int, float, bool, complex, list, str, None]
 PrimitiveType = Union[int, float, bool, complex, list, str, None]
 
