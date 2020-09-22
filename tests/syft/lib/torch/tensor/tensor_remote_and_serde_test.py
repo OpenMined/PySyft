@@ -1,3 +1,6 @@
+# stdlib
+import gc
+
 # third party
 import pytest
 import torch as th
@@ -74,3 +77,26 @@ def test_torch_no_read_permissions() -> None:
     assert (x == x2).all()
 
     assert x.grad == x2.grad
+
+
+def test_torch_garbage_collect() -> None:
+    """
+    Test if sending a tensor and then deleting the pointer removes the object
+    from the remote worker.
+    """
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    x = th.tensor([-1, 0, 1, 2, 3, 4])
+    ptr = x.send(alice_client)
+
+    assert len(alice.store) == 1
+
+    # "del" only decrements the counter and the garbage collector plays the role of the reaper
+    del ptr
+
+    # Make sure __del__ from Pointer is called
+    gc.collect()
+
+    assert len(alice.store) == 0
