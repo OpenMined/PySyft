@@ -84,6 +84,8 @@ class Duet(DomainClient):
         # WebRTCConnection instance ( Bidirectional Connection )
         self.connection = WebRTCConnection(node=self.node)
 
+        self.peer_addr = address
+
         # Client used to exchange signaling messages in order to establish a connection
         # NOTE: In the future it may be a good idea to modularize this client to make
         # it pluggable using different connection protocols.
@@ -146,7 +148,7 @@ class Duet(DomainClient):
                 signing_key=self.signing_key,
                 verify_key=self.verify_key,
             )
-            self.connection._client_address = self.address  # type: ignore
+            self.connection._client_address = self.address
         # If client_metada is None, then an exception occurred during the process
         # The exception has been caught and saved in self._exception
         else:
@@ -169,6 +171,9 @@ class Duet(DomainClient):
         # Finish the pending one.
         for task in pending:
             task.cancel()
+
+    def close(self) -> None:
+        self.connection.close(self.peer_addr)
 
     @syft_decorator(typechecking=True)
     async def push(self) -> None:

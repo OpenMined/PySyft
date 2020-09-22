@@ -49,3 +49,7 @@ message InvalidLoopBackRequest {
   syft.core.io.Address address = 2;
 }
 
+message CloseConnectionMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}

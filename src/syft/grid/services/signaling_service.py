@@ -24,6 +24,9 @@ from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )
 from ...proto.grid.service.signaling_service_pb2 import (
+    CloseConnectionMessage as CloseConnectionMessage_PB,
+)
+from ...proto.grid.service.signaling_service_pb2 import (
     InvalidLoopBackRequest as InvalidLoopBackRequest_PB,
 )
 from ...proto.grid.service.signaling_service_pb2 import (
@@ -525,6 +528,79 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         """
 
         return InvalidLoopBackRequest_PB
+
+
+@final
+class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> CloseConnectionMessage_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: CloseConnectionMessage_PB
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return CloseConnectionMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: CloseConnectionMessage_PB,
+    ) -> "CloseConnectionMessage":
+        """Creates a InvalidLoopBackRequest from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of CloseConnectionMessage
+        :rtype: CloseConnectionMessage
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return CloseConnectionMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return CloseConnectionMessage_PB
 
 
 class PushSignalingService(ImmediateNodeServiceWithoutReply):
