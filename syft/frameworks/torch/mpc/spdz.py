@@ -67,7 +67,7 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
 
 # share level
 @allow_command
-def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+def spdz_compute(j: int, delta, epsilon, kwargs_, op: str, dtype: str, torch_dtype: th.dtype, field: int):
     """
     Compute the mul or matmul part of the SPDZ protocol, once delta and epsilon
     have been made public
@@ -99,9 +99,9 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         epsilon = CUDALongTensor(epsilon)
         a = CUDALongTensor(a)
         b = CUDALongTensor(b)
-        delta_b = cmd(delta, b)
-        a_epsilon = cmd(a, epsilon)
-        delta_epsilon = cmd(delta, epsilon)
+        delta_b = cmd(delta, b, **kwargs_)
+        a_epsilon = cmd(a, epsilon, **kwargs_)
+        delta_epsilon = cmd(delta, epsilon, **kwargs_)
 
         delta_b, a_epsilon, delta_epsilon = delta_b._tensor, a_epsilon._tensor, delta_epsilon._tensor
     else:
@@ -117,7 +117,7 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         return delta_b + a_epsilon + c
 
 
-def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
+def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     """Abstractly multiplies two tensors (mul or matmul)
     Args:
         cmd: a callable of the equation to be computed (mul or matmul)
@@ -151,11 +151,13 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
     except EmptyCryptoPrimitiveStoreError as e:
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
-        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
-        return spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field)
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, kwargs_=kwargs_, **e.kwargs_)
+        return spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field)
 
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
+    
+
 
     for location, share_delta, share_epsilon in zip(locations, shares_delta, shares_epsilon):
         location.de_register_obj(share_delta)
@@ -166,7 +168,7 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
-            args = (th.LongTensor([i]), delta, epsilon, op, dtype, torch_dtype, field)
+            args = (th.LongTensor([i]), delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
@@ -177,7 +179,7 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
                     (
                         full_name(spdz_compute),
                         None,
-                        (th.LongTensor([i]), delta, epsilon, op),
+                        (th.LongTensor([i]), delta, epsilon, kwargs_, op),
                         {},
                     )
                     for i in [0, 1]

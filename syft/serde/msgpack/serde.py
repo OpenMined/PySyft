@@ -37,6 +37,8 @@ import hashlib
 
 import syft
 import msgpack as msgpack_lib
+import msgpack_numpy as m
+m.patch()
 from syft import dependency_check
 
 from syft.serde import compression

@@ -1,7 +1,7 @@
 import torch as th
 import torch.nn as nn
 
-from syft.frameworks.torch.nn.functional import conv2d
+from syft.frameworks.torch.nn.functional import OLDconv2d as conv2d
 
 
 class Conv2d(nn.Module):

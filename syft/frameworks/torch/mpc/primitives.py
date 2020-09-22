@@ -149,6 +149,7 @@ class PrimitiveStorage:
     def provide_primitives(
         self,
         op: str,
+        kwargs_: dict,
         workers: List[AbstractWorker],
         n_instances: int = 10,
         **kwargs,
@@ -168,7 +169,7 @@ class PrimitiveStorage:
 
         builder = self._builders[op]
 
-        primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
+        primitives = builder(kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs)
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -228,7 +229,7 @@ class PrimitiveStorage:
 
         n = sy.frameworks.torch.mpc.fss.n
 
-        def build_separate_fss_keys(n_party: int, n_instances: int = 100):
+        def build_separate_fss_keys(kwargs_: dict, n_party: int, n_instances: int = 100):
             assert (
                 n_party == 2
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
@@ -244,7 +245,7 @@ class PrimitiveStorage:
         The builder to generate beaver triple for multiplication or matrix multiplication
         """
 
-        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
+        def build_separate_triples(kwargs_: dict, n_party: int, n_instances: int, **kwargs) -> list:
             assert n_party == 2, (
                 "Only 2 workers supported for the moment. "
                 "Please fill an issue if you have an urgent need."
@@ -263,7 +264,7 @@ class PrimitiveStorage:
 
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
-                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
+                shares_worker = build_triple(op, kwargs_, shape, n_party, n_instances, torch_dtype, field)
                 config = (shape, dtype, torch_dtype, field)
                 for primitives, shares in zip(primitives_worker, shares_worker):
                     primitives.append((config, shares))

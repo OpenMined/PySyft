@@ -520,7 +520,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def __rsub__(self, other):
         return (self - other) * -1
 
-    def _private_mul(self, other, equation: str):
+    @staticmethod
+    def _private_mul(x, y, equation: str, kwargs_={}):
         """Abstractly Multiplies two tensors
 
         Args:
@@ -529,17 +530,18 @@ class AdditiveSharingTensor(AbstractTensor):
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
+        self = x
         # check to see that operation is either mul or matmul
-        assert equation == "mul" or equation == "matmul"
+        assert equation in {"mul", "matmul", "conv2d"}
         cmd = getattr(torch, equation)
 
-        assert isinstance(other, AdditiveSharingTensor)
+        assert isinstance(y, AdditiveSharingTensor)
 
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
         shares = spdz.spdz_mul(
-            equation, self, other, self.crypto_provider, self.dtype, self.torch_dtype, self.field
+            equation, x, y, kwargs_, self.crypto_provider, self.dtype, self.torch_dtype, self.field
         )
 
         return shares
@@ -584,7 +586,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 other = other.wrap()
             return self._public_mul(other, "mul")
 
-        return self._private_mul(other, "mul")
+        return AdditiveSharingTensor._private_mul(self, other, "mul")
 
     def __mul__(self, other, **kwargs):
         return self.mul(other, **kwargs)
@@ -635,7 +637,16 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(other, sy.AdditiveSharingTensor):
             return self._public_mul(other, "matmul")
 
-        return self._private_mul(other, "matmul")
+        return AdditiveSharingTensor._private_mul(self, other, "matmul")
+    
+    def conv2d(self, other, **kw):
+        """Multiplies two tensors matrices together
+
+        Args:
+            self: an AdditiveSharingTensor
+            other: another AdditiveSharingTensor or a MultiPointerTensor
+        """
+        return AdditiveSharingTensor._private_mul(self, other, "conv2d", kw)
 
     def mm(self, *args, **kwargs):
         """Multiplies two tensors matrices together"""
@@ -889,6 +900,17 @@ class AdditiveSharingTensor(AbstractTensor):
                     return padded_shares
 
                 module.pad = pad
+                
+                def conv2d(a, b, *args, **kw):
+                    return a.conv2d(b, 
+                                    bias=args[0], 
+                                    stride=args[1], 
+                                    padding=args[2],
+                                    dilation=args[3], 
+                                    groups=args[4] 
+                                   )
+
+                module.conv2d = conv2d
 
             module.functional = functional
 

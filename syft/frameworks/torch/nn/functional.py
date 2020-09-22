@@ -143,16 +143,14 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     
     im_flat = input.reshape(batch_size, -1)
     im_reshaped = []
-    t1 = time.time()
+
     for cur_row_out in range(nb_rows_out):
         for cur_col_out in range(nb_cols_out):
             # For each new output value, we just need to shift the receptive field
             offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
             im_reshaped.append(im_flat[:, pattern_ind + offset])
-    print('*', time.time() - t1)
-    t1 = time.time()
+
     im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
-    print('**', time.time() - t1)
 
     # The convolution kernels are also reshaped for the matrix multiplication
     # We will get a matrix [[weights for out channel 0],
@@ -206,7 +204,7 @@ def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
     return res
 
 
-def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+def OLDconv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
     The idea is to unroll the input and weight matrices to compute a
