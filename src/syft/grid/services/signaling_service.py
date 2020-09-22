@@ -24,6 +24,9 @@ from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )
 from ...proto.grid.service.signaling_service_pb2 import (
+    InvalidLoopBackRequest as InvalidLoopBackRequest_PB,
+)
+from ...proto.grid.service.signaling_service_pb2 import (
     OfferPullRequestMessage as OfferPullRequestMessage_PB,
 )
 from ...proto.grid.service.signaling_service_pb2 import (
@@ -412,13 +415,13 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     def _proto2object(
         proto: SignalingRequestsNotFound_PB,
     ) -> "SignalingRequestsNotFound":
-        """Creates a SignalingAnswerMessage from a protobuf
+        """Creates a SignalingRequestsNotFound from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of SignalingAnswerMessage
-        :rtype: SignalingAnswerMessage
+        :return: returns an instance of SignalingRequestsNotFound
+        :rtype: SignalingRequestsNotFound
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -451,6 +454,79 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         return SignalingRequestsNotFound_PB
 
 
+@final
+class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> InvalidLoopBackRequest_PB:
+        """Returns a protobuf serialization of self.
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+
+        :return: returns a protobuf object
+        :rtype: InvalidLoopBackRequest_PB
+
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return InvalidLoopBackRequest_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: InvalidLoopBackRequest_PB,
+    ) -> "InvalidLoopBackRequest":
+        """Creates a InvalidLoopBackRequest from a protobuf
+
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+
+        :return: returns an instance of InvalidLoopBackRequest
+        :rtype: InvalidLoopBackRequest
+
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return InvalidLoopBackRequest(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return InvalidLoopBackRequest_PB
+
+
 class PushSignalingService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(root_only=True)
@@ -459,8 +535,10 @@ class PushSignalingService(ImmediateNodeServiceWithoutReply):
         msg: Union[SignalingOfferMessage, SignalingAnswerMessage],
         verify_key: VerifyKey,
     ) -> None:
-        # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
-        node.signaling_msgs[msg.id] = msg
+        # Do not store loopback signaling requests
+        if msg.host_peer != msg.target_peer:
+            # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+            node.signaling_msgs[msg.id] = msg
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
@@ -481,8 +559,14 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
         msg: Union[OfferPullRequestMessage, AnswerPullRequestMessage],
         verify_key: VerifyKey,
     ) -> Union[
-        SignalingOfferMessage, SignalingAnswerMessage, SignalingRequestsNotFound
+        SignalingOfferMessage,
+        SignalingAnswerMessage,
+        SignalingRequestsNotFound,
+        InvalidLoopBackRequest,
     ]:
+        # Do not allow loopback signaling requests
+        if msg.host_peer == msg.target_peer:
+            return InvalidLoopBackRequest(address=msg.reply_to)
 
         sig_requests_for_me = (
             lambda push_msg: push_msg.target_peer == msg.host_peer

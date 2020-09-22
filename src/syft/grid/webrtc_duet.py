@@ -43,6 +43,7 @@ from ..core.node.domain.domain import Domain
 from ..decorators.syft_decorator_impl import syft_decorator
 from .connections.webrtc import WebRTCConnection
 from .services.signaling_service import AnswerPullRequestMessage
+from .services.signaling_service import InvalidLoopBackRequest
 from .services.signaling_service import OfferPullRequestMessage
 from .services.signaling_service import SignalingAnswerMessage
 from .services.signaling_service import SignalingOfferMessage
@@ -209,6 +210,12 @@ class Duet(DomainClient):
                 # If Signaling Answer Message was found
                 elif isinstance(_response, SignalingAnswerMessage):
                     task = self._ack
+
+                # If LoopBack Message it was a loopback request
+                elif isinstance(_response, InvalidLoopBackRequest):
+                    raise Exception(
+                        "You can't perform p2p connection using your current node address as a destination peer."
+                    )
 
                 # If Signaling Message weren't found
                 else:

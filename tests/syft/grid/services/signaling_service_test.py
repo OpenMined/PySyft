@@ -6,6 +6,7 @@ import syft as sy
 from syft.core.io.address import Address
 from syft.core.node.common.node import Node
 from syft.grid.services.signaling_service import AnswerPullRequestMessage
+from syft.grid.services.signaling_service import InvalidLoopBackRequest
 from syft.grid.services.signaling_service import OfferPullRequestMessage
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
@@ -192,6 +193,64 @@ def test_pull_answer_signaling_service() -> None:
     response = om_network_client.send_immediate_msg_with_reply(msg=ans_pull_req)
 
     assert response == answer_msg
+
+
+def test_loopback_offer_signaling_service() -> None:
+    om_network, bob_vm, alice_vm = get_preset_nodes()
+    om_network_client = om_network.get_root_client()
+
+    offer_msg = SignalingOfferMessage(
+        address=om_network.address,
+        payload="SDP",
+        host_metadata=alice_vm.get_metadata_for_client(),
+        target_peer=alice_vm.address,
+        host_peer=alice_vm.address,
+    )
+    om_network_client.send_immediate_msg_without_reply(msg=offer_msg)
+
+    # Do not enqueue loopback requests
+    assert len(om_network.signaling_msgs) == 0
+
+    offer_pull_req = OfferPullRequestMessage(
+        address=om_network.address,
+        target_peer=alice_vm.address,
+        host_peer=alice_vm.address,
+        reply_to=om_network_client.address,
+    )
+
+    response = om_network_client.send_immediate_msg_with_reply(msg=offer_pull_req)
+
+    # Return InvalidLoopBack Message
+    assert isinstance(response, InvalidLoopBackRequest)
+
+
+def test_loopback_answer_signaling_service() -> None:
+    om_network, bob_vm, alice_vm = get_preset_nodes()
+    om_network_client = om_network.get_root_client()
+
+    answer_msg = SignalingAnswerMessage(
+        address=om_network.address,
+        payload="SDP",
+        host_metadata=alice_vm.get_metadata_for_client(),
+        target_peer=alice_vm.address,
+        host_peer=alice_vm.address,
+    )
+    om_network_client.send_immediate_msg_without_reply(msg=answer_msg)
+
+    # Do not enqueue loopback requests
+    assert len(om_network.signaling_msgs) == 0
+
+    ans_pull_req = AnswerPullRequestMessage(
+        address=om_network.address,
+        target_peer=alice_vm.address,
+        host_peer=alice_vm.address,
+        reply_to=om_network_client.address,
+    )
+
+    response = om_network_client.send_immediate_msg_with_reply(msg=ans_pull_req)
+
+    # Return InvalidLoopBackMessage
+    assert isinstance(response, InvalidLoopBackRequest)
 
 
 def test_not_found_pull_offer_requests_signaling_service() -> None:

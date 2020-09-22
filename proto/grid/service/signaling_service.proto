@@ -43,3 +43,9 @@ message SignalingRequestsNotFound {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
 }
+
+message InvalidLoopBackRequest {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
