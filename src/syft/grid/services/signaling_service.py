@@ -485,8 +485,8 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
     ]:
 
         sig_requests_for_me = (
-            lambda push_msg: push_msg.target_peer.name == msg.host_peer.name
-            and push_msg.host_peer.name == msg.target_peer.name
+            lambda push_msg: push_msg.target_peer == msg.host_peer
+            and push_msg.host_peer == msg.target_peer
             and isinstance(push_msg, PullSignalingService._pull_push_mapping[type(msg)])
         )
 
