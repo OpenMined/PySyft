@@ -80,7 +80,10 @@ def test_wrapper_with_device_remotely() -> None:
 
     # make a device on bobs system using a string which was sent over
     device_ptr = bob_th.device(string_ptr)
-    assert full_name_with_qualname(klass=type(device_ptr)) == "abc.devicePointer"
+    assert (
+        full_name_with_qualname(klass=type(device_ptr))
+        == "syft.proxy.torch.devicePointer"
+    )
 
     # make an int and send it over
     local_int = sy.lib.python.Int(1)
@@ -89,7 +92,9 @@ def test_wrapper_with_device_remotely() -> None:
     # make a tensor using torch.ones and the int that was sent over
     # pass in the remotely generated device to torch.ones
     out_ptr = bob_th.ones(int_ptr, device=device_ptr)
-    assert full_name_with_qualname(klass=type(out_ptr)) == "abc.TensorPointer"
+    assert (
+        full_name_with_qualname(klass=type(out_ptr)) == "syft.proxy.torch.TensorPointer"
+    )
 
     # get the result and make sure its as expected
     out = out_ptr.get()

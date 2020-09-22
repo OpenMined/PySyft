@@ -113,6 +113,21 @@ class Class(Callable):
 
             return attr
 
+        # here we can ensure that the fully qualified name of the Pointer klass is
+        # consistent between versions of python and matches our other klasses in
+        # generic.py like subclassed or ShadowWrapper constructors
+        # this will result in: syft.proxy.{original_fully_qualified_name}Pointer
+        fqn = "Pointer"
+        # this should always be a str
+        if self.path_and_name is not None:
+            # prepend
+            fqn = self.path_and_name + fqn
+        new_class_name = f"syft.proxy.{fqn}"
+        parts = new_class_name.split(".")
+        name = parts.pop(-1)
+        attrs["__name__"] = name
+        attrs["__module__"] = ".".join(parts)
+
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(klass_pointer, "_props", _props)
