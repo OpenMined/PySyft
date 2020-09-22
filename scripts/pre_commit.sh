@@ -8,8 +8,8 @@ isort .
 black src tests
 pre-commit run --all-files
 bandit -r src -ll
-pytest -m fast
+pytest -m fast --cov=src/ --cov-report html
 
 # run API documentation test notebooks
 ./scripts/nb_test.sh
-pytest examples/api --cov-fail-under 0
+pytest examples/api --cov=examples/ --cov-fail-under 0

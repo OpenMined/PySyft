@@ -1343,7 +1343,7 @@ class MixinStrUnicodeUserStringTest:
     def test_floatformatting(self):
         # float formatting
         for prec in range(100):
-            format = "%%.%if" % prec
+            format = f"%.{prec:d}f"
             value = 0.01
             for x in range(60):
                 value = value * 3.14159265359 / 3.0 * 10.0
