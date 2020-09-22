@@ -37,6 +37,8 @@ import hashlib
 
 import syft
 import msgpack as msgpack_lib
+import msgpack_numpy
+
 from syft import dependency_check
 
 from syft.serde import compression
@@ -61,6 +63,8 @@ if dependency_check.tensorflow_available:
     from syft_tensorflow.serde import MAP_TF_SIMPLIFIERS_AND_DETAILERS
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
+
+msgpack_numpy.patch()
 
 
 class MetaMsgpackGlobalState(type):
