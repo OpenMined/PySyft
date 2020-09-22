@@ -143,8 +143,13 @@ class Class(Callable):
             # STep 4: return pointer
             return ptr
 
+        def send_to(self: Any, client: Any, searchable: bool = False) -> Pointer:
+            # alias method to send method.
+            return send(self=self, client=client, searchable=searchable)
+
         # using curse because Numpy tries to lock down custom attributes
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
+        aggressive_set_attr(obj=outer_self.ref, name="send_to", attr=send_to)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:

@@ -54,7 +54,7 @@ Example:
     domain_1_client = domain_1.get_root_client()
 
     # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client)
+    data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
 
     # creating the data user domain
     domain_2 = Domain(name="Data user domain")
@@ -254,7 +254,7 @@ class Pointer(AbstractPointer):
             domain_1_client = domain_1.get_root_client()
 
             # sending the data and receiving a pointer
-            data_ptr_domain_1 = tensor.send(domain_1_client)
+            data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
 
             # requesting access to the pointer
             data_ptr_domain_1.request(request_name="My Request", reason="Research project.")
