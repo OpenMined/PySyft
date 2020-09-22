@@ -146,6 +146,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
 
+        # TODO: replace with proper tuple support
+        if type(result) is tuple:
+            # convert to list until we support tuples
+            result = list(result)
+
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
