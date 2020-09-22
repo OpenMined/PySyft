@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 
@@ -73,6 +74,36 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
+    @staticmethod
+    def upcast_args_and_kwargs(
+        args: List[Any], kwargs: Dict[Any, Any]
+    ) -> Tuple[List[Any], Dict[Any, Any]]:
+        # When we call original constructors like torch.device we will get errors
+        # that the types are not supported because the checks are probably done in C.
+        # This ensures that any Wrapped types like SyPrimitives or ShadowWrapper types
+        # are upcasted before being passed in
+        upcasted_args = []
+        upcasted_kwargs = {}
+        for arg in args:
+            # try to upcast if possible
+            upcast_method = getattr(arg, "upcast", None)
+            # if we decide to ShadowWrap NoneType we would need to check here
+            if upcast_method is not None:
+                upcasted_args.append(upcast_method())
+            else:
+                upcasted_args.append(arg)
+
+        for k, arg in kwargs.items():
+            # try to upcast if possible
+            upcast_method = getattr(arg, "upcast", None)
+            # if we decide to ShadowWrap NoneType we would need to check here
+            if upcast_method is not None:
+                upcasted_kwargs[k] = upcast_method()
+            else:
+                upcasted_kwargs[k] = arg
+
+        return (upcasted_args, upcasted_kwargs)
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
@@ -98,14 +129,26 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         if type(method).__name__ == "getset_descriptor":
             # we have a detached class property so we need the __get__ descriptor
-            result = method.__get__(resolved_self.data)
+            upcast_attr = getattr(resolved_self.data, "upcast", None)
+            data = resolved_self.data
+            if upcast_attr is not None:
+                data = upcast_attr()
+
+            result = method.__get__(data)
         else:
             # we have a callable
-            result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
+            # upcast our args in case the method only accepts the original types
+            (
+                upcasted_args,
+                upcasted_kwargs,
+            ) = RunClassMethodAction.upcast_args_and_kwargs(
+                resolved_args, resolved_kwargs
+            )
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
-            # Wrap in a PyPrimitive
+            # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
                 value=result, id=self.id_at_location
             )

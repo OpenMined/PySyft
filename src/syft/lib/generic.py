@@ -10,7 +10,7 @@ from typing import Type
 
 # syft relative
 from ..core.common.uid import UID
-from .cwrapper import CWrapperFactory
+from .shadowwrapper import ShadowWrapperFactory
 from .util import copy_static_methods
 from .util import full_name_with_qualname
 from .util import get_original_constructor_name
@@ -77,11 +77,11 @@ class ObjectConstructor(object):
 
     # This represents the name of the constructor this constructor is wrapping. Also, it sometimes represents the
     # type that this constructor will imitate so that isinstance(obj, ObjectConstructor) will operate as if you
-    # instead called isinstance(obj, original_constructor). This allows us to replace a framework constructor with
+    # instead called isinstance(obj, unmodified_constructor). This allows us to replace a framework constructor with
     # our constructor.
     constructor_name = "String name of a constructor"
 
-    # This represents the location in which our tensor constructor is stored within the library. If original_constructor
+    # This represents the location in which our tensor constructor is stored within the library. If original constructor
     # is 'torch.Tensor', then constructor_location is 'torch'.
     constructor_location: Optional[
         Type
@@ -91,24 +91,29 @@ class ObjectConstructor(object):
     # an object with a different name, deposit that object type here
     constructor_produces_type: Optional[Type] = None
 
+    # a prefix for safely preserving the original constructor references during calls to
+    # replace_classes_in_module
+    ignore_prefix = "_syft_original"
+
     def install_inside_library(self) -> None:
         """Installs this custom constructor by replacing the library constructor with itself"""
 
         replacee = getattr(self.constructor_location, self.constructor_name)
         # If a custom constructor hasn't already been installed at this location, install it
         if not isinstance(replacee, ObjectConstructor):
-            # cache original constructor at original_<constructor name>
-            self.store_original_constructor()
+            # cache the old constructor at _syft_original_<constructor name>
+            # cache the new constructor at original_<constructor name>
+            self.store_and_replace_original_constructor(replacee)
 
             # save this constructor in its place
             setattr(self.constructor_location, self.constructor_name, self)
 
             # If the original constructor is a class (not just a standalone func like tf.constant or th.tensor)
-            if isinstance(self.original_constructor, type):
+            if isinstance(self.new_constructor, type):
 
                 # copy static methods from previous constructor to new one
                 copy_static_methods(
-                    from_class=self.original_constructor, to_class=type(self)
+                    from_class=self.new_constructor, to_class=type(self)
                 )
 
                 # Replace all occurrences of the original constructor in the main module
@@ -116,8 +121,14 @@ class ObjectConstructor(object):
                     main_module = sys.modules[
                         self.constructor_location.__name__.split(".")[0]
                     ]
+                    # anything starting with self.ignore_prefix will not be replaced
+                    # so we can still have a single reference to the original
+                    # unmodified constructor
                     replace_classes_in_module(
-                        module=main_module, from_class=replacee, to_class=self
+                        module=main_module,
+                        from_class=replacee,
+                        to_class=self,
+                        ignore_prefix=self.ignore_prefix,
                     )
         else:
             raise AttributeError(
@@ -138,11 +149,11 @@ class ObjectConstructor(object):
             else:
                 type_to_subclass = original_constructor
 
-            def id_get(__self: Any) -> UID:
-                return __self._id
+            def id_get(_self: Any) -> UID:
+                return _self._id
 
-            def id_set(__self: Any, new_id: UID) -> None:
-                __self._id = new_id
+            def id_set(_self: Any, new_id: UID) -> None:
+                _self._id = new_id
 
             id_property = property(fget=id_get, fset=id_set)
 
@@ -158,8 +169,10 @@ class ObjectConstructor(object):
             attrs["__module__"] = ".".join(parts)
             attrs["id"] = id_property
 
+            replaced_subclass_constructor = NotImplemented
+
             try:
-                OriginalConstructorSubclass = type(
+                replaced_subclass_constructor = type(
                     name,
                     (type_to_subclass,),
                     attrs,
@@ -168,7 +181,7 @@ class ObjectConstructor(object):
                 # TODO Fix this better
                 # torch.nn.Parameter.__repr__ throws an exception after we install
                 # our library, so we can catch it and just return something
-                org_repr = OriginalConstructorSubclass.__repr__
+                org_repr = replaced_subclass_constructor.__repr__
 
                 def make_repr(org_repr: Callable) -> Callable:
                     def try_repr(self: Any) -> str:
@@ -181,7 +194,7 @@ class ObjectConstructor(object):
 
                     return try_repr
 
-                setattr(OriginalConstructorSubclass, "__repr__", make_repr(org_repr))
+                setattr(replaced_subclass_constructor, "__repr__", make_repr(org_repr))
 
             # If this raises 'TypeError: type <> is not an acceptable base type'
             # then it's a special class of which Python cannot subtype
@@ -189,21 +202,20 @@ class ObjectConstructor(object):
             # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
             except TypeError:
                 # Sometimes we cant set attributes of built-in/extension type so we
-                # have a light CWrapper which we can inherit from and will proxy
-                # the constructor and all the calls through to.
+                # have a ShadowWrapper which we can inherit from and will proxy the
+                # constructor and all the calls through to.
 
-                # we need the original constructor so we can wrap it
-                # attrs["_original_constructor"] = original_constructor
-
-                OriginalConstructorSubclass = CWrapperFactory(
-                    shadow_type=original_constructor
+                replaced_subclass_constructor = ShadowWrapperFactory(
+                    shadow_type=type_to_subclass
                 )
 
-            original_constructor = OriginalConstructorSubclass
+            return replaced_subclass_constructor
+        else:
+            return original_constructor
 
-        return original_constructor
-
-    def store_original_constructor(self) -> None:
+    def store_and_replace_original_constructor(
+        self, original_constructor: Type
+    ) -> None:
         """Copies current object constructor to original_<constructor_name>
 
         Since all instances of ObjectConstructor are overloading an existing constructor within a library, we
@@ -212,21 +224,35 @@ class ObjectConstructor(object):
         """
 
         # get the name of the place you want to move the original constructor to
+        # this will be a subclass or shadowwrapper
         self.original_constructor_name = get_original_constructor_name(
             object_name=self.constructor_name
         )
 
-        # save the original_constructor
-        original_constructor = getattr(self.constructor_location, self.constructor_name)
+        # store the unmodified constructor at a location starting with ignore_prefix
+        # which will not be replaced later during calls to replace_classes_in_module
+        # this will not be the subclass or shadowwrapper
+        self.unmodified_constructor_name = (
+            f"{self.ignore_prefix}{self.constructor_name}"
+        )
 
-        original_constructor = self.install_id_attribute(original_constructor)
+        # copies the original unmodified constructor to a safe place for later use
+        if not hasattr(self.constructor_location, self.unmodified_constructor_name):
+            setattr(
+                self.constructor_location,
+                self.unmodified_constructor_name,
+                original_constructor,
+            )
 
-        # copies the original constructor to a safe place for later use
+        # now change the constructor to either a subclass or shadowwrapper
+        modified_constructor = self.install_id_attribute(original_constructor)
+
+        # lets store the new modified constructor for later user
         if not hasattr(self.constructor_location, self.original_constructor_name):
             setattr(
                 self.constructor_location,
                 self.original_constructor_name,
-                original_constructor,
+                modified_constructor,
             )
 
     def __call__(self, *args: Tuple[Any, ...], **kwargs: Any) -> object:
@@ -290,7 +316,7 @@ class ObjectConstructor(object):
         Returns:
             out (SyftObject): returns the underlying syft object.
         """
-        return self.original_constructor(*args, **kwargs)
+        return self.new_constructor(*args, **kwargs)
 
     def post_init(self, obj: object, *args: Tuple[Any, ...], **kwargs: Any) -> object:
         """Execute functionality after object has been created.
@@ -317,7 +343,35 @@ class ObjectConstructor(object):
         return obj
 
     @property
-    def original_constructor(self) -> Callable:
+    def unmodified_original_constructor(self) -> Callable:
+        """Return the unmodified original constructor for this method
+        (i.e., the constructor the library had by default which this custom constructor
+        overloaded.
+
+        Note: I'm using try/except in this method instead of if/else because it's
+        faster at runtime.
+        """
+
+        try:
+            return getattr(self.constructor_location, self.unmodified_constructor_name)
+        except AttributeError:
+            raise AttributeError(
+                f"Syft's custom object constructor {type(self)} "
+                f"cannot find the original constructor"
+                f"to initialize '{self.constructor_name}' "
+                f"objects, which should have been stored at "
+                f"'{self.unmodified_constructor_name}'. Either "
+                f"you're doing active development and forgot "
+                f"to cache the original constructor in the "
+                f"right place before installing Syft's custom "
+                f"constructor or something is very broken and "
+                f"you should file a Github Issue. See "
+                f"the documentation for ObjectConstructor for "
+                f"more information on this functionality."
+            )
+
+    @property
+    def new_constructor(self) -> Callable:
         """Return the original constructor for this method (i.e., the constructor the library had by
         default which this custom constructor overloaded.
 

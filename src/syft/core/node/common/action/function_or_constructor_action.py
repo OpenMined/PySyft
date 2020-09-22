@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -71,6 +72,36 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
+    @staticmethod
+    def upcast_args_and_kwargs(
+        args: List[Any], kwargs: Dict[Any, Any]
+    ) -> Tuple[List[Any], Dict[Any, Any]]:
+        # When we call original constructors like torch.device we will get errors
+        # that the types are not supported because the checks are probably done in C.
+        # This ensures that any Wrapped types like SyPrimitives or ShadowWrapper types
+        # are upcasted before being passed in
+        upcasted_args = []
+        upcasted_kwargs = {}
+        for arg in args:
+            # try to upcast if possible
+            upcast_method = getattr(arg, "upcast", None)
+            # if we decide to ShadowWrap NoneType we would need to check here
+            if upcast_method is not None:
+                upcasted_args.append(upcast_method())
+            else:
+                upcasted_args.append(arg)
+
+        for k, arg in kwargs.items():
+            # try to upcast if possible
+            upcast_method = getattr(arg, "upcast", None)
+            # if we decide to ShadowWrap NoneType we would need to check here
+            if upcast_method is not None:
+                upcasted_kwargs[k] = upcast_method()
+            else:
+                upcasted_kwargs[k] = arg
+
+        return (upcasted_args, upcasted_kwargs)
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
@@ -104,28 +135,20 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        # when we call original constructors like torch.device we will get errors
-        # that the types are not supported because the checks are done in C
-        # this ensures that any SyPrimitives are upcasted before being passed in
-        upcasted_args = []
-        upcasted_kwargs = {}
-        for arg in resolved_args:
-            if issubclass(type(arg), lib.python.primitive_interface.PyPrimitive):
-                upcasted_args.append(arg.upcast())
-            else:
-                upcasted_args.append(arg)
+        # upcast our args in case the method only accepts the original types
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = RunFunctionOrConstructorAction.upcast_args_and_kwargs(
+            resolved_args, resolved_kwargs
+        )
 
-        for k, arg in resolved_kwargs.items():
-            if issubclass(type(arg), lib.python.primitive_interface.PyPrimitive):
-                upcasted_kwargs[k] = arg.upcast()
-            else:
-                upcasted_kwargs[k] = arg
-
+        # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
-            # Wrap in a PyPrimitive
+            # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
                 value=result, id=self.id_at_location
             )
@@ -133,6 +156,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
                 result.id = self.id_at_location
+            # else:
+            # TODO: Solve this problem where its an issue
 
         if not isinstance(result, StorableObject):
             result = StorableObject(
