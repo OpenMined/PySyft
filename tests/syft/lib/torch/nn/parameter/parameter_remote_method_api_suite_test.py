@@ -241,7 +241,17 @@ def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
         # if this is a valid method for this type in torch
         valid_torch_command = True
         if type(target_op_method).__name__ in ["builtin_function_or_method", "method"]:
-            target_result = target_op_method(*args)
+            # this prevents things like syft.lib.python.bool.Bool from getting treated
+            # as an Int locally but then failing on the upcast to builtins.bool on
+            # the remote side
+            upcasted_args = []
+            for arg in args:
+                upcast_attr = getattr(arg, "upcast", None)
+                if upcast_attr is not None:
+                    upcasted_args.append(upcast_attr())
+                else:
+                    upcasted_args.append(arg)
+            target_result = target_op_method(*upcasted_args)
 
             if target_result == NotImplemented:
                 valid_torch_command = False
