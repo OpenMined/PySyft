@@ -53,8 +53,10 @@ class Dict(UserDict, PyPrimitive):
         if kwargs:
             self.update(kwargs)
 
-        # finally lets add our UID
-        self._id: UID = kwargs["id"] if "id" in kwargs else UID()  # type: ignore
+        # We cant add UID from kwargs or it could easily be overwritten by the dict
+        # that is being passed in for __init__
+        # If you want to update it use the _id setter after creation.
+        self._id = UID()
 
     # fix the type signature
     __init__.__text_signature__ = "($self, dict=None, /, **kwargs)"

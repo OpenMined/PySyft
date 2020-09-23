@@ -1,3 +1,6 @@
+# stdlib
+from collections import UserDict
+
 # third party
 import torch as th
 
@@ -6,6 +9,24 @@ import syft as sy
 from syft.core.common.uid import UID
 from syft.lib.python.dict import Dict
 from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
+
+
+def test_dict_creation() -> None:
+    d1 = {"t1": 1, "t2": 2}
+    dict1 = Dict(d1)
+    assert type(getattr(dict1, "id", None)) is UID
+
+    d2 = dict({"t1": 1, "t2": 2})
+    dict2 = Dict(d2)
+    dict2._id = UID()
+    assert type(getattr(dict2, "id", None)) is UID
+
+    d3 = UserDict({"t1": 1, "t2": 2})
+    dict3 = Dict(**d3)
+    assert type(getattr(dict3, "id", None)) is UID
+
+    assert dict1.keys() == dict2.keys()
+    assert dict1.keys() == dict3.keys()
 
 
 def test_dict_serde() -> None:
