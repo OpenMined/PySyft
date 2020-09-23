@@ -69,24 +69,30 @@ class Module(ast.attribute.Attribute):
                     ),
                 )
             elif isinstance(attr_ref, class_type):
+                # call the ClassFactory now so that the type can be subclassed later by
+                # end users, see klass.py.
+                klass = ast.klass.ClassFactory(
+                    name=path[index],
+                    path_and_name=unsplit(path[: index + 1]),
+                    ref=attr_ref,
+                    return_type_name=return_type_name,
+                )
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.klass.Class(
-                        name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref,
-                        return_type_name=return_type_name,
-                    ),
+                    attr=klass,
                 )
             elif isinstance(attr_ref, ObjectConstructor):
+                # call the ClassFactory now so that the type can be subclassed later by
+                # end users, see klass.py.
+                klass = ast.klass.ClassFactory(
+                    name=path[index],
+                    path_and_name=unsplit(path[: index + 1]),
+                    ref=attr_ref.original_type,  # type: ignore
+                    return_type_name=return_type_name,
+                )
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.klass.Class(
-                        name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref.original_type,  # type: ignore
-                        return_type_name=return_type_name,
-                    ),
+                    attr=klass,
                 )
 
             elif isinstance(attr_ref, func_type):

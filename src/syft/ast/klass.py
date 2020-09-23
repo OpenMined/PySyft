@@ -1,6 +1,8 @@
 # stdlib
+import sys
 from typing import Any
 from typing import Callable as CallableT
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -20,9 +22,6 @@ from ..util import aggressive_set_attr
 
 
 class Class(Callable):
-
-    ""
-
     def __init__(
         self,
         name: Optional[str],
@@ -209,3 +208,81 @@ class Class(Callable):
         aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
         aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
         aggressive_set_attr(obj=outer_self.ref, name="hex", attr=Serializable.hex)
+
+
+# The ClassFactory replaces the previous usage of initalizing a klass.Class during ast.
+# The difference is that firstly, while building the ast a subclass of Class will be
+# created however the initializer will be swapped out so that if a person subclasses
+# the externally facing module path class name like so:
+#
+# class MyTensor(torch.Tensor):
+#     pass
+#
+# The result will be that the creation of the class won't raise an Exception since
+# torch.Tensor now points to klass.Class which expects name, path_and_name etc and worse
+# its an object with __call__ not a class, so subclassing it will be missing all the
+# a bunch of initialized data needed to work. The second step is that when manually
+# defining the new class MyTensor(torch.Tensor) as above, the hijack code path will
+# activate and the sys.modules["torch"].original_Tensor will be returned thus providing
+# something to initialize with the expected __init__ params and returning a sane obj.
+# This is WIP and the next step is to modify the __name__ and __module__ and mro() to
+# give the expected experience of subclassing and finally figure out how to what extra
+# hurdles will be required to get this working.
+
+
+def ClassFactory(
+    name: Optional[str],
+    path_and_name: Optional[str],
+    ref: Union[Callable, CallableT],
+    return_type_name: Optional[str],
+) -> Class:
+    attrs: Dict[Any, Any] = {}
+
+    def new(
+        cls: type,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> None:
+        if len(args) == 0:
+            new_cls = super(Class, cls).__new__(cls)  # type: ignore
+            new_cls._hijack = False
+        else:
+            if path_and_name is not None:
+                parts = path_and_name.split(".")
+                end = parts.pop(-1)
+                end = f"original_{end}"
+                sub: Any = sys.modules
+                for part in parts:
+                    if type(sub) is dict:
+                        if part in sub:
+                            sub = sub[part]
+                    else:
+                        if hasattr(sub, part):
+                            sub = getattr(sub, part, None)
+
+                org_class = getattr(sub, end, None)
+                return org_class
+
+        return new_cls
+
+    attrs["__new__"] = new
+
+    def default_args_init(
+        _self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> None:
+        hijack = getattr(_self, "_hijack", None)
+        if hijack is False:
+            Class.__init__(
+                _self,
+                name=name,
+                path_and_name=path_and_name,
+                ref=ref,
+                return_type_name=return_type_name,
+            )
+
+    # default_args_init.__text_signature__ = "($self, *args, **kwargs)"  # type: ignore
+    attrs["__init__"] = default_args_init
+    SubclassableClass = type("SubclassableClass", (Class,), attrs)
+    return SubclassableClass()

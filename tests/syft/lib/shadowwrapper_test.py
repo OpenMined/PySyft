@@ -21,6 +21,7 @@ def test_wrapper_with_device() -> None:
 
     # create something to compare with
     comp = th.Tensor([[1]])
+    assert full_name_with_qualname(klass=type(comp)) == "syft.proxy.torch.Tensor"
 
     # confirm out wrapped device responds as expected
     assert d.type == "cpu"

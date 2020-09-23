@@ -12,6 +12,8 @@ from .allowlist import allowlist
 from .device import DeviceConstructor
 from .generator import GeneratorConstructor
 from .lowercase_tensor import LowercaseTensorConstructor
+
+# from .module import ModuleConstructor
 from .parameter import ParameterConstructor
 from .uppercase_tensor import UppercaseTensorConstructor
 
@@ -19,6 +21,7 @@ __all__ = [
     "DeviceConstructor",
     "GeneratorConstructor",
     "LowercaseTensorConstructor",
+    # "ModuleConstructor",
     "ParameterConstructor",
     "UppercaseTensorConstructor",
 ]

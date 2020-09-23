@@ -56,6 +56,7 @@ class PrimitiveFactory(ABC):
     def generate_primitive(
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
+        recurse: bool = False,
     ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
         # syft relative
         from .bool import Bool
@@ -83,10 +84,39 @@ class PrimitiveFactory(ABC):
             return Complex(real=value.real, imag=value.imag, id=id)
 
         if type(value) in [list, UserList]:
-            return List(value=value, id=id)
+            if not recurse:
+                return List(value=value, id=id)
+            else:
+                # allow recursive primitive downcasting
+                new_list = []
+                if value is not None:
+                    for val in value:
+                        if isprimitive(val):
+                            new_list.append(
+                                PrimitiveFactory.generate_primitive(
+                                    value=val, recurse=recurse
+                                )
+                            )
+                        else:
+                            new_list.append(val)
+                return List(value=new_list, id=id)
 
         if type(value) in [dict, UserDict]:
-            new_dict = Dict(value)
+            if not recurse:
+                new_dict = Dict(value)
+            else:
+                # allow recursive primitive downcasting
+                new_dict = Dict()
+                if value is not None:
+                    items = getattr(value, "items", None)
+                    if items is not None:
+                        for k, val in items():
+                            if isprimitive(val):
+                                new_dict[k] = PrimitiveFactory.generate_primitive(
+                                    value=val, recurse=recurse
+                                )
+                            else:
+                                new_dict[k] = val
             # if we pass id in as a kwargs it ends up in the actual dict
             if id is not None:
                 new_dict._id = id
