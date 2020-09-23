@@ -83,6 +83,10 @@ def federated_avg(models: Dict[Any, torch.nn.Module]) -> torch.nn.Module:
     nr_models = len(models)
     model_list = list(models.values())
     model = type(model_list[0])()
+    
+    # setting all model parameters to zero
+    for p in model.parameters():
+        nn.init.zeros_(p)
 
     for i in range(nr_models):
         model = add_model(model, model_list[i])
