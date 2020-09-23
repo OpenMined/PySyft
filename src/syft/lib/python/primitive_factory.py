@@ -14,6 +14,7 @@ from .primitive_interface import PyPrimitive
 
 primitives = [
     bool,
+    dict,
     complex,
     float,
     int,
@@ -27,6 +28,7 @@ primitives = [
 
 PrimitiveType = Union[
     bool,
+    dict,
     complex,
     float,
     int,
@@ -84,7 +86,11 @@ class PrimitiveFactory(ABC):
             return List(value=value, id=id)
 
         if type(value) in [dict, UserDict]:
-            return Dict(value=value, id=id)
+            new_dict = Dict(value)
+            # if we pass id in as a kwargs it ends up in the actual dict
+            if id is not None:
+                new_dict._id = id
+            return new_dict
 
         if type(value) in [str, UserString]:
             return String(value=value, id=id)
