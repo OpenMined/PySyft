@@ -24,8 +24,6 @@ from syft.serde.torch.serde import TORCH_MFORMAT_ID
 from syft.serde.torch.serde import TORCH_ID_MFORMAT
 from syft.serde.torch.serde import torch_tensor_serializer
 from syft.serde.torch.serde import torch_tensor_deserializer
-from syft.serde.torch.serde import numpy_tensor_serializer
-from syft.serde.torch.serde import numpy_tensor_deserializer  # noqa: F401
 
 
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
@@ -41,7 +39,6 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     """
     serializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
-        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
         TENSOR_SERIALIZATION.ALL: simplified_tensor_serializer,
     }
     if worker.serializer not in serializers:
@@ -66,7 +63,6 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     """
     deserializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
-        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
         TENSOR_SERIALIZATION.ALL: simplified_tensor_deserializer,
     }
     if serializer not in deserializers:
@@ -153,6 +149,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         tensor.id,
         tensor_bin,
         chain,
+        tensor.requires_grad,
         grad_chain,
         serde._simplify(worker, tensor.tags),
         serde._simplify(worker, tensor.description),
@@ -181,6 +178,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor_id,
         tensor_bin,
         chain,
+        requires_grad,
         grad_chain,
         tags,
         description,
@@ -190,6 +188,8 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     ) = tensor_tuple
 
     tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
+
+    tensor.requires_grad = requires_grad
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino

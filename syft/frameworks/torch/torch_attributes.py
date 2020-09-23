@@ -85,6 +85,7 @@ class TorchAttributes(FrameworkAttributes):
             "isclose",
             "isfinite",
             "load",
+            "numpy",
             "save",
             "set_",
             "set_num_threads",
