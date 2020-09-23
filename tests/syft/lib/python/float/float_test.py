@@ -745,6 +745,7 @@ def test_previous_round_bugs() -> None:
     assert round(Float(95.0), -1) == Float(100.0)
 
 
+@pytest.mark.slow
 def test_matches_Float_format() -> None:
     # round should give the same results as Float formatting
     for i in range(500):

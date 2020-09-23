@@ -12,6 +12,9 @@ from random import random
 import sys
 import unittest
 
+# third party
+import pytest
+
 # syft absolute
 from syft.lib.python.complex import Complex
 
@@ -170,6 +173,7 @@ class ComplexTest(unittest.TestCase):
             q = z.__truediv__(y)
             self.assertClose(q, x)
 
+    @pytest.mark.slow
     def test_truediv(self):
         simple_real = [float(i) for i in range(-5, 6)]
         simple_complex = [Complex(x, y) for x in simple_real for y in simple_real]
@@ -227,6 +231,7 @@ class ComplexTest(unittest.TestCase):
         self.assertIs(operator.ne(1 + 1j, 1 + 1j), False)
         self.assertIs(operator.ne(1 + 1j, 2 + 2j), True)
 
+    @pytest.mark.slow
     def test_richcompare_boundaries(self):
         def check(n, deltas, is_equal, imag=0.0):
             for delta in deltas:

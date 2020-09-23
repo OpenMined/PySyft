@@ -885,6 +885,7 @@ class DictTest(unittest.TestCase):
             )
             d.clear()
 
+    @pytest.mark.slow
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for dictiter and
         # dictview objects.
@@ -917,6 +918,7 @@ class DictTest(unittest.TestCase):
         gc.collect()
         self.assertTrue(gc.is_tracked(t), t)
 
+    @pytest.mark.slow
     @support.cpython_only
     def test_track_literals(self):
         # Test GC-optimization of dict literals
