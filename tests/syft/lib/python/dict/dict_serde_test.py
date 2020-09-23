@@ -3,6 +3,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.common.uid import UID
 from syft.lib.python.dict import Dict
 from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
@@ -12,6 +13,7 @@ def test_dict_serde() -> None:
     t2 = th.tensor([1, 3])
 
     syft_list = Dict({"t1": t1, "t2": t2})
+    assert type(getattr(syft_list, "id", None)) is UID
 
     serialized = syft_list._object2proto()
 
