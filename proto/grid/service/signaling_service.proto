@@ -8,11 +8,38 @@ import "proto/core/io/address.proto";
 message SignalingAnswerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string payload = 4;
+  string payload = 3;
+  string host_metadata = 4;
+  syft.core.io.Address target_peer = 5;
+  syft.core.io.Address host_peer = 6;
 }
 
 message SignalingOfferMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string payload = 4;
+  string payload = 3;
+  string host_metadata = 4;
+  syft.core.io.Address target_peer = 5;
+  syft.core.io.Address host_peer = 6;
+}
+
+message OfferPullRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address target_peer = 4;
+  syft.core.io.Address host_peer = 5;
+}
+
+message AnswerPullRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address target_peer = 4;
+  syft.core.io.Address host_peer = 5;
+}
+
+message SignalingRequestsNotFound {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
 }

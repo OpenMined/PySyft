@@ -2,6 +2,4 @@ syntax = "proto3";
 
 package syft.ast;
 
-message AstObject {
-
-}
+message AstObject {}
