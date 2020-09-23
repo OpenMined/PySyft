@@ -34,33 +34,33 @@ TORCH_ID_MFORMAT = {i: cls for cls, i in TORCH_MFORMAT_ID.items()}
 
 from syft.serde.msgpack import serde
 
+
 def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
     """Strategy to serialize a tensor using Torch saver"""
     my_array = tensor.cpu().numpy()
     return my_array
-    
-    #arr_bytes = my_array.tobytes()
-    #arr_shape = serde._simplify(worker, my_array.shape)
-    #arr_dtype = serde._simplify(worker, my_array.dtype.name)
 
-    #return (arr_bytes, arr_shape, arr_dtype)
-    
-    
-    #binary_stream = io.BytesIO()
-    #torch.save(tensor, binary_stream)
-    #return binary_stream.getvalue()
+    # arr_bytes = my_array.tobytes()
+    # arr_shape = serde._simplify(worker, my_array.shape)
+    # arr_dtype = serde._simplify(worker, my_array.dtype.name)
+
+    # return (arr_bytes, arr_shape, arr_dtype)
+
+    # binary_stream = io.BytesIO()
+    # torch.save(tensor, binary_stream)
+    # return binary_stream.getvalue()
 
 
 def torch_tensor_deserializer(worker: AbstractWorker, arr_representation) -> torch.Tensor:
     """Strategy to deserialize a binary input using Torch load"""
-    
-    #arr_shape = serde._detail(worker, arr_representation[1])
-    #arr_dtype = serde._detail(worker, arr_representation[2])
-    #res = numpy.frombuffer(arr_representation[0], dtype=arr_dtype).reshape(arr_shape)
-    
+
+    # arr_shape = serde._detail(worker, arr_representation[1])
+    # arr_dtype = serde._detail(worker, arr_representation[2])
+    # res = numpy.frombuffer(arr_representation[0], dtype=arr_dtype).reshape(arr_shape)
+
     return torch.from_numpy(arr_representation).cuda()
-    #bin_tensor_stream = io.BytesIO(tensor_bin)
-    #return torch.load(bin_tensor_stream)
+    # bin_tensor_stream = io.BytesIO(tensor_bin)
+    # return torch.load(bin_tensor_stream)
 
 
 def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin:

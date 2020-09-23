@@ -5,11 +5,13 @@ import syft as sy
 from .cuda import CUDALongTensor
 
 import torchcsprng as csprng
-generator = csprng.create_random_device_generator('/dev/urandom')
+
+generator = csprng.create_random_device_generator("/dev/urandom")
+
 
 def build_triple(
     op: str,
-    kwargs_, 
+    kwargs_,
     shape: Tuple[th.Size, th.Size],
     n_workers: int,
     n_instances: int,
@@ -34,12 +36,12 @@ def build_triple(
     left_shape, right_shape = shape
     cmd = getattr(th, op)
     low_bound, high_bound = -(field // 2), (field - 1) // 2
-    a = th.empty(
-        *left_shape, dtype=torch_dtype, device='cuda'
-    ).random_(low_bound, high_bound, generator=generator)
-    b = th.empty(
-        *right_shape, dtype=torch_dtype, device='cuda'
-    ).random_(low_bound, high_bound, generator=generator)
+    a = th.empty(*left_shape, dtype=torch_dtype, device="cuda").random_(
+        low_bound, high_bound, generator=generator
+    )
+    b = th.empty(*right_shape, dtype=torch_dtype, device="cuda").random_(
+        low_bound, high_bound, generator=generator
+    )
 
     if op == "mul":
         if b.numel() == a.numel():
@@ -75,5 +77,7 @@ def build_triple(
     for i, tensor in enumerate([a, b, c]):
         shares = helper.generate_shares(secret=tensor, n_workers=n_workers, random_type=torch_dtype)
         for w_id in range(n_workers):
-            shares_worker[w_id][i] = shares[w_id].unsqueeze(0) #TODO change primitives to not expect batches
+            shares_worker[w_id][i] = shares[w_id].unsqueeze(
+                0
+            )  # TODO change primitives to not expect batches
     return shares_worker

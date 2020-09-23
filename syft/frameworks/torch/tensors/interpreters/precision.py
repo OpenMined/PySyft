@@ -458,7 +458,7 @@ class FixedPrecisionTensor(AbstractTensor):
         )
 
         response = response.truncate(other.precision_fractional)
-        
+
         return response
 
     __matmul__ = matmul
@@ -858,10 +858,9 @@ class FixedPrecisionTensor(AbstractTensor):
         # You can also overload functions in submodules!
         # Modules should be registered just like functions
         module.nn = nn  # Handles all the overloading properly
-        
-        
+
         def conv2d(input, weight, bias, *args, **kwargs):
-            
+
             # put bias to None, we will add it just after
             _, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 "conv2d", None, (input, weight, None, *args), kwargs
@@ -874,12 +873,12 @@ class FixedPrecisionTensor(AbstractTensor):
             )
 
             response = response.truncate(input.precision_fractional)
-            
+
             if bias is not None:
                 response = response + bias.unsqueeze(-1).unsqueeze(-1)
-            
+
             return response
-        
+
         module.nn.functional.conv2d = conv2d
 
     @classmethod

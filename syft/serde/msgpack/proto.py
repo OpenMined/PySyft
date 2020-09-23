@@ -64,13 +64,14 @@ def fullname(cls):
     else:
         return module + "." + cls.__name__
 
+
 @memorize
 def proto_type_info(cls):
     """Returns `TypeInfo` instance for a given *class* identified by `cls` parameter.
     Throws an exception when such class does not exists in the `proto.json`.
     """
     type_name = fullname(cls)
-    
+
     class Bla:
         code = None
 
@@ -78,11 +79,11 @@ def proto_type_info(cls):
         if type_name in proto_info["TYPES"]:
             return TypeInfo(name=type_name, obj=proto_info["TYPES"][type_name])
         elif cls.get_msgpack_code.__qualname__.startswith(cls.__name__):
-                return TypeInfo(name=type_name, obj=cls.get_msgpack_code())
+            return TypeInfo(name=type_name, obj=cls.get_msgpack_code())
         else:
             raise UndefinedProtocolTypeError(
                 f"{type_name} is not defined in the protocol file and it does not provide a code by"
                 f" implementing 'get_msgpack_code'."
             )
     except AttributeError:
-            return Bla()
+        return Bla()

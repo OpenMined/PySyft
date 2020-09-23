@@ -1,7 +1,8 @@
 import torch
 
 from syft.frameworks.torch.nn.conv import Conv2d
-#from syft.frameworks.torch.nn.functional import conv2d
+
+# from syft.frameworks.torch.nn.functional import conv2d
 from syft.frameworks.torch.nn.functional import max_pool2d
 from syft.frameworks.torch.nn.functional import avg_pool2d
 from syft.frameworks.torch.nn.functional import adaptive_avg_pool2d

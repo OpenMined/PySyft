@@ -67,7 +67,9 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
 
 # share level
 @allow_command
-def spdz_compute(j: int, delta, epsilon, kwargs_, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+def spdz_compute(
+    j: int, delta, epsilon, kwargs_, op: str, dtype: str, torch_dtype: th.dtype, field: int
+):
     """
     Compute the mul or matmul part of the SPDZ protocol, once delta and epsilon
     have been made public
@@ -103,7 +105,11 @@ def spdz_compute(j: int, delta, epsilon, kwargs_, op: str, dtype: str, torch_dty
         a_epsilon = cmd(a, epsilon, **kwargs_)
         delta_epsilon = cmd(delta, epsilon, **kwargs_)
 
-        delta_b, a_epsilon, delta_epsilon = delta_b._tensor, a_epsilon._tensor, delta_epsilon._tensor
+        delta_b, a_epsilon, delta_epsilon = (
+            delta_b._tensor,
+            a_epsilon._tensor,
+            delta_epsilon._tensor,
+        )
     else:
         cmd = getattr(th, op)
 
@@ -151,13 +157,13 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     except EmptyCryptoPrimitiveStoreError as e:
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
-        sy.local_worker.crypto_store.provide_primitives(workers=locations, kwargs_=kwargs_, **e.kwargs_)
+        sy.local_worker.crypto_store.provide_primitives(
+            workers=locations, kwargs_=kwargs_, **e.kwargs_
+        )
         return spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field)
 
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
-    
-
 
     for location, share_delta, share_epsilon in zip(locations, shares_delta, shares_epsilon):
         location.de_register_obj(share_delta)

@@ -24,7 +24,8 @@ from syft.generic.utils import remote
 
 
 import torchcsprng as csprng
-generator = csprng.create_random_device_generator('/dev/urandom')
+
+generator = csprng.create_random_device_generator("/dev/urandom")
 
 λ = 127  # security parameter
 n = 32  # bit precision
@@ -184,15 +185,15 @@ def eq_evaluate(b, x_masked):
 
 
 # process level
-def comp_evaluate(b, x_masked,  dtype=None):
+def comp_evaluate(b, x_masked, dtype=None):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
     result = DIF.eval(b, x_masked, s_0, *CW)
 
-    #dtype_options = {None: th.long, "int": th.int32, "long": th.long}
-    #result = th.tensor(result, dtype=dtype_options[dtype], device="cuda")
-    
+    # dtype_options = {None: th.long, "int": th.int32, "long": th.long}
+    # result = th.tensor(result, dtype=dtype_options[dtype], device="cuda")
+
     return result
 
 
@@ -209,7 +210,9 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.empty(n_values, dtype=th.long, device='cuda').random_(0, 2**n, generator=generator)
+        alpha = th.empty(n_values, dtype=th.long, device="cuda").random_(
+            0, 2 ** n, generator=generator
+        )
         beta = th.tensor([1], device="cuda")
         α = bit_decomposition(alpha)
         s, t, CW = (
@@ -266,9 +269,11 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.empty(n_values, dtype=th.long, device='cuda').random_(0, 2**n, generator=generator)
+        alpha = th.empty(n_values, dtype=th.long, device="cuda").random_(
+            0, 2 ** n, generator=generator
+        )
         α = bit_decomposition(alpha)
-        
+
         s, σ, t, τ, CW, CW_leaf = (
             Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, λs, n_values),
@@ -311,7 +316,7 @@ class DIF:
                         1 - convert(σ[i + 1, 0]) + convert(σ[i + 1, 1]) - (1 - α[i])
                     )
 
-        CW_leaf[n] = (-1) ** t[n, 1] #* (1 - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_leaf[n] = (-1) ** t[n, 1]  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
         CW_leaf = CW_leaf.type(th.long)
 
@@ -333,7 +338,7 @@ class DIF:
         s[0], *_CW, CW_leaf = k_b
         CW_leaf = CW_leaf.type(th.long)
         t[0] = b
-        
+
         out = 0
 
         for i in range(0, n):
@@ -344,11 +349,11 @@ class DIF:
             out += (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
 
         # Last node, the other σ is also a leaf
-        out += (-1) ** b * (t[n].squeeze() * CW_leaf[n])# + convert(s[n]))
+        out += (-1) ** b * (t[n].squeeze() * CW_leaf[n])  # + convert(s[n]))
 
         return out.type(th.long).reshape(original_shape)
 
-    
+
 def compress(CWi, alpha_i, op=EQ):
     """Compression technique which reduces the size of the CWi by dropping some
     non-necessary randomness.
@@ -393,10 +398,13 @@ def uncompress(_CWi, op=EQ):
         ).reshape(2, 6, -1)
     return CWi
 
+
 def Array(*shape):
     return th.empty(shape, dtype=th.long, device="cuda")
 
+
 bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
+
 
 def bit_decomposition(x):
     x = x.unsqueeze(-1)
@@ -404,17 +412,22 @@ def bit_decomposition(x):
     z = z.t()
     return (z > 0).to(th.uint8)
 
+
 def randbit(shape):
     assert len(shape) == 3
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
-    randvalues = th.empty(*shape_with_bytes, dtype=th.long, device='cuda').random_(-2**63, 2**63-1, generator=generator)
-    #randvalues = th.randint(-2 ** 63, 2 ** 63 - 1, shape_with_bytes, dtype=th.long, device="cuda")
-    #randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
+    randvalues = th.empty(*shape_with_bytes, dtype=th.long, device="cuda").random_(
+        -(2 ** 63), 2 ** 63 - 1, generator=generator
+    )
+    # randvalues = th.randint(-2 ** 63, 2 ** 63 - 1, shape_with_bytes, dtype=th.long, device="cuda")
+    # randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
     return randvalues
+
 
 def concat(*args, **kwargs):
     return th.cat(args, **kwargs)
+
 
 split_helpers = {
     (EQ, 2, 1): lambda x: (x[:2], x[2]),
@@ -436,20 +449,23 @@ split_helpers = {
 def split(list_, idx):
     return split_helpers[idx](list_)
 
+
 ones_dict2 = {}
+
 
 def SwitchTableDPF(s, α_i):
     one = th.ones((1, s.shape[1]), device="cuda").type(th.long)
     s_one = concat(s, one)
-    
+
     if s_one.shape not in ones_dict2:
         ones_dict2[s_one.shape] = th.ones((1, *s_one.shape), dtype=th.long, device="cuda")
-    
+
     ones = ones_dict2[s_one.shape]
     pad = (α_i * ones).type(th.long)
     pad = concat(1 - pad, pad, axis=0)
     Table = pad * s_one
     return Table
+
 
 def SwitchTableDIF(s, σ, α_i):
     leafTable = SwitchTableDPF(σ, 1 - α_i)
@@ -463,6 +479,7 @@ def multi_dim_filter(τ, idx):
     filtered_τ = (1 - idx) * τ[0] + idx * τ[1]
     return filtered_τ
 
+
 def convert(x):
     """
     convert a multi dim big tensor to a "random" single tensor
@@ -471,31 +488,35 @@ def convert(x):
     r = x[-1] & 0b1111_1111_1111_1111_1111_1111_1111_111
     return r.type(th.long)
 
+
 # PRG
 
 
-#TODO
-key = th.tensor([224,  28,  13, 108,  97,  35, 195, 240,  14, 221, 233, 215,   0,  67,
-        174, 129], dtype=th.uint8)
+# TODO
+key = th.tensor(
+    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
+)
+
 
 def split_last_bit(buffer):
     # Numbers are on 64 bits signed
-    return buffer.abs(), (buffer>=0)
+    return buffer.abs(), (buffer >= 0)
+
 
 def G(seed):
-    #print('G', seed.shape)
+    # print('G', seed.shape)
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
-    
-    seed = seed#.cuda()
+
+    seed = seed  # .cuda()
     urandom_gen = csprng.create_const_generator(key)
-    mask = th.empty(2*λs, n_values, dtype=th.long, device='cuda').random_(generator=urandom_gen)
+    mask = th.empty(2 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
     repl_seed = seed.repeat(2, 1)
-    #print('mask, repl_seed', mask.shape, repl_seed.shape)
-    buffer = (mask + repl_seed)
-    valuebits = th.empty(2, 3, n_values, dtype=th.long, device='cuda')
-    
+    # print('mask, repl_seed', mask.shape, repl_seed.shape)
+    buffer = mask + repl_seed
+    valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
+
     # [λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1]
     valuebits[0, 0], last_bit = split_last_bit(buffer[0])
@@ -504,10 +525,12 @@ def G(seed):
     valuebits[1, 0], last_bit = split_last_bit(buffer[2])
     valuebits[1, 1] = buffer[3]
     valuebits[1, 2] = last_bit
-    
+
     return valuebits
 
+
 empty_dict = {}
+
 
 def H(seed, idx=0):
     """
@@ -519,15 +542,14 @@ def H(seed, idx=0):
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
-    
-    seed = seed#.cuda()
+
+    seed = seed  # .cuda()
     urandom_gen = csprng.create_const_generator(key)
-    mask = th.empty(4*λs, n_values, dtype=th.long, device='cuda').random_(generator=urandom_gen)
+    mask = th.empty(4 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
     repl_seed = seed.repeat(4, 1)
-    #print('mask, repl_seed', mask.shape, repl_seed.shape)
-    buffer = (mask + repl_seed)
-    valuebits = th.empty(2, 6, n_values, dtype=th.long, device='cuda')
-    
+    # print('mask, repl_seed', mask.shape, repl_seed.shape)
+    buffer = mask + repl_seed
+    valuebits = th.empty(2, 6, n_values, dtype=th.long, device="cuda")
 
     # [λ, 1, λ, 1, λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]

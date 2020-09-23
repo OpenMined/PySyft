@@ -169,7 +169,9 @@ class PrimitiveStorage:
 
         builder = self._builders[op]
 
-        primitives = builder(kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs)
+        primitives = builder(
+            kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs
+        )
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -216,7 +218,7 @@ class PrimitiveStorage:
                                     )
                                 current_primitives[i] = tuple(new_prims)
                             else:
-                                 current_primitives[i] = th.cat(
+                                current_primitives[i] = th.cat(
                                     (current_primitives[i], primitive), dim=len(primitive.shape) - 1
                                 )
             else:
@@ -264,7 +266,9 @@ class PrimitiveStorage:
 
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
-                shares_worker = build_triple(op, kwargs_, shape, n_party, n_instances, torch_dtype, field)
+                shares_worker = build_triple(
+                    op, kwargs_, shape, n_party, n_instances, torch_dtype, field
+                )
                 config = (shape, dtype, torch_dtype, field)
                 for primitives, shares in zip(primitives_worker, shares_worker):
                     primitives.append((config, shares))

@@ -638,7 +638,7 @@ class AdditiveSharingTensor(AbstractTensor):
             return self._public_mul(other, "matmul")
 
         return AdditiveSharingTensor._private_mul(self, other, "matmul")
-    
+
     def conv2d(self, other, **kw):
         """Multiplies two tensors matrices together
 
@@ -900,15 +900,16 @@ class AdditiveSharingTensor(AbstractTensor):
                     return padded_shares
 
                 module.pad = pad
-                
+
                 def conv2d(a, b, *args, **kw):
-                    return a.conv2d(b, 
-                                    bias=args[0], 
-                                    stride=args[1], 
-                                    padding=args[2],
-                                    dilation=args[3], 
-                                    groups=args[4] 
-                                   )
+                    return a.conv2d(
+                        b,
+                        bias=args[0],
+                        stride=args[1],
+                        padding=args[2],
+                        dilation=args[3],
+                        groups=args[4],
+                    )
 
                 module.conv2d = conv2d
 
@@ -1122,7 +1123,6 @@ class AdditiveSharingTensor(AbstractTensor):
             the response of the function command
         """
         cmd_name, _, args_, kwargs_ = command
-        
 
         # Check that the function has not been overwritten
         cmd = None

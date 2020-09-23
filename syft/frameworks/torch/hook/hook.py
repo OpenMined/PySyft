@@ -780,7 +780,7 @@ class TorchHook(FrameworkHook):
         self.torch.nn.Module.float_precision_ = module_float_precision_
         self.torch.nn.Module.float_precision = module_float_precision_
         self.torch.nn.Module.float_prec = module_float_precision_
-        
+
         def module_cuda_(nn_self):
             """Overloads cuda for torch.nn.Module, convert cpu
             parameters to cuda parameters"""
@@ -789,15 +789,15 @@ class TorchHook(FrameworkHook):
                 with torch.no_grad():
                     for p in element_iter():
                         r = p.cuda()
-                        
+
                         p.set_(r)
                     # Todo: do for gradients
 
             return nn_self
-        
+
         self.torch.nn.Module.cuda_ = module_cuda_
         self.torch.nn.Module.cuda = module_cuda_
-        
+
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)

@@ -38,6 +38,7 @@ import hashlib
 import syft
 import msgpack as msgpack_lib
 import msgpack_numpy as m
+
 m.patch()
 from syft import dependency_check
 
@@ -423,7 +424,6 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # for this type. If there is, return the simplified object.
 
     current_type, obj = _simplify_field(obj)
-
 
     if current_type in msgpack_global_state.simplifiers:
         result = (
