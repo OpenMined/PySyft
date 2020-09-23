@@ -138,8 +138,8 @@ def test_torch_tensor_simplify(workers):
 
     At the time of writing, tensors simplify to a tuple where the
     first value in the tuple is the tensor's ID and the second
-    value is a serialized version of the Tensor (serialized
-    by PyTorch's torch.save method)
+    value is the numpy version of the Tensor which is given to
+    msgpack directly
     """
 
     me = workers["me"]
@@ -166,7 +166,7 @@ def test_torch_tensor_simplify(workers):
     assert output[1][0] == input.id
 
     # make sure tensor data type is correct
-    assert type(output[1][1]) == bytes
+    assert type(output[1][1]) == numpy.array
 
 
 def test_torch_tensor_simplify_generic(workers):
@@ -675,31 +675,6 @@ def test_pointer_tensor_detail(id):
     x_ptr = 2 * x_ptr
     x_back = x_ptr.get()
     assert (x_back == 2 * x).all()
-
-
-@pytest.mark.parametrize(
-    "tensor",
-    [
-        (torch.tensor(numpy.ones((10, 10)), requires_grad=False)),
-        (torch.tensor([[0.25, 1.5], [0.15, 0.25], [1.25, 0.5]], requires_grad=True)),
-        (torch.randint(low=0, high=10, size=[3, 7], requires_grad=False)),
-    ],
-)
-def test_numpy_tensor_serde(tensor):
-    compression._apply_compress_scheme = compression.apply_lz4_compression
-
-    serde._serialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_serializer
-    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_deserializer
-
-    tensor_serialized = syft.serde.serialize(tensor)
-    assert tensor_serialized[0] != compression.NO_COMPRESSION
-    tensor_deserialized = syft.serde.deserialize(tensor_serialized)
-
-    # Back to Pytorch serializer
-    serde._serialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_serializer
-    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_deserializer
-
-    assert torch.eq(tensor_deserialized, tensor).all()
 
 
 @pytest.mark.parametrize("compress", [True, False])
