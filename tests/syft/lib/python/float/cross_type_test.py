@@ -40,12 +40,13 @@ binop = [
 
 
 def test_api_sanity_check():
-    sy_float = Float(42.5)
-    py_float = 42.5
-    sy_float_API = set(dir(sy_float))
-    py_float_API = set(dir(py_float))
+    sy_int = Float(42.5)
+    py_int = 42.5
+    sy_int_API = set(dir(sy_int))
+    py_int_API = set(dir(py_int))
+    print(sy_int_API - py_int_API)
 
-    assert len(py_float_API - sy_float_API) == 0
+    assert len(py_int_API - sy_int_API) == 0
 
 
 @pytest.mark.parametrize("op", binop)

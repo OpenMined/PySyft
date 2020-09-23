@@ -30,6 +30,8 @@ class AbstractNode(Address):
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
+    # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
+    signaling_msgs: Dict[Any, Any]
 
     @syft_decorator(typechecking=True)
     def __init__(
