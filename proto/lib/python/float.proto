@@ -3,8 +3,7 @@ syntax = "proto3";
 package syft.lib.python;
 import "proto/core/common/common_object.proto";
 
-
 message Float {
-    float data = 1;
-    syft.core.common.UID id = 2;
+  float data = 1;
+  syft.core.common.UID id = 2;
 }

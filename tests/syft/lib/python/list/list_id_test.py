@@ -1,5 +1,6 @@
-from syft.lib.python.list import List
+# syft absolute
 from syft.lib.python.int import Int
+from syft.lib.python.list import List
 
 sy_list = List([Int(1), Int(2), Int(3)])
 other_list = List([Int(4)])
