@@ -1,5 +1,8 @@
 # stdlib
 from abc import ABC
+from collections import UserDict
+from collections import UserList
+from collections import UserString
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -17,7 +20,11 @@ def isprimitive(value: Any) -> bool:
         bool,
         complex,
         list,
+        UserList,
+        dict,
+        UserDict,
         str,
+        UserString,
         None,
     ]:
         return True
@@ -34,6 +41,7 @@ class PrimitiveFactory(ABC):
         # syft relative
         from .bool import Bool
         from .complex import Complex
+        from .dict import Dict
         from .float import Float
         from .int import Int
         from .list import List
@@ -55,11 +63,15 @@ class PrimitiveFactory(ABC):
         if type(value) is complex:
             return String(value=value, id=id)
 
-        if type(value) is list:
+        if type(value) in [list, UserList]:
             return List(value=value, id=id)
 
-        if type(value) is str:
+        if type(value) in [dict, UserDict]:
+            return Dict(value=value, id=id)
+
+        if type(value) in [str, UserString]:
             return String(value=value, id=id)
+
         if value is NotImplemented:
             return value
 
