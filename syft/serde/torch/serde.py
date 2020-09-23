@@ -1,7 +1,3 @@
-import io
-import warnings
-
-import numpy
 import torch
 
 from syft.workers.abstract import AbstractWorker
