@@ -9,7 +9,7 @@ def test_sigmoid_chebyshev(benchmark, workers):
     Test sigmoid approximation with chebyshev method and
     precision value of 1
     """
-    benchmark(sigmoid, "chebyshev", 1, workers)
+    benchmark(sigmoid, "chebyshev", 4, workers)
 
 
 def test_tanh_chebyshev(benchmark, workers):
@@ -17,4 +17,4 @@ def test_tanh_chebyshev(benchmark, workers):
     Test tanh approximation with chebyshev method and
     precision value of 1
     """
-    benchmark(tanh, "chebyshev", 1, workers)
+    benchmark(tanh, "chebyshev", 4, workers)
