@@ -35,25 +35,26 @@ import weakref
 from nacl.signing import SigningKey
 
 # syft relative
-from ..core.io.address import Address
-from ..core.io.route import SoloRoute
-from ..core.node.common.client import Client
-from ..core.node.domain.client import DomainClient
-from ..core.node.domain.domain import Domain
-from ..decorators.syft_decorator_impl import syft_decorator
-from .connections.webrtc import WebRTCConnection
-from .services.signaling_service import AnswerPullRequestMessage
-from .services.signaling_service import InvalidLoopBackRequest
-from .services.signaling_service import OfferPullRequestMessage
-from .services.signaling_service import SignalingAnswerMessage
-from .services.signaling_service import SignalingOfferMessage
+from ...core.io.address import Address
+from ...core.io.route import SoloRoute
+from ...core.node.common.client import Client
+from ...core.node.domain.client import DomainClient
+from ...core.node.domain.domain import Domain
+from ...decorators.syft_decorator_impl import syft_decorator
+from ..connections.webrtc import WebRTCConnection
+from ..services.signaling_service import AnswerPullRequestMessage
+from ..services.signaling_service import InvalidLoopBackRequest
+from ..services.signaling_service import OfferPullRequestMessage
+from ..services.signaling_service import RegisterNewPeerMessage
+from ..services.signaling_service import SignalingAnswerMessage
+from ..services.signaling_service import SignalingOfferMessage
 
 
 class Duet(DomainClient):
     def __init__(
         self,
         node: Domain,
-        address: Address,
+        target_id: str,
         signaling_client: Client,
         offer: bool = True,
     ):
@@ -84,8 +85,6 @@ class Duet(DomainClient):
         # WebRTCConnection instance ( Bidirectional Connection )
         self.connection = WebRTCConnection(node=self.node)
 
-        self.peer_addr = address
-
         # Client used to exchange signaling messages in order to establish a connection
         # NOTE: In the future it may be a good idea to modularize this client to make
         # it pluggable using different connection protocols.
@@ -99,14 +98,14 @@ class Duet(DomainClient):
             self._pull_msg_queue.put_nowait(
                 OfferPullRequestMessage(
                     address=self.signaling_client.address,
-                    target_peer=address,
-                    host_peer=self.node.address,
+                    target_peer=target_id,
+                    host_peer=self.signaling_client.duet_id,
                     reply_to=self.signaling_client.address,
                 )
             )
         else:
             # Push a WebRTC offer request to the address.
-            self.send_offer(address=address)
+            self.send_offer(target_id=target_id)
 
         # This flag is used in order to finish the signaling process gracefully
         # While self._available is True, the pull/push tasks will be running
@@ -241,7 +240,7 @@ class Duet(DomainClient):
             self._exception = e
 
     @syft_decorator(typechecking=True)
-    def send_offer(self, address: Address) -> None:
+    def send_offer(self, target_id: str) -> None:
         """Starts a new signaling process by creating a new
         offer message and pushing it to the Signaling Server."""
 
@@ -254,8 +253,8 @@ class Duet(DomainClient):
             address=self.signaling_client.address,  # Target's address
             payload=payload,  # Offer Payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
-            target_peer=address,
-            host_peer=self.node.address,  # Own Node Address
+            target_peer=target_id,
+            host_peer=self.signaling_client.duet_id,  # Own Node ID
         )
 
         # Enqueue it in push msg queue to be sent to the signaling server.
@@ -265,8 +264,8 @@ class Duet(DomainClient):
         self._pull_msg_queue.put_nowait(
             AnswerPullRequestMessage(
                 address=self.signaling_client.address,
-                target_peer=address,
-                host_peer=self.node.address,
+                target_peer=target_id,
+                host_peer=self.signaling_client.duet_id,
                 reply_to=self.signaling_client.address,
             )
         )
@@ -289,8 +288,8 @@ class Duet(DomainClient):
             address=self.signaling_client.address,
             payload=payload,  # Signaling answer payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
-            target_peer=msg.host_peer,  # Remote Node Address
-            host_peer=self.node.address,
+            target_peer=msg.host_peer,  # Remote Node ID
+            host_peer=self.signaling_client.duet_id,
         )
 
         # Enqueue it in the push msg queue to be sent to the signaling server.
