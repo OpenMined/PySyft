@@ -612,7 +612,7 @@ class PushSignalingService(ImmediateNodeServiceWithoutReply):
         verify_key: VerifyKey,
     ) -> None:
         # Do not store loopback signaling requests
-        if msg.host_peer != msg.target_peer:
+        if msg.host_peer.name != msg.target_peer.name:
             # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
             node.signaling_msgs[msg.id] = msg
 
@@ -641,12 +641,12 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
         InvalidLoopBackRequest,
     ]:
         # Do not allow loopback signaling requests
-        if msg.host_peer == msg.target_peer:
+        if msg.host_peer.name == msg.target_peer.name:
             return InvalidLoopBackRequest(address=msg.reply_to)
 
         sig_requests_for_me = (
-            lambda push_msg: push_msg.target_peer == msg.host_peer
-            and push_msg.host_peer == msg.target_peer
+            lambda push_msg: push_msg.target_peer.name == msg.host_peer.name
+            and push_msg.host_peer.name == msg.target_peer.name
             and isinstance(push_msg, PullSignalingService._pull_push_mapping[type(msg)])
         )
 

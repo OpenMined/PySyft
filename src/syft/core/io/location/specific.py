@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Optional
 
 # third party
@@ -86,18 +85,3 @@ class SpecificLocation(ObjectWithID, Location):
         """
 
         return SpecificLocation_PB
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether two SpecificLocation objects refer to the same location.
-
-        :param other: the other object to compare with self
-        :type other: Any (note this must be Any or __eq__ fails on other types)
-        :returns: whether the two objects are the same
-        :rtype: bool
-        """
-
-        try:
-            return self.name == other.name
-        except Exception:
-            return False
