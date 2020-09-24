@@ -1,0 +1,13 @@
+# syft relative
+from ...core.node.network.client import NetworkClient
+from ..connections.http_connection import HTTPConnection
+from ..duet.signaling_client import SignalingClient
+from .signaling_client import SignalingClient
+
+
+def register(url: str = "http://ec2-18-221-97-68.us-east-2.compute.amazonaws.com:5000"):
+    client = SignalingClient(
+        url=url, conn_type=HTTPConnection, client_type=NetworkClient
+    )
+    print("Duet ID: ", client.duet_id)
+    return client
