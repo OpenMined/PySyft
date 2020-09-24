@@ -231,6 +231,7 @@ class ComplexTest(unittest.TestCase):
         self.assertIs(operator.ne(1 + 1j, 1 + 1j), False)
         self.assertIs(operator.ne(1 + 1j, 2 + 2j), True)
 
+    @pytest.mark.slow
     def test_richcompare_boundaries(self):
         def check(n, deltas, is_equal, imag=0.0):
             for delta in deltas:

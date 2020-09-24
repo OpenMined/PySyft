@@ -9,6 +9,7 @@ from ...ast.klass import Class
 from ...ast.module import Module
 from .bool import Bool
 from .complex import Complex
+from .dict import Dict
 from .float import Float
 from .int import Int
 from .list import List
@@ -65,8 +66,9 @@ def create_python_ast() -> Globals:
     primitives = [
         ("syft.lib.python.Bool", Bool),
         ("syft.lib.python.Complex", Complex),
-        ("syft.lib.python.Int", Int),
+        ("syft.lib.python.Dict", Dict),
         ("syft.lib.python.Float", Float),
+        ("syft.lib.python.Int", Int),
         ("syft.lib.python.List", List),
         ("syft.lib.python.String", String),
     ]

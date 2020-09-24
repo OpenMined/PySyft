@@ -1,15 +1,14 @@
 syntax = "proto3";
 
-// this file is from https://github.com/npuichigo/pytorch_lmdb_dataset/blob/master/proto/tensor.proto
+// this file is from
+// https://github.com/npuichigo/pytorch_lmdb_dataset/blob/master/proto/tensor.proto
 // which is licensed under Apache 2.0 according to
 // https://github.com/npuichigo/pytorch_lmdb_dataset/blob/master/proto/utils.py
 
 package syft.lib.numpy;
 
 // TensorProtos stores multiple TensorProto objects in one single proto.
-message TensorProtos {
-  repeated TensorProto protos = 1;
-}
+message TensorProtos { repeated TensorProto protos = 1; }
 
 // TensorProto stores serialized Tensor objects.
 message TensorProto {
@@ -21,20 +20,20 @@ message TensorProto {
     UNDEFINED = 0;
 
     // Basic types
-    FLOAT = 1;     // float
-    INT32 = 2;     // int
-    BYTE = 3;      // byte, when deserialized, is going to be restored as uint8
-    STRING = 4;    // string
+    FLOAT = 1;  // float
+    INT32 = 2;  // int
+    BYTE = 3;   // byte, when deserialized, is going to be restored as uint8
+    STRING = 4; // string
 
     // Less-commonly used data types
-    BOOL = 5;      // bool
-    UINT8 = 6;     // uint8_t
-    INT8 = 7;      // int8_t
-    UINT16 = 8;    // uint16_t
-    INT16 = 9;     // int16_t
-    INT64 = 10;    // int64_t
-    FLOAT16 = 12;  // at::Half
-    DOUBLE = 13;   // double
+    BOOL = 5;     // bool
+    UINT8 = 6;    // uint8_t
+    INT8 = 7;     // int8_t
+    UINT16 = 8;   // uint16_t
+    INT16 = 9;    // int16_t
+    INT64 = 10;   // int64_t
+    FLOAT16 = 12; // at::Half
+    DOUBLE = 13;  // double
   }
   DataType data_type = 2;
 
