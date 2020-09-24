@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "syft/frameworks/torch/tensors/**"
+      - "syft/frameworks/torch/mpc/**"
 
 jobs:
   benchmark:
