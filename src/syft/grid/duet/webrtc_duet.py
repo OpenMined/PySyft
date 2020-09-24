@@ -35,17 +35,15 @@ import weakref
 from nacl.signing import SigningKey
 
 # syft relative
-from ...core.io.address import Address
 from ...core.io.route import SoloRoute
-from ...core.node.common.client import Client
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
 from ...decorators.syft_decorator_impl import syft_decorator
 from ..connections.webrtc import WebRTCConnection
+from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage
 from ..services.signaling_service import InvalidLoopBackRequest
 from ..services.signaling_service import OfferPullRequestMessage
-from ..services.signaling_service import RegisterNewPeerMessage
 from ..services.signaling_service import SignalingAnswerMessage
 from ..services.signaling_service import SignalingOfferMessage
 
@@ -55,7 +53,7 @@ class Duet(DomainClient):
         self,
         node: Domain,
         target_id: str,
-        signaling_client: Client,
+        signaling_client: SignalingClient,
         offer: bool = True,
     ):
         # Generate a signing key
@@ -172,7 +170,7 @@ class Duet(DomainClient):
             task.cancel()
 
     def close(self) -> None:
-        self.connection.close(self.peer_addr)
+        self.connection.close()
 
     @syft_decorator(typechecking=True)
     async def push(self) -> None:
@@ -233,6 +231,7 @@ class Duet(DomainClient):
 
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
+                await asyncio.sleep(0.5)
         except Exception as e:
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.

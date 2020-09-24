@@ -261,9 +261,9 @@ class WebRTCConnection(BidirectionalConnection):
             # send it as a binary using the RTCDataChannel.
             self.channel.send(msg.to_binary())  # type: ignore
 
-    def close(self, peer_addr: Address) -> None:
+    def close(self) -> None:
         # Build Close Message to warn the other peer
-        bye_msg = CloseConnectionMessage(address=peer_addr)
+        bye_msg = CloseConnectionMessage(address=Address())
 
         self.channel.send(bye_msg.to_binary())  # type: ignore
 
@@ -302,7 +302,6 @@ class WebRTCConnection(BidirectionalConnection):
                 self.recv_immediate_msg_without_reply(msg=_msg)
 
             elif isinstance(_msg, CloseConnectionMessage):
-                print("Received ...")
                 # Just finish async tasks related with this connection
                 self._finish_coroutines()
 
