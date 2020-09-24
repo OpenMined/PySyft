@@ -1340,6 +1340,7 @@ class MixinStrUnicodeUserStringTest:
         self.checkraises(OverflowError, "%*s", "__mod__", (SIZE_MAX + 1, ""))
         self.checkraises(OverflowError, "%.*f", "__mod__", (UINT_MAX + 1, 1.0 / 7))
 
+    @pytest.mark.slow
     def test_floatformatting(self):
         # float formatting
         for prec in range(100):

@@ -1,5 +1,8 @@
 # stdlib
 from abc import ABC
+from collections import UserDict
+from collections import UserList
+from collections import UserString
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -9,9 +12,33 @@ from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
 
+primitives = [
+    bool,
+    dict,
+    complex,
+    float,
+    int,
+    list,
+    None,
+    str,
+    UserDict,
+    UserList,
+    UserString,
+]
 
-primitives = [int, float, bool, complex, list, str, None]
-PrimitiveType = Union[int, float, bool, complex, list, str, None]
+PrimitiveType = Union[
+    bool,
+    dict,
+    complex,
+    float,
+    int,
+    list,
+    None,
+    str,
+    UserDict,
+    UserList,
+    UserString,
+]
 
 
 def isprimitive(value: Any) -> bool:
@@ -30,6 +57,7 @@ class PrimitiveFactory(ABC):
         # syft relative
         from .bool import Bool
         from .complex import Complex
+        from .dict import Dict
         from .float import Float
         from .int import Int
         from .list import List
@@ -51,13 +79,17 @@ class PrimitiveFactory(ABC):
         if isinstance(value, complex):
             return Complex(real=value.real, imag=value.imag, id=id)
 
-        if isinstance(value, complex):
-            return String(value=value, id=id)
-
-        if type(value) is list:
+        if type(value) in [list, UserList]:
             return List(value=value, id=id)
 
-        if type(value) is str:
+        if type(value) in [dict, UserDict]:
+            new_dict = Dict(value)
+            # if we pass id in as a kwargs it ends up in the actual dict
+            if id is not None:
+                new_dict._id = id
+            return new_dict
+
+        if type(value) in [str, UserString]:
             return String(value=value, id=id)
 
         if value is NotImplemented:

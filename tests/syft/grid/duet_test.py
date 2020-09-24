@@ -1,10 +1,12 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.slow
 def test_duet_send_and_get() -> None:
     duet = sy.Duet(host="127.0.0.1", port=5001)
 
@@ -21,6 +23,7 @@ def test_duet_send_and_get() -> None:
     duet.stop()
 
 
+@pytest.mark.slow
 def test_duet_searchable_functionality() -> None:
     duet = sy.Duet(host="127.0.0.1", port=5001)
 
