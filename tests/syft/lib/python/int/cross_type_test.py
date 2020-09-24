@@ -47,7 +47,7 @@ def test_api_sanity_check():
 
     assert len(py_int_API - sy_int_API) == 0
     # immutable opeartors on the ID
-    assert len(sy_int_API - py_int_API) == 28
+    assert len(sy_int_API - py_int_API) == 29
 
 
 @pytest.mark.parametrize("op", binop)

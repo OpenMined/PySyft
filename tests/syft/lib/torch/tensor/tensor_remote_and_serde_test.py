@@ -24,6 +24,26 @@ def test_torch_remote_tensor_register() -> None:
     assert len(alice.store) == 0  # Get removes the object
 
 
+def test_torch_remote_tensor_with_alias_send() -> None:
+    """Test sending tensor on the remote worker with alias send method."""
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    x = th.tensor([-1, 0, 1, 2, 3, 4])
+    ptr = x.send_to(alice_client)
+
+    assert len(alice.store) == 1
+
+    ptr = x.send_to(alice_client)
+
+    data = ptr.get()
+
+    assert len(alice.store) == 0  # Get removes the object
+
+    assert x.equal(data)  # Check if send data and recieved data are equal
+
+
 def test_torch_serde() -> None:
 
     x = th.tensor([1.0, 2, 3, 4], requires_grad=True)
