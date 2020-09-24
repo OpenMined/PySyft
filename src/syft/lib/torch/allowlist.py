@@ -627,7 +627,7 @@ allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 # However, we still need the constructor Class to be listed here. Everything else is
 # automatically added in create_torch_ast function by doing:
 # method = method.replace("torch.Tensor.", "torch.nn.Parameter.")
-# allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
+allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
 
 
 # MNIST
@@ -640,11 +640,18 @@ allowlist["torch.device.index"] = "syft.lib.python.int.Int"
 allowlist["torch.device.type"] = "syft.lib.python.string.String"
 # allowlist["torch.cuda.is_available"] = "syft.lib.python.bool.Bool"
 allowlist["torch.nn.Module"] = "torch.nn.Module"
+allowlist["torch.nn.Module.__call__"] = "torch.nn.Module"
+allowlist["torch.nn.Module.parameters"] = "torch.nn.Parameter"
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Module"
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
-allowlist["torch.nn.Linear"] = "torch.nn.Linear"
+allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Module"
+allowlist["torch.nn.Linear"] = "torch.nn.Module"
+allowlist["torch.nn.Linear.__call__"] = "torch.nn.Module"
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
 allowlist["torch.flatten"] = "torch.Tensor"
+allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
+allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
