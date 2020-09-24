@@ -238,7 +238,7 @@ def multiply_add_plain_with_delta(ct, pt, context_data):
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
-    # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
+    # and rounded to the nearest integer (rounded up in case of a tie).
     for i in range(plain_coeff_count):
         for j in range(len(coeff_modulus)):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]
@@ -266,7 +266,7 @@ def multiply_sub_plain_with_delta(ct, pt, context_data):
     ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
-    # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
+    # and rounded to the nearest integer (rounded up in case of a tie)
     for i in range(plain_coeff_count):
         for j in range(len(coeff_modulus)):
             temp = round(delta[j] * pt[i]) % coeff_modulus[j]

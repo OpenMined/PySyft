@@ -20,9 +20,6 @@ from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 from syft.frameworks.torch.he.fv.evaluator import Evaluator
 
-# from syft.frameworks.torch.he.fv.plaintext import PlainText
-# from syft.frameworks.torch.he.fv.ciphertext import CipherText
-
 
 class BFVTensor(AbstractTensor):
     def __init__(self, **kwargs):
@@ -129,8 +126,36 @@ class BFVTensor(AbstractTensor):
         return obj
 
     def mm(self, *args, **kwargs):
-        print("custom mm called!")
-        pass
+        self.prepareEvaluator()
+
+        if not self.child.shape[1] == args[0].shape[0]:
+            raise RuntimeError(
+                f"shape mismatch for matrix multiplication {self.child.shape} ,{args[0].shape}"
+            )
+
+        x_dim, y_dim, inner_dim = self.child.shape[0], args[0].shape[1], self.child.shape[1]
+
+        output = [[0 for x in range(y_dim)] for y in range(x_dim)]
+
+        for i in range(x_dim):
+            for j in range(y_dim):
+                output[i][j] = self.encoder.encode(output[i][j])
+
+        for i in range(x_dim):
+            for j in range(y_dim):
+                for k in range(inner_dim):
+                    output[i][j] = self.evaluator.add(
+                        output[i][j],
+                        self.evaluator.relin(
+                            self.evaluator.mul(self.child[i][k], args[0].child[k][j]),
+                            kwargs.get("relin_key"),
+                        ),
+                    )
+
+        obj = BFVTensor()
+        obj.context = self.context
+        obj.child = np.asarray(output)
+        return obj
 
     # Method overloading
     @overloaded.method
