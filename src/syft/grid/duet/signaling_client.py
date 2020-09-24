@@ -7,9 +7,7 @@ from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.network.client import NetworkClient
 from ...decorators.syft_decorator_impl import syft_decorator
-from ..connections.http_connection import HTTPConnection
 from ..services.signaling_service import RegisterNewPeerMessage
 
 
