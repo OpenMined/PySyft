@@ -36,7 +36,7 @@ jobs:
         python setup.py install
     - name: Run benchmark
       run: |
-        pytest benchmarks/frameworks/torch/mpc/pytest-benchmark/bench.py --benchmark-json pytest_benchmark_output.json
+        pytest benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py --benchmark-json pytest_benchmark_output.json
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
