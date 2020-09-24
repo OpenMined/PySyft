@@ -605,7 +605,7 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
 
 class PushSignalingService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @service_auth(root_only=True)
+    @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
         msg: Union[SignalingOfferMessage, SignalingAnswerMessage],
@@ -629,7 +629,7 @@ class PullSignalingService(ImmediateNodeServiceWithReply):
     }
 
     @staticmethod
-    @service_auth(root_only=True)
+    @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
         msg: Union[OfferPullRequestMessage, AnswerPullRequestMessage],
