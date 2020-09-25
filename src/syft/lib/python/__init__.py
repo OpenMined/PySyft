@@ -90,6 +90,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__getitem__", "torch.Tensor", List),
         ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
+        ("syft.lib.python.List.append", "syft.lib.python.SyNone", List),
     ]
 
     add_modules(ast, modules)
