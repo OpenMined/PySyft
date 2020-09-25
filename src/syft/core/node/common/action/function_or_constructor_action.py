@@ -3,7 +3,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -24,8 +23,6 @@ from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
-DEFAULT_AVAILABLE_READ_PERMISSIONS: Set[str] = {"torch.cuda.is_available"}
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
@@ -137,7 +134,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         # If we have no permission (None or {}) we add some default permissions based on a permission list
         if result_read_permissions is None:
-            if self.path in DEFAULT_AVAILABLE_READ_PERMISSIONS:
+            if self.path in node.lib_ast.DRP:
                 result_read_permissions = {verify_key: result.id}
             else:
                 result_read_permissions = {}
