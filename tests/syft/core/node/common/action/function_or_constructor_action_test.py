@@ -28,7 +28,7 @@ def test_constructor_not_in_default_permissions() -> None:
     alice_client = alice.get_client()
 
     torch = alice_client.torch
-    ptr = torch.Tensor([1, 2, 3])
+    ptr = torch.random.initial_seed()
 
     with pytest.raises(Exception) as e:
         ptr.get()

@@ -639,6 +639,7 @@ allowlist["torch.device"] = "torch.device"
 allowlist["torch.device.index"] = "syft.lib.python.Int"
 allowlist["torch.device.type"] = "syft.lib.python.String"
 allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
+allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
 
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
