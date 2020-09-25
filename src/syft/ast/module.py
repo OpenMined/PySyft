@@ -7,7 +7,6 @@ from typing import Union
 # syft relative
 from .. import ast
 from ..ast.callable import Callable
-from ..lib.generic import ObjectConstructor
 from .util import builtin_func_type
 from .util import class_type
 from .util import func_type
@@ -55,7 +54,6 @@ class Module(ast.attribute.Attribute):
         framework_reference: Optional[Union[Callable, CallableT]] = None,
     ) -> None:
         if path[index] not in self.attrs:
-
             attr_ref = getattr(self.ref, path[index])
 
             if isinstance(attr_ref, module_type):
@@ -69,26 +67,16 @@ class Module(ast.attribute.Attribute):
                     ),
                 )
             elif isinstance(attr_ref, class_type):
+                klass = ast.klass.Class(
+                    name=path[index],
+                    path_and_name=unsplit(path[: index + 1]),
+                    ref=attr_ref,
+                    return_type_name=return_type_name,
+                )
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.klass.Class(
-                        name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref,
-                        return_type_name=return_type_name,
-                    ),
+                    attr=klass,
                 )
-            elif isinstance(attr_ref, ObjectConstructor):
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=ast.klass.Class(
-                        name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref.original_type,  # type: ignore
-                        return_type_name=return_type_name,
-                    ),
-                )
-
             elif isinstance(attr_ref, func_type):
                 self.add_attr(
                     attr_name=path[index],

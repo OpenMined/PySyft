@@ -48,6 +48,10 @@ class Float(float, PyPrimitive):
         """
         return self._id
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> float:
+        return float(self)
+
     def __hash__(self) -> int:
         return super().__hash__()
 

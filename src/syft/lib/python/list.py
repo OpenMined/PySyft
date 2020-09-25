@@ -3,6 +3,7 @@ from collections import UserList
 from typing import Any
 from typing import List as TypeList
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -16,8 +17,10 @@ from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
+from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
+from .util import downcast
 
 
 class List(UserList, PyPrimitive):
@@ -40,6 +43,10 @@ class List(UserList, PyPrimitive):
         :rtype: UID
         """
         return self._id
+
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> list:
+        return list(self)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __gt__(self, other: Any) -> SyPrimitiveRet:
@@ -65,11 +72,6 @@ class List(UserList, PyPrimitive):
     def __imul__(self, other: Any) -> SyPrimitiveRet:
         res = super().__imul__(other)
         return PrimitiveFactory.generate_primitive(value=res, id=self.id)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __len__(self) -> SyPrimitiveRet:
-        res = super().__len__()
-        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
@@ -117,6 +119,37 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
+    def __len__(self) -> Any:
+        res = super().__len__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, key: Union[int, str, slice]) -> Any:
+        res = super().__getitem__(key)  # type: ignore
+        # we might be holding a primitive value, but generate_primitive
+        # doesn't handle non primitives so we should check
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        return res
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> Any:
+        # TODO: remove temp hack
+        if type(self).__name__ == "generator":
+            return type(self).__iter__(self)
+        res = super().__iter__()
+        return res
+
+    # hack for working around generators
+    # list doesnt have __next__ but converting a generator that thinks its a list
+    # requires this method
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __next__(self) -> Any:
+        if type(self).__name__ == "generator":
+            return type(self).__next__(self)
+        raise NotImplementedError
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
         res = super().copy()
         res._id = UID()
@@ -130,7 +163,8 @@ class List(UserList, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)
-        data = [serialize(obj=element) for element in self.data]
+        downcasted = [downcast(value=element) for element in self.data]
+        data = [serialize(obj=element) for element in downcasted]
         return List_PB(id=id_, data=data)
 
     @staticmethod

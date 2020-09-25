@@ -5,19 +5,19 @@ import torch as th
 from ..generic import ObjectConstructor
 
 
-class GeneratorConstructor(ObjectConstructor):
+class ModuleConstructor(ObjectConstructor):
 
-    __name__ = "GeneratorConstructor"
+    __name__ = "ModuleConstructor"
 
     # Step 1: Store the attribute name that this constructor is replacing
-    constructor_name = "Generator"
+    constructor_name = "Module"
 
     # Step 2: Store a reference to the location on which this constructor currently lives.
     # This is also the location that this custom constructor will live once installed using
-    constructor_location = th
+    constructor_location = th.nn
 
-    original_type = th.Generator
+    original_type = th.nn.Module
 
 
 # Step 3: create constructor and install it in the library
-GeneratorConstructor().install_inside_library()
+ModuleConstructor().install_inside_library()

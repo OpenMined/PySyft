@@ -4,15 +4,13 @@ from typing import Union
 
 # third party
 from packaging import version
-import torch
+import torchvision as tv
 
 # syft relative
-from . import parameter  # noqa: 401
-from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
 from .allowlist import allowlist
 
-TORCH_VERSION = version.parse(torch.__version__)
+TORCHVISION_VERSION = version.parse(tv.__version__)
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -26,10 +24,10 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
     if isinstance(support_dict, str):
         return True
     else:
-        return TORCH_VERSION >= version.parse(support_dict["min_version"])
+        return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def create_torch_ast() -> Globals:
+def create_torchvision_ast() -> Globals:
     ast = Globals()
 
     # most methods work in all versions and have a single return type
@@ -39,17 +37,14 @@ def create_torch_ast() -> Globals:
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             ast.add_path(
-                path=method, framework_reference=torch, return_type_name=return_type
+                path=method,
+                framework_reference=tv,
+                return_type_name=return_type,
             )
-            # add all the torch.nn.Parameter hooks
-            if method.startswith("torch.Tensor."):
-                method = method.replace("torch.Tensor.", "torch.nn.Parameter.")
-                return_type = return_type.replace("torch.Tensor", "torch.nn.Parameter")
-                ast.add_path(
-                    path=method, framework_reference=torch, return_type_name=return_type
-                )
         else:
-            print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
+            print(
+                f"Skipping torchvision.{method} not supported in {TORCHVISION_VERSION}"
+            )
 
     for klass in ast.classes:
         klass.create_pointer_class()

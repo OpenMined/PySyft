@@ -1,8 +1,10 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -41,7 +43,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Tuple[Any, ...],
+        args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -98,21 +100,42 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         if type(method).__name__ == "getset_descriptor":
             # we have a detached class property so we need the __get__ descriptor
-            result = method.__get__(resolved_self.data)
+            upcast_attr = getattr(resolved_self.data, "upcast", None)
+            data = resolved_self.data
+            if upcast_attr is not None:
+                data = upcast_attr()
+
+            result = method.__get__(data)
         else:
             # we have a callable
-            result = method(resolved_self.data, *resolved_args, **resolved_kwargs)
+            # upcast our args in case the method only accepts the original types
+            (
+                upcasted_args,
+                upcasted_kwargs,
+            ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        # TODO: replace with proper tuple support
+        if type(result) is tuple:
+            # convert to list until we support tuples
+            result = list(result)
 
         # to avoid circular imports
+
         if lib.python.primitive_factory.isprimitive(value=result):
-            # Wrap in a PyPrimitive
+            # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
                 value=result, id=self.id_at_location
             )
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
-                result.id = self.id_at_location
+                try:
+                    result._id = self.id_at_location
+                    assert result.id == self.id_at_location
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    raise Exception(err)
 
         # QUESTION: There seems to be return value tensors that have no id
         # and get auto wrapped? So is this code not correct?
@@ -146,6 +169,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return RunClassMethodAction_PB(
             path=self.path,
             _self=self._self.serialize(),
