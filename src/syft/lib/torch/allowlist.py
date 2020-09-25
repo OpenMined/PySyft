@@ -630,6 +630,7 @@ allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
 
 
 # MNIST
+# Misc
 allowlist["torch.manual_seed"] = "torch.Generator"
 allowlist["torch.Generator"] = "torch.Generator"
 allowlist["torch.Generator.get_state"] = "torch.Tensor"
@@ -638,21 +639,49 @@ allowlist["torch.device"] = "torch.device"
 allowlist["torch.device.index"] = "syft.lib.python.Int"
 allowlist["torch.device.type"] = "syft.lib.python.String"
 allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
+
+# Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.nn.Module"
-allowlist["torch.nn.Module.parameters"] = "torch.nn.Parameter"
+allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.__call__"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
+
+# DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
-allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.List"
-# allowlist["torch.utils.data.DataLoader.__getitem__"] = "torch.Tensor"
+allowlist[
+    "torch.utils.data.DataLoader.__iter__"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
+] = "syft.lib.python.Int"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
+] = "torch.Tensor"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
+] = "torch.Tensor"
+
+# Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
 allowlist["torch.flatten"] = "torch.Tensor"
+
+# Optimizers
 allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
 allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"

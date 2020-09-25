@@ -128,7 +128,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
-                result.id = self.id_at_location
+                result._id = self.id_at_location
             # else:
             # TODO: Solve this problem where its an issue
 

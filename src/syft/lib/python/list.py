@@ -20,6 +20,7 @@ from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
+from .util import downcast
 
 
 class List(UserList, PyPrimitive):
@@ -73,11 +74,6 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res, id=self.id)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __len__(self) -> SyPrimitiveRet:
-        res = super().__len__()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
         res = super().__add__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -122,10 +118,10 @@ class List(UserList, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def __next__(self) -> SyPrimitiveRet:
-    #     res = super().__next__()
-    #     return PrimitiveFactory.generate_primitive(value=res)
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __len__(self) -> Any:
+        res = super().__len__()
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, key: Union[int, str, slice]) -> Any:
@@ -135,6 +131,23 @@ class List(UserList, PyPrimitive):
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
         return res
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> Any:
+        # TODO: remove temp hack
+        if type(self).__name__ == "generator":
+            return type(self).__iter__(self)
+        res = super().__iter__()
+        return res
+
+    # hack for working around generators
+    # list doesnt have __next__ but converting a generator that thinks its a list
+    # requires this method
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __next__(self) -> Any:
+        if type(self).__name__ == "generator":
+            return type(self).__next__(self)
+        raise NotImplementedError
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
@@ -150,7 +163,8 @@ class List(UserList, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)
-        data = [serialize(obj=element) for element in self.data]
+        downcasted = [downcast(value=element) for element in self.data]
+        data = [serialize(obj=element) for element in downcasted]
         return List_PB(id=id_, data=data)
 
     @staticmethod

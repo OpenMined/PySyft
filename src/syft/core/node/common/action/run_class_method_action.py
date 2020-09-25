@@ -121,6 +121,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             result = list(result)
 
         # to avoid circular imports
+
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(

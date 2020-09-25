@@ -15,6 +15,14 @@ NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type
 SyPrimitiveRet = NewType("SyPrimitiveRet", Union[PyPrimitive, NotImplementedType])  # type: ignore
 
 
+def downcast(value: Any) -> Any:
+    if isprimitive(value=value):
+        # Wrap in a SyPrimitive
+        return PrimitiveFactory.generate_primitive(value=value, recurse=True)
+    else:
+        return value
+
+
 def downcast_args_and_kwargs(
     args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any]
 ) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -24,21 +32,11 @@ def downcast_args_and_kwargs(
     downcasted_kwargs = {}
     for arg in args:
         # check if its primitive
-        if isprimitive(value=arg):
-            # Wrap in a SyPrimitive
-            wrapped_arg = PrimitiveFactory.generate_primitive(value=arg, recurse=True)
-            downcasted_args.append(wrapped_arg)
-        else:
-            downcasted_args.append(arg)
+        downcasted_args.append(downcast(value=arg))
 
     for k, arg in kwargs.items():
         # check if its primitive
-        if isprimitive(value=arg):
-            # Wrap in a SyPrimitive
-            wrapped_arg = PrimitiveFactory.generate_primitive(value=arg, recurse=True)
-            downcasted_kwargs[k] = wrapped_arg
-        else:
-            downcasted_kwargs[k] = arg
+        downcasted_kwargs[k] = downcast(value=arg)
 
     return (downcasted_args, downcasted_kwargs)
 

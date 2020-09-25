@@ -86,7 +86,7 @@ def create_python_ast() -> Globals:
 
     methods = [
         ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
-        ("syft.lib.python.List.__getitem__", "syft.lib.python.List", List),
+        ("syft.lib.python.List.__getitem__", "torch.Tensor", List),
         ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
     ]
 
