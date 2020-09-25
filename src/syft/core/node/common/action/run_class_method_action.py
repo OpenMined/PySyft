@@ -105,6 +105,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return (upcasted_args, upcasted_kwargs)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        print("executing a ", type(self))
         method = node.lib_ast(self.path)
 
         resolved_self = node.store[self._self.id_at_location]

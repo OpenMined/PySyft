@@ -52,14 +52,22 @@ class Class(Callable):
             the function object itself then it includes the current attr_path_and_name as an internal
             variable and when we call get_run_class_method multiple times it returns genuinely
             different methods each time with a different internal attr_path_and_name variable."""
+            print("what is our attr_path and name", attr_path_and_name)
 
             def run_class_method(
                 __self: Any,
                 *args: Tuple[Any, ...],
                 **kwargs: Any,
             ) -> object:
-                # TODO: lookup actual return type instead of just guessing that it's identical
-                result = self.pointer_type(client=__self.client)
+                # result = self.pointer_type(client=__self.client)
+
+                return_type_name = __self.client.lib_ast(
+                    attr_path_and_name, return_callable=True
+                ).return_type_name
+                resolved_pointer_type = __self.client.lib_ast(
+                    return_type_name, return_callable=True
+                )
+                result = resolved_pointer_type.pointer_type(client=__self.client)
 
                 # QUESTION can the id_at_location be None?
                 result_id_at_location = getattr(result, "id_at_location", None)
@@ -108,6 +116,7 @@ class Class(Callable):
             # if the attr key name is in the _props list from above then we know
             # we should execute it immediately and return the result
             if name in props:
+                print("call property", name, attr)
                 return attr()
 
             return attr

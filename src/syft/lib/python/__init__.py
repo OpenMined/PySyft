@@ -39,20 +39,34 @@ def add_modules(ast: Globals, modules: TypeList[str]) -> None:
         )
 
 
-def add_primitives(ast: Globals, primitives: TypeList[Tuple[str, Any]]) -> None:
-    for primitive, ref in primitives:
-        parent = get_parent(primitive, ast)
-        attr_name = primitive.rsplit(".", 1)[-1]
+def add_classes(ast: Globals, paths: TypeList[Tuple[str, str, Any]]) -> None:
+    for path, return_type, ref in paths:
+        parent = get_parent(path, ast)
+        attr_name = path.rsplit(".", 1)[-1]
 
         parent.add_attr(
             attr_name=attr_name,
             attr=Class(
                 attr_name,
-                primitive,
+                path,
                 ref,
-                return_type_name=primitive,
+                return_type_name=return_type,
             ),
         )
+
+
+def add_methods(ast: Globals, paths: TypeList[Tuple[str, str, Any]]) -> None:
+    for path, return_type, _ in paths:
+        parent = get_parent(path, ast)
+
+        parent.add_path(path=path.split("."), index=2, return_type_name=return_type)
+
+
+def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
+    if isinstance(support_dict, str):
+        return support_dict
+    else:
+        return support_dict["return_type"]
 
 
 def create_python_ast() -> Globals:
@@ -63,18 +77,24 @@ def create_python_ast() -> Globals:
         "syft.lib",
         "syft.lib.python",
     ]
-    primitives = [
-        ("syft.lib.python.Bool", Bool),
-        ("syft.lib.python.Complex", Complex),
-        ("syft.lib.python.Dict", Dict),
-        ("syft.lib.python.Float", Float),
-        ("syft.lib.python.Int", Int),
-        ("syft.lib.python.List", List),
-        ("syft.lib.python.String", String),
+    classes = [
+        ("syft.lib.python.Bool", "syft.lib.python.Bool", Bool),
+        ("syft.lib.python.Complex", "syft.lib.python.Complex", Complex),
+        ("syft.lib.python.Dict", "syft.lib.python.Dict", Dict),
+        ("syft.lib.python.Float", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int", "syft.lib.python.Int", Int),
+        ("syft.lib.python.List", "syft.lib.python.List", List),
+        ("syft.lib.python.String", "syft.lib.python.String", String),
+    ]
+
+    methods = [
+        ("models.MNIST.__call__", "models.MNIST", MNIST),
+        ("models.MNIST.parameters", "torch.nn.Parameter", MNIST),
+        ("models.MNIST.to", "models.MNIST", MNIST),
     ]
 
     add_modules(ast, modules)
-    add_primitives(ast, primitives)
+    add_classes(ast, classes)
 
     for klass in ast.classes:
         klass.create_pointer_class()
@@ -83,3 +103,18 @@ def create_python_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
+
+
+def create_models_ast() -> Globals:
+    ast = Globals()
+
+    modules = [
+        "models",
+    ]
+    classes = [
+        ("models.MNIST", "models.MNIST", MNIST),
+    ]
+
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)

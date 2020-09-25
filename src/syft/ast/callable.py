@@ -26,15 +26,26 @@ class Callable(ast.attribute.Attribute):
         return_callable: bool = False,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
+        print(
+            "we are calling",
+            type(self),
+            args,
+            kwargs,
+            return_callable,
+            self.return_type_name,
+        )
 
         if (
             hasattr(self, "client")
             and self.client is not None
             and return_callable is False
         ):
+            print("call ast with ", self.return_type_name, True)
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
+
+            print("this is our return tensor", return_tensor_type_pointer_type)
             ptr = return_tensor_type_pointer_type(client=self.client)
 
             if self.path_and_name is not None:
@@ -55,6 +66,7 @@ class Callable(ast.attribute.Attribute):
         if len(path) == index:
             if return_callable:
                 return self
+            print("we are here for", type(self), self.ref)
             return self.ref
         else:
             return self.attrs[path[index]](
@@ -64,6 +76,7 @@ class Callable(ast.attribute.Attribute):
     def add_path(
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:
+        print("adding, path", type(self))
 
         if index < len(path):
             if path[index] not in self.attrs:
@@ -82,3 +95,6 @@ class Callable(ast.attribute.Attribute):
                         return_type_name=return_type_name,
                         is_property=is_property,
                     )
+        # elif index == len(path):
+        #     print("DO WE GET HERE?")
+        #     self.return_type_name = return_type_name
