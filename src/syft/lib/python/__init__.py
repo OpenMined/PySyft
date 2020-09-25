@@ -13,6 +13,7 @@ from .dict import Dict
 from .float import Float
 from .int import Int
 from .list import List
+from .none import SyNone
 from .string import String
 
 
@@ -80,6 +81,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int", "syft.lib.python.Int", Int),
         ("syft.lib.python.List", "syft.lib.python.List", List),
         ("syft.lib.python.String", "syft.lib.python.String", String),
+        ("syft.lib.python.SyNone", "syft.lib.python.SyNone", SyNone),
     ]
 
     methods = [
