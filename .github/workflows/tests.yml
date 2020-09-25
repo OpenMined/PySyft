@@ -65,13 +65,21 @@ jobs:
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          declare -A TORCHVISION_VERSION
-          TORCHVISION_VERSION["1.4.0"]="0.5"
-          TORCHVISION_VERSION["1.5.0"]="0.6.0"
-          TORCHVISION_VERSION["1.5.1"]="0.6.1"
-          TORCHVISION_VERSION["1.6.0"]="0.7"
+          if [ $TORCH_VERSION = "1.4.0" ]
+          then
+              TORCHVISION_VERSION="0.5"
+          elif [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          fi
           pip install torch==$TORCH_VERSION
-          pip install torchvision==${TORCHVISION_VERSION["${TORCH_VERSION}"]}
+          pip install torchvision==${TORCHVISION_VERSION}
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
@@ -217,13 +225,21 @@ jobs:
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          declare -A TORCHVISION_VERSION
-          TORCHVISION_VERSION["1.4.0"]="0.5"
-          TORCHVISION_VERSION["1.5.0"]="0.6.0"
-          TORCHVISION_VERSION["1.5.1"]="0.6.1"
-          TORCHVISION_VERSION["1.6.0"]="0.7"
+          if [ $TORCH_VERSION = "1.4.0" ]
+          then
+              TORCHVISION_VERSION="0.5"
+          elif [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          fi
           pip install torch==$TORCH_VERSION
-          pip install torchvision==${TORCHVISION_VERSION["${TORCH_VERSION}"]}
+          pip install torchvision==${TORCHVISION_VERSION}
           pip install -r requirements.txt
           pip install -e .
           pytest -m slow --cov-fail-under 0
