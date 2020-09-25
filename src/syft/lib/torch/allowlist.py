@@ -46,7 +46,7 @@ allowlist[
 # allowlist['torch.Tensor.__format__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 allowlist["torch.Tensor.__ge__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__getattribute__'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist['torch.Tensor.__getitem__'] = #
+allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
 allowlist["torch.Tensor.__gt__"] = "torch.Tensor"
 # allowlist['torch.Tensor.__hash__'] = #
 # allowlist['torch.Tensor.__iadd__'] = #
@@ -160,7 +160,7 @@ allowlist["torch.Tensor.atan"] = "torch.Tensor"
 allowlist["torch.Tensor.atan_"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
-# allowlist['torch.Tensor.backward'] = #
+allowlist["torch.Tensor.backward"] = "syft.lib.python.SyNone"
 # allowlist['torch.Tensor.baddbmm'] = #
 # allowlist['torch.Tensor.baddbmm_'] = #
 # allowlist['torch.Tensor.bernoulli'] = #
@@ -644,18 +644,26 @@ allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.nn.Module"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Module.train"] = "torch.nn.Module"
+
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
+
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
+
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.__call__"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
+# allowlist["torch.utils.data.DataLoader.dataset"] = "torchvision.datasets.VisionDataset"
 allowlist[
     "torch.utils.data.DataLoader.__iter__"
 ] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
@@ -669,17 +677,30 @@ allowlist[
 allowlist[
     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
 ] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+
+# working for part
+# allowlist[
+#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
+# ] = "torch.Tensor"
+# allowlist[
+#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
+# ] = "torch.Tensor"
+
+# we are returning syft.lib.python.List so that we can __getitem__ on the return of
+# enumerate(train_loader)
 allowlist[
     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
-] = "torch.Tensor"
+] = "syft.lib.python.List"
 allowlist[
     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
-] = "torch.Tensor"
+] = "syft.lib.python.List"
+
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
+allowlist["torch.nn.functional.nll_loss"] = "torch.Tensor"
 allowlist["torch.flatten"] = "torch.Tensor"
 
 # Optimizers
