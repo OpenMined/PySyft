@@ -75,7 +75,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
-        result_read_permissions = None
+        result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
         for arg in self.args:
@@ -132,15 +132,18 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             # else:
             # TODO: Solve this problem where its an issue
 
+        # If we have no permission (None or {}) we add some default permissions based on a permission list
+        if result_read_permissions is None:
+            if self.path in node.lib_ast.DRP:
+                result_read_permissions = {verify_key: result.id}
+            else:
+                result_read_permissions = {}
+
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
-                read_permissions=(
-                    result_read_permissions
-                    if result_read_permissions is not None
-                    else {}
-                ),
+                read_permissions=result_read_permissions,
             )
 
         node.store.store(obj=result)

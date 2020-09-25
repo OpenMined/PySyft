@@ -1,6 +1,8 @@
 # syft relative
 from ..ast.globals import Globals
+from ..lib.python import DEFAULT_READ_PERMISSION as PYTHON_DRP
 from ..lib.python import create_python_ast
+from ..lib.torch import DEFAULT_READ_PERMISSION as TORCH_DRP
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 
@@ -17,6 +19,7 @@ def create_lib_ast() -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+
     # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast
@@ -25,3 +28,7 @@ def create_lib_ast() -> Globals:
 # constructor: copyType = create_lib_ast
 lib_ast = create_lib_ast()
 lib_ast._copy = create_lib_ast
+
+
+DRP = frozenset(PYTHON_DRP + TORCH_DRP)
+setattr(lib_ast, "DRP", DRP)
