@@ -78,6 +78,7 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+from typing import Optional
 from typing import Union
 
 # third party
@@ -92,9 +93,11 @@ from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.serde.deserialize import _deserialize
+from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
 from ...decorators.syft_decorator_impl import syft_decorator
+from ..services.signaling_service import CloseConnectionMessage
 
 
 class WebRTCConnection(BidirectionalConnection):
@@ -138,8 +141,8 @@ class WebRTCConnection(BidirectionalConnection):
         # This attribute will be used for external classes
         # in order to verify if the connection channel
         # was established.
-        self.channel = None
-        self._client_address = None
+        self.channel: Optional[RTCDataChannel] = None
+        self._client_address: Optional[Address] = None
 
     @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
@@ -157,15 +160,15 @@ class WebRTCConnection(BidirectionalConnection):
         # This method will be called by as a callback
         # function by the aioRTC lib when the when
         # the connection opens.
-        @self.channel.on("open")  # type: ignore
+        @self.channel.on("open")
         async def on_open() -> None:  # type : ignore
-            asyncio.ensure_future(self.producer())
+            self.__producer_task = asyncio.ensure_future(self.producer())
 
         # This method is the aioRTC "consumer" task
         # and will be running as long as connection remains.
         # At this point we're just setting the method behavior
         # It'll start running after the connection opens.
-        @self.channel.on("message")  # type: ignore
+        @self.channel.on("message")
         async def on_message(message: Union[bin, str]) -> None:  # type: ignore
             # Forward all received messages to our own consumer method.
             await self.consumer(msg=message)
@@ -197,9 +200,9 @@ class WebRTCConnection(BidirectionalConnection):
         def on_datachannel(channel: RTCDataChannel) -> None:
             self.channel = channel
 
-            asyncio.ensure_future(self.producer())
+            self.__producer_task = asyncio.ensure_future(self.producer())
 
-            @self.channel.on("message")  # type: ignore
+            @self.channel.on("message")
             async def on_message(message: Union[bin, str]) -> None:  # type: ignore
                 await self.consumer(msg=message)
 
@@ -258,6 +261,19 @@ class WebRTCConnection(BidirectionalConnection):
             # send it as a binary using the RTCDataChannel.
             self.channel.send(msg.to_binary())  # type: ignore
 
+    def close(self) -> None:
+        # Build Close Message to warn the other peer
+        bye_msg = CloseConnectionMessage(address=Address())
+
+        self.channel.send(bye_msg.to_binary())  # type: ignore
+
+        # Finish async tasks related with this connection
+        self._finish_coroutines()
+
+    def _finish_coroutines(self) -> None:
+        asyncio.run(self.peer_connection.close())
+        self.__producer_task.cancel()
+
     @syft_decorator(typechecking=True)
     async def consumer(self, msg: bin) -> None:  # type: ignore
         # Async task to receive/process messages sent by the other side.
@@ -284,6 +300,10 @@ class WebRTCConnection(BidirectionalConnection):
             # Immediate message without reply
             elif isinstance(_msg, SignedImmediateSyftMessageWithoutReply):
                 self.recv_immediate_msg_without_reply(msg=_msg)
+
+            elif isinstance(_msg, CloseConnectionMessage):
+                # Just finish async tasks related with this connection
+                self._finish_coroutines()
 
             # Eventual message without reply
             else:
