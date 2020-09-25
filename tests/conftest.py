@@ -26,6 +26,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "fast: mark test as fast to run")
     config.addinivalue_line("markers", "all: all tests")
+    config.addinivalue_line("markers", "asyncio: mark test as asyncio")
 
 
 def pytest_collection_modifyitems(

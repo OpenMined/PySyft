@@ -1,9 +1,5 @@
-# third party
-import torchvision  # noqa: F401 # force torchvision imports before we replace them
-
 # syft relative
 from ..ast.globals import Globals
-from ..lib.models import create_models_ast  # run before torch gets mutated
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
@@ -12,7 +8,6 @@ from ..lib.torchvision import create_torchvision_ast
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast() -> Globals:
 
-    model_ast = create_models_ast()
     python_ast = create_python_ast()
     torch_ast = create_torch_ast()
     torchvision_ast = create_torchvision_ast()
@@ -22,7 +17,6 @@ def create_lib_ast() -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-    lib_ast.add_attr(attr_name="models", attr=model_ast.attrs["models"])
     # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast

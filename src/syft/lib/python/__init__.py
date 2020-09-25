@@ -58,15 +58,10 @@ def add_classes(ast: Globals, paths: TypeList[Tuple[str, str, Any]]) -> None:
 def add_methods(ast: Globals, paths: TypeList[Tuple[str, str, Any]]) -> None:
     for path, return_type, _ in paths:
         parent = get_parent(path, ast)
-
-        parent.add_path(path=path.split("."), index=2, return_type_name=return_type)
-
-
-def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
-    if isinstance(support_dict, str):
-        return support_dict
-    else:
-        return support_dict["return_type"]
+        path_list = path.split(".")
+        parent.add_path(
+            path=path_list, index=len(path_list) - 1, return_type_name=return_type
+        )
 
 
 def create_python_ast() -> Globals:
@@ -88,13 +83,14 @@ def create_python_ast() -> Globals:
     ]
 
     methods = [
-        ("models.MNIST.__call__", "models.MNIST", MNIST),
-        ("models.MNIST.parameters", "torch.nn.Parameter", MNIST),
-        ("models.MNIST.to", "models.MNIST", MNIST),
+        ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
+        ("syft.lib.python.List.__getitem__", "syft.lib.python.List", List),
+        ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
     ]
 
     add_modules(ast, modules)
     add_classes(ast, classes)
+    add_methods(ast, methods)
 
     for klass in ast.classes:
         klass.create_pointer_class()
@@ -103,18 +99,3 @@ def create_python_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
-
-
-def create_models_ast() -> Globals:
-    ast = Globals()
-
-    modules = [
-        "models",
-    ]
-    classes = [
-        ("models.MNIST", "models.MNIST", MNIST),
-    ]
-
-    add_modules(ast, modules)
-    add_classes(ast, classes)
-    add_methods(ast, methods)

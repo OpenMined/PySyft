@@ -42,7 +42,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         path: str,
-        args: Tuple[Any, ...],
+        args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -71,36 +71,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         intersection = set(left.keys()).intersection(right.keys())
         # left and right have the same keys
         return {k: left[k] for k in intersection}
-
-    @staticmethod
-    def upcast_args_and_kwargs(
-        args: List[Any], kwargs: Dict[Any, Any]
-    ) -> Tuple[List[Any], Dict[Any, Any]]:
-        # When we call original constructors like torch.device we will get errors
-        # that the types are not supported because the checks are probably done in C.
-        # This ensures that any Wrapped types like SyPrimitives or ShadowWrapper types
-        # are upcasted before being passed in
-        upcasted_args = []
-        upcasted_kwargs = {}
-        for arg in args:
-            # try to upcast if possible
-            upcast_method = getattr(arg, "upcast", None)
-            # if we decide to ShadowWrap NoneType we would need to check here
-            if upcast_method is not None:
-                upcasted_args.append(upcast_method())
-            else:
-                upcasted_args.append(arg)
-
-        for k, arg in kwargs.items():
-            # try to upcast if possible
-            upcast_method = getattr(arg, "upcast", None)
-            # if we decide to ShadowWrap NoneType we would need to check here
-            if upcast_method is not None:
-                upcasted_kwargs[k] = upcast_method()
-            else:
-                upcasted_kwargs[k] = arg
-
-        return (upcasted_args, upcasted_kwargs)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
@@ -139,9 +109,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = RunFunctionOrConstructorAction.upcast_args_and_kwargs(
-            resolved_args, resolved_kwargs
-        )
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)

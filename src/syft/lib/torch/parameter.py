@@ -16,25 +16,6 @@ from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
 from ...util import aggressive_set_attr
 
-# from ..generic import ObjectConstructor
-
-
-# class ParameterConstructor(ObjectConstructor):
-
-#     # Step 1: Store the attribute name that this constructor is replacing
-#     constructor_name = "Parameter"
-
-#     # Step 2: Store a reference to the location on which this constructor currently lives.
-#     # This is also the location that this custom constructor will live once installed using
-#     # self.install_inside_library()
-#     constructor_location = th.nn.parameter
-
-#     original_type = th.nn.parameter.Parameter
-
-
-# # Step 3: create constructor and install it in the library
-# ParameterConstructor().install_inside_library()
-
 torch_tensor = th.tensor([1.0, 2.0, 3.0])
 torch_parameter_type = type(th.nn.parameter.Parameter(torch_tensor))
 

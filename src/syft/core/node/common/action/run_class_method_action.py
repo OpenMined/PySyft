@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -42,7 +43,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Tuple[Any, ...],
+        args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -74,38 +75,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
-    @staticmethod
-    def upcast_args_and_kwargs(
-        args: List[Any], kwargs: Dict[Any, Any]
-    ) -> Tuple[List[Any], Dict[Any, Any]]:
-        # When we call original constructors like torch.device we will get errors
-        # that the types are not supported because the checks are probably done in C.
-        # This ensures that any Wrapped types like SyPrimitives or ShadowWrapper types
-        # are upcasted before being passed in
-        upcasted_args = []
-        upcasted_kwargs = {}
-        for arg in args:
-            # try to upcast if possible
-            upcast_method = getattr(arg, "upcast", None)
-            # if we decide to ShadowWrap NoneType we would need to check here
-            if upcast_method is not None:
-                upcasted_args.append(upcast_method())
-            else:
-                upcasted_args.append(arg)
-
-        for k, arg in kwargs.items():
-            # try to upcast if possible
-            upcast_method = getattr(arg, "upcast", None)
-            # if we decide to ShadowWrap NoneType we would need to check here
-            if upcast_method is not None:
-                upcasted_kwargs[k] = upcast_method()
-            else:
-                upcasted_kwargs[k] = arg
-
-        return (upcasted_args, upcasted_kwargs)
-
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        print("executing a ", type(self))
         method = node.lib_ast(self.path)
 
         resolved_self = node.store[self._self.id_at_location]
@@ -142,9 +112,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             (
                 upcasted_args,
                 upcasted_kwargs,
-            ) = RunClassMethodAction.upcast_args_and_kwargs(
-                resolved_args, resolved_kwargs
-            )
+            ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
             result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         # TODO: replace with proper tuple support
@@ -161,7 +129,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
-                result.id = self.id_at_location
+                try:
+                    result._id = self.id_at_location
+                    assert result.id == self.id_at_location
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    raise Exception(err)
 
         # QUESTION: There seems to be return value tensors that have no id
         # and get auto wrapped? So is this code not correct?
@@ -195,6 +168,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return RunClassMethodAction_PB(
             path=self.path,
             _self=self._self.serialize(),

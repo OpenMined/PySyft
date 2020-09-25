@@ -23,5 +23,6 @@ def test_save_object_action_serde() -> None:
 
     assert msg2.obj_id == msg.obj_id
     assert (msg2.obj == msg.obj).all()
-    assert msg2.obj.id == msg.obj.id
+    # Tensors do not automatically get IDs anymore
+    # assert msg2.obj.id == msg.obj.id
     assert msg2.address == msg.address

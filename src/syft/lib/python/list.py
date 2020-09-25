@@ -3,6 +3,7 @@ from collections import UserList
 from typing import Any
 from typing import List as TypeList
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -16,6 +17,7 @@ from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
+from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 
@@ -119,6 +121,20 @@ class List(UserList, PyPrimitive):
     def __sizeof__(self) -> SyPrimitiveRet:
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
+
+    # @syft_decorator(typechecking=True, prohibit_args=False)
+    # def __next__(self) -> SyPrimitiveRet:
+    #     res = super().__next__()
+    #     return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, key: Union[int, str, slice]) -> Any:
+        res = super().__getitem__(key)  # type: ignore
+        # we might be holding a primitive value, but generate_primitive
+        # doesn't handle non primitives so we should check
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":

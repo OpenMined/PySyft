@@ -7,26 +7,10 @@ from packaging import version
 import torch
 
 # syft relative
+from . import parameter  # noqa: 401
+from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
 from .allowlist import allowlist
-
-# from .device import DeviceConstructor
-# from .generator import GeneratorConstructor
-# from .lowercase_tensor import LowercaseTensorConstructor
-
-# from .module import ModuleConstructor
-from . import parameter
-from . import uppercase_tensor
-
-# __all__ = [x
-#     # "DeviceConstructor",
-#     # "GeneratorConstructor",
-#     # "LowercaseTensorConstructor",
-#     # "ModuleConstructor",
-#     # "PyTorchParameterWrapper",
-#     # "UppercaseTensorConstructor",
-# ]
-
 
 TORCH_VERSION = version.parse(torch.__version__)
 

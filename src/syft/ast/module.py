@@ -54,7 +54,6 @@ class Module(ast.attribute.Attribute):
         framework_reference: Optional[Union[Callable, CallableT]] = None,
     ) -> None:
         if path[index] not in self.attrs:
-
             attr_ref = getattr(self.ref, path[index])
 
             if isinstance(attr_ref, module_type):
@@ -68,9 +67,7 @@ class Module(ast.attribute.Attribute):
                     ),
                 )
             elif isinstance(attr_ref, class_type):
-                # call the ClassFactory now so that the type can be subclassed later by
-                # end users, see klass.py.
-                klass = ast.klass.ClassFactory(
+                klass = ast.klass.Class(
                     name=path[index],
                     path_and_name=unsplit(path[: index + 1]),
                     ref=attr_ref,
@@ -80,20 +77,6 @@ class Module(ast.attribute.Attribute):
                     attr_name=path[index],
                     attr=klass,
                 )
-            # elif isinstance(attr_ref, ObjectConstructor):
-            #     # call the ClassFactory now so that the type can be subclassed later by
-            #     # end users, see klass.py.
-            #     klass = ast.klass.ClassFactory(
-            #         name=path[index],
-            #         path_and_name=unsplit(path[: index + 1]),
-            #         ref=attr_ref.original_type,  # type: ignore
-            #         return_type_name=return_type_name,
-            #     )
-            #     self.add_attr(
-            #         attr_name=path[index],
-            #         attr=klass,
-            #     )
-
             elif isinstance(attr_ref, func_type):
                 self.add_attr(
                     attr_name=path[index],
@@ -116,7 +99,6 @@ class Module(ast.attribute.Attribute):
                 )
 
         attr = self.attrs[path[index]]
-        print("We need to add methods", type(self), path[index], path, attr, type(attr))
         if hasattr(attr, "add_path"):
             attr.add_path(  # type: ignore
                 path=path, index=index + 1, return_type_name=return_type_name

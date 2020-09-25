@@ -41,6 +41,7 @@ PrimitiveType = Union[
 ]
 
 
+@syft_decorator(typechecking=True)
 def isprimitive(value: Any) -> bool:
     if not issubclass(type(value), PyPrimitive) and type(value) in primitives:
         return True
@@ -91,7 +92,7 @@ class PrimitiveFactory(ABC):
                 new_list = []
                 if value is not None:
                     for val in value:
-                        if isprimitive(val):
+                        if isprimitive(value=val):
                             new_list.append(
                                 PrimitiveFactory.generate_primitive(
                                     value=val, recurse=recurse
@@ -111,7 +112,7 @@ class PrimitiveFactory(ABC):
                     items = getattr(value, "items", None)
                     if items is not None:
                         for k, val in items():
-                            if isprimitive(val):
+                            if isprimitive(value=val):
                                 new_dict[k] = PrimitiveFactory.generate_primitive(
                                     value=val, recurse=recurse
                                 )
