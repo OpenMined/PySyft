@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -23,6 +24,8 @@ from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+DEFAULT_AVAILABLE_READ_PERMISSIONS: Set[str] = {"torch.cuda.is_available"}
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
@@ -75,7 +78,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
-        result_read_permissions = None
+        result_read_permissions: Dict[VerifyKey, UID] = {}
 
         resolved_args = list()
         for arg in self.args:
@@ -132,15 +135,18 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             # else:
             # TODO: Solve this problem where its an issue
 
+        # If we do not get args/kwargs, we add some default permissions based on a permission list
+        if (
+            not result_read_permissions
+            and self.path in DEFAULT_AVAILABLE_READ_PERMISSIONS
+        ):
+            result_read_permissions = {verify_key: result.id}
+
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
-                read_permissions=(
-                    result_read_permissions
-                    if result_read_permissions is not None
-                    else {}
-                ),
+                read_permissions=result_read_permissions,
             )
 
         node.store.store(obj=result)
