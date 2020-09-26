@@ -717,3 +717,8 @@ allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
 allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
 allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python.SyNone"
 allowlist["torch.optim.Adadelta.step"] = "syft.lib.python.SyNone"
+
+allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
+allowlist["torch.autograd.grad_mode.no_grad"] = "torch.autograd.grad_mode.no_grad"
+allowlist["torch.autograd.grad_mode.no_grad.__enter__"] = "syft.lib.python.SyNone"
+allowlist["torch.autograd.grad_mode.no_grad.__exit__"] = "syft.lib.python.SyNone"
