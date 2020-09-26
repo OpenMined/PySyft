@@ -20,7 +20,7 @@ class Cycle(BaseModel):
     start = db.Column(db.DateTime())
     end = db.Column(db.DateTime())
     sequence = db.Column(db.Integer())
-    version = db.Column(db.String())
+    version = db.Column(db.String(255))
     worker_cycles = db.relationship("WorkerCycle", backref="cycle")
     fl_process_id = db.Column(db.Integer, db.ForeignKey("model_centric_fl_process.id"))
     is_completed = db.Column(db.Boolean, default=False)

@@ -18,9 +18,9 @@ class WorkerCycle(BaseModel):
     __tablename__ = "model_centric_worker_cycle"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    request_key = db.Column(db.String())
+    request_key = db.Column(db.String(2048))
     cycle_id = db.Column(db.Integer, db.ForeignKey("model_centric_cycle.id"))
-    worker_id = db.Column(db.String, db.ForeignKey("model_centric_worker.id"))
+    worker_id = db.Column(db.String(255), db.ForeignKey("model_centric_worker.id"))
     started_at = db.Column(db.DateTime(), default=datetime.datetime.utcnow())
     is_completed = db.Column(db.Boolean(), default=False)
     completed_at = db.Column(db.DateTime())

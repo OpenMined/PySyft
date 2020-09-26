@@ -18,7 +18,7 @@ class Model(BaseModel):
     __tablename__ = "model_centric_model"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    version = db.Column(db.String())
+    version = db.Column(db.String(255))
     checkpoints = db.relationship("ModelCheckPoint", backref="model")
     fl_process_id = db.Column(
         db.Integer, db.ForeignKey("model_centric_fl_process.id"), unique=True
@@ -42,7 +42,7 @@ class ModelCheckPoint(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     value = db.Column(db.LargeBinary)
     number = db.Column(db.Integer)
-    alias = db.Column(db.String)
+    alias = db.Column(db.String(255))
     model_id = db.Column(db.Integer, db.ForeignKey("model_centric_model.id"))
 
     @property

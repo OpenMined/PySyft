@@ -5,10 +5,10 @@ class User(BaseModel):
     __tablename__ = "user"
 
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    email = db.Column(db.String())
-    hashed_password = db.Column(db.String())
-    salt = db.Column(db.String())
-    private_key = db.Column(db.String())
+    email = db.Column(db.String(255))
+    hashed_password = db.Column(db.String(512))
+    salt = db.Column(db.String(255))
+    private_key = db.Column(db.String(2048))
     role = db.Column(db.Integer, db.ForeignKey("role.id"))
 
     def __str__(self):

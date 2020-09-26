@@ -14,7 +14,7 @@ class Worker(BaseModel):
 
     __tablename__ = "model_centric_worker"
 
-    id = db.Column(db.String, primary_key=True)
+    id = db.Column(db.String(255), primary_key=True)
     ping = db.Column(db.Float)
     avg_download = db.Column(db.Float)
     avg_upload = db.Column(db.Float)

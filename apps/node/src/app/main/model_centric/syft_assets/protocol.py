@@ -15,7 +15,7 @@ class Protocol(BaseModel):
     __tablename__ = "model_centric_protocol"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String())
+    name = db.Column(db.String(255))
     value = db.Column(db.LargeBinary)
     value_ts = db.Column(db.LargeBinary)
     value_tfjs = db.Column(db.LargeBinary)

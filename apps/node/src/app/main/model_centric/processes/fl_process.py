@@ -20,8 +20,8 @@ class FLProcess(BaseModel):
     __tablename__ = "model_centric_fl_process"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String())
-    version = db.Column(db.String())
+    name = db.Column(db.String(255))
+    version = db.Column(db.String(255))
     model = db.relationship("Model", backref="flprocess", uselist=False)
     averaging_plan = db.relationship("Plan", backref="avg_flprocess", uselist=False)
     plans = db.relationship("Plan", backref="plan_flprocess")
