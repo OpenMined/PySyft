@@ -609,8 +609,8 @@ allowlist["torch.Tensor.unsqueeze"] = "torch.Tensor"
 allowlist["torch.Tensor.unsqueeze_"] = "torch.Tensor"
 # allowlist['torch.Tensor.values'] = #
 allowlist["torch.Tensor.var"] = "torch.Tensor"
-# allowlist['torch.Tensor.view'] = #
-# allowlist['torch.Tensor.view_as'] = #
+allowlist["torch.Tensor.view"] = "torch.Tensor"
+allowlist["torch.Tensor.view_as"] = "torch.Tensor"
 # allowlist['torch.Tensor.where'] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 
