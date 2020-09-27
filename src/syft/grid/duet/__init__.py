@@ -147,7 +147,7 @@ def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.com
 
 def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"):
     from .webrtc_duet import Duet
-    print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
+    print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
                                           ":"
