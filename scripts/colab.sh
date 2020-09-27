@@ -27,7 +27,7 @@ import syft as sy
 
 # update the code (handy during development)
 echo "> git pull"
-git pull --rebase 2>&1 >/dev/null
+git pull --rebase > /dev/null 2>&1
 
 # show the latest commit
 echo "> using latest commit"
@@ -36,10 +36,10 @@ echo "  `  git log --oneline | sed -n 1p`"
 
 # step 2 install PySyft
 echo "> installing pip requirements"
-pip install -e . 2>&1 >/dev/null
+pip install -e .  > /dev/null 2>&1
 
 # step 3 install PySyft Dependencies
-pip install -r requirements.txt 2>&1 >/dev/null
+pip install -r requirements.txt > /dev/null 2>&1
 
 # step 4 patch linux python 3.6.9 on Google Colab
 # without this fix the code doesnt work in some places, weirdly this code is not broken
