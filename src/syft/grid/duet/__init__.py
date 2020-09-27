@@ -198,14 +198,14 @@ def launch_duet(
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     #     return duet, my_domain.get_root_client()
-    # out_duet = my_domain.get_root_client()
+    out_duet = my_domain.get_root_client()
 
     # if logging:
     #     begin_duet_logger(my_domain)
     # print()
 
-    # return out_duet
-    return duet
+    return out_duet
+    # return duet
 
 
 def join_duet(
