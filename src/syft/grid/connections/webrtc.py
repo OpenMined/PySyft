@@ -128,13 +128,13 @@ class WebRTCConnection(BidirectionalConnection):
         # defined beforehand.
         try:
             self.loop = get_running_loop()
-            print("♫♫♫ > Using a running event loop")
+            print("♫♫♫ > ...using a running event loop...")
         except RuntimeError as e:
             self.loop = None
-            print(f"♫♫♫ > Error getting a running event Loop. {e}")
+            print(f"♫♫♫ > ...error getting a running event Loop... {e}")
 
         if self.loop is None:
-            print("♫♫♫ > Creating a new event loop.")
+            print("♫♫♫ > ...creating a new event loop...")
             self.loop = asyncio.new_event_loop()
 
         # Message pool (High Priority)
