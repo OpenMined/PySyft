@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# set -e
 
 # update the code (handy during development)
 echo "> git pull"
@@ -7,7 +7,8 @@ git pull --rebase 2>&1 >/dev/null
 
 # show the latest commit
 echo "> using latest commit"
-git log --oneline | sed -n 1p
+# make it line up with the indent above
+echo "  `  git log --oneline | sed -n 1p`"
 
 # step 2 install PySyft
 echo "> installing pip requirements"
