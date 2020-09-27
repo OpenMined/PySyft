@@ -36,21 +36,27 @@ network._register_services()  # re-register all services including SignalingServ
 
 @app.route("/metadata")
 def get_metadata() -> str:
-    return network.get_metadata_for_client()
+    try:
+        return network.get_metadata_for_client()
+    except Exception:
+        return ""
 
 
 @app.route("/", methods=["POST"])
 def process_network_msgs() -> str:
-    json_msg = request.get_json()
-    obj_msg = _deserialize(blob=json_msg, from_json=True)
-    if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
-        reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
-        return reply.json()
-    elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        network.recv_immediate_msg_without_reply(msg=obj_msg)
-    else:
-        network.recv_eventual_msg_without_reply(msg=obj_msg)
-    return ""
+    try:
+        json_msg = request.get_json()
+        obj_msg = _deserialize(blob=json_msg, from_json=True)
+        if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+            reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
+            return reply.json()
+        elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+            network.recv_immediate_msg_without_reply(msg=obj_msg)
+        else:
+            network.recv_eventual_msg_without_reply(msg=obj_msg)
+        return ""
+    except Exception:
+        return ""
 
 
 def run() -> None:
@@ -61,7 +67,7 @@ def run() -> None:
     # this signing_key is to aid in local development and is not used in the real
     # PyGrid implementation
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    app.run()
+    app.run(host="0.0.0.0", port=5000)  # nosec
 
 
 run()
