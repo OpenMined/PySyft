@@ -281,6 +281,8 @@ class Pointer(AbstractPointer):
             requester_verify_key=self.client.verify_key,
         )
 
+        print("Request Message Id:" + str(msg.id))
+
         self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore

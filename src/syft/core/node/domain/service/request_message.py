@@ -141,8 +141,8 @@ class RequestService(ImmediateNodeServiceWithoutReply):
 
         # since we reject/accept requests based on the ID, we don't want there to be
         # multiple requests with the same ID because this could cause security problems.
-        for req in node.requests:
-            if req.id == msg.id:
-                raise Exception("This request already exists!")
+        # for req in node.requests:
+        #     if req.id == msg.id:
+        #         raise Exception("This request already exists!")
 
         node.requests.append(msg)
