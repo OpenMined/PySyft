@@ -95,6 +95,10 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__truediv__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__divmod__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__floordiv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__add__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__truediv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__divmod__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__floordiv__", "syft.lib.python.Float", Float),
     ]
 
     add_modules(ast, modules)
