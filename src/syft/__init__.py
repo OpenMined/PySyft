@@ -61,6 +61,7 @@ from syft.core.node.domain.domain import DomainClient  # noqa: F401
 from syft.core.node.network.network import Network  # noqa: F401
 from syft.core.node.network.network import NetworkClient  # noqa: F401
 from syft.grid.duet import launch_duet
+from syft.grid.duet import join_duet
 
 # Convenience Constructors
 from syft.core.node.vm.vm import VirtualMachine  # noqa: F401

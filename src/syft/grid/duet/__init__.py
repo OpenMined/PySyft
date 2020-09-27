@@ -118,8 +118,9 @@ def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.com
     print("♫♫♫ > " + bcolors.HEADER + "STEP 1:" + bcolors.ENDC + " Send the following code to your duet partner!")
     #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
 
-    print("\n import syft as sy")
-    print("\n sy.join_duet('" + signaling_client.duet_id + "')")
+    print("\nimport syft as sy")
+    print("sy.VERBOSE=False")
+    print("duet = sy.join_duet('" + bcolors.BOLD + signaling_client.duet_id + bcolors.ENDC + "')")
 
     my_domain = Domain(name="Launcher")
 
@@ -142,3 +143,43 @@ def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.com
         begin_duet_logger(my_domain)
     print()
     return out_duet
+
+
+def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"):
+    from .webrtc_duet import Duet
+    print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
+    sys.stdout.write(
+        "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
+                                          ":"
+        + "\033[1m"
+        + " Duet is an experimental feature currently \n♫♫♫ > "
+        + "in alpha. Do not use this to protect real-world data.\n"
+        + "\033[0m"
+    )
+
+    print("♫♫♫ >")
+    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+    print("♫♫♫ > " + str(network_url))
+    print("♫♫♫ >")
+    sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+
+    signaling_client = register(url=network_url)
+
+    print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+
+    my_domain = Domain(name="Joiner")
+    print()
+    print("♫♫♫ > Duet Client ID: " + bcolors.BOLD + signaling_client.duet_id + bcolors.ENDC)
+    print()
+    print("♫♫♫ > " + bcolors.HEADER + "STEP 1:" + bcolors.ENDC + " Send the Duet Client ID to your duet partner!")
+    print()
+    print("♫♫♫ > ...waiting for partner to connect...")
+    duet = Duet(node=my_domain,
+                target_id=target_id,
+                signaling_client=signaling_client,
+                offer=False)
+    print()
+    print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    #     begin_duet_client_logger(duet)
+
+    return duet

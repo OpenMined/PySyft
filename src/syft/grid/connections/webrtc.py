@@ -376,7 +376,7 @@ class WebRTCConnection(BidirectionalConnection):
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
-        self.producer_pool.put(msg)
+        self.producer_pool.put_nowait(msg)
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(
