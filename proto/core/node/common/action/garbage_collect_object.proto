@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message GarbageCollectObjectAction {
+    syft.core.common.UID obj_id = 1;
+    syft.core.io.Address address = 2;
+}
