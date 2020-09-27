@@ -143,12 +143,13 @@ def launch_duet(
 
     print("♫♫♫ >")
     print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+
+    if not network_url:
+        network_url = get_available_network()
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
 
-    if not network_url:
-        network_url = get_available_network()
     signaling_client = register(url=network_url)
 
     print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
@@ -224,11 +225,11 @@ def join_duet(
 
     print("♫♫♫ >")
     print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+    if not network_url:
+        network_url = get_available_network()
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
-    if not network_url:
-        network_url = get_available_network()
 
     signaling_client = register(url=network_url)
 
