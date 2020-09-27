@@ -16,7 +16,7 @@ d5 = {"one": 1, "two": 1}
 
 
 # class UserDictTest(mapping_tests.TestHashMappingProtocol):
-class UserDictTest():
+class UserDictTest:
     type2test = Dict
 
     def test_all(self):
