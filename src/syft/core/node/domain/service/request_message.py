@@ -64,6 +64,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
                 request_id=self.id,
             )
             self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+            print("Granting request: " + str(self.id))
         else:
             raise Exception("No owner_client_if_available")
 
