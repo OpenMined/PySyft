@@ -20,6 +20,15 @@ def test_constructor_in_default_permissions() -> None:
     torch = alice_client.torch
     ptr = torch.cuda.is_available()
 
+    # allow the permssion to get the pointer
+    def get_permission(obj: object) -> None:
+        key = alice_client.verify_key
+        ro = alice.store[obj.id_at_location]  # type: ignore
+        ro.read_permissions[key] = obj.id_at_location  # type: ignore
+
+    ptr = torch.cuda.is_available()
+    get_permission(ptr)
+
     assert ptr.get() == th.cuda.is_available()
 
 
