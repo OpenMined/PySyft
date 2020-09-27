@@ -90,6 +90,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__getitem__", "torch.Tensor", List),
         ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
+        ("syft.lib.python.List.append", "syft.lib.python.SyNone", List),
     ]
 
     add_modules(ast, modules)
@@ -103,3 +104,15 @@ def create_python_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
+
+
+DEFAULT_READ_PERMISSION: TypeList[str] = [
+    "syft.lib.python.Bool",
+    "syft.lib.python.Complex",
+    "syft.lib.python.Dict",
+    "syft.lib.python.Float",
+    "syft.lib.python.Int",
+    "syft.lib.python.List",
+    "syft.lib.python.String",
+    "syft.lib.python.SyNone",
+]

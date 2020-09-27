@@ -1,6 +1,5 @@
 # stdlib
 import json
-import sys
 
 # third party
 from aiortc import RTCSessionDescription
@@ -23,14 +22,12 @@ def get_signing_key() -> SigningKey:
     return SigningKey(bytes.fromhex(key))
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python >= 3.7")
 def test_init_without_event_loop() -> None:
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python >= 3.7")
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
     domain = Domain(name="test")
@@ -59,7 +56,6 @@ async def test_signaling_process() -> None:
     assert response is None
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python >= 3.7")
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
     test_domain = Domain(name="test")

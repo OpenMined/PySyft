@@ -1,5 +1,6 @@
 # stdlib
 from typing import Dict
+from typing import List as TypeList
 from typing import Union
 
 # third party
@@ -57,3 +58,6 @@ def create_torch_ast() -> Globals:
         klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
     return ast
+
+
+DEFAULT_READ_PERMISSION: TypeList[str] = ["torch.cuda.is_available"]

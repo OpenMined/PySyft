@@ -568,7 +568,7 @@ allowlist["torch.Tensor.tan"] = "torch.Tensor"
 allowlist["torch.Tensor.tan_"] = "torch.Tensor"
 allowlist["torch.Tensor.tanh"] = "torch.Tensor"
 allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
-# allowlist['torch.Tensor.to'] = #
+# allowlist['torch.Tensor.to'] = "syft.lib.python.SyNone"
 # allowlist['torch.Tensor.to_binary'] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.to_dense'] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.to_hex'] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
@@ -639,6 +639,7 @@ allowlist["torch.device"] = "torch.device"
 allowlist["torch.device.index"] = "syft.lib.python.Int"
 allowlist["torch.device.type"] = "syft.lib.python.String"
 allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
+allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
 
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
@@ -706,3 +707,5 @@ allowlist["torch.flatten"] = "torch.Tensor"
 # Optimizers
 allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
 allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
+allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python.SyNone"
+allowlist["torch.optim.Adadelta.step"] = "syft.lib.python.SyNone"
