@@ -16,7 +16,6 @@ from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
 nest_asyncio.apply()
 
-
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
@@ -130,7 +129,6 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
 ) -> WebRTCDuet:
-
     print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
@@ -191,7 +189,7 @@ def launch_duet(
     target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
     print("♫♫♫ > Connecting...")
 
-    _ = WebRTCDuet(
+    duet = WebRTCDuet(
         node=my_domain,
         target_id=target_id,
         signaling_client=signaling_client,
@@ -200,19 +198,20 @@ def launch_duet(
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     #     return duet, my_domain.get_root_client()
-    out_duet = my_domain.get_root_client()
+    # out_duet = my_domain.get_root_client()
 
-    if logging:
-        begin_duet_logger(my_domain)
-    print()
-    return out_duet
+    # if logging:
+    #     begin_duet_logger(my_domain)
+    # print()
+
+    # return out_duet
+    return duet
 
 
 def join_duet(
     target_id: str,
     network_url: str = "",
 ) -> WebRTCDuet:
-
     print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
@@ -261,6 +260,6 @@ def join_duet(
     )
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
-    #     begin_duet_client_logger(duet)
+    # begin_duet_client_logger(duet.node)
 
     return duet
