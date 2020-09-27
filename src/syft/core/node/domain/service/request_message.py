@@ -145,7 +145,7 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         # since we reject/accept requests based on the ID, we don't want there to be
         # multiple requests with the same ID because this could cause security problems.
         for req in node.requests:
-            # the same user has requested the same object so we so raise a
+            # the same user has requested the same object so we raise a
             # DuplicateRequestException
             if (
                 req.object_id == msg.object_id
