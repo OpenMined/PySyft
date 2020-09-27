@@ -10,14 +10,7 @@ import nest_asyncio
 from ...core.node.domain.domain import Domain
 from .duet import Duet  # noqa: F401
 from .om_signaling_client import register
-
-# syft relative
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
-
-# syft relative
-from ...core.node.domain.domain import Domain
-from .om_signaling_client import register
-from .webrtc_duet import Duet
 
 nest_asyncio.apply()
 WebRTC_HOST = (
@@ -179,7 +172,7 @@ def launch_duet(
     target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
     print("♫♫♫ > Connecting...")
 
-    _ = WebRTCDuet(
+    duet = WebRTCDuet(
         node=my_domain,
         target_id=target_id,
         signaling_client=signaling_client,
@@ -188,20 +181,15 @@ def launch_duet(
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     #     return duet, my_domain.get_root_client()
-    out_duet = my_domain.get_root_client()
+    # out_duet = my_domain.get_root_client()
 
-    if logging:
-        begin_duet_logger(my_domain)
-    print()
+    # if logging:
+    #     begin_duet_logger(my_domain)
+    # print()
 
     # return out_duet
     return duet
 
-
-def join_duet(
-    target_id: str,
-    network_url: str = "http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000",
-) -> Duet:
 
 def join_duet(
     target_id: str,
