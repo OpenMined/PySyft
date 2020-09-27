@@ -48,13 +48,13 @@ def get_token(*args, **kwargs):
 
 
 def format_result(response_body, status_code, mimetype):
-    return dumps(response_body)
+    return response_body
 
 
 token_required = token_required_factory(get_token, format_result)
 
 
-def signup_user_socket(message: dict) -> str:
+def signup_user_socket(message: dict) -> dict:
     def route_logic(message: dict) -> dict:
         private_key = user = user_role = None
         private_key = message.get("private-key")
@@ -73,10 +73,10 @@ def signup_user_socket(message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, message)
 
-    return dumps(response_body)
+    return response_body
 
 
-def login_user_socket(message: dict) -> str:
+def login_user_socket(message: dict) -> dict:
     def route_logic(message: dict) -> dict:
 
         email = message.get("email")
@@ -92,11 +92,11 @@ def login_user_socket(message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def get_all_users_socket(current_user: User, message: dict) -> str:
+def get_all_users_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         private_key = message.get("private-key")
         if private_key is None:
@@ -112,11 +112,11 @@ def get_all_users_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def get_specific_user_socket(current_user: User, message: dict) -> str:
+def get_specific_user_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         private_key = message.get("private-key")
@@ -133,11 +133,11 @@ def get_specific_user_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def change_user_email_socket(current_user: User, message: dict) -> str:
+def change_user_email_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         email = message.get("email")
@@ -155,11 +155,11 @@ def change_user_email_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def change_user_role_socket(current_user: User, message: dict) -> str:
+def change_user_role_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         role = message.get("role")
@@ -177,11 +177,11 @@ def change_user_role_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def change_user_password_socket(current_user: User, message: dict) -> str:
+def change_user_password_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         password = message.get("password")
@@ -200,11 +200,11 @@ def change_user_password_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def change_user_groups_socket(current_user: User, message: dict) -> str:
+def change_user_groups_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         groups = message.get("groups")
@@ -222,11 +222,11 @@ def change_user_groups_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def delete_user_socket(current_user: User, message: dict) -> str:
+def delete_user_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         user_id = message.get("id")
         private_key = message.get("private-key")
@@ -243,11 +243,11 @@ def delete_user_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def search_users_socket(current_user: User, message: dict) -> str:
+def search_users_socket(current_user: User, message: dict) -> dict:
     def route_logic(current_user: User, message: dict) -> dict:
         filters = message.copy()
         filters.pop("private-key", None)
@@ -273,4 +273,4 @@ def search_users_socket(current_user: User, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body

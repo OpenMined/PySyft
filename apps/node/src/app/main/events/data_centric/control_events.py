@@ -13,53 +13,49 @@ from ...core.codes import MSG_FIELD
 from ...data_centric.auth import authenticated_only, get_session
 
 
-def get_node_infos(message: dict) -> str:
+def get_node_infos(message: dict) -> dict:
     """Returns node id.
 
     Returns:
-        response (str) : Response message containing node id.
+        response (dict) : Response message containing node id.
     """
-    return json.dumps(
-        {
-            RESPONSE_MSG.NODE_ID: local_worker.id,
-            MSG_FIELD.SYFT_VERSION: sy.version.__version__,
-        }
-    )
+    return {
+        RESPONSE_MSG.NODE_ID: local_worker.id,
+        MSG_FIELD.SYFT_VERSION: sy.version.__version__,
+    }
 
 
-def authentication(message: dict) -> str:
+def authentication(message: dict) -> dict:
     """Receive user credentials and performs user authentication.
 
     Args:
         message (dict) : Dict data structure containing user credentials.
     Returns:
-        response (str) : Authentication response message.
+        response (dict) : Authentication response message.
     """
     user = get_session().authenticate(message)
     # If it was authenticated
     if user:
         login_user(user)
-        return json.dumps(
-            {RESPONSE_MSG.SUCCESS: "True", RESPONSE_MSG.NODE_ID: user.worker.id}
-        )
+        return {RESPONSE_MSG.SUCCESS: "True", RESPONSE_MSG.NODE_ID: user.worker.id}
     else:
-        return json.dumps({RESPONSE_MSG.ERROR: "Invalid username/password!"})
+        return {RESPONSE_MSG.ERROR: "Invalid username/password!"}
 
 
-def connect_grid_nodes(message: dict) -> str:
+def connect_grid_nodes(message: dict) -> dict:
     """Connect remote grid nodes between each other.
 
     Args:
         message (dict) :  Dict data structure containing node_id, node address and user credentials(optional).
     Returns:
-        response (str) : response message.
+        response (dict) : response message.
     """
     if message["id"] not in local_worker._known_workers:
         worker = DataCentricFLClient(hook, address=message["address"], id=message["id"])
-    return json.dumps({"status": "Succesfully connected."})
+    return {"status": "Succesfully connected."}
 
 
 @authenticated_only
-def socket_ping(message: dict) -> str:
+def socket_ping(message: dict) -> dict:
     """Ping request to check node's health state."""
-    return json.dumps({"alive": "True"})
+    return {"alive": "True"}

@@ -41,14 +41,14 @@ def get_token(*args, **kwargs):
 
 
 def format_result(response_body, status_code, mimetype):
-    return dumps(response_body)
+    return response_body
 
 
 token_required = token_required_factory(get_token, format_result)
 
 
 @token_required
-def create_role_socket(current_user, message: dict) -> str:
+def create_role_socket(current_user, message: dict) -> dict:
     def route_logic(current_user, message: dict) -> dict:
         private_key = message.get("private-key")
         role = message.get("role")
@@ -70,11 +70,11 @@ def create_role_socket(current_user, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def get_role_socket(current_user, message: dict) -> str:
+def get_role_socket(current_user, message: dict) -> dict:
     def route_logic(current_user, message: dict) -> dict:
         private_key = message.get("private-key")
         role_id = message.get("id")
@@ -91,11 +91,11 @@ def get_role_socket(current_user, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def get_all_roles_socket(current_user, message: dict) -> str:
+def get_all_roles_socket(current_user, message: dict) -> dict:
     def route_logic(current_user, message: dict) -> dict:
         private_key = message.get("private-key")
 
@@ -111,11 +111,11 @@ def get_all_roles_socket(current_user, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def put_role_socket(current_user, message: dict) -> str:
+def put_role_socket(current_user, message: dict) -> dict:
     def route_logic(current_user, message: dict) -> dict:
         private_key = message.get("private-key")
         role_id = message.get("id")
@@ -133,11 +133,11 @@ def put_role_socket(current_user, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body
 
 
 @token_required
-def delete_role_socket(current_user, message: dict) -> str:
+def delete_role_socket(current_user, message: dict) -> dict:
     def route_logic(current_user, message: dict) -> dict:
         private_key = message.get("private-key")
         role_id = message.get("id")
@@ -154,4 +154,4 @@ def delete_role_socket(current_user, message: dict) -> str:
 
     status_code, response_body = error_handler(route_logic, current_user, message)
 
-    return dumps(response_body)
+    return response_body

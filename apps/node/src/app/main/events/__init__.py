@@ -72,12 +72,18 @@ def route_requests(message, socket):
     if isinstance(message, bytearray):
         return forward_binary_message(message)
 
+    request_id = None
     try:
         message = json.loads(message)
+        request_id = message.get(MSG_FIELD.REQUEST_ID)
         response = routes[message[REQUEST_MSG.TYPE_FIELD]](message)
-        return response
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        response = {"error": str(e)}
+
+    if request_id:
+        response[MSG_FIELD.REQUEST_ID] = request_id
+
+    return json.dumps(response)
 
 
 @ws.route("/")
