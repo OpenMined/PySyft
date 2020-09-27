@@ -91,6 +91,14 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
         ("syft.lib.python.List.append", "syft.lib.python.SyNone", List),
+        ("syft.lib.python.Float.__add__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Float.__truediv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Float.__divmod__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Float.__floordiv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__add__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__truediv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__divmod__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Int.__floordiv__", "syft.lib.python.Float", Float),
     ]
 
     add_modules(ast, modules)
@@ -104,15 +112,3 @@ def create_python_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
-
-
-DEFAULT_READ_PERMISSION: TypeList[str] = [
-    "syft.lib.python.Bool",
-    "syft.lib.python.Complex",
-    "syft.lib.python.Dict",
-    "syft.lib.python.Float",
-    "syft.lib.python.Int",
-    "syft.lib.python.List",
-    "syft.lib.python.String",
-    "syft.lib.python.SyNone",
-]

@@ -56,7 +56,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCH_VERSION >= version.parse(support_dict["min_version"])
 
 
-SKIP_METHODS = ["__getitem__"]
+SKIP_METHODS = ["__getitem__", "max"]
 
 BASIC_OPS = list()
 BASIC_OPS_RETURN_TYPE = {}
