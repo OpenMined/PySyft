@@ -381,6 +381,7 @@ class StoreClient:
         # This is because of a current limitation in Pointer where we cannot
         # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
         for result in results:
+            result.gc_enabled = False
             result.client = self.client
 
         return results

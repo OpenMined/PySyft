@@ -141,6 +141,7 @@ class Pointer(AbstractPointer):
         self.id_at_location = id_at_location
         self.tags = tags
         self.description = description
+        self.gc_enabled = True
 
     def get(
         self,
@@ -318,10 +319,11 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        # Create the delete message
-        msg = GarbageCollectObjectAction(
-            obj_id=self.id_at_location, address=self.client.address
-        )
+        if self.gc_enabled:
+            # Create the delete message
+            msg = GarbageCollectObjectAction(
+                obj_id=self.id_at_location, address=self.client.address
+            )
 
-        # Send the message
-        self.client.send_eventual_msg_without_reply(msg=msg)
+            # Send the message
+            self.client.send_eventual_msg_without_reply(msg=msg)
