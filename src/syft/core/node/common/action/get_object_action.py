@@ -20,6 +20,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
 
 
@@ -147,7 +148,7 @@ class GetObjectAction(ImmediateActionWithReply):
         storeable_object = node.store[self.obj_id]
 
         if verify_key not in storeable_object.read_permissions:
-            raise Exception(
+            raise AuthorizationException(
                 "You do not have permission to .get() this tensor. Please submit a request."
             )
 
