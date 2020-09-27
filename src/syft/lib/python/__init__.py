@@ -104,15 +104,3 @@ def create_python_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
-
-
-DEFAULT_READ_PERMISSION: TypeList[str] = [
-    "syft.lib.python.Bool",
-    "syft.lib.python.Complex",
-    "syft.lib.python.Dict",
-    "syft.lib.python.Float",
-    "syft.lib.python.Int",
-    "syft.lib.python.List",
-    "syft.lib.python.String",
-    "syft.lib.python.SyNone",
-]
