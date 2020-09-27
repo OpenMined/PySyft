@@ -139,10 +139,13 @@ def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.com
     #     return duet, my_domain.get_root_client()
     out_duet = my_domain.get_root_client()
 
-    if (logging):
-        begin_duet_logger(my_domain)
+    # If logging == True the remote data will be ereased by each domain.store remote call
+    #if (logging):
+    #    begin_duet_logger(my_domain)
     print()
-    return out_duet
+    
+    # return out_duet  
+    return duet
 
 
 def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"):
@@ -180,6 +183,6 @@ def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.
                 offer=False)
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
-    #     begin_duet_client_logger(duet)
+    # begin_duet_client_logger(duet.node)
 
     return duet

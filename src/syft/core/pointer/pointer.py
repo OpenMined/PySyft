@@ -313,7 +313,8 @@ class Pointer(AbstractPointer):
         return response.status
 
     def __del__(self) -> None:
-        if type(self.client) == Address:
+        _client_type = type(self.client)
+        if _client_type == Address:
             # it is a serialized pointer that we receive from another client do nothing
             return
 
