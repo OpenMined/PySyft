@@ -402,7 +402,8 @@ allowlist["torch.Tensor.lt_"] = "torch.Tensor"
 # allowlist['torch.Tensor.masked_select'] = #
 allowlist["torch.Tensor.matmul"] = "torch.Tensor"
 # allowlist['torch.Tensor.matrix_power'] = #
-# allowlist["torch.Tensor.max"] = "torch.Tensor" # some issues
+# torch.Tensor.max some times returns a special torch.return_types.max type
+allowlist["torch.Tensor.max"] = "torch.Tensor"  # tests are being ignored
 allowlist["torch.Tensor.mean"] = "torch.Tensor"
 # allowlist["torch.median"] = # "torch.Tensor"  # requires torch.return_types.median
 # allowlist["torch.Tensor.median"] = # "torch.Tensor"  # requires torch.return_types.median
