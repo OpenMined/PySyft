@@ -67,7 +67,7 @@ def run() -> None:
     # this signing_key is to aid in local development and is not used in the real
     # PyGrid implementation
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)  # nosec
 
 
 run()
