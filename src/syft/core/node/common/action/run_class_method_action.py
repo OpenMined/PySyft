@@ -131,7 +131,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
                 try:
-                    result._id = self.id_at_location
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = self.id_at_location
+                    else:
+                        result.id = self.id_at_location
+
                     assert result.id == self.id_at_location
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
