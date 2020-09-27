@@ -29,7 +29,6 @@ source code.
 
 # stdlib
 import asyncio
-import weakref
 
 # third party
 from nacl.signing import SigningKey

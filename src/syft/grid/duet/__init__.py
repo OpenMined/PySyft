@@ -1,37 +1,42 @@
+# stdlib
+import sys
+
+# third party
+# third party libraries
+import nest_asyncio
+
 # syft relative
 from ...core.node.domain.domain import Domain
 from .om_signaling_client import register
-from .duet import Duet  # noqa: F401
-
-# third party libraries
-import nest_asyncio
-import sys
+from .webrtc_duet import Duet
 
 nest_asyncio.apply()
 
+
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
-def begin_duet_logger(my_domain):
+def begin_duet_logger(my_domain: Domain) -> None:
+    # stdlib
+    from contextlib import contextmanager
     import sys
     import threading
     import time
-    from contextlib import contextmanager
 
     # we need a lock, so that other threads don't snatch control
     # while we have set a temporary parent
     stdout_lock = threading.Lock()
 
     @contextmanager
-    def set_stdout_parent(parent):
+    def set_stdout_parent(parent):  # type: ignore
         """a context manager for setting a particular parent for sys.stdout
 
         the parent determines the destination cell of output
@@ -47,11 +52,11 @@ def begin_duet_logger(my_domain):
                 sys.stdout.parent_header = save_parent
 
     class counterThread(threading.Thread):
-        def run(self):
+        def run(self) -> None:
             # record the parent when the thread starts
-            thread_parent = sys.stdout.parent_header
+            thread_parent = sys.stdout.parent_header  # type: ignore
             iterator = 0
-            while (True):
+            while True:
                 time.sleep(0.1)
                 # then ensure that the parent is the same as when the thread started
                 # every time we print
@@ -79,9 +84,21 @@ def begin_duet_logger(my_domain):
                     else:
                         star = "-"
 
-                    out = "♫♫♫ > DUET LIVE STATUS  " + star + "  Objects: " + str(
-                        n_objects) + "  " + left_color + "Requests:" + right_color + left_blink + str(
-                        n_requests) + right_blink + "  Messages: " + str(n_messages)
+                    out = (
+                        "♫♫♫ > DUET LIVE STATUS  "
+                        + star
+                        + "  Objects: "
+                        + str(n_objects)
+                        + "  "
+                        + left_color
+                        + "Requests:"
+                        + right_color
+                        + left_blink
+                        + str(n_requests)
+                        + right_blink
+                        + "  Messages: "
+                        + str(n_messages)
+                    )
                     out += "                                "
                     sys.stdout.write("\r" + out)
                 iterator += 1
@@ -89,12 +106,14 @@ def begin_duet_logger(my_domain):
     counterThread().start()
 
 
-def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"):
-    from .webrtc_duet import Duet
+def launch_duet(
+    logging: bool = True,
+    network_url: str = "http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000",
+) -> Duet:
     print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-                                          ":"
+        ":"
         + "\033[1m"
         + " Duet is an experimental feature currently \n♫♫♫ > "
         + "in alpha. Do not use this to protect real-world data.\n"
@@ -115,45 +134,67 @@ def launch_duet(logging=True, network_url="http://ec2-18-191-23-46.us-east-2.com
     #     print("♫♫♫ > Your Duet Id: " + signaling_client.duet_id)
 
     print("♫♫♫ >")
-    print("♫♫♫ > " + bcolors.HEADER + "STEP 1:" + bcolors.ENDC + " Send the following code to your duet partner!")
+    print(
+        "♫♫♫ > "
+        + bcolors.HEADER
+        + "STEP 1:"
+        + bcolors.ENDC
+        + " Send the following code to your duet partner!"
+    )
     #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
 
     print("\nimport syft as sy")
     print("sy.VERBOSE=False")
-    print("duet = sy.join_duet('" + bcolors.BOLD + signaling_client.duet_id + bcolors.ENDC + "')")
+    print(
+        "duet = sy.join_duet('"
+        + bcolors.BOLD
+        + signaling_client.duet_id
+        + bcolors.ENDC
+        + "')"
+    )
 
     my_domain = Domain(name="Launcher")
 
-    print("\n♫♫♫ > " + bcolors.HEADER + "STEP 2:" + bcolors.ENDC + " The code above will print out a 'Client Id'. Have")
+    print(
+        "\n♫♫♫ > "
+        + bcolors.HEADER
+        + "STEP 2:"
+        + bcolors.ENDC
+        + " The code above will print out a 'Client Id'. Have"
+    )
     print("♫♫♫ >         your duet partner send it to you and enter it below!")
     print()
     target_id = input("♫♫♫ > Duet Partner's Client Id:")
     print("♫♫♫ > Connecting...")
 
-    duet = Duet(node=my_domain,
-                target_id=target_id,
-                signaling_client=signaling_client,
-                offer=True)
+    duet = Duet(
+        node=my_domain,
+        target_id=target_id,
+        signaling_client=signaling_client,
+        offer=True,
+    )
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     #     return duet, my_domain.get_root_client()
-    out_duet = my_domain.get_root_client()
-
+    # out_duet = my_domain.get_root_client()
     # If logging == True the remote data will be ereased by each domain.store remote call
-    #if (logging):
+    # if (logging):
     #    begin_duet_logger(my_domain)
     print()
-    
-    # return out_duet  
+
+    # return out_duet
     return duet
 
 
-def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"):
-    from .webrtc_duet import Duet
+def join_duet(
+    target_id: str,
+    network_url: str = "http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000",
+) -> Duet:
+
     print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-                                          ":"
+        ":"
         + "\033[1m"
         + " Duet is an experimental feature currently \n♫♫♫ > "
         + "in alpha. Do not use this to protect real-world data.\n"
@@ -172,15 +213,28 @@ def join_duet(target_id, network_url="http://ec2-18-191-23-46.us-east-2.compute.
 
     my_domain = Domain(name="Joiner")
     print()
-    print("♫♫♫ > Duet Client ID: " + bcolors.BOLD + signaling_client.duet_id + bcolors.ENDC)
+    print(
+        "♫♫♫ > Duet Client ID: "
+        + bcolors.BOLD
+        + signaling_client.duet_id
+        + bcolors.ENDC
+    )
     print()
-    print("♫♫♫ > " + bcolors.HEADER + "STEP 1:" + bcolors.ENDC + " Send the Duet Client ID to your duet partner!")
+    print(
+        "♫♫♫ > "
+        + bcolors.HEADER
+        + "STEP 1:"
+        + bcolors.ENDC
+        + " Send the Duet Client ID to your duet partner!"
+    )
     print()
     print("♫♫♫ > ...waiting for partner to connect...")
-    duet = Duet(node=my_domain,
-                target_id=target_id,
-                signaling_client=signaling_client,
-                offer=False)
+    duet = Duet(
+        node=my_domain,
+        target_id=target_id,
+        signaling_client=signaling_client,
+        offer=False,
+    )
     print()
     print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     # begin_duet_client_logger(duet.node)
