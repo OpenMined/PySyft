@@ -241,6 +241,9 @@ class Node(AbstractNode):
         # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
         self.signaling_msgs = {}
 
+        # For logging the number of messages received
+        self.message_counter = 0
+
     @property
     def icon(self) -> str:
         return "📍"
@@ -435,6 +438,9 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
+        self.message_counter += 1
+
         if sy.VERBOSE:
             print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):

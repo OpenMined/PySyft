@@ -10,5 +10,4 @@ def register(
     client = SignalingClient(
         url=url, conn_type=HTTPConnection, client_type=NetworkClient
     )
-    print("Duet ID: ", client.duet_id)
     return client
