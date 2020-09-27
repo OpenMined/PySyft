@@ -1,6 +1,5 @@
 # stdlib
 from typing import Dict
-from typing import List as TypeList
 from typing import Union
 
 # third party

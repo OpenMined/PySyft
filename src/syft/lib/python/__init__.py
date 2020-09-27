@@ -91,6 +91,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
         ("syft.lib.python.List.append", "syft.lib.python.SyNone", List),
+        ("syft.lib.python.Float.__add__", "syft.lib.python.Float", Float),
     ]
 
     add_modules(ast, modules)
