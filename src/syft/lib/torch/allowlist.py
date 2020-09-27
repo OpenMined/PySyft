@@ -344,7 +344,7 @@ allowlist["torch.Tensor.is_quantized"] = "syft.lib.python.Bool"
 # allowlist['torch.Tensor.is_signed'] = #
 allowlist["torch.Tensor.is_sparse"] = "syft.lib.python.Bool"
 # allowlist['torch.Tensor.isclose'] = #
-allowlist["torch.Tensor.item"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.item"] = "syft.lib.python.Float"
 # allowlist['torch.Tensor.json'] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist['torch.Tensor.kthvalue'] = #
 # allowlist["torch.Tensor.layout"] = "torch.layout"
@@ -643,7 +643,7 @@ allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
 
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
-allowlist["torch.nn.Module.__call__"] = "torch.nn.Module"
+allowlist["torch.nn.Module.__call__"] = "torch.nn.Tensor"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
