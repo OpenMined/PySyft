@@ -78,6 +78,7 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -99,8 +100,17 @@ from ...core.node.abstract.node import AbstractNode
 from ...decorators.syft_decorator_impl import syft_decorator
 from ..services.signaling_service import CloseConnectionMessage
 
+try:
+    # stdlib
+    from asyncio import get_running_loop  # noqa Python >=3.7
+except ImportError:  # pragma: no cover
+    # stdlib
+    from asyncio.events import _get_running_loop as get_running_loop  # pragma: no cover
+
 
 class WebRTCConnection(BidirectionalConnection):
+    loop: Any
+
     def __init__(self, node: AbstractNode) -> None:
         # WebRTC Connection representation
 
@@ -117,12 +127,15 @@ class WebRTCConnection(BidirectionalConnection):
         # This structure is global and needs to be
         # defined beforehand.
         try:
-            self.loop = asyncio.get_running_loop()
-            print("> Using a running event loop")
+            self.loop = get_running_loop()
+            print("♫♫♫ > ...using a running event loop...")
         except RuntimeError as e:
+            self.loop = None
+            print(f"♫♫♫ > ...error getting a running event Loop... {e}")
+
+        if self.loop is None:
+            print("♫♫♫ > ...creating a new event loop...")
             self.loop = asyncio.new_event_loop()
-            print(f"Error getting a running event Loop. {e}")
-            print("> Creating a new event loop.")
 
         # Message pool (High Priority)
         # These queues will be used to manage
@@ -363,7 +376,7 @@ class WebRTCConnection(BidirectionalConnection):
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
-        self.producer_pool.put(msg)
+        self.producer_pool.put_nowait(msg)
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(

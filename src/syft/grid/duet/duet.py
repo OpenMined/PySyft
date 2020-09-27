@@ -103,9 +103,9 @@ class Duet(DomainClient):
     def send_signed(self) -> None:
         self.send_immediate_msg_without_reply(msg=sy.ReprMessage(address=self.domain))
 
-    @property
-    def id(self) -> UID:
-        return self.target_id.id
+    # @property
+    # def id(self) -> UID:
+    #     return self.target_id.id
 
     def get_client_params(
         self, domain_url: str

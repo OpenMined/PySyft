@@ -29,7 +29,6 @@ source code.
 
 # stdlib
 import asyncio
-import weakref
 
 # third party
 from nacl.signing import SigningKey
@@ -78,7 +77,7 @@ class Duet(DomainClient):
         # not creating a  strong reference to the object.
         # So, If we delete the real object instance, the
         # garbage collect will call the __del__ method without problem.
-        self.node = weakref.proxy(node)
+        self.node = node
 
         # WebRTCConnection instance ( Bidirectional Connection )
         self.connection = WebRTCConnection(node=self.node)

@@ -248,7 +248,7 @@ def ispointer(obj: Any) -> bool:
     return False
 
 
-def convert_param_to_remote_pointer(param: Any, client: Any) -> Any:
+def convert_param_to_remote_pointer(param: Any, client: Any) -> Pointer:
     pointer = param.send(client)
     return pointer
 
