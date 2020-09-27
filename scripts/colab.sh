@@ -4,26 +4,19 @@
 # How to use this script
 # put these into your colab cells
 
-# cell 1
-"""
+<< 'MULTILINE-COMMENT'
 %%capture
 # Step 1: Clone PySyft Library
 ! git clone --single-branch --branch gm_cuda_test https://github.com/OpenMined/PySyft.git
-"""
 
-# cell 2
-"""
 # Step 2: Setup Colab Environment
 ! cd PySyft && ./scripts/colab.sh
-"""
 
-# cell 3
-"""
 # Step 3: Importing
 import sys
 sys.path.append("/content/PySyft/src") # prevents needing restart
 import syft as sy
-"""
+MULTILINE-COMMENT
 
 # update the code (handy during development)
 echo "> git pull"
