@@ -1,10 +1,12 @@
 # stdlib
+import json
 import sys
 from typing import Any
 from typing import Generator
 
 # third party
 import nest_asyncio
+import requests
 
 # syft relative
 from ...core.node.domain.domain import Domain
@@ -13,8 +15,9 @@ from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
 nest_asyncio.apply()
-WebRTC_HOST = (
-    "http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"  # noqa: F811
+
+ADDR_REPOSITORY = (
+    "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
 
 
@@ -27,6 +30,17 @@ class bcolors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
+
+
+def get_available_network() -> str:
+    network_addr = json.loads(requests.get(ADDR_REPOSITORY).content)
+    for addr in network_addr:
+        try:
+            requests.get(addr + "/metadata")
+            return addr
+        except Exception:
+            continue
+    raise Exception("Couldn't find any available network.")
 
 
 def begin_duet_logger(my_domain: Domain) -> None:
@@ -113,7 +127,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
 
 def launch_duet(
     logging: bool = True,
-    network_url: str = WebRTC_HOST,
+    network_url: str = "",
 ) -> WebRTCDuet:
     print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
@@ -127,6 +141,9 @@ def launch_duet(
 
     print("♫♫♫ >")
     print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+
+    if not network_url:
+        network_url = get_available_network()
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
@@ -193,7 +210,7 @@ def launch_duet(
 
 def join_duet(
     target_id: str,
-    network_url: str = WebRTC_HOST,
+    network_url: str = "",
 ) -> WebRTCDuet:
     print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
@@ -207,6 +224,8 @@ def join_duet(
 
     print("♫♫♫ >")
     print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+    if not network_url:
+        network_url = get_available_network()
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
