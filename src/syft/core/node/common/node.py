@@ -68,6 +68,11 @@ from .service.repr_service import ReprService
 ClientT = TypeVar("ClientT", bound=Client)
 
 
+# TODO: Move but right now import loop prevents importing from the RequestMessage
+class DuplicateRequestException(Exception):
+    pass
+
+
 class Node(AbstractNode):
 
     """
@@ -375,7 +380,49 @@ class Node(AbstractNode):
     ) -> None:
         if sy.VERBOSE:
             print(f"> Received {msg.pprint} @ {self.pprint}")
-        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+        try:
+            self.process_message(
+                msg=msg, router=self.immediate_msg_without_reply_router
+            )
+        except Exception as e:
+            # public_exception: Exception
+            if isinstance(e, DuplicateRequestException):
+                private_log_msg = "An DuplicateRequestException has been triggered"
+                # public_exception = e
+            else:
+                private_log_msg = f"An {type(e)} has been triggered"  # dont send
+                # public_exception = UnknownPrivateException(
+                #     "UnknownPrivateException has been triggered."
+                # )
+            try:
+                # try printing a useful message
+                private_log_msg += f" by {type(msg.message)} "
+                private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+            except Exception:
+                pass
+            # show the host what the real exception is
+            print(private_log_msg)
+
+            # we still want to raise for now due to certain exceptions we expect
+            # in tests
+            if not isinstance(e, DuplicateRequestException):
+                raise e
+
+            # TODO: finish code to send ExceptionMessage back
+            # if isinstance(e, DuplicateRequestException):
+            #     # we have a reply_to
+            #     # send the public exception back
+            #     response = ExceptionMessage(
+            #         address=msg.message.reply_to,  # type: ignore
+            #         msg_id_causing_exception=msg.message.id,
+            #         exception_type=type(public_exception),
+            #         exception_msg=str(public_exception),
+            #     )
+            #     res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+            #     self.client.send_immediate_msg_with_reply.process(
+            #         node=self,
+            #         msg=res_msg,
+            #     )
         return None
 
     @syft_decorator(typechecking=True)
