@@ -173,7 +173,7 @@ def launch_duet(
     )
     print("♫♫♫ >         your duet partner send it to you and enter it below!")
     print()
-    target_id = input("♫♫♫ > Duet Partner's Client Id:")
+    target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
     print("♫♫♫ > Connecting...")
 
     _ = WebRTCDuet(
