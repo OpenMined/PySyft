@@ -32,6 +32,7 @@ class List(UserList, PyPrimitive):
         UserList.__init__(self, value)
 
         self._id: UID = id if id else UID()
+        self._index = 0
 
     @property
     def id(self) -> UID:
@@ -128,32 +129,29 @@ class List(UserList, PyPrimitive):
         res = super().__getitem__(key)  # type: ignore
         # we might be holding a primitive value, but generate_primitive
         # doesn't handle non primitives so we should check
-        if isprimitive(value=res):
+        if not isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
         return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self) -> Any:
-        # TODO: remove temp hack
-        if type(self).__name__ == "generator":
-            return type(self).__iter__(self)
-        res = super().__iter__()
-        return res
+        self._index = 0
+        return self
 
-    # hack for working around generators
-    # list doesnt have __next__ but converting a generator that thinks its a list
-    # requires this method
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __next__(self) -> Any:
-        if type(self).__name__ == "generator":
-            return type(self).__next__(self)
-        raise NotImplementedError
+    def __next__(self):
+        if self._index == self.__len__():
+            raise StopIteration
+
+        result = self[self._index]
+        self._index += 1
+        return result
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
         res = super().copy()
         res._id = UID()
         return res
+
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, other: Any) -> SyPrimitiveRet:

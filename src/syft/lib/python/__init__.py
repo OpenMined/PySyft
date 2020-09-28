@@ -15,7 +15,8 @@ from .int import Int
 from .list import List
 from .none import SyNone
 from .string import String
-
+from .primitive_interface import PyPrimitive
+from .primitive_container import PyContainer
 
 def get_parent(path: str, root: Any) -> Module:
     parent = root
@@ -82,13 +83,15 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List", "syft.lib.python.List", List),
         ("syft.lib.python.String", "syft.lib.python.String", String),
         ("syft.lib.python.SyNone", "syft.lib.python.SyNone", SyNone),
+        ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
+        ("syft.lib.python.PyContainer", "syft.lib.python.PyContainer", PyContainer)
     ]
 
     methods = [
         ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
-        # ("syft.lib.python.List.__getitem__", "torch.Tensor", List),
-        ("syft.lib.python.List.__getitem__", "torch.Tensor", List),
-        ("syft.lib.python.List.__iter__", "syft.lib.python.List", List),
+        ("syft.lib.python.List.__getitem__", "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.List.__iter__", "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.List.__next__", "syft.lib.python.PyContainer", PyContainer),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
         ("syft.lib.python.List.append", "syft.lib.python.SyNone", List),
         ("syft.lib.python.Float.__add__", "syft.lib.python.Float", Float),
@@ -99,6 +102,27 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.__truediv__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Int.__divmod__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Int.__floordiv__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.PyContainer.__add__", "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__iter__", "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__next__", "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__radd__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__truediv__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__rtruediv__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__floordiv__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__rfloordiv__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__mul__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__rmul__", "syft.lib.python.PyContainer",
+         PyContainer),
+        ("syft.lib.python.PyContainer.__sub__",
+         "syft.lib.python.PyContainer", PyContainer),
+        ("syft.lib.python.PyContainer.__rsub__", "syft.lib.python.PyContainer",
+         PyContainer)
     ]
 
     add_modules(ast, modules)
