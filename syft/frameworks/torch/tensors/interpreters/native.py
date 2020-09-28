@@ -89,6 +89,27 @@ class TorchTensor(AbstractTensor):
 
         return trigger_origin_backward
 
+    def register_hook_to_callback(self, message, location):
+        location = self.owner.get_worker(location)
+
+        def callback(grad):
+            assert isinstance(grad, torch.Tensor), "Grad in callback should be Tensor"
+            self.owner.register_obj(grad)
+            pointer = PointerTensor(
+                location=self.owner,
+                id_at_location=grad.id,
+                owner=location,
+                id=syft.ID_PROVIDER.pop(),
+            )
+            message.action.args = (pointer,)
+            self.owner.send_msg(message=message, location=location)
+            self.owner.de_register_obj(grad)
+
+        self.register_hook(callback)
+
+    def trigger_hook_function(self, outputs):
+        self.child.grad_fn.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
+
     def set_grad(self, grad):
         self.grad = grad
 

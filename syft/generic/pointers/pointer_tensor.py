@@ -159,6 +159,27 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def data(self, new_data):
         self._data = new_data
 
+    def register_hook(self, hook_function):
+        # store the hook_function
+        self._hook_function = hook_function
+        # send a request to set a hook to trigger back the hook
+        point_to_attr = self.point_to_attr
+        self.point_to_attr = None
+        self.owner.send_command(
+            recipient=self.location,
+            cmd_name="register_hook_to_callback",
+            target=self,
+            args_=tuple(),
+            kwargs_=dict(
+                # args & kwargs are not provided, they will be filled later
+                message=TensorCommandMessage.computation(
+                    "trigger_hook_function", self.id, tuple(), {}, None
+                ),
+                location=self.owner.id,
+            ),
+        )
+        self.point_to_attr = point_to_attr
+
     def is_none(self):
         try:
             return self.owner.request_is_remote_tensor_none(self)
