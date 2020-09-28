@@ -175,3 +175,6 @@ class ObjectStore:
         Return the number of objects in the store
         """
         return len(self._objects)
+
+    def __str__(self):
+        return f"<ObjectStorage of {self.owner.id}>"

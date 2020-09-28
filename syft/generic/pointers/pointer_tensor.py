@@ -136,6 +136,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self._grad = new_grad
 
     @property
+    def grad_fn(self):
+        if not hasattr(self, "_grad_fn"):
+            self._grad_fn = self.attr("grad_fn")
+
+        if self._grad_fn.child.is_none():
+            return None
+
+        return self._grad_fn
+
+    @grad_fn.setter
+    def grad_fn(self, new_grad_fn):
+        self._grad_fn = new_grad_fn
+
+    @property
     def data(self):
         if not hasattr(self, "_data"):
             self._data = self.attr("data")
