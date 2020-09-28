@@ -7,7 +7,8 @@
 << 'MULTILINE-COMMENT'
 %%capture
 # Step 1: Clone PySyft Library
-! git clone --single-branch --branch gm_cuda_test https://github.com/OpenMined/PySyft.git
+branch_name = "syft_0.3.0" # pick a branch name
+! git clone --single-branch --branch $branch_name https://github.com/OpenMined/PySyft.git
 
 # Step 2: Setup Colab Environment
 ! cd PySyft && ./scripts/colab.sh
