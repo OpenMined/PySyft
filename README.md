@@ -171,6 +171,30 @@ You can pass the arguments or use environment variables to set the network confi
 - `DATABASE_URL` - The Network database URL
 - `SECRET_KEY` - The secret key
 
+## PyGrid CLI
+
+OpenMined PyGrid CLI is used for Infrastructure Management to deploy various PyGrid components to various cloud providers ([AWS](https://aws.amazon.com/), [GCP](https://cloud.google.com/), [Azure](https://azure.microsoft.com/)).
+
+To get started, install the CLI first through this command:
+
+```shell
+pip install -e .
+```
+
+### Running CLI
+
+#### Deploy a Node to AWS
+
+```shell
+pygrid deploy --provider aws --app node
+```
+
+#### Deploy a Network to AWS
+
+```shell
+pygrid deploy --provider azure --app network
+```
+
 ## Contributing
 
 If you're interested in contributing, check out our [Contributor Guidelines](CONTRIBUTING.md).
