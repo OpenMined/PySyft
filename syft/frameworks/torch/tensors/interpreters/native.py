@@ -96,8 +96,8 @@ class TorchTensor(AbstractTensor):
         are updated with a reference to `self`.
 
         Args:
-            message: the message to send back
-            location: the worker to which the message should be sent
+            message (Message): the message to send back
+            location (BaseWorker): the worker to which the message should be sent
         """
         location = self.owner.get_worker(location)
 
