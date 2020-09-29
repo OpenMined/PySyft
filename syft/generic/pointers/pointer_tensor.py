@@ -200,12 +200,12 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             recipient=self.location,
             cmd_name="register_callback_hook",
             target=self,
-            args_=tuple(),
+            args_=(),
             kwargs_=dict(
                 # args & kwargs are not provided, they will be filled by
                 # the remote party
                 message=TensorCommandMessage.computation(
-                    "trigger_hook_function", self.id, tuple(), {}, None
+                    "trigger_hook_function", self.id, (), {}, None
                 ),
                 location=self.owner.id,
             ),
