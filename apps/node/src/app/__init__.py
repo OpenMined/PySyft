@@ -1,16 +1,19 @@
+import json
 import logging
 import os
 
-from .util import mask_payload_fast
-from flask import Flask
+from flask import Flask, Response
 from flask_cors import CORS
 from flask_executor import Executor
+from flask_lambda import FlaskLambda
 from flask_migrate import Migrate
 from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
+from geventwebsocket.websocket import Header
 from sqlalchemy_mixins import AllFeaturesMixin
 from sqlalchemy_utils.functions import database_exists
-from geventwebsocket.websocket import Header
+
+from .util import mask_payload_fast
 
 # Monkey patch geventwebsocket.websocket.Header.mask_payload() and
 # geventwebsocket.websocket.Header.unmask_payload(), for efficiency
@@ -182,6 +185,93 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     else:
         db.create_all()
         seed_db()
+
+    db.session.commit()
+
+    # Set Authentication configs
+    app = auth.set_auth_configs(app)
+
+    CORS(app)
+
+    # Threads
+    executor.init_app(app)
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
+
+    return app
+
+
+def create_lambda_app(node_id: str) -> FlaskLambda:
+    """Create flask application for hosting on AWS Lambda.
+
+    Args:
+        node_id: ID used to identify this node.
+    Returns:
+        app : FlaskLambda App instance.
+    """
+
+    # Register dialects to talk to AWS RDS via Data API
+    import sqlalchemy_aurora_data_api
+
+    sqlalchemy_aurora_data_api.register_dialects()
+
+    database_name = os.environ.get("DB_NAME")
+    cluster_arn = os.environ.get("DB_CLUSTER_ARN")
+    secret_arn = os.environ.get("DB_SECRET_ARN")
+
+    app = FlaskLambda(__name__)
+    app.config.from_mapping(
+        DEBUG=False,
+        SQLALCHEMY_DATABASE_URI=f"mysql+auroradataapi://:@/{database_name}",
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "connect_args": dict(aurora_cluster_arn=cluster_arn, secret_arn=secret_arn)
+        },
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+
+    # Register app blueprints
+    from .main import (
+        auth,
+        data_centric_routes,
+        hook,
+        local_worker,
+        main_routes,
+        model_centric_routes,
+        ws,
+    )
+
+    # Add a test route
+    @main_routes.route("/test-deployment/")
+    def test():
+        return Response(
+            json.dumps({"message": "Serverless deployment successful."}),
+            status=200,
+            mimetype="application/json",
+        )
+
+    # set_node_id(id)
+    local_worker.id = node_id
+    hook.local_worker._known_workers[node_id] = local_worker
+    local_worker.add_worker(hook.local_worker)
+
+    # Register app blueprints
+    app.register_blueprint(main_routes, url_prefix=r"/")
+    app.register_blueprint(model_centric_routes, url_prefix=r"/model-centric")
+    app.register_blueprint(data_centric_routes, url_prefix=r"/data-centric")
+
+    # Setup database
+    global db
+    db.init_app(app)
+
+    s = app.app_context().push()  # Push the app into context
+
+    try:
+        db.Model.metadata.create_all(
+            db.engine, checkfirst=False
+        )  # Create database tables
+        seed_db()  # Seed the database
+    except Exception as e:
+        print("Error", e)
 
     db.session.commit()
 

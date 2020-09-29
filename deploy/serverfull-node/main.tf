@@ -129,6 +129,8 @@ resource "aws_security_group" "web" {
 
 resource "aws_instance" "webserver_instance" {
   for_each      = var.vm_names
+  # TODO: future proof ami attribute
+  # AWS can change ami names, so we need to make our ami attribute dynamic
   ami           = var.amis[var.aws_region]
   instance_type = var.instance_type
   key_name      = var.key_name

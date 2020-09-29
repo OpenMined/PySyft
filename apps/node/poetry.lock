@@ -112,6 +112,17 @@ tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.i
 
 [[package]]
 category = "main"
+description = "A Python DB-API 2.0 client for the AWS Aurora Serverless Data API"
+name = "aurora-data-api"
+optional = false
+python-versions = "*"
+version = "0.2.0"
+
+[package.dependencies]
+boto3 = ">=1.9.245,<2"
+
+[[package]]
+category = "main"
 description = "Pythonic bindings for FFmpeg's libraries."
 name = "av"
 optional = false
@@ -174,6 +185,35 @@ version = "3.1.5"
 packaging = "*"
 six = ">=1.9.0"
 webencodings = "*"
+
+[[package]]
+category = "main"
+description = "The AWS SDK for Python"
+name = "boto3"
+optional = false
+python-versions = "*"
+version = "1.15.5"
+
+[package.dependencies]
+botocore = ">=1.18.5,<1.19.0"
+jmespath = ">=0.7.1,<1.0.0"
+s3transfer = ">=0.3.0,<0.4.0"
+
+[[package]]
+category = "main"
+description = "Low-level, data-driven core of boto 3."
+name = "botocore"
+optional = false
+python-versions = "*"
+version = "1.18.5"
+
+[package.dependencies]
+jmespath = ">=0.7.1,<1.0.0"
+python-dateutil = ">=2.1,<3.0.0"
+
+[package.dependencies.urllib3]
+python = "<3.4.0 || >=3.5.0"
+version = ">=1.20,<1.26"
 
 [[package]]
 category = "main"
@@ -401,6 +441,17 @@ Flask = "*"
 
 [[package]]
 category = "dev"
+description = "Python3.6+ module to make Flask compatible with AWS Lambda"
+name = "flask-lambda-python36"
+optional = false
+python-versions = "*"
+version = "0.1.0"
+
+[package.dependencies]
+Flask = ">=0.10"
+
+[[package]]
+category = "main"
 description = "Python3.6+ module to make Flask compatible with AWS Lambda"
 name = "flask-lambda-python36"
 optional = false
@@ -713,6 +764,14 @@ MarkupSafe = ">=0.23"
 
 [package.extras]
 i18n = ["Babel (>=0.8)"]
+
+[[package]]
+category = "main"
+description = "JSON Matching Expressions"
+name = "jmespath"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "0.10.0"
 
 [[package]]
 category = "main"
@@ -1504,6 +1563,17 @@ test = ["pytest", "pytest-mock"]
 
 [[package]]
 category = "main"
+description = "An Amazon S3 Transfer Manager"
+name = "s3transfer"
+optional = false
+python-versions = "*"
+version = "0.3.3"
+
+[package.dependencies]
+botocore = ">=1.12.36,<2.0a.0"
+
+[[package]]
+category = "main"
 description = "SciPy: Scientific Library for Python"
 name = "scipy"
 optional = false
@@ -1561,6 +1631,18 @@ postgresql_pg8000 = ["pg8000"]
 postgresql_psycopg2binary = ["psycopg2-binary"]
 postgresql_psycopg2cffi = ["psycopg2cffi"]
 pymysql = ["pymysql"]
+
+[[package]]
+category = "main"
+description = "An AWS Aurora Serverless Data API dialect for SQLAlchemy"
+name = "sqlalchemy-aurora-data-api"
+optional = false
+python-versions = "*"
+version = "0.2.0"
+
+[package.dependencies]
+aurora-data-api = ">=0.2.0"
+sqlalchemy = "*"
 
 [[package]]
 category = "main"
@@ -1946,7 +2028,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "07390420db554698dd356870d76ff2aee5a2a71a03fa2b4bce51bf7c039bb502"
+content-hash = "321966ac8fa39c5964d65f3dcc79fb02748b5c3e32da32e033c86f63397bf5ba"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -2014,6 +2096,10 @@ attrs = [
     {file = "attrs-19.3.0-py2.py3-none-any.whl", hash = "sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c"},
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
+aurora-data-api = [
+    {file = "aurora-data-api-0.2.0.tar.gz", hash = "sha256:eea5070ea9b41e18d253513f7769ff7166c0468640d5966e610e184cc368c99e"},
+    {file = "aurora_data_api-0.2.0-py2.py3-none-any.whl", hash = "sha256:ff46b4428c011602e37648a4341ac836cbd7a149db5db900b8f64d48e2c76386"},
+]
 av = [
     {file = "av-8.0.2-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:313a7142805cc6cb3992c3c16618871b10e608b5a7d496766771e1eee92ae4e6"},
     {file = "av-8.0.2-cp35-cp35m-manylinux2010_i686.whl", hash = "sha256:07b342d96c7143819d84c2019a070266ea762949d08bb7f49024d73b12d14051"},
@@ -2059,6 +2145,14 @@ black = [
 bleach = [
     {file = "bleach-3.1.5-py2.py3-none-any.whl", hash = "sha256:2bce3d8fab545a6528c8fa5d9f9ae8ebc85a56da365c7f85180bfe96a35ef22f"},
     {file = "bleach-3.1.5.tar.gz", hash = "sha256:3c4c520fdb9db59ef139915a5db79f8b51bc2a7257ea0389f30c846883430a4b"},
+]
+boto3 = [
+    {file = "boto3-1.15.5-py2.py3-none-any.whl", hash = "sha256:0c464a7de522f88b581ca0d41ffa71e9be5e17fbb0456c275421f65b7c5f6a55"},
+    {file = "boto3-1.15.5.tar.gz", hash = "sha256:0fce548e19d6db8e11fd0e2ae7809e1e3282080636b4062b2452bfa20e4f0233"},
+]
+botocore = [
+    {file = "botocore-1.18.5-py2.py3-none-any.whl", hash = "sha256:e3bf44fba058f6df16006b94a67650418a080a525c82521abb3cb516a4cba362"},
+    {file = "botocore-1.18.5.tar.gz", hash = "sha256:7ce7a05b98ffb3170396960273383e8aade9be6026d5a762f5f40969d5d6b761"},
 ]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
@@ -2389,6 +2483,10 @@ jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
+jmespath = [
+    {file = "jmespath-0.10.0-py2.py3-none-any.whl", hash = "sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f"},
+    {file = "jmespath-0.10.0.tar.gz", hash = "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"},
+]
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
@@ -2554,6 +2652,7 @@ netifaces = [
 ]
 nodeenv = [
     {file = "nodeenv-1.4.0-py2.py3-none-any.whl", hash = "sha256:4b0b77afa3ba9b54f4b6396e60b0c83f59eaeb2d63dc3cc7a70f7f4af96c82bc"},
+    {file = "nodeenv-1.4.0.tar.gz", hash = "sha256:26941644654d8dd5378720e38f62a3bac5f9240811fb3b8913d2663a17baa91c"},
 ]
 notebook = [
     {file = "notebook-5.7.8-py2.py3-none-any.whl", hash = "sha256:f64fa6624d2323fbef6210a621817d6505a45d0d4a9367f1843b20a38a4666ee"},
@@ -2929,6 +3028,10 @@ restrictedpython = [
     {file = "RestrictedPython-5.0-py2.py3-none-any.whl", hash = "sha256:9bd69505147b0ff8c68f4ff5a275975a3ab66fc43cbf3b61a195650ed767cd4e"},
     {file = "RestrictedPython-5.0.tar.gz", hash = "sha256:a080569bffdf53371ae3e754ab1732f43054b1bab904fc100f74ba68ac731abc"},
 ]
+s3transfer = [
+    {file = "s3transfer-0.3.3-py2.py3-none-any.whl", hash = "sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13"},
+    {file = "s3transfer-0.3.3.tar.gz", hash = "sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db"},
+]
 scipy = [
     {file = "scipy-1.4.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:c5cac0c0387272ee0e789e94a570ac51deb01c796b37fb2aad1fb13f85e2f97d"},
     {file = "scipy-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:a144811318853a23d32a07bc7fd5561ff0cac5da643d96ed94a4ffe967d89672"},
@@ -2994,6 +3097,10 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.3.18-cp38-cp38-win32.whl", hash = "sha256:109581ccc8915001e8037b73c29590e78ce74be49ca0a3630a23831f9e3ed6c7"},
     {file = "SQLAlchemy-1.3.18-cp38-cp38-win_amd64.whl", hash = "sha256:8619b86cb68b185a778635be5b3e6018623c0761dde4df2f112896424aa27bd8"},
     {file = "SQLAlchemy-1.3.18.tar.gz", hash = "sha256:da2fb75f64792c1fc64c82313a00c728a7c301efe6a60b7a9fe35b16b4368ce7"},
+]
+sqlalchemy-aurora-data-api = [
+    {file = "sqlalchemy-aurora-data-api-0.2.0.tar.gz", hash = "sha256:6fe9bc8eed26e5f003f7356a2bf9ed524d4e3f8c4fd4677e5f3648ccc71d4c62"},
+    {file = "sqlalchemy_aurora_data_api-0.2.0-py2.py3-none-any.whl", hash = "sha256:375f18ab0846c313ebf52b581dc6ad1e622d8d15cbf94f77622f889fe2e315f8"},
 ]
 sqlalchemy-mixins = [
     {file = "sqlalchemy_mixins-1.2.1-py3-none-any.whl", hash = "sha256:97bc52ef5e5b5f226130c8d3d667d600c083cc1627e2a1417462c7b10f8f3cd5"},

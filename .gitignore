@@ -32,6 +32,7 @@ docs/_build/
 
 # Local .terraform directories
 **/.terraform/*
+**/**/builds/*
 
 # .tfstate files
 *.tfstate
@@ -65,17 +66,19 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Ignore zip files inside lambda layers
+/deploy/*/lambda-layer/*.zip
+/deploy/*/lambda-layer/*.txt
+
+# Ignore keys
+/deploy/*/*key*
+
 #Ignore terraform build files
 /deploy/*/builds/
-
-
-# --- Ignore files/folders in lambda-layer directories ---
-
-# Ignore temporary requirements.txt files
-/deploy/*/*/requirements.txt
 
 # Ignore temporary installed dependencies
 /deploy/*/*/python
 
 # Ignore zipped packages
 /deploy/*/*/*.zip
+
