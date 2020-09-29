@@ -89,11 +89,21 @@ class TorchTensor(AbstractTensor):
 
         return trigger_origin_backward
 
-    def register_hook_to_callback(self, message, location):
+    def register_callback_hook(self, message, location):
+        """
+        Register a Torch hook (that is triggered when the `self` tensor has a gradient
+        update) which will send back to a location a specific message whose arguments
+        are updated with a reference to `self`.
+
+        Args:
+            message: the message to send back
+            location: the worker to which the message should be sent
+        """
         location = self.owner.get_worker(location)
 
         def callback(grad):
-            assert isinstance(grad, torch.Tensor), "Grad in callback should be Tensor"
+            assert isinstance(grad, torch.Tensor), "Grad in callback should be a Tensor"
+            # the grad tensor is created by the torch backprop and might not be registered properly
             self.owner.register_obj(grad)
             pointer = PointerTensor(
                 location=self.owner,
@@ -101,13 +111,26 @@ class TorchTensor(AbstractTensor):
                 owner=location,
                 id=syft.ID_PROVIDER.pop(),
             )
+            # update the message arguments
             message.action.args = (pointer,)
             self.owner.send_msg(message=message, location=location)
+            # De-register the grad after the callback has been handled
             self.owner.de_register_obj(grad)
 
         self.register_hook(callback)
 
     def trigger_hook_function(self, outputs):
+        """
+        Run the hook function stored in the _hook_function attribute using the
+        pointer to the gradient received.
+
+        trigger_hook_function is called on the tensor while it should run on the
+        tensor.grad_fn (confusion is due to both sharing the same id), that's why
+        we get the grad_fn attribute.
+
+        Args:
+            outputs (PointerTensor): a pointer to a remote gradient
+        """
         self.child.grad_fn.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
 
     def set_grad(self, grad):

@@ -160,18 +160,50 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self._data = new_data
 
     def register_hook(self, hook_function):
+        """
+        This allows to register torch hooks on remote tensors. Such operation
+        is tricky because you can't really send the hook function to a remote
+        party, as python functions are not serializable within PySyft. So you
+        need to keep it attached to the PointerTensor.
+        On the other hand, the PointerTensor cannot watch for gradient update
+        or be triggered natively by torch when backpropagation happens. That's
+        why we actually remotely set a hook that we call a callback hook whose
+        function is only to call back the pointer during the backpropagation
+        to effectively run the hook function.
+        So the workflow is: the remote hook is triggered by pytorch, a message
+        is sent back to the pointer owner which has the hook function, then
+        the hook function is run remotely on the remote gradient, and a termi-
+        nation message is returned to the gradient owner.
+
+        Args:
+            hook_function (Callable): the function to run when the hook is
+                triggered. It should be able to run on PointerTensor, other-
+                wise you will get an error, which will by hard to understand
+                as only the backward engine of torch will return a generic
+                error.
+        """
         # store the hook_function
         self._hook_function = hook_function
-        # send a request to set a hook to trigger back the hook
+        # The hook function is run on tensor.grad_fn, but we register it
+        # on the tensor because we only interact remotely with tensors.
+        # `self` is a pointer to tensor.grad_fn, but we can easily retrieve
+        # the pointer to the tensor by temporarily setting self.point_to_attr
+        # to None. Note that the id & id_at_location are the same, so now
+        # self is (temporarily) a direct reference to tensor, but self.id in
+        # the message also refers to the tensor while we would need to refer
+        # to the tensor.grad_fn, that's why trigger_hook_function actually
+        # takes the .grad_fn attribute
         point_to_attr = self.point_to_attr
         self.point_to_attr = None
+        # send a request to set a hook to trigger back the real hook
         self.owner.send_command(
             recipient=self.location,
-            cmd_name="register_hook_to_callback",
+            cmd_name="register_callback_hook",
             target=self,
             args_=tuple(),
             kwargs_=dict(
-                # args & kwargs are not provided, they will be filled later
+                # args & kwargs are not provided, they will be filled by
+                # the remote party
                 message=TensorCommandMessage.computation(
                     "trigger_hook_function", self.id, tuple(), {}, None
                 ),

@@ -257,11 +257,17 @@ class BaseDataset(AbstractSendable):
         return BaseDatasetPB
 
 
-def dataset_federate(dataset, *workers, **kwargs):
+def dataset_federate(dataset, *workers, **kwargs) -> "FederatedDataset":
     """
     Add a method to easily transform a torch.Dataset or a sy.BaseDataset
     into a sy.FederatedDataset. The dataset given is split in len(workers)
     part and sent to each workers
+
+    Args:
+        dataset (Dataset): the dataset to federate across workers
+        *workers (BaseWorker): the workers receiving parts of the dataset
+        **kwargs (dict): any kwargs to use when sending parts of the dataset
+            to the workers
     """
     logger.info(f"Scanning and sending data to {', '.join([w.id for w in workers])}...")
 
