@@ -269,6 +269,10 @@ def dataset_federate(dataset, *workers, **kwargs) -> "FederatedDataset":
         **kwargs (dict): any kwargs to use when sending parts of the dataset
             to the workers
     """
+    # Compat with the old signature without the (*)workers
+    if isinstance(workers[0], tuple):
+        workers = workers[0]
+
     logger.info(f"Scanning and sending data to {', '.join([w.id for w in workers])}...")
 
     # take ceil to have exactly len(workers) sets after splitting
