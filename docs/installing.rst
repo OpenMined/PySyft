@@ -402,7 +402,7 @@ Step 1 - Install Git
 --------------------
 
 Here is the download link for Git on windows:  `Git for Windows <https://gitforwindows.org/>`_
-or in case you are lazy! you can use  `Github for Desktop <https://desktop.github.com/>`_
+or in case you are lazy! you can use  `Github for Desktop. <https://desktop.github.com/>`_
 
 Step 2 - Install Microsoft Build tools
 --------------------------------------
@@ -411,7 +411,7 @@ Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and c
 
 After the download is finished, run the downloaded package. In the installation window select `Desktop development with C++` and click on `Install` at the bottom-right corner of the page. (In the above screenshot you see a `Close` button instead since I have already installed it.)
 
-Wait until the the install has finished.
+Wait until the the installation has finished. (Have a break as it will take time! 😪)
 
 
 Step 3 - Clone PySyft Repository
@@ -548,7 +548,7 @@ it by installing the latest version.
 
     pip install torch -U
     
-or else you can get the installation command from [here](https://pytorch.org/get-started/locally/) (use the pip option)
+or else you can get the installation command from `here. <https://pytorch.org/get-started/locally/>`_ (use the pip option)
 
 Step 7 - Install PySyft
 -----------------------
