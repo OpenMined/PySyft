@@ -630,7 +630,7 @@ def test_register_hook_on_remote_tensor_or_modules(workers):
     flag = []
 
     def hook_function(inputs, outputs):
-        flag.append(True)
+        flag.append(True)  # pragma: no cover
 
     p = th.tensor([1.0, 2], requires_grad=True).send(alice)
     p.register_hook(hook_function)
@@ -644,7 +644,7 @@ def test_register_hook_on_remote_tensor_or_modules(workers):
     flag = []
 
     def hook_function(model, inputs, outputs):
-        flag.append(True)
+        flag.append(True)  # pragma: no cover
 
     x = th.tensor([1.0, 2])
     model = torch.nn.Linear(2, 1)
@@ -654,3 +654,5 @@ def test_register_hook_on_remote_tensor_or_modules(workers):
     assert len(flag) == 0
     loss.backward()
     assert len(flag) == 1
+
+    syft.local_worker.is_client_worker = True
