@@ -270,7 +270,7 @@ def dataset_federate(dataset, *workers, **kwargs) -> "FederatedDataset":
             to the workers
     """
     # Compat with the old signature without the (*)workers
-    if isinstance(workers[0], tuple):
+    if isinstance(workers[0], (list, tuple)):
         workers = workers[0]
 
     logger.info(f"Scanning and sending data to {', '.join([w.id for w in workers])}...")

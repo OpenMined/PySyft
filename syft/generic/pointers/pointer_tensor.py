@@ -184,15 +184,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         # store the hook_function
         self._hook_function = hook_function
-        # The hook function is run on tensor.grad_fn, but we register it
+        # The hook function can run on tensor.grad_fn, but we always register it
         # on the tensor because we only interact remotely with tensors.
-        # `self` is a pointer to tensor.grad_fn, but we can easily retrieve
+        # `self` can be a pointer to tensor.grad_fn, but we can easily retrieve
         # the pointer to the tensor by temporarily setting self.point_to_attr
         # to None. Note that the id & id_at_location are the same, so now
         # self is (temporarily) a direct reference to tensor, but self.id in
-        # the message also refers to the tensor while we would need to refer
+        # the message also refers to the tensor while we might need to refer
         # to the tensor.grad_fn, that's why trigger_hook_function actually
-        # takes the .grad_fn attribute
+        # checks the .grad_fn attribute
         point_to_attr = self.point_to_attr
         self.point_to_attr = None
         # send a request to set a hook to trigger back the real hook

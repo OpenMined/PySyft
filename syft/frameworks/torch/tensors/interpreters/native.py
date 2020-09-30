@@ -124,14 +124,18 @@ class TorchTensor(AbstractTensor):
         Run the hook function stored in the _hook_function attribute using the
         pointer to the gradient received.
 
-        trigger_hook_function is called on the tensor while it should run on the
+        trigger_hook_function is called on the tensor while it can be run on the
         tensor.grad_fn (confusion is due to both sharing the same id), that's why
-        we get the grad_fn attribute.
+        we check the grad_fn attribute also. For module hooks, grad_fn will be
+        used, for simple tensor hooks, it won't by default.
 
         Args:
             outputs (PointerTensor): a pointer to a remote gradient
         """
-        self.child.grad_fn.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
+        if hasattr(self.child.grad_fn.child, "_hook_function"):
+            self.child.grad_fn.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
+        else:
+            self.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
 
     def set_grad(self, grad):
         self.grad = grad
