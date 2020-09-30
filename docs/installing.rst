@@ -407,19 +407,9 @@ or in case you are lazy! you can use  `Github for Desktop <https://desktop.githu
 Step 2 - Install Microsoft Build tools
 --------------------------------------
 
-Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and click on `Free download` under **Community** in the Visual Studio download section. This is illustrated in the following screenshot:
+Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and click on `Free download` under **Community** in the Visual Studio download section. 
 
-.. image:: ./images/microsoft_build_tools_download.png
-  :width: 400
-  :alt: Downlaod_window
-
-After the download is finished, run the downloaded package. You will eventually get the following window:
-
-.. image:: ./images/microsoft_build_tools_choice.png
-  :width: 400
-  :alt: Options
-
-Select `Desktop development with C++` and click on `Install` at the bottom-right corner of the page. (In the above screenshot you see a `Close` button instead since I have already installed it.)
+After the download is finished, run the downloaded package. In the installation window select `Desktop development with C++` and click on `Install` at the bottom-right corner of the page. (In the above screenshot you see a `Close` button instead since I have already installed it.)
 
 Wait until the the install has finished.
 
