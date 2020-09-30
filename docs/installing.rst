@@ -401,19 +401,23 @@ Windows operating system.
 Step 1 - Install Git
 --------------------
 
-Here is the download link for Git on windows: [git-scm.com/download/win](https://git-scm.com/download/win)
-or in case you are lazy! you can use [github desktop](https://desktop.github.com/)
+Here is the download link for Git on windows:  `Git for Windows <https://gitforwindows.org/>`_
+or in case you are lazy! you can use  `Github for Desktop <https://desktop.github.com/>`_
 
 Step 2 - Install Microsoft Build tools
 --------------------------------------
 
-Go to the [download page](https://visualstudio.microsoft.com/downloads/) and click on `Free download` under **Community** in the Visual Studio download section. This is illustrated in the following screenshot:
+Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and click on `Free download` under **Community** in the Visual Studio download section. This is illustrated in the following screenshot:
 
-![Downlaod_window](./images/microsoft_build_tools_download.png)
+.. image:: ./images/microsoft_build_tools_download.png
+  :width: 400
+  :alt: Downlaod_window
 
 After the download is finished, run the downloaded package. You will eventually get the following window:
 
-![Options](./images/microsoft_build_tools_choice.png)
+.. image:: ./images/microsoft_build_tools_choice.png
+  :width: 400
+  :alt: Options
 
 Select `Desktop development with C++` and click on `Install` at the bottom-right corner of the page. (In the above screenshot you see a `Close` button instead since I have already installed it.)
 
