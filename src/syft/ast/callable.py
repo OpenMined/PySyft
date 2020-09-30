@@ -8,6 +8,7 @@ from typing import Union
 
 # syft relative
 from .. import ast
+from .. import lib
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
@@ -26,7 +27,6 @@ class Callable(ast.attribute.Attribute):
         return_callable: bool = False,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
-
         if (
             hasattr(self, "client")
             and self.client is not None
@@ -35,13 +35,25 @@ class Callable(ast.attribute.Attribute):
             return_tensor_type_pointer_type = self.client.lib_ast(
                 path=self.return_type_name, return_callable=True
             ).pointer_type
+
             ptr = return_tensor_type_pointer_type(client=self.client)
+
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = ast.klass.pointerize_args_and_kwargs(
+                args=downcast_args, kwargs=downcast_kwargs, client=self.client
+            )
 
             if self.path_and_name is not None:
                 msg = RunFunctionOrConstructorAction(
                     path=self.path_and_name,
-                    args=args,
-                    kwargs=kwargs,
+                    args=pointer_args,
+                    kwargs=pointer_kwargs,
                     id_at_location=ptr.id_at_location,
                     address=self.client.address,
                 )
@@ -64,9 +76,6 @@ class Callable(ast.attribute.Attribute):
     def add_path(
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:
-
-        self.return_type_name = return_type_name
-
         if index < len(path):
             if path[index] not in self.attrs:
 

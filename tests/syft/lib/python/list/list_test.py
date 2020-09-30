@@ -353,7 +353,11 @@ class CommonTest(unittest.TestCase):
         self.assertRaises(BadExc, d.remove, "c")
         for x, y in zip(d, e):
             # verify that original order and values are retained.
-            self.assertIs(x, y)
+            # we upcast to remove the randomly generated IDs
+            if hasattr(x, "upcast") and hasattr(y, "upcast"):
+                self.assertIs(x.upcast(), y.upcast())
+            else:
+                self.assertIs(x, y)
 
     def test_index(self) -> None:
         u = List([0, 1])
@@ -463,7 +467,12 @@ class CommonTest(unittest.TestCase):
         u = List([1, 2, [3, 4], 5])
         v = u.copy()
         self.assertEqual(u, v)
-        self.assertIs(v[3], u[3])
+
+        # we upcast to remove the randomly generated IDs
+        if hasattr(v[3], "upcast") and hasattr(u[3], "upcast"):
+            self.assertIs(v[3].upcast(), u[3].upcast())
+        else:
+            self.assertIs(v[3], u[3])
 
         self.assertRaises(TypeError, u.copy, None)
 

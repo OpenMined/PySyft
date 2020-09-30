@@ -49,6 +49,10 @@ class Bool(int, PyPrimitive):
         """
         return self._id
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> bool:
+        return bool(self)
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __abs__(self) -> PyPrimitive:
         return PrimitiveFactory.generate_primitive(value=self.value.__abs__())

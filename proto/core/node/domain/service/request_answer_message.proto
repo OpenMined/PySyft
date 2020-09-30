@@ -5,9 +5,8 @@ package syft.core.node.domain.service;
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
-
 message RequestAnswerMessage {
-    syft.core.common.UID request_id = 1;
-    syft.core.io.Address address = 2;
-    syft.core.io.Address reply_to = 3;
+  syft.core.common.UID request_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
 }

@@ -15,6 +15,7 @@
 # numpy==1.13.3
 # scipy==1.0
 #
+aiortc
 bandit
 black
 dataclasses # backport to python 3.6
@@ -30,10 +31,12 @@ pyjwt
 PyNaCl
 pyscaffold[all]
 pytest
+pytest-asyncio
 pytest-cov
 requests
 sqlitedict
 torch>=1.4
+torchvision
 typeguard
 typing-extensions # backport to older python 3
 websockets

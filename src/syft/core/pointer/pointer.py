@@ -97,7 +97,11 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
+from ..io.address import Address
 from ..node.abstract.node import AbstractNode
+from ..node.common.action.garbage_collect_object_action import (
+    GarbageCollectObjectAction,
+)
 from ..node.common.action.get_object_action import GetObjectAction
 from ..store.storeable_object import StorableObject
 
@@ -137,6 +141,7 @@ class Pointer(AbstractPointer):
         self.id_at_location = id_at_location
         self.tags = tags
         self.description = description
+        self.gc_enabled = True
 
     def get(
         self,
@@ -236,6 +241,7 @@ class Pointer(AbstractPointer):
     def request(
         self,
         request_name: str = "",
+        name: str = "",
         reason: str = "",
     ) -> None:
         """Method that requests access to the data on which the pointer points to.
@@ -272,6 +278,11 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestMessage
 
+        # optional kwarg to set name
+        request_name = request_name
+        if len(name) > 0:
+            request_name = name
+
         msg = RequestMessage(
             request_name=request_name,
             request_description=reason,
@@ -280,6 +291,8 @@ class Pointer(AbstractPointer):
             object_id=self.id_at_location,
             requester_verify_key=self.client.verify_key,
         )
+
+        print("Request Message Id:" + str(msg.id))
 
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -305,3 +318,18 @@ class Pointer(AbstractPointer):
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 
         return response.status
+
+    def __del__(self) -> None:
+        _client_type = type(self.client)
+        if (_client_type == Address) or issubclass(_client_type, AbstractNode):
+            # it is a serialized pointer that we receive from another client do nothing
+            return
+
+        if self.gc_enabled:
+            # Create the delete message
+            msg = GarbageCollectObjectAction(
+                obj_id=self.id_at_location, address=self.client.address
+            )
+
+            # Send the message
+            self.client.send_eventual_msg_without_reply(msg=msg)

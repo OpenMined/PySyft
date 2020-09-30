@@ -39,6 +39,7 @@ from ...io.route import SoloRoute
 from ...io.virtual import VirtualClientConnection
 from ...node.common.service.obj_search_service import ObjectSearchMessage
 from ..abstract.node import AbstractNodeClient
+from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 
 
@@ -219,9 +220,15 @@ class Client(AbstractNodeClient):
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
-
         if response.is_valid:
-            return response.message
+            # check if we have an ExceptionMessage to trigger a local exception
+            # from a remote exception that we caused
+            if isinstance(response.message, ExceptionMessage):
+                exception_msg = response.message
+                exception = exception_msg.exception_type(exception_msg.exception_msg)
+                raise exception
+            else:
+                return response.message
 
         raise Exception(
             "Response was signed by a fake key or was corrupted in transit."
@@ -374,6 +381,7 @@ class StoreClient:
         # This is because of a current limitation in Pointer where we cannot
         # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
         for result in results:
+            result.gc_enabled = False
             result.client = self.client
 
         return results

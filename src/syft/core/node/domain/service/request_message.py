@@ -18,6 +18,7 @@ from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from ....node.common.client import Client
+from ....node.common.node import DuplicateRequestException
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
@@ -41,9 +42,11 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         owner_address: Address,
         request_name: str = "",
         request_description: str = "",
-        request_id: UID = UID(),
+        request_id: Optional[UID] = None,
         owner_client_if_available: Optional[Client] = None,
     ):
+        if request_id is None:
+            request_id = UID()
         super().__init__(address=address, msg_id=request_id)
         self.request_name = request_name
         self.request_description = request_description
@@ -61,6 +64,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
                 request_id=self.id,
             )
             self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
+            print("Granting request: " + str(self.id))
         else:
             raise Exception("No owner_client_if_available")
 
@@ -142,7 +146,14 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         # since we reject/accept requests based on the ID, we don't want there to be
         # multiple requests with the same ID because this could cause security problems.
         for req in node.requests:
-            if req.id == msg.id:
-                raise Exception("This request already exists!")
+            # the same user has requested the same object so we raise a
+            # DuplicateRequestException
+            if (
+                req.object_id == msg.object_id
+                and req.requester_verify_key == msg.requester_verify_key
+            ):
+                raise DuplicateRequestException(
+                    f"You have already requested {msg.object_id}"
+                )
 
         node.requests.append(msg)

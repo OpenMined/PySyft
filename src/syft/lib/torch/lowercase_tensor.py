@@ -12,7 +12,6 @@ class LowercaseTensorConstructor(ObjectConstructor):
 
     # Step 2: Store a reference to the location on which this constructor currently lives.
     # This is also the location that this custom constructor will live once installed using
-    # self.install_inside_library()
     constructor_location = th
 
     original_type = th.tensor
