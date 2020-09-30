@@ -70,6 +70,14 @@ def test_dataset_to_federate(workers):
 
     dataset = BaseDataset(th.tensor([1.0, 2, 3, 4, 5, 6]), th.tensor([1.0, 2, 3, 4, 5, 6]))
 
+    fed_dataset = dataset.federate(bob, alice)
+
+    assert isinstance(fed_dataset, sy.FederatedDataset)
+
+    assert fed_dataset.workers == ["bob", "alice"]
+    assert fed_dataset["bob"].location.id == "bob"
+    assert len(fed_dataset) == 6
+
     fed_dataset = dataset.federate((bob, alice))
 
     assert isinstance(fed_dataset, sy.FederatedDataset)
