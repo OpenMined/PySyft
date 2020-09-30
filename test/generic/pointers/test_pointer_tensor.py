@@ -399,6 +399,18 @@ def test_remote_function_with_multi_ouput(workers):
     assert argmax_idx.get().item() == 3
 
 
+def test_inplace_binary_method_with_non_pointers(workers):
+    """Under very specific conditions, ie inplace methods containing a
+    single argument which is a Tensor, we allow automatic sending of
+    this tensor. This is helpful to facilitate utilizing python code
+    of other library for remote execution"""
+    alice = workers["alice"]
+    p = th.tensor([1.0, 2]).send(alice)
+    x = th.tensor([1.0, 1])
+    p += x
+    assert (p.get() == th.tensor([2.0, 3])).all()
+
+
 def test_raising_error_when_item_func_called(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     with pytest.raises(RuntimeError):
