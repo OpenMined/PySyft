@@ -618,3 +618,39 @@ def test_iterable_pointer(workers):
         assert len(alice.object_store) == 3
         assert isinstance(tensor, PointerTensor)
         assert torch.all(tensor.get() == t[:, 1][idx])
+
+
+def test_register_hook_on_remote_tensor_or_modules(workers):
+    alice = workers["alice"]
+    # we need to set a storage object on the local worker
+    syft.local_worker.is_client_worker = False
+
+    ## Tensor hook
+
+    flag = []
+
+    def hook_function(inputs, outputs):
+        flag.append(True)
+
+    p = th.tensor([1.0, 2], requires_grad=True).send(alice)
+    p.register_hook(hook_function)
+
+    assert len(flag) == 0
+    p.sum().backward()
+    assert len(flag) == 1
+
+    ## Module hook
+
+    flag = []
+
+    def hook_function(model, inputs, outputs):
+        flag.append(True)
+
+    x = th.tensor([1.0, 2])
+    model = torch.nn.Linear(2, 1)
+    model.register_backward_hook(hook_function)
+    loss = model(x)
+
+    assert len(flag) == 0
+    loss.backward()
+    assert len(flag) == 1
