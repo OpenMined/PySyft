@@ -241,6 +241,7 @@ class Pointer(AbstractPointer):
     def request(
         self,
         request_name: str = "",
+        name: str = "",
         reason: str = "",
     ) -> None:
         """Method that requests access to the data on which the pointer points to.
@@ -276,6 +277,11 @@ class Pointer(AbstractPointer):
         """
         # syft relative
         from ..node.domain.service import RequestMessage
+
+        # optional kwarg to set name
+        request_name = request_name
+        if len(name) > 0:
+            request_name = name
 
         msg = RequestMessage(
             request_name=request_name,

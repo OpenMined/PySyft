@@ -36,7 +36,7 @@ class RequestQueueClient:
         ).requests
 
         for request in requests:
-            request.gc_enabled = False
+            request.gc_enabled = False  # type: ignore
             request.owner_client_if_available = self.client
 
         return requests
