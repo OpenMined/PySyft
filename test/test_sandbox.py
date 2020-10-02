@@ -42,6 +42,7 @@ def test_sandbox():
 
     try:
         from tensorflow.keras import datasets  # noqa: F401
+
         assert bob.search(["#fashion_mnist"])  # noqa: F821
         assert bob.search(["#cifar10"])  # noqa: F821
     except ImportError:
