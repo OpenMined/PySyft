@@ -85,7 +85,7 @@ make notebook
 ```
 
 This assumes that you want to use a local virtual environment. It will install it
-independently to the condo environment if you already installed one, or any
+independently to the conda environment if you already installed one, or any
 other virtual environment you might have set up.
 
 Once the jupyter notebook launches on your browser, select the pysyft
