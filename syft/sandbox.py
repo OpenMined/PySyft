@@ -147,19 +147,19 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         diabetes = load_sklearn(load_diabetes, *["#diabetes"])
         if verbose:
             print("\t\t- Breast Cancer Dataset")
-        breast_cancer = load_sklearn(load_breast_cancer)
+        breast_cancer = load_sklearn(load_breast_cancer, *["#breast_cancer_dataset"])
         if verbose:
             print("\t- Digits Dataset")
-        digits = load_sklearn(load_digits)
+        digits = load_sklearn(load_digits, *["#digits_dataset"])
         if verbose:
             print("\t\t- Iris Dataset")
-        iris = load_sklearn(load_iris)
+        iris = load_sklearn(load_iris, *["#iris_dataset"])
         if verbose:
             print("\t\t- Wine Dataset")
-        wine = load_sklearn(load_wine)
+        wine = load_sklearn(load_wine, *["#wine_dataset"])
         if verbose:
             print("\t\t- Linnerud Dataset")
-        linnerud = load_sklearn(load_linnerud)
+        linnerud = load_sklearn(load_linnerud, *["#linnerrud_dataset"])
         if tf_datasets_available:
             if verbose:
                 print("\tLoading datasets from TensorFlow datasets...")
