@@ -40,7 +40,7 @@ EQ = 0
 COMP = 1
 
 # number of processes
-N_CORES = 8
+N_CORES = max(4, multiprocessing.cpu_count())
 MULTI_LIMIT = 50_000
 
 

@@ -55,7 +55,7 @@ NOTE: If you are using a virtual environment, please be sure to use the correct 
 
 ### Deploying Workers
 
-You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
+You can follow along [this example](./examples/tutorials/tutorial-websocket/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
