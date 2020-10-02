@@ -41,7 +41,7 @@ def test_sandbox():
     assert bob.search(["#linnerrud_dataset"])  # noqa: F821
 
     try:
-        from tensorflow.keras import datasets  # pragma: no cover
+        from tensorflow.keras import datasets  # noqa: F401
         assert bob.search(["#fashion_mnist"])  # noqa: F821
         assert bob.search(["#cifar10"])  # noqa: F821
     except ImportError:
