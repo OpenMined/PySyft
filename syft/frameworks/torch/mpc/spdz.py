@@ -12,11 +12,8 @@ from syft.frameworks.torch.mpc.fss import N_CORES
 
 from .cuda import CUDALongTensor
 
+NAMESPACE = "syft.frameworks.torch.mpc.spdz"
 no_wrap = {"no_wrap": True}
-
-
-def full_name(f):
-    return f"syft.frameworks.torch.mpc.spdz.{f.__name__}"
 
 
 # share level
@@ -45,24 +42,6 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
         field=field,
     )
     return x - a, y - b
-
-
-def slice(x, j, slice_size):
-    x_slice = x[j * slice_size : (j + 1) * slice_size]
-    x_slice.owner = x.owner
-    return x_slice
-
-
-def triple_mat_mul(core_id, delta, epsilon, a, b):
-    cmd = th.matmul
-    delta = CUDALongTensor(delta)
-    epsilon = CUDALongTensor(epsilon)
-    a = CUDALongTensor(a)
-    b = CUDALongTensor(b)
-    delta_b = CUDALongTensor.matmul(delta, b)
-    a_epsilon = CUDALongTensor.matmul(a, epsilon)
-    delta_epsilon = CUDALongTensor.matmul(delta, epsilon)
-    return core_id, delta_b._tensor, a_epsilon._tensor, delta_epsilon._tensor
 
 
 # share level
@@ -183,7 +162,7 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
                 workers=locations,
                 commands=[
                     (
-                        full_name(spdz_compute),
+                        f"{NAMESPACE}.{spdz_compute.__name__}",
                         None,
                         (th.LongTensor([i]), delta, epsilon, kwargs_, op),
                         {},
