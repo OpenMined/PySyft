@@ -190,6 +190,27 @@ class TorchTensor(AbstractTensor):
             return self.native_data
 
     @property
+    def grad_fn(self):
+        if self.is_wrapper:
+            return self.child.grad_fn
+        else:
+            return self.native_grad_fn
+
+    @grad_fn.setter
+    def grad_fn(self, new_grad_fn):
+        if new_grad_fn is not None and (
+            not isinstance(new_grad_fn, torch.Tensor) or hasattr(new_grad_fn, "child")
+        ):
+            self.child.grad_fn = new_grad_fn
+        else:
+            if hasattr(self, "native_grad_fn"):
+                with torch.no_grad():
+                    self.native_grad_fn = new_grad_fn
+            elif new_grad_fn is not None:
+                self.native_grad_fn = new_grad_fn
+        return self
+
+    @property
     def grad(self):
         if self.is_wrapper:
             child_grad = self.child.grad
