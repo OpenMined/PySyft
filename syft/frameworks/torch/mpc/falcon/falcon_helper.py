@@ -99,8 +99,6 @@ class FalconHelper:
         c = torch.randint(high=2, size=shape)
         c_2 = c.share(*players, protocol="falcon", field=2)
         c_L = c.share(*players, protocol="falcon", field=ring_size)
-        print(c_L)
-        print(c_2)
 
         xor_b_c = FalconHelper.xor(b, c_2).reconstruct()
         d = c_L * (1 - 2 * xor_b_c) + xor_b_c
