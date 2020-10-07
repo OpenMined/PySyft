@@ -191,6 +191,7 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_data
 
+    @property
     def grad_fn(self):
         if self.is_wrapper:
             return self.child.grad_fn
@@ -210,20 +211,6 @@ class TorchTensor(AbstractTensor):
             elif new_grad_fn is not None:
                 self.native_grad_fn = new_grad_fn
         return self
-
-    @property
-    def players(self):
-        if hasattr(self, "child") and isinstance(self.child, ReplicatedSharingTensor):
-            return self.child.players
-        raise ValueError('Only ReplicatedSharingTensors have property "players"')
-
-    @property
-    def ring_size(self):
-        if hasattr(self, "child") and isinstance(
-            self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
-        ):
-            return self.child.ring_size
-        raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
 
     @property
     def grad(self):
@@ -266,6 +253,20 @@ class TorchTensor(AbstractTensor):
             elif new_grad is not None:
                 self.native_grad = new_grad
         return self
+
+    @property
+    def players(self):
+        if hasattr(self, "child") and isinstance(self.child, ReplicatedSharingTensor):
+            return self.child.players
+        raise ValueError('Only ReplicatedSharingTensors have property "players"')
+
+    @property
+    def ring_size(self):
+        if hasattr(self, "child") and isinstance(
+                self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
+        ):
+            return self.child.ring_size
+        raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
 
     def __str__(self) -> str:
         if self.has_child():
