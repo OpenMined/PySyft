@@ -263,7 +263,7 @@ class TorchTensor(AbstractTensor):
     @property
     def ring_size(self):
         if hasattr(self, "child") and isinstance(
-                self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
+            self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
         ):
             return self.child.ring_size
         raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
