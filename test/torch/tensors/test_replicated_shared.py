@@ -7,7 +7,7 @@ def test_sharing(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, 7, 11])
     secret = plain_text.share(bob, alice, james, protocol="falcon")
-    assert type(secret) == syft.ReplicatedSharingTensor
+    assert isinstance(secret, syft.ReplicatedSharingTensor)
     assert type(secret.child) == dict
 
 
@@ -33,6 +33,13 @@ def test_public_add(workers):
     assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
 
 
+def test_reversed_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = 1
+    assert ((y + x).reconstruct() == torch.Tensor([8, 5])).all()
+
+
 def test_private_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
@@ -47,6 +54,13 @@ def test_public_sub(workers):
     assert x.sub(y).reconstruct() == 4
 
 
+def test_reversed_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
+    y = 1
+    assert ((y - x).reconstruct() == torch.Tensor([-6, -3])).all()
+
+
 def test_add_with_operator(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
@@ -58,6 +72,12 @@ def test_public_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
     assert ((x * 2).reconstruct() == torch.Tensor([14, -8])).all()
+
+
+def test_reversed_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
+    assert ((2 * x).reconstruct() == torch.Tensor([14, -8])).all()
 
 
 def test_private_mul(workers):
@@ -98,57 +118,9 @@ def test_get_players(workers):
 
 def test_view(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.rand([2, 1]).share(bob, alice, james, protocol="falcon")
+    x = torch.rand([2, 1]).long().share(bob, alice, james, protocol="falcon")
     x = x.view([1, 2])
     assert x.shape == torch.Size([1, 2])
-
-
-def test_conv2d_public(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
-        bob, alice, james, protocol="falcon"
-    )
-    y = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]])
-    assert (
-        x.conv2d(y, padding=1).reconstruct()
-        == torch.tensor([[[[123, 180, 132], [224, 312, 224], [132, 180, 123]]]])
-    ).all()
-
-
-def test_conv2d_private(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
-        bob, alice, james, protocol="falcon"
-    )
-    y = torch.tensor([[[[1, 2, 3, 4], [4, 5, 6, 7], [1, 2, 3, 4], [4, 5, 6, 7]]]]).share(
-        bob, alice, james, protocol="falcon"
-    )
-    assert (
-        x.conv2d(y, padding=1).reconstruct()
-        == torch.tensor([[[[123, 180, 132], [224, 312, 224], [132, 180, 123]]]])
-    ).all()
-
-
-def test_public_xor(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
-    y = torch.tensor([1])
-    a = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
-    b = torch.tensor([0])
-    assert (x.xor(y).reconstruct() == torch.tensor(1)).all()
-    assert (x.xor(b).reconstruct() == torch.tensor(0)).all()
-    assert (a.xor(y).reconstruct() == torch.tensor(0)).all()
-    assert (a.xor(b).reconstruct() == torch.tensor(1)).all()
-
-
-def test_private_xor(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = torch.tensor([0]).share(bob, alice, james, protocol="falcon", field=2)
-    y = torch.tensor([1]).share(bob, alice, james, protocol="falcon", field=2)
-    assert (x.xor(y).reconstruct() == torch.tensor(1)).all()
-    assert (x.xor(x).reconstruct() == torch.tensor(0)).all()
-    assert (y.xor(y).reconstruct() == torch.tensor(0)).all()
-    assert (y.xor(x).reconstruct() == torch.tensor(1)).all()
 
 
 # corner cases

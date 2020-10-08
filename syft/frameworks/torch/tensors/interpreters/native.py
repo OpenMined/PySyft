@@ -89,6 +89,54 @@ class TorchTensor(AbstractTensor):
 
         return trigger_origin_backward
 
+    def register_callback_hook(self, message, location):
+        """
+        Register a Torch hook (that is triggered when the `self` tensor has a gradient
+        update) which will send back to a location a specific message whose arguments
+        are updated with a reference to `self`.
+
+        Args:
+            message (Message): the message to send back
+            location (BaseWorker): the worker to which the message should be sent
+        """
+        location = self.owner.get_worker(location)
+
+        def callback(grad):
+            assert isinstance(grad, torch.Tensor), "Grad in callback should be a Tensor"
+            # the grad tensor is created by the torch backprop and might not be registered properly
+            self.owner.register_obj(grad)
+            pointer = PointerTensor(
+                location=self.owner,
+                id_at_location=grad.id,
+                owner=location,
+                id=syft.ID_PROVIDER.pop(),
+            )
+            # update the message arguments
+            message.action.args = (pointer,)
+            self.owner.send_msg(message=message, location=location)
+            # De-register the grad after the callback has been handled
+            self.owner.de_register_obj(grad)
+
+        self.register_hook(callback)
+
+    def trigger_hook_function(self, outputs):
+        """
+        Run the hook function stored in the _hook_function attribute using the
+        pointer to the gradient received.
+
+        trigger_hook_function is called on the tensor while it can be run on the
+        tensor.grad_fn (confusion is due to both sharing the same id), that's why
+        we check the grad_fn attribute also. For module hooks, grad_fn will be
+        used, for simple tensor hooks, it won't by default.
+
+        Args:
+            outputs (PointerTensor): a pointer to a remote gradient
+        """
+        if hasattr(self.child.grad_fn.child, "_hook_function"):
+            self.child.grad_fn.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
+        else:
+            self.child._hook_function(inputs=None, outputs=(outputs.wrap(),))
+
     def set_grad(self, grad):
         self.grad = grad
 
@@ -140,6 +188,27 @@ class TorchTensor(AbstractTensor):
             return self.child.data
         else:
             return self.native_data
+
+    @property
+    def grad_fn(self):
+        if self.is_wrapper:
+            return self.child.grad_fn
+        else:
+            return self.native_grad_fn
+
+    @grad_fn.setter
+    def grad_fn(self, new_grad_fn):
+        if new_grad_fn is not None and (
+            not isinstance(new_grad_fn, torch.Tensor) or hasattr(new_grad_fn, "child")
+        ):
+            self.child.grad_fn = new_grad_fn
+        else:
+            if hasattr(self, "native_grad_fn"):
+                with torch.no_grad():
+                    self.native_grad_fn = new_grad_fn
+            elif new_grad_fn is not None:
+                self.native_grad_fn = new_grad_fn
+        return self
 
     @property
     def grad(self):
@@ -667,7 +736,7 @@ class TorchTensor(AbstractTensor):
                 return tensor
 
         if inplace:
-            self.set_(tensor)
+            self.set_(tensor.native_type(self.dtype))
             if hasattr(tensor, "child"):
                 self.child = tensor.child
             else:
@@ -990,15 +1059,26 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, protocol="mpc", **kwargs):
+    def encrypt(self, protocol="mpc", inplace=False, **kwargs):
         """
         This method will encrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
+            protocol (str): Currently supports the following crypto protocols:
+                - 'snn' for SecureNN
+                - 'fss' for Function Secret Sharing (see AriaNN paper)
+                - 'mpc' (Multi Party Computation) defaults to most standard protocol,
+                    currently 'snn'
+                - 'paillier' for Paillier Homomorphic Encryption
+
+            inplace (bool): compute the operation inplace (default is False)
+
             **kwargs:
+                With respect to Fixed Precision accepts:
+                    precision_fractional (int)
+                    dtype (str)
+
                 With Respect to MPC accepts:
                     workers (list): Parties involved in the sharing of the Tensor
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
@@ -1019,22 +1099,33 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if protocol.lower() == "mpc":
+        protocol = protocol.lower()
+
+        if protocol in {"mpc", "snn", "fss"}:
+            if protocol == "mpc":
+                protocol = "snn"
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
             requires_grad = kwargs.pop("requires_grad", False)
             no_wrap = kwargs.pop("no_wrap", False)
+            dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
-
-            x_shared = self.fix_prec(**kwargs_fix_prec).share(
-                *workers,
+            kwargs_share = dict(
                 crypto_provider=crypto_provider,
                 requires_grad=requires_grad,
                 no_wrap=no_wrap,
+                protocol=protocol,
+                dtype=dtype,
             )
-            return x_shared
 
-        elif protocol.lower() == "paillier":
+            if not inplace:
+                x_shared = self.fix_prec(**kwargs_fix_prec).share(*workers, **kwargs_share)
+                return x_shared
+            else:
+                self.fix_prec_(**kwargs_fix_prec).share_(*workers, **kwargs_share)
+                return self
+
+        elif protocol == "paillier":
             public_key = kwargs.get("public_key")
 
             x = self.copy()
@@ -1046,15 +1137,16 @@ class TorchTensor(AbstractTensor):
         else:
             raise NotImplementedError(
                 "Currently the .encrypt() method only supports Paillier Homomorphic "
-                "Encryption and Secure Multi-Party Computation"
+                f"Encryption and Secure Multi-Party Computation, but {protocol} was given"
             )
 
-    def decrypt(self, **kwargs):
+    def decrypt(self, inplace=False, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
+            inplace (bool): compute the operation inplace (default is False)
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1075,9 +1167,13 @@ class TorchTensor(AbstractTensor):
             warnings.warn("protocol should no longer be used in decrypt")
 
         if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
-            x_encrypted = self.copy()
-            x_decrypted = x_encrypted.get().float_prec()
-            return x_decrypted
+            if not inplace:
+                x_encrypted = self.copy()
+                x_decrypted = x_encrypted.get().float_prec()
+                return x_decrypted
+            else:
+                self.get_().float_prec_()
+                return self
 
         elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace

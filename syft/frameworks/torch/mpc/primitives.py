@@ -51,7 +51,7 @@ class PrimitiveStorage:
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return FSS keys primitives
+        Return keys primitives
 
         Args:
             op (str): primitive type, should be fss_eq, fss_comp, mul or matmul
@@ -94,7 +94,11 @@ class PrimitiveStorage:
                         f"n_instances={n_instances}"
                     )
                 raise EmptyCryptoPrimitiveStoreError(
-                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                    self,
+                    available_instances=available_instances,
+                    n_instances=n_instances,
+                    op=op,
+                    **kwargs,
                 )
         elif op in {"fss_eq", "fss_comp"}:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
@@ -147,7 +151,11 @@ class PrimitiveStorage:
                         f"n_instances={n_instances}"
                     )
                 raise EmptyCryptoPrimitiveStoreError(
-                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                    self,
+                    available_instances=available_instances,
+                    n_instances=n_instances,
+                    op=op,
+                    **kwargs,
                 )
 
     def provide_primitives(

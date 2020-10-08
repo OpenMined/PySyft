@@ -5,7 +5,7 @@ import timeit
 import syft
 import matplotlib.pyplot as plt
 
-from benchmarks.frameworks.torch.mpc.scripts.workers_initialization import workers, hook
+from benchmarks.frameworks.torch.mpc.scripts.abstract.workers_initialization import workers, hook
 from benchmarks.frameworks.torch.mpc.scripts.benchmark_sample_data import (
     b_data_share_get,
     b_data_max_pool2d,
