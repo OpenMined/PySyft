@@ -45,5 +45,5 @@ def test_sandbox():
 
         assert bob.search(["#fashion_mnist"])  # noqa: F821
         assert bob.search(["#cifar10"])  # noqa: F821
-    except ImportError:
-        pass
+    except ImportError:  # pragma: no cover
+        pass  # pragma: no cover
