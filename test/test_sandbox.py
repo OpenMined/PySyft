@@ -9,7 +9,7 @@ from syft.grid.private_grid import PrivateGridNetwork
 
 
 def test_sandbox():
-    sy.create_sandbox(globals(), download_data=False)
+    sy.create_sandbox(globals(), download_data=True)
 
     assert alice == alice  # noqa: F821
     assert isinstance(alice, sy.VirtualWorker)  # noqa: F821
