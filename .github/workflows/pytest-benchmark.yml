@@ -39,13 +39,13 @@ jobs:
         python setup.py install
     - name: Run benchmark
       run: |
-        pytest benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py --benchmark-json pytest_benchmark_output.json
+        pytest benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py --benchmark-json benchmarks/frameworks/torch/mpc/pytestbenchmark/pytest_benchmark_output.json
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
         name: Python Benchmark with pytestbenchmark
         tool: 'pytest'
-        output-file-path: pytest_benchmark_output.json
+        output-file-path: benchmarks/frameworks/torch/mpc/pytestbenchmark/pytest_benchmark_output.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: true
         # Show alert with commit comment on detecting possible performance regression
