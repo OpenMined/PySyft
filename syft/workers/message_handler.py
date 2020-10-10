@@ -206,8 +206,8 @@ class BaseMessageHandler(AbstractMessageHandler):
         elif not get_copy:
             self.object_store.de_register_obj(obj)
             return obj
-        else:
-            return obj
+
+        return obj
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         for object_id in msg.object_ids:

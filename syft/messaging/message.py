@@ -414,7 +414,9 @@ class ObjectRequestMessage(Message):
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
-        return ObjectRequestMessage(obj_id=obj_id, user=None, reason=proto_msg.reason)
+        return ObjectRequestMessage(
+            obj_id=obj_id, user=None, reason=proto_msg.reason, get_copy=False
+        )
 
     @staticmethod
     def get_protobuf_schema():
