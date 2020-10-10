@@ -205,7 +205,6 @@ class BaseMessageHandler(AbstractMessageHandler):
             raise GetNotPermittedError()
         elif not get_copy:
             self.object_store.de_register_obj(obj)
-            return obj
 
         return obj
 
