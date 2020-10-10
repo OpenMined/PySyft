@@ -38,7 +38,7 @@ TEST_VALS_INTEGERS = [
 def test_public_xor(x_val, y, x_xor_y, workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = x_val.share(bob, alice, james, protocol="falcon", field=2)
-    assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
+    assert (FalconHelper.xor(x.child, y).reconstruct() == x_xor_y).all()
 
 
 @pytest.mark.parametrize("x_val, y_val, x_xor_y", TEST_VALS_TENSORS)
@@ -46,7 +46,7 @@ def test_private_xor(x_val, y_val, x_xor_y, workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = x_val.share(bob, alice, james, protocol="falcon", field=2)
     y = y_val.share(bob, alice, james, protocol="falcon", field=2)
-    assert (FalconHelper.xor(x, y).reconstruct() == x_xor_y).all()
+    assert (FalconHelper.xor(x.child, y.child).reconstruct() == x_xor_y).all()
 
 
 @pytest.mark.parametrize("bit_select", [0, 1])
@@ -95,3 +95,27 @@ def test_determine_sign(beta, workers):
     plaintext = FalconHelper.determine_sign(x_shared, beta).reconstruct()
 
     assert (expected_plaintext == plaintext).all()
+
+
+def test_rst_wrapper(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    workers = [bob, alice, james]
+    x = torch.tensor([0, 1, 2])
+    rst_wrapper = x.share(*workers, protocol="falcon", field=2)
+    assert FalconHelper.xor(rst_wrapper, 1).is_wrapper
+
+    y = torch.tensor([4, 5, 6])
+    other_wrapper = y.share(*workers, protocol="falcon", field=2)
+    assert FalconHelper.xor(rst_wrapper, other_wrapper).is_wrapper
+
+
+def test_rst_no_wrap(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    workers = [bob, alice, james]
+    x = torch.tensor([0, 1, 2])
+    simple_rst = x.share(*workers, protocol="falcon", field=2).child
+    assert not FalconHelper.xor(simple_rst, 1).is_wrapper
+
+    y = torch.tensor([4, 5, 6])
+    other_wrapper = y.share(*workers, protocol="falcon", field=2)
+    assert not FalconHelper.xor(simple_rst, other_wrapper).is_wrapper

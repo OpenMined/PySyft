@@ -577,6 +577,29 @@ def test_setting_back_grad_to_origin_after_move(workers):
         assert (x.grad == th.tensor([4.0, 4.0, 4.0, 4.0, 4.0])).all()
 
 
+def test_remote_grad_fn(workers):
+    """
+    Test that grad_fn can be accessed remotely
+    """
+    alice = workers["alice"]
+
+    t = th.tensor([1.0, 1], requires_grad=True)
+    p = t.sum()
+    p.backward()
+    expected_type = type(p.grad_fn)
+
+    x = th.tensor([1.0, 1], requires_grad=True).send(alice)
+    p = x.sum()
+    p.backward()
+    p_grad_fn = p.child.grad_fn.child
+
+    assert isinstance(p_grad_fn, syft.PointerTensor)
+
+    remote_grad_fn = alice._objects[p_grad_fn.id_at_location]
+
+    assert type(remote_grad_fn.grad_fn) == expected_type
+
+
 def test_iadd(workers):
     alice = workers["alice"]
     a = torch.ones(1, 5)
@@ -635,36 +658,35 @@ def test_iterable_pointer(workers):
 def test_register_hook_on_remote_tensor_or_modules(workers):
     alice = workers["alice"]
     # we need to set a storage object on the local worker
-    syft.local_worker.is_client_worker = False
 
-    ## Tensor hook
+    with syft.local_worker.registration_enabled():
 
-    flag = []
+        ## Tensor hook
 
-    def hook_function(inputs, outputs):
-        flag.append(True)  # pragma: no cover
+        flag = []
 
-    p = th.tensor([1.0, 2], requires_grad=True).send(alice)
-    p.register_hook(hook_function)
+        def hook_function(inputs, outputs):
+            flag.append(True)  # pragma: no cover
 
-    assert len(flag) == 0
-    p.sum().backward()
-    assert len(flag) == 1
+        p = th.tensor([1.0, 2], requires_grad=True).send(alice)
+        p.register_hook(hook_function)
 
-    ## Module hook
+        assert len(flag) == 0
+        p.sum().backward()
+        assert len(flag) == 1
 
-    flag = []
+        ## Module hook
 
-    def hook_function(model, inputs, outputs):
-        flag.append(True)  # pragma: no cover
+        flag = []
 
-    x = th.tensor([1.0, 2])
-    model = torch.nn.Linear(2, 1)
-    model.register_backward_hook(hook_function)
-    loss = model(x)
+        def hook_function(model, inputs, outputs):
+            flag.append(True)  # pragma: no cover
 
-    assert len(flag) == 0
-    loss.backward()
-    assert len(flag) == 1
+        x = th.tensor([1.0, 2])
+        model = torch.nn.Linear(2, 1)
+        model.register_backward_hook(hook_function)
+        loss = model(x)
 
-    syft.local_worker.is_client_worker = True
+        assert len(flag) == 0
+        loss.backward()
+        assert len(flag) == 1

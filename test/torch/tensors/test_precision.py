@@ -691,3 +691,38 @@ def test_dtype():
         and x.child.field == 2 ** 64
         and isinstance(x.child.child, torch.LongTensor)
     )
+
+
+def test_reconstruct(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3, -7, 11])
+
+    # test for (wrapper) > FPT > RST
+    secret = plain_text.fix_prec().share(bob, alice, james, protocol="falcon", field=2 ** 20)
+    decryption = secret.reconstruct().float_prec()
+    assert (plain_text == decryption).all()
+
+    # exception test for AST
+    secret = plain_text.fix_prec().share(bob, alice, crypto_provider=james)
+    with pytest.raises(ValueError):
+        decryption = secret.child.reconstruct()
+
+
+def test_ring_size(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    plain_text = torch.tensor([3, -7, 11])
+    ring_size = 2 ** 5
+
+    # test for (wrapper) > FPT > RST
+    secret = plain_text.fix_prec().share(bob, alice, james, protocol="falcon", field=ring_size)
+    assert secret.ring_size == ring_size
+
+    # exception test for AST
+    secret = plain_text.share(bob, alice, crypto_provider=james)
+    with pytest.raises(ValueError):
+        ring_size_ = secret.ring_size
+
+    # exception test for FPT
+    secret = plain_text.fix_prec()
+    with pytest.raises(ValueError):
+        ring_size_ = secret.ring_size
