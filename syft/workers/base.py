@@ -589,7 +589,12 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+        self,
+        obj_id: Union[str, int],
+        location: "BaseWorker",
+        user=None,
+        reason: str = "",
+        get_copy: bool = False,
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -599,10 +604,11 @@ class BaseWorker(AbstractWorker):
                 location.
             user (object, optional): user credentials to perform user authentication.
             reason (string, optional): a description of why the data scientist wants to see it.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason, get_copy), location)
         return obj
 
     # SECTION: Manage the workers network
