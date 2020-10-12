@@ -21,7 +21,13 @@ from geventwebsocket.websocket import Header
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
-from main.io.routes import *
+from main.routes import (
+    roles_blueprint,
+    users_blueprint,
+    setup_blueprint,
+    association_requests_blueprint,
+    infrastructure_blueprint,
+)
 
 import config
 
@@ -63,8 +69,13 @@ def create_app() -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(signaling, url_prefix=r"/signaling/")
-    app.register_blueprint(common, url_prefix=r"/")
+    app.register_blueprint(roles_blueprint, url_prefix=r"/roles/")
+    app.register_blueprint(users_blueprint, url_prefix=r"/users/")
+    app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
+    app.register_blueprint(infrastructure_blueprint, url_prefix=r"/networks/")
+    app.register_blueprint(
+        association_requests_blueprint, url_prefix=r"/association-requests/"
+    )
 
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
