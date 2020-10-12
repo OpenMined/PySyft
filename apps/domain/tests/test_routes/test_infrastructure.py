@@ -1,10 +1,8 @@
-
-
-
 def test_create_node(client):
     result = client.post("/dcfl/nodes", data={"name": "test_node", "password": "1234"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Node created succesfully!"}
+
 
 def test_get_all_nodes(client):
     result = client.get("/dcfl/nodes")
@@ -25,10 +23,12 @@ def test_get_specific_node(client):
         "node": {"id": "464615", "tags": ["node-a"], "description": "node sample"}
     }
 
+
 def test_update_node(client):
     result = client.put("/dcfl/nodes/546313", data={"node": "{new_node}"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Node changed succesfully!"}
+
 
 def test_delete_node(client):
     result = client.delete("/dcfl/nodes/546313")
@@ -37,9 +37,12 @@ def test_delete_node(client):
 
 
 def test_create_autoscaling(client):
-    result = client.post("/dcfl/nodes/autoscaling", data={"configs": "{auto-scaling_configs}"})
+    result = client.post(
+        "/dcfl/nodes/autoscaling", data={"configs": "{auto-scaling_configs}"}
+    )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Autoscaling condition created succesfully!"}
+
 
 def test_get_all_autoscaling_conditions(client):
     result = client.get("/dcfl/nodes/autoscaling")
@@ -50,15 +53,25 @@ def test_get_all_autoscaling_conditions(client):
         "condition_c": {"mem_usage": "92%", "cpu_usage": "77%", "disk_usage": "50%"},
     }
 
+
 def test_get_specific_autoscaling_condition(client):
     result = client.get("/dcfl/nodes/autoscaling/6413568")
     assert result.status_code == 200
-    assert result.get_json() == { "mem_usage": "80%", "cpu_usage": "90%", "disk_usage": "75%" }
+    assert result.get_json() == {
+        "mem_usage": "80%",
+        "cpu_usage": "90%",
+        "disk_usage": "75%",
+    }
+
 
 def test_update_autoscaling_condition(client):
-    result = client.put("/dcfl/nodes/autoscaling/6413568", data={"autoscaling": "{new_autoscaling_condition}"})
+    result = client.put(
+        "/dcfl/nodes/autoscaling/6413568",
+        data={"autoscaling": "{new_autoscaling_condition}"},
+    )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Autoscaling condition updated succesfully!"}
+
 
 def test_delete_autoscaling_condition(client):
     result = client.delete("/dcfl/nodes/autoscaling/6413568")
@@ -70,6 +83,7 @@ def test_create_worker(client):
     result = client.post("/dcfl/workers", data={"name": "test_worker"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Worker created succesfully!"}
+
 
 def test_get_all_workers(client):
     result = client.get("/dcfl/workers")
@@ -87,7 +101,10 @@ def test_get_all_workers(client):
 def test_get_specific_worker(client):
     result = client.get("/dcfl/workers/9846165")
     assert result.status_code == 200
-    assert result.get_json() == { "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320} }
+    assert result.get_json() == {
+        "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
+    }
+
 
 def test_delete_worker(client):
     result = client.delete("/dcfl/workers/9846165")

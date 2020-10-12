@@ -1,7 +1,7 @@
-"""
-Preset config values for Development/Tests/Production environments.
-If you need to add a new environment parameter ( database address, certificates, etc.)
-this is the right place to do it.
+"""Preset config values for Development/Tests/Production environments.
+
+If you need to add a new environment parameter ( database address,
+certificates, etc.) this is the right place to do it.
 """
 
 

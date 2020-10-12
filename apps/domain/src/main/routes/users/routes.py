@@ -78,8 +78,10 @@ def delete_user(user_id):
 
 @user_route.route("/login", methods=["POST"])
 def user_login():
-    mock_response = {"msg": "Successfully logged in!",
-                     "metadata": node.get_metadata_for_client()}
+    mock_response = {
+        "msg": "Successfully logged in!",
+        "metadata": node.get_metadata_for_client(),
+    }
     return Response(
         status=200, response=json.dumps(mock_response), mimetype="application/json"
     )

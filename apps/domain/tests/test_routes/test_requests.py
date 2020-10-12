@@ -1,8 +1,11 @@
-
 def test_create_user(client):
-    result = client.post("/dcfl/requests", data={"id": "61612325", "dataset": "12354", "reason": " reason sample"})
+    result = client.post(
+        "/dcfl/requests",
+        data={"id": "61612325", "dataset": "12354", "reason": " reason sample"},
+    )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Request created succesfully!"}
+
 
 def test_get_all_requests(client):
     result = client.get("/dcfl/requests")
@@ -15,15 +18,20 @@ def test_get_all_requests(client):
         ]
     }
 
+
 def test_get_specific_request(client):
     result = client.get("/dcfl/requests/6516513")
     assert result.status_code == 200
-    assert result.get_json() == {"request": {"id": "6516513", "reason": "request reason"} }
+    assert result.get_json() == {
+        "request": {"id": "6516513", "reason": "request reason"}
+    }
+
 
 def test_update_request(client):
-    result = client.put("/dcfl/requests/546313", data={"request": "{new_request}"} )
+    result = client.put("/dcfl/requests/546313", data={"request": "{new_request}"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Request updated succesfully!"}
+
 
 def test_delete_request(client):
     result = client.delete("/dcfl/requests/546313")

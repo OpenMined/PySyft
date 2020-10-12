@@ -1,5 +1,4 @@
-"""
-CODING GUIDELINES:
+"""CODING GUIDELINES:
 
 - Add docstrings following the pattern chosen by the community.
 - Add comments explaining step by step how your method works and the purpose of it.
@@ -47,7 +46,9 @@ logger = logging.getLogger()
 
 
 def create_app() -> Flask:
-    """This method creates a new Flask App instance and attach it with some HTTP/Websocket bluetprints.
+    """This method creates a new Flask App instance and attach it with some
+    HTTP/Websocket bluetprints.
+
     PS: In order to keep modularity and reause, do not add any PyGrid logic here, this method should be as logic agnostic as possible.
     :return: returns a Flask app instance.
     :rtype: Flask

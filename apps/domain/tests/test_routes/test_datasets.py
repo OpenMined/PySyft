@@ -1,9 +1,8 @@
-
-
 def test_create_dataset(client):
     result = client.post("/dcfl/datasets", data={"dataset": "{serialized_dataset}"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Dataset created succesfully!"}
+
 
 def test_get_all_datasets(client):
     result = client.get("/dcfl/datasets")
@@ -28,6 +27,7 @@ def test_get_all_datasets(client):
         ]
     }
 
+
 def test_get_specific_dataset(client):
     result = client.get("/dcfl/datasets/5484626")
     assert result.status_code == 200
@@ -41,9 +41,12 @@ def test_get_specific_dataset(client):
 
 
 def test_update_dataset(client):
-    result = client.put("/dcfl/datasets/546313", data={"dataset": "new_serialized_dataset"})
+    result = client.put(
+        "/dcfl/datasets/546313", data={"dataset": "new_serialized_dataset"}
+    )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Dataset changed succesfully!"}
+
 
 def test_delete_dataset(client):
     result = client.delete("/dcfl/datasets/546313")

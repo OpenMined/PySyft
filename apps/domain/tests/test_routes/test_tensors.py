@@ -1,9 +1,8 @@
-
-
 def test_create_tensor(client):
     result = client.post("/dcfl/tensors", data={"tensor": "{serialized_tensor}"})
     assert result.status_code == 200
     assert result.get_json() == {"msg": "tensor created succesfully!"}
+
 
 def test_get_all_tensors(client):
     result = client.get("/dcfl/tensors")
@@ -28,6 +27,7 @@ def test_get_all_tensors(client):
         ]
     }
 
+
 def test_get_specific_tensor(client):
     result = client.get("/dcfl/tensors/5484626")
     assert result.status_code == 200
@@ -41,9 +41,12 @@ def test_get_specific_tensor(client):
 
 
 def test_update_tensor(client):
-    result = client.put("/dcfl/tensors/546313", data={"tensor": "new_serialized_tensor"})
+    result = client.put(
+        "/dcfl/tensors/546313", data={"tensor": "new_serialized_tensor"}
+    )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "tensor changed succesfully!"}
+
 
 def test_delete_tensor(client):
     result = client.delete("/dcfl/tensors/546313")
