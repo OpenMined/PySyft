@@ -21,6 +21,9 @@ from geventwebsocket.websocket import Header
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
+from main.routes import (
+    dcfl_blueprint,
+)
 import config
 
 # Masking/Unmasking is a process used to guarantee some level of security
@@ -61,7 +64,7 @@ def create_app() -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    # app.register_blueprint()
+    app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
 
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
