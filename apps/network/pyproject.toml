@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "generic_app"
+name = "PyGrid Network"
 version = "0.1.0"
-description = ""
+description = "PyGrid Network!"
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
 
 [tool.poetry.dependencies]
