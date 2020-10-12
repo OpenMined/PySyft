@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "generic_app"
-version = "0.1.0"
+name = "PyGrid Worker"
+version = "0.3.0"
 description = ""
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
 
