@@ -59,14 +59,6 @@ def change_role(user_id):
     )
 
 
-@user_route.route("/<user_id>/groups", methods=["PUT"])
-def change_groups(user_id):
-    mock_response = {"msg": "User groups was changed succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
 @user_route.route("/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     mock_response = {"msg": "User was deleted succesfully!"}
