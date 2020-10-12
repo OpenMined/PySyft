@@ -82,4 +82,4 @@ jobs:
           cd ./apps/domain/
 
           # Run Integration tests
-          poetry run coverage run -m pytest -v ../../tests
+          # poetry run coverage run -m pytest -v ../../tests
