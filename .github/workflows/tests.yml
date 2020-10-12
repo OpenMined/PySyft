@@ -29,7 +29,7 @@ jobs:
           pip install --upgrade pip
           pip install poetry==1.1.2
 
-      - name: Test Grid Node
+      - name: Test Grid Domain
         run: |
           cd ./apps/domain/
 
@@ -37,7 +37,7 @@ jobs:
           poetry install
 
           # Run black
-          poetry run black --check --verbose --exclude src/syft .
+          poetry run black --check --verbose .
 
           # Run docformatter
           poetry run docformatter --check --recursive .
