@@ -1,4 +1,3 @@
-
 class BaseConfig:
     TESTING = False
     DEBUG = False
