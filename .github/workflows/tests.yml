@@ -27,7 +27,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install --upgrade pip
-          pip install poetry==1.0
+          pip install poetry==1.1.2
 
       - name: Test Grid Node
         run: |
