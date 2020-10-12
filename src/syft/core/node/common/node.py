@@ -45,7 +45,10 @@ from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ...store import MemoryStore
 from ..abstract.node import AbstractNode
+from .action.exception_action import ExceptionMessage
+from .action.exception_action import UnknownPrivateException
 from .client import Client
+from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import SignedMessageWithReplyForwardingService
@@ -63,6 +66,11 @@ from .service.repr_service import ReprService
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
+
+
+# TODO: Move but right now import loop prevents importing from the RequestMessage
+class DuplicateRequestException(Exception):
+    pass
 
 
 class Node(AbstractNode):
@@ -233,6 +241,9 @@ class Node(AbstractNode):
         # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
         self.signaling_msgs = {}
 
+        # For logging the number of messages received
+        self.message_counter = 0
+
     @property
     def icon(self) -> str:
         return "📍"
@@ -319,11 +330,44 @@ class Node(AbstractNode):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        response = self.process_message(
-            msg=msg, router=self.immediate_msg_with_reply_router
-        )
+        # exceptions can be easily triggered which break any WebRTC loops
+        # so we need to catch them here and respond with a special exception
+        # message reply
+        try:
+            # try to process message
+            response = self.process_message(
+                msg=msg, router=self.immediate_msg_with_reply_router
+            )
+
+        except Exception as e:
+            public_exception: Exception
+            if isinstance(e, AuthorizationException):
+                private_log_msg = "An AuthorizationException has been triggered"
+                public_exception = e
+            else:
+                private_log_msg = f"An {type(e)} has been triggered"  # dont send
+                public_exception = UnknownPrivateException(
+                    "UnknownPrivateException has been triggered."
+                )
+            try:
+                # try printing a useful message
+                private_log_msg += f" by {type(msg.message)} "
+                private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+            except Exception:
+                pass
+            # show the host what the real exception is
+            print(private_log_msg)
+
+            # send the public exception back
+            response = ExceptionMessage(
+                address=msg.message.reply_to,  # type: ignore
+                msg_id_causing_exception=msg.message.id,
+                exception_type=type(public_exception),
+                exception_msg=str(public_exception),
+            )
+
         # maybe I shouldn't have created process_message because it screws up
-        # all the type inferrence.
+        # all the type inference.
         res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
         if sy.VERBOSE:
             output = (
@@ -339,7 +383,49 @@ class Node(AbstractNode):
     ) -> None:
         if sy.VERBOSE:
             print(f"> Received {msg.pprint} @ {self.pprint}")
-        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+        try:
+            self.process_message(
+                msg=msg, router=self.immediate_msg_without_reply_router
+            )
+        except Exception as e:
+            # public_exception: Exception
+            if isinstance(e, DuplicateRequestException):
+                private_log_msg = "An DuplicateRequestException has been triggered"
+                # public_exception = e
+            else:
+                private_log_msg = f"An {type(e)} has been triggered"  # dont send
+                # public_exception = UnknownPrivateException(
+                #     "UnknownPrivateException has been triggered."
+                # )
+            try:
+                # try printing a useful message
+                private_log_msg += f" by {type(msg.message)} "
+                private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+            except Exception:
+                pass
+            # show the host what the real exception is
+            print(private_log_msg)
+
+            # we still want to raise for now due to certain exceptions we expect
+            # in tests
+            if not isinstance(e, DuplicateRequestException):
+                raise e
+
+            # TODO: finish code to send ExceptionMessage back
+            # if isinstance(e, DuplicateRequestException):
+            #     # we have a reply_to
+            #     # send the public exception back
+            #     response = ExceptionMessage(
+            #         address=msg.message.reply_to,  # type: ignore
+            #         msg_id_causing_exception=msg.message.id,
+            #         exception_type=type(public_exception),
+            #         exception_msg=str(public_exception),
+            #     )
+            #     res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+            #     self.client.send_immediate_msg_with_reply.process(
+            #         node=self,
+            #         msg=res_msg,
+            #     )
         return None
 
     @syft_decorator(typechecking=True)
@@ -352,6 +438,9 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
+        self.message_counter += 1
+
         if sy.VERBOSE:
             print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):

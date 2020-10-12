@@ -55,6 +55,10 @@ class Int(int, PyPrimitive):
         """
         return self._id
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def upcast(self) -> int:
+        return int(self)
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
         res = super().__add__(other)

@@ -5,13 +5,26 @@ package syft.grid.service;
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
+message RegisterNewPeerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+
+}
+
+message PeerSuccessfullyRegistered {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string peer_id = 3;
+}
+
 message SignalingAnswerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string payload = 3;
   string host_metadata = 4;
-  syft.core.io.Address target_peer = 5;
-  syft.core.io.Address host_peer = 6;
+  string target_peer = 5;
+  string host_peer = 6;
 }
 
 message SignalingOfferMessage {
@@ -19,27 +32,37 @@ message SignalingOfferMessage {
   syft.core.io.Address address = 2;
   string payload = 3;
   string host_metadata = 4;
-  syft.core.io.Address target_peer = 5;
-  syft.core.io.Address host_peer = 6;
+  string target_peer = 5;
+  string host_peer = 6;
 }
 
 message OfferPullRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   syft.core.io.Address reply_to = 3;
-  syft.core.io.Address target_peer = 4;
-  syft.core.io.Address host_peer = 5;
+  string target_peer = 4;
+  string host_peer = 5;
 }
 
 message AnswerPullRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   syft.core.io.Address reply_to = 3;
-  syft.core.io.Address target_peer = 4;
-  syft.core.io.Address host_peer = 5;
+  string target_peer = 4;
+  string host_peer = 5;
 }
 
 message SignalingRequestsNotFound {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
+message InvalidLoopBackRequest {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
+message CloseConnectionMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
 }

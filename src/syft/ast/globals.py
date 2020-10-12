@@ -18,13 +18,6 @@ class Globals(Module):
     def __init__(self) -> None:
         super().__init__("globals")
 
-    def add_framework(
-        self,
-        attr_name: str,
-        attr: Union[Callable, CallableT],
-    ) -> None:
-        self.attrs[attr_name] = attr
-
     def add_path(
         self,
         path: Union[str, List[str]],

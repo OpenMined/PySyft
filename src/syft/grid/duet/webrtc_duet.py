@@ -29,31 +29,30 @@ source code.
 
 # stdlib
 import asyncio
-import weakref
 
 # third party
 from nacl.signing import SigningKey
 
 # syft relative
-from ..core.io.address import Address
-from ..core.io.route import SoloRoute
-from ..core.node.common.client import Client
-from ..core.node.domain.client import DomainClient
-from ..core.node.domain.domain import Domain
-from ..decorators.syft_decorator_impl import syft_decorator
-from .connections.webrtc import WebRTCConnection
-from .services.signaling_service import AnswerPullRequestMessage
-from .services.signaling_service import OfferPullRequestMessage
-from .services.signaling_service import SignalingAnswerMessage
-from .services.signaling_service import SignalingOfferMessage
+from ...core.io.route import SoloRoute
+from ...core.node.domain.client import DomainClient
+from ...core.node.domain.domain import Domain
+from ...decorators.syft_decorator_impl import syft_decorator
+from ..connections.webrtc import WebRTCConnection
+from ..duet.signaling_client import SignalingClient
+from ..services.signaling_service import AnswerPullRequestMessage
+from ..services.signaling_service import InvalidLoopBackRequest
+from ..services.signaling_service import OfferPullRequestMessage
+from ..services.signaling_service import SignalingAnswerMessage
+from ..services.signaling_service import SignalingOfferMessage
 
 
 class Duet(DomainClient):
     def __init__(
         self,
         node: Domain,
-        address: Address,
-        signaling_client: Client,
+        target_id: str,
+        signaling_client: SignalingClient,
         offer: bool = True,
     ):
         # Generate a signing key
@@ -78,7 +77,7 @@ class Duet(DomainClient):
         # not creating a  strong reference to the object.
         # So, If we delete the real object instance, the
         # garbage collect will call the __del__ method without problem.
-        self.node = weakref.proxy(node)
+        self.node = node
 
         # WebRTCConnection instance ( Bidirectional Connection )
         self.connection = WebRTCConnection(node=self.node)
@@ -96,14 +95,14 @@ class Duet(DomainClient):
             self._pull_msg_queue.put_nowait(
                 OfferPullRequestMessage(
                     address=self.signaling_client.address,
-                    target_peer=address,
-                    host_peer=self.node.address,
+                    target_peer=target_id,
+                    host_peer=self.signaling_client.duet_id,
                     reply_to=self.signaling_client.address,
                 )
             )
         else:
             # Push a WebRTC offer request to the address.
-            self.send_offer(address=address)
+            self.send_offer(target_id=target_id)
 
         # This flag is used in order to finish the signaling process gracefully
         # While self._available is True, the pull/push tasks will be running
@@ -145,7 +144,7 @@ class Duet(DomainClient):
                 signing_key=self.signing_key,
                 verify_key=self.verify_key,
             )
-            self.connection._client_address = self.address  # type: ignore
+            self.connection._client_address = self.address
         # If client_metada is None, then an exception occurred during the process
         # The exception has been caught and saved in self._exception
         else:
@@ -168,6 +167,9 @@ class Duet(DomainClient):
         # Finish the pending one.
         for task in pending:
             task.cancel()
+
+    def close(self) -> None:
+        self.connection.close()
 
     @syft_decorator(typechecking=True)
     async def push(self) -> None:
@@ -210,6 +212,12 @@ class Duet(DomainClient):
                 elif isinstance(_response, SignalingAnswerMessage):
                     task = self._ack
 
+                # If LoopBack Message it was a loopback request
+                elif isinstance(_response, InvalidLoopBackRequest):
+                    raise Exception(
+                        "You can't perform p2p connection using your current node address as a destination peer."
+                    )
+
                 # If Signaling Message weren't found
                 else:
                     # Just enqueue the request to be processed later.
@@ -222,6 +230,7 @@ class Duet(DomainClient):
 
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
+                await asyncio.sleep(0.5)
         except Exception as e:
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
@@ -229,7 +238,7 @@ class Duet(DomainClient):
             self._exception = e
 
     @syft_decorator(typechecking=True)
-    def send_offer(self, address: Address) -> None:
+    def send_offer(self, target_id: str) -> None:
         """Starts a new signaling process by creating a new
         offer message and pushing it to the Signaling Server."""
 
@@ -242,8 +251,8 @@ class Duet(DomainClient):
             address=self.signaling_client.address,  # Target's address
             payload=payload,  # Offer Payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
-            target_peer=address,
-            host_peer=self.node.address,  # Own Node Address
+            target_peer=target_id,
+            host_peer=self.signaling_client.duet_id,  # Own Node ID
         )
 
         # Enqueue it in push msg queue to be sent to the signaling server.
@@ -253,8 +262,8 @@ class Duet(DomainClient):
         self._pull_msg_queue.put_nowait(
             AnswerPullRequestMessage(
                 address=self.signaling_client.address,
-                target_peer=address,
-                host_peer=self.node.address,
+                target_peer=target_id,
+                host_peer=self.signaling_client.duet_id,
                 reply_to=self.signaling_client.address,
             )
         )
@@ -277,8 +286,8 @@ class Duet(DomainClient):
             address=self.signaling_client.address,
             payload=payload,  # Signaling answer payload
             host_metadata=self.node.get_metadata_for_client(),  # Own Node Metadata
-            target_peer=msg.host_peer,  # Remote Node Address
-            host_peer=self.node.address,
+            target_peer=msg.host_peer,  # Remote Node ID
+            host_peer=self.signaling_client.duet_id,
         )
 
         # Enqueue it in the push msg queue to be sent to the signaling server.

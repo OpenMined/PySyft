@@ -2,6 +2,7 @@
 import inspect
 from types import ModuleType
 from typing import Callable
+from typing import Optional
 from typing import Union
 
 # syft relative
@@ -86,9 +87,12 @@ def get_original_constructor_name(object_name: str) -> str:
 
 @syft_decorator(typechecking=True)
 def replace_classes_in_module(
-    module: ModuleType, from_class: Callable, to_class: Callable
+    module: ModuleType,
+    from_class: Callable,
+    to_class: Callable,
+    ignore_prefix: Optional[str] = None,
 ) -> None:
-    """Recursively replace occurence of `from_class` to `to_class` inside module.
+    """Recursively replace occurrence of `from_class` to `to_class` inside module.
 
     For example, when syft replaces torch.nn.parameter.Parameter constructor,
     there's also need to replace same constructor in other modules that has already
@@ -104,6 +108,16 @@ def replace_classes_in_module(
     def recursive_update(
         module: ModuleType, attr_name: Union[str, None] = None
     ) -> None:
+
+        # check if we need to skip this attribute to preserve our unmodified
+        # original copy
+        if (
+            attr_name is not None
+            and ignore_prefix is not None
+            and attr_name.startswith(ignore_prefix)
+        ):
+            # found an attr that should be skipped so lets return
+            return
         attr = getattr(module, attr_name) if isinstance(attr_name, str) else module
         if isinstance(attr, ModuleType) and attr not in visited_modules:
             visited_modules.append(attr)

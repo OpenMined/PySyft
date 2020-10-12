@@ -1,5 +1,6 @@
 # stdlib
 from random import randint
+from typing import Any
 from typing import List
 from typing import Union
 
@@ -143,6 +144,14 @@ def char_emoji(hex_chars: str) -> str:
         offset = ord(char)
         code += offset - hex_base
     return chr(base + code)
+
+
+# this helps loop over a pointer because iter and len are expecting things that
+# we cant provide just yet
+# TODO: Improve / or remove with better solution
+def syrange(ptr: Any) -> Any:
+    for i in range(ptr.__len__().get()):
+        yield ptr[i]
 
 
 left_name = [

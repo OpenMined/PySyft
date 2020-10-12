@@ -36,6 +36,7 @@ pytest-cov
 requests
 sqlitedict
 torch>=1.4
+torchvision
 typeguard
 typing-extensions # backport to older python 3
 websockets

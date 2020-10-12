@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -41,7 +42,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         path: str,
-        args: Tuple[Any, ...],
+        args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -74,7 +75,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
-        result_read_permissions = None
+        result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
         for arg in self.args:
@@ -104,28 +105,42 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        result = method(*resolved_args, **resolved_kwargs)
+        # upcast our args in case the method only accepts the original types
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+
+        # execute the method with the newly upcasted args and kwargs
+        result = method(*upcasted_args, **upcasted_kwargs)
+
+        # TODO: replace with proper tuple support
+        if type(result) is tuple:
+            # convert to list until we support tuples
+            result = list(result)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
-            # Wrap in a PyPrimitive
+            # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
                 value=result, id=self.id_at_location
             )
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
-                result.id = self.id_at_location
+                result._id = self.id_at_location
+            # else:
+            # TODO: Solve this problem where its an issue
+
+        # If we have no permission (None or {}) we add some default permissions based on a permission list
+        if result_read_permissions is None:
+            result_read_permissions = {}
 
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
-                read_permissions=(
-                    result_read_permissions
-                    if result_read_permissions is not None
-                    else {}
-                ),
+                read_permissions=result_read_permissions,
             )
 
         node.store.store(obj=result)
