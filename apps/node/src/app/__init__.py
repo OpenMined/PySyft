@@ -49,7 +49,7 @@ def set_database_config(app, test_config=None, verbose=False):
     Returns:
         app: Flask application.
     Raises:
-        RuntimeError : If DATABASE_URL or test_config didn't initialized, RuntimeError exception will be raised.
+        RuntimeError : If DATABASE_URL or test_config didn't initialize, RuntimeError exception will be raised.
     """
     db_url = os.environ.get("DATABASE_URL")
     migrate = Migrate(app, db)
@@ -147,7 +147,7 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     if app.config["SECRET_KEY"] is None:
         app.config["SECRET_KEY"] = DEFAULT_SECRET_KEY
         logging.warning(
-            "Using default secrect key, this is not safe and should be used only for testing and development. To define a secrete key please define the environment variable SECRET_KEY."
+            "Using default secret key, this is not safe and should be used only for testing and development. To define a secret key please define the environment variable SECRET_KEY."
         )
 
     app.config["N_REPLICA"] = n_replica
