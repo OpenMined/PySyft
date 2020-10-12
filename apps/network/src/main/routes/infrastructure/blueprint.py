@@ -1,3 +1,3 @@
 from flask import Blueprint
 
-users_blueprint = Blueprint("networks", __name__)
+infrastructure_blueprint = Blueprint("networks", __name__)

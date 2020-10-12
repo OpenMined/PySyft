@@ -1,4 +1,4 @@
-from .blueprint import networks_blueprint as network_route
+from .blueprint import infrastructure_blueprint as network_route
 from flask import request, Response
 import json
 
