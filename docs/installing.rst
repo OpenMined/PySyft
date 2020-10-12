@@ -407,7 +407,7 @@ or in case you are lazy! you can use  `Github for Desktop. <https://desktop.gith
 Step 2 - Install Microsoft Build tools
 --------------------------------------
 
-Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and click on `Free download` under **Community** in the Visual Studio download section. 
+Go to the `Download page <https://visualstudio.microsoft.com/downloads/>`_ and click on `Free download` under **Community** in the Visual Studio download section.
 
 After the download is finished, run the downloaded package. In the installation window select `Desktop development with C++` and click on `Install` at the bottom-right corner of the page. (In the above screenshot you see a `Close` button instead since I have already installed it.)
 
@@ -547,7 +547,7 @@ it by installing the latest version.
 .. code:: console
 
     pip install torch -U
-    
+
 or else you can get the installation command from `here. <https://pytorch.org/get-started/locally/>`_ (use the pip option)
 
 Step 7 - Install PySyft
@@ -567,7 +567,7 @@ If you don't want this fanciness you can also run the good ole fashioned setup.p
 .. code:: python
 
     python setup.py install
-    
+
 Step 6 - Run Light Tests
 ------------------------
 
