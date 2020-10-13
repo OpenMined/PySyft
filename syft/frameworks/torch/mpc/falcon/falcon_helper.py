@@ -38,6 +38,13 @@ class FalconHelper:
         Returns:
             The XOR computation between value and other
         """
+        is_wrapper = value.is_wrapper
+
+        if value.is_wrapper:
+            value = value.child
+
+        if torch.is_tensor(other) and other.is_wrapper:
+            other = other.child
 
         assert (
             isinstance(value, ReplicatedSharingTensor) and value.ring_size == 2
@@ -50,7 +57,11 @@ class FalconHelper:
             ]
         ), "Second argument should be RST (with ring size of 2)/Integer/LongTensor values in {0, 1}"
 
-        return value + other - 2 * value * other
+        result = value + other - 2 * value * other
+
+        if is_wrapper:
+            result = result.wrap()
+        return result
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):

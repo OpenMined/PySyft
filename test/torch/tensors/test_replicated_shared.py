@@ -7,8 +7,8 @@ def test_sharing(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, 7, 11])
     secret = plain_text.share(bob, alice, james, protocol="falcon")
-    assert isinstance(secret, syft.ReplicatedSharingTensor)
-    assert type(secret.child) == dict
+    assert isinstance(secret.child, syft.ReplicatedSharingTensor)
+    assert type(secret.child.child) == dict
 
 
 def test_reconstruction(workers):
@@ -23,21 +23,21 @@ def test_private_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([-2, 5]).share(bob, alice, james, protocol="falcon")
-    assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
+    assert torch.allclose(x.add(y).reconstruct(), torch.tensor([5, 9]))
 
 
 def test_public_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = torch.Tensor([-2, 5])
-    assert (x.add(y).reconstruct() == torch.Tensor([5, 9])).all()
+    assert torch.allclose(x.add(y).reconstruct(), torch.tensor([5, 9]))
 
 
 def test_reversed_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = 1
-    assert ((y + x).reconstruct() == torch.Tensor([8, 5])).all()
+    assert torch.allclose((y + x).reconstruct(), torch.tensor([8, 5]))
 
 
 def test_private_sub(workers):
@@ -58,47 +58,47 @@ def test_reversed_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = 1
-    assert ((y - x).reconstruct() == torch.Tensor([-6, -3])).all()
+    assert torch.allclose((y - x).reconstruct(), torch.tensor([-6, -3]))
 
 
 def test_add_with_operator(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, 4]).share(bob, alice, james, protocol="falcon")
     y = torch.Tensor([2, 5])
-    assert ((x + y).reconstruct() == torch.Tensor([9, 9])).all()
+    assert torch.allclose((x + y).reconstruct(), torch.tensor([9, 9]))
 
 
 def test_public_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
-    assert ((x * 2).reconstruct() == torch.Tensor([14, -8])).all()
+    assert torch.allclose((x * 2).reconstruct(), torch.tensor([14, -8]))
 
 
 def test_reversed_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([7, -4]).share(bob, alice, james, protocol="falcon")
-    assert ((2 * x).reconstruct() == torch.Tensor([14, -8])).all()
+    assert torch.allclose((2 * x).reconstruct(), torch.tensor([14, -8]))
 
 
 def test_private_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([3, -5]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([5, -2]).share(bob, alice, james, protocol="falcon")
-    assert ((x * y).reconstruct() == torch.tensor([15, 10])).all()
+    assert torch.allclose((x * y).reconstruct(), torch.tensor([15, 10]))
 
 
 def test_public_matmul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([[1, 2], [1, 2]])
-    assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
+    assert torch.allclose((x.matmul(y)).reconstruct(), torch.tensor([[3, 6], [7, 14]]))
 
 
 def test_private_matmul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([[1, 2], [3, 4]]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([[1, 2], [1, 2]]).share(bob, alice, james, protocol="falcon")
-    assert ((x.matmul(y)).reconstruct() == torch.tensor([[3, 6], [7, 14]])).all()
+    assert torch.allclose((x.matmul(y)).reconstruct(), torch.tensor([[3, 6], [7, 14]]))
 
 
 def test_get_shape(workers):
@@ -129,7 +129,7 @@ def test_consecutive_arithmetic(workers):
     x = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
     y = torch.tensor([1, 2]).share(bob, alice, james, protocol="falcon")
     z = x * x + y * 2 - x * 4
-    assert (z.reconstruct() == torch.tensor([-1, 0])).all()
+    assert torch.allclose(z.reconstruct(), torch.tensor([-1, 0]))
 
 
 def test_negative_result(workers):
@@ -152,3 +152,116 @@ def test_workers_arrangement(workers):
     me, bob, alice = (workers["me"], workers["bob"], workers["alice"])
     x = torch.tensor(7).share(bob, alice, me, protocol="falcon")
     assert x.players[0] == me
+
+
+def test_fixed_precision_and_sharing(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([3.25, 6.83, 8.21, 5.506])
+    x = t.fix_prec().share(bob, alice, james, protocol="falcon")
+    out = x.reconstruct().float_prec()
+    assert torch.allclose(out, t)
+
+
+def test_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 3 workers
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james, protocol="falcon")
+    y = (x + x).reconstruct()
+    assert torch.allclose(y, (t + t))
+
+    # negative numbers
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, protocol="falcon")
+    y = (x + x).reconstruct()
+    assert torch.allclose(y, (t + t))
+
+    # with fixed precisions
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james, protocol="falcon")
+    y = (x + x).reconstruct().float_prec()
+    assert torch.allclose(y, (t + t))
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, james, protocol="falcon")
+    y = t.fix_prec()
+    z = (x + y).reconstruct().float_prec()
+    assert torch.allclose(z, (t + t))
+
+    z = (y + x).reconstruct().float_prec()
+    assert torch.allclose(z, (t + t))
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, james, protocol="falcon")
+    c = 4
+
+    z = (x + c).reconstruct().float_prec()
+    assert torch.allclose(z, (t + c))
+
+    z = (c + x).reconstruct().float_prec()
+    assert torch.allclose(z, (c + t))
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, james, protocol="falcon")
+    c = 4.2
+    z = (x + c).reconstruct().float_prec()
+    assert torch.allclose(z, (t + c))
+
+    z = (c + x).reconstruct().float_prec()
+    assert torch.allclose(z, (c + t))
+
+
+def test_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james, protocol="falcon")
+    y = (x - x).reconstruct()
+    assert torch.allclose(y, (t - t))
+
+    # negative numbers
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, protocol="falcon")
+    y = (x - x).reconstruct()
+    assert torch.allclose(y, (t - t))
+
+    # with fixed precision
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james, protocol="falcon")
+    y = (x - x).reconstruct().float_prec()
+    assert torch.allclose(y, (t - t))
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([4.0, 3.0, 2.0])
+    x = t.fix_prec().share(bob, alice, james, protocol="falcon")
+    y = u.fix_prec()
+    z = (x - y).reconstruct().float_prec()
+    assert torch.allclose(z, (t - u))
+
+    z = (y - x).reconstruct().float_prec()
+    assert torch.allclose(z, (u - t))
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, james, protocol="falcon")
+    c = 4
+    z = (x - c).reconstruct().float_prec()
+    assert torch.allclose(z, (t - c))
+
+    z = (c - x).reconstruct().float_prec()
+    assert torch.allclose(z, (c - t))
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, james, protocol="falcon")
+    c = 4.2
+    z = (x - c).reconstruct().float_prec()
+    assert torch.allclose(z, (t - c))
+
+    z = (c - x).reconstruct().float_prec()
+    assert torch.allclose(z, (c - t))

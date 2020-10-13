@@ -77,6 +77,7 @@ ambiguous_functions = {
     "cat",
     "torch.mean",
     "torch.sum",
+    "torch.einsum",
     "torch.chunk",
     "chunk",
     "torch.functional.split",

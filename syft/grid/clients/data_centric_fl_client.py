@@ -6,14 +6,13 @@ from typing import Union
 from urllib.parse import urlparse
 
 # Syft imports
+import syft as sy
 from syft.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
-from syft.workers.virtual import VirtualWorker
 
 
 class DataCentricFLClient(WebsocketClientWorker):
@@ -286,16 +285,42 @@ class DataCentricFLClient(WebsocketClientWorker):
         return f"<Federated Worker id:{self.id}>"
 
     @staticmethod
-    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
-        return BaseWorker.simplify(_worker, worker)
+    def simplify(worker: AbstractWorker, data_centric_fl_client: "DataCentricFLClient") -> tuple:
+
+        # Simplify the attributes for DataCentricFLClient
+        address = json.dumps(data_centric_fl_client.address)
+        id = json.dumps(data_centric_fl_client.id)
+        is_client_worker = json.dumps(data_centric_fl_client.is_client_worker)
+        log_msgs = json.dumps(data_centric_fl_client.log_msgs)
+        verbose = json.dumps(data_centric_fl_client.verbose)
+        encoding = json.dumps(data_centric_fl_client.encoding)
+        timeout = json.dumps(data_centric_fl_client.timeout)
+
+        return (address, id, is_client_worker, log_msgs, verbose, encoding, timeout)
 
     @staticmethod
-    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
-        detailed = BaseWorker.detail(worker, worker_tuple)
+    def detail(worker: AbstractWorker, client_tuple: tuple) -> "DataCentricFLClient":
 
-        if isinstance(detailed, int):
-            result = VirtualWorker(id=detailed, hook=worker.hook)
-        else:
-            result = detailed
+        address, id, is_client_worker, log_msgs, verbose, encoding, timeout = client_tuple
 
-        return result
+        # detail client attributes
+        address = json.loads(address)
+        id = json.loads(id)
+        is_client_worker = json.loads(is_client_worker)
+        log_msgs = json.loads(log_msgs)
+        verbose = json.loads(verbose)
+        encoding = json.loads(encoding)
+        timeout = json.loads(timeout)
+
+        hook = sy.local_worker.hook
+        me = sy.local_worker
+
+        # if worker with same id exist return that worker 2 worker with same id raises error
+        if id in me._known_workers.keys():
+            return me._known_workers[id]
+
+        client = DataCentricFLClient(
+            hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
+        )
+
+        return client

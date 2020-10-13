@@ -2,6 +2,7 @@ import torch
 import warnings
 
 import syft
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 from syft.frameworks.torch.nn import nn
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
@@ -125,7 +126,6 @@ class FixedPrecisionTensor(AbstractTensor):
             ).all(), (
                 f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
             )
-
         field_element = upscaled
         field_element.owner = rational.owner
         self.child = field_element.type(self.torch_dtype)
@@ -158,6 +158,14 @@ class FixedPrecisionTensor(AbstractTensor):
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
+
+    @property
+    def ring_size(self):
+        if hasattr(self, "child") and isinstance(
+            self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
+        ):
+            return self.child.ring_size
+        raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
 
     @overloaded.method
     def mod(self, _self, divisor):
@@ -192,6 +200,9 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             _self, other = other, _self.wrap()
+
+        elif isinstance(other, ReplicatedSharingTensor) and isinstance(_self, torch.Tensor):
+            _self, other = other, _self
 
         response = getattr(_self, "add")(other)
 
@@ -230,6 +241,9 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to subtract a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             _self, other = -other, -_self.wrap()
+
+        elif isinstance(other, ReplicatedSharingTensor) and isinstance(_self, torch.Tensor):
+            _self, other = other * -1, -_self
 
         response = getattr(_self, "sub")(other)
 
@@ -524,6 +538,12 @@ class FixedPrecisionTensor(AbstractTensor):
             return (-new_self.log()).exp() * self.signum()
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
+
+    def reconstruct(self):
+        if not isinstance(self.child, ReplicatedSharingTensor):
+            raise ValueError("reconstruct can only be called on RST")
+        self.child = self.child.reconstruct()
+        return self
 
     # Approximations:
     def inverse(self, iterations=8):
@@ -935,7 +955,12 @@ class FixedPrecisionTensor(AbstractTensor):
         tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
 
         tensor.child = self.child.share(
-            *owners, protocol=protocol, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
+            *owners,
+            protocol=protocol,
+            dtype=dtype,
+            field=field,
+            crypto_provider=crypto_provider,
+            no_wrap=True,
         )
         return tensor
 

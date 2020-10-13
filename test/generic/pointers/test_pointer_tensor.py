@@ -399,6 +399,18 @@ def test_remote_function_with_multi_ouput(workers):
     assert argmax_idx.get().item() == 3
 
 
+def test_inplace_binary_method_with_non_pointers(workers):
+    """Under very specific conditions, ie inplace methods containing a
+    single argument which is a Tensor, we allow automatic sending of
+    this tensor. This is helpful to facilitate utilizing python code
+    of other library for remote execution"""
+    alice = workers["alice"]
+    p = th.tensor([1.0, 2]).send(alice)
+    x = th.tensor([1.0, 1])
+    p += x
+    assert (p.get() == th.tensor([2.0, 3])).all()
+
+
 def test_raising_error_when_item_func_called(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     with pytest.raises(RuntimeError):
@@ -565,6 +577,29 @@ def test_setting_back_grad_to_origin_after_move(workers):
         assert (x.grad == th.tensor([4.0, 4.0, 4.0, 4.0, 4.0])).all()
 
 
+def test_remote_grad_fn(workers):
+    """
+    Test that grad_fn can be accessed remotely
+    """
+    alice = workers["alice"]
+
+    t = th.tensor([1.0, 1], requires_grad=True)
+    p = t.sum()
+    p.backward()
+    expected_type = type(p.grad_fn)
+
+    x = th.tensor([1.0, 1], requires_grad=True).send(alice)
+    p = x.sum()
+    p.backward()
+    p_grad_fn = p.child.grad_fn.child
+
+    assert isinstance(p_grad_fn, syft.PointerTensor)
+
+    remote_grad_fn = alice._objects[p_grad_fn.id_at_location]
+
+    assert type(remote_grad_fn.grad_fn) == expected_type
+
+
 def test_iadd(workers):
     alice = workers["alice"]
     a = torch.ones(1, 5)
@@ -618,3 +653,40 @@ def test_iterable_pointer(workers):
         assert len(alice.object_store) == 3
         assert isinstance(tensor, PointerTensor)
         assert torch.all(tensor.get() == t[:, 1][idx])
+
+
+def test_register_hook_on_remote_tensor_or_modules(workers):
+    alice = workers["alice"]
+    # we need to set a storage object on the local worker
+
+    with syft.local_worker.registration_enabled():
+
+        ## Tensor hook
+
+        flag = []
+
+        def hook_function(inputs, outputs):
+            flag.append(True)  # pragma: no cover
+
+        p = th.tensor([1.0, 2], requires_grad=True).send(alice)
+        p.register_hook(hook_function)
+
+        assert len(flag) == 0
+        p.sum().backward()
+        assert len(flag) == 1
+
+        ## Module hook
+
+        flag = []
+
+        def hook_function(model, inputs, outputs):
+            flag.append(True)  # pragma: no cover
+
+        x = th.tensor([1.0, 2])
+        model = torch.nn.Linear(2, 1)
+        model.register_backward_hook(hook_function)
+        loss = model(x)
+
+        assert len(flag) == 0
+        loss.backward()
+        assert len(flag) == 1
