@@ -474,6 +474,7 @@ def test_public_mul(workers, protocol):
     # assert (z == (t * y)).all()
 
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
@@ -503,6 +504,7 @@ def test_div(workers):
     assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
 
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_pow(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
@@ -531,6 +533,7 @@ def test_operate_with_integer_constants(workers):
     assert r_sh.get().float_prec() == x / 2
 
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_stack(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([1.3, 2])
@@ -542,6 +545,7 @@ def test_stack(workers):
     assert (res == expected).all()
 
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_cat(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([[1, 2, 3], [4, 5, 6]])
@@ -578,6 +582,7 @@ def test_chunk(workers):
     assert all(((res1[i].get() == expected1[i]).all() for i in range(2)))
 
 
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_roll(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([[1, 2, 3], [4, 5, 6]])
@@ -1049,6 +1054,7 @@ def test_batch_norm(workers, protocol, training):
     assert relative_error.mean() < 0.1
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
 def test_mod(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
@@ -1063,6 +1069,7 @@ def test_mod(workers):
     assert (t.child % 8).get() % 8 == torch.tensor([3])
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
 def test_torch_sum(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
@@ -1112,6 +1119,7 @@ def test_torch_dot(workers):
     assert torch.dot(x, y).get().float_prec() == 45
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
 def test_numel(workers):
     """Test numel on AST which returns an integer"""
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
@@ -1125,6 +1133,7 @@ def test_numel(workers):
     assert expected == result
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
 def test_mean(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
     t = torch.tensor([1.0, 2, 3, 4])
@@ -1137,6 +1146,7 @@ def test_mean(workers):
     assert expected == result
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
 @pytest.mark.parametrize("unbiased", [True, False])
 def test_var(workers, unbiased):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
