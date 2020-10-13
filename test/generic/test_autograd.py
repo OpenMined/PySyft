@@ -695,7 +695,7 @@ def test_train_remote_autograd_tensor(workers):
 
             if remote:
                 # Remote loss monotonic decrease
-                loss_val_local = loss.get(get_copy = True).item()
+                loss_val_local = loss.get(get_copy=True).item()
                 assert loss_val_local < loss_previous
                 loss_previous = loss_val_local
 
@@ -743,7 +743,7 @@ def test_train_remote_autograd_tensor(workers):
     # let's check if the local version and the remote version have the same weight
     assert torch.all(
         torch.eq(
-            model_local_trained.weight.get(get_copy = True).data, model_remote.weight.get(get_copy = True).data
+            model_local_trained.weight.get(get_copy=True).data, model_remote.weight.get(get_copy=True).data
         )
     )
 
@@ -759,7 +759,7 @@ def test_train_without_requires_grad(workers):
             l.backward()
             optimizer.step()
 
-        return enc_model.weight.get(get_copy = True).data
+        return enc_model.weight.get(get_copy=True).data
 
     alice = workers["alice"]
     bob = workers["bob"]

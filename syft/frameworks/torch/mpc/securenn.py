@@ -439,8 +439,8 @@ def share_convert(a_sh):
 
     # 4)
     # a_tilde_shares = a_tilde_sh.child
-    # delta = a_tilde_shares[workers[0].id].get(get_copy = True)
-    #         + a_tilde_shares[workers[1].id].get(get_copy = True)
+    # delta = a_tilde_shares[workers[0].id].get(get_copy=True)
+    #         + a_tilde_shares[workers[1].id].get(get_copy=True)
     # Check for both positive and negative overflows
     # delta = ((delta > get_max_val_field(L)) + (delta < get_min_val_field(L))).type(torch_dtype)
     # x = a_tilde_sh.get()
