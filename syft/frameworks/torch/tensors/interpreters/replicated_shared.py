@@ -76,7 +76,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         pointers = self.retrieve_pointers()
         shares = []
         for pointer in pointers:
-            shares.append(pointer.copy().get())
+            shares.append(pointer.get(get_copy = True))
         return shares
 
     def retrieve_pointers(self):

@@ -415,7 +415,7 @@ def test_remote_gradient_clipping(workers):
     # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
     smaller_tensor_check_remote = remote_tensor.grad < tensor_comp_grad_remote
 
-    assert 1 == smaller_tensor_check_remote.all().copy().get().item()
+    assert 1 == smaller_tensor_check_remote.all().get(get_copy = True).item()
 
 
 def test_local_gradient_clipping():

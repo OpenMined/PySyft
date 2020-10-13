@@ -41,7 +41,7 @@ def test_norm_mpc(hook, workers):
     t = torch.randn([n])
     t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
     norm_sh = _norm_mpc(t_sh, norm_factor=n ** (1 / 2))
-    norm = norm_sh.copy().get().float_precision()
+    norm = norm_sh.get(get_copy = True).float_precision()
 
     assert (norm - torch.norm(t)).abs() < 1e-4
 
