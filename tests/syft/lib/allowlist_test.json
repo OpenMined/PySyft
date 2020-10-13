@@ -61,7 +61,8 @@
         "profile": "tensor_method_noinput"
       },
       "__abs__": {
-        "profile": "tensor_method_noinput"
+        "profile": "tensor_method_noinput",
+        "skip": [{ "data_types": ["bool"] }]
       },
       "__add__": {
         "profile": "tensor_method_input"

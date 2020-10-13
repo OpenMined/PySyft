@@ -28,6 +28,7 @@ def test_init_without_event_loop() -> None:
     assert webrtc is not None
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
     domain = Domain(name="test")
