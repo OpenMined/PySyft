@@ -1,7 +1,9 @@
 from operator import add, sub, mul
+
 import torch
-from syft.generic.frameworks.hook import hook_args
+
 import syft
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
@@ -21,7 +23,10 @@ class ReplicatedSharingTensor(AbstractTensor):
     ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
         self.ring_size = ring_size or 2 ** 32
-        shares_map = self.__validate_input(plain_text, players)
+        if shares is None:
+            shares_map = self.__validate_input(plain_text, players)
+        else:
+            shares_map = shares
         self.child = shares_map
 
     def __validate_input(self, plain_text, players):
@@ -87,14 +92,13 @@ class ReplicatedSharingTensor(AbstractTensor):
         pointers = self.retrieve_pointers()
         shares = []
         for pointer in pointers:
-            shares.append(pointer.copy().get())
+            shares.append(pointer[0].copy().get())
         return shares
 
     def retrieve_pointers(self):
         shares_map = self.__get_shares_map()
         players = list(shares_map.keys())
-        pointers = list(shares_map[players[0]])
-        pointers.append(shares_map[players[1]][1])
+        pointers = [shares_map[player] for player in players]
         return pointers
 
     def __sum_shares(self, shares):
@@ -188,23 +192,24 @@ class ReplicatedSharingTensor(AbstractTensor):
         plain_text = torch.tensor(plain_text, dtype=torch.long)
         remote_plain_text = [plain_text.send(players[0]), plain_text.send(players[-1])]
         shares_map[players[0]] = (
-            operator(shares_map[players[0]][0], remote_plain_text[0]),
+            operator(shares_map[players[0]][0], remote_plain_text[0]) % self.ring_size,
             shares_map[players[0]][1],
         )
         shares_map[players[-1]] = (
             shares_map[players[-1]][0],
-            operator(shares_map[players[-1]][1], remote_plain_text[-1]),
+            operator(shares_map[players[-1]][1], remote_plain_text[-1]) % self.ring_size,
         )
-        return ReplicatedSharingTensor().__set_shares_map(shares_map)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(shares_map)
 
     def __private_linear_operation(self, secret, operator):
+        assert self.ring_size == secret.ring_size
         x, y = self.__get_shares_map(), secret.__get_shares_map()
         players = self.__get_players()
         z = {
             player: (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
             for player in players
         }
-        return ReplicatedSharingTensor().__set_shares_map(z)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(z)
 
     def __public_multiplication_operation(self, plain_text, operator):
         players = self.__get_players()
@@ -217,9 +222,10 @@ class ReplicatedSharingTensor(AbstractTensor):
                 operator(shares_map[player][0], plain_text_map[player]),
                 operator(shares_map[player][1], plain_text_map[player]),
             )
-        return ReplicatedSharingTensor().__set_shares_map(shares_map)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(shares_map)
 
     def __private_multiplication_operation(self, secret, operator):
+        assert self.ring_size == secret.ring_size
         x, y = self.__get_shares_map(), secret.__get_shares_map()
         players = self.__get_players()
         z = [
@@ -230,7 +236,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         ]
         z = self.__add_noise(z)
         z = self.__reshare(z, players)
-        return ReplicatedSharingTensor().__set_shares_map(z)
+        return ReplicatedSharingTensor(ring_size=self.ring_size).__set_shares_map(z)
 
     @staticmethod
     def __add_noise(shares):
@@ -275,7 +281,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     @property
     def shape(self):
-        return self.retrieve_pointers()[0].shape
+        return next(iter(self.child.values()))[0].shape
 
     @property
     def players(self):
@@ -349,6 +355,8 @@ class ReplicatedSharingTensor(AbstractTensor):
         # We should always have wrappers
         prep_simplify = list(tensor.child.values())
         chain = _simplify(prep_simplify)
+
+        tensor.set_garbage_collect_data(False)
 
         tensor.set_garbage_collect_data(False)
 

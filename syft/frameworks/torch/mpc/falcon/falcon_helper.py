@@ -1,8 +1,14 @@
 import torch
 import syft
 
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
+from syft.frameworks.torch.mpc.przs import gen_alpha_3of3
+
 from typing import Union
+from typing import List
 
 
 class FalconHelper:
@@ -22,6 +28,36 @@ class FalconHelper:
     @staticmethod
     def __private_unfold(image, kernel_size, padding):
         return image.unfold(kernel_size, padding)
+
+    @staticmethod
+    def binary_to_arithmetic(shares: List[PointerTensor], players: List[AbstractWorker], ring_size: int = 2 * 32):
+        """
+        Since we shared the seeds for the PSRZ at the beginning we know
+        that zero_share_p0 + zero_share_p1 + zero_share_p2 == 0
+        """
+
+        player0 = shares[0].location
+        player1 = shares[1].location
+
+        shape = shares[0].shape
+
+        zero_share_p0 = gen_alpha_3of3(players[0], shape=shape).wrap()
+        zero_share_p1 = gen_alpha_3of3(players[1], shape=shape).wrap()
+        zero_share_p2 = gen_alpha_3of3(players[2], shape=shape).wrap()
+
+        # RST for the zero share
+        share_p0 = [zero_share_p0, zero_share_p1.copy().move(players[0])]
+        share_p1 = [zero_share_p1, zero_share_p2.copy().move(players[1])]
+        share_p2 = [zero_share_p2, zero_share_p0.copy().move(players[2])]
+
+        arithmetic_shares = dict(zip(players, (share_p0, share_p1, share_p2)))
+        arithmetic_shares[player0][0] += shares[0]
+        arithmetic_shares[player1][1] += shares[1]
+
+        shares = {key: tuple(val) for key, val in arithmetic_shares.items()}
+
+        return ReplicatedSharingTensor(shares=shares)
+
 
     @staticmethod
     def xor(
@@ -45,21 +81,6 @@ class FalconHelper:
 
         if torch.is_tensor(other) and other.is_wrapper:
             other = other.child
-
-        if (not isinstance(value, ReplicatedSharingTensor)) or (value.ring_size != 2):
-            raise TypeError("First argument should be a RST with ring size 2")
-
-        if not any(
-            [
-                isinstance(other, ReplicatedSharingTensor) and other.ring_size == 2,
-                isinstance(other, int) and other in {0, 1},
-                isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
-            ]
-        ):
-            raise TypeError(
-                "Second argument should be RST "
-                "(with ring size of 2)/Integer/LongTensor values in {0, 1}"
-            )
 
         result = value + other - 2 * value * other
 
