@@ -1,0 +1,465 @@
+"""In this test suite, we load the allowlist.json and run through all the tests based
+on what expected inputs and return types are provided by the json file.
+"""
+
+# stdlib
+from itertools import product
+import json
+import os
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Union
+
+# third party
+from packaging import version
+import pytest
+import torch as th
+
+# syft absolute
+import syft as sy
+from syft.core.pointer.pointer import Pointer
+from syft.lib.python.primitive_factory import PrimitiveFactory
+from syft.lib.python.primitive_factory import isprimitive
+from syft.lib.python.primitive_interface import PyPrimitive
+from syft.lib.torch import allowlist
+from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
+from syft.lib.util import full_name_with_qualname
+
+TORCH_VERSION = version.parse(th.__version__)
+
+
+# Allow List Test Generation
+#
+# The purpose of this code is to gather all of the explicitly defined classes,
+# attributes, methods and properties that are can be executed remotely via a pointer.
+# The vast majority of types and inputs are tensors or collections of numeric values
+# so for many cases simply enumerating all possible supported numeric data types
+# and using them as both Tensors and inputs covers a lot of the functionality.
+# However there are instances where specific methods or properties either do not
+# accept input, have specific input requirements or kwargs, or give a variety of output
+# types. Additionally some methods exist or behave differently depending on the version
+# of the library that we are testing. To support all of this added complexity we start
+# with the simplest version which is the "attribute path" to "return type" mapping aka:
+#
+# allowlist["torch.Tensor.__add__"] = "torch.Tensor"
+#
+# We then check to see if a explicit configuration is set for the attribute path in
+# allowlist_test.json and if so we use the configuration from there.
+# To keep the custom definitions DRY we use a concept called "profiles" which are just
+# a key lookup in the main JSON tree. Many configuration options also support the
+# concept of a key lookup for example you will see lots of "all" which is used to map
+# to a whole pre-defined set of supported data types, or inputs. By utilising this
+# approach we can prevent the need to maintain a large list of expected exceptions
+# which increases the likelihood tests are skipped by accident and makes it very hard
+# to track exactly which data types and inputs are supported for a given attribute.
+#
+# Once we understand what can be tested we construct a product or combination of all
+# possible options using the following required variables for each test run:
+#
+# tensor_type, op_name, self_tensor, _args, is_property, return_type
+#
+# tensor_type:  this is the data type we convert our test tensor to e.g. uint8
+# op_name:      this is the method or property we are testing e.g. __add__
+# self_tensor:  this is the tensor we are operating when doing the test
+# _args:        this is the input used on the method where "self" represents the
+#               self_tensor and None represents no input
+# is_property:  this helps understand if the attribute can be called or not
+# return_type:  this helps verify that the return type matches the expected return type
+
+# this handles instances where the allow list provides more meta information
+def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
+    if isinstance(support_dict, str):
+        return support_dict
+    else:
+        return support_dict["return_type"]
+
+
+# this allows us to skip tests based on a few loose matching rules for example:
+#
+# "skip": [{ "data_types": ["bool"], "inputs": [0, 1] }]
+#
+# This rule set will match on any test which is for the data type bool and has the
+# inputs 0 or 1. Since the primary variation of test combinations relates to their
+# tensors, inputs and the data types associated with them
+def check_skip(combination: List, skip_rule: Dict[str, Any]) -> bool:
+    print("testing")
+    combination_dict = {
+        "data_types": combination[0],
+        "tensors": combination[2],
+        "inputs": combination[3],
+    }
+
+    # we will assume the skip rule applies and try to prove it doesn't by finding a
+    # condition which we cannot satisfy
+    applies = True
+    for key in skip_rule.keys():
+        if key in combination_dict:
+            # first check it is not equal since then the rule would apply
+            if combination_dict[key] != skip_rule[key]:
+                # second check if the rule is a list of rules in which case we
+                # need to check for the presence of our current combination value
+                if isinstance(skip_rule[key], Iterable):
+                    print(
+                        "combination_dict[key]",
+                        combination_dict[key],
+                        type(combination_dict[key]),
+                    )
+                    print("skip_rule[key]", skip_rule[key])
+                    for i in skip_rule[key]:
+                        print(type(i))
+
+                    # we cant use x not in y because bool matches for 0 and 1 in lists
+                    presence = False
+                    for item in skip_rule[key]:
+                        if combination_dict[key] == item and type(
+                            combination_dict[key]
+                        ) == type(item):
+                            presence = True
+
+                    # if we cant find a matching item of value and type then we dont
+                    # match and we wont skip this test, if its True we match so far and
+                    # can keep checking more rules
+                    applies = presence
+                    if not applies:
+                        break
+
+                else:
+                    # we dont match and the rule is not a list of rules so we wont skip
+                    # and can break
+                    applies = False
+                    break
+
+    # if we were unable to fail the skip rules we should have applies = True and will
+    # skip this particular test combination
+    if applies:
+        print("combination skipped", combination, skip_rule)
+    return applies
+
+
+BASIC_OPS = list()
+BASIC_OPS_RETURN_TYPE = {}
+# here we are loading up the true allowlist which means that we are only testing what
+# can be used by the end user
+for method, return_type_name_or_dict in allowlist.items():
+    if "torch.Tensor." in method:
+        return_type = get_return_type(support_dict=return_type_name_or_dict)
+        method_name = method.split(".")[-1]
+        BASIC_OPS.append(method_name)
+        BASIC_OPS_RETURN_TYPE[method_name] = return_type
+
+# load our custom configurations
+with open(__file__.replace(".py", ".json"), "r") as f:
+    TEST_JSON = json.loads(f.read())
+
+
+TEST_DATA = []
+# we iterate over the allowlist and only override where explicitly defined
+for op in BASIC_OPS:
+    skip = []
+    if op not in TEST_JSON["tests"]["torch.Tensor"]:
+        # there is no custom configuration so we will test all supported combinations
+        dtypes = ["common", "complex", "quantized"]
+        test_tensors = ["tensor1", "tensor2"]
+        test_inputs = ["all"]
+        is_property = False
+        return_type = BASIC_OPS_RETURN_TYPE[op]
+    else:
+        meta = {}
+        # if there is a profile use the settings from that first
+        if "profile" in TEST_JSON["tests"]["torch.Tensor"][op]:
+            profile = TEST_JSON["tests"]["torch.Tensor"][op]["profile"]
+            meta.update(TEST_JSON["profiles"][profile])
+
+        # now update with what ever extra settings are overridden on the method
+        meta.update(TEST_JSON["tests"]["torch.Tensor"][op])
+        dtypes = meta["data_types"]
+        test_tensors = meta["tensors"]
+        test_inputs = meta["inputs"]
+        is_property = meta["property"]
+        return_type = meta["return_type"]
+
+        # grab skip rules
+        if "skip" in meta:
+            skip += meta["skip"]
+
+        if "min_version" in meta and TORCH_VERSION < version.parse(meta["min_version"]):
+            # skip attributes which are not supported in the TORCH_VERSION
+            continue
+
+    # gather all the data types we want to test
+    data_types = []
+    for dtype in dtypes:
+        if issubclass(type(dtype), str) and dtype in TEST_JSON["data_types"]:
+            data_types += TEST_JSON["data_types"][dtype]
+        else:
+            data_types.append(dtype)
+
+    # collect the tensors we want to test
+    tensors = []
+    for tensor in test_tensors:
+        if issubclass(type(tensor), str) and tensor in TEST_JSON["tensors"]:
+            tensors += TEST_JSON["tensors"][tensor]
+        else:
+            tensors.append(tensor)
+
+    # get the list of inputs
+    inputs = []
+    for input in test_inputs:
+        if issubclass(type(input), str) and input in TEST_JSON["inputs"]:
+            inputs += TEST_JSON["inputs"][input]
+        else:
+            inputs.append(input)
+
+    combinations = list(
+        product(
+            data_types,
+            [op],
+            tensors,
+            inputs,
+            [is_property],
+            [return_type],
+        )
+    )
+
+    skipped_combinations = set()
+    for combination in combinations:
+        for skip_rule in skip:
+            if check_skip(combination=combination, skip_rule=skip_rule):
+                # we use str(combination) so that we can hash the entire combination
+                skipped_combinations.add(str(combination))
+    for combination in combinations:
+        # we use str so that we can hash the entire combination with nested lists
+        if str(combination) not in skipped_combinations:
+            TEST_DATA.append(combination)
+
+
+# we need a file to keep all the errors in that makes it easy to debug failures
+ERROR_FILE_PATH = os.path.abspath(
+    Path(__file__) / "../../../.." / "allowlist_test_errors.jsonl"
+)
+
+# clear the file before running the tests
+if os.path.exists(ERROR_FILE_PATH):
+    os.unlink(ERROR_FILE_PATH)
+
+
+# write test debug info to make it easy to debug long running tests with large output
+def write_error_debug(debug_data: Dict[str, Any]) -> None:
+    # save a file in the root project dir
+    with open(ERROR_FILE_PATH, "a+") as f:
+        f.write(f"{json.dumps(debug_data)}\n")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "tensor_type, op_name, self_tensor, _args, is_property, return_type", TEST_DATA
+)
+def test_all_allowlisted_tensor_methods(
+    tensor_type: str,
+    op_name: str,
+    self_tensor: List,
+    _args: Union[str, List, bool, None],
+    is_property: bool,
+    return_type: str,
+) -> None:
+
+    # this is used in bulk error reporting
+    debug_data: Dict[str, Any] = {}
+    debug_data["input"] = {
+        "tensor_type": tensor_type,
+        "op_name": op_name,
+        "self_tensor": self_tensor,
+        "_args": _args,
+        "is_property": is_property,
+        "return_type": return_type,
+    }
+
+    try:
+        # Step 1: Create the alice client
+        alice = sy.VirtualMachine(name="alice")
+        alice_client = alice.get_client()
+
+        # Step 2: Decide which type we're testing
+        t_type = TORCH_STR_DTYPE[tensor_type]
+
+        # Step 3: Create the object we're going to call a method on
+        # NOTE: we need a second copy because some methods mutate tensor before we send
+        self_tensor, self_tensor_copy = (
+            th.tensor(self_tensor, dtype=t_type),
+            th.tensor(self_tensor, dtype=t_type),
+        )
+
+        # we dont have .id's by default anymore
+        # self_tensor_copy.id = self_tensor.id  # type: ignore
+
+        args: List[Any] = []
+
+        # Step 4: Create the arguments we're going to pass the method on
+        if _args is None:
+            args = []
+        elif _args == "self":
+            args = [th.tensor(self_tensor, dtype=t_type)]
+        elif isinstance(_args, list):
+            args = [th.tensor(_args, dtype=t_type)]
+        else:
+            args = [PrimitiveFactory.generate_primitive(value=_args, recurse=True)]
+
+        try:
+            _ = len(args)
+        except Exception as e:
+            err = (
+                f"Args must be iterable so it can be spread with * into the method. {e}"
+            )
+            raise Exception(err)
+
+        # Step 4: Get the method we're going to call
+        target_op_method = getattr(self_tensor, op_name)
+
+        # Step 5: Test to see whether this method and arguments combination is valid
+        # in normal PyTorch. If it this is an invalid combination, abort the test
+        try:
+            if not is_property:
+                # this prevents things like syft.lib.python.bool.Bool from getting treated
+                # as an Int locally but then failing on the upcast to builtins.bool on
+                # the remote side
+                upcasted_args = []
+                for arg in args:
+                    upcast_attr = getattr(arg, "upcast", None)
+                    if upcast_attr is not None:
+                        upcasted_args.append(upcast_attr())
+                    else:
+                        upcasted_args.append(arg)
+
+                target_result = target_op_method(*upcasted_args)
+            else:
+                # we have a property and already have its value
+                target_result = target_op_method
+
+            debug_data["target_result"] = target_result
+            debug_data["target_result_type"] = type(target_result)
+
+        except Exception as e:
+            error = (
+                "Exception in allowlist suite. If this is an expected exception, update"
+            )
+            error += " the .json file to prevent this test combination."
+            print(error)
+            debug_data["exception"] = str(e)
+            write_error_debug(debug_data)
+            raise e
+
+        # Step 6: Send our target tensor to alice.
+        # NOTE: send the copy we haven't mutated
+        xp = self_tensor_copy.send(alice_client)
+        argsp: List[Any] = []
+        if len(args) > 0 and not is_property:
+            argsp = [
+                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
+            ]
+
+        # Step 7: get the method on the pointer to alice we want to test
+        op_method = getattr(xp, op_name, None)
+
+        # Step 8: make sure the method exists
+        assert op_method is not None
+
+        # Step 9: Execute the method remotely
+        if is_property:
+            # we already have the result
+            result = op_method
+        else:
+            result = op_method(*argsp)
+
+        # Step 10: Ensure the method returned a pointer
+        assert isinstance(result, Pointer)
+
+        # Step 11: Get the result
+        local_result = result.get()
+
+        debug_data["local_result"] = local_result
+        debug_data["local_result_type"] = type(local_result)
+
+        # Step 12: If there are NaN values, set them to 0 (this is normal for division by 0)
+        try:
+            # only do single value comparisons, do lists, tuples etc below in the else
+            if not hasattr(target_result, "__len__") and (
+                isprimitive(value=target_result)
+                or issubclass(type(local_result), PyPrimitive)
+            ):
+                # check that it matches functionally
+                assert local_result == target_result
+
+                # convert target_result for type comparison below
+                target_result = PrimitiveFactory.generate_primitive(value=target_result)
+            else:
+                if issubclass(type(target_result), tuple) or issubclass(
+                    type(local_result), tuple
+                ):
+                    target_result = list(target_result)
+                    local_result = list(local_result)
+
+                # to handle tuple return types for now we just make sure everything
+                # is in a list of at least 1 size and then iterate over it
+                if type(local_result) is not list:
+                    local_result = [local_result]
+                    target_result = [target_result]
+
+                for i, local_item in enumerate(local_result):
+                    target_item = target_result[i]
+
+                    # Set all NaN to 0
+                    # If we have two tensors like
+                    # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+                    # those are not equal
+                    # Tensor.isnan was added in torch 1.6
+                    # so we need to do torch.isnan(tensor)
+                    nan_mask = th.isnan(local_item)
+
+                    # Use the same mask for local and target
+                    local_item[nan_mask] = 0
+                    target_item[nan_mask] = 0
+
+                    # Step 13: Ensure we got the same result locally (using normal
+                    # pytorch) as we did remotely using Syft pointers to communicate
+                    # with remote torch objects
+                    assert (local_item == target_item).all()
+
+            # make sure the return types match
+            assert type(local_result) == type(target_result)
+
+            # TODO: Fix this workaround for types that sometimes return Tensor tuples
+            # we are getting back more than 1 return type so we need to fake it until
+            # we add Union to the return types
+            if type(local_result) is list and len(local_result) == 1:
+                local_result = local_result[0]  # unpack
+            else:
+                # TODO: Fix this when we find one
+                raise Exception("Unsupported Union return type")
+
+            # make sure the return type matches the specified allowlist return type
+            local_type = full_name_with_qualname(klass=type(local_result))
+            python_types = "syft.lib.python"
+            if local_type.startswith(python_types) and return_type.startswith(
+                python_types
+            ):
+                # python types seem to resolve as both int.Int and .Int causing issues
+                # in the match
+                assert local_type.split(".")[-1] == return_type.split(".")[-1]
+
+            else:
+                assert local_type == return_type
+
+        except Exception as e:
+            error = "Exception in allowlist suite during final comparison."
+            print(error)
+            debug_data["exception"] = str(e)
+            write_error_debug(debug_data)
+            raise e
+
+    except Exception as e:
+        debug_data["exception"] = str(e)
+        write_error_debug(debug_data)
+        raise e

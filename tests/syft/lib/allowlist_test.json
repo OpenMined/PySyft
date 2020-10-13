@@ -1,0 +1,76 @@
+{
+  "data_types": {
+    "common": [
+      "bool",
+      "uint8",
+      "int8",
+      "int16",
+      "int32",
+      "int64",
+      "float16",
+      "float32",
+      "float64",
+      "bfloat16"
+    ],
+    "integer": ["uint8", "int8", "int16", "int32", "int64"],
+    "float": ["float16", "float32", "float64", "bfloat16"],
+    "complex": ["complex64", "complex128"],
+    "quantized": ["qint8", "quint8", "qint32"]
+  },
+  "tensors": {
+    "tensor1": [[-1, 0, 1, 2, 3, 4]],
+    "tensor2": [
+      [
+        [-0.1, 0.1],
+        [0.2, 0.3]
+      ]
+    ]
+  },
+  "inputs": {
+    "all": ["self", [0], [1], 0, 1, true, false]
+  },
+  "profiles": {
+    "tensor_property_noinput": {
+      "property": true,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": [null]
+    },
+    "tensor_method_noinput": {
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": [null]
+    },
+    "tensor_method_input": {
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": ["all"]
+    }
+  },
+  "tests": {
+    "torch.Tensor": {
+      "T": {
+        "profile": "tensor_property_noinput"
+      },
+      "t": {
+        "profile": "tensor_method_noinput"
+      },
+      "__abs__": {
+        "profile": "tensor_method_noinput"
+      },
+      "__add__": {
+        "profile": "tensor_method_input"
+      },
+      "__and__": {
+        "profile": "tensor_method_input",
+        "data_types": ["bool", "integer"],
+        "skip": [{ "data_types": ["bool"], "inputs": [0, 1] }]
+      }
+    }
+  }
+}
