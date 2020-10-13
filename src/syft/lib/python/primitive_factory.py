@@ -21,6 +21,7 @@ primitives = [
     float,
     int,
     list,
+    tuple,
     None,
     NoneType,
     str,
@@ -35,6 +36,7 @@ PrimitiveType = Union[
     complex,
     float,
     int,
+    tuple,
     list,
     None,
     NoneType,
@@ -72,6 +74,7 @@ class PrimitiveFactory(ABC):
         from .list import List
         from .none import SyNone
         from .string import String
+        from .tuple import Tuple
 
         if isinstance(value, PyPrimitive):
             return value
@@ -87,6 +90,9 @@ class PrimitiveFactory(ABC):
 
         if isinstance(value, complex):
             return Complex(real=value.real, imag=value.imag, id=id)
+
+        if isinstance(value, tuple):
+            return Tuple(value=value)
 
         if type(value) in [list, UserList]:
             if not recurse:
