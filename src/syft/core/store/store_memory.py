@@ -5,6 +5,9 @@ from typing import Set
 from typing import Union
 from typing import ValuesView
 
+import threading
+from collections import defaultdict
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -30,7 +33,9 @@ class MemoryStore(ObjectStore):
     def __init__(self) -> None:
         super().__init__()
         self._objects: Dict[UID, AbstractStorableObject] = {}
+        self._reference_count: Dict[UID, int] = defaultdict(lambda: 0)
         self._search_engine = None
+        self._lock = threading.Lock()
         self.post_init()
 
     def get_object(self, id: UID) -> Union[AbstractStorableObject, None]:
@@ -63,7 +68,9 @@ class MemoryStore(ObjectStore):
     def store(self, obj: AbstractStorableObject) -> None:
         # TODO: obj should be just "object" and the attributes
         #  of StoreableObject should be put in the metadatastore
-        self._objects[obj.id] = obj
+        with self._lock:
+            self._reference_count[obj.id] += 1
+            self._objects[obj.id] = obj
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, key: UID) -> bool:
@@ -79,7 +86,13 @@ class MemoryStore(ObjectStore):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, key: UID) -> None:
-        del self._objects[key]
+        with self._lock:
+            self._reference_count[key] -= 1
+            assert self._reference_count[key] >= 0, f"Reference count reached a negative value for {key}"
+
+            if self._reference_count[key] == 0:
+                del self._objects[key]
+                del self._reference_count[key]
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:

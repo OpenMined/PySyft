@@ -321,7 +321,7 @@ class Pointer(AbstractPointer):
 
     def __del__(self) -> None:
         _client_type = type(self.client)
-        if (_client_type == Address) or issubclass(_client_type, AbstractNode):
+        if _client_type == Address or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
