@@ -1,6 +1,4 @@
 class PyContainer:
-    def __add__(self, other):
-        return self.__add__(other)
 
     def __iter__(self):
         return self
@@ -8,8 +6,11 @@ class PyContainer:
     def __next__(self):
         return self.__next__()
 
+    def __add__(self, other):
+        return self + other
+
     def __radd__(self, other):
-        return self.__radd__(other)
+        return other + self
 
     def __truediv__(self, other):
         return self / other
@@ -18,22 +19,19 @@ class PyContainer:
         return other / self
 
     def __floordiv__(self, other):
-        return self.__floordiv__(other)
+        return self / other
 
     def __rfloordiv__(self, other):
-        return self.__rfloordiv__(other)
-
-    def __instancecheck__(self, instance):
-        return self.__instancecheck__(instance)
+        return self / other
 
     def __mul__(self, other):
-        return self.__mul__(other)
+        return self * other
 
     def __rmul__(self, other):
-        return self.__mul__(other)
+        return other * self
 
     def __sub__(self, other):
         return self - other
 
     def __rsub__(self, other):
-        return self.__rsub__(other)
+        return other - self
