@@ -2,6 +2,7 @@ from .blueprint import users_blueprint as user_route
 from flask import request, Response
 import json
 from ...core.node import node
+from nacl.encoding import HexEncoder
 
 
 @user_route.route("/", methods=["POST"])
@@ -67,11 +68,11 @@ def delete_user(user_id):
         status=200, response=json.dumps(mock_response), mimetype="application/json"
     )
 
-
 @user_route.route("/login", methods=["POST"])
 def user_login():
     mock_response = {
         "msg": "Successfully logged in!",
+        "key": node.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
         "metadata": node.get_metadata_for_client(),
     }
     return Response(

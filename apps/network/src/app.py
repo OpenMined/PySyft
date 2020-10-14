@@ -26,6 +26,7 @@ from main.routes import (
     setup_blueprint,
     association_requests_blueprint,
     infrastructure_blueprint,
+    root_blueprint,
 )
 
 import config
@@ -74,6 +75,7 @@ def create_app() -> Flask:
     app.register_blueprint(users_blueprint, url_prefix=r"/users/")
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
     app.register_blueprint(infrastructure_blueprint, url_prefix=r"/networks/")
+    app.register_blueprint(root_blueprint, url_prefix=r'/')
     app.register_blueprint(
         association_requests_blueprint, url_prefix=r"/association-requests/"
     )
