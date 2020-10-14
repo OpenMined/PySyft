@@ -1,9 +1,13 @@
 # third party
 import requests
+from typing import Tuple
+from typing import Dict
+import json
 
 # syft relative
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.io.connection import ClientConnection
@@ -11,6 +15,10 @@ from ...decorators.syft_decorator_impl import syft_decorator
 
 
 class HTTPConnection(ClientConnection):
+
+    LOGIN_ROUTE = "/users/login"
+    SYFT_ROUTE = "/pysyft"
+
     @syft_decorator(typechecking=True)
     def __init__(self, url: str) -> None:
         self.base_url = url
@@ -54,7 +62,7 @@ class HTTPConnection(ClientConnection):
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """Sends low priority messages without waiting for their reply.
 
@@ -79,11 +87,19 @@ class HTTPConnection(ClientConnection):
         json_msg = msg.json()
 
         # Perform HTTP request using base_url as a root address
-        r = requests.post(url=self.base_url, json=json_msg)
+        r = requests.post(url=self.base_url + HTTPConnection.SYFT_ROUTE, json=json_msg)
 
         # Return request's response object
         # r.text provides the response body as a str
         return r
+
+    def login(self, credentials=Dict) -> Tuple:
+        response = json.loads(
+            requests.post(
+                url=self.base_url + HTTPConnection.LOGIN_ROUTE, data=credentials
+            ).text
+        )
+        return (response["metadata"], response["key"])
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> str:
