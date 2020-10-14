@@ -17,7 +17,7 @@ from typing_extensions import final
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.copy_repr_service_pb2 import (
-    CopyReprMessage as CopyReprMessage_PB,
+    LoginMessage as LoginMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
@@ -29,12 +29,14 @@ from .node_service import ImmediateNodeServiceWithoutReply
 
 
 @final
-class CopyReprMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: Optional[UID] = None):
+class LoginMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(self, address: Address, username: str, password: str, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
+        self.username = username
+        self.password = password
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> CopyReprMessage_PB:
+    def _object2proto(self) -> LoginMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -42,7 +44,7 @@ class CopyReprMessage(ImmediateSyftMessageWithoutReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: CopyReprMessage_PB
+        :rtype: LoginMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -50,29 +52,33 @@ class CopyReprMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
 
-        return CopyReprMessage_PB(
+        return LoginMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
+            username=self.username,
+            password=self.password,
         )
 
     @staticmethod
-    def _proto2object(proto: CopyReprMessage_PB) -> "CopyReprMessage":
-        """Creates a CopyReprMessage from a protobuf
+    def _proto2object(proto: LoginMessage_PB) -> "LoginMessage":
+        """Creates a LoginMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of CopyReprMessage
-        :rtype: CopyReprMessage
+        :return: returns an instance of LoginMessage
+        :rtype: LoginMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return CopyReprMessage(
+        return LoginMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
+            username=proto.username,
+            password=proto.password,
         )
 
     @staticmethod
@@ -93,17 +99,15 @@ class CopyReprMessage(ImmediateSyftMessageWithoutReply):
 
         """
 
-        return CopyReprMessage_PB
+        return LoginMessage_PB
 
 
-class CopyReprService(ImmediateNodeServiceWithoutReply):
+class LoginService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @service_auth(root_only=True)
-    def process(
-        node: AbstractNode, msg: CopyReprMessage, verify_key: VerifyKey
-    ) -> None:
+    @service_auth(guests_welcome=True)
+    def process(node: AbstractNode, msg: LoginMessage, verify_key: VerifyKey) -> None:
         print(node.__repr__())
 
     @staticmethod
-    def message_handler_types() -> List[Type[CopyReprMessage]]:
-        return [CopyReprMessage]
+    def message_handler_types() -> List[Type[LoginMessage]]:
+        return [LoginMessage]

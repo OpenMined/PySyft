@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n6proto/core/node/common/service/copy_repr_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"`\n\x0f\x43opyReprMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n6proto/core/node/common/service/copy_repr_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"]\n\x0cLoginMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -33,9 +33,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 )
 
 
-_COPYREPRMESSAGE = _descriptor.Descriptor(
-    name="CopyReprMessage",
-    full_name="syft.core.node.common.service.CopyReprMessage",
+_LOGINMESSAGE = _descriptor.Descriptor(
+    name="LoginMessage",
+    full_name="syft.core.node.common.service.LoginMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -43,7 +43,7 @@ _COPYREPRMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.core.node.common.service.CopyReprMessage.msg_id",
+            full_name="syft.core.node.common.service.LoginMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -62,7 +62,7 @@ _COPYREPRMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.core.node.common.service.CopyReprMessage.address",
+            full_name="syft.core.node.common.service.LoginMessage.address",
             index=1,
             number=2,
             type=11,
@@ -89,28 +89,28 @@ _COPYREPRMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=157,
-    serialized_end=253,
+    serialized_end=250,
 )
 
-_COPYREPRMESSAGE.fields_by_name[
+_LOGINMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_COPYREPRMESSAGE.fields_by_name[
+_LOGINMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-DESCRIPTOR.message_types_by_name["CopyReprMessage"] = _COPYREPRMESSAGE
+DESCRIPTOR.message_types_by_name["LoginMessage"] = _LOGINMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-CopyReprMessage = _reflection.GeneratedProtocolMessageType(
-    "CopyReprMessage",
+LoginMessage = _reflection.GeneratedProtocolMessageType(
+    "LoginMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _COPYREPRMESSAGE,
+        "DESCRIPTOR": _LOGINMESSAGE,
         "__module__": "proto.core.node.common.service.copy_repr_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.CopyReprMessage)
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.LoginMessage)
     },
 )
-_sym_db.RegisterMessage(CopyReprMessage)
+_sym_db.RegisterMessage(LoginMessage)
 
 
 # @@protoc_insertion_point(module_scope)
