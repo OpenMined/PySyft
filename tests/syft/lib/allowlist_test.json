@@ -276,6 +276,7 @@
       },
       "square": {
         "profile": "tensor_method_noinput",
+        "min_version": "1.5.0",
         "skip": [
           { "data_types": ["bool"], "max_version": "1.5.1" },
           { "data_types": ["float16"], "max_version": "1.6.0" },
@@ -284,6 +285,7 @@
       },
       "square_": {
         "profile": "tensor_method_noinput",
+        "min_version": "1.5.0",
         "skip": [
           { "data_types": ["bool"], "max_version": "1.6.0" },
           { "data_types": ["float16"], "max_version": "1.6.0" },
