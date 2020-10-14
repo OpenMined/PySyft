@@ -84,8 +84,9 @@ def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
 # This rule set will match on any test which is for the data type bool and has the
 # inputs 0 or 1. Since the primary variation of test combinations relates to their
 # tensors, inputs and the data types associated with them
-def check_skip(combination: List, skip_rule: Dict[str, Any]) -> bool:
-    print("testing")
+def check_skip(
+    combination: List, skip_rule: Dict[str, Any], lib_version: version.Version
+) -> bool:
     combination_dict = {
         "data_types": combination[0],
         "tensors": combination[2],
@@ -97,20 +98,14 @@ def check_skip(combination: List, skip_rule: Dict[str, Any]) -> bool:
     applies = True
     for key in skip_rule.keys():
         if key in combination_dict:
+            # do this differently
+            if key.endswith("_version"):
+                continue
             # first check it is not equal since then the rule would apply
             if combination_dict[key] != skip_rule[key]:
                 # second check if the rule is a list of rules in which case we
                 # need to check for the presence of our current combination value
                 if isinstance(skip_rule[key], Iterable):
-                    print(
-                        "combination_dict[key]",
-                        combination_dict[key],
-                        type(combination_dict[key]),
-                    )
-                    print("skip_rule[key]", skip_rule[key])
-                    for i in skip_rule[key]:
-                        print(type(i))
-
                     # we cant use x not in y because bool matches for 0 and 1 in lists
                     presence = False
                     for item in skip_rule[key]:
@@ -132,10 +127,22 @@ def check_skip(combination: List, skip_rule: Dict[str, Any]) -> bool:
                     applies = False
                     break
 
+    # if there is a max_version for the skip rule and our lib is over that version
+    # then skipping does not apply
+    if "max_version" in skip_rule and lib_version > version.parse(
+        skip_rule["max_version"]
+    ):
+        applies = False
+
+    # if there is a min_version for the skip rule and our lib is over that version
+    # then skipping does not apply
+    if "min_version" in skip_rule and lib_version < version.parse(
+        skip_rule["min_version"]
+    ):
+        applies = False
+
     # if we were unable to fail the skip rules we should have applies = True and will
     # skip this particular test combination
-    if applies:
-        print("combination skipped", combination, skip_rule)
     return applies
 
 
@@ -227,7 +234,9 @@ for op in BASIC_OPS:
     skipped_combinations = set()
     for combination in combinations:
         for skip_rule in skip:
-            if check_skip(combination=combination, skip_rule=skip_rule):
+            if check_skip(
+                combination=combination, skip_rule=skip_rule, lib_version=TORCH_VERSION
+            ):
                 # we use str(combination) so that we can hash the entire combination
                 skipped_combinations.add(str(combination))
     for combination in combinations:
@@ -250,7 +259,7 @@ if os.path.exists(ERROR_FILE_PATH):
 def write_error_debug(debug_data: Dict[str, Any]) -> None:
     # save a file in the root project dir
     with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data)}\n")
+        f.write(f"{json.dumps(debug_data, default=str)}\n")
 
 
 @pytest.mark.slow
@@ -322,9 +331,9 @@ def test_all_allowlisted_tensor_methods(
         # in normal PyTorch. If it this is an invalid combination, abort the test
         try:
             if not is_property:
-                # this prevents things like syft.lib.python.bool.Bool from getting treated
-                # as an Int locally but then failing on the upcast to builtins.bool on
-                # the remote side
+                # this prevents things like syft.lib.python.bool.Bool from getting
+                # treated as an Int locally but then failing on the upcast to
+                # builtins.bool on the remote side
                 upcasted_args = []
                 for arg in args:
                     upcast_attr = getattr(arg, "upcast", None)
@@ -347,8 +356,6 @@ def test_all_allowlisted_tensor_methods(
             )
             error += " the .json file to prevent this test combination."
             print(error)
-            debug_data["exception"] = str(e)
-            write_error_debug(debug_data)
             raise e
 
         # Step 6: Send our target tensor to alice.
@@ -382,7 +389,7 @@ def test_all_allowlisted_tensor_methods(
         debug_data["local_result"] = local_result
         debug_data["local_result_type"] = type(local_result)
 
-        # Step 12: If there are NaN values, set them to 0 (this is normal for division by 0)
+        # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
         try:
             # only do single value comparisons, do lists, tuples etc below in the else
             if not hasattr(target_result, "__len__") and (
@@ -410,22 +417,44 @@ def test_all_allowlisted_tensor_methods(
                 for i, local_item in enumerate(local_result):
                     target_item = target_result[i]
 
-                    # Set all NaN to 0
-                    # If we have two tensors like
-                    # local = [Nan, 0, 1] and remote = [0, Nan, 1]
-                    # those are not equal
-                    # Tensor.isnan was added in torch 1.6
-                    # so we need to do torch.isnan(tensor)
-                    nan_mask = th.isnan(local_item)
+                    try:
+                        # if they don't match we can try to remove NaN's
+                        if not (local_item == target_item).all():
 
-                    # Use the same mask for local and target
-                    local_item[nan_mask] = 0
-                    target_item[nan_mask] = 0
+                            # Set all NaN to 0
+                            # If we have two tensors like
+                            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+                            # those are not equal
+                            # Tensor.isnan was added in torch 1.6
+                            # so we need to do torch.isnan(tensor)
 
-                    # Step 13: Ensure we got the same result locally (using normal
-                    # pytorch) as we did remotely using Syft pointers to communicate
-                    # with remote torch objects
-                    assert (local_item == target_item).all()
+                            # th.isnan fails on some versions of torch or methods for
+                            # example the op T / t() and the data_type float16 on
+                            # torch==1.4.0 gives:
+                            # RuntimeError: "ne_cpu" not implemented for 'Half'
+                            nan_mask = th.isnan(local_item)
+
+                            # check if any of the elements are actually NaN because
+                            # assigning to some masked positions fails on some versions
+                            # of torch and some methods so its best to avoid unless
+                            # actually needed
+                            if any(nan_mask.view(-1)):
+                                # Use the same mask for local and target
+                                local_item[nan_mask] = 0
+                                target_item[nan_mask] = 0
+
+                            # Step 13: Ensure we got the same result locally (using
+                            # normal pytorch) as we did remotely using Syft pointers to
+                            # communicate with remote torch objects
+                            assert (local_item == target_item).all()
+                    except Exception as e:
+                        # if the issue is with equality of the data_type we can try
+                        # comparing them with numpy
+                        if "eq_cpu" in str(e):
+                            assert (local_item.numpy() == target_item.numpy()).all()
+                        else:
+                            # otherwise lets just raise the exception
+                            raise e
 
             # make sure the return types match
             assert type(local_result) == type(target_result)
@@ -455,11 +484,10 @@ def test_all_allowlisted_tensor_methods(
         except Exception as e:
             error = "Exception in allowlist suite during final comparison."
             print(error)
-            debug_data["exception"] = str(e)
-            write_error_debug(debug_data)
             raise e
 
     except Exception as e:
         debug_data["exception"] = str(e)
+        debug_data["exception_type"] = type(e)
         write_error_debug(debug_data)
         raise e

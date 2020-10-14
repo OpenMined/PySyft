@@ -225,6 +225,7 @@ jobs:
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
+          echo "CPUs: $(nproc --all)"
           if [ $TORCH_VERSION = "1.4.0" ]
           then
               TORCHVISION_VERSION="0.5"

@@ -62,15 +62,26 @@
       },
       "__abs__": {
         "profile": "tensor_method_noinput",
-        "skip": [{ "data_types": ["bool"] }]
+        "skip": [
+          { "data_types": ["bool"] },
+          { "data_types": ["float16", "bfloat16"], "max_version": "1.5.1" }
+        ]
       },
       "__add__": {
-        "profile": "tensor_method_input"
+        "profile": "tensor_method_input",
+        "skip": [{ "data_types": ["float16"], "max_version": "1.5.1" }]
       },
       "__and__": {
         "profile": "tensor_method_input",
         "data_types": ["bool", "integer"],
-        "skip": [{ "data_types": ["bool"], "inputs": [0, 1] }]
+        "skip": [
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "min_version": "1.5.0",
+            "max_version": "1.6.0"
+          }
+        ]
       }
     }
   }
