@@ -340,7 +340,10 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "mul", args, n_instances=5, shapes=[((4,), (4,)), ((1,), (3,))],
+            "mul",
+            args,
+            n_instances=5,
+            shapes=[((4,), (4,)), ((1,), (3,))],
         )
 
     t = torch.tensor([1, 2, 3, 4])
@@ -402,7 +405,10 @@ def test_matmul(workers, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "matmul", args, n_instances=1, shapes=[((2, 2), (2, 2))],
+            "matmul",
+            args,
+            n_instances=1,
+            shapes=[((2, 2), (2, 2))],
         )
 
     m = torch.tensor([[1, 2], [3, 4.0]])
