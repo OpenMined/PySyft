@@ -1,18 +1,19 @@
+# stdlib
+from typing import Any
+from typing import Dict
+from typing import Optional
+
 # third party
 from nacl.signing import SigningKey
-from typing import Dict
-from typing import Any
 
 # syft relative
-from ..core.common.message import SyftMessage
-from ..core.io.address import Address
 from ..core.io.connection import ClientConnection
-from ..core.io.route import SoloRoute
 from ..core.io.location.specific import SpecificLocation
+from ..core.io.route import SoloRoute
 from ..core.node.common.client import Client
-from ..core.node.network.client import NetworkClient
-from ..core.node.domain.client import DomainClient
 from ..core.node.device.client import DeviceClient
+from ..core.node.domain.client import DomainClient
+from ..core.node.network.client import NetworkClient
 from ..core.node.vm.client import VirtualMachineClient
 from ..decorators.syft_decorator_impl import syft_decorator
 
@@ -22,8 +23,8 @@ def connect(
     url: str,
     conn_type: ClientConnection,
     client_type: Client,
-):
-    class GridClient(client_type):
+) -> Any:
+    class GridClient(client_type):  # type: ignore
         def __init__(
             self,
             credentials: Dict,
@@ -54,7 +55,7 @@ def connect(
             )
 
             # Create a new signaling client using the selected client type
-            super().__init__(  # type: ignore
+            super().__init__(
                 network=location_args[NetworkClient],
                 domain=location_args[DomainClient],
                 device=location_args[DeviceClient],
@@ -69,7 +70,7 @@ def connect(
         def __route_client_location(
             self, client_type: Any, location: SpecificLocation
         ) -> Dict:
-            locations = {
+            locations: Dict[Any, Optional[SpecificLocation]] = {
                 NetworkClient: None,
                 DomainClient: None,
                 DeviceClient: None,
