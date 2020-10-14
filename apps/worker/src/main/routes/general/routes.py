@@ -1,4 +1,4 @@
-from .blueprint import dcfl_blueprint as dcfl_route
+from .blueprint import root_blueprint as root_route
 from ...core.node import node
 
 # syft absolute
@@ -10,7 +10,7 @@ from flask import request, Response
 import json
 
 
-@dcfl_route.route("/pysyft", methods=["POST"])
+@root_route.route("/pysyft", methods=["POST"])
 def root_route():
     json_msg = request.get_json()
     obj_msg = _deserialize(blob=json_msg, from_json=True)

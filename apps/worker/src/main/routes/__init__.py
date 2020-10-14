@@ -1,4 +1,4 @@
-from .data_centric.blueprint import dcfl_blueprint
+from .general.blueprint import root_blueprint
 
 
-from .data_centric.root import *
+from .general.routes import *

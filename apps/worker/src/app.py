@@ -21,7 +21,7 @@ from geventwebsocket.websocket import Header
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
 from main.routes import (
-    dcfl_blueprint,
+    root_blueprint,
 )
 import config
 
@@ -65,7 +65,7 @@ def create_app() -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
+    app.register_blueprint(root_blueprint, url_prefix=r"/")
 
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
