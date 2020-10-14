@@ -1,5 +1,22 @@
 {
   "data_types": {
+    "all": [
+      "bool",
+      "uint8",
+      "int8",
+      "int16",
+      "int32",
+      "int64",
+      "float16",
+      "float32",
+      "float64",
+      "bfloat16",
+      "complex64",
+      "complex128",
+      "qint8",
+      "quint8",
+      "qint32"
+    ],
     "common": [
       "bool",
       "uint8",
@@ -19,18 +36,35 @@
   },
   "tensors": {
     "tensor1": [[-1, 0, 1, 2, 3, 4]],
+    "tensor1_nonzero": [[-1, 1, 2, 3, 4]],
     "tensor2": [
       [
         [-0.1, 0.1],
         [0.2, 0.3]
       ]
+    ],
+    "tensor2_nonzero_rounded": [
+      [
+        [-1.1, 1.1],
+        [2.2, 3.3]
+      ]
     ]
   },
   "inputs": {
-    "all": ["self", [0], [1], 0, 1, true, false]
+    "all": ["self", [0], [1], 0, 1, true, false],
+    "all_nonzero": ["self", [1], 1, true]
   },
   "profiles": {
+    "default": {
+      "description": "Great for testing a new method and seeing what breaks",
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["all"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": ["all"]
+    },
     "tensor_property_noinput": {
+      "description": "Covers most tensor property attributes",
       "property": true,
       "return_type": "torch.Tensor",
       "data_types": ["common"],
@@ -38,6 +72,7 @@
       "inputs": [null]
     },
     "tensor_method_noinput": {
+      "description": "Covers most tensor method attributes with no input",
       "property": false,
       "return_type": "torch.Tensor",
       "data_types": ["common"],
@@ -45,11 +80,39 @@
       "inputs": [null]
     },
     "tensor_method_input": {
+      "description": "Covers most tensor method attributes",
       "property": false,
       "return_type": "torch.Tensor",
       "data_types": ["common"],
       "tensors": ["tensor1", "tensor2"],
       "inputs": ["all"]
+    },
+    "tensor_float_division_method_v150": {
+      "description": "Skips running float / div methods which crash on torch==1.4.0",
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1_nonzero", "tensor2_nonzero_rounded"],
+      "inputs": ["all_nonzero"],
+      "min_version": "1.5.0"
+    },
+    "tensor_bitwise_method_v150": {
+      "description": "Skips running bitwise methods not in torch==1.4.0",
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": ["all"],
+      "min_version": "1.5.0"
+    },
+    "tensor_logical_method_v150": {
+      "description": "Skips running logical methods not in torch==1.4.0",
+      "property": false,
+      "return_type": "torch.Tensor",
+      "data_types": ["common"],
+      "tensors": ["tensor1", "tensor2"],
+      "inputs": ["self", [0], [1]],
+      "min_version": "1.5.0"
     }
   },
   "tests": {
@@ -81,6 +144,164 @@
             "min_version": "1.5.0",
             "max_version": "1.6.0"
           }
+        ]
+      },
+      "__div__": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.5.1" },
+          { "data_types": ["float16"], "max_version": "1.5.1" },
+          { "min_version": "1.6.0" }
+        ]
+      },
+      "__floordiv__": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.5.1" }
+        ]
+      },
+      "__rfloordiv__": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.5.1" },
+          { "data_types": ["bfloat16"], "max_version": "1.5.1" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "bitwise_and": {
+        "profile": "tensor_bitwise_method_v150",
+        "skip": [
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "bitwise_and_": {
+        "profile": "tensor_bitwise_method_v150",
+        "skip": [
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "bitwise_or": {
+        "profile": "tensor_bitwise_method_v150",
+        "skip": [
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "bitwise_or_": {
+        "profile": "tensor_bitwise_method_v150",
+        "skip": [
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "div": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.5.1" },
+          { "data_types": ["float16"], "max_version": "1.5.1" },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "div_": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.5.1" },
+          { "data_types": ["float16"], "max_version": "1.5.1" },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "max_version": "1.6.0"
+          }
+        ]
+      },
+      "floor_divide": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "floor_divide_": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "logical_and": {
+        "profile": "tensor_logical_method_v150"
+      },
+      "logical_and_": {
+        "profile": "tensor_logical_method_v150"
+      },
+      "logical_or": {
+        "profile": "tensor_logical_method_v150"
+      },
+      "logical_or_": {
+        "profile": "tensor_logical_method_v150"
+      },
+      "remainder": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "remainder_": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "square": {
+        "profile": "tensor_method_noinput",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.5.1" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "square_": {
+        "profile": "tensor_method_noinput",
+        "skip": [
+          { "data_types": ["bool"], "max_version": "1.6.0" },
+          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+        ]
+      },
+      "true_divide": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [{ "data_types": ["float16"], "max_version": "1.5.1" }]
+      },
+      "true_divide_": {
+        "profile": "tensor_float_division_method_v150",
+        "skip": [
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "max_version": "1.6.0"
+          },
+          { "data_types": ["float16"], "max_version": "1.5.1" }
         ]
       }
     }

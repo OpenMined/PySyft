@@ -170,7 +170,7 @@ for op in BASIC_OPS:
     skip = []
     if op not in TEST_JSON["tests"]["torch.Tensor"]:
         # there is no custom configuration so we will test all supported combinations
-        dtypes = ["common", "complex", "quantized"]
+        dtypes = ["common"]
         test_tensors = ["tensor1", "tensor2"]
         test_inputs = ["all"]
         is_property = False
