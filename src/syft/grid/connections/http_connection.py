@@ -1,13 +1,15 @@
+# stdlib
+import json
+from typing import Dict
+from typing import Tuple
+
 # third party
 import requests
-from typing import Tuple
-from typing import Dict
-import json
 
 # syft relative
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.io.connection import ClientConnection
@@ -93,7 +95,7 @@ class HTTPConnection(ClientConnection):
         # r.text provides the response body as a str
         return r
 
-    def login(self, credentials=Dict) -> Tuple:
+    def login(self, credentials: Dict) -> Tuple:
         response = json.loads(
             requests.post(
                 url=self.base_url + HTTPConnection.LOGIN_ROUTE, data=credentials
