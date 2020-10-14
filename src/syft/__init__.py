@@ -53,7 +53,6 @@ from syft.core import common  # noqa: F401
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from syft.core.node.common.service.login_service import LoginMessage  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
 from syft.core.node.device.device import Device  # noqa: F401
 from syft.core.node.device.device import DeviceClient  # noqa: F401
