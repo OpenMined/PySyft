@@ -340,10 +340,7 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "mul",
-            args,
-            n_instances=5,
-            shapes=[((4,), (4,)), ((1,), (3,))],
+            "mul", args, n_instances=5, shapes=[((4,), (4,)), ((1,), (3,))],
         )
 
     t = torch.tensor([1, 2, 3, 4])
@@ -405,10 +402,7 @@ def test_matmul(workers, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "matmul",
-            args,
-            n_instances=1,
-            shapes=[((2, 2), (2, 2))],
+            "matmul", args, n_instances=1, shapes=[((2, 2), (2, 2))],
         )
 
     m = torch.tensor([[1, 2], [3, 4.0]])
@@ -1095,8 +1089,7 @@ def test_torch_mean(workers, protocol):
 
     t = torch.tensor([[1.0, 2.5], [8.0, 5.5]])
     x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
-        alice, bob, crypto_provider=james,
-        protocol=protocol
+        alice, bob, crypto_provider=james, protocol=protocol
     )
 
     s = torch.mean(x).get().float_prec()
