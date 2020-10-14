@@ -26,14 +26,14 @@ def test_duet_send_and_get() -> None:
 
 @pytest.mark.slow
 def test_duet_searchable_functionality() -> None:
-    duet = sy.Duet(host="127.0.0.1", port=5001)
+    duet = sy.Duet(host="127.0.0.1", port=5002)
 
     xp = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet)
     xp2 = (
         th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet, searchable=True)
     )
 
-    guest = sy.Duet(domain_url="http://127.0.0.1:5001/")
+    guest = sy.Duet(domain_url="http://127.0.0.1:5002/")
 
     assert len(guest.store) == 1
     assert len(duet.store) == 2
@@ -49,7 +49,7 @@ def test_duet_searchable_functionality() -> None:
 @pytest.mark.slow
 def test_duet_exception_catching() -> None:
     try:
-        duet = sy.Duet(host="127.0.0.1", port=5001)
+        duet = sy.Duet(host="127.0.0.1", port=5003)
 
         xp = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet)
         xp2 = (
@@ -58,7 +58,7 @@ def test_duet_exception_catching() -> None:
             .send(duet, searchable=True)
         )
 
-        guest = sy.Duet(domain_url="http://127.0.0.1:5001/")
+        guest = sy.Duet(domain_url="http://127.0.0.1:5003/")
 
         assert len(guest.store) == 1
         assert len(duet.store) == 2

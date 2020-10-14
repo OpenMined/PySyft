@@ -1,15 +1,16 @@
 #!/bin/bash
 set -e
 
-./scripts/build_proto.sh
+# start tests in parallel (with additional parallelism)
+pytest -m fast -n auto &
+
+# check bandit in parallel
+bandit -r src -ll &
+
+# run API documentation test notebooks in parallel
+./scripts/nb_test.sh && pytest examples/api --cov-fail-under 0 &
 
 # fix isort and format with black
-isort .
-black src tests
-pre-commit run --all-files
-bandit -r src -ll
-pytest -m fast
+./scripts/build_proto.sh && isort . && black src tests && pre-commit run --all-files &
 
-# run API documentation test notebooks
-./scripts/nb_test.sh
-pytest examples/api --cov-fail-under 0
+wait

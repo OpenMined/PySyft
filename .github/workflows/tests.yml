@@ -83,7 +83,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
-          pytest -m fast --cov-fail-under 0
+          pytest -m fast --cov-fail-under 0 -n auto
 
   python-linting:
     runs-on: ubuntu-latest
@@ -179,7 +179,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pytest -m fast
+          pytest -m fast -n auto
 
   python-slow-tests:
     runs-on: ubuntu-latest
@@ -243,7 +243,7 @@ jobs:
           pip install torchvision==${TORCHVISION_VERSION}
           pip install -r requirements.txt
           pip install -e .
-          pytest -m slow --cov-fail-under 0 --workers auto
+          pytest -m slow --cov-fail-under 0 -n auto
 
   python-nb-examples:
     runs-on: ubuntu-latest
@@ -288,4 +288,4 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           ./scripts/nb_test.sh
-          pytest examples/api --cov-fail-under 0
+          pytest examples/api --cov-fail-under 0 -n auto

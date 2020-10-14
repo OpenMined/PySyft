@@ -33,7 +33,7 @@ pyscaffold[all]
 pytest
 pytest-asyncio
 pytest-cov
-pytest-parallel
+pytest-xdist[psutil]
 requests
 sqlitedict
 torch>=1.4
