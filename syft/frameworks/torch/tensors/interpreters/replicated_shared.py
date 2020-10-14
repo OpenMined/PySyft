@@ -1,14 +1,17 @@
+from typing import Dict
+
 from operator import add, sub, mul
 import torch
 from syft.generic.frameworks.hook import hook_args
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
-    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
-        super().__init__(owner=owner)
+    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None, id=None):
+        super().__init__(owner=owner, id=id)
         self.ring_size = ring_size or 2 ** 32
         shares_map = self.__validate_input(plain_text, players)
         self.child = shares_map
@@ -269,6 +272,98 @@ class ReplicatedSharingTensor(AbstractTensor):
     @property
     def players(self):
         return self.__get_players()
+
+    def set_garbage_collect_data(self, value):
+        shares = self.child
+        for _, share in shares.items():
+            share[0].garbage_collect_data = value
+            share[1].garbage_collect_data = value
+
+    def get_garbage_collect_data(self):
+        shares = self.child
+        res = {}
+
+        for worker, shares in shares.items():
+            assert shares[0].garbage_collect_data == shares[1].garbage_collect_data
+            res[worker.id] = shares[0].garbage_collect_data
+
+        return res
+
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Additive Shared Tensor, so we make it clear
+        that if someone query .grad on a Additive Shared Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
+
+    def backward(self, *args, **kwargs):
+        """Calling backward on Additive Shared Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an AST (for example in create_grad_objects), so
+        we just ignore the call."""
+        pass
+
+
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
+        """
+        This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+        Args:
+            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the additive shared tensor
+        Examples:
+            data = simplify(tensor)
+        """
+        _simplify = lambda x: syft.serde.msgpack.serde._simplify(worker, x)
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = _simplify(tensor.child)
+
+        # Don't delete the remote values of the shares at simplification
+        garbage_collect = tensor.get_garbage_collect_data()
+        tensor.set_garbage_collect_data(False)
+
+        return (
+            _simplify(tensor.id),
+            _simplify(tensor.ring_size),
+            chain,
+            garbage_collect,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
+        """
+            This function reconstructs a AdditiveSharingTensor given it's attributes in
+        form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+        Returns:
+            AdditiveSharingTensor: a AdditiveSharingTensor
+        Examples:
+            shared_tensor = detail(data)
+        """
+        _detail = lambda x: syft.serde.msgpack.serde._detail(worker, x)
+
+        tensor_id, ring_size, chain, garbage_collect = tensor_tuple
+
+        tensor = ReplicatedSharingTensor(
+            owner=worker,
+            id=_detail(tensor_id),
+            ring_size=_detail(ring_size),
+        )
+
+        if chain is not None:
+            chain = _detail(chain)
+            tensor.child = chain
+
+        tensor.set_garbage_collect_data(garbage_collect)
+
+        return tensor
 
     def __repr__(self):
         return self.__str__()

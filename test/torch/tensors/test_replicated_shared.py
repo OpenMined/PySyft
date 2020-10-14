@@ -265,3 +265,18 @@ def test_sub(workers):
 
     z = (c - x).reconstruct().float_prec()
     assert torch.allclose(z, (c - t))
+
+
+def test_remote_share(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1,2,3], dtype=torch.long)
+
+    ptr = x.send(bob)
+    rst_pointer = ptr.share(bob, alice, james, protocol="falcon")
+
+    rst = rst_pointer.get().child
+
+    # Validate all pointers are pointing to valid objects
+    rst.retrieve_shares()
+
+    assert torch.all(rst.get() == x)
