@@ -85,7 +85,9 @@ def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
 # inputs 0 or 1. Since the primary variation of test combinations relates to their
 # tensors, inputs and the data types associated with them
 def check_skip(
-    combination: List, skip_rule: Dict[str, Any], lib_version: version.Version
+    combination: List,
+    skip_rule: Dict[str, Any],
+    lib_version: Union[version.Version, version.LegacyVersion],
 ) -> bool:
     combination_dict = {
         "data_types": combination[0],
