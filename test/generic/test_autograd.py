@@ -743,7 +743,8 @@ def test_train_remote_autograd_tensor(workers):
     # let's check if the local version and the remote version have the same weight
     assert torch.all(
         torch.eq(
-            model_local_trained.weight.get(get_copy=True).data, model_remote.weight.get(get_copy=True).data
+            model_local_trained.weight.get(get_copy=True).data,
+            model_remote.weight.get(get_copy=True).data,
         )
     )
 
