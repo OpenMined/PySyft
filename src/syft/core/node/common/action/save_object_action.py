@@ -37,7 +37,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
-        obj=StorableObject(
+        obj = StorableObject(
             # ignoring this - the fundamental problem is that we can't force the classes
             # we want to use to subclass from something without creating wrappers for
             # everything which are mandatory for all operations. It's plausible that we
@@ -57,9 +57,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 if hasattr(self.obj, "description")
                 else ""
             ),
-            search_permissions={All(): None}
-            if self.anyone_can_search_for_this
-            else {},
+            search_permissions={All(): None} if self.anyone_can_search_for_this else {},
             read_permissions={
                 node.verify_key: node.id,
                 verify_key: None,  # we dont have the passed in sender's UID
