@@ -99,22 +99,21 @@ def check_skip(
     # condition which we cannot satisfy
     applies = True
     for key in skip_rule.keys():
+        # handle the version checks later
+        if key.endswith("_version"):
+            continue
         if key in combination_dict:
-            # do this differently
-            if key.endswith("_version"):
-                continue
             # first check it is not equal since then the rule would apply
             if combination_dict[key] != skip_rule[key]:
                 # second check if the rule is a list of rules in which case we
                 # need to check for the presence of our current combination value
                 if isinstance(skip_rule[key], Iterable):
                     # we cant use x not in y because bool matches for 0 and 1 in lists
-                    presence = False
-                    for item in skip_rule[key]:
-                        if combination_dict[key] == item and type(
-                            combination_dict[key]
-                        ) == type(item):
-                            presence = True
+                    presence = any(
+                        combination_dict[key] == item
+                        and type(combination_dict[key]) == type(item)
+                        for item in skip_rule[key]
+                    )
 
                     # if we cant find a matching item of value and type then we dont
                     # match and we wont skip this test, if its True we match so far and
@@ -129,17 +128,23 @@ def check_skip(
                     applies = False
                     break
 
-    # if there is a max_version for the skip rule and our lib is over that version
-    # then skipping does not apply
-    if "max_version" in skip_rule and lib_version > version.parse(
-        skip_rule["max_version"]
+    # skip rule versioning example:
+    # "skip": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+    # this says skip float16 if the library is less than or equal to 1.5.1
+    # say we are running 1.4.0 that means
+    # torch==1.4.0 <= 1.5.1 so this rule applies and we could possibly need to skip
+
+    # if there is a lte_version for the skip rule and our lib is NOT lte, less than or
+    # equal to the version then we cant skip because the rule only prohibits lte
+    if "lte_version" in skip_rule and (
+        not lib_version <= version.parse(skip_rule["lte_version"])
     ):
         applies = False
 
-    # if there is a min_version for the skip rule and our lib is over that version
-    # then skipping does not apply
-    if "min_version" in skip_rule and lib_version < version.parse(
-        skip_rule["min_version"]
+    # if there is a gte_version for the skip rule and our lib is NOT gte, greater than
+    # or equal to the version then  we cant skip because the rule only prohibits gte
+    if "gte_version" in skip_rule and (
+        not lib_version >= version.parse(skip_rule["gte_version"])
     ):
         applies = False
 
@@ -153,7 +158,7 @@ BASIC_OPS_RETURN_TYPE = {}
 # here we are loading up the true allowlist which means that we are only testing what
 # can be used by the end user
 for method, return_type_name_or_dict in allowlist.items():
-    if "torch.Tensor." in method:
+    if method.startswith("torch.Tensor."):
         return_type = get_return_type(support_dict=return_type_name_or_dict)
         method_name = method.split(".")[-1]
         BASIC_OPS.append(method_name)
@@ -194,6 +199,8 @@ for op in BASIC_OPS:
         if "skip" in meta:
             skip += meta["skip"]
 
+        # this is the minimum version of the library required to run this test
+        # which should match the values in the actual allowlist.py
         if "min_version" in meta and TORCH_VERSION < version.parse(meta["min_version"]):
             # skip attributes which are not supported in the TORCH_VERSION
             continue
@@ -241,6 +248,7 @@ for op in BASIC_OPS:
             ):
                 # we use str(combination) so that we can hash the entire combination
                 skipped_combinations.add(str(combination))
+
     for combination in combinations:
         # we use str so that we can hash the entire combination with nested lists
         if str(combination) not in skipped_combinations:

@@ -127,12 +127,17 @@
         "profile": "tensor_method_noinput",
         "skip": [
           { "data_types": ["bool"] },
-          { "data_types": ["float16", "bfloat16"], "max_version": "1.5.1" }
+          { "data_types": ["float16", "bfloat16"], "lte_version": "1.5.1" }
         ]
       },
       "__add__": {
         "profile": "tensor_method_input",
-        "skip": [{ "data_types": ["float16"], "max_version": "1.5.1" }]
+        "skip": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__and__": {
         "profile": "tensor_method_input",
@@ -141,36 +146,36 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "min_version": "1.5.0",
-            "max_version": "1.6.0"
+            "gte_version": "1.5.0",
+            "lte_version": "1.6.0"
           }
         ]
       },
       "__div__": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.5.1" },
-          { "data_types": ["float16"], "max_version": "1.5.1" },
-          { "min_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          { "gte_version": "1.6.0" }
         ]
       },
       "__floordiv__": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.5.1" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
         ]
       },
       "__rfloordiv__": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.5.1" },
-          { "data_types": ["bfloat16"], "max_version": "1.5.1" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
+          { "data_types": ["bool"], "lte_version": "1.5.1" },
+          { "data_types": ["bfloat16"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -179,7 +184,7 @@
         "skip": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -188,7 +193,7 @@
         "skip": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -197,7 +202,7 @@
         "skip": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -206,46 +211,46 @@
         "skip": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
       "div": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.5.1" },
-          { "data_types": ["float16"], "max_version": "1.5.1" },
+          { "data_types": ["bool"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "lte_version": "1.5.1" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
       "div_": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.5.1" },
-          { "data_types": ["float16"], "max_version": "1.5.1" },
+          { "data_types": ["bool"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "lte_version": "1.5.1" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
       "floor_divide": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "floor_divide_": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "logical_and": {
@@ -263,47 +268,47 @@
       "remainder": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "remainder_": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "square": {
         "profile": "tensor_method_noinput",
         "min_version": "1.5.0",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.5.1" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "square_": {
         "profile": "tensor_method_noinput",
         "min_version": "1.5.0",
         "skip": [
-          { "data_types": ["bool"], "max_version": "1.6.0" },
-          { "data_types": ["float16"], "max_version": "1.6.0" },
-          { "data_types": ["bfloat16"], "max_version": "1.6.0" }
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "true_divide": {
         "profile": "tensor_float_division_method_v150",
-        "skip": [{ "data_types": ["float16"], "max_version": "1.5.1" }]
+        "skip": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
       },
       "true_divide_": {
         "profile": "tensor_float_division_method_v150",
         "skip": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "max_version": "1.6.0"
+            "lte_version": "1.6.0"
           },
-          { "data_types": ["float16"], "max_version": "1.5.1" }
+          { "data_types": ["float16"], "lte_version": "1.5.1" }
         ]
       }
     }
