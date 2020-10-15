@@ -1,4 +1,5 @@
 import pytest
+import torch as th
 
 from syft.frameworks.torch.he.fv.util.numth import is_prime
 from syft.frameworks.torch.he.fv.util.operations import multiply_many_except
@@ -672,8 +673,7 @@ def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
 
 
 @pytest.mark.parametrize(
-    "val1, val2",
-    [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
+    "val1, val2", [(0, 0), (1, 1), (-1, 1), (100, -1), (1000, 1), (-1000, -1), (-99, 0)],
 )
 def test_fv_relin(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
@@ -694,8 +694,7 @@ def test_fv_relin(val1, val2):
 
 
 @pytest.mark.parametrize(
-    "val1, val2",
-    [(-1, 1)],
+    "val1, val2", [(-1, 1)],
 )
 def test_fv_relin_exceptions(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
@@ -715,3 +714,68 @@ def test_fv_relin_exceptions(val1, val2):
 
     with pytest.raises(Exception):
         evaluator.relin(evaluator.mul(temp_prod, val1), relin_key)  # Ciphertext size 4
+
+
+@pytest.mark.parametrize(
+    "val1, val2, ans",
+    [
+        (th.tensor([1]), th.tensor([-1]), th.tensor([0])),
+        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6]), th.tensor([5, 7, 9])),
+        (
+            th.tensor([[1, 2, 3], [4, 5, 6]]),
+            th.tensor([[-1, -2, 3], [4, -5, 6]]),
+            th.tensor([[0, 0, 6], [8, 0, 12]]),
+        ),
+    ],
+)
+def test_bfv_tensor_add(val1, val2, ans):
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+
+    op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    assert th.all(th.eq((op1 + op2).decrypt(private_key=keys[0]), ans))
+
+
+@pytest.mark.parametrize(
+    "val1, val2, ans",
+    [
+        (th.tensor([1]), th.tensor([-1]), th.tensor([-1])),
+        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6]), th.tensor([4, 10, 18])),
+        (
+            th.tensor([[1, 2, 3], [4, 5, 6]]),
+            th.tensor([[-1, -2, 3], [4, -5, 6]]),
+            th.tensor([[-1, -4, 9], [16, -25, 36]]),
+        ),
+    ],
+)
+def test_bfv_tensor_mul(val1, val2, ans):
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+
+    op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    assert th.all(th.eq((op1 * op2).decrypt(private_key=keys[0]), ans))
+
+
+@pytest.mark.parametrize(
+    "val1, val2, ans",
+    [
+        (
+            th.tensor([[1, 2, 3], [4, 5, 6]]),
+            th.Tensor([[-1, -2], [-3, -4], [-5, -6]]),
+            th.tensor([[-22, -28], [-49, -64]]),
+        ),
+    ],
+)
+def test_bfv_tensor_mm(val1, val2, ans):
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+
+    op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    assert th.all(th.eq(op1.mm(op2, relin_key=relin_key).decrypt(private_key=keys[0]), ans))
