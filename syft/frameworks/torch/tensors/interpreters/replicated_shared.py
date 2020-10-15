@@ -299,21 +299,21 @@ class ReplicatedSharingTensor(AbstractTensor):
         return None
 
     def backward(self, *args, **kwargs):
-        """Calling backward on Additive Shared Tensor doesn't make sense, but sometimes a call
-        can be propagated downward the chain to an AST (for example in create_grad_objects), so
+        """Calling backward on Replicated Shared Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an RST (for example in create_grad_objects), so
         we just ignore the call."""
         pass
 
 
 
     @staticmethod
-    def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "ReplicatedSharingTensor") -> tuple:
         """
-        This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
+        This function takes the attributes of a ReplicatedSharingTensor and saves them in a tuple
         Args:
-            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+            tensor (ReplicatedSharingTensor): a ReplicatedSharingTensor
         Returns:
-            tuple: a tuple holding the unique attributes of the additive shared tensor
+            tuple: a tuple holding the unique attributes of the replicated shared tensor
         Examples:
             data = simplify(tensor)
         """
@@ -335,15 +335,15 @@ class ReplicatedSharingTensor(AbstractTensor):
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "ReplicatedSharingTensor":
         """
-            This function reconstructs a AdditiveSharingTensor given it's attributes in
+            This function reconstructs a ReplicatedSharingTensor given it's attributes in
         form of a tuple.
         Args:
             worker: the worker doing the deserialization
-            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+            tensor_tuple: a tuple holding the attributes of the ReplicatedSharingTensor
         Returns:
-            AdditiveSharingTensor: a AdditiveSharingTensor
+            ReplicatedSharingTensor: a ReplicatedSharingTensor
         Examples:
             shared_tensor = detail(data)
         """
