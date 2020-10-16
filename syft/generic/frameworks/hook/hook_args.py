@@ -620,7 +620,7 @@ def typed_identity(a):
         def none_identity(i):
             # assert i is None
             if i is not None:
-                raise ValueError("Supposed to be None")
+                raise AssertionError("Supposed to be None")
             return i
 
         return none_identity
