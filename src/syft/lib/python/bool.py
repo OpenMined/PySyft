@@ -102,10 +102,6 @@ class Bool(int, PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__floordiv__(other))
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def __format__():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.__format__())
-
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> PyPrimitive:
         other = dispatch_other(other)
