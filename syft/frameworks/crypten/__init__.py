@@ -64,7 +64,11 @@ def load(tag: str, src: int, **kwargs):
         results = worker.search(tag)
 
         # Make sure there is only one result
-        assert len(results) == 1
+        if len(results) != 1:
+            if len(results) == 0:
+                raise RuntimeError("No worker result found.")
+            else:
+                raise RuntimeError("More than one worker result found.")
 
         result = crypten.load_from_party(preloaded=results[0], src=src, **kwargs)
 
@@ -86,7 +90,12 @@ def load_model(tag: str):
     results = worker.search(tag)
 
     # Make sure there is only one result
-    assert len(results) == 1
+    # assert len(results) == 1
+    if len(results) != 1:
+        if len(results) == 0:
+            raise RuntimeError("No worker result found.")
+        else:
+            raise RuntimeError("More than one worker result found.")
 
     result = results[0].to_crypten()
     return result

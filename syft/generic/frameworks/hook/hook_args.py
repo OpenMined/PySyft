@@ -113,7 +113,9 @@ def unwrap_args_from_method(attr, method_self, args_, kwargs_):
     # As they won't be used with the same arg types
     attr_id = type(method_self).__name__ + "." + attr
     try:
-        assert attr not in ambiguous_methods
+        # assert attr not in ambiguous_methods
+        if attr in ambiguous_methods:
+            raise AttributeError("attr is part of ambiguous_methods")
 
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
@@ -147,7 +149,10 @@ def unwrap_args_from_function(attr, args_, kwargs_, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
-        assert attr not in ambiguous_functions
+        # assert attr not in ambiguous_functions
+        if attr in ambiguous_functions:
+            raise AttributeError("attr is part of ambiguous_functions")
+
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
@@ -230,7 +235,9 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
-        assert attr not in ambiguous_functions
+        # assert attr not in ambiguous_functions
+        if attr in ambiguous_functions:
+            raise AttributeError("attr is part of ambiguous_functions")
 
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
@@ -611,7 +618,9 @@ def typed_identity(a):
     if a is None:
 
         def none_identity(i):
-            assert i is None
+            # assert i is None
+            if i is not None:
+                raise ValueError("Supposed to be None")
             return i
 
         return none_identity
@@ -619,7 +628,9 @@ def typed_identity(a):
     elif type(a) in (int, float, bool):
 
         def number_identity(i):
-            assert isinstance(i, type(a))
+            # assert isinstance(i, type(a))
+            if not isinstance(i, type(a)):
+                raise TypeError("i is supposed to be type of a")
             return i
 
         return number_identity
@@ -664,8 +675,12 @@ def register_response(
     attr_id = f"{attr}"
 
     try:
-        assert attr not in ambiguous_functions
-        assert attr not in ambiguous_methods
+        # assert attr not in ambiguous_functions
+        if attr in ambiguous_functions:
+            raise AttributeError("attr is part of ambiguous_functions")
+        # assert attr not in ambiguous_methods
+        if attr in ambiguous_methods:
+            raise AttributeError("attr is part of ambiguous_methods")
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
