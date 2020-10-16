@@ -175,7 +175,7 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def format(self, *args, **kwargs) -> PyPrimitive:
+    def format(self, *args: Any, **kwargs: Any) -> PyPrimitive:
         res = super().format(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 

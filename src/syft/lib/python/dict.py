@@ -3,6 +3,8 @@ from collections import UserDict
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Iterable
+from typing import Mapping
 import warnings
 
 # third party
@@ -17,7 +19,7 @@ from ...decorators import syft_decorator
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
 from .primitive_interface import PyPrimitive
-
+from .primitive_factory import PrimitiveFactory
 
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
@@ -75,6 +77,122 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=True)
     def upcast(self) -> dict:
         return dict(self)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __contains__(self, other: Any) -> PyPrimitive:
+        res = super().__contains__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __eq__(self, other: Any) -> PyPrimitive:
+        res = super().__eq__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __format__(self, format_spec: str) -> PyPrimitive:
+        res = super().__format__(format_spec)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __ge__(self, other: Any) -> PyPrimitive:
+        res = super().__ge__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, key: Any) -> PyPrimitive:
+        res = super().__getitem__(key)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __gt__(self, other: Any) -> PyPrimitive:
+        res = super().__gt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __hash__(self) -> PyPrimitive:
+        res = super().__hash__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> PyPrimitive:
+        res = super().__iter__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __le__(self, other: Any) -> PyPrimitive:
+        res = super().__le__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __len__(self) -> PyPrimitive:
+        res = super().__len__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __lt__(self, other: Any) -> PyPrimitive:
+        res = super().__lt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __ne__(self) -> PyPrimitive:
+        res = super().__ne__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __sizeof__(self) -> PyPrimitive:
+        res = super().__sizeof__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __str__(self) -> PyPrimitive:
+        res = super().__str__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def copy(self) -> PyPrimitive:
+        res = super().copy()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @classmethod
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def fromkeys(cls, iterable: Iterable, value: Optional[Any] = ...) -> PyPrimitive:
+        res = super().fromkeys(iterable, value)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def get(self, key: Any) -> PyPrimitive:
+        res = super().get(key)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def items(self) -> PyPrimitive:
+        res = super().items()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def keys(self) -> PyPrimitive:
+        res = super().keys()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def pop(self, key: Any) -> PyPrimitive:
+        res = super().pop(key)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def popitem(self) -> PyPrimitive:
+        res = super().popitem()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def setdefault(self, key: Any = ..., default: Any = ...) -> PyPrimitive:
+        res = super().setdefault(key, default)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def values(self) -> PyPrimitive:
+        res = super().values()
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dict_PB:
