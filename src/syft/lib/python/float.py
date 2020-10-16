@@ -231,28 +231,6 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive("0")
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __hex__(self) -> SyPrimitiveRet:
-        res = super().hex()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @property  # type: ignore
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def imag(self) -> SyPrimitiveRet:
-        res = super().imag
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @property  # type: ignore
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def real(self) -> SyPrimitiveRet:
-        res = super().real
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def conjugate(self) -> SyPrimitiveRet:
-        res = super().conjugate()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def is_integer(self) -> SyPrimitiveRet:
         res = super().is_integer()
         return PrimitiveFactory.generate_primitive(value=res)
