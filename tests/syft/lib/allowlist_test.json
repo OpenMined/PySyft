@@ -141,13 +141,15 @@
       },
       "__and__": {
         "profile": "tensor_method_input",
-        "data_types": ["bool", "integer"],
         "skip": [
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
             "gte_version": "1.5.0",
             "lte_version": "1.6.0"
+          },
+          {
+            "data_types": ["float16", "float32", "float64", "bfloat16"]
           }
         ]
       },
@@ -310,6 +312,10 @@
           },
           { "data_types": ["float16"], "lte_version": "1.5.1" }
         ]
+      },
+      "is_meta": {
+        "profile": "tensor_property_noinput",
+        "skip": [{ "lte_version": "1.5.1" }]
       }
     }
   }

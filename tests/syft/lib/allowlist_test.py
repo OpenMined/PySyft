@@ -7,6 +7,10 @@ from itertools import product
 import json
 import os
 from pathlib import Path
+import platform
+import random
+import sys
+import time
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -29,6 +33,9 @@ from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
 TORCH_VERSION = version.parse(th.__version__)
+py_ver = sys.version_info
+PYTHON_VERSION = version.parse(f"{py_ver.major}.{py_ver.minor}")
+OS_NAME = platform.system().lower()
 
 
 # Allow List Test Generation
@@ -160,6 +167,8 @@ BASIC_OPS_RETURN_TYPE = {}
 for method, return_type_name_or_dict in allowlist.items():
     if method.startswith("torch.Tensor."):
         return_type = get_return_type(support_dict=return_type_name_or_dict)
+        if return_type == "unknown":
+            return_type = "torch.Tensor"
         method_name = method.split(".")[-1]
         BASIC_OPS.append(method_name)
         BASIC_OPS_RETURN_TYPE[method_name] = return_type
@@ -167,6 +176,51 @@ for method, return_type_name_or_dict in allowlist.items():
 # load our custom configurations
 with open(__file__.replace(".py", ".json"), "r") as f:
     TEST_JSON = json.loads(f.read())
+
+# we need a file to keep all the errors in that makes it easy to debug failures
+TARGET_PLATFORM = f"{PYTHON_VERSION}_{TORCH_VERSION}_{OS_NAME}"
+ERROR_FILE_PATH = os.path.abspath(
+    Path(__file__) / "../../../.." / f"allowlist_test_errors_{TARGET_PLATFORM}.jsonl"
+)
+
+# we need a file to keep track of all the methods that are skipped or succeed
+SUPPORT_FILE_PATH = os.path.abspath(
+    Path(__file__) / "../../../.." / f"allowlist_test_support_{TARGET_PLATFORM}.jsonl"
+)
+
+
+# clear the file before running the tests
+if os.path.exists(ERROR_FILE_PATH):
+    # this one we can delete since we dont start writing until we are into the tests
+    os.unlink(ERROR_FILE_PATH)
+
+
+# we are running many works in parallel and theres a race condition with deleting this
+# file and then writing to it during the collection phase so we are going to just
+# spread out the workers and only delete if the file isnt brand new
+time.sleep(random.random() * 2)
+
+if os.path.exists(SUPPORT_FILE_PATH):
+    # we need to write during gathering so we need to delete this carefully
+    file_stat = os.stat(SUPPORT_FILE_PATH)
+    diff = time.time() - file_stat.st_mtime
+    if diff > 0.1:
+        # only delete on the first run
+        os.unlink(SUPPORT_FILE_PATH)
+
+
+# write test debug info to make it easy to debug long running tests with large output
+def write_error_debug(debug_data: Dict[str, Any]) -> None:
+    # save a file in the root project dir
+    with open(ERROR_FILE_PATH, "a+") as f:
+        f.write(f"{json.dumps(debug_data, default=str)}\n")
+
+
+# write the result of support for the test for creating a comprehensive report
+def write_support_result(test_details: Dict[str, Any]) -> None:
+    # save a file in the root project dir
+    with open(SUPPORT_FILE_PATH, "a+") as f:
+        f.write(f"{json.dumps(test_details, default=str)}\n")
 
 
 TEST_DATA = []
@@ -180,6 +234,7 @@ for op in BASIC_OPS:
         test_inputs = ["all"]
         is_property = False
         return_type = BASIC_OPS_RETURN_TYPE[op]
+        # continue  # dont try testing without testing rules
     else:
         meta = {}
         # if there is a profile use the settings from that first
@@ -250,26 +305,18 @@ for op in BASIC_OPS:
                 skipped_combinations.add(str(combination))
 
     for combination in combinations:
+        # we need to record the support for this combination, the key will be unique
+        # and easy to match multiple entries of the same combination
+        support_data = {}
+        support_data["tensor_type"] = combination[0]
+        support_data["op_name"] = combination[1]
+
         # we use str so that we can hash the entire combination with nested lists
         if str(combination) not in skipped_combinations:
             TEST_DATA.append(combination)
-
-
-# we need a file to keep all the errors in that makes it easy to debug failures
-ERROR_FILE_PATH = os.path.abspath(
-    Path(__file__) / "../../../.." / "allowlist_test_errors.jsonl"
-)
-
-# clear the file before running the tests
-if os.path.exists(ERROR_FILE_PATH):
-    os.unlink(ERROR_FILE_PATH)
-
-
-# write test debug info to make it easy to debug long running tests with large output
-def write_error_debug(debug_data: Dict[str, Any]) -> None:
-    # save a file in the root project dir
-    with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data, default=str)}\n")
+        else:
+            support_data["status"] = "skip"
+            write_support_result(support_data)
 
 
 @pytest.mark.slow
@@ -284,6 +331,10 @@ def test_all_allowlisted_tensor_methods(
     is_property: bool,
     return_type: str,
 ) -> None:
+
+    support_data = {}
+    support_data["tensor_type"] = tensor_type
+    support_data["op_name"] = op_name
 
     # this is used in bulk error reporting
     debug_data: Dict[str, Any] = {}
@@ -491,12 +542,18 @@ def test_all_allowlisted_tensor_methods(
             else:
                 assert local_type == return_type
 
+            # Test Passes
+            support_data["status"] = "pass"
+            write_support_result(support_data)
+
         except Exception as e:
             error = "Exception in allowlist suite during final comparison."
             print(error)
             raise e
 
     except Exception as e:
+        support_data["status"] = "fail"
+        write_support_result(support_data)
         debug_data["exception"] = str(e)
         debug_data["exception_type"] = type(e)
         write_error_debug(debug_data)
