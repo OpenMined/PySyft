@@ -523,11 +523,12 @@ def test_all_allowlisted_tensor_methods(
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if type(local_result) is list and len(local_result) == 1:
-                local_result = local_result[0]  # unpack
-            else:
-                # TODO: Fix this when we find one
-                raise Exception("Unsupported Union return type")
+            if hasattr(local_result, "__len__"):
+                if type(local_result) is list and len(local_result) == 1:
+                    local_result = local_result[0]  # unpack
+                else:
+                    # TODO: Fix this when we find one
+                    raise Exception("Unsupported Union return type")
 
             # make sure the return type matches the specified allowlist return type
             local_type = full_name_with_qualname(klass=type(local_result))

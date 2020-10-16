@@ -315,6 +315,7 @@
       },
       "is_meta": {
         "profile": "tensor_property_noinput",
+        "return_type": "syft.lib.python.Bool",
         "skip": [{ "lte_version": "1.5.1" }]
       }
     }
