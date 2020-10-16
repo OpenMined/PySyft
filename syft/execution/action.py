@@ -114,7 +114,7 @@ class Action(ABC, SyftSerializable):
         #     f"{field_name} must be {expected_type.__name__}, but was "
         #     f"{type(actual_value).__name__}: {actual_value}."
         # )
-        if actual_value is not None or not isinstance(actual_value, expected_type):
+        if actual_value is not None and not isinstance(actual_value, expected_type):
             raise ValueError(
                 f"{field_name} must be {expected_type.__name__}, but was "
                 f"{type(actual_value).__name__}: {actual_value}."
