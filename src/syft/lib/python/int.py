@@ -328,11 +328,11 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__hash__())
 
     # add tests
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __neg__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__neg__())
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __pos__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__pos__())
 

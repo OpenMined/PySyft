@@ -207,7 +207,7 @@ class Dict(UserDict, PyPrimitive):
         id_: UID = deserialize(blob=proto.id)
         values = [deserialize(blob=element) for element in proto.values]
         new_dict = Dict(dict(zip(proto.keys, values)))
-        new_dict._id = id_
+        new_dict._id = id_tu
         return new_dict
 
     @staticmethod
