@@ -299,7 +299,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.__sub__", "syft.lib.python.Int", Any),
         ("syft.lib.python.Int.__rsub__", "syft.lib.python.Int", Any),
         ("syft.lib.python.Int.__rtruediv__", "syft.lib.python.Int", Int),
-        ("syft.lib.python.Int.__mul__", "syft.lib.python.Int", Int)
+        ("syft.lib.python.Int.__mul__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__rmul__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__ceil__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__eq__", "syft.lib.python.Bool", Bool),

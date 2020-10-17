@@ -130,9 +130,8 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __str__(self) -> PyPrimitive:
-        res = super().__str__()
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __str__(self) -> str:
+        return super().__str__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def capitalize(self) -> PyPrimitive:
@@ -160,7 +159,7 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def endswith(self, suffix: Any, start: int = ..., end: int = ...) -> PyPrimitive:
+    def endswith(self, suffix: Any, start: int = 0, end: int = sys.maxsize) -> PyPrimitive:
         res = super().endswith(suffix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -315,7 +314,7 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def startswith(self, prefix: Any, start: int = ..., end: int = ...) -> PyPrimitive:
+    def startswith(self, prefix: Any, start: int = 0, end: int = sys.maxsize) -> PyPrimitive:
         res = super().startswith(prefix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 

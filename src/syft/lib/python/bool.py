@@ -36,7 +36,7 @@ class Bool(int, PyPrimitive):
         if value is None:
             value = False
 
-        self.value = bool(value)
+        self.value: bool = bool(value)
         self._id: UID = id if id else UID()
 
     @property
@@ -279,41 +279,50 @@ class Bool(int, PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__xor__(other))
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def as_integer_ratio():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.as_integer_ratio())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def bit_length():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.bit_length())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def conjugate():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.conjugate())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def denominator():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.denominator())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def from_bytes():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.from_bytes())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def imag():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.imag())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def numerator():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.numerator())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def real():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.real())
-    #
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def to_bytes():
-    #     return PrimitiveFactory.generate_primitive(value=self.value.to_bytes())
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def as_integer_ratio(self) -> PyPrimitive:
+        l, r = self.value.as_integer_ratio()
+
+        return PrimitiveFactory.generate_primitive(value=r)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def bit_length(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.bit_length())
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def conjugate(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.conjugate())
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def denominator(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.denominator)
+
+    @staticmethod
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def from_bytes(byte: Any, byteorder: Any) -> PyPrimitive:
+        if not isinstance(byteorder, str):
+            byteorder = str(byteorder)
+
+        return PrimitiveFactory.generate_primitive(value=bool.from_bytes(byte, byteorder))
+
+    @property
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def imag(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.imag)
+
+    @property
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def numerator(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.numerator)
+
+    @property
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def real(self) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.real)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def to_bytes(self, byteorder: Any, length: Any) -> PyPrimitive:
+        return PrimitiveFactory.generate_primitive(value=self.value.to_bytes(byteorder, length))
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Bool_PB:
