@@ -69,10 +69,9 @@ def test_string_methods():
     out = x.send(bob)
     assert isinstance(out, sy.generic.pointers.string_pointer.StringPointer)
 
-    # adding this to increase test coverage of generic/string.py
-    test = "test"
-    x = String().simplify(worker=bob, string=String(test))
-    assert x is not None
-    x = String().detail(bob, x)
-    assert x is not None
-    assert x == test
+    # adding these to increase test coverage of generic/string.py
+    test = String("test")
+    x = String().simplify(worker=bob, string=test)
+    assert String.add_string(test, String().detail(bob, x)) == "testtest"
+    assert isinstance(test.get_class_attributes()["owner"], sy.VirtualWorker)
+    assert test.on("on") == "on"
