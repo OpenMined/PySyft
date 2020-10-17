@@ -183,6 +183,9 @@ pip install -e .
 
 ### Running CLI
 
+#### Install Terraform
+Check Instructions here: https://learn.hashicorp.com/tutorials/terraform/install-cli
+
 #### Deploy a Node to AWS
 
 ```shell

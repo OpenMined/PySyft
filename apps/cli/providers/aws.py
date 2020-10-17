@@ -14,12 +14,12 @@ class EC2:
         self.client = boto3.client("ec2")
 
     def regions_list(self):
-        return [region["RegionName"] for region in EC2.describe_regions()["Regions"]]
+        return [region["RegionName"] for region in self.client.describe_regions()["Regions"]]
 
     def instances_list(self):
         return [
             instance["InstanceType"]
-            for instance in EC2.describe_instance_types()["InstanceTypes"]
+            for instance in self.client.describe_instance_types()["InstanceTypes"]
         ]
 
 
