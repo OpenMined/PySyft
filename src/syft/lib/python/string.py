@@ -85,7 +85,7 @@ class String(UserString, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self) -> PyPrimitive:
-        #TODO fix this
+        # TODO fix this
         res = super().__iter__()
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -159,7 +159,9 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def endswith(self, suffix: Any, start: int = 0, end: int = sys.maxsize) -> PyPrimitive:
+    def endswith(
+        self, suffix: Any, start: int = 0, end: int = sys.maxsize
+    ) -> PyPrimitive:
         res = super().endswith(suffix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -314,7 +316,9 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def startswith(self, prefix: Any, start: int = 0, end: int = sys.maxsize) -> PyPrimitive:
+    def startswith(
+        self, prefix: Any, start: int = 0, end: int = sys.maxsize
+    ) -> PyPrimitive:
         res = super().startswith(prefix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -352,7 +356,6 @@ class String(UserString, PyPrimitive):
     def __contains__(self, val: Any) -> PyPrimitive:
         res = super().__contains__(val)
         return PrimitiveFactory.generate_primitive(value=res)
-
 
     @property
     def id(self) -> UID:

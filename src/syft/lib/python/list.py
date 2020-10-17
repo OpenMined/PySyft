@@ -152,7 +152,6 @@ class List(UserList, PyPrimitive):
         res._id = UID()
         return res
 
-
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, other: Any) -> SyPrimitiveRet:
         res = super().count(other)

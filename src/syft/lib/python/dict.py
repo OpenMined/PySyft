@@ -21,6 +21,7 @@ from ...util import aggressive_set_attr
 from .primitive_interface import PyPrimitive
 from .primitive_factory import PrimitiveFactory
 
+
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
     # see https://github.com/python/cpython/blob/master/Lib/collections/__init__.py

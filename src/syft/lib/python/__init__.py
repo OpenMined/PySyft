@@ -19,6 +19,7 @@ from .primitive_interface import PyPrimitive
 from .primitive_container import Any as SyAny
 from .tuple import Tuple as SyTuple
 
+
 def get_parent(path: str, root: Any) -> Module:
     parent = root
     for step in path.split(".")[:-1]:
@@ -86,11 +87,11 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.SyNone", "syft.lib.python.SyNone", SyNone),
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", SyAny),
-        ("syft.lib.python.Tuple", "syft.lib.python.Tuple", SyTuple)
+        ("syft.lib.python.Tuple", "syft.lib.python.Tuple", SyTuple),
     ]
 
     methods = [
-        #List methods - quite there
+        # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.List.__iter__", "syft.lib.python.Any", SyAny),
@@ -115,9 +116,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.List.copy", "syft.lib.python.List", List),
         ("syft.lib.python.List.count", "syft.lib.python.Int", Int),
-
-
-        #Bool methods - quite there
+        # Bool methods - quite there
         ("syft.lib.python.Bool.__abs__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__add__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__and__", "syft.lib.python.Bool", Bool),
@@ -157,8 +156,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Bool.__sub__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__truediv__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__xor__", "syft.lib.python.Int", Int),
-
-        #Float methods - subject to further change due
+        # Float methods - subject to further change due
         ("syft.lib.python.Float.__add__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__truediv__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__divmod__", "syft.lib.python.Float", Float),
@@ -197,9 +195,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__imul__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__imod__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__ipow__", "syft.lib.python.Float", Float),
-
-
-        #String Methods
+        # String Methods
         ("syft.lib.python.String.__add__", "syft.lib.python.String", String),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.String.__eq__", "syft.lib.python.Bool", Bool),
@@ -260,8 +256,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.String.upper", "syft.lib.python.String", String),
         ("syft.lib.python.String.zfill", "syft.lib.python.String", String),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool", Bool),
-
-        #Dict methods
+        # Dict methods
         ("syft.lib.python.Dict.__contains__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Dict.__eq__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Dict.__format__", "syft.lib.python.String", String),
@@ -284,8 +279,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Dict.popitem", "syft.lib.python.Tuple", SyTuple),
         ("syft.lib.python.Dict.setdefault", "syft.lib.python.Any", Any),
         ("syft.lib.python.Dict.values", "syft.lib.python.List", List),
-
-        #Int methods - subject to further change
+        # Int methods - subject to further change
         ("syft.lib.python.Int.__add__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__truediv__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Int.__divmod__", "syft.lib.python.Float", Float),
@@ -338,8 +332,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.__ne__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Int.__neg__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__pos__", "syft.lib.python.Int", Int),
-
-        #Tuple
+        # Tuple
         ("syft.lib.python.Tuple.__add__", "syft.lib.python.Tuple", Tuple),
         ("syft.lib.python.Tuple.__contains__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Tuple.__ne__", "syft.lib.python.Bool", Bool),
@@ -354,8 +347,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Tuple.count", "syft.lib.python.Int", Int),
         ("syft.lib.python.Tuple.index", "syft.lib.python.Int", Int),
         ("syft.lib.python.Tuple.__iter__", "syft.lib.python.Any", SyAny),
-
-        #PyContainer - quite there
+        # PyContainer - quite there
         ("syft.lib.python.Any.__add__", "syft.lib.python.PyContainer", SyAny),
         ("syft.lib.python.Any.__iter__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.Any.__next__", "syft.lib.python.Any", SyAny),
@@ -367,7 +359,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__mul__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any", SyAny),
-        ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any", SyAny)
+        ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any", SyAny),
     ]
 
     add_modules(ast, modules)

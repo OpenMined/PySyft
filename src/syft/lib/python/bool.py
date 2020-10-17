@@ -303,7 +303,9 @@ class Bool(int, PyPrimitive):
         if not isinstance(byteorder, str):
             byteorder = str(byteorder)
 
-        return PrimitiveFactory.generate_primitive(value=bool.from_bytes(byte, byteorder))
+        return PrimitiveFactory.generate_primitive(
+            value=bool.from_bytes(byte, byteorder)
+        )
 
     @property
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -322,7 +324,9 @@ class Bool(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def to_bytes(self, byteorder: Any, length: Any) -> PyPrimitive:
-        return PrimitiveFactory.generate_primitive(value=self.value.to_bytes(byteorder, length))
+        return PrimitiveFactory.generate_primitive(
+            value=self.value.to_bytes(byteorder, length)
+        )
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Bool_PB:

@@ -219,9 +219,28 @@ def test_boolean():
 
 def test_types():
     # types are always SyTrue.
-    for t in [bool, complex, dict, float, int, list, object, set, str, tuple, type,
-              Int, Float, Dict, List, String, Tuple, Float]:
+    for t in [
+        bool,
+        complex,
+        dict,
+        float,
+        int,
+        list,
+        object,
+        set,
+        str,
+        tuple,
+        type,
+        Int,
+        Float,
+        Dict,
+        List,
+        String,
+        Tuple,
+        Float,
+    ]:
         assert bool(t) == SyTrue
+
 
 def test_operator():
     import operator
@@ -238,7 +257,6 @@ def test_operator():
     assert operator.is_(SyTrue, SyFalse) == SyFalse
     assert operator.is_not(SyTrue, SyTrue) == SyFalse
     assert operator.is_not(SyTrue, SyFalse) == SyTrue
-
 
 
 def test_from_bytes():

@@ -4,9 +4,11 @@ alice = sy.VirtualMachine(name="alice")
 alice_client = alice.get_root_client()
 remote_python = alice_client.syft.lib.python
 
+
 def get_permission(obj):
     remote_obj = alice.store[obj.id_at_location]
     remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
+
 
 x_data = list(range(13))
 y_data = [1, 3, 2, 5, 7, 8, 8, 9, 10, 12, 12, 13, 15]
@@ -30,13 +32,11 @@ for x_ptr, y_ptr in zip(x_data_ptr, y_data_ptr):
 cross_dev_ptr = sum(crossdev_list_ptr) - n_ptr * x_mean_ptr * y_mean_ptr
 dev_ptr = sum(dev_list_ptr) - n_ptr * x_mean_ptr * x_mean_ptr
 
-b_1_ptr = (cross_dev_ptr / dev_ptr)
-b_0_ptr = (y_mean_ptr - b_1_ptr * x_mean_ptr)
+b_1_ptr = cross_dev_ptr / dev_ptr
+b_0_ptr = y_mean_ptr - b_1_ptr * x_mean_ptr
 
 get_permission(b_1_ptr)
 get_permission(b_0_ptr)
 
 b_1 = b_1_ptr.get()
 b_0 = b_0_ptr.get()
-
-
