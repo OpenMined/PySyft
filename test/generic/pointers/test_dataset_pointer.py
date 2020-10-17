@@ -54,3 +54,10 @@ def test_get_data_targets(workers):
 
     assert torch.equal(remote_data, data) == 1
     assert torch.equal(remote_targets, target) == 1
+
+
+# adding this to increase test coverage of generic/pointers/pointer_dataset.py
+def test_simple_case(workers):
+    alice, _, _ = workers["alice"], workers["bob"], workers["me"]
+    dataset = PointerDataset(alice, tags=["test1", "test2"], description="test")
+    assert isinstance(dataset.__repr__(), str)
