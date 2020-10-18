@@ -10,6 +10,7 @@
 
 # Std Python imports
 from typing import Optional
+from typing import Dict
 import logging
 import os
 
@@ -17,6 +18,7 @@ import os
 from flask import Flask
 from flask_sockets import Sockets
 from geventwebsocket.websocket import Header
+from sqlalchemy_utils.functions import database_exists
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
@@ -51,7 +53,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app() -> Flask:
+def create_app(test_config: Optional[Dict] = None) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -84,6 +86,20 @@ def create_app() -> Flask:
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
+
+    from main.core.database import db, set_database_config, seed_db
+
+    # Set SQLAlchemy configs
+    set_database_config(app, test_config=test_config)
+    s = app.app_context().push()
+
+    if database_exists(db.engine.url):
+        db.create_all()
+    else:
+        db.create_all()
+        seed_db()
+
+    db.session.commit()
 
     # Send app instance
     return app
