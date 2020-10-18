@@ -9,7 +9,8 @@ from app import create_app
 
 @pytest.fixture(scope="function", autouse=True)
 def app():
-    return create_app()
+    db_path = "sqlite:///databasenetwork.db"
+    return create_app(test_config={"SQLALCHEMY_DATABASE_URI": db_path})
 
 
 @pytest.fixture
