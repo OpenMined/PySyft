@@ -336,20 +336,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         tensor.set_garbage_collect_data(False)
 
         chain = _simplify(tensor.child)
-        """
-        if hasattr(tensor, "child"):
-            shares = []
-            for (share_0, share_1) in tensor.child.values():
-                if share_0.is_wrapper:
-                    share_0 = share_0.child
-                if share_1.is_wrapper:
-                    share_1 = share_1.child
-                share_0.set_garbage_collect_data(False)
-                share_1.set_garbage_collect_data(False)
-                shares.append(share_0)
-                shares.append(share_1)
-            chain = _simplify(shares)
-        """
 
         return (
             _simplify(tensor.id),
@@ -381,9 +367,8 @@ class ReplicatedSharingTensor(AbstractTensor):
             ring_size=_detail(ring_size),
         )
 
-        if chain is not None:
-            chain = _detail(chain)
-            tensor.child = chain
+        chain = _detail(chain)
+        tensor.child = chain
 
         tensor.set_garbage_collect_data(garbage_collect)
 
