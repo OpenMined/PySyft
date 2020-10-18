@@ -557,7 +557,7 @@ def make_additivesharingtensor(**kwargs):
                     ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], ast.child
+                        kwargs["workers"]["serde_worker"], list(ast.child.values())
                     ),  # (dict of AbstractTensor) simplified chain
                     ast.get_garbage_collect_data(),
                 ),
