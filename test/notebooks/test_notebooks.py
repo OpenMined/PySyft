@@ -1,7 +1,6 @@
 import glob
 import os
 import sys
-import time
 import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
@@ -9,24 +8,19 @@ import codecs
 
 import pytest
 import nbformat
-import numpy as np
-import pandas as pd
 import papermill as pm
-import torch
 
 import syft as sy
-from syft import TorchHook
-from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
-all_notebooks = [n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
-basic_notebooks = [n for n in glob.glob("examples/tutorials/*.ipynb")]
-advanced_notebooks = [
+all_notebooks = (n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True))
+basic_notebooks = (n for n in glob.glob("examples/tutorials/*.ipynb"))
+advanced_notebooks = (
     n for n in glob.glob("examples/tutorials/advanced/**/*.ipynb", recursive=True)
-]
-translated_notebooks = [
+)
+translated_notebooks = (
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
-]
+)
 # Exclude all translated basic tutorials that are also
 # excluded in their original version.
 excluded_translated_notebooks = [
@@ -52,14 +46,14 @@ translated_notebooks_diff = list(set(changed_files) & set(translated_notebooks))
 exclusion_list_notebooks = [
     # Part 10 needs either torch.log2 to be implemented or numpy to be hooked
     "Part 10 - Federated Learning with Secure Aggregation.ipynb",
+    # Part 11 bis needs a lot of RAM and runs for > 300s for sure
+    "Part 11 bis - Encrypted inference on ResNet-18.ipynb",
     # Part 13b and c need fixing of the tensorflow serving with PySyft
     "Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb",
     "Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb",
     # This notebook is excluded as it needs library code modification which I might add later on
     "Build your own tensor type (advanced).ipynb",
     "Federated Recurrent Neural Network.ipynb",
-    # Outdated training method
-    "Introduction to TrainConfig.ipynb",
     # Outdated websocket client code
     "Federated learning with websockets and federated averaging.ipynb",
 ]
@@ -70,12 +64,15 @@ exclusion_list_notebooks += excluded_translated_notebooks
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/monitor_network_traffic",
+    "examples/tutorials/advanced/privacy_attacks",
     "examples/tutorials/advanced/websockets_mnist_parallel",
-    # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
+    # To run these notebooks, we need to run grid nodes / grid gateway
+    # previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in github actions and we do not know why for the moment
+    # This notebook is skipped because it fails in github actions and we
+    # do not know why for the moment
     "examples/tutorials/advanced/federated_sms_spam_prediction",
 ]
 
@@ -119,7 +116,7 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         notebook,
         "/dev/null",
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+        timeout=400,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
@@ -154,25 +151,8 @@ def test_notebooks_advanced(isolated_filesystem, notebook):
     notebook = notebook.replace("examples/tutorials/", "")
     list_name = Path("examples/tutorials/") / notebook
     tested_notebooks.append(str(list_name))
-    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=400)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
-
-
-def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
-    os.chdir("advanced/federated_learning_with_trainconfig")
-    notebook = "Introduction to TrainConfig.ipynb"
-    p_name = Path("examples/tutorials/advanced/federated_learning_with_trainconfig/")
-    tested_notebooks.append(str(p_name / notebook))
-    hook.local_worker.remove_worker_from_registry("alice")
-    kwargs = {"id": "alice", "host": "localhost", "port": 8777, "hook": hook}
-    data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
-    target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
-    dataset = sy.BaseDataset(data, target)
-    process_remote_worker = start_remote_server_worker_only(dataset=(dataset, "xor"), **kwargs)
-    res = pm.execute_notebook(notebook, "/dev/null", timeout=300)
-    assert isinstance(res, nbformat.notebooknode.NotebookNode)
-    process_remote_worker.terminate()
-    sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
 
 
 @pytest.mark.skip

@@ -115,9 +115,9 @@ class PointerPlan(ObjectPointer):
         location = self._locations[0]
         id_at_location = self._ids_at_location[0]
 
-        command = ("parameters", id_at_location, [], {})
-
-        pointers = self.owner.send_command(message=command, recipient=location)
+        pointers = self.owner.send_command(
+            cmd_name="parameters", target=id_at_location, recipient=location
+        )
 
         for pointer in pointers:
             pointer.garbage_collect_data = False
@@ -161,10 +161,12 @@ class PointerPlan(ObjectPointer):
                 id_at_location = id_at_loc
                 break
 
-        command = ("run", id_at_location, args, kwargs)
-
         response = self.owner.send_command(
-            message=command, recipient=location, return_ids=response_ids
+            cmd_name="run",
+            target=id_at_location,
+            args_=tuple(args),
+            recipient=location,
+            return_ids=tuple(response_ids),
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         if isinstance(response, (list, tuple)):

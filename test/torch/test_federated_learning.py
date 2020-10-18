@@ -2,10 +2,10 @@
 
 import syft as sy
 import torch
-
-hook = sy.TorchHook(torch)
 from torch import nn
 from torch import optim
+
+hook = sy.TorchHook(torch)
 
 
 class TestFederatedLearning(object):

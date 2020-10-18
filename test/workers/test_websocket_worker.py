@@ -1,15 +1,8 @@
-import io
-from os.path import exists, join
 import time
-from socket import gethostname
-from OpenSSL import crypto, SSL
+from OpenSSL import crypto
 import pytest
 import torch
-import syft as sy
-from syft.generic.frameworks.hook import hook_args
-from syft.frameworks.torch.fl import utils
 
-from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 
 from test.conftest import instantiate_websocket_client_worker
@@ -26,7 +19,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
     def create_self_signed_cert(cert_path, key_path):
         # create a key pair
         k = crypto.PKey()
-        k.generate_key(crypto.TYPE_RSA, 1024)
+        k.generate_key(crypto.TYPE_RSA, 2048)
 
         # create a self-signed cert
         cert = crypto.X509()
@@ -117,13 +110,13 @@ def test_list_objects_remote(hook, start_remote_worker):
 
     x = torch.tensor([1, 2, 3]).send(remote_proxy)
 
-    res = remote_proxy.list_objects_remote()
+    res = remote_proxy.list_tensors_remote()
 
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 1
 
     y = torch.tensor([4, 5, 6]).send(remote_proxy)
-    res = remote_proxy.list_objects_remote()
+    res = remote_proxy.list_tensors_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 2
 
@@ -143,15 +136,15 @@ def test_objects_count_remote(hook, start_remote_worker):
 
     x = torch.tensor([1, 2, 3]).send(remote_proxy)
 
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 1
 
     y = torch.tensor([4, 5, 6]).send(remote_proxy)
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 2
 
     x.get()
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 1
 
     # delete remote object before terminating the websocket connection
@@ -169,7 +162,7 @@ def test_clear_objects_remote(hook, start_remote_worker):
     x = torch.tensor([1, 2, 3]).send(remote_proxy, garbage_collect_data=False)
     y = torch.tensor(4).send(remote_proxy, garbage_collect_data=False)
 
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 2
 
     remote_proxy.clear_objects_remote()
@@ -187,7 +180,7 @@ def test_connect_close(hook, start_remote_worker):
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_proxy)
 
-    assert remote_proxy.objects_count_remote() == 1
+    assert remote_proxy.tensors_count_remote() == 1
 
     remote_proxy.close()
 
@@ -195,7 +188,7 @@ def test_connect_close(hook, start_remote_worker):
 
     remote_proxy.connect()
 
-    assert remote_proxy.objects_count_remote() == 1
+    assert remote_proxy.tensors_count_remote() == 1
 
     x_val = x_ptr.get()
     assert (x_val == x).all()
@@ -228,15 +221,15 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     server.terminate()
 
 
-def test_send_command_whitelist(hook, start_remote_worker):
+def test_send_command_allow_list(hook, start_remote_worker):
     server, remote_proxy = start_remote_worker(
         id="worker_call_api_good_methods", hook=hook, port=8772
     )
-    whitelisted_methods = {
+    allow_listed_methods = {
         "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
     }
 
-    for framework, methods in whitelisted_methods.items():
+    for framework, methods in allow_listed_methods.items():
         attr = getattr(remote_proxy.remote, framework)
 
         for method, inp in methods.items():
@@ -249,7 +242,7 @@ def test_send_command_whitelist(hook, start_remote_worker):
     server.terminate()
 
 
-def test_send_command_not_whitelisted(hook, start_remote_worker):
+def test_send_command_not_allow_listed(hook, start_remote_worker):
     server, remote_proxy = start_remote_worker(
         id="worker_call_api_bad_method", hook=hook, port=8773
     )
@@ -264,76 +257,3 @@ def test_send_command_not_whitelisted(hook, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
-
-
-@pytest.mark.skip
-def test_evaluate(hook, start_proc):  # pragma: no cover
-
-    sy.local_worker.clear_objects()
-    sy.generic.frameworks.hook.hook_args.hook_method_args_functions = {}
-    sy.generic.frameworks.hook.hook_args.hook_method_response_functions = {}
-    sy.generic.frameworks.hook.hook_args.get_tensor_type_functions = {}
-    sy.generic.frameworks.hook.hook_args.register_response_functions = {}
-
-    data, target = utils.iris_data_partial()
-
-    dataset = sy.BaseDataset(data=data, targets=target)
-
-    kwargs = {"id": "evaluate_remote", "host": "localhost", "port": 8790, "hook": hook}
-    dataset_key = "iris"
-    # TODO: check why unit test sometimes fails when WebsocketServerWorker is started from the unit test. Fails when run after test_federated_client.py
-    # process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, dataset_key), verbose=True, **kwargs)
-
-    remote_proxy = instantiate_websocket_client_worker(**kwargs)
-
-    def loss_fn(pred, target):
-        return torch.nn.functional.cross_entropy(input=pred, target=target)
-
-    class Net(torch.nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = torch.nn.Linear(4, 3)
-
-            torch.nn.init.xavier_normal_(self.fc1.weight)
-
-        def forward(self, x):
-            x = torch.nn.functional.relu(self.fc1(x))
-            return x
-
-    model_untraced = Net()
-    model = torch.jit.trace(model_untraced, data)
-    loss_traced = torch.jit.trace(loss_fn, (torch.tensor([[0.3, 0.5, 0.2]]), torch.tensor([1])))
-
-    pred = model(data)
-    loss_before = loss_fn(target=target, pred=pred)
-    if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print(f"Loss: {loss_before}")
-
-    # Create and send train config
-    train_config = sy.TrainConfig(
-        batch_size=4,
-        model=model,
-        loss_fn=loss_traced,
-        model_id=None,
-        loss_fn_id=None,
-        optimizer_args=None,
-        epochs=1,
-    )
-    train_config.send(remote_proxy)
-
-    result = remote_proxy.evaluate(
-        dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
-    )
-
-    len_dataset = result["nr_predictions"]
-    hist_target = result["histogram_target"]
-
-    if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print(f"Evaluation result before training: {result}")
-
-    assert len_dataset == 30
-    assert (hist_target == [10, 10, 10]).all()
-
-    remote_proxy.close()
-    remote_proxy.remove_worker_from_local_worker_registry()
-    # process_remote_worker.terminate()

@@ -1,99 +1,9 @@
-import logging
-import syft as sy
-from syft.workers import WebsocketServerWorker
-import torch
+import subprocess
+import sys
+from pathlib import Path
 import argparse
-from torchvision import datasets
-from torchvision import transforms
-import numpy as np
-from syft.frameworks.torch.federated import utils
 
-KEEP_LABELS_DICT = {
-    "alice": [0, 1, 2, 3],
-    "bob": [4, 5, 6],
-    "charlie": [7, 8, 9],
-    "testing": list(range(10)),
-}  # pragma: no cover
-
-
-def start_websocket_server_worker(
-    id, host, port, hook, verbose, keep_labels=None, training=True
-):  # pragma: no cover
-    """Helper function for spinning up a websocket server and setting up the local datasets."""
-
-    server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
-
-    # Setup toy data (mnist example)
-    mnist_dataset = datasets.MNIST(
-        root="./data",
-        train=training,
-        download=True,
-        transform=transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        ),
-    )
-
-    if training:
-        indices = np.isin(mnist_dataset.targets, keep_labels).astype("uint8")
-        logger.info("number of true indices: %s", indices.sum())
-        selected_data = (
-            torch.native_masked_select(mnist_dataset.data.transpose(0, 2), torch.tensor(indices))
-            .view(28, 28, -1)
-            .transpose(2, 0)
-        )
-        logger.info("after selection: %s", selected_data.shape)
-        selected_targets = torch.native_masked_select(mnist_dataset.targets, torch.tensor(indices))
-
-        dataset = sy.BaseDataset(
-            data=selected_data, targets=selected_targets, transform=mnist_dataset.transform
-        )
-        key = "mnist"
-    else:
-        dataset = sy.BaseDataset(
-            data=mnist_dataset.data,
-            targets=mnist_dataset.targets,
-            transform=mnist_dataset.transform,
-        )
-        key = "mnist_testing"
-
-    server.add_dataset(dataset, key=key)
-
-    # Setup toy data (vectors example)
-    data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
-    target_vectors = torch.tensor([[1], [0], [1], [0]])
-
-    server.add_dataset(sy.BaseDataset(data_vectors, target_vectors), key="vectors")
-
-    # Setup toy data (xor example)
-    data_xor = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
-    target_xor = torch.tensor([1.0, 1.0, 0.0, 0.0], requires_grad=False)
-
-    server.add_dataset(sy.BaseDataset(data_xor, target_xor), key="xor")
-
-    # Setup gaussian mixture dataset
-    data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
-    server.add_dataset(sy.BaseDataset(data, target), key="gaussian_mixture")
-
-    # Setup partial iris dataset
-    data, target = utils.iris_data_partial()
-    dataset = sy.BaseDataset(data, target)
-    dataset_key = "iris"
-    server.add_dataset(dataset, key=dataset_key)
-
-    logger.info("datasets: %s", server.datasets)
-    if training:
-        logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
-
-    server.start()
-    return server
-
-
-if __name__ == "__main__":  # pragma: no cover
-    # Logging setup
-    logger = logging.getLogger("run_websocket_server")
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
-    logging.basicConfig(format=FORMAT)
-    logger.setLevel(level=logging.DEBUG)
+if __name__ == "__main__":
 
     # Parse args
     parser = argparse.ArgumentParser(description="Run websocket server worker.")
@@ -110,25 +20,47 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument(
         "--testing",
         action="store_true",
-        help="if set, websocket server worker will load the test dataset instead of the training dataset",
+        help=(
+            "if set, websocket server worker will load the test dataset "
+            "instead of the training dataset",
+        ),
     )
     parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
-        help="if set, websocket server worker will be started in verbose mode",
+        help="""if set, websocket server worker will be started in verbose mode""",
     )
-
+    parser.add_argument(
+        "--notebook",
+        type=str,
+        default="normal",
+        help="""can run websocket server for websockets examples of mnist/mnist-parallel or
+        pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
+        for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
+        and 'steal_data' for pen_tesing stealing data over sockets""",
+    )
+    parser.add_argument("--pytest_testing", action="store_true", help="""Used for pytest testing""")
     args = parser.parse_args()
 
-    # Hook and start server
-    hook = sy.TorchHook(torch)
-    server = start_websocket_server_worker(
-        id=args.id,
-        host=args.host,
-        port=args.port,
-        hook=hook,
-        verbose=args.verbose,
-        keep_labels=KEEP_LABELS_DICT[args.id] if args.id in KEEP_LABELS_DICT else list(range(10)),
-        training=not args.testing,
-    )
+    python = Path(sys.executable).name
+    FILE_PATH = Path(__file__).resolve().parents[1].joinpath("run_websocket_server.py")
+    call_alice = [
+        python,
+        FILE_PATH,
+        "--host",
+        args.host,
+        "--port",
+        str(args.port),
+        "--id",
+        args.id,
+        "--pytest_testing",
+    ]
+
+    if args.verbose:
+        call_alice.append("--verbose")
+
+    if args.testing:
+        call_alice.append("--testing")
+
+    subprocess.Popen(call_alice)

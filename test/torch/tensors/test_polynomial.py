@@ -61,7 +61,8 @@
 #
 # def test_interpolate():
 #
-#     # Test if interpolation function works as expected by verifying an approximation of exponential function
+#     # Test if interpolation function works as expected by verifying an approximation of
+#     # exponential function
 #
 #     expected = torch.tensor([1.2220, 2.9582, 7.1763, 20.3064, 54.4606], dtype=torch.double)
 #

@@ -37,12 +37,15 @@ tests_require = ["pytest", "pytest-flake8"] + sandbox_extras + notebook_extras
 
 setup(
     name="syft",
-    version="0.2.4",
+    version="0.2.9",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
     license="Apache-2.0",
-    keywords="deep learning artificial intelligence privacy secure multi-party computation federated learning differential privacy",
+    keywords=(
+        "deep learning artificial intelligence privacy secure "
+        "multi-party computation federated learning differential privacy"
+    ),
     packages=find_packages(exclude=["docs", "examples", "dist"]),
     include_package_data=True,
     long_description=read("README.md"),

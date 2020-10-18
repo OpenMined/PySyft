@@ -1,7 +1,6 @@
 from flask import Flask
 from flask import request
 import torch as th
-from torch import nn
 import syft as sy
 
 sy.create_sandbox(globals())
@@ -18,11 +17,13 @@ def get_model():
     global model
     global ptr
     ptr = model.create_pointer()
-    return model.ser()
+
+    return sy.serde.serialize(model)
 
 
 @app.route("/send_data", methods=["POST"])
 def send_data():
+    global ptr
     ptr = sy.serde.deserialize(request.data)
 
-    return model.ser()
+    return sy.serde.serialize(model)

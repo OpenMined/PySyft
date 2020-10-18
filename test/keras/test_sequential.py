@@ -11,12 +11,14 @@ if dependency_check.tfe_available:  # pragma: no cover
 
 @pytest.mark.skipif(not dependency_check.tfe_available, reason="tf_encrypted not installed")
 def test_instantiate_tfe_layer():  # pragma: no cover
-    """tests tfe layer by running a constant 4*5 input matrix on a network
-        with one constant tensor of weights, using tf.keras then tfe and comparing results"""
+    """
+    tests tfe layer by running a constant 4*5 input matrix on a network
+    with one constant tensor of weights, using tf.keras then tfe and comparing results
+    """
 
     from syft.frameworks.keras.model.sequential import _instantiate_tfe_layer
 
-    hook = sy.KerasHook(tf.keras)
+    sy.KerasHook(tf.keras)
 
     # creates input and weights constant tensors
     input_shape = [4, 5]
@@ -51,17 +53,19 @@ def test_instantiate_tfe_layer():  # pragma: no cover
             actual = sess.run(out.reveal())
 
     # compares results and raises error if not equal up to 0.001
-    np.testing.assert_allclose(actual, expected, rtol=0.001)
+    np.testing.assert_allclose(actual, expected, rtol=0.005, atol=0.001)
 
 
 @pytest.mark.skipif(not dependency_check.tfe_available, reason="tf_encrypted not installed")
 def test_share():  # pragma: no cover
-    """tests tfe federated learning functionality by running a constant input on same model using tf.keras
-        then tfe on remote workers and comparing the outputs of both cases """
+    """tests tfe federated learning functionality by running a constant input on same model
+    using tf.keras
+    then tfe on remote workers and comparing the outputs of both cases
+    """
     from tensorflow.keras import Sequential
     from tensorflow.keras.layers import Dense
 
-    hook = sy.KerasHook(tf.keras)
+    sy.KerasHook(tf.keras)
 
     # creates input and weights constant tensors
     input_shape = (4, 5)

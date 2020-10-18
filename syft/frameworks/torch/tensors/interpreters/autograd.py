@@ -1,10 +1,16 @@
-from functools import wraps
 import torch
 
 import syft
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook.hook_args import (
+    get_child,
+    register_backward_func,
+    register_forward_func,
+    register_type_rule,
+    one,
+)
 from syft.workers.abstract import AbstractWorker
 from . import gradients
 
@@ -21,8 +27,8 @@ def backwards_grad(grad_fn, in_grad=None):
 
 
 class AutogradTensor(AbstractTensor):
-    """ A tensor that tracks operations to build a dynamic graph and backprops
-        through the graph to calculate gradients.
+    """A tensor that tracks operations to build a dynamic graph and backprops
+    through the graph to calculate gradients.
     """
 
     def __init__(
@@ -52,6 +58,7 @@ class AutogradTensor(AbstractTensor):
 
     @property
     def data(self):
+        # TODO why is that? Normally .data is detached from autograd
         return self
 
     @data.setter
@@ -83,6 +90,7 @@ class AutogradTensor(AbstractTensor):
         result = self.add(other)
         self.child = result.child
         self.grad_fn = result.grad_fn
+        return self
 
     def __sub__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
@@ -93,11 +101,15 @@ class AutogradTensor(AbstractTensor):
         result = self.sub(other)
         self.child = result.child
         self.grad_fn = result.grad_fn
+        return self
 
     def __mul__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
             other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.mul(other)
+
+    def __neg__(self):
+        return self.neg()
 
     def __matmul__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
@@ -132,7 +144,7 @@ class AutogradTensor(AbstractTensor):
         return _self.eq(other)
 
     @overloaded.method
-    def relu(self, self_):
+    def relu(self, self_, **kwargs):
         return self_.relu()
 
     def __getattribute__(self, name):
@@ -153,7 +165,6 @@ class AutogradTensor(AbstractTensor):
                 # Put back SyftTensor on the tensors found in the response
                 result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
-                result.grad_fn.result = result
 
                 return result
 
@@ -178,6 +189,34 @@ class AutogradTensor(AbstractTensor):
             return self.mul(other)
 
         module.mul = mul
+
+        def neg(self):
+            return self.neg()
+
+        module.neg = neg
+
+        def log(self):
+            """Overriding torch's log method."""
+            return self.log()
+
+        module.log = log
+
+        def exp(self):
+            """Overriding torch's exp function."""
+            return self.exp()
+
+        module.exp = exp
+
+        def sum(self, **kwargs):
+            """Overriding torch's sum function."""
+            return self.sum(**kwargs)
+
+        module.sum = sum
+
+        def mean(self, **kwargs):
+            return self.mean(**kwargs)
+
+        module.mean = mean
 
         def matmul(self, other):
             return self.matmul(other)
@@ -216,7 +255,7 @@ class AutogradTensor(AbstractTensor):
 
                 module.linear = linear
 
-                def relu(tensor):
+                def relu(tensor, **kwargs):
                     return tensor.relu()
 
                 module.relu = relu
@@ -237,31 +276,36 @@ class AutogradTensor(AbstractTensor):
         response and replace a AutogradTensor on top of all tensors found in
         the response.
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
 
-        cmd, _, args, kwargs = command
+        cmd_name, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
+        cmd = None
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            cmd = cls.rgetattr(cls, cmd_name)
         except AttributeError:
             pass
 
+        if cmd is not None:
+            return cmd(*args_, **kwargs_)
+
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
+        new_command = (cmd_name, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
 
         # Put back AutogradTensor on the tensors found in the response
-        response = hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd_name, response, wrap_type=cls)
 
         return response
 
@@ -322,15 +366,16 @@ class AutogradTensor(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AutogradTensor":
         """
-            This function reconstructs (deserializes) an AutogradTensor given its attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the AutogradTensor
-            Returns:
-                AutogradTensor: an AutogradTensor
-            Examples:
-                shared_tensor = detail(data)
-            """
+            This function reconstructs (deserializes) an AutogradTensor given its
+        attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AutogradTensor
+        Returns:
+            AutogradTensor: an AutogradTensor
+        Examples:
+            shared_tensor = detail(data)
+        """
         (
             tensor_id,
             chain,
@@ -357,3 +402,10 @@ class AutogradTensor(AbstractTensor):
         )
 
         return tensor
+
+
+register_type_rule({AutogradTensor: one})
+register_forward_func({AutogradTensor: get_child})
+register_backward_func(
+    {AutogradTensor: lambda i, **kwargs: AutogradTensor(data=i).on(i, wrap=False)}
+)

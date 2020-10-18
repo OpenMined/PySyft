@@ -7,17 +7,17 @@ the function apply_compress_scheme.
 
 from typing import Callable
 
-from syft.workers.abstract import AbstractWorker
+from syft.serde.msgpack import serialize as msgpack_serialize
+from syft.serde.msgpack import deserialize as msgpack_deserialize
 
-from syft.serde import msgpack
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
-    worker: AbstractWorker = None,
+    worker=None,
     simplified: bool = False,
     force_full_simplification: bool = False,
-    strategy: Callable[[object, AbstractWorker], bin] = msgpack.serialize,
+    strategy: Callable[[object], bin] = None,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -40,15 +40,19 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+    if strategy is None:
+
+        strategy = msgpack_serialize
+
     return strategy(obj, worker, simplified, force_full_simplification)
 
 
 def deserialize(
     binary: bin,
-    worker: AbstractWorker = None,
-    strategy: Callable[[bin, AbstractWorker], object] = msgpack.deserialize,
+    worker=None,
+    strategy: Callable[[bin], object] = None,
 ) -> object:
-    """ This method can deserialize any object PySyft needs to send or store.
+    """This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
     of objects which PySyft has sent over the wire or stored. It includes three
@@ -66,4 +70,9 @@ def deserialize(
     Returns:
         object: the deserialized form of the binary input.
     """
+
+    if strategy is None:
+
+        strategy = msgpack_deserialize
+
     return strategy(binary, worker)

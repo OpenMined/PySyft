@@ -4,22 +4,28 @@ on:
   push:
     branches:
     - master
-    paths-ignore:
-    - "examples/tutorials/translations/**"
+    paths:
+    - '**.py'
+    - '**.ipynb'
+    - 'pip-dep/**'
+    - "!examples/tutorials/translations/**"
 
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-    - "examples/tutorials/translations/**"
+    paths:
+    - '**.py'
+    - '**.ipynb'
+    - 'pip-dep/**'
+    - "!examples/tutorials/translations/**"
 
 jobs:
-  build:
+  tutorial-tests:
 
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.7]
 
     steps:
     - uses: actions/checkout@v2
@@ -45,4 +51,4 @@ jobs:
         python setup.py install
     - name: Run the tutorials
       run: |
-        pytest test/notebooks/test_notebooks.py -m "not translation"
+        pytest --randomly-dont-reorganize test/notebooks/test_notebooks.py -m "not translation"

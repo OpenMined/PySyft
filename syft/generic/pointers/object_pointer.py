@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
 import weakref
+from websocket._exceptions import WebSocketConnectionClosedException
 
 import syft
 from syft import exceptions
@@ -11,19 +12,17 @@ from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.object import AbstractObject
-from syft.messaging.message import ForceObjectDeleteMessage
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers.abstract import AbstractWorker
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractObject):
+class ObjectPointer(AbstractSendable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
@@ -51,7 +50,6 @@ class ObjectPointer(AbstractObject):
         tags: List[str] = None,
         description: str = None,
     ):
-
         """Initializes a ObjectPointer.
 
         Args:
@@ -199,7 +197,7 @@ class ObjectPointer(AbstractObject):
         Get the remote location to send the command, send it and get a
         pointer to the response, return.
         :param command: instruction of a function command: (command name,
-        None, arguments[, kwargs])
+        None, arguments[, kwargs_])
         :return: the response of the function command
         """
         pointer = cls.find_a_pointer(command)
@@ -207,32 +205,34 @@ class ObjectPointer(AbstractObject):
         owner = pointer.owner
         location = pointer.location
 
+        cmd, _, args_, kwargs_ = command
+
         # Send the command
-        response = owner.send_command(location, command)
+        response = owner.send_command(location, cmd_name=cmd, args_=args_, kwargs_=kwargs_)
 
         return response
 
     @classmethod
     def find_a_pointer(cls, command):
         """
-        Find and return the first pointer in the args object, using a trick
+        Find and return the first pointer in the args_ object, using a trick
         with the raising error RemoteObjectFoundError
         """
         try:
-            cmd, _, args, kwargs = command
-            _ = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+            cmd, _, args_, kwargs_ = command
+            _ = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
 
         Note:
             This will typically mean that the remote object will be
-            removed/destroyed.
+            removed/destroyed. Setting get_copy True doesn't destroy remote.
 
         Args:
             user (obj, optional) : authenticate/allow user to perform get on remote private objects.
@@ -242,12 +242,11 @@ class ObjectPointer(AbstractObject):
                 method. This defaults to True because the main reason people use
                 this method is to move the tensor from the location to the
                 local one, at which time the pointer has no use.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
 
         Returns:
             An AbstractObject object which is the tensor (or chain) that this
             object used to point to on a location.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
         """
 
         if self.point_to_attr is not None:
@@ -266,7 +265,7 @@ class ObjectPointer(AbstractObject):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason, get_copy)
 
         # Remove this pointer by default
         if deregister_ptr:
@@ -341,7 +340,10 @@ class ObjectPointer(AbstractObject):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
+                try:
+                    self.owner.garbage(self.id_at_location, self.location)
+                except (BrokenPipeError, WebSocketConnectionClosedException):
+                    pass
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
@@ -363,7 +365,11 @@ class ObjectPointer(AbstractObject):
 
     def setattr(self, name, value):
         self.owner.send_command(
-            message=("__setattr__", self, (name, value), {}), recipient=self.location
+            cmd_name="__setattr__",
+            target=self,
+            args_=(name, value),
+            kwargs_={},
+            recipient=self.location,
         )
 
     @staticmethod

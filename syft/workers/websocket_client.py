@@ -8,11 +8,18 @@ import websockets
 import logging
 import ssl
 import time
+import asyncio
 
 import syft as sy
+
+from syft.exceptions import ResponseSignatureError
+
+from syft.messaging.message import Message
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import SearchMessage
-from syft.generic.tensor import AbstractTensor
+from syft.messaging.message import TensorCommandMessage
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
 
 logger = logging.getLogger(__name__)
@@ -32,6 +39,7 @@ class WebsocketClientWorker(BaseWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
+        timeout: int = None,
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.
@@ -39,6 +47,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self.port = port
         self.host = host
+        self.timeout = TIMEOUT_INTERVAL if timeout is None else timeout
 
         super().__init__(
             hook=hook,
@@ -61,12 +70,12 @@ class WebsocketClientWorker(BaseWorker):
         return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
 
     def connect(self):
-        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+        args_ = {"max_size": None, "timeout": self.timeout, "url": self.url}
 
         if self.secure:
-            args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+            args_["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
 
-        self.ws = websocket.create_connection(**args)
+        self.ws = websocket.create_connection(**args_)
         self._log_msgs_remote(self.log_msgs)
 
     def close(self):
@@ -84,6 +93,9 @@ class WebsocketClientWorker(BaseWorker):
         return self._recv_msg(message)
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
+        """
+        Note: Is subclassed by the node client when you use the GridNode
+        """
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
         return response
@@ -96,7 +108,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(0.1)
             # Avoid timing out on the server-side
-            self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(self.url, max_size=None, timeout=self.timeout)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._forward_to_websocket_server_worker(message)
@@ -114,6 +126,12 @@ class WebsocketClientWorker(BaseWorker):
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
+    def list_tensors_remote(self):
+        return self._send_msg_and_deserialize("list_tensors")
+
+    def tensors_count_remote(self):
+        return self._send_msg_and_deserialize("tensors_count")
+
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
 
@@ -129,7 +147,89 @@ class WebsocketClientWorker(BaseWorker):
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
-    async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
+    async def async_dispatch(self, workers, commands):
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
+
+    async def async_send_msg(self, message: Message) -> object:
+        """Asynchronous version of send_msg."""
+        if self.verbose:
+            print("async_send_msg", message)
+
+        async with websockets.connect(
+            self.url, timeout=self.timeout, max_size=None, ping_timeout=self.timeout
+        ) as websocket:
+            # Step 1: serialize the message to a binary
+            bin_message = sy.serde.serialize(message, worker=self)
+
+            # Step 2: send the message
+            await websocket.send(bin_message)
+
+            # Step 3: wait for a response
+            bin_response = await websocket.recv()
+
+            # Step 4: deserialize the response
+            response = sy.serde.deserialize(bin_response, worker=self)
+
+        return response
+
+    async def async_send_command(
+        self, message: tuple, return_ids: str = None, return_value: bool = False
+    ) -> Union[List[PointerTensor], PointerTensor]:
+        """
+        Sends a command through a message to the server part attached to the client
+        Args:
+            message: A tuple representing the message being sent.
+            return_ids: A list of strings indicating the ids of the
+                tensors that should be returned as response to the command execution.
+        Returns:
+            A list of PointerTensors or a single PointerTensor if just one response is expected.
+        Note: this is the async version of send_command, with the major difference that you
+        directly call it on the client worker (so we don't have the recipient kw argument)
+        """
+
+        if return_ids is None:
+            return_ids = (sy.ID_PROVIDER.pop(),)
+
+        name, target, args_, kwargs_ = message
+
+        # Close the existing websocket connection in order to open a asynchronous connection
+        self.close()
+        try:
+            message = TensorCommandMessage.computation(
+                name, target, args_, kwargs_, return_ids, return_value
+            )
+            ret_val = await self.async_send_msg(message)
+
+        except ResponseSignatureError as e:
+            ret_val = None
+            return_ids = e.ids_generated
+        # Reopen the standard connection
+        self.connect()
+
+        if ret_val is None or type(ret_val) == bytes:
+            responses = []
+            for return_id in return_ids:
+                response = PointerTensor(
+                    location=self,
+                    id_at_location=return_id,
+                    owner=sy.local_worker,
+                    id=sy.ID_PROVIDER.pop(),
+                )
+                responses.append(response)
+
+            if len(return_ids) == 1:
+                responses = responses[0]
+        else:
+            responses = ret_val
+        return responses
+
+    async def async_fit(self, dataset_key: str, device: str = "cpu", return_ids: List[int] = None):
         """Asynchronous call to fit function on the remote location.
 
         Args:
@@ -146,10 +246,10 @@ class WebsocketClientWorker(BaseWorker):
         # This code is not tested with secure connections (wss protocol).
         self.close()
         async with websockets.connect(
-            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+            self.url, timeout=self.timeout, max_size=None, ping_timeout=self.timeout
         ) as websocket:
             message = self.create_worker_command_message(
-                command_name="fit", return_ids=return_ids, dataset_key=dataset_key
+                command_name="fit", return_ids=return_ids, dataset_key=dataset_key, device=device
             )
 
             # Send the message and return the deserialized response.
@@ -240,7 +340,7 @@ class WebsocketClientWorker(BaseWorker):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #objects local:" + str(len(self._objects))
-        out += " #objects remote: " + str(self.objects_count_remote())
+        out += " #tensors local:" + str(len(self.object_store._tensors))
+        out += " #tensors remote: " + str(self.tensors_count_remote())
         out += ">"
         return out

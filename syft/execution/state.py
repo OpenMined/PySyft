@@ -1,27 +1,25 @@
 from typing import List
-from typing import Tuple
-from typing import Union
-from typing import Dict
 
 import torch
 
 import syft as sy
+from syft.generic.abstract.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
-class State(object):
+class State(SyftSerializable):
     """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, state_placeholders=None):
-        self.owner = owner
+    def __init__(self, state_placeholders=None):
         self.state_placeholders = state_placeholders or []
+        self.tracing = False
 
     def __str__(self):
         """Returns the string representation of the State."""
@@ -39,15 +37,10 @@ class State(object):
         """
         Fetch and return all the state elements.
         """
-        tensors = []
-        for placeholder in self.state_placeholders:
-            tensor = placeholder.child
-            tensors.append(tensor)
-        return tensors
+        return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
-        state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
-        return state
+        return State(self.state_placeholders.copy())
 
     def read(self):
         """
@@ -56,28 +49,10 @@ class State(object):
         If run while a plan is building, declare all the state tensors to the plan
         currently building.
         """
-        # If there is a plan building, it is referenced in init_plan
-        if self.owner.init_plan:
-            parent_plan = self.owner.init_plan
-            # to see if we are in a sub plan, we use state objects equality
-            if parent_plan.state != self:
-                # for all the placeholders in this sub plan, we report a copy of them
-                # in the parent plan and notify their origin using the #inner tag
-                for placeholder in self.state_placeholders:
-                    placeholder = placeholder.copy()
-                    placeholder.tags = set()
-                    placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
-                    parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.placeholders[placeholder.child.id] = placeholder
-                    parent_plan.var_count += 1
-
-        tensors = []
-        for placeholder in self.state_placeholders:
-            # State elements from sub plan should not be reported when read() is used
-            if "#inner" not in placeholder.tags:
-                tensor = placeholder.child
-                tensors.append(tensor)
-        return tensors
+        if self.tracing:
+            return list(self.state_placeholders)
+        else:
+            return [ph.child for ph in self.state_placeholders]
 
     @staticmethod
     def create_grad_if_missing(tensor):
@@ -138,7 +113,7 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state
 
     @staticmethod
@@ -197,5 +172,9 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state
+
+    @staticmethod
+    def get_protobuf_schema() -> StatePB:
+        return StatePB

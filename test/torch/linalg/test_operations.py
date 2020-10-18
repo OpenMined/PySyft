@@ -1,6 +1,4 @@
-import pytest
 import torch
-import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
 from syft.frameworks.torch.linalg.operations import _norm_mpc
@@ -27,7 +25,7 @@ def test_inv_sym(hook, workers):
     gram = gram.get().float_precision()
 
     diff = (gram_inv - gram.inverse()).abs()
-    assert (diff < 1e-3).all()
+    assert (diff < 0.0015).all()
 
 
 def test_norm_mpc(hook, workers):

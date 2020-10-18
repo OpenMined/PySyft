@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class CallablePointer(ObjectPointer):
-    """ A class of pointers that are callable
+    """A class of pointers that are callable
 
     A CallablePointer is an ObjectPointer which implements the __call__ function.
     This lets you execute a command directly on the object to which it points.
@@ -61,11 +61,15 @@ class CallablePointer(ObjectPointer):
         )
 
     def __call__(self, *args, **kwargs):
-        command = ("__call__", self.id_at_location, args, kwargs)
 
-        return_ids = [sy.ID_PROVIDER.pop()]
+        return_ids = (sy.ID_PROVIDER.pop(),)
         response = self.owner.send_command(
-            message=command, recipient=self.location, return_ids=return_ids
+            cmd_name="__call__",
+            target=self.id_at_location,
+            args_=args,
+            kwargs_=kwargs,
+            recipient=self.location,
+            return_ids=return_ids,
         )
         return response
 
@@ -93,9 +97,6 @@ def create_callable_pointer(
         description:
         garbage_collect_data:
         register_pointer:
-
-    Returns:
-
     """
 
     if id is None:

@@ -4,7 +4,6 @@ import sys
 import time
 import os
 import shutil
-from pathlib import Path
 import tempfile
 
 import pytest
@@ -15,6 +14,12 @@ from syft import TorchHook
 from syft.generic.frameworks.hook import hook_args
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "translation: mark test to run only as part of the translation test suite"
+    )
 
 
 def pytest_sessionstart(session):
@@ -28,7 +33,7 @@ def pytest_runtest_makereport(item, call):  # pragma: no cover
 
 def pytest_runtest_setup(item):  # pragma: no cover
     if item.originalname in item.session.failed_tests:
-        pytest.skip("previous test failed (%s)" % item.name)
+        pytest.skip(f"previous test failed ({item.name})")
 
 
 def _start_proc(participant, dataset: str = None, **kwargs):  # pragma: no cover

@@ -2,6 +2,7 @@
 
 import syft
 from syft.workers.abstract import AbstractWorker
+from syft.generic.abstract.syft_serializable import SyftSerializable
 
 from . import gradients
 
@@ -24,18 +25,19 @@ def forward_grad(tensor):
         return grad_fn
 
 
-class GradFunc:
+class GradFunc(SyftSerializable):
     def __init__(self, *args):
         # This part builds our graph. It takes grad functions (if they exist)
         # from the input arguments and builds a tuple pointing to them. This way
         # we can use .next_functions to traverse through the entire graph.
-        # _attributes is a private list that records all the attributes (required for serialization/deserialization)
+        # _attributes is a private list that records all the attributes (required for
+        # serialization/deserialization)
 
         self.next_functions = tuple(
-            filter(lambda x: x is not None, [forward_grad(arg) for arg in args])
+            filter(lambda x: x is not None, (forward_grad(arg) for arg in args))
         )
-        self.result = None
-        self._attributes = list()
+        # self.result = None TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
+        self._attributes = []
 
     def gradient(self, grad):
         raise NotImplementedError
@@ -51,12 +53,12 @@ class GradFunc:
 
         # add attributes of grad function to _attributes list
         # essential for serialization and deserialization
-        if not name in {"next_functions", "result", "_attributes"}:
+        if name not in {"next_functions", "result", "_attributes"}:
             self._attributes.append(value)
 
     @staticmethod
     def simplify(worker: AbstractWorker, grad_fn) -> tuple:
-        """ Takes the attributes of a grad_fn object and saves them in a tuple
+        """Takes the attributes of a grad_fn object and saves them in a tuple
             Every gradient function class that extends `GradFunc` uses this function to
             simplify the attributes.
 
@@ -80,7 +82,7 @@ class GradFunc:
 
     @staticmethod
     def detail(worker: AbstractWorker, gradfn_tuple):
-        """ This function reconstructs (deserializes) the gradient function object,
+        """This function reconstructs (deserializes) the gradient function object,
          given its attributes in the form of a tuple
 
          Args:
@@ -113,7 +115,7 @@ class Accumulate:
 
     def __call__(self, grad):
         if self.tensor.grad is not None:
-            self.tensor.grad += grad.child
+            self.tensor.grad.add_(grad.child)
         else:
             self.tensor.grad = grad.child.copy()
         return ()
@@ -131,22 +133,23 @@ def get_mismatch_dims(
 
     Note that we assume len(x_shape) <= len(y_shape) and inverse x and y if necessary.
 
-    1. If one tensor has a longer shape (so lives in higher dimension)(so it is y because len(x_shape)
-    <= len(y_shape)), then all the extra dimensions indices end up in x_squash_dims. Indeed, x will be
-    automatically expanded in all the extra dimensions at forward operation time to match the tensor with
-    the highest dimension. Example: tensor([1]) + tensor([[2], [3]]) is rewritten by torch as
-    tensor([[1], [1]]) + tensor([[2], [3]]). So we need to remove all these dimensions of expansion to
-    get back the gradient of x.
+    1. If one tensor has a longer shape (so lives in higher dimension)(so it is y because
+    len(x_shape) <= len(y_shape)), then all the extra dimensions indices end up in x_squash_dims.
+    Indeed, x will be automatically expanded in all the extra dimensions at forward operation time
+    to match the tensor with the highest dimension. Example: tensor([1]) + tensor([[2], [3]]) is
+    rewritten by torch as tensor([[1], [1]]) + tensor([[2], [3]]). So we need to remove all these
+    dimensions of expansion to get back the gradient of x.
 
-    2. If x or y has a 1 in some dimension and doesn't match the other tensor (ex: torch.Size([3, 7, 5]) and
-    torch.Size([3, 1, 5])), then when an operation is called the tensor is expanded on this dimension, so we
-    need to register this information to do the same squashing as before but we keep the dimension this time.
-    This apply to both tensors and hence we use the lists x_squash_keep_dims and y_squash_keep_dims
+    2. If x or y has a 1 in some dimension and doesn't match the other tensor
+    (ex: torch.Size([3, 7, 5]) and torch.Size([3, 1, 5])), then when an operation is called the
+    tensor is expanded on this dimension, so we need to register this information to do the same
+    squashing as before but we keep the dimension this time. This apply to both tensors and hence
+    we use the lists x_squash_keep_dims and y_squash_keep_dims
 
-    3. current_dim is used to keep count of the dimension, as we iterate on the dimension starting from the
-    highest (the most right one) down to zero. Generally, remember that the shape tuple should match when
-    align on the right, unless there is a 1 instead of the other value: shapes (5,4,3,2) and (4,1,2) are
-    compatible, (5,4,3,2) and (5,4,2,2) are not.
+    3. current_dim is used to keep count of the dimension, as we iterate on the dimension starting
+    from the highest (the most right one) down to zero. Generally, remember that the shape tuple
+    should match when align on the right, unless there is a 1 instead of the other value: shapes
+    (5,4,3,2) and (4,1,2) are compatible, (5,4,3,2) and (5,4,2,2) are not.
     """
     # Initialize the dimension if needed
     if current_dim is None:

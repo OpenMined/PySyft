@@ -6,7 +6,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 
@@ -126,9 +126,7 @@ class MultiPointerTensor(AbstractTensor):
 
     def get(self, sum_results: bool = False) -> FrameworkTensor:
 
-        results = list()
-        for v in self.child.values():
-            results.append(v.get())
+        results = [v.get() for v in self.child.values()]
 
         if sum_results:
             return sum(results)
@@ -136,11 +134,15 @@ class MultiPointerTensor(AbstractTensor):
         return results
 
     def virtual_get(self, sum_results: bool = False):
-        """Get the value of the tensor without calling get - Only for VirtualWorkers"""
+        """
+        Get the value of the tensor without sending `get` message
 
-        results = list()
+        (Only for VirtualWorkers)
+        """
+
+        results = []
         for v in self.child.values():
-            value = v.location._objects[v.id_at_location]
+            value = v.location.object_store.get_obj(v.id_at_location)
             results.append(value)
 
         if sum_results:
@@ -149,21 +151,21 @@ class MultiPointerTensor(AbstractTensor):
         return results
 
     @staticmethod
-    def dispatch(args, worker):
+    def dispatch(args_, worker):
         """
         utility function for handle_func_command which help to select
         shares (seen as elements of dict) in an argument set. It could
         perhaps be put elsewhere
 
         Args:
-            args: arguments to give to a functions
+            args_: arguments to give to a functions
             worker: owner of the shares to select
 
         Return:
-            args where the MultiPointerTensor are replaced by
+            args_ where the MultiPointerTensor are replaced by
             the appropriate share
         """
-        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args_)
 
     @classmethod
     def handle_func_command(cls, command):
@@ -177,26 +179,26 @@ class MultiPointerTensor(AbstractTensor):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
 
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
-        tensor = args[0]
+        tensor = args_[0]
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         results = {}
         for worker, share in new_args[0].items():

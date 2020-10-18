@@ -1,4 +1,4 @@
-# from syft.generic.tensor import AbstractTensor
+# from syft.generic.abstract.tensor import AbstractTensor
 # import torch
 # import numpy as np
 # from typing import Callable, List, Union
@@ -9,17 +9,18 @@
 #     Tensor type to provide non-linear function approximations
 #
 #     MPC and Homomorphic Encryption are capable of performing some addition and logical operations.
-#     Non-linear functions could be approximated as a series of approximated functions of basic arithmetic
-#     operations using function approximations such as interpolation/Taylor series.
+#     Non-linear functions could be approximated as a series of approximated functions of basic
+#     arithmetic operations using function approximations such as interpolation/Taylor series.
 #
-#     The polynomial tensor provides flexibility to consider every non-linear function as piecewise linear function
-#     and fit over different intervals.
+#     The polynomial tensor provides flexibility to consider every non-linear function as piecewise
+#     linear function and fit over different intervals.
 #     """
 #
 #     def __init__(self, function=lambda x: x, precision=10):
 #         """
 #         Args:
-#             function[callable,Optional]: Function to applied to function approximation coefficients.
+#             function[callable,Optional]: Function to applied to function approximation
+#                 coefficients.
 #                 Used to encrypt coefficients.
 #             precision[integer]: Precision of approximated values
 #         """
@@ -27,7 +28,8 @@
 #         self.function = function
 #         self.precision = precision
 #
-#         # Stores parameters of function approximations such as precision, degree, piecewise functions and base function
+#         # Stores parameters of function approximations such as precision, degree, piecewise
+#         # functions and base function
 #         self.function_attr = {}
 #
 #         # Stores fitted function
@@ -46,7 +48,8 @@
 #         )
 #         self.add_function("log", 10, [[1, 10, 100, 10, self.fit_function]], lambda x: np.log(x))
 #         self.add_function(
-#             "sigmoid", 10, [[-10, 10, 100, 10, self.fit_function]], (lambda x: 1 / (1 + np.exp(-x)))
+#             "sigmoid", 10, [[-10, 10, 100, 10, self.fit_function]],
+#             (lambda x: 1 / (1 + np.exp(-x)))
 #         )
 #         self.add_function(
 #             "tanh",
@@ -61,7 +64,8 @@
 #         Args:
 #             name[str]: Name of function
 #             degree[int]: Degree of function
-#             piecewise[List]: List of piecewise functions in format [min_val of fit,max_val of fit,step of fit,function to fit values]
+#             piecewise[List]: List of piecewise functions in format [min_val of fit,max_val
+#                   of fit,step of fit,function to fit values]
 #             function[callable]: Base function
 #         """
 #
@@ -141,15 +145,16 @@
 #     def piecewise_linear_fit(self, name, array):
 #         """Fit a piecewise linear function. This can be used to approximate a non-linear function
 #         as separate linear functions valid for separate ranges.
-#         For instance function approximations are more accurate for exponential when separate instances
-#         of interpolation are fit between -10 to 0 and 0 to 10.
+#         For instance function approximations are more accurate for exponential when separate
+#         instances of interpolation are fit between -10 to 0 and 0 to 10.
 #
 #         Args:
 #             array[2D List]: Each instance of list must take four values [min_val, steps, max_val,
 #                 function approximation method]
 #
 #         Returns:
-#             array[2D List]: Each instance of list with four values [min_val,max_val,Approximated function]
+#             array[2D List]: Each instance of list with four
+#                       values [min_val,max_val,Approximated function]
 #         """
 #
 #         arguments = []

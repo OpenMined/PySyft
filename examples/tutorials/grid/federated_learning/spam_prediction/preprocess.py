@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import re
 
-# from nltk.corpus import stopwords
+from nltk.corpus import stopwords  # noqa: F401
 
-STOPWORDS = set([])  # set(stopwords.words('english'))
+STOPWORDS = {}  # {stopwords.words('english')}
 
 
 def clean_text(text):

@@ -8,6 +8,8 @@ from typing import Dict
 
 from abc import ABC, abstractmethod
 
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient  # noqa: F401
+
 
 class AbstractGrid(ABC):
     def __init__(self):
@@ -32,7 +34,7 @@ class AbstractGrid(ABC):
     @abstractmethod
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["NodeClient", Tuple["NodeClient"]]:
+    ) -> Union["DataCentricFLClient", Tuple["DataCentricFLClient"]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -52,8 +54,9 @@ class AbstractGrid(ABC):
                     node_j.connect_nodes(node_i)
 
     def _check_node_type(self, grid_workers: List[Any], node_type: Any) -> bool:
-        """ Private method used to verify if workers used by grid network are exactly what we expect.
-            Returns:
-               result : Boolean result.
+        """Private method used to verify if workers used by grid network are exactly what we expect.
+
+        Returns:
+            result : Boolean result.
         """
         return all(isinstance(node, node_type) for node in grid_workers)

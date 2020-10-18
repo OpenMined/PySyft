@@ -19,7 +19,7 @@ def test_section_1_differential_privacy():
     get_parallel_db(db, 52352)
 
     def get_parallel_dbs(db):
-        parallel_dbs = list()
+        parallel_dbs = []
 
         for i in range(len(db)):
             pdb = get_parallel_db(db, i)
@@ -222,7 +222,7 @@ def test_section_1_differential_privacy():
         (np.random.rand(num_teachers, num_examples) * num_labels).astype(int).transpose(1, 0)
     )  # fake predictions
 
-    new_labels = list()
+    new_labels = []
     for an_image in preds:
 
         label_counts = np.bincount(an_image, minlength=num_labels)
@@ -294,15 +294,15 @@ def test_section_2_federated_learning(hook):
 
     bob = sy.VirtualWorker(hook, id="bob_udacity")
 
-    bob._objects
+    bob._tensors
 
     x = th.tensor([1, 2, 3, 4, 5])
 
     x = x.send(bob)
 
-    bob._objects
+    bob._tensors
 
-    assert len(bob._objects) == 1
+    assert len(bob._tensors) == 1
 
     x.location
 
@@ -319,9 +319,9 @@ def test_section_2_federated_learning(hook):
     x = x.get()
     x
 
-    bob._objects
+    bob._tensors
 
-    assert len(bob._objects) == 0
+    assert len(bob._tensors) == 0
 
     alice = sy.VirtualWorker(hook, id="alice_udacity")
 
@@ -753,7 +753,7 @@ def test_section_3_securing_fl(hook):
 
     def encrypt(x, n_share=3):
 
-        shares = list()
+        shares = []
 
         for i in range(n_share - 1):
             shares.append(random.randint(0, Q))
@@ -771,7 +771,7 @@ def test_section_3_securing_fl(hook):
     decrypt(shares)
 
     def add(a, b):
-        c = list()
+        c = []
         for i in range(len(a)):
             c.append((a[i] + b[i]) % Q)
         return tuple(c)

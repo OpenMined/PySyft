@@ -72,7 +72,8 @@ def test_crypto_lr(fit_intercept, hook, workers):
 
 def test_DASH(hook, workers):
     """
-    Test DASH (Distributed Association Scan Hammer), i.e. distributed linear regression for genetics with SMPC
+    Test DASH (Distributed Association Scan Hammer)
+    i.e. distributed linear regression for genetics with SMPC
     """
 
     bob = workers["bob"]

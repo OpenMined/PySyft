@@ -1,9 +1,16 @@
-import syft
-from syft.generic.tensor import AbstractTensor
+import syft as sy
+
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook.hook_args import (
+    get_child,
+    register_backward_func,
+    register_forward_func,
+    register_type_rule,
+    one,
+)
 from syft.workers.abstract import AbstractWorker
-import syft as sy
+from syft.generic.abstract.tensor import AbstractTensor
 
 
 class LoggingTensor(AbstractTensor):
@@ -127,7 +134,7 @@ class LoggingTensor(AbstractTensor):
         function with arguments containing syft tensors of the class doing
         the overloading
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
         print("Default log", cmd)
 
     @staticmethod
@@ -168,3 +175,8 @@ class LoggingTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+register_type_rule({LoggingTensor: one})
+register_forward_func({LoggingTensor: get_child})
+register_backward_func({LoggingTensor: lambda i, **kwargs: LoggingTensor().on(i, wrap=False)})

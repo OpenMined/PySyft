@@ -1,3 +1,5 @@
+import pytest
+
 import torch
 
 import syft

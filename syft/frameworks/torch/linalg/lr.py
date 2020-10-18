@@ -1,7 +1,6 @@
 import random
 from typing import List
 
-import numpy as np
 import torch
 
 from syft.workers.base import BaseWorker
@@ -66,12 +65,14 @@ class EncryptedLinearRegression:
         hbc_worker: BaseWorker,
         precision_fractional: int = 6,
         fit_intercept: bool = True,
+        protocol: str = "snn",
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
         self.fit_intercept = fit_intercept
+        self.protocol = protocol
 
     def fit(self, X_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]):
         """
@@ -249,7 +250,7 @@ class EncryptedLinearRegression:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = set([])
+        workers = set()
         for ptr in ptrs:
             workers.add(ptr.child.location)
         return tuple(workers)
@@ -279,7 +280,10 @@ class EncryptedLinearRegression:
         for ptr in ptrs:
             fpt_tensor = ptr.fix_precision(precision_fractional=self.precision_fractional)
             shared_tensor = fpt_tensor.share(
-                self.workers[worker_idx], self.hbc_worker, crypto_provider=self.crypto_provider
+                self.workers[worker_idx],
+                self.hbc_worker,
+                crypto_provider=self.crypto_provider,
+                protocol=self.protocol,
             ).get()
             shared_tensors.append(shared_tensor)
         return shared_tensors
@@ -323,6 +327,7 @@ class DASH:
             but will attempt to learn all possible information from legitimately
             received messages.
         precision_fractional: precision chosen for FixedPrecisionTensors
+        protocol: the crypto protocol used for private comparison
 
     Attributes:
         coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
@@ -333,12 +338,17 @@ class DASH:
     """
 
     def __init__(
-        self, crypto_provider: BaseWorker, hbc_worker: BaseWorker, precision_fractional: int = 6
+        self,
+        crypto_provider: BaseWorker,
+        hbc_worker: BaseWorker,
+        precision_fractional: int = 6,
+        protocol: str = "snn",
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
+        self.protocol = protocol
 
     def fit(
         self, X_ptrs: List[torch.Tensor], C_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]
@@ -425,7 +435,8 @@ class DASH:
                 map(lambda t: t.has_child() and isinstance(t.child, PointerTensor), (x, c, y))
             ):
                 raise TypeError(
-                    "Some tensors are not pointers or are not wrapped, please provided a wrapped Pointer Tensor"
+                    "Some tensors are not pointers or are not wrapped, please provided a wrapped "
+                    "Pointer Tensor"
                 )
 
             # Check if both are in the same worker
@@ -461,7 +472,7 @@ class DASH:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = set([])
+        workers = set()
         for ptr in ptrs:
             workers.add(ptr.child.location)
         return tuple(workers)
@@ -532,7 +543,10 @@ class DASH:
         for ptr in ptrs:
             fpt_tensor = ptr.fix_precision(precision_fractional=self.precision_fractional)
             shared_tensor = fpt_tensor.share(
-                self.workers[worker_idx], self.hbc_worker, crypto_provider=self.crypto_provider
+                self.workers[worker_idx],
+                self.hbc_worker,
+                crypto_provider=self.crypto_provider,
+                protocol=self.protocol,
             ).get()
             shared_tensors.append(shared_tensor)
         return shared_tensors

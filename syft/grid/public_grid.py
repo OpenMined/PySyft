@@ -9,27 +9,25 @@ from typing import Tuple
 from typing import Dict
 
 # Syft imports
-from syft.grid.authentication.credential import AbstractCredential
 from syft.grid.abstract_grid import AbstractGrid
-from syft.workers.node_client import NodeClient
+from syft.grid.clients.data_centric_fl_client import DataCentricFLClient
 from syft.execution.plan import Plan
 from syft.codes import GATEWAY_ENDPOINTS
 
 
 class PublicGridNetwork(AbstractGrid):
-    def __init__(self, hook, gateway_url: str, credential: AbstractCredential = None):
+    def __init__(self, hook, gateway_url: str):
         super().__init__()
         self.hook = hook
         self.gateway_url = gateway_url
-        self.credential = credential
 
     def search(self, *query: Union[str]) -> Dict[Any, Any]:
-        """ Search a set of tags across the grid network.
+        """Search a set of tags across the grid network.
 
-            Args:
-                query : A set of dataset tags.
-            Returns:
-                tensor_results : matrix of tensor pointers.
+        Args:
+            query : A set of dataset tags.
+        Returns:
+            tensor_results : matrix of tensor pointers.
         """
         # Ask gateway about desired tags
         body = json.dumps({"query": list(query)})
@@ -51,14 +49,15 @@ class PublicGridNetwork(AbstractGrid):
         allow_download: bool = False,
         n_replica: int = 1,
     ) -> None:
-        """ Choose n (number of replicas defined at gateway) grid nodes registered
-            in the grid network to host a model.
-            Args:
-                model : Model to be hosted.
-                id : Model's ID.
-                mpc : Boolean flag to serve plan models in an encrypted/unencrypted format.
-                allow_remote_inference : Allow workers to run inference in this model.
-                allow_download : Allow workers to copy the model and run it locally.
+        """Choose n (number of replicas defined at gateway) grid nodes registered
+        in the grid network to host a model.
+
+        Args:
+            model : Model to be hosted.
+            id : Model's ID.
+            mpc : Boolean flag to serve plan models in an encrypted/unencrypted format.
+            allow_remote_inference : Allow workers to run inference in this model.
+            allow_download : Allow workers to copy the model and run it locally.
         """
         if not mpc:
             self._serve_unencrypted_model(model, id, allow_remote_inference, allow_download)
@@ -67,17 +66,18 @@ class PublicGridNetwork(AbstractGrid):
 
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["NodeClient", Tuple["NodeClient"]]:
-        """ This method will search for a specific model registered on grid network, if found,
-            It will return all grid nodes that contains the desired model.
-            Args:
-                id : Model's ID.
-                mpc : Boolean flag to search plan models in an encrypted/unencrypted format.
-            Returns:
-                workers : Worker / list of workers that contains the desired model.
-            Raises:
-                RuntimeError : If grid network doesn't have enough workers to host
-                an encrypted model, or if model isn't a plan.
+    ) -> Union["DataCentricFLClient", Tuple["DataCentricFLClient"]]:
+        """This method will search for a specific model registered on grid network, if found,
+        It will return all grid nodes that contains the desired model.
+
+        Args:
+            id : Model's ID.
+            mpc : Boolean flag to search plan models in an encrypted/unencrypted format.
+        Returns:
+            workers : Worker / list of workers that contains the desired model.
+        Raises:
+            RuntimeError : If grid network doesn't have enough workers to host
+            an encrypted model, or if model isn't a plan.
         """
         if not mpc:
             return self._query_unencrypted_models(id)
@@ -85,16 +85,17 @@ class PublicGridNetwork(AbstractGrid):
             return self._query_encrypted_models(id)
 
     def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False) -> torch.Tensor:
-        """ This method will search for a specific model registered on the grid network, if found,
-            It will run inference.
-            Args:
-                id : Model's ID.
-                dataset : Data used to run inference.
-                mpc : Boolean flag to run encrypted/unencrypted inferences.
-            Returns:
-                Tensor : Inference's result.
-            Raises:
-                RuntimeError: If model id not registered on the grid network.
+        """This method will search for a specific model registered on the grid network, if found,
+        It will run inference.
+
+        Args:
+            id : Model's ID.
+            dataset : Data used to run inference.
+            mpc : Boolean flag to run encrypted/unencrypted inferences.
+        Returns:
+            Tensor : Inference's result.
+        Raises:
+            RuntimeError: If model id not registered on the grid network.
         """
         if not mpc:
             return self._run_unencrypted_inference(id, data)
@@ -104,13 +105,14 @@ class PublicGridNetwork(AbstractGrid):
     def _serve_unencrypted_model(
         self, model, id, allow_remote_inference: bool, allow_download: bool
     ) -> None:
-        """ This method will choose one of grid nodes registered in the grid network
-            to host a plain text model.
-            Args:
-                model: Model to be hosted.
-                id: Model's ID.
-                allow_remote_inference: Allow workers to run inference in this model.
-                allow_download: Allow workers to copy the model and run it locally.
+        """This method will choose one of grid nodes registered in the grid network
+        to host a plain text model.
+
+        Args:
+            model: Model to be hosted.
+            id: Model's ID.
+            allow_remote_inference: Allow workers to run inference in this model.
+            allow_download: Allow workers to copy the model and run it locally.
         """
         hosts = self._ask_gateway(requests.get, GATEWAY_ENDPOINTS.SELECT_MODEL_HOST)
 
@@ -127,13 +129,13 @@ class PublicGridNetwork(AbstractGrid):
         host_worker.close()
 
     def _serve_encrypted_model(self, model) -> None:
-        """ This method wiil choose some grid nodes at grid network to host an encrypted model.
+        """This method wiil choose some grid nodes at grid network to host an encrypted model.
 
-            Args:
-                model: Model to be hosted.
-            Raises:
-                RuntimeError : If grid network doesn't have enough workers to host
-                an encrypted model, or if model isn't a plan.
+        Args:
+            model: Model to be hosted.
+        Raises:
+            RuntimeError : If grid network doesn't have enough workers to host
+            an encrypted model, or if model isn't a plan.
         """
         # Model needs to be a plan
         if isinstance(model, Plan):
@@ -158,7 +160,7 @@ class PublicGridNetwork(AbstractGrid):
 
                     # Connect nodes to each other
                     model_nodes = smpc_workers + [crypto_provider, host]
-                    self._connect_all_nodes(model_nodes, NodeClient)
+                    self._connect_all_nodes(model_nodes, DataCentricFLClient)
 
                     # SMPC Share
                     model.fix_precision().share(*smpc_workers, crypto_provider=crypto_provider)
@@ -178,13 +180,14 @@ class PublicGridNetwork(AbstractGrid):
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def _query_unencrypted_models(self, id) -> "NodeClient":
-        """ Search for a specific model registered on grid network, if found,
-            It will return the first node that contains the desired model.
-            Args:
-                id : Model's ID.
-            Returns:
-                worker : worker that contains the desired model.
+    def _query_unencrypted_models(self, id) -> "DataCentricFLClient":
+        """Search for a specific model registered on grid network, if found,
+        It will return the first node that contains the desired model.
+
+        Args:
+            id : Model's ID.
+        Returns:
+            worker : worker that contains the desired model.
         """
         # Search for a model
         body = json.dumps({"model_id": id})
@@ -194,13 +197,14 @@ class PublicGridNetwork(AbstractGrid):
             # Return the first node that stores the desired model
             return self.__connect_with_node(node_id, node_url)
 
-    def _query_encrypted_models(self, id) -> List["NodeClient"]:
-        """ Search for a specific encrypted model registered on grid network, if found,
-            It will return the first node that hosts the desired model and mpc shares.
-            Args:
-                id : Model's ID.
-            Returns:
-                workers : List of workers that contains the desired mpc model.
+    def _query_encrypted_models(self, id) -> List["DataCentricFLClient"]:
+        """Search for a specific encrypted model registered on grid network, if found,
+        It will return the first node that hosts the desired model and mpc shares.
+
+        Args:
+            id : Model's ID.
+        Returns:
+            workers : List of workers that contains the desired mpc model.
         """
         # Search for an encrypted model
         body = json.dumps({"model_id": id})
@@ -233,21 +237,22 @@ class PublicGridNetwork(AbstractGrid):
 
             # Connect nodes
             nodes = workers + [host_node, crypto_node]
-            self._connect_all_nodes(tuple(nodes), NodeClient)
+            self._connect_all_nodes(tuple(nodes), DataCentricFLClient)
 
             return (host_node, workers, crypto_node)
         else:
             raise RuntimeError("Model not found on Grid Network!")
 
     def _run_unencrypted_inference(self, id, data) -> torch.Tensor:
-        """ Search for an unencrypted model and perform data inference.
-            Args:
-                id: Model's ID.
-                data: Dataset to be inferred.
-            Returns:
-                Tensor: Inference's result.
-            Raises:
-                RuntimeError: If model if not found.
+        """Search for an unencrypted model and perform data inference.
+
+        Args:
+            id: Model's ID.
+            data: Dataset to be inferred.
+        Returns:
+            Tensor: Inference's result.
+        Raises:
+            RuntimeError: If model if not found.
         """
         worker = self.query_model_hosts(id)
         if worker:
@@ -258,16 +263,16 @@ class PublicGridNetwork(AbstractGrid):
             raise RuntimeError("Model not found on Grid Network!")
 
     def _run_encrypted_inference(self, id, data, copy=True):
-        """ Search for an encrypted model and perform inference.
+        """Search for an encrypted model and perform inference.
 
-            Args:
-                model_id: Model's ID.
-                data: Dataset to be shared/inferred.
-                copy: Boolean flag to perform encrypted inference without lose plan.
-            Returns:
-                Tensor: Inference's result.
-            Raises:
-                RuntimeError: If model id not found.
+        Args:
+            model_id: Model's ID.
+            data: Dataset to be shared/inferred.
+            copy: Boolean flag to perform encrypted inference without lose plan.
+        Returns:
+            Tensor: Inference's result.
+        Raises:
+            RuntimeError: If model id not found.
         """
         # Get model's host / mpc shares
         host_node, smpc_workers, crypto_provider = self._query_encrypted_models(id)
@@ -281,7 +286,7 @@ class PublicGridNetwork(AbstractGrid):
 
     def __connect_with_node(self, node_id, node_url):
         if node_id not in self.hook.local_worker._known_workers:
-            worker = NodeClient(self.hook, node_url, credential=self.credential)
+            worker = DataCentricFLClient(self.hook, node_url)
         else:
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]

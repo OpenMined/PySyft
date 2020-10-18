@@ -21,7 +21,7 @@ class Optims:
 
     def get_optim(self, worker):
         """returns optimizer for worker
-        args: 
+        args:
             worker: worker id
         """
         return self.optimizers[str(worker)]

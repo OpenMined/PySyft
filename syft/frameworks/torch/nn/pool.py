@@ -37,9 +37,9 @@ class AvgPool2d(Module):
         # These assertions are the required settings.
 
         assert padding == 0
-        assert ceil_mode == False
-        assert count_include_pad == True
-        assert divisor_override == None
+        assert ceil_mode is False
+        assert count_include_pad is True
+        assert divisor_override is None
 
         if stride is None:
             stride = kernel_size
@@ -57,7 +57,7 @@ class AvgPool2d(Module):
 
         batch_size, out_channels, rows, cols = data.shape
 
-        kernel_results = list()
+        kernel_results = []
 
         for i in range(0, rows - self.kernel_size + 1, self.stride):
             for j in range(0, cols - self.kernel_size + 1, self.stride):

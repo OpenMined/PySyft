@@ -1,9 +1,5 @@
-import torch
-import syft
 from .gradients_core import GradFunc
 from .gradients_core import apply_dim_transformations
-
-from syft.workers.abstract import AbstractWorker
 
 
 class AddBackward(GradFunc):
@@ -14,12 +10,13 @@ class AddBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self = grad.copy()
-        grad_other = grad.copy() if type(self.self_) == type(self.other) else None
+        grad_other = grad.copy() if isinstance(self.self_, type(self.other)) else None
 
-        if self.self_.shape != self.other.shape:
-            grad_self, grad_other = apply_dim_transformations(
-                grad_self, grad_other, self.self_.shape, self.other.shape
-            )
+        if not isinstance(self.other.child, int):
+            if self.self_.shape != self.other.shape:
+                grad_self, grad_other = apply_dim_transformations(
+                    grad_self, grad_other, self.self_.shape, self.other.shape
+                )
 
         return (grad_self, grad_other)
 
@@ -32,23 +29,54 @@ class SubBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self = grad.copy()
-        grad_other = grad * -1 if type(self.self_) == type(self.other) else None
+        grad_other = grad * -1 if isinstance(self.self_, type(self.other)) else None
 
-        if self.self_.shape != self.other.shape:
-            grad_self, grad_other = apply_dim_transformations(
-                grad_self, grad_other, self.self_.shape, self.other.shape
-            )
+        if not isinstance(self.other.child, int):
+            if self.self_.shape != self.other.shape:
+                grad_self, grad_other = apply_dim_transformations(
+                    grad_self, grad_other, self.self_.shape, self.other.shape
+                )
         return (grad_self, grad_other)
 
 
 class SumBackward(GradFunc):
-    def __init__(self, self_):
+    """Tensor Sum backward gradient class"""
+
+    def __init__(self, self_, **kwargs):
+        super().__init__(self, self_)
+        self.self_ = self_
+        self.kwargs = kwargs
+
+    def gradient(self, grad):
+        if grad.shape != self.self_.shape:
+            grad = grad.reshape([-1, 1])
+        return ((self.self_ * 0 + 1) * grad,)
+
+
+class MeanBackward(GradFunc):
+    """Tensor Mean backward gradient class"""
+
+    def __init__(self, self_, dim=None):
         super().__init__(self, self_)
         self.self_ = self_
 
     def gradient(self, grad):
+        if grad.shape != self.self_.shape:
+            grad = grad.reshape([-1, 1])
+        numel = self.self_.numel()
+        return ((self.self_ * 0 + 1) * grad / numel,)
+
+
+class ReshapeBackward(GradFunc):
+    """Tensor reshape backward gradient class"""
+
+    def __init__(self, self_, *dims):
+        super().__init__(self, self_)
+
+    def gradient(self, grad):
+        if grad.shape != self.self_.shape:
+            grad = grad.reshape(self.self_.shape)
         return ((self.self_ * 0 + 1) * grad,)
-        # return (torch.ones(self.self_.shape) * grad, )
 
 
 class AsinBackward(GradFunc):
@@ -61,6 +89,30 @@ class AsinBackward(GradFunc):
         return (grad_self_,)
 
 
+class LogBackward(GradFunc):
+    """Log backward gradient class"""
+
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        grad_self_ = grad * (1 / self.self_)
+        return (grad_self_,)
+
+
+class ExpBackward(GradFunc):
+    """Exp backward gradient class"""
+
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        grad_self_ = grad * self.self_.exp()
+        return (grad_self_,)
+
+
 class MulBackward(GradFunc):
     def __init__(self, self_, other):
         super().__init__(self, self_, other)
@@ -69,8 +121,18 @@ class MulBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self_ = grad * self.other
-        grad_other = grad * self.self_ if type(self.self_) == type(self.other) else None
+        grad_other = grad * self.self_ if isinstance(self.self_, type(self.other)) else None
         return (grad_self_, grad_other)
+
+
+class NegBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        grad_self_ = grad * -1
+        return (grad_self_,)
 
 
 class DivBackward(GradFunc):
@@ -80,7 +142,7 @@ class DivBackward(GradFunc):
         self.other = other
 
     def gradient(self, grad):
-        assert isinstance(self.other, int)
+        # assert isinstance(self.other, int)
         grad_self_ = grad / self.other
         return (grad_self_,)
 
@@ -104,7 +166,7 @@ class MatmulBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self_ = grad @ self.other.t()
-        grad_other = self.self_.t() @ grad if type(self.self_) == type(self.other) else None
+        grad_other = self.self_.t() @ grad if isinstance(self.self_, type(self.other)) else None
         return (grad_self_, grad_other)
 
 
@@ -147,14 +209,15 @@ class SinhBackward(GradFunc):
         return (grad_self_,)
 
 
-class SqrtBackward(GradFunc):
-    def __init__(self, self_):
-        super().__init__(self, self_)
-        self.self_ = self_
-
-    def gradient(self, grad):
-        grad_self_ = grad / (2 * self.result)
-        return (grad_self_,)
+# class SqrtBackward(GradFunc):
+#     def __init__(self, self_):
+#         super().__init__(self, self_)
+#         self.self_ = self_
+#
+#     def gradient(self, grad):
+#         TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
+#         grad_self_ = grad / (2 * self.result)
+#         return (grad_self_,)
 
 
 class TanhBackward(GradFunc):

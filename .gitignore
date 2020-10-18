@@ -20,4 +20,5 @@ docs/_modules
 .coverage
 .vscode/
 **/pip-wheel-metadata
-
+.ropeproject/
+pytest_benchmark_output.json

@@ -24,13 +24,23 @@ class NetworkMonitor:
         Args:
         timeout: An integer. Set for sniffing with tshark. Default to 50 seconds in this setup.
         interface: A string. Name of the interface to sniff on.
-        bpf_filter: A string. The capture filter in bpf syntax 'tcp port 80'. Needs to be changed to match filter for the traffic sent. Not to be confused with the display filters (e.g. tcp.port == 80). The former are much more limited and is used to restrict the size of a raw packet capture, whereas the latter is used to hide some packets from the packet list. More info can be found at https://wiki.wireshark.org/CaptureFilters.
-        display_filter: A string. Default to 'tcp.port == 80' (assuming this is the port of the 'WebsocketClientWorker'). Please see notes for 'bpf_filter' for details regarding differences. More info can be found at https://wiki.wireshark.org/DisplayFilters.
+        bpf_filter: A string. The capture filter in bpf syntax 'tcp port 80'. Needs to be changed
+                    to match filter for the traffic sent. Not to be confused with the display
+                    filters (e.g. tcp.port == 80). The former are much more limited and is used to
+                    restrict the size of a raw packet capture, whereas the latter is used to hide
+                    some packets from the packet list. More info can be found at
+                    https://wiki.wireshark.org/CaptureFilters.
+        display_filter: A string. Default to 'tcp.port == 80' (assuming this is the port of the
+                        'WebsocketClientWorker'). Please see notes for 'bpf_filter' for details
+                        regarding differences. More info can be found at
+                        https://wiki.wireshark.org/DisplayFilters.
         tshark_path: Path to the tshark binary. E.g. '/usr/local/bin/tshark'.
-        output_file: A string. Path including the output file name is to saved. E.g. '/tmp/mycapture.cap'
+        output_file: A string. Path including the output file name is to saved.
+                     E.g. '/tmp/mycapture.cap'
 
         Returns:
-        catpure: A 'pyshark.capture.live_capture.LiveCapture' object. Of packets sent over WebSockets.
+        catpure: A 'pyshark.capture.live_capture.LiveCapture' object. Of packets sent
+                 over WebSockets.
         length: An integer. The number of packets captured at the network interface.
         """
         capture_output = []

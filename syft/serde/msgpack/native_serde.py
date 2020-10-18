@@ -7,7 +7,8 @@ from typing import Collection
 from typing import Dict
 from typing import Union
 from typing import Tuple
-
+import warnings
+import pydoc
 
 import numpy
 
@@ -43,7 +44,7 @@ def _simplify_collection(
         return tuple(my_collection)
 
     # Step 0: initialize empty list
-    pieces = list()
+    pieces = []
 
     # Step 1: serialize each part of the collection
     for part in my_collection:
@@ -76,7 +77,7 @@ def _detail_collection_list(
     if shallow:
         return list(my_collection)
 
-    pieces = list()
+    pieces = []
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
@@ -109,7 +110,7 @@ def _detail_collection_set(
     if shallow:
         return set(my_collection)
 
-    pieces = list()
+    pieces = []
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
@@ -143,7 +144,7 @@ def _detail_collection_tuple(
     if shallow:
         return my_tuple
 
-    pieces = list()
+    pieces = []
 
     # Step 1: deserialize each part of the collection
     for part in my_tuple:
@@ -169,7 +170,7 @@ def _simplify_dictionary(worker: AbstractWorker, my_dict: Dict, shallow: bool = 
             input dictionary.
 
     """
-    pieces = list()
+    pieces = []
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
         pieces.append(
@@ -364,6 +365,56 @@ def _detail_ndarray(
     return res
 
 
+def _simplify_type(worker: AbstractWorker, obj_type: type) -> bytes:
+    """
+    This function gets an type object and returns its representation as bytes.
+
+    Args:
+        obj_type (s.g builtins.str, builtins.int, torch.tensor): a type
+
+    Returns:
+        str: a string in utf-8 encoding that encodes the path in the module + the actual
+        class that generates the type.
+
+    Examples:
+          str_type_representation = _simplify_type(worker, type("i'm a string"))
+    """
+    module_path = obj_type.__module__
+    full_path_type = module_path + "." + obj_type.__name__
+    return full_path_type.encode("utf-8")
+
+
+def _detail_type(worker: AbstractWorker, type_repr: bytes) -> type:
+    """
+    This function gets the byte representation of a type and its path in the module as a string,
+    decodes the string and locates the type in the module, returning the type object.
+
+    Args:
+        type_repr: bytes that encode the path of a type/class in a module
+
+    Returns:
+        type: the type of an object (e.g: builtins.str, builtins.int).
+
+    Warning: if pydoc can't locate the type in the current process, might mean that the file
+    layout is different between sender and receiver.
+
+    TODO:
+        As syft-protobuf grows in type support, we should change the type serialization by
+        using those types, enabling cross language typechecking/type validation.
+    """
+
+    string_representation = type_repr.decode("utf-8")
+    result = pydoc.locate(string_representation)
+    if result is None:
+        warnings.warn(
+            f"{string_representation} can't be located in the current process, the layout "
+            "of the modules has been changed.",
+            Warning,
+        )
+        return object
+    return result
+
+
 def _simplify_numpy_number(
     worker: AbstractWorker, numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
 ) -> Tuple[bin, Tuple]:
@@ -425,6 +476,7 @@ MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         range: (_simplify_range, _detail_range),
         set: (_simplify_collection, _detail_collection_set),
         slice: (_simplify_slice, _detail_slice),
+        type: (_simplify_type, _detail_type),
         str: (_simplify_str, _detail_str),
         tuple: (_simplify_collection, _detail_collection_tuple),
         type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),

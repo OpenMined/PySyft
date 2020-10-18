@@ -55,8 +55,7 @@ def test_federated_dataset(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert len(fed_dataset) == 6
 
-    alice_remote_data = fed_dataset["alice"].get()
-    del fed_dataset.datasets["alice"]
+    alice_remote_data = fed_dataset.get_dataset("alice")
     assert (alice_remote_data.data == alice_base_dataset.data).all()
     assert alice_remote_data[2] == (5, 5)
     assert len(alice_remote_data) == 4
@@ -70,6 +69,14 @@ def test_dataset_to_federate(workers):
     alice = workers["alice"]
 
     dataset = BaseDataset(th.tensor([1.0, 2, 3, 4, 5, 6]), th.tensor([1.0, 2, 3, 4, 5, 6]))
+
+    fed_dataset = dataset.federate(bob, alice)
+
+    assert isinstance(fed_dataset, sy.FederatedDataset)
+
+    assert fed_dataset.workers == ["bob", "alice"]
+    assert fed_dataset["bob"].location.id == "bob"
+    assert len(fed_dataset) == 6
 
     fed_dataset = dataset.federate((bob, alice))
 
@@ -117,4 +124,38 @@ def test_abstract_dataset():
     dataset = BaseDataset(inputs, targets, id=1)
 
     assert dataset.id == 1
-    assert dataset.description == None
+    assert dataset.description is None
+
+
+def test_get_dataset(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    dataset = fed_dataset.get_dataset("alice")
+
+    assert len(fed_dataset) == 2
+    assert len(dataset) == 4
+
+
+def test_illegal_get(workers):
+    """
+    test getting error message when calling .get() on a
+    dataset that's a part of fedratedDataset object
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    with pytest.raises(ValueError):
+        fed_dataset["alice"].get()

@@ -3,16 +3,12 @@ from functools import wraps
 import logging
 from math import inf
 import torch
-from torch import nn
-import types
 import weakref
 
 import syft
+from syft import dependency_check
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
-from syft.generic.frameworks.hook.trace import Trace
-from syft.generic.frameworks.hook.trace import tracer
-from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
@@ -21,19 +17,14 @@ from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import initialize_tensor
-from syft.generic.tensor import _apply_args
+from syft.generic.abstract.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.execution.plan import Plan
-
-from syft.exceptions import route_method_exception
 
 
 class TorchHook(FrameworkHook):
@@ -88,9 +79,15 @@ class TorchHook(FrameworkHook):
     """
 
     def __init__(
-        self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
+        self,
+        torch,
+        local_worker: BaseWorker = None,
+        is_client: bool = True,
+        verbose: bool = False,
+        seed=None,
     ):
-        """Initializes the hook.
+        """
+        Initializes the hook.
 
         Initialize the hook and define all the attributes pertaining to the
         torch hook in a special TorchAttibute class, that will be added in the
@@ -100,6 +97,9 @@ class TorchHook(FrameworkHook):
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
         self.framework = self.torch
+        if seed is not None:
+            syft.ID_PROVIDER.seed(seed)
+        self.verbose = verbose
 
         # Save the local worker as an attribute
         self.local_worker = local_worker
@@ -115,7 +115,20 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
-        self.trace = Trace()
+        """
+        In Syft there is a syft.framework value that can contain only one framework.
+        Ideally it should contain a list of supported frameworks.
+
+        We do this because in Plans there is method to reduce the number of actions
+        that are traced (and then sent).
+        The actions that are not returning a result, changing a placeholder, inplace
+        or changing the global state are eliminated from the traced list
+        """
+        if dependency_check.crypten_available:
+            import crypten
+            from syft.frameworks.crypten.crypten_attributes import CryptenAttributes
+
+            syft.crypten = CryptenAttributes(crypten, self)
 
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()
@@ -127,15 +140,26 @@ class TorchHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = VirtualWorker(hook=self, is_client_worker=is_client, id="me")
+            self.local_worker = VirtualWorker(
+                hook=self, is_client_worker=is_client, id="me", verbose=verbose
+            )
         else:
             self.local_worker.hook = self
+
+        self._syft_workers = {self.local_worker}
 
         self.to_auto_overload = {}
 
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
+
+        if dependency_check.crypten_available:
+            from syft.frameworks.crypten.hook.hook import crypten_to_auto_overload
+
+            for crypten_class, method_names in crypten_to_auto_overload.items():
+                self.to_auto_overload[crypten_class] = method_names
+                self._hook_syft_placeholder_methods(crypten_class, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
@@ -182,9 +206,6 @@ class TorchHook(FrameworkHook):
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AdditiveSharingTensor)
 
-        # Add all hooked tensor methods to LargePrecisionTensor tensor
-        self._hook_syft_tensor_methods(LargePrecisionTensor)
-
         # Add all hooked tensor methods to NumpyTensor tensor
         self._hook_syft_tensor_methods(HookedTensor)
 
@@ -202,7 +223,8 @@ class TorchHook(FrameworkHook):
         # Hook the Parameter methods to store tensor chains in parameters
         self._hook_parameters()
 
-        # Hook torch functions from modules like torch.add OR torch.nn.functional (containing relu, etc.)
+        # Hook torch functions from modules like torch.add OR
+        # torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
 
         # Hook torch.nn (containing Linear and Convolution layers)
@@ -210,6 +232,13 @@ class TorchHook(FrameworkHook):
 
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
+
+        # Hook the Crypten module
+        if dependency_check.crypten_available:
+            from syft.frameworks.crypten.hook.hook import hook_crypten, hook_crypten_module
+
+            hook_crypten()
+            hook_crypten_module()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -222,11 +251,14 @@ class TorchHook(FrameworkHook):
     def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
-        assert (
-            wrapper_type is None or wrapper_type == torch.Tensor
-        ), "TorchHook only uses torch.Tensor wrappers"
-
-        return torch.Tensor()
+        if wrapper_type is None or wrapper_type == torch.Tensor:
+            return torch.Tensor()
+        elif isinstance(wrapper_type, torch.dtype):
+            return torch.tensor([], dtype=wrapper_type)
+        else:
+            raise ValueError(
+                "Wrapper type should be None, torch.Tensor, or a torch.dtype like torch.long"
+            )
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
         return torch.zeros(*shape, dtype=dtype, **kwargs)
@@ -294,7 +326,10 @@ class TorchHook(FrameworkHook):
         @wraps(attr)
         def overloaded_attr(self_torch, *args, **kwargs):
             ptr = hook_self.local_worker.send_command(
-                recipient=self_torch.worker(), message=(f"{'torch'}.{attr}", None, args, kwargs)
+                recipient=self_torch.worker(),
+                cmd_name=f"{'torch'}.{attr}",
+                args_=args,
+                kwargs_=kwargs,
             )
 
             return ptr.wrap()
@@ -480,8 +515,8 @@ class TorchHook(FrameworkHook):
             the hooked method
         """
 
-        def dispatch(args, k):
-            return map(lambda x: x[k] if isinstance(x, dict) else x, args)
+        def dispatch(args_, k):
+            return map(lambda x: x[k] if isinstance(x, dict) else x, args_)
 
         @wraps(attr)
         def overloaded_attr(self, *args, **kwargs):
@@ -521,7 +556,6 @@ class TorchHook(FrameworkHook):
         if "native_tensor" not in dir(hook_self.torch):
             hook_self.torch.native_tensor = hook_self.torch.tensor
 
-        @tracer(func_name="torch.tensor")
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
@@ -564,7 +598,9 @@ class TorchHook(FrameworkHook):
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
-            # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
+            # FIXME it now overwritten in native.py to use torch.eq, because
+            # of pb between == & __eq__ See #2030
+            # "__eq__",
             "__gt__",
             "__ge__",
             "__lt__",
@@ -574,10 +610,26 @@ class TorchHook(FrameworkHook):
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module
-           responsible for core ML functionality such as Neural network layers and
-           loss functions.
-           It is important to note that all the operations are actually in-place.
+        responsible for core ML functionality such as Neural network layers and
+        loss functions.
+
+        It is important to note that all the operations are actually in-place.
         """
+        self.element_iter_dict = {}
+
+        def register_element_iterator(name, func):
+            """register an internal element buffer iterator"""
+            if name in self.element_iter_dict.keys():
+                return
+            self.element_iter_dict[name] = func
+
+        def tensor_iterator(nn_self):
+            """adding relavant iterators for the tensor elements"""
+            iterators = [
+                "parameters",
+                "buffers",
+            ]  # all the element iterators from nn module should be listed here,
+            return [getattr(nn_self, iter) for iter in iterators]
 
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
@@ -601,8 +653,9 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.send_(*dest, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.send_(*dest, **kwargs)
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.send(*dest, force=force_send)
@@ -614,9 +667,9 @@ class TorchHook(FrameworkHook):
 
         def module_move_(nn_self, destination):
 
-            params = list(nn_self.parameters())
-            for p in params:
-                p.move(destination)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.move_(destination)
 
         self.torch.nn.Module.move = module_move_
 
@@ -638,9 +691,13 @@ class TorchHook(FrameworkHook):
         # self.torch.nn.Module.move = module_move_
 
         def module_get_(nn_self):
-            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
-            for p in nn_self.parameters():
-                p.get_()
+            """
+            overloads torch.nn instances with get method so that parameters
+            could be sent back to owner
+            """
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.get_()
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.get()
@@ -650,14 +707,42 @@ class TorchHook(FrameworkHook):
         self.torch.nn.Module.get_ = module_get_
         self.torch.nn.Module.get = module_get_
 
-        def module_share_(nn_self, *args, **kwargs):
+        def module_encrypt_(nn_self, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""
-            # TODO: add .data and .grad to syft tensors
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.share_(*args, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.encrypt(inplace=True, **kwargs)
+
+            return nn_self
+
+        self.torch.nn.Module.encrypt_ = module_encrypt_
+        self.torch.nn.Module.encrypt = module_encrypt_
+
+        def module_decrypt_(nn_self):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.decrypt(inplace=True)
+
+            return nn_self
+
+        self.torch.nn.Module.decrypt_ = module_decrypt_
+        self.torch.nn.Module.decrypt = module_decrypt_
+
+        def module_share_(nn_self, *args, **kwargs):
+            """Overloads fix_precision for torch.nn.Module."""
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
+
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.share_(*args, **kwargs)
 
             return nn_self
 
@@ -669,8 +754,9 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.fix_precision_(*args, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.fix_precision_(*args, **kwargs)
 
             return nn_self
 
@@ -685,8 +771,9 @@ class TorchHook(FrameworkHook):
             # if module_is_missing_grad(nn_self):
             #    create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.float_precision_()
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.float_precision_()
 
             return nn_self
 
@@ -731,9 +818,10 @@ class TorchHook(FrameworkHook):
 
     def _hook_optim(self):
         """Overloading torch.optim.Optimizer with PySyft functionality. Optimizer
-           hyper-parameters should indeed be converted to fixed precision to interact
-           with fixed precision or additive shared tensors.
-           It is important to note that all the operations are actually in-place.
+        hyper-parameters should indeed be converted to fixed precision to interact
+        with fixed precision or additive shared tensors.
+
+        It is important to note that all the operations are actually in-place.
         """
 
         def optim_fix_precision_(optim_self, *args, **kwargs):
@@ -761,9 +849,9 @@ class TorchHook(FrameworkHook):
 
         self.torch.optim.Optimizer.float_precision = optim_float_precision_
 
-        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
-        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
-        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
+        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible
+        # with PySyft remote tensors, so this method adds support for gradient clipping of remote
+        # tensors, and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
 
@@ -772,7 +860,8 @@ class TorchHook(FrameworkHook):
 
             Arguments:
                 - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
-                Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
+                Tensors or PyTorch tensor will have gradients normalized or a single
+                PySyfy / PyTorch tensor.
                 - max_norm (float or int): max norm of the gradients
                 - worker: The worker where the parameters are hosted and where the gradient clipping
                 will be performed
@@ -802,7 +891,7 @@ class TorchHook(FrameworkHook):
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
                 # all parameters are remote
-                if all([param_is_pointer_tensor(param) for param in parameters]):
+                if all(param_is_pointer_tensor(param) for param in parameters):
                     total_norm = torch.zeros(1)
                     # Let's send the total norm over to the remote where the remote tensor is
                     total_norm = total_norm.send(parameters[0].location)
@@ -810,12 +899,7 @@ class TorchHook(FrameworkHook):
                     total_norm = 0
                 for p in parameters:
                     param_norm = p.grad.data.norm(norm_type)
-                    # Remote PySyft tensor
-                    if param_is_pointer_tensor(p):
-                        total_norm += param_norm ** norm_type
-                    # Local PySyft tensor
-                    else:
-                        total_norm += param_norm.item() ** norm_type
+                    total_norm += param_norm ** norm_type
 
                 total_norm = total_norm ** (1.0 / norm_type)
             clip_coef = max_norm / (total_norm + 1e-6)
@@ -825,3 +909,7 @@ class TorchHook(FrameworkHook):
             return total_norm
 
         self.torch.nn.utils.clip_grad_norm_ = clip_grad_norm_remote_
+
+    def set_verbose(self, flag):
+        for workers in self._syft_workers:
+            workers.verbose = flag

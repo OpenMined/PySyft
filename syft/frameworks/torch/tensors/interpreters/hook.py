@@ -1,5 +1,5 @@
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 
 
 class HookedTensor(AbstractTensor):

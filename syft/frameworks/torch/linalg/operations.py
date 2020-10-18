@@ -1,6 +1,5 @@
 import torch
 
-import syft as sy
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
@@ -66,7 +65,7 @@ def _ldl(t):
     return l, d, inv_d
 
 
-def qr(t, mode="reduced", norm_factor=None):
+def qr(t, mode="reduced", norm_factor=None):  # noqa: C901
     """
     This function performs the QR decomposition of a matrix (2-dim tensor). The
     decomposition is performed using Householder Reflection.
@@ -106,6 +105,7 @@ def qr(t, mode="reduced", norm_factor=None):
         workers = t.child.child.locations
         crypto_prov = t.child.child.crypto_provider
         prec_frac = t.child.precision_fractional
+        protocol = t.child.child.protocol
     elif isinstance(t, torch.Tensor):
         t_type = "local"
     else:
@@ -135,7 +135,9 @@ def qr(t, mode="reduced", norm_factor=None):
     if t_type == "pointer":
         I = I.send(location)
     if t_type == "ast":
-        I = I.fix_prec(precision_fractional=prec_frac).share(*workers, crypto_provider=crypto_prov)
+        I = I.fix_prec(precision_fractional=prec_frac).share(
+            *workers, crypto_provider=crypto_prov, protocol=protocol
+        )
 
     if not mode == "r":
         # Initiate Q_transpose
@@ -176,10 +178,10 @@ def qr(t, mode="reduced", norm_factor=None):
                 up_zeros = up_zeros.send(location)
             if t_type == "ast":
                 down_zeros = down_zeros.fix_prec(precision_fractional=prec_frac).share(
-                    *workers, crypto_provider=crypto_prov
+                    *workers, crypto_provider=crypto_prov, protocol=protocol
                 )
                 up_zeros = up_zeros.fix_prec(precision_fractional=prec_frac).share(
-                    *workers, crypto_provider=crypto_prov
+                    *workers, crypto_provider=crypto_prov, protocol=protocol
                 )
             left_cat = torch.cat((I[:i, :i], down_zeros), dim=0)
             right_cat = torch.cat((up_zeros, H), dim=0)
@@ -229,6 +231,7 @@ def _norm_mpc(t, norm_factor):
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
+    protocol = t.child.child.protocol
     field = t.child.child.field
     norm_factor = int(norm_factor)
     t_normalized = t / norm_factor
@@ -240,7 +243,7 @@ def _norm_mpc(t, norm_factor):
     r = (
         torch.LongTensor([0])
         .fix_precision(precision_fractional=prec_frac)
-        .share(*workers, crypto_provider=crypto_prov)
+        .share(*workers, crypto_provider=crypto_prov, protocol=protocol)
         .random_(0, Q)
     )
 
@@ -254,7 +257,7 @@ def _norm_mpc(t, norm_factor):
     # Secret share and compute unmasked norm in MPC
     masked_norm = (
         masked_norm.fix_precision(precision_fractional=prec_frac)
-        .share(*workers, crypto_provider=crypto_prov)
+        .share(*workers, crypto_provider=crypto_prov, protocol=protocol)
         .get()
     )
     norm = masked_norm / r * norm_factor

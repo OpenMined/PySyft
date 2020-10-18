@@ -1,15 +1,13 @@
-from typing import List
-from typing import Union
+from typing import List, Union
 
 import syft
-from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
@@ -18,15 +16,17 @@ from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as P
 
 from syft.exceptions import RemoteObjectFoundError
 
+import torch
+
 
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
-    A PointerTensor forwards all API calls to the remote.PointerTensor objects
-    point to tensors (as their name implies). They exist to mimic the entire
-    API of a normal tensor, but instead of computing a tensor function locally
-    (such as addition, subtraction, etc.) they forward the computation to a
-    remote machine as specified by self.location. Specifically, every
+    A PointerTensor forwards all API calls to the remote tensor. PointerTensor
+    objects point to tensors (as their name implies). They exist to mimic the
+    entire API of a normal tensor, but instead of computing a tensor function
+    locally (such as addition, subtraction, etc.) they forward the computation
+    to a remote machine as specified by self.location. Specifically, every
     PointerTensor has a tensor located somewhere that it points to (they should
     never exist by themselves). Note that PointerTensor objects can point to
     both FrameworkTensor objects AND to other PointerTensor objects. Furthermore,
@@ -105,7 +105,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     @property
     def shape(self):
-        """ This method returns the shape of the data being pointed to.
+        """This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
         case, then it requests the shape information from the remote object
@@ -136,6 +136,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self._grad = new_grad
 
     @property
+    def grad_fn(self):
+        if not hasattr(self, "_grad_fn"):
+            self._grad_fn = self.attr("grad_fn")
+
+        if self._grad_fn.child.is_none():
+            return None
+
+        return self._grad_fn
+
+    @grad_fn.setter
+    def grad_fn(self, new_grad_fn):
+        self._grad_fn = new_grad_fn
+
+    @property
     def data(self):
         if not hasattr(self, "_data"):
             self._data = self.attr("data")
@@ -145,6 +159,59 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def data(self, new_data):
         self._data = new_data
 
+    def register_hook(self, hook_function):
+        """
+        This allows to register torch hooks on remote tensors. Such operation
+        is tricky because you can't really send the hook function to a remote
+        party, as python functions are not serializable within PySyft. So you
+        need to keep it attached to the PointerTensor.
+        On the other hand, the PointerTensor cannot watch for gradient update
+        or be triggered natively by torch when backpropagation happens. That's
+        why we actually remotely set a hook that we call a callback hook whose
+        function is only to call back the pointer during the backpropagation
+        to effectively run the hook function.
+        So the workflow is: the remote hook is triggered by pytorch, a message
+        is sent back to the pointer owner which has the hook function, then
+        the hook function is run remotely on the remote gradient, and a termi-
+        nation message is returned to the gradient owner.
+
+        Args:
+            hook_function (Callable): the function to run when the hook is
+                triggered. It should be able to run on PointerTensor, other-
+                wise you will get an error, which will by hard to understand
+                as only the backward engine of torch will return a generic
+                error.
+        """
+        # store the hook_function
+        self._hook_function = hook_function
+        # The hook function can run on tensor.grad_fn, but we always register it
+        # on the tensor because we only interact remotely with tensors.
+        # `self` can be a pointer to tensor.grad_fn, but we can easily retrieve
+        # the pointer to the tensor by temporarily setting self.point_to_attr
+        # to None. Note that the id & id_at_location are the same, so now
+        # self is (temporarily) a direct reference to tensor, but self.id in
+        # the message also refers to the tensor while we might need to refer
+        # to the tensor.grad_fn, that's why trigger_hook_function actually
+        # checks the .grad_fn attribute
+        point_to_attr = self.point_to_attr
+        self.point_to_attr = None
+        # send a request to set a hook to trigger back the real hook
+        self.owner.send_command(
+            recipient=self.location,
+            cmd_name="register_callback_hook",
+            target=self,
+            args_=(),
+            kwargs_=dict(
+                # args & kwargs are not provided, they will be filled by
+                # the remote party
+                message=TensorCommandMessage.computation(
+                    "trigger_hook_function", self.id, (), {}, None
+                ),
+                location=self.owner.id,
+            ),
+        )
+        self.point_to_attr = point_to_attr
+
     def is_none(self):
         try:
             return self.owner.request_is_remote_tensor_none(self)
@@ -153,7 +220,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             enough remote error handling yet to do anything better."""
             return True
 
-    def clone(self):
+    def clone(self, memory_format=torch.preserve_format):
         """
         Clone should keep ids unchanged, contrary to copy.
         We make the choice that a clone action is local, and can't affect
@@ -182,7 +249,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         tensor,
         location: Union[AbstractWorker, str] = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
         owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
@@ -210,18 +276,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 something different than self.id, but again this is very rare
                 and most of the time, setting this means that you are probably
                 doing something you shouldn't.
-            register: A boolean parameter (default False) that determines
-                whether to register the new pointer that gets created. This is
-                set to false by default because most of the time a pointer is
-                initialized in this way so that it can be sent to someone else
-                (i.e., "Oh you need to point to my tensor? let me create a
-                pointer and send it to you" ). Thus, when a pointer gets
-                created, we want to skip being registered on the local worker
-                because the pointer is about to be sent elsewhere. However, if
-                you are initializing a pointer you intend to keep, then it is
-                probably a good idea to register it, especially if there is any
-                chance that someone else will initialize a pointer to your
-                pointer.
             owner: A AbstractWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
@@ -264,20 +318,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
         Will move the remove value from self.location A to destination B
-
         Note a A will keep a copy of his value that he sent to B. This follows the
         .send() paradigm where the local worker keeps a copy of the value he sends.
-
         Args:
             destination: the new location of the remote data
             requires_grad: see send() for details
-
         Returns:
             A pointer to location
         """
         # move to local target is equivalent to doing .get()
         if self.owner.id == destination.id:
             return self.get()
+
+        if self.location.id == destination.id:
+            return self
 
         ptr = self.remote_send(destination, requires_grad=requires_grad)
 
@@ -289,30 +343,27 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def remote_send(
-        self, destination: AbstractWorker, requires_grad: bool = False,
-    ):
-        """ Request the worker where the tensor being pointed to belongs to send it to destination.
+    def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
+        """Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-
         Args:
             destination: where the remote value should be sent
-            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
-                a message to update the gradient of the value on A.
+            requires_grad: if true updating the grad of the remote tensor on destination B will
+                trigger a message to update the gradient of the value on A.
         """
-        kwargs = {"inplace": False, "requires_grad": requires_grad}
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs
+            "remote_send", self, (destination.id,), kwargs_, (self.id,)
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
-        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -322,8 +373,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         Note:
             This will typically mean that the remote object will be
-            removed/destroyed. To just bring a copy back to the local worker,
-            call .copy() before calling .get().
+            removed/destroyed. Setting get_copy True doesn't destroy remote object.
 
 
         Args:
@@ -334,12 +384,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 method. This defaults to True because the main reason people use
                 this method is to move the tensor from the remote machine to the
                 local one, at which time the pointer has no use.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
 
         Returns:
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
+        tensor = ObjectPointer.get(
+            self, user=user, reason=reason, deregister_ptr=deregister_ptr, get_copy=get_copy
+        )
 
         # TODO: remove these 3 lines
         # The fact we have to check this means
@@ -347,7 +400,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if tensor.is_wrapper:
             if isinstance(tensor.child, FrameworkTensor):
                 return tensor.child
-
         return tensor
 
     def attr(self, attr_name):
@@ -371,12 +423,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an FixPrecisionTensor
         """
-
-        # Send the command
-        command = ("fix_prec", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "fix_prec", self, args, kwargs)
         return response
 
     fix_precision = fix_prec
@@ -388,12 +435,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-
-        # Send the command
-        command = ("float_prec", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "float_prec", self, args, kwargs)
         return response
 
     float_precision = float_prec
@@ -405,25 +447,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
+        if len(args) < 2:
+            raise RuntimeError("Error, share must have > 1 arguments all of type syft.workers")
 
-        # Send the command
-        command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def value(self, *args, **kwargs):
-        """
-        Send a command to remote worker to get the result generated by a promise.
-
-        Returns:
-            A pointer to a Tensor
-        """
-        command = ("value", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "share", self, args, kwargs)
         return response
 
     def share_(self, *args, **kwargs):
@@ -433,12 +460,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        # Send the command
-        command = ("share_", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "share_", self, args, kwargs)
         return self
 
     def set_garbage_collect_data(self, value):
@@ -456,6 +478,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
+    def __iter__(self):
+        return (self[idx] for idx in range(self.shape[0]))
+
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "PointerTensor") -> tuple:
         """
@@ -469,20 +494,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             data = simplify(ptr)
         """
 
-        if ptr.tags:
-            tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
-        else:
-            tags = None
-
         return (
-            # ptr.id,
             syft.serde.msgpack.serde._simplify(worker, ptr.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             syft.serde.msgpack.serde._simplify(worker, ptr.location.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.point_to_attr),
             syft.serde.msgpack.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
-            tags,
+            syft.serde.msgpack.serde._simplify(worker, ptr.tags),
             ptr.description,
         )
 
@@ -543,7 +562,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
@@ -625,7 +644,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
@@ -647,6 +666,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             )
 
             return ptr
+
+    @staticmethod
+    def get_protobuf_schema() -> PointerTensorPB:
+        return PointerTensorPB
 
 
 ### Register the tensor with hook_args.py ###

@@ -6,19 +6,20 @@ on:
     - master
     paths:
     - "examples/tutorials/translations/**"
+
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
     - "examples/tutorials/translations/**"
 
 jobs:
-  build:
+  translation-tests:
 
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.7]
 
     steps:
     - uses: actions/checkout@v2
@@ -42,9 +43,8 @@ jobs:
         pip3 install -r pip-dep/requirements_dev.txt
         pip3 install -r pip-dep/requirements_udacity.txt
         pip3 install -r pip-dep/requirements_notebooks.txt
-        pip3 install scikit-learn
         python setup.py install
     - name: Test with pytest
       run: |
         git diff --name-only origin/master HEAD examples/tutorials/translations/ > ./test/notebooks/git-diff.txt
-        pytest test/notebooks/test_notebooks.py::test_notebooks_basic_translations_diff
+        pytest --randomly-dont-reorganize test/notebooks/test_notebooks.py::test_notebooks_basic_translations_diff

@@ -6,7 +6,7 @@ import numpy as np
 
 
 def chebyshev_series(func, width, terms):
-    """
+    r"""
     Computes Chebyshev coefficients
     For n = terms, the ith Chebyshev series coefficient is
     .. math::
@@ -27,7 +27,7 @@ def chebyshev_series(func, width, terms):
 
 
 def chebyshev_polynomials(tensor, terms=32):
-    """
+    r"""
     Evaluates odd degree Chebyshev polynomials at x
     Chebyshev Polynomials of the first kind are defined as
     .. math::

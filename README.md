@@ -2,6 +2,7 @@
 
 ![](https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg)
 ![](https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg)
+[![codecov](https://codecov.io/gh/openmined/PySyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/PySyft)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
 [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
@@ -38,7 +39,7 @@ work from the command line.
 ```bash
 conda create -n pysyft python=3.7
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
-conda install jupyter notebook
+conda install jupyter notebook==5.7.8 tornado==4.5.3
 ```
 **Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
@@ -55,7 +56,7 @@ make venv
 > PySyft supports Python >= 3.6 and PyTorch 1.4
 
 ```bash
-pip install syft[udacity]
+pip install 'syft[udacity]'
 ```
 
 This will auto-install the PyTorch and TF Encrypted
@@ -72,6 +73,9 @@ Slack.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
+## Documentation
+Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
+
 ## Run Local Notebook Server
 
 All the examples can be played with by running the command
@@ -80,11 +84,11 @@ All the examples can be played with by running the command
 make notebook
 ```
 
-This assumes you want to use a local virtual environment. It installs it
-independently to the conda environment in case you installed one, or any
+This assumes that you want to use a local virtual environment. It will install it
+independently to the conda environment if you already installed one, or any
 other virtual environment you might have set up.
 
-Once the jupyter notebook launches on your browser select the pysyft
+Once the jupyter notebook launches on your browser, select the pysyft
 kernel.
 
 ## Use the Docker image
@@ -95,7 +99,7 @@ installed) using [Docker](https://www.docker.com/). All you
 will have to do is start the container like this:
 
 ```bash
-$ docker container run openmined/pysyft-notebook
+docker container run openmined/pysyft-notebook
 ```
 
 You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
@@ -109,15 +113,15 @@ You can use the provided link to access the jupyter notebook (the link is only a
 You can also set the directory from which the server will serve notebooks (default is /workspace).
 
 ```bash
-$ docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
+docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
 ```
 
 You could also build the image on your own and run it locally:
 
 ```bash
-$ cd docker-images/pysyft-notebook/
-$ docker image build -t pysyft-notebook .
-$ docker container run pysyft-notebook
+cd docker-images/pysyft-notebook/
+docker image build -t pysyft-notebook .
+docker container run pysyft-notebook
 ```
 
 More information about how to use this image can be found [on docker hub](https://hub.docker.com/r/openmined/pysyft-notebook)
@@ -150,6 +154,9 @@ We are very grateful for contributions to PySyft from the following organization
 
 [<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="200" height="150"/>](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="200"/>](https://dropoutlabs.com/)
 --------------------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------
+
+## Support
+For support in using this library, please join the **#lib_pysyft** Slack channel. If you’d like to follow along with any code changes to the library, please join the **#code_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Disclaimer
 

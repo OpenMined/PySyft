@@ -55,7 +55,7 @@ NOTE: If you are using a virtual environment, please be sure to use the correct 
 
 ### Deploying Workers
 
-You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
+You can follow along [this example](./examples/tutorials/tutorial-websocket/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
@@ -69,7 +69,7 @@ Each issue someone is currently working on should have an assignee. If you want 
 
 If you want to work on an open issue, please post a comment telling that you will work on that issue, we will assign you as the assignee then.
 
-**Caution**: We try our best to keep the assignee up-to-date but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when no one is assigned to it.
+**Caution**: We try our best to keep the assignee up-to-date, but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when no one is assigned to it.
 
 ### Writing Test Cases
 
@@ -116,13 +116,13 @@ or renaming/moving related classes can make unit tests fail because `proto.json`
 Use following process:
 
  1. Fork [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto) and create new branch.
- 2. In your PySyft branch, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto>=*`.
+ 2. In your PySyft branch, update `pip-dep/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto>=*`.
  3. Make required changes in your PySyft and syft-proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/syft-proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
  4. Create PRs in PySyft and syft-proto repos.
  5. PRs should pass CI checks.
  6. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
 ](https://pypi.org/project/syft-proto/#history).
- 7. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto>=<new version>`.
+ 7. Before merging PySyft PR, update `pip-dep/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto>=<new version>`.
 
 ### Documentation and Codestyle
 
@@ -161,7 +161,7 @@ Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ig
 
 ### Keep it DRY (Don't repeat yourself)
 
-As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
+As with any software project, it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
 
 ### Contributing a notebook and adding it to the CI system
 
@@ -181,4 +181,4 @@ After each commit GitHub Actions will check your new code against the formatting
 
 We will only merge PRs that pass the GitHub Actions checks.
 
-If your check fails don't worry you will still be able to make changes and make your code pass the checks.
+If your check fails, don't worry, you will still be able to make changes and make your code pass the checks.

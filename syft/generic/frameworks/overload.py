@@ -1,4 +1,3 @@
-import syft
 from syft.generic.frameworks.hook import hook_args
 
 
@@ -46,7 +45,7 @@ class Overloaded:
 
             # TODO have a better way to infer the type of tensor -> this is implies
             # that the first argument is a tensor (even if this is the case > 99%)
-            tensor = args[0] if not isinstance(args[0], (tuple)) else args[0][0]
+            tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
             cls = type(tensor)
 
             # Replace all syft tensor with their child attribute

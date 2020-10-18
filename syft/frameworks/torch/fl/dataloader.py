@@ -140,8 +140,8 @@ class _DataLoaderOneWorkerIter(object):
             # If nothing is found, stop the iterator
             self.stop()
 
-    # TODO: implement a length function. It should return the number of elements of the federated dataset that are
-    #       located at this worker
+    # TODO: implement a length function. It should return the number of elements
+    #       of the federated dataset that are located at this worker
     # def __len__(self):
     #    return len(self.federated_dataset)
 
@@ -174,9 +174,10 @@ class FederatedDataLoader(object):
             will be smaller. (default: ``False``)
         num_iterators (int): number of workers from which to retrieve data in parallel.
             num_iterators <= len(federated_dataset.workers) - 1
-            the effect is to retrieve num_iterators epochs of data but at each step data from num_iterators distinct
-            workers is returned.
-        iter_per_worker (bool): if set to true, __next__() will return a dictionary containing one batch per worker
+            the effect is to retrieve num_iterators epochs of data but at each step data
+            from num_iterators distinct workers is returned.
+        iter_per_worker (bool): if set to true, __next__() will return a dictionary
+            containing one batch per worker
     """
 
     __initialized = False
@@ -232,7 +233,7 @@ class FederatedDataLoader(object):
                 self.num_iterators = min(num_iterators, len(self.workers) - 1)
 
     def __iter__(self):
-        self.iterators = list()
+        self.iterators = []
         for idx in range(self.num_iterators):
             self.iterators.append(self.iter_class(self, worker_idx=idx))
         return self
