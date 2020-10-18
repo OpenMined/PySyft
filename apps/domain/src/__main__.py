@@ -80,12 +80,5 @@ else:
     num_replicas = os.environ.get("N_REPLICAS", None)
     _address = os.environ.get("ADDRESS", None)
     _network = os.environ.get("NETWORK", None)
-    if _address and _network:
-        requests.post(
-            os.path.join(_network, "join"),
-            data=json.dumps(
-                {"node-id": node_id, "node-address": "{}".format(_address)}
-            ),
-        )
 
     app = create_app()
