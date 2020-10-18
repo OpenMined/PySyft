@@ -36,7 +36,7 @@ def connect(
             signing_key = SigningKey.generate()
             verify_key = signing_key.verify_key
 
-            # Use Signaling Server metadata
+            # Use Server metadata
             # to build client route
             conn = conn_type(url=url)  # type: ignore
             metadata, user_key = conn.login(credentials=credentials)
@@ -54,7 +54,7 @@ def connect(
                 client_type=client_type, location=spec_location
             )
 
-            # Create a new signaling client using the selected client type
+            # Create a new client using the selected client type
             super().__init__(
                 network=location_args[NetworkClient],
                 domain=location_args[DomainClient],
