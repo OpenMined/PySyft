@@ -17,6 +17,7 @@ from .roles.roles import Role
 
 def set_database_config(app, test_config=None, verbose=False):
     """Set configs to use SQL Alchemy library.
+
     Args:
         app: Flask application.
         test_config : Dictionary containing SQLAlchemy configs for test purposes.
