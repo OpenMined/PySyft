@@ -68,6 +68,7 @@ def delete_user(user_id):
         status=200, response=json.dumps(mock_response), mimetype="application/json"
     )
 
+
 @user_route.route("/login", methods=["POST"])
 def user_login():
     mock_response = {

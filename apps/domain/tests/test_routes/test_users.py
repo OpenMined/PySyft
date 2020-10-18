@@ -56,4 +56,8 @@ def test_login(client):
     result = client.post(
         "/users/login", data={"username": "user", "password": "pwd123"}
     )
+    response = result.get_json()
     assert result.status_code == 200
+    assert response["key"] is not None
+    assert response["metadata"] is not None
+    assert response["msg"] == "Successfully logged in!"

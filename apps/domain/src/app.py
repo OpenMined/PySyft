@@ -76,9 +76,9 @@ def create_app() -> Flask:
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
     app.register_blueprint(groups_blueprint, url_prefix=r"/groups/")
     app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
-    app.register_blueprint(root_blueprint, url_prefix=r'/')
+    app.register_blueprint(root_blueprint, url_prefix=r"/")
     app.register_blueprint(
-            association_requests_blueprint, url_prefix=r"/association-requests/"
+        association_requests_blueprint, url_prefix=r"/association-requests/"
     )
 
     # Register WebSocket blueprints
