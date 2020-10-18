@@ -306,8 +306,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     @property
     def grad(self):
         """
-        Gradient makes no sense for Additive Shared Tensor, so we make it clear
-        that if someone query .grad on a Additive Shared Tensor it doesn't error
+        Gradient makes no sense for Replicated Shared Tensor, so we make it clear
+        that if someone query .grad on a Replicated Shared Tensor it doesn't error
         but returns grad and can't be set
         """
         return None
