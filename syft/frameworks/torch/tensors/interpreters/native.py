@@ -158,7 +158,7 @@ class TorchTensor(AbstractTensor):
             if new_tags is not None:
                 self.child.tags = set(new_tags)
             else:
-                self.child.tags = set()
+                self.child.tags = None
         else:
             self._tags = new_tags
 

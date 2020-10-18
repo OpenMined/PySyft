@@ -1,5 +1,3 @@
-from typing import Dict
-
 from operator import add, sub, mul
 import torch
 from syft.generic.frameworks.hook import hook_args
@@ -275,17 +273,33 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def set_garbage_collect_data(self, value):
         shares = self.child
-        for _, share in shares.items():
-            share[0].garbage_collect_data = value
-            share[1].garbage_collect_data = value
+        for _, shares in shares.items():
+            assert shares[0].is_wrapper == shares[1].is_wrapper
+
+            if shares[0].is_wrapper:
+                shares[0].child.garbage_collect_data = value
+                shares[1].child.garbage_collect_data = value
+            else:
+                shares[0].garbage_collect = value
+                shares[1].garbage_collect_data = value
 
     def get_garbage_collect_data(self):
         shares = self.child
-        res = {}
+        res = None
 
         for worker, shares in shares.items():
-            assert shares[0].garbage_collect_data == shares[1].garbage_collect_data
-            res[worker.id] = shares[0].garbage_collect_data
+            assert shares[0].is_wrapper == shares[1].is_wrapper
+            shares0_unwrap = shares[0]
+            shares1_unwrap = shares[1]
+
+            if shares[0].is_wrapper:
+                shares0_unwrap = shares[0].child
+                shares1_unwrap = shares[1].child
+
+            """ Make sure the GC value is the same for all shares """
+            assert shares0_unwrap.garbage_collect_data == shares1_unwrap.garbage_collect_data
+            assert res is None or res == shares0_unwrap.garbage_collect_data
+            res = shares0_unwrap.garbage_collect_data
 
         return res
 
@@ -304,8 +318,6 @@ class ReplicatedSharingTensor(AbstractTensor):
         we just ignore the call."""
         pass
 
-
-
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "ReplicatedSharingTensor") -> tuple:
         """
@@ -319,13 +331,25 @@ class ReplicatedSharingTensor(AbstractTensor):
         """
         _simplify = lambda x: syft.serde.msgpack.serde._simplify(worker, x)
 
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = _simplify(tensor.child)
-
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
         tensor.set_garbage_collect_data(False)
+
+        chain = _simplify(tensor.child)
+        """
+        if hasattr(tensor, "child"):
+            shares = []
+            for (share_0, share_1) in tensor.child.values():
+                if share_0.is_wrapper:
+                    share_0 = share_0.child
+                if share_1.is_wrapper:
+                    share_1 = share_1.child
+                share_0.set_garbage_collect_data(False)
+                share_1.set_garbage_collect_data(False)
+                shares.append(share_0)
+                shares.append(share_1)
+            chain = _simplify(shares)
+        """
 
         return (
             _simplify(tensor.id),
