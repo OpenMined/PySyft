@@ -17,6 +17,7 @@ import os
 from flask import Flask
 from flask_sockets import Sockets
 from geventwebsocket.websocket import Header
+from sqlalchemy_utils.functions import database_exists
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
@@ -28,8 +29,10 @@ from main.routes import (
     infrastructure_blueprint,
     root_blueprint,
 )
-
+from main.routes.roles.routes import *
 import config
+
+DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
@@ -51,7 +54,9 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app() -> Flask:
+def create_app(
+    test_config=None, debug=False, secret_key=DEFAULT_SECRET_KEY, db_config=None
+) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -71,7 +76,7 @@ def create_app() -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(roles_blueprint, url_prefix=r"/roles/")
+    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
     app.register_blueprint(users_blueprint, url_prefix=r"/users/")
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
     app.register_blueprint(infrastructure_blueprint, url_prefix=r"/networks/")
@@ -83,6 +88,23 @@ def create_app() -> Flask:
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
+
+    app.debug = debug
+    app.config["SECRET_KEY"] = secret_key
+
+    from main.core.database import db, set_database_config, seed_db
+
+    # Set SQLAlchemy configs
+    set_database_config(app, test_config=test_config)
+    s = app.app_context().push()
+
+    if database_exists(db.engine.url):
+        db.create_all()
+    else:
+        db.create_all()
+        seed_db()
+
+    db.session.commit()
 
     # Send app instance
     return app
