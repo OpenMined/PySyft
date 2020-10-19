@@ -1139,12 +1139,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def set_garbage_collect_data(self, value):
         shares = self.child
-        for _, share in shares.items():
+        for share in shares.values():
             share.garbage_collect_data = value
 
     def get_garbage_collect_data(self):
         shares = self.child
-        return {worker: share.garbage_collect_data for worker, share in shares.items()}
+        gc_data = None
+
+        for share in shares.values():
+            assert gc_data is None or gc_data == share.garbage_collect_data
+            gc_data = share.garbage_collect_data
+
+        return gc_data
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
@@ -1159,9 +1165,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         _simplify = lambda x: sy.serde.msgpack.serde._simplify(worker, x)
 
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = _simplify(tensor.child)
+        chain = _simplify(list(tensor.child.values()))
 
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
@@ -1205,9 +1209,15 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
-        if chain is not None:
-            chain = _detail(chain)
-            tensor.child = chain
+        chain = _detail(chain)
+        tensor.child = {}
+        for share in chain:
+            if share.location is not None:
+                # Remote
+                tensor.child[share.location.id] = share
+            else:
+                # Local
+                tensor.child[share.owner.id] = share
 
         tensor.set_garbage_collect_data(garbage_collect)
 
