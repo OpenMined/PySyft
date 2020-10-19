@@ -363,7 +363,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -373,8 +373,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         Note:
             This will typically mean that the remote object will be
-            removed/destroyed. To just bring a copy back to the local worker,
-            call .copy() before calling .get().
+            removed/destroyed. Setting get_copy True doesn't destroy remote object.
 
 
         Args:
@@ -385,12 +384,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 method. This defaults to True because the main reason people use
                 this method is to move the tensor from the remote machine to the
                 local one, at which time the pointer has no use.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
 
         Returns:
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
+        tensor = ObjectPointer.get(
+            self, user=user, reason=reason, deregister_ptr=deregister_ptr, get_copy=get_copy
+        )
 
         # TODO: remove these 3 lines
         # The fact we have to check this means

@@ -196,15 +196,17 @@ class BaseMessageHandler(AbstractMessageHandler):
         obj_id = msg.object_id
         user = msg.user
         reason = msg.reason
+        get_copy = msg.get_copy
 
         obj = self.get_obj(obj_id)
 
         permitted = all(map_chain_call(obj, "allow", user=user))
         if not permitted:
             raise GetNotPermittedError()
-        else:
+        elif not get_copy:
             self.object_store.de_register_obj(obj)
-            return obj
+
+        return obj
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         for object_id in msg.object_ids:

@@ -44,6 +44,31 @@ N_CORES = max(4, multiprocessing.cpu_count())
 MULTI_LIMIT = 50_000
 
 
+def _get_items(partitions):
+    list_items = [[] for _ in range(len(partitions[0]))]
+    for partition in partitions:
+        for i, item in enumerate(partition):
+            if isinstance(item, tuple):
+                if len(list_items[i]) == 0:
+                    list_items[i] = [[] for _ in range(len(item))]
+                for j, it in enumerate(item):
+                    list_items[i][j].append(it)
+            else:
+                list_items[i].append(item)
+    return list_items
+
+
+def _get_primitives(list_items):
+    primitives = []
+    for items in list_items:
+        if isinstance(items[0], np.ndarray):
+            primitive = concat(*items, axis=-1)
+        else:
+            primitive = tuple(concat(*its, axis=-1) for its in items)
+        primitives.append(primitive)
+    return primitives
+
+
 def keygen(n_values, op):
     """
     Run FSS keygen in parallel to accelerate the offline part of the protocol
@@ -54,44 +79,22 @@ def keygen(n_values, op):
     """
     if op == "eq":
         return DPF.keygen(n_values=n_values)
-    elif op == "comp":
-        if n_values > MULTI_LIMIT:
-            multiprocessing_args = []
-            slice_size = math.ceil(n_values / N_CORES)
-            for j in range(N_CORES):
-                n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
-                process_args = (n_instances,)  # TODO add a seed element for the PRG?
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(DIF.keygen, multiprocessing_args)
-            p.close()
-            list_items = [[] for _ in range(len(partitions[0]))]
-            for idx, partition in enumerate(partitions):
-                for i, item in enumerate(partition):
-                    if isinstance(item, tuple):
-                        if len(list_items[i]) == 0:
-                            list_items[i] = [[] for _ in range(len(item))]
-                        for j, it in enumerate(item):
-                            list_items[i][j].append(it)
-                    else:
-                        list_items[i].append(item)
-
-            primitives = []
-            for items in list_items:
-                if isinstance(items[0], np.ndarray):
-                    primitive = concat(*items, axis=-1)
-                    primitives.append(primitive)
-                else:
-                    list_primitives = []
-                    for its in items:
-                        list_primitives.append(concat(*its, axis=-1))
-                    primitives.append(tuple(list_primitives))
-
-            return primitives
-        else:
+    if op == "comp":
+        if n_values <= MULTI_LIMIT:
             return DIF.keygen(n_values)
-    else:
-        raise ValueError
+        multiprocessing_args = []
+        slice_size = math.ceil(n_values / N_CORES)
+        for j in range(N_CORES):
+            n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
+            process_args = (n_instances,)  # TODO add a seed element for the PRG?
+            multiprocessing_args.append(process_args)
+
+        with multiprocessing.Pool() as p:
+            partitions = p.starmap(DIF.keygen, multiprocessing_args)
+
+        list_items = _get_items(partitions)
+        return _get_primitives(list_items)
+    raise ValueError(f"{op} is an unsupported operation.")
 
 
 def fss_op(x1, x2, op="eq"):

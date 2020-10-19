@@ -225,14 +225,14 @@ class ObjectPointer(AbstractSendable):
             pointer = err.pointer
             return pointer
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
 
         Note:
             This will typically mean that the remote object will be
-            removed/destroyed.
+            removed/destroyed. Setting get_copy True doesn't destroy remote.
 
         Args:
             user (obj, optional) : authenticate/allow user to perform get on remote private objects.
@@ -242,12 +242,11 @@ class ObjectPointer(AbstractSendable):
                 method. This defaults to True because the main reason people use
                 this method is to move the tensor from the location to the
                 local one, at which time the pointer has no use.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
 
         Returns:
             An AbstractObject object which is the tensor (or chain) that this
             object used to point to on a location.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
         """
 
         if self.point_to_attr is not None:
@@ -266,7 +265,7 @@ class ObjectPointer(AbstractSendable):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason, get_copy)
 
         # Remove this pointer by default
         if deregister_ptr:

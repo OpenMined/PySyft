@@ -22,3 +22,4 @@ docs/_modules
 **/pip-wheel-metadata
 .ropeproject/
 ./examples/tutorials/Part*
+pytest_benchmark_output.json
