@@ -20,6 +20,7 @@ from typing import Union
 # third party
 from packaging import version
 import pytest
+from pytest import approx
 import torch as th
 
 # syft absolute
@@ -458,7 +459,10 @@ def test_all_allowlisted_tensor_methods(
                 or issubclass(type(local_result), PyPrimitive)
             ):
                 # check that it matches functionally
-                assert local_result == target_result
+                if issubclass(type(target_result), float):
+                    assert local_result + target_result == approx(2 * target_result)
+                else:
+                    assert local_result == target_result
 
                 # convert target_result for type comparison below
                 target_result = PrimitiveFactory.generate_primitive(value=target_result)
