@@ -21,6 +21,7 @@ def test_torch_remote_tensor_register() -> None:
     assert len(alice.store) == 1
 
     ptr = x.send(alice_client)
+    gc.collect()
 
     # the previous objects get deleted because we overwrite
     # ptr - we send a message to delete that object
