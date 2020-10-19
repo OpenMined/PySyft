@@ -4,11 +4,11 @@
 pipenv --venv
 if test $? -eq 0
 then
-    array=( "0.5" "0.6" "0.6.1" "0.7" )
-    for i in "${array[@]}"
+    versions=( "0.5" "0.6" "0.6.1" "0.7" )
+    for version in "${versions[@]}"
     do
-        yes | pip uninstall torchvision
-        pip install torchvision==$i
+        pip uninstall -y torchvision
+        pip install torchvision=="$version"
         pytest -k allowlist_test --tb=line -n auto
     done
 
