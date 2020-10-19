@@ -40,11 +40,11 @@ class AvgPool2d(Module):
         # assert ceil_mode is False
         # assert count_include_pad is True
         # assert divisor_override is None
-        if (
-            (padding != 0)
-            or (ceil_mode is True)
-            or (count_include_pad is False)
-            or (divisor_override is not None)
+        if not (
+            (padding == 0)
+            and (ceil_mode is False)
+            and (count_include_pad is True)
+            and (divisor_override is None)
         ):
             raise NotImplementedError("Not supported settings")
 

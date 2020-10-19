@@ -477,10 +477,10 @@ class AdditiveSharingTensor(AbstractTensor):
                 *self.child.keys(), **self.get_class_attributes(), **no_wrap
             ).child
 
+        # assert len(shares) == len(operand)
         if len(shares) != len(operand):
             raise ValueError(
-                "Size of shares(%d) is not equal to that of operand(%d)."
-                % (len(shares), len(operand))
+                f"Size of shares({len(shares)}) is not equal to that of operand({len(operand)})"
             )
         return {worker: op(share, operand[worker]) for worker, share in shares.items()}
 

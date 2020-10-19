@@ -92,8 +92,10 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
 
     # assert len(input.shape) == 4
     # assert len(weight.shape) == 4
-    if len(input.shape) != 4 or len(weight.shape) != 4:
-        raise ValueError("Check size of input and weight, it should be 4")
+    if len(input.shape) != 4:
+        raise ValueError(f"Size of input.shape is {len(input.shape)}, it should be 4")
+    if len(weight.shape) != 4:
+        raise ValueError(f"Size of weight.shape is {len(weight.shape)}, it should be 4")
 
     # Change to tuple if not one
     stride = torch.nn.modules.utils._pair(stride)
@@ -107,20 +109,33 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     if bias is not None:
         # assert len(bias) == nb_channels_out
         if len(bias) != nb_channels_out:
-            raise ValueError("Check size of bias")
+            raise ValueError(
+                f"Size of bias should be same as nb_channels_out. Size "
+                f"of bias: {len(bias)}, nb_channels_out: {nb_channels_out}"
+            )
 
     # Check if inputs are coherent
     # assert nb_channels_in == nb_channels_kernel * groups
     # assert nb_channels_in % groups == 0
     # assert nb_channels_out % groups == 0
     if nb_channels_in != nb_channels_kernel * groups:
-        raise ValueError("Given inputs are not supported")
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, "
+            f"nb_channels_kernel: {nb_channels_kernel}, groups: {groups}"
+        )
 
     if nb_channels_in % groups != 0:
-        raise ValueError("Given inputs are not supported")
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, groups: {groups}"
+        )
 
     if nb_channels_out % groups != 0:
-        raise ValueError("Given inputs are not supported")
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_out: {nb_channels_out}, groups: {groups}"
+        )
 
     # Compute output shape
     nb_rows_out = int(
@@ -240,9 +255,9 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         # assert isinstance(input.child, FrameworkTensor)
         # assert isinstance(weight.child, FrameworkTensor)
         if not isinstance(input.child, FrameworkTensor):
-            raise TypeError("input needs to be FrameworkTensor")
+            raise TypeError("input.child needs to be FrameworkTensor")
         if not isinstance(weight.child, FrameworkTensor):
-            raise TypeError("input needs to be FrameworkTensor")
+            raise TypeError("weight.child needs to be FrameworkTensor")
         im_reshaped, weight_reshaped, *params = _pre_conv(
             input, weight, bias, stride, padding, dilation, groups
         )
@@ -363,9 +378,15 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     # assert nb_channels_in % groups == 0
     # assert nb_channels_out % groups == 0
     if nb_channels_in % groups != 0:
-        raise ValueError("Given inputs are not supported")
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, groups: {groups}"
+        )
     if nb_channels_out % groups != 0:
-        raise ValueError("Given inputs are not supported")
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_out: {nb_channels_out}, groups: {groups}"
+        )
 
     # Compute output shape
     nb_rows_out = int(
@@ -490,12 +511,17 @@ def _pool2d(
     if isinstance(kernel_size, tuple):
         # assert kernel_size[0] == kernel_size[1]
         if kernel_size[0] != kernel_size[1]:
-            raise ValueError("Check the given kernel_size")
+            raise ValueError(
+                f"kernel_size[0] should be equal to kernel_size[1], "
+                f"Check the given kernel_size {kernel_size}"
+            )
         kernel_size = kernel_size[0]
     if isinstance(stride, tuple):
         # assert stride[0] == stride[1]
         if stride[0] != stride[1]:
-            raise ValueError("Check the given stride")
+            raise ValueError(
+                f"stride[0] should be equal to stride[1], " f"Check the given stride {stride}"
+            )
         stride = stride[0]
 
     input_fp = input
@@ -565,7 +591,11 @@ def adaptive_avg_pool2d(tensor, output_size):
 
     # assert tensor.shape[2] == tensor.shape[3]
     if tensor.shape[2] != tensor.shape[3]:
-        raise ValueError("Check given tensor")
+        raise ValueError(
+            f"Shape of given tensor is invalid, "
+            f"tensor.shape[2] should be equal to tensor.shape[3], "
+            f"Given tensor.shape: {tensor.shape}"
+        )
 
     input_size = tensor.shape[2]
 

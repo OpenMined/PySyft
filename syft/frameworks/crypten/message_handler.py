@@ -46,7 +46,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
         plans = self.worker.search("crypten_plan")
         # assert len(plans) == 1
         if len(plans) != 1:
-            raise ValueError("More than one plans found. Currently not supported.")
+            raise ValueError(f"Error: {len(plans)} plans found. There should be only 1.")
 
         plan = plans[0].get()
 
