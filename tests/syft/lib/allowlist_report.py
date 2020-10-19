@@ -43,7 +43,7 @@ if len(support_files) < 1:
     print("Generate allowlist_test_support files first.")
     sys.exit(1)
 
-
+# complex have been removed for now as they are rare and have some known bugs
 dtypes = [
     "bool",
     "uint8",
@@ -55,9 +55,9 @@ dtypes = [
     "bfloat16",
     "float32",
     "float64",
-    "complex32",
-    "complex64",
-    "complex128",
+    # "complex32",
+    # "complex64",
+    # "complex128",
     "qint8",
     "quint8",
     "qint32",
