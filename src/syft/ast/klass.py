@@ -164,10 +164,12 @@ class Class(Callable):
                 id_ = UID()
                 self.id = id_
 
+            id_at_location = UID()
+
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
-                id_at_location=self.id,
+                id_at_location=id_at_location,
                 tags=self.tags if hasattr(self, "tags") else list(),
                 description=self.description if hasattr(self, "description") else "",
             )
@@ -184,6 +186,7 @@ class Class(Callable):
             client.send_immediate_msg_without_reply(msg=obj_msg)
 
             # STep 4: return pointer
+            # Step 4: return pointer
             return ptr
 
         def send_to(self: Any, client: Any, searchable: bool = False) -> Pointer:

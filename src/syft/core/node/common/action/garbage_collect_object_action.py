@@ -23,8 +23,6 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         self.obj_id = obj_id
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        # TODO: make lazy
-        # QUESTION: Where is delete_object defined
         try:
             del node.store[self.obj_id]
         except KeyError:
