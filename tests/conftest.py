@@ -6,14 +6,17 @@
     Read more about conftest.py under:
     https://pytest.org/latest/plugins.html
 """
-
 # stdlib
 from typing import Any
+from typing import Generator
 from typing import List
 
 # third party
 import _pytest
 import pytest
+
+# syft absolute
+import syft as sy
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
@@ -44,3 +47,21 @@ def pytest_collection_modifyitems(
             item.add_marker(slow_tests)
         else:
             item.add_marker(fast_tests)
+
+
+@pytest.fixture
+def duet() -> Generator[sy.Duet, None, None]:
+    address = "127.0.0.1"
+    port = 5001
+
+    class DuetWrapper:
+        def __enter__(self) -> sy.Duet:
+            self.duet = sy.Duet(host=address, port=port)
+            return self.duet
+
+        def __exit__(self, *args: List[Any]) -> bool:
+            self.duet.stop()
+            return True
+
+    with DuetWrapper() as duet:
+        yield duet

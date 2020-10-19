@@ -70,7 +70,7 @@ class Duet(DomainClient):
 
         if domain_url is None:
 
-            domain_url = "http://" + host + ":" + str(port) + "/"
+            domain_url = f"http://{host}:{port}/"
 
             # start a node on host and port
             if id is None:
