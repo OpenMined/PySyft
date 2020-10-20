@@ -332,6 +332,15 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.__ne__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Int.__neg__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.__pos__", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.as_integer_ratio", "syft.lib.python.Tuple", SyTuple),
+        ("syft.lib.python.Int.bit_length", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.denominator", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.from_bytes", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.real", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.imag", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.numerator", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.conjugate", "syft.lib.python.Int", Int),
+
         # Tuple
         ("syft.lib.python.Tuple.__add__", "syft.lib.python.Tuple", Tuple),
         ("syft.lib.python.Tuple.__contains__", "syft.lib.python.Bool", Bool),
