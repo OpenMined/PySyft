@@ -115,7 +115,8 @@ def qr(t, mode="reduced", norm_factor=None):  # noqa: C901
         )
 
     # Check if t is 2-dim
-    assert len(t.shape) == 2
+    if len(t.shape) != 2:
+        raise ValueError("t isn't 2-dimensional")
 
     if mode not in ["reduced", "complete", "r"]:
         raise ValueError(

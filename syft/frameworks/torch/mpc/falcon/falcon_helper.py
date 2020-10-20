@@ -46,16 +46,20 @@ class FalconHelper:
         if torch.is_tensor(other) and other.is_wrapper:
             other = other.child
 
-        assert (
-            isinstance(value, ReplicatedSharingTensor) and value.ring_size == 2
-        ), "First argument should be a RST with ring size 2"
-        assert any(
+        if (not isinstance(value, ReplicatedSharingTensor)) or (value.ring_size != 2):
+            raise TypeError("First argument should be a RST with ring size 2")
+
+        if not any(
             [
                 isinstance(other, ReplicatedSharingTensor) and other.ring_size == 2,
                 isinstance(other, int) and other in {0, 1},
                 isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
             ]
-        ), "Second argument should be RST (with ring size of 2)/Integer/LongTensor values in {0, 1}"
+        ):
+            raise TypeError(
+                "Second argument should be RST "
+                "(with ring size of 2)/Integer/LongTensor values in {0, 1}"
+            )
 
         result = value + other - 2 * value * other
 

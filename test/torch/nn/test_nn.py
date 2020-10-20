@@ -1,4 +1,5 @@
 import copy
+import pytest
 
 import torch
 import torch.nn as nn
@@ -372,3 +373,11 @@ def test_LSTM():
     assert torch.all(torch.lt(torch.abs(output_syft - output_torch), 1e-6))
     assert torch.all(torch.lt(torch.abs(hidden_syft - hidden_torch), 1e-6))
     assert torch.all(torch.lt(torch.abs(cell_syft - cell_torch), 1e-6))
+
+
+# adding this to increase test coverage of syft/frameworks/torch/nn/conv.py
+def test_simple_case():
+    model = syft_nn.conv.Conv2d(1, 2, 3, bias=True)
+    assert not isinstance(model, torch.nn.Conv2d)
+    with pytest.raises(ValueError):
+        model.forward(torch.rand((1, 2)))

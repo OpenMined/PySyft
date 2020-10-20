@@ -44,12 +44,14 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         # TODO Change this, we need a way to handle multiple plan definitions
         plans = self.worker.search("crypten_plan")
-        assert len(plans) == 1
+        if len(plans) != 1:
+            raise ValueError(f"Error: {len(plans)} plans found. There should be only 1.")
 
         plan = plans[0].get()
 
         rank = self._current_rank(rank_to_worker_id)
-        assert rank is not None
+        if rank is None:
+            raise ValueError("Current rank can't be None")
 
         if crypten_model:
             args = (crypten_model,)
@@ -87,7 +89,8 @@ class CryptenMessageHandler(AbstractMessageHandler):
         jail_runner = JailRunner.detail(ser_func, model=crypten_model)
 
         rank = self._current_rank(rank_to_worker_id)
-        assert rank is not None
+        if rank is None:
+            raise ValueError("Current rank can't be None")
 
         return_value = run_party(
             cid, jail_runner, rank, world_size, master_addr, master_port, (), {}

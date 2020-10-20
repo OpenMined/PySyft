@@ -228,7 +228,8 @@ def perform_analysis(
     labels = set(teacher_preds.flatten())
     num_labels = len(labels)
 
-    assert num_examples == _num_examples
+    if num_examples != _num_examples:
+        raise ValueError("Check the shape of teacher_preds & indices.")
 
     counts_mat = np.zeros((num_examples, num_labels))
 
@@ -472,7 +473,8 @@ def perform_analysis_torch(
     _num_examples = indices.shape[0]
 
     # Check that preds is shape (teachers x examples)
-    assert num_examples == _num_examples
+    if num_examples != _num_examples:
+        raise ValueError("Check the shape of preds & indices.")
 
     labels = list(preds.flatten())
     labels = {tensor.item() for tensor in labels}

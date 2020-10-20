@@ -104,7 +104,8 @@ class TorchTensor(AbstractTensor):
         location = self.owner.get_worker(location)
 
         def callback(grad):
-            assert isinstance(grad, torch.Tensor), "Grad in callback should be a Tensor"
+            if not isinstance(grad, torch.Tensor):
+                raise TypeError("Grad in callback should be a Tensor")
             # the grad tensor is created by the torch backprop and might not be registered properly
             self.owner.register_obj(grad)
             pointer = PointerTensor(
@@ -1060,7 +1061,8 @@ class TorchTensor(AbstractTensor):
 
         """
 
-        assert isinstance(self.child, PointerTensor)
+        if not isinstance(self.child, PointerTensor):
+            raise TypeError("child should be a PointerTensor")
 
         ps = list(pointers)
         ps.append(self)

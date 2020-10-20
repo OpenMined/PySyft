@@ -7,5 +7,6 @@ class Remote(object):
 
     @staticmethod
     def register_framework(cls):
-        assert cls.name not in Remote.frameworks
+        if cls.name in Remote.frameworks:
+            raise AttributeError(f"Error: {cls.name} is in Remote.Frameworks")
         Remote.frameworks[cls.name] = cls
