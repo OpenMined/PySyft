@@ -20,6 +20,7 @@ from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
 from .primitive_interface import PyPrimitive
 from .primitive_factory import PrimitiveFactory
+from .util import downcast
 
 
 class Dict(UserDict, PyPrimitive):
@@ -114,10 +115,11 @@ class Dict(UserDict, PyPrimitive):
         res = super().__hash__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> PyPrimitive:
-        res = super().__iter__()
-        return PrimitiveFactory.generate_primitive(value=res)
+    #TODO fix this
+    # @syft_decorator(typechecking=True, prohibit_args=False)
+    # def __iter__(self) -> PyPrimitive:
+    #     res = super().__iter__()
+    #     return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> PyPrimitive:
@@ -135,8 +137,8 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ne__(self) -> PyPrimitive:
-        res = super().__ne__()
+    def __ne__(self, other: Any) -> PyPrimitive:
+        res = super().__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -168,11 +170,15 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def items(self) -> PyPrimitive:
         res = super().items()
+        # TODO: we should actually support this at some point and stop converting to list
+        res = list(res)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def keys(self) -> PyPrimitive:
         res = super().keys()
+        # TODO: we should actually support this at some point and stop converting to list
+        res = list(res)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -193,12 +199,18 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def values(self) -> PyPrimitive:
         res = super().values()
+        res = list(res)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def clear(self) -> PyPrimitive:
+        res = super().clear()
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dict_PB:
         id_ = serialize(obj=self.id)
-        keys = list(self.data.keys())
+        keys = [serialize(obj=element) for element in self.data.keys()]
         values = [serialize(obj=element) for element in self.data.values()]
         return Dict_PB(id=id_, keys=keys, values=values)
 
@@ -206,9 +218,10 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Dict_PB) -> "Dict":
         id_: UID = deserialize(blob=proto.id)
-        values = [deserialize(blob=element) for element in proto.values]
-        new_dict = Dict(dict(zip(proto.keys, values)))
-        new_dict._id = id_tu
+        values = [deserialize(blob=downcast(value=element)) for element in proto.values]
+        keys = [deserialize(blob=downcast(value=element)) for element in proto.keys]
+        new_dict = Dict(dict(zip(keys, values)))
+        new_dict._id = id_
         return new_dict
 
     @staticmethod

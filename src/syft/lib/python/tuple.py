@@ -20,10 +20,9 @@ from ... import deserialize
 from ... import serialize
 
 
-
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args):
-        super(Tuple, self).__init__(*args)
+        super(Tuple, self).__init__()
 
     def __new__(cls, *args):
         return super(Tuple, cls).__new__(cls, args)
@@ -98,7 +97,6 @@ class Tuple(tuple, PyPrimitive):
         new_list = Tuple(value=value)
         new_list._id = id_
         return new_list
-
 
     @staticmethod
     @syft_decorator(typechecking=True)

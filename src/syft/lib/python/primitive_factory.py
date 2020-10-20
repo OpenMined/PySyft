@@ -16,6 +16,8 @@ NoneType = type(None)
 
 primitives = [
     bool,
+    #TODO: add support for ellipsis
+    ...,
     dict,
     complex,
     float,
@@ -33,6 +35,8 @@ primitives = [
 PrimitiveType = Union[
     bool,
     dict,
+    #TODO: add support for ellipsis
+    type(...),
     complex,
     float,
     int,
@@ -79,6 +83,9 @@ class PrimitiveFactory(ABC):
         if isinstance(value, PyPrimitive):
             return value
 
+        if value is ...:
+            return value
+
         if isinstance(value, bool):
             return Bool(value=value, id=id)
 
@@ -92,7 +99,7 @@ class PrimitiveFactory(ABC):
             return Complex(real=value.real, imag=value.imag, id=id)
 
         if isinstance(value, tuple):
-            return Tuple(value=value)
+            return Tuple(*value)
 
         if type(value) in [list, UserList]:
             if not recurse:
