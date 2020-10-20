@@ -29,7 +29,7 @@ td {
   color: #282828;
 }
 
-.pass {
+.pass, na {
   background: darkgreen;
 }
 
@@ -52,9 +52,34 @@ td {
 .untested {
   background: black;
 }
-</style>
 
-<table>
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+li {
+  float:left;
+  padding-right:10px;
+}
+
+</style>
+<h1>Syft Tensor Compatibility Matrix</h1>
+
+<ul>
+<li>✅ All Tests Pass</li>
+<li>❎ Not Supported</li>
+<li>❌ Some or All Tests Fail</li>
+<li>➖ Temporarily Skipped</li>
+<li>❔ Unknown</li>
+<li>&nbsp;</li>
+<li><sup>x</sup>❌<sub>y</sub> x = Tests passed y = Tests Failed</li>
+</ul>
+<div style="clear:both;"></div>
+
+<table cellspacing="0" width="100%">
     <tr><th></th>
     {% set num_torch = torch_versions|length %}
     {% for dtype in dtypes %}
@@ -82,6 +107,9 @@ td {
                     {% set majority = vmeta[dtype]["majority"] %}
                     {% if status == "pass" %}
                     <td class="pass"><sup>{{num_pass}}</sup>✅<sub>{{num_fail}}</sub></td>
+                    {% endif %}
+                    {% if status == "not_available" %}
+                    <td class="na">❎</td>
                     {% endif %}
                     {% if status == "fail" %}
                       {% if majority == True %}

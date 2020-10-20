@@ -100,6 +100,7 @@ for op in BASIC_OPS:
                 "num_pass": 0,
                 "num_fail": 0,
                 "num_skip": 0,
+                "num_not_available": 0,
             }
 
 
@@ -134,8 +135,7 @@ for support_file in support_files:
                 # and if nothing but skip, it will be marked skip
 
                 # lets count them for later
-
-                if status in ["pass", "fail", "skip"]:
+                if status in ["pass", "fail", "skip", "not_available"]:
                     key = f"num_{status}"
                     ops[op_name]["dtypes"][torch_version][dtype][key] += 1
                     # recalculate a rough ratio
@@ -154,7 +154,12 @@ for support_file in support_files:
                 elif status == "pass" and current_status != "fail":
                     # set pass
                     ops[op_name]["dtypes"][torch_version][dtype]["status"] = "pass"
-                elif status == "skip" and current_status == "untested":
+                elif status == "not_available" and current_status == "untested":
+                    # set not_available
+                    ops[op_name]["dtypes"][torch_version][dtype][
+                        "status"
+                    ] = "not_available"
+                elif status == "skip" and current_status == "not_available":
                     # set skip
                     ops[op_name]["dtypes"][torch_version][dtype]["status"] = "skip"
 

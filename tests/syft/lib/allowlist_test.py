@@ -228,6 +228,7 @@ TEST_DATA = []
 # we iterate over the allowlist and only override where explicitly defined
 for op in BASIC_OPS:
     skip = []
+    not_available = []
     if op not in TEST_JSON["tests"]["torch.Tensor"]:
         # there is no custom configuration so we will test all supported combinations
         dtypes = ["common"]
@@ -254,6 +255,10 @@ for op in BASIC_OPS:
         # grab skip rules
         if "skip" in meta:
             skip += meta["skip"]
+
+        # grab not_available rules
+        if "not_available" in meta:
+            not_available += meta["not_available"]
 
         # this is the minimum version of the library required to run this test
         # which should match the values in the actual allowlist.py
@@ -297,13 +302,23 @@ for op in BASIC_OPS:
     )
 
     skipped_combinations = set()
+    not_available_combinations = set()
     for combination in combinations:
+        # skips are temporary
         for skip_rule in skip:
             if check_skip(
                 combination=combination, skip_rule=skip_rule, lib_version=TORCH_VERSION
             ):
                 # we use str(combination) so that we can hash the entire combination
                 skipped_combinations.add(str(combination))
+
+        # not available are features we cant or wont test because they arent supported
+        for na_rule in not_available:
+            if check_skip(
+                combination=combination, skip_rule=na_rule, lib_version=TORCH_VERSION
+            ):
+                # we use str(combination) so that we can hash the entire combination
+                not_available_combinations.add(str(combination))
 
     for combination in combinations:
         # we need to record the support for this combination, the key will be unique
@@ -313,9 +328,15 @@ for op in BASIC_OPS:
         support_data["op_name"] = combination[1]
 
         # we use str so that we can hash the entire combination with nested lists
-        if str(combination) not in skipped_combinations:
+        if (
+            str(combination) not in skipped_combinations
+            and str(combination) not in not_available_combinations
+        ):
             TEST_DATA.append(combination)
-        else:
+        elif str(combination) in not_available_combinations:
+            support_data["status"] = "not_available"
+            write_support_result(support_data)
+        elif str(combination) in skipped_combinations:
             support_data["status"] = "skip"
             write_support_result(support_data)
 
