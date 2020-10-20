@@ -295,8 +295,6 @@ allowlist["torch.Tensor.floor_"] = "torch.Tensor"
 allowlist["torch.Tensor.floor"] = "torch.Tensor"
 allowlist["torch.Tensor.frac_"] = "torch.Tensor"
 allowlist["torch.Tensor.frac"] = "torch.Tensor"
-allowlist["torch.Tensor.t"] = "torch.Tensor"
-allowlist["torch.Tensor.T"] = "torch.Tensor"
 allowlist["torch.Tensor.ge_"] = "torch.Tensor"
 allowlist["torch.Tensor.ge"] = "torch.Tensor"
 allowlist["torch.Tensor.ger"] = "torch.Tensor"
@@ -329,24 +327,21 @@ allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
 allowlist["torch.Tensor.long"] = "torch.Tensor"
 allowlist["torch.Tensor.lt_"] = "torch.Tensor"
 allowlist["torch.Tensor.lt"] = "torch.Tensor"
+allowlist["torch.Tensor.matmul"] = "torch.Tensor"
+allowlist["torch.Tensor.mm"] = "torch.Tensor"
+allowlist["torch.Tensor.mul_"] = "torch.Tensor"
+allowlist["torch.Tensor.mul"] = "torch.Tensor"
+allowlist["torch.Tensor.ndim"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.ne_"] = "torch.Tensor"
+allowlist["torch.Tensor.ne"] = "torch.Tensor"
+allowlist["torch.Tensor.t"] = "torch.Tensor"
+allowlist["torch.Tensor.T"] = "torch.Tensor"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are untested
 # --------------------------------------------------------------------------------------
 
-# allowlist["torch.Tensor.matmul"] = "torch.Tensor"
-# # tests are being ignored # torch.Tensor.max some times returns a special torch.return_types.max type
-# allowlist["torch.Tensor.max"] = "torch.Tensor"
-# allowlist["torch.Tensor.mean"] = "torch.Tensor"
-# allowlist["torch.Tensor.min"] = "torch.Tensor"  # some issues
-# allowlist["torch.Tensor.mm"] = "torch.Tensor"
-# allowlist["torch.Tensor.mul_"] = "torch.Tensor"
-# allowlist["torch.Tensor.mul"] = "torch.Tensor"
-# allowlist["torch.Tensor.name"] = "Optional[str]"
-# allowlist["torch.Tensor.names"] = "Tuple[str]"
-# allowlist["torch.Tensor.ndim"] = "syft.lib.python.Int"
-# allowlist["torch.Tensor.ne_"] = "torch.Tensor"
-# allowlist["torch.Tensor.ne"] = "torch.Tensor"
+
 # allowlist["torch.Tensor.neg_"] = "torch.Tensor"
 # allowlist["torch.Tensor.neg"] = "torch.Tensor"
 # allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
@@ -437,6 +432,11 @@ allowlist["torch.Tensor.lt"] = "torch.Tensor"
 # allowlist["torch.Tensor.item"] = "syft.lib.python.Float" # Union[bool, int, float]
 # allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
 # allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
+# allowlist["torch.Tensor.max"] = "torch.Tensor" # requires torch.return_types.max
+# allowlist["torch.Tensor.mean"] = "torch.Tensor" # requires some test kwargs
+# allowlist["torch.Tensor.min"] = "torch.Tensor" # requires some test kwargs
+# allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
+# allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which haven't been checked yet

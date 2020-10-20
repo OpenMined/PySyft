@@ -1351,6 +1351,38 @@
       "lt": {
         "profile": "default",
         "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
+      },
+      "matmul": {
+        "profile": "default",
+        "data_types": ["common"],
+        "inputs": ["self"],
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "lte_version": "1.6.0",
+            "gte_version": "1.6.0"
+          }
+        ]
+      },
+      "mm": {
+        "profile": "default",
+        "tensors": ["tensor2"],
+        "inputs": ["self"],
+        "not_available": [
+          { "data_types": ["bool", "float16"], "lte_version": "1.6.0" }
+        ]
+      },
+      "mul_": {
+        "profile": "default",
+        "not_available": [{ "data_types": ["bool"], "lte_version": "1.6.0" }]
+      },
+      "mul": {
+        "profile": "default",
+        "not_available": [{ "data_types": ["bool"], "lte_version": "1.6.0" }]
+      },
+      "ndim": {
+        "profile": "tensor_property_noinput",
+        "return_type": "syft.lib.python.Int"
       }
     }
   }
