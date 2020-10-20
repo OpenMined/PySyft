@@ -102,15 +102,22 @@ class PrimitiveStorage:
             # print(f"Primitive stack: {primitive_stack}\n op {op}")
             # Primitive stack is a list of keys arrays (2d numpy u8 arrays).
             # TODO: should we get the most relevant stack? Generation/consumption algo.
-            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
 
+            # Block-primitives: the first line is the AES keys
+            available_instances = len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 # print(
                 #     f"Got {n_instances} keys for op {op} from the stack which had {available_instances} keys."
                 # )
-                keys = primitive_stack[0][0:n_instances]
+                keys = primitive_stack[0][0 : n_instances + 1]
                 if remove:
-                    primitive_stack[0] = primitive_stack[0][n_instances:]
+                    # Keep the AES keys and drop the first n_instance primitives.
+                    remaining_indices = (
+                        np.r_[0, n_instances + 1 : available_instances + 1]
+                        if available_instances > n_instances
+                        else []
+                    )
+                    primitive_stack[0] = primitive_stack[0][remaining_indices]
                 return keys
                 # keys = []
                 # # We iterate on the different elements that constitute a given primitive, for

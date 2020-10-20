@@ -43,7 +43,7 @@ EQ = 0
 COMP = 1
 
 # number of processes
-# N_CORES = max(4, multiprocessing.cpu_count() - 2)
+# N_CORES = max(4, multiprocessing.cpu_count() - 1)
 
 N_CORES = max(4, multiprocessing.cpu_count())
 
@@ -212,8 +212,12 @@ def mask_builder(x1, x2, op):
     # you actually get a share of alpha
     # alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
 
+    # Ignore the first line (AES keys and not alpha)
+
+    # print(f"x1 and x2 shape: {x1.shape} {x2.shape}")
     keys = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
-    alpha = np.frombuffer(np.ascontiguousarray(keys[:, 0:N]), dtype=np.uint32)
+    alpha = np.frombuffer(np.ascontiguousarray(keys[1:, 0:N]), dtype=np.uint32)
+    # print(f"Alpha shape: {alpha.shape}")
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r
 
@@ -290,6 +294,10 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
     keys = x_masked.owner.crypto_store.get_keys(
         op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
+    # print(f"Keys shape: {keys.shape}")
+    # print(f"keys AES {keys[0]}")
+    # print(f"primitive 1 {keys[1]}")
+
     result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), keys)
 
     dtype_options = {None: th.long, "int": th.int32, "long": th.long}
