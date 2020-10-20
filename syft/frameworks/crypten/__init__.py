@@ -64,7 +64,6 @@ def load(tag: str, src: int, **kwargs):
         results = worker.search(tag)
 
         # Make sure there is only one result
-        # assert len(results) == 1
         if len(results) != 1:
             raise RuntimeError(
                 f"Error: {len(results)} worker result found. There should be only 1."
@@ -90,7 +89,6 @@ def load_model(tag: str):
     results = worker.search(tag)
 
     # Make sure there is only one result
-    # assert len(results) == 1
     if len(results) != 1:
         raise RuntimeError(f"Error: {len(results)} worker result found. There should be only 1.")
 

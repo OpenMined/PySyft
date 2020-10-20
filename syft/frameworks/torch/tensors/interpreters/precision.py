@@ -121,12 +121,6 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
         upscaled = (rational * self.base ** self.precision_fractional).long()
         if check_range:
-            # assert (
-            #     upscaled.abs() < (self.field / 2)
-            # ).all(), (
-            #     f"{rational} cannot be correctly embedded: "
-            #     f"choose bigger field or a lower precision"
-            # )
             if not ((upscaled.abs() < (self.field / 2)).all()):
                 raise ValueError(
                     f"{rational} cannot be correctly embedded: "
@@ -288,14 +282,10 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         changed_sign = False
         if isinstance(other, FixedPrecisionTensor):
-            # assert (
-            #     self.precision_fractional == other.precision_fractional
-            # ), "In mul and div, all args should have the same precision_fractional"
             if self.precision_fractional != other.precision_fractional:
                 raise ValueError(
                     "In mul and div, all args should have the same precision_fractional"
                 )
-            # assert self.base == other.base, "In mul and div, all args should have the same base"
             if self.base != other.base:
                 raise ValueError("In mul and div, all args should have the same base")
 
@@ -451,9 +441,6 @@ class FixedPrecisionTensor(AbstractTensor):
         other = args[0]
 
         if isinstance(other, FixedPrecisionTensor):
-            # assert (
-            #     self.precision_fractional == other.precision_fractional
-            # ), "In matmul, all args should have the same precision_fractional"
             if self.precision_fractional != other.precision_fractional:
                 raise ValueError("In matmul, all args should have the same precision_fractional")
 
@@ -567,10 +554,8 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         # TODO: should we add non-approximate version if self.child is a pure tensor?
 
-        # assert len(self.shape) >= 2, "Can't compute inverse on non-matrix"
         if len(self.shape) < 2:
             raise ValueError("Can't compute inverse on non-matrix")
-        # assert self.shape[-1] == self.shape[-2], "Must be batches of square matrices"
         if self.shape[-1] != self.shape[-2]:
             raise ValueError("Must be batches of square matrices")
 
@@ -965,11 +950,6 @@ class FixedPrecisionTensor(AbstractTensor):
         if dtype is None:
             dtype = self.dtype
         else:
-            # assert (
-            #     dtype == self.dtype
-            # ), "When sharing a FixedPrecisionTensor, the dtype of "
-            #    "the resulting AdditiveSharingTensor "
-            #     "must be the same as the one of the original tensor"
             if dtype != self.dtype:
                 raise TypeError(
                     "When sharing a FixedPrecisionTensor, "
@@ -998,11 +978,6 @@ class FixedPrecisionTensor(AbstractTensor):
         if dtype is None:
             kwargs["dtype"] = self.dtype
         else:
-            # assert (
-            #     dtype == self.dtype
-            # ), "When sharing a FixedPrecisionTensor,
-            # the dtype of the resulting AdditiveSharingTensor \
-            #     must be the same as the one of the original tensor"
             if dtype != self.dtype:
                 raise TypeError(
                     "When sharing a FixedPrecisionTensor, the dtype of the resulting "

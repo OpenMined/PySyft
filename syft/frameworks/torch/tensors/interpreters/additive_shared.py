@@ -477,7 +477,6 @@ class AdditiveSharingTensor(AbstractTensor):
                 *self.child.keys(), **self.get_class_attributes(), **no_wrap
             ).child
 
-        # assert len(shares) == len(operand)
         if len(shares) != len(operand):
             raise ValueError(
                 f"Size of shares({len(shares)}) is not equal to that of operand({len(operand)})"
@@ -534,14 +533,12 @@ class AdditiveSharingTensor(AbstractTensor):
                 summation form
         """
         # check to see that operation is either mul or matmul
-        # assert equation == "mul" or equation == "matmul"
         if equation != "mul" and equation != "matmul":
             raise NotImplementedError(
                 f"Operation({equation}) is not possible, only mul or matmul are allowed"
             )
         cmd = getattr(torch, equation)
 
-        # assert isinstance(other, AdditiveSharingTensor)
         if not isinstance(other, AdditiveSharingTensor):
             raise TypeError("other is not an AdditiveSharingTensor")
 
@@ -573,7 +570,6 @@ class AdditiveSharingTensor(AbstractTensor):
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
-        # assert equation == "mul" or equation == "matmul"
         if equation != "mul" and equation != "matmul":
             raise NotImplementedError(
                 f"Operation({equation}) is not possible, only mul or matmul are allowed"
@@ -685,7 +681,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
-        # assert isinstance(modulus, int)
         if not isinstance(modulus, int):
             raise TypeError("modulus param should be an int instance.")
 
@@ -1058,7 +1053,6 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             the max of the tensor self
         """
-        # assert algorithm == "pairwise", "Other methods not supported for the moment"
         if algorithm != "pairwise":
             raise NotImplementedError(
                 "Other methods not supported for the moment, only pairwise supported for now"

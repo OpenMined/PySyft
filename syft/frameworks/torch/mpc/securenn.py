@@ -73,9 +73,6 @@ def flip(x, dim, dtype):
     """
     Reverse the order of the elements in a tensor
     """
-    # assert (
-    #     x.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if x.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -151,9 +148,6 @@ def select_share(alpha_sh, x_sh, y_sh):
     Return:
         z_sh = (1 - alpha_sh) * x_sh + alpha_sh * y_sh
     """
-    # assert (
-    #     alpha_sh.dtype == x_sh.dtype == y_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if not (alpha_sh.dtype == x_sh.dtype == y_sh.dtype != "custom"):
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -191,9 +185,6 @@ def private_compare(x_bit_sh, r, beta, L):
     return:
         β′ = β ⊕ (x > r).
     """
-    # assert isinstance(x_bit_sh, sy.AdditiveSharingTensor)
-    # assert isinstance(r, sy.MultiPointerTensor)
-    # assert isinstance(beta, sy.MultiPointerTensor)
     if not isinstance(x_bit_sh, sy.AdditiveSharingTensor):
         raise TypeError("x_bit_sh should be AdditiveSharingTensor.")
     if not isinstance(r, sy.MultiPointerTensor):
@@ -397,12 +388,8 @@ def share_convert(a_sh):
     Return:
         An additive sharing tensor with shares in field L-1
     """
-    # assert isinstance(a_sh, sy.AdditiveSharingTensor)
     if not isinstance(a_sh, sy.AdditiveSharingTensor):
         raise TypeError("a_sh should be AdditiveSharingTensor")
-    # assert (
-    #     a_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if a_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -512,9 +499,6 @@ def relu_deriv(a_sh):
         1 if Dec(a_sh) > 0
         encrypted in an AdditiveSharingTensor
     """
-    # assert (
-    #     a_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if a_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -559,9 +543,6 @@ def relu(a_sh):
         Dec(a_sh) > 0
         encrypted in an AdditiveSharingTensor
     """
-    # assert (
-    #     a_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if a_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -588,9 +569,6 @@ def division(x_sh, y_sh, bit_len_max=None):
     Returns:
         element-wise integer division of x_sh by y_sh
     """
-    # assert (
-    #     x_sh.dtype == y_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if not (x_sh.dtype == y_sh.dtype != "custom"):
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -604,7 +582,6 @@ def division(x_sh, y_sh, bit_len_max=None):
 
     x_shape = x_sh.shape
     y_shape = y_sh.shape
-    # assert x_shape == y_shape or list(y_shape) == [1]
     if not (x_shape == y_shape or list(y_shape) == [1]):
         raise ValueError("Check shape of x_sh and y_sh")
 
@@ -654,9 +631,6 @@ def maxpool(x_sh):
         maximum value as an AdditiveSharingTensor
         index of this value in the flattened tensor as an AdditiveSharingTensor
     """
-    # assert (
-    #     x_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if x_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -712,9 +686,6 @@ def maxpool_deriv(x_sh):
         an AdditiveSharingTensor of the same shape as x_sh full of zeros except for
         a 1 at the position of the max value
     """
-    # assert (
-    #     x_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if x_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
@@ -728,7 +699,6 @@ def maxpool_deriv(x_sh):
 
     n1, n2 = x_sh.shape
     n = n1 * n2
-    # assert L % n == 0
     if L % n != 0:
         raise ValueError("Check x_sh.field and x_sh.shape ")
     x_sh = x_sh.view(-1)
@@ -770,14 +740,10 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
         stride: the stride of the window
         padding: implicit zero padding to be added on both sides
     """
-    # assert (
-    #     a_sh.dtype != "custom"
-    # ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     if a_sh.dtype == "custom":
         raise TypeError(
             "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
         )
-    # assert len(a_sh.shape) == 4
     if len(a_sh.shape) != 4:
         raise ValueError("Size of a_sh.shape should be 4")
 

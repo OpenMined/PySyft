@@ -36,10 +36,6 @@ class AvgPool2d(Module):
         # I have not implemented all functionality from torch.nn.AvgPool2d
         # These assertions are the required settings.
 
-        # assert padding == 0
-        # assert ceil_mode is False
-        # assert count_include_pad is True
-        # assert divisor_override is None
         if not (
             (padding == 0)
             and (ceil_mode is False)

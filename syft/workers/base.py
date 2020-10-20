@@ -408,7 +408,6 @@ class BaseWorker(AbstractWorker):
         if not isinstance(workers, (list, tuple)):
             workers = [workers]
 
-        # assert len(workers) > 0, "Please provide workers to receive the data"
         if len(workers) <= 0:
             raise RuntimeError(
                 "Please provide workers to receive the data, current size of workers: %d"
@@ -864,7 +863,6 @@ class BaseWorker(AbstractWorker):
         """
         results = self.object_store.find_by_tag(tag)
         if results:
-            # assert all(result.location.id == location.id for result in results)
             if not all(result.location.id == location.id for result in results):
                 raise ValueError("All Tags are not of same location.")
             return results

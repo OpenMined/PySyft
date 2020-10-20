@@ -110,11 +110,7 @@ class Action(ABC, SyftSerializable):
 
     def _type_check(self, field_name, expected_type):
         actual_value = getattr(self, field_name)
-        # assert actual_value is None or isinstance(actual_value, expected_type), (
-        #     f"{field_name} must be {expected_type.__name__}, but was "
-        #     f"{type(actual_value).__name__}: {actual_value}."
-        # )
-        if actual_value is not None and not isinstance(actual_value, expected_type):
+        if not (actual_value is None or isinstance(actual_value, expected_type)):
             raise ValueError(
                 f"{field_name} must be {expected_type.__name__}, but was "
                 f"{type(actual_value).__name__}: {actual_value}."

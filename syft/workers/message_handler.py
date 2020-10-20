@@ -83,9 +83,6 @@ class BaseMessageHandler(AbstractMessageHandler):
                     _self = self.worker
                 else:
                     res: list = self.worker.search(_self)
-                    # assert (
-                    #     len(res) == 1
-                    # ), f"Searching for {_self} on {self.worker.id}. /!\\ {len(res)} found"
                     if len(res) != 1:
                         raise ValueError(
                             f"Searching for {_self} on {self.worker.id}. /!\\ {len(res)} found"
