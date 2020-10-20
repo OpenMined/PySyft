@@ -12,7 +12,9 @@ class BaseModel(db.Model, AllFeaturesMixin):
     pass
 
 
-from .roles.roles import Role
+from .roles.roles import Role, create_role
+from .users.user import User, create_user
+from .utils import model_to_json
 
 
 def set_database_config(app, test_config=None, verbose=False):

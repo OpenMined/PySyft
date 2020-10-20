@@ -61,7 +61,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.start_local_db:
-        db_path = "sqlite:///databasenetwork.db"
+        db_path = "sqlite:///datadomain.db"
         app = create_app(
             test_config={"SQLALCHEMY_DATABASE_URI": db_path},
         )

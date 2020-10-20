@@ -33,6 +33,8 @@ from main.routes import (
 )
 import config
 
+DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
+
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
 # Since the masking process needs to iterate over the message payload,
@@ -53,7 +55,9 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app(test_config: Optional[Dict] = None) -> Flask:
+def create_app(
+    test_config: Optional[Dict] = None, secret_key=DEFAULT_SECRET_KEY, debug=False
+) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -73,7 +77,7 @@ def create_app(test_config: Optional[Dict] = None) -> Flask:
 
     # Register HTTP blueprints
     # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(roles_blueprint, url_prefix=r"/roles/")
+    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
     app.register_blueprint(users_blueprint, url_prefix=r"/users/")
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
     app.register_blueprint(groups_blueprint, url_prefix=r"/groups/")
@@ -86,6 +90,9 @@ def create_app(test_config: Optional[Dict] = None) -> Flask:
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
+
+    app.debug = debug
+    app.config["SECRET_KEY"] = secret_key
 
     from main.core.database import db, set_database_config, seed_db
 
