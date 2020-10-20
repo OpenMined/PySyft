@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1603132097316,
+  "lastUpdate": 1603200068867,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Python Benchmark with pytestbenchmark": [
@@ -59,6 +59,65 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.03555611755453424",
             "extra": "mean: 1.1549254001999885 sec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevivthapion@gmail.com",
+            "name": "Vivek Pothina",
+            "username": "ViveK-PothinA"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f1d55314dacb8300e2bd6d3c595883c0cb5336f6",
+          "message": "changed all asset to if/raise to prevent disable of assert during PYTHONOPTIMISE env (#4655)\n\n* changed all asset to if/raise to prevent disable of assert during PYTHONOPTIMISE env\r\n\r\n* minor fix for proper inverson of assert condition\r\n\r\n* Changed to AssertionError which is handled at multiple places\r\n\r\n* Changed to AssertionError which is handled at multiple places\r\n\r\n* added simple test case in test_string to increase test coverage\r\n\r\n* added simple test cases in test_string to increase test coverage\r\n\r\n* added simple test cases to increase test coverage\r\n\r\n* Either None OR More than One worker result found\r\n\r\n* changes for review comments\r\n\r\n* removed comments, minor changes\r\n\r\nCo-authored-by: Vivek Pothina <vivek.pothina@ninjacart.com>",
+          "timestamp": "2020-10-20T16:14:40+03:00",
+          "tree_id": "11bfbaa619e44305fcae4d76769df1865f5e6f59",
+          "url": "https://github.com/OpenMined/PySyft/commit/f1d55314dacb8300e2bd6d3c595883c0cb5336f6"
+        },
+        "date": 1603200068318,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_chebyshev",
+            "value": 0.8371058374301785,
+            "unit": "iter/sec",
+            "range": "stddev: 0.02925063381994206",
+            "extra": "mean: 1.1945920757999828 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_chebyshev",
+            "value": 0.8482763921188635,
+            "unit": "iter/sec",
+            "range": "stddev: 0.051263506141909214",
+            "extra": "mean: 1.1788610519999907 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_exp",
+            "value": 0.05225905011062059,
+            "unit": "iter/sec",
+            "range": "stddev: 0.19437782338265033",
+            "extra": "mean: 19.13544157199999 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_maclaurin",
+            "value": 12.579877662953313,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000431575497002569",
+            "extra": "mean: 79.492029000005 msec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_sigmoid",
+            "value": 0.8244862452404306,
+            "unit": "iter/sec",
+            "range": "stddev: 0.03749463073792496",
+            "extra": "mean: 1.2128765103999855 sec\nrounds: 5"
           }
         ]
       }
