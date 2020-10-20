@@ -44,6 +44,7 @@ if len(support_files) < 1:
     sys.exit(1)
 
 # complex have been removed for now as they are rare and have some known bugs
+# qints have been disabled for now and are added as a separate ticket
 dtypes = [
     "bool",
     "uint8",
@@ -58,12 +59,13 @@ dtypes = [
     # "complex32",
     # "complex64",
     # "complex128",
-    "qint8",
-    "quint8",
-    "qint32",
+    # "qint8",
+    # "quint8",
+    # "qint32",
 ]
 
-torch_versions = ["1.4.0", "1.5.0", "1.5.1", "1.6.0"]
+# 1.4.0 has been temporarily disabled and will be re-investigated
+torch_versions = ["1.5.0", "1.5.1", "1.6.0"]
 
 
 # this handles instances where the allow list provides more meta information

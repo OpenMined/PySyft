@@ -139,8 +139,8 @@ def check_skip(
     # skip rule versioning example:
     # "skip": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
     # this says skip float16 if the library is less than or equal to 1.5.1
-    # say we are running 1.4.0 that means
-    # torch==1.4.0 <= 1.5.1 so this rule applies and we could possibly need to skip
+    # say we are running 1.5.0 that means
+    # torch==1.5.0 <= 1.5.1 so this rule applies and we could possibly need to skip
 
     # if there is a lte_version for the skip rule and our lib is NOT lte, less than or
     # equal to the version then we cant skip because the rule only prohibits lte
@@ -495,7 +495,6 @@ def test_all_allowlisted_tensor_methods(
 
                             # th.isnan fails on some versions of torch or methods for
                             # example the op T / t() and the data_type float16 on
-                            # torch==1.4.0 gives:
                             # RuntimeError: "ne_cpu" not implemented for 'Half'
                             nan_mask = th.isnan(local_item)
 
