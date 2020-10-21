@@ -336,111 +336,73 @@ allowlist["torch.Tensor.ne_"] = "torch.Tensor"
 allowlist["torch.Tensor.ne"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
 allowlist["torch.Tensor.T"] = "torch.Tensor"
+allowlist["torch.Tensor.neg_"] = "torch.Tensor"
+allowlist["torch.Tensor.neg"] = "torch.Tensor"
+allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
+allowlist["torch.Tensor.nonzero"] = "torch.Tensor"
+allowlist["torch.Tensor.norm"] = "torch.Tensor"
+allowlist["torch.Tensor.orgqr"] = "torch.Tensor"
+allowlist["torch.Tensor.output_nr"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.pinverse"] = "torch.Tensor"
+allowlist["torch.Tensor.pow_"] = "torch.Tensor"
+allowlist["torch.Tensor.pow"] = "torch.Tensor"
+allowlist["torch.Tensor.prod"] = "torch.Tensor"
+allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
+allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
+allowlist["torch.Tensor.relu_"] = "torch.Tensor"
+allowlist["torch.Tensor.relu"] = "torch.Tensor"
+allowlist["torch.Tensor.requires_grad_"] = "torch.Tensor"
+allowlist["torch.Tensor.requires_grad"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.reshape_as"] = "torch.Tensor"
+allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
+allowlist["torch.Tensor.rot90"] = "torch.Tensor"
+allowlist["torch.Tensor.round_"] = "torch.Tensor"
+allowlist["torch.Tensor.round"] = "torch.Tensor"
+allowlist["torch.Tensor.rsqrt_"] = "torch.Tensor"
+allowlist["torch.Tensor.rsqrt"] = "torch.Tensor"
+allowlist["torch.Tensor.short"] = "torch.Tensor"
+allowlist["torch.Tensor.sigmoid_"] = "torch.Tensor"
+allowlist["torch.Tensor.sigmoid"] = "torch.Tensor"
+allowlist["torch.Tensor.sign_"] = "torch.Tensor"
+allowlist["torch.Tensor.sign"] = "torch.Tensor"
+allowlist["torch.Tensor.sin_"] = "torch.Tensor"
+allowlist["torch.Tensor.sin"] = "torch.Tensor"
+allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
+allowlist["torch.Tensor.sinh"] = "torch.Tensor"
+allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
+allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
+allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
+allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
+allowlist["torch.Tensor.std"] = "torch.Tensor"
+allowlist["torch.Tensor.sub_"] = "torch.Tensor"
+allowlist["torch.Tensor.sub"] = "torch.Tensor"
+allowlist["torch.Tensor.sum"] = "torch.Tensor"
+allowlist["torch.Tensor.t_"] = "torch.Tensor"
+allowlist["torch.Tensor.t"] = "torch.Tensor"
+allowlist["torch.Tensor.tan_"] = "torch.Tensor"
+allowlist["torch.Tensor.tan"] = "torch.Tensor"
+allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
+allowlist["torch.Tensor.tanh"] = "torch.Tensor"
+allowlist["torch.Tensor.to"] = "torch.Tensor"
+allowlist["torch.Tensor.trace"] = "torch.Tensor"
+allowlist["torch.Tensor.tril_"] = "torch.Tensor"
+allowlist["torch.Tensor.tril"] = "torch.Tensor"
+allowlist["torch.Tensor.triu_"] = "torch.Tensor"
+allowlist["torch.Tensor.triu"] = "torch.Tensor"
+allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
+allowlist["torch.Tensor.trunc"] = "torch.Tensor"
+allowlist["torch.Tensor.unique"] = "torch.Tensor"
+allowlist["torch.Tensor.unsqueeze_"] = "torch.Tensor"
+allowlist["torch.Tensor.unsqueeze"] = "torch.Tensor"
+allowlist["torch.Tensor.var"] = "torch.Tensor"
+allowlist["torch.Tensor.view_as"] = "torch.Tensor"
+allowlist["torch.Tensor.view"] = "torch.Tensor"
+allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are untested
 # --------------------------------------------------------------------------------------
 
-
-# allowlist["torch.Tensor.neg_"] = "torch.Tensor"
-# allowlist["torch.Tensor.neg"] = "torch.Tensor"
-# allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
-# allowlist["torch.Tensor.nonzero"] = "torch.Tensor"
-# allowlist["torch.Tensor.norm"] = "torch.Tensor"
-# allowlist["torch.Tensor.orgqr"] = "torch.Tensor"
-# allowlist["torch.Tensor.output_nr"] = "syft.lib.python.Int"
-# allowlist["torch.Tensor.pinverse"] = "torch.Tensor"
-# allowlist["torch.Tensor.pow_"] = "torch.Tensor"
-# allowlist["torch.Tensor.pow"] = "torch.Tensor"
-# allowlist["torch.Tensor.prod"] = "torch.Tensor"
-# allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
-# allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
-# allowlist["torch.Tensor.relu_"] = "torch.Tensor"
-# allowlist["torch.Tensor.relu"] = "torch.Tensor"
-# # RuntimeError: a leaf Variable that requires grad is being used in an in-place operation.
-# allowlist["torch.Tensor.requires_grad_"] = "torch.Tensor"
-# allowlist["torch.Tensor.requires_grad"] = "syft.lib.python.Bool"
-# allowlist["torch.Tensor.reshape_as"] = "torch.Tensor"
-# allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
-# allowlist["torch.Tensor.rot90"] = "torch.Tensor"
-# allowlist["torch.Tensor.round_"] = "torch.Tensor"
-# allowlist["torch.Tensor.round"] = "torch.Tensor"
-# allowlist["torch.Tensor.rsqrt_"] = "torch.Tensor"
-# allowlist["torch.Tensor.rsqrt"] = "torch.Tensor"
-# allowlist["torch.Tensor.shape"] = "torch.Size"
-# allowlist["torch.Tensor.short"] = "torch.Tensor"
-# allowlist["torch.Tensor.sigmoid_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sigmoid"] = "torch.Tensor"
-# allowlist["torch.Tensor.sign_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sign"] = "torch.Tensor"
-# allowlist["torch.Tensor.sin_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sin"] = "torch.Tensor"
-# allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sinh"] = "torch.Tensor"
-# allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
-# allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
-# allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
-# allowlist["torch.Tensor.std"] = "torch.Tensor"
-# allowlist["torch.Tensor.sub_"] = "torch.Tensor"
-# allowlist["torch.Tensor.sub"] = "torch.Tensor"
-# allowlist["torch.Tensor.sum"] = "torch.Tensor"
-# allowlist["torch.Tensor.t_"] = "torch.Tensor"
-# allowlist["torch.Tensor.t"] = "torch.Tensor"
-# allowlist["torch.Tensor.take"] = "torch.Tensor"
-# allowlist["torch.Tensor.tan_"] = "torch.Tensor"
-# allowlist["torch.Tensor.tan"] = "torch.Tensor"
-# allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
-# allowlist["torch.Tensor.tanh"] = "torch.Tensor"
-# allowlist["torch.Tensor.to"] = "torch.Tensor"
-# allowlist["torch.Tensor.trace"] = "torch.Tensor"
-# allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
-# allowlist["torch.Tensor.transpose"] = "torch.Tensor"
-# allowlist["torch.Tensor.tril_"] = "torch.Tensor"
-# allowlist["torch.Tensor.tril"] = "torch.Tensor"
-# allowlist["torch.Tensor.triu_"] = "torch.Tensor"
-# allowlist["torch.Tensor.triu"] = "torch.Tensor"
-# allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
-# allowlist["torch.Tensor.trunc"] = "torch.Tensor"
-# allowlist["torch.Tensor.unfold"] = "torch.Tensor"
-# allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
-# allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor"
-# allowlist["torch.Tensor.unique"] = "torch.Tensor"
-# allowlist["torch.Tensor.unsqueeze_"] = "torch.Tensor"
-# allowlist["torch.Tensor.unsqueeze"] = "torch.Tensor"
-# allowlist["torch.Tensor.var"] = "torch.Tensor"
-# allowlist["torch.Tensor.view_as"] = "torch.Tensor"
-# allowlist["torch.Tensor.view"] = "torch.Tensor"
-# allowlist["torch.Tensor.zero_"] = "torch.Tensor"
-
-# --------------------------------------------------------------------------------------
-# SECTION - Tensor methods with specific issues or require a special test combination
-# --------------------------------------------------------------------------------------
-# hashes are not matching
-# allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
-# allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
-# allowlist["torch.Tensor.__setitem__"] = "torch.Tensor"
-# allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
-# allowlist["torch.Tensor.backward"] = "syft.lib.python.SyNone"
-# allowlist["torch.Tensor.clamp_"] = "torch.Tensor" # clamps need min max etc
-# allowlist["torch.Tensor.clamp_max_"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_max"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_min_"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_min"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp"] = "torch.Tensor"
-# allowlist["torch.Tensor.index_select"] = "torch.Tensor"
-# allowlist["torch.Tensor.item"] = "syft.lib.python.Float" # Union[bool, int, float]
-# allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
-# allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
-# allowlist["torch.Tensor.max"] = "torch.Tensor" # requires torch.return_types.max
-# allowlist["torch.Tensor.mean"] = "torch.Tensor" # requires some test kwargs
-# allowlist["torch.Tensor.min"] = "torch.Tensor" # requires some test kwargs
-# allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
-# allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
-
-# --------------------------------------------------------------------------------------
-# SECTION - Tensor methods which haven't been checked yet
-# --------------------------------------------------------------------------------------
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires complex or 1.6.0?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires complex or 1.6.0?
 # allowlist["torch.Tensor._version"] = "unknown"
@@ -650,6 +612,39 @@ allowlist["torch.Tensor.T"] = "torch.Tensor"
 # allowlist["torch.Tensor.unbind"] = "unknown"
 # allowlist["torch.Tensor.unflatten"] = "unknown"
 # allowlist["torch.Tensor.values"] = "unknown"
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods with specific issues or require a special test combination
+# --------------------------------------------------------------------------------------
+# hashes are not matching
+# allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
+# allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
+# allowlist["torch.Tensor.__setitem__"] = "torch.Tensor"
+# allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
+# allowlist["torch.Tensor.backward"] = "syft.lib.python.SyNone"
+# allowlist["torch.Tensor.clamp_"] = "torch.Tensor" # clamps need min max etc
+# allowlist["torch.Tensor.clamp_max_"] = "torch.Tensor"
+# allowlist["torch.Tensor.clamp_max"] = "torch.Tensor"
+# allowlist["torch.Tensor.clamp_min_"] = "torch.Tensor"
+# allowlist["torch.Tensor.clamp_min"] = "torch.Tensor"
+# allowlist["torch.Tensor.clamp"] = "torch.Tensor"
+# allowlist["torch.Tensor.index_select"] = "torch.Tensor"
+# allowlist["torch.Tensor.item"] = "syft.lib.python.Float" # Union[bool, int, float]
+# allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
+# allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
+# allowlist["torch.Tensor.max"] = "torch.Tensor" # requires torch.return_types.max
+# allowlist["torch.Tensor.mean"] = "torch.Tensor" # requires some test kwargs
+# allowlist["torch.Tensor.min"] = "torch.Tensor" # requires some test kwargs
+# allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
+# allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
+# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
+# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
+# allowlist["torch.Tensor.take"] = "torch.Tensor" # requires long tensor input only
+# allowlist["torch.Tensor.transpose_"] = "torch.Tensor" # requires two inputs
+# allowlist["torch.Tensor.transpose"] = "torch.Tensor" # requires two inputs
+# allowlist["torch.Tensor.unfold"] = "torch.Tensor" # requires three inputs
+# allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
+# allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor" # requires Union / Tuple
 
 
 # --------------------------------------------------------------------------------------
