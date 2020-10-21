@@ -38,6 +38,9 @@ def create_torch_ast() -> Globals:
     for method, return_type_name_or_dict in allowlist.items():
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
+            if return_type == "unknown":
+                # this allows us to import them for testing
+                continue
             ast.add_path(
                 path=method, framework_reference=torch, return_type_name=return_type
             )

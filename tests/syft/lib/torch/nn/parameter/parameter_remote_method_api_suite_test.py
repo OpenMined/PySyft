@@ -188,9 +188,11 @@ def is_expected_index_error(msg: str) -> bool:
     return any(expected_msg in msg for expected_msg in expected_msgs)
 
 
+# disabling until replaced by the new allowlist tests
+@pytest.mark.skip(reason="disabling until replaced by the new allowlist tests")
 @pytest.mark.slow
 @pytest.mark.parametrize("tensor_type, op_name, self_tensor, _args", TEST_DATA)
-def test_all_allowlisted_parameter_methods_work_remotely_on_all_types(
+def all_allowlisted_parameter_methods_work_remotely_on_all_types(
     tensor_type: str, op_name: str, self_tensor: List, _args: str
 ) -> None:
 
