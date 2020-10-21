@@ -13,8 +13,6 @@ from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
 from syft.grid.connections.webrtc import WebRTCConnection
 
-nest_asyncio.apply()
-
 
 def get_signing_key() -> SigningKey:
     # return a the signing key used to sign the get_signed_message_bytes fixture
@@ -23,13 +21,18 @@ def get_signing_key() -> SigningKey:
 
 
 def test_init_without_event_loop() -> None:
+    nest_asyncio.apply()
+
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
+    nest_asyncio.apply()
+
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -58,6 +61,8 @@ async def test_signaling_process() -> None:
 
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
+    nest_asyncio.apply()
+
     test_domain = Domain(name="test")
 
     webrtc_node = WebRTCConnection(node=test_domain)
