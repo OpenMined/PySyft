@@ -1,0 +1,138 @@
+<style>
+table, caption, tbody, tfoot, thead, tr, th, td {
+  margin: 0px;
+  padding: 0px;
+  border: 0;
+  vertical-align: baseline;
+  font-size: 100%;
+  font: inherit;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+th, td {
+  text-align:center;
+  padding:5px;
+}
+
+th {
+  font-weight:bold;
+}
+
+td {
+  color: #282828;
+}
+
+.pass, na {
+  background: darkgreen;
+}
+
+.fail {
+  background: maroon;
+}
+
+.fail_half {
+  background: #a31c11;
+}
+
+.unknown {
+  background: darkorange;
+}
+
+.skip {
+  background: lightsteelblue;
+}
+
+.untested {
+  background: black;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+li {
+  float:left;
+  padding-right:10px;
+}
+
+</style>
+<h1>Syft Tensor Compatibility Matrix</h1>
+
+<ul>
+<li>✅ All Tests Pass</li>
+<li>❎ Not Supported</li>
+<li>❌ Some or All Tests Fail</li>
+<li>➖ Temporarily Skipped</li>
+<li>❔ Unknown</li>
+<li>&nbsp;</li>
+<li><sup>x</sup>❌<sub>y</sub> x = Tests passed y = Tests Failed</li>
+</ul>
+<div style="clear:both;"></div>
+
+<table cellspacing="0" width="100%">
+    <tr><th></th>
+    {% set num_torch = torch_versions|length %}
+    {% for dtype in dtypes %}
+        <th colspan="{{ num_torch }}">{{ dtype }}</th>
+    {% endfor %}
+    </tr>
+    <tr><th>Method</th>
+    {% for dtype in dtypes %}
+        {% for torch_version in torch_versions %}
+            <th>{{ torch_version }}</th>
+        {% endfor %}
+    {% endfor %}
+    </tr>
+    {% for op, meta in ops.items() %}
+    <tr>
+        <td>{{ op }}</td>
+        {% for dtype in dtypes %}
+            {% for torch_version in torch_versions %}
+                {% set vmeta = meta["dtypes"][torch_version] %}
+                {% if dtype in vmeta %}
+                    {% set status = vmeta[dtype]["status"] %}
+                    {% set num_fail = vmeta[dtype]["num_fail"] %}
+                    {% set num_pass = vmeta[dtype]["num_pass"] %}
+                    {% set num_skip = vmeta[dtype]["num_skip"] %}
+                    {% set majority = vmeta[dtype]["majority"] %}
+                    {% if status == "pass" %}
+                    <td class="pass"><sup>{{num_pass}}</sup>✅<sub>{{num_fail}}</sub></td>
+                    {% endif %}
+                    {% if status == "not_available" %}
+                    <td class="na">❎</td>
+                    {% endif %}
+                    {% if status == "fail" %}
+                      {% if majority == True %}
+                        <td class="fail_half"><sup>{{num_pass}}</sup>❌<sub>{{num_fail}}</sub></td>
+                      {% endif %}
+                      {% if majority == False %}
+                        <td class="fail"><sup>{{num_pass}}</sup>❌<sub>{{num_fail}}</sub></td>
+                      {% endif %}
+                    {% endif %}
+                    {% if status == "unknown" %}
+                    <td class="unknown">❔</td>
+                    {% endif %}
+                    {% if status == "skip" %}
+                    <td class="skip">➖{{num_skip}}</td>
+                    {% endif %}
+                    {% if status == "untested" %}
+                    <td class="untested"></td>
+                    {% endif %}
+                {% else %}
+                    <td class="untested"></td>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
