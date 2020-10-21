@@ -1359,8 +1359,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
-            "lte_version": "1.6.0",
-            "gte_version": "1.6.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -1374,15 +1373,29 @@
       },
       "mul_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["bool"], "lte_version": "1.6.0" }]
+        "not_available": [
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.5.1" }
+        ]
       },
       "mul": {
         "profile": "default",
-        "not_available": [{ "data_types": ["bool"], "lte_version": "1.6.0" }]
+        "not_available": [
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
+          { "data_types": ["float16"], "lte_version": "1.5.1" }
+        ]
       },
       "ndim": {
         "profile": "tensor_property_noinput",
         "return_type": "syft.lib.python.Int"
+      },
+      "ne": {
+        "profile": "default",
+        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+      },
+      "ne_": {
+        "profile": "default",
+        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
       }
     }
   }
