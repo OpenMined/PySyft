@@ -128,13 +128,13 @@ def check_skip(
                     # can keep checking more rules
                     applies = presence
                     if not applies:
-                        break
+                        return applies
 
                 else:
                     # we dont match and the rule is not a list of rules so we wont skip
                     # and can break
                     applies = False
-                    break
+                    return applies
 
     # skip rule versioning example:
     # "skip": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]

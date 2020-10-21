@@ -12,5 +12,3 @@ bandit -r src -ll &
 
 # fix isort and format with black
 ./scripts/build_proto.sh && isort . && black src tests && pre-commit run --all-files &
-
-wait
