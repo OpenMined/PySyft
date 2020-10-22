@@ -67,9 +67,3 @@ funcs = [
     "numerator",
     "real",
 ]
-
-
-def test_sanity():
-    for func in funcs:
-        assert hasattr(remote_int, func)
-        assert hasattr(local_int, func)
