@@ -18,14 +18,17 @@ from ...util import aggressive_set_attr
 from .util import downcast
 from ... import deserialize
 from ... import serialize
+from .iterator import Iterator
 
+class TupleIterator(Iterator):
+    pass
 
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args):
         super(Tuple, self).__init__()
 
     def __new__(cls, *args):
-        return super(Tuple, cls).__new__(cls, args)
+        return super(Tuple, cls).__new__(cls, *args)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
@@ -87,7 +90,7 @@ class Tuple(tuple, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self) -> SyPrimitiveRet:
-        return self
+        return TupleIterator(self)
 
     @staticmethod
     @syft_decorator(typechecking=True)

@@ -20,7 +20,6 @@ from .util import SyPrimitiveRet
 
 NoneType = type(None)
 
-
 class SyNone(PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, id: Optional[UID] = None):
@@ -111,5 +110,6 @@ class SyNoneWrapper(StorableObject):
         data.description = description
         return data
 
+# SyNone = SyNone()
 
 aggressive_set_attr(obj=SyNone, name="serializable_wrapper_type", attr=SyNoneWrapper)
