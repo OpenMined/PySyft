@@ -14,7 +14,11 @@ from .duet import Duet  # noqa: F401
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
-nest_asyncio.apply()
+try:
+    nest_asyncio.apply()
+except RuntimeError as e:
+    # this happens when pytest-xdist parallel threaded tests are run on some systems
+    print("Nothing to patch", e)
 
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
