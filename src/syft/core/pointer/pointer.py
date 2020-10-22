@@ -157,6 +157,7 @@ class Pointer(AbstractPointer):
 
         if request_block:
             from ..node.domain.service import RequestStatus
+
             response_status = self.request(block=True)
 
             if response_status == RequestStatus.Accepted:
@@ -317,10 +318,14 @@ class Pointer(AbstractPointer):
 
         if block:
             from ..node.domain.service import RequestAnswerMessage, RequestStatus
-            from ..node.domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
+            from ..node.domain.service.accept_or_deny_request_service import (
+                AcceptOrDenyRequestMessage,
+            )
 
             status_msg = RequestAnswerMessage(
-                request_id=msg.id, address=self.client.address, reply_to=self.client.address
+                request_id=msg.id,
+                address=self.client.address,
+                reply_to=self.client.address,
             )
             time.sleep(20)
             response = self.client.send_immediate_msg_with_reply(msg=status_msg)
