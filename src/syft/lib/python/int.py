@@ -362,7 +362,7 @@ class Int(int, PyPrimitive):
         s, u = super().as_integer_ratio()
         return (
             PrimitiveFactory.generate_primitive(value=s),
-            PrimitiveFactory.generate_primitive(value=u)
+            PrimitiveFactory.generate_primitive(value=u),
         )
 
     @syft_decorator(typechecking=True, prohibit_args=False)

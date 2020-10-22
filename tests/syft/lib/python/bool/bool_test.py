@@ -1,11 +1,10 @@
 # syft absolute
 from syft.lib.python.bool import Bool
-from syft.lib.python.int import Int
-from syft.lib.python.string import String
-from syft.lib.python.float import Float
-from syft.lib.python.list import List
 from syft.lib.python.dict import Dict
+from syft.lib.python.float import Float
+from syft.lib.python.int import Int
 from syft.lib.python.list import List
+from syft.lib.python.string import String
 from syft.lib.python.tuple import Tuple
 
 SyFalse = Bool(False)
@@ -245,6 +244,7 @@ def test_types():
 
 
 def test_operator():
+    # stdlib
     import operator
 
     assert operator.truth(0) == SyFalse

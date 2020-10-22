@@ -1,10 +1,10 @@
 # stdlib
 from collections import UserList
 from typing import Any
+from typing import Iterable
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
-from typing import Iterable
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -17,12 +17,13 @@ from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
+from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
-from .iterator import Iterator
+
 
 class ListIterator(Iterator):
     def __init__(self, _ref: Iterable):
@@ -213,7 +214,6 @@ class ListWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
-
 
 
 aggressive_set_attr(obj=List, name="serializable_wrapper_type", attr=ListWrapper)

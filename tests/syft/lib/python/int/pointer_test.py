@@ -1,3 +1,4 @@
+# syft absolute
 import syft as sy
 
 alice = sy.VirtualMachine(name="alice")

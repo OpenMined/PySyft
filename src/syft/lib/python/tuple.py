@@ -1,34 +1,37 @@
 # stdlib
+from dataclasses import dataclass
 from typing import Any
-from typing import Optional
 from typing import List
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...decorators.syft_decorator_impl import syft_decorator
-from .primitive_interface import PyPrimitive
-from .primitive_factory import PrimitiveFactory
-from .util import SyPrimitiveRet
-from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
-from ...core.store.storeable_object import StorableObject
-from ...core.common import UID
-from ...util import aggressive_set_attr
-from .util import downcast
 from ... import deserialize
 from ... import serialize
+from ...core.common import UID
+from ...core.store.storeable_object import StorableObject
+from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
+from ...util import aggressive_set_attr
 from .iterator import Iterator
+from .primitive_factory import PrimitiveFactory
+from .primitive_interface import PyPrimitive
+from .util import SyPrimitiveRet
+from .util import downcast
+
 
 class TupleIterator(Iterator):
     pass
 
+
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args):
-        super(Tuple, self).__init__()
+        pass
 
     def __new__(cls, *args):
-        return super(Tuple, cls).__new__(cls, *args)
+        return super(Tuple, cls).__new__(Tuple, *args)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
@@ -43,8 +46,8 @@ class Tuple(tuple, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__eq__(other))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __ne__(self) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(value=super().__ne__())
+    def __ne__(self, other: Any) -> SyPrimitiveRet:
+        return PrimitiveFactory.generate_primitive(value=super().__ne__(other))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> SyPrimitiveRet:

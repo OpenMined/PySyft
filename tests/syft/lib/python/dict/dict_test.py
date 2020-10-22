@@ -20,8 +20,9 @@ import pytest
 
 # syft absolute
 from syft.lib.python.dict import Dict
-from syft.lib.python.string import String
 from syft.lib.python.none import SyNone
+from syft.lib.python.string import String
+
 
 class DictTest(unittest.TestCase):
     def test_invalid_keyword_arguments(self):
@@ -330,7 +331,7 @@ class DictTest(unittest.TestCase):
         self.assertRaises(TypeError, d.copy, None)
 
     def test_copy_fuzz(self):
-        for dict_size in [10, 100, 1000]: # TODO: 10000, 100000
+        for dict_size in [10, 100, 1000]:  # TODO: 10000, 100000
             dict_size = random.randrange(dict_size // 2, dict_size + dict_size // 2)
             with self.subTest(dict_size=dict_size):
                 d = Dict()
@@ -486,7 +487,6 @@ class DictTest(unittest.TestCase):
         d = {}
         self.assertRaises(KeyError, d.popitem)
 
-
     def test_pop(self):
         # Tests for pop with specified key
         d = Dict()
@@ -622,7 +622,7 @@ class DictTest(unittest.TestCase):
         self.assertEqual(Dict(), {})
         self.assertEqual(Dict({1: 2}), {1: 2})
 
-        #TODO, when we have full set and iter support, make this pass as well
+        # TODO, when we have full set and iter support, make this pass as well
         pass
         # class Exc(Exception):
         #     pass
@@ -645,7 +645,7 @@ class DictTest(unittest.TestCase):
         self.helper_keys_contained(lambda x: x.items())
 
     def helper_keys_contained(self, fn):
-        #TODO add this when we have set support
+        # TODO add this when we have set support
         pass
         # Test rich comparisons against dict key views, which should behave the
         # same as sets.
@@ -1184,7 +1184,7 @@ class DictTest(unittest.TestCase):
             self.assertEqual(list(it), list(data))
 
     def test_itemiterator_pickling(self):
-        #TODO decide if we want this, probably not.
+        # TODO decide if we want this, probably not.
         pass
         # for proto in range(pickle.HIGHEST_PROTOCOL + 1):
         #     # UserDict fails these tests so our Dict should fail as well
@@ -1406,7 +1406,7 @@ class DictTest(unittest.TestCase):
                 d.clear()
                 return NotImplemented
 
-        d = Dict({0: String("test")}) #TODO: we should be able to support set
+        d = Dict({0: String("test")})  # TODO: we should be able to support set
         (0, X()) in d.items()
 
     def test_init_use_after_free(self):

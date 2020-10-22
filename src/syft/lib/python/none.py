@@ -20,7 +20,8 @@ from .util import SyPrimitiveRet
 
 NoneType = type(None)
 
-class SyNone(PyPrimitive):
+
+class _SyNone(PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, id: Optional[UID] = None):
         self._id: UID = id if id else UID()
@@ -58,10 +59,10 @@ class SyNone(PyPrimitive):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: None_PB) -> "SyNone":
+    def _proto2object(proto: None_PB) -> "_SyNone":
         none_id: UID = deserialize(blob=proto.id)
 
-        de_none = SyNone()
+        de_none = _SyNone()
         de_none._id = none_id
 
         return de_none
@@ -110,6 +111,7 @@ class SyNoneWrapper(StorableObject):
         data.description = description
         return data
 
-# SyNone = SyNone()
+
+SyNone = _SyNone()
 
 aggressive_set_attr(obj=SyNone, name="serializable_wrapper_type", attr=SyNoneWrapper)

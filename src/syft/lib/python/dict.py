@@ -1,10 +1,10 @@
 # stdlib
 from collections import UserDict
 from typing import Any
-from typing import List
-from typing import Optional
 from typing import Iterable
+from typing import List
 from typing import Mapping
+from typing import Optional
 import warnings
 
 # third party
@@ -18,27 +18,32 @@ from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
-from .primitive_interface import PyPrimitive
-from .primitive_factory import PrimitiveFactory
-from .util import downcast, SyPrimitiveRet
 from .iterator import Iterator
+from .primitive_factory import PrimitiveFactory
+from .primitive_interface import PyPrimitive
+from .util import SyPrimitiveRet
+from .util import downcast
 
 
 class KeysIterator(Iterator):
     def __next__(self):
         return next(self._obj_ref)
 
+
 class ValuesIterator(Iterator):
     def __next__(self):
         return next(self._obj_ref)
+
 
 class ItemsIterator(Iterator):
     def __next__(self):
         return next(self._obj_ref)
 
+
 class DictIterator(Iterator):
     def __next__(self):
         return next(self._obj_ref)
+
 
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
@@ -163,9 +168,8 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __str__(self) -> SyPrimitiveRet:
-        res = super().__str__()
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __str__(self) -> str:
+        return super().__str__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> SyPrimitiveRet:
@@ -174,28 +178,30 @@ class Dict(UserDict, PyPrimitive):
 
     @classmethod
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def fromkeys(cls, iterable: Iterable, value: Optional[Any] = None) -> SyPrimitiveRet:
+    def fromkeys(
+        cls, iterable: Iterable, value: Optional[Any] = None
+    ) -> SyPrimitiveRet:
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def get(self, key: Any) -> SyPrimitiveRet:
-        res = super().get(key)
+    def get(self, key: Any, default: Any = None) -> SyPrimitiveRet:
+        res = super().get(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def items(self) -> SyPrimitiveRet:
-        res = ValuesIterator(iter(super().items()))
+        res = list((super().items()))
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def keys(self) -> SyPrimitiveRet:
-        res = KeysIterator(iter(super().keys()))
+        res = list(super().keys())
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def pop(self, key: Any) -> SyPrimitiveRet:
-        res = super().pop(key)
+    def pop(self, key: Any, *args: Any) -> SyPrimitiveRet:
+        res = super().pop(key, *args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -204,9 +210,10 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def setdefault(self, key: Any = ..., default: Any = ...) -> SyPrimitiveRet:
-        res = super().setdefault(key, default)
-        return PrimitiveFactory.generate_primitive(value=res)
+    def setdefault(self, key: Any, default: Any = None) -> SyPrimitiveRet:
+        res = PrimitiveFactory.generate_primitive(value=default)
+        res = super().setdefault(key, res)
+        return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def values(self) -> SyPrimitiveRet:

@@ -14,9 +14,9 @@ from .float import Float
 from .int import Int
 from .list import List
 from .none import SyNone
-from .string import String
-from .primitive_interface import PyPrimitive
 from .primitive_container import Any
+from .primitive_interface import PyPrimitive
+from .string import String
 from .tuple import Tuple
 
 
@@ -271,7 +271,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Dict.__str__", "syft.lib.python.String", String),
         ("syft.lib.python.Dict.copy", "syft.lib.python.Dict", Dict),
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict", Dict),
-        ("syft.lib.python.Dict.get", "syft.lib.python.Any", Any),
+        # TODO: name conflict with syft.get()
+        # ("syft.lib.python.Dict.get", "syft.lib.python.Any", Any),
         ("syft.lib.python.Dict.items", "syft.lib.python.List", List),
         ("syft.lib.python.Dict.keys", "syft.lib.python.List", List),
         ("syft.lib.python.Dict.pop", "syft.lib.python.Any", Any),
@@ -339,7 +340,6 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.imag", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.numerator", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.conjugate", "syft.lib.python.Int", Int),
-
         # Tuple
         ("syft.lib.python.Tuple.__add__", "syft.lib.python.Tuple", Tuple),
         ("syft.lib.python.Tuple.__contains__", "syft.lib.python.Bool", Bool),

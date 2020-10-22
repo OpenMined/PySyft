@@ -2,12 +2,12 @@
 from collections import UserString
 import sys
 from typing import Any
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Mapping
-from typing import Iterable
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
