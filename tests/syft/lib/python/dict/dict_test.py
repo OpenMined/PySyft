@@ -21,6 +21,7 @@ import pytest
 # syft absolute
 from syft.lib.python.dict import Dict
 from syft.lib.python.string import String
+from syft.lib.python.none import SyNone
 
 class DictTest(unittest.TestCase):
     def test_invalid_keyword_arguments(self):
@@ -366,10 +367,10 @@ class DictTest(unittest.TestCase):
 
     def test_get(self):
         d = Dict()
-        self.assertIs(d.get("c"), None)
+        self.assertEqual(d.get("c"), SyNone)
         self.assertEqual(d.get("c", 3), 3)
         d = Dict({"a": 1, "b": 2})
-        self.assertIs(d.get("c"), None)
+        self.assertEqual(d.get("c"), SyNone)
         self.assertEqual(d.get("c", 3), 3)
         self.assertEqual(d.get("a"), 1)
         self.assertEqual(d.get("a", 3), 1)
