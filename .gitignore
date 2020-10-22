@@ -23,3 +23,4 @@ docs/_modules
 allowlist_test_errors_*.jsonl
 allowlist_report_*.html
 allowlist_test_support*.jsonl
+examples/pytorch/data/*

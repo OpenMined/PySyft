@@ -1928,6 +1928,18 @@
       },
       "zero_": {
         "profile": "tensor_method_noinput"
+      },
+      "backward": {
+        "profile": "default",
+        "skip": [{ "lte_version": "1.6.0" }]
+      },
+      "item": {
+        "profile": "default",
+        "skip": [{ "lte_version": "1.6.0" }]
+      },
+      "__getitem__": {
+        "profile": "default",
+        "skip": [{ "lte_version": "1.6.0" }]
       }
     }
   }
