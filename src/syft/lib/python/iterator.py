@@ -1,20 +1,29 @@
+# stdlib
+from typing import Any
+from typing import Iterable
+
 # syft relative
 from ...core.common.uid import UID
+from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
+from .util import SyPrimitiveRet
 
 
 class Iterator(PyPrimitive):
-    def __init__(self, _ref):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __init__(self, _ref: Iterable):
         super().__init__()
         self._obj_ref = _ref
         self._index = 0
         self._id = UID()
         self._exhausted = False
 
-    def __iter__(self):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> SyPrimitiveRet:
         return self
 
-    def __next__(self):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __next__(self) -> Any:
         if self._exhausted:
             raise StopIteration
 

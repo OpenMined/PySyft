@@ -1,5 +1,4 @@
 # stdlib
-from dataclasses import dataclass
 from typing import Any
 from typing import List
 from typing import Optional
@@ -27,10 +26,12 @@ class TupleIterator(Iterator):
 
 
 class Tuple(tuple, PyPrimitive):
-    def __init__(self, *args):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __init__(self, *args: Any):
         pass
 
-    def __new__(cls, *args):
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __new__(cls, *args: Any) -> SyPrimitiveRet:
         return super(Tuple, cls).__new__(Tuple, *args)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

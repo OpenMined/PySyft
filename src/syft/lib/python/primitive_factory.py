@@ -134,5 +134,4 @@ class PrimitiveFactory(ABC):
         if value is NotImplemented:
             return value
 
-        none: python.SyNone = python.SyNone
-        return none
+        return python.SyNone

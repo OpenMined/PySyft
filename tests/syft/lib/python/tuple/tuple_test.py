@@ -6,7 +6,6 @@ type2test = Tuple
 
 def test_constructors():
     assert Tuple() == ()
-    t0_3 = (0, 1, 2, 3)
     assert Tuple([]) == ()
     assert Tuple([0, 1, 2, 3]) == (0, 1, 2, 3)
     assert Tuple("") == ()
@@ -15,8 +14,8 @@ def test_constructors():
 
 
 def test_truth():
-    assert not ()
-    assert (42,)
+    assert not Tuple()
+    assert Tuple((42,))
 
 
 def test_len():

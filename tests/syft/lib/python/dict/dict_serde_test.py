@@ -61,5 +61,5 @@ def test_list_send() -> None:
 
     # Check that we can get back the object
     res = ptr.get()
-    # for res_el, original_el in zip(res, syft_list):
-    #     assert res_el == original_el
+    for res_el, original_el in zip(res, syft_list):
+        assert res_el == original_el

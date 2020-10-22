@@ -3,7 +3,6 @@ from collections import UserDict
 from typing import Any
 from typing import Iterable
 from typing import List
-from typing import Mapping
 from typing import Optional
 import warnings
 

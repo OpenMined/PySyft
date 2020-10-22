@@ -6,7 +6,6 @@ from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -41,11 +40,6 @@ class String(UserString, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> PyPrimitive:
         res = super().__add__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __contains__(self, other: Any) -> PyPrimitive:
-        res = super().__contains__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

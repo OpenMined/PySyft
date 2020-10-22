@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # syft absolute
 import syft as sy
 
@@ -6,7 +9,7 @@ alice_client = alice.get_root_client()
 remote_python = alice_client.syft.lib.python
 
 
-def get_permission(obj):
+def get_permission(obj: Any) -> None:
     remote_obj = alice.store[obj.id_at_location]
     remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
 

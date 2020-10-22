@@ -13,7 +13,6 @@ import string
 import sys
 from test import support
 import unittest
-import weakref
 
 # third party
 import pytest
@@ -22,6 +21,8 @@ import pytest
 from syft.lib.python.dict import Dict
 from syft.lib.python.none import SyNone
 from syft.lib.python.string import String
+
+# import weakref
 
 
 class DictTest(unittest.TestCase):
