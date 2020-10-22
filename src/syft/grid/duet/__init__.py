@@ -31,7 +31,7 @@ ADDR_REPOSITORY = (
 def get_loopback_path() -> str:
     loopback_file = "duet_loopback.json"
     # needs to be deterministic, will need updating for Windows
-    return str(Path("/tmp") / loopback_file)
+    return str(Path("/tmp") / loopback_file)  # nosec
 
 
 class bcolors:
