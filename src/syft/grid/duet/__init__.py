@@ -1,6 +1,8 @@
 # stdlib
 import json
+from pathlib import Path
 import sys
+import time
 from typing import Any
 from typing import Generator
 
@@ -23,6 +25,13 @@ except RuntimeError as e:
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
+
+
+# for local debugging
+def get_loopback_path() -> str:
+    loopback_file = "duet_loopback.json"
+    # needs to be deterministic, will need updating for Windows
+    return str(Path("/tmp") / loopback_file)
 
 
 class bcolors:
@@ -132,6 +141,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
 def launch_duet(
     logging: bool = True,
     network_url: str = "",
+    loopback: bool = False,
 ) -> WebRTCDuet:
     print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
@@ -179,6 +189,13 @@ def launch_duet(
         + "')"
     )
 
+    # use a local file to automatically exchange duet ids
+    if loopback is True:
+        loopback_config = {}
+        loopback_config["server_id"] = signaling_client.duet_id
+        with open(get_loopback_path(), "w") as f:
+            f.write(json.dumps(loopback_config))
+
     my_domain = Domain(name="Launcher")
 
     print(
@@ -190,7 +207,25 @@ def launch_duet(
     )
     print("♫♫♫ >         your duet partner send it to you and enter it below!")
     print()
-    target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
+    if loopback is False:
+        target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
+    else:
+        target_id = ""
+        print(
+            "Running loopback mode. Use sy.join_duet(loopback=True) on the other side."
+        )
+        while target_id == "":
+            try:
+                with open(get_loopback_path(), "r") as f:
+                    loopback_config = json.loads(f.read())
+                    if "client_id" in loopback_config:
+                        target_id = str(loopback_config["client_id"])
+                    else:
+                        time.sleep(0.5)
+            except Exception as e:
+                print(e)
+                break
+
     print("♫♫♫ > Connecting...")
 
     _ = WebRTCDuet(
@@ -213,9 +248,13 @@ def launch_duet(
 
 
 def join_duet(
-    target_id: str,
+    target_id: str = "",
     network_url: str = "",
+    loopback: bool = False,
 ) -> WebRTCDuet:
+    if target_id == "" and loopback is False:
+        cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
+        raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
     print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
@@ -256,6 +295,20 @@ def join_duet(
     )
     print()
     print("♫♫♫ > ...waiting for partner to connect...")
+    if loopback:
+        loopback_config = {}
+        with open(get_loopback_path(), "r") as f:
+            loopback_config = json.loads(f.read())
+            if "server_id" in loopback_config:
+                target_id = loopback_config["server_id"]
+            else:
+                raise Exception("No loopback file. start the Duet Data Owner first")
+
+        loopback_config["client_id"] = signaling_client.duet_id
+
+        with open(get_loopback_path(), "w") as f:
+            f.write(json.dumps(loopback_config))
+
     duet = WebRTCDuet(
         node=my_domain,
         target_id=target_id,
