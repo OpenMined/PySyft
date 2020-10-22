@@ -4,6 +4,7 @@ from typing import Any
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
+from typing import Iterable
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -21,6 +22,11 @@ from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
+from .iterator import Iterator
+
+class ListIterator(Iterator):
+    def __init__(self, _ref: Iterable):
+        super().__init__(_ref=_ref)
 
 
 class List(UserList, PyPrimitive):
@@ -129,22 +135,13 @@ class List(UserList, PyPrimitive):
         res = super().__getitem__(key)  # type: ignore
         # we might be holding a primitive value, but generate_primitive
         # doesn't handle non primitives so we should check
-        if not isprimitive(value=res):
+        if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
         return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> Any:
-        self._index = 0
-        return self
-
-    def __next__(self):
-        if self._index == self.__len__():
-            raise StopIteration
-
-        result = self[self._index]
-        self._index += 1
-        return result
+    def __iter__(self) -> ListIterator:
+        return ListIterator(self)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
@@ -216,6 +213,7 @@ class ListWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
+
 
 
 aggressive_set_attr(obj=List, name="serializable_wrapper_type", attr=ListWrapper)

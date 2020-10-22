@@ -95,7 +95,6 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.List.__iter__", "syft.lib.python.Any", SyAny),
-        ("syft.lib.python.List.__next__", "syft.lib.python.Any", SyAny),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
         ("syft.lib.python.List.append", "syft.lib.python.SyNone", SyNone),
         ("syft.lib.python.List.__gt__", "syft.lib.python.Bool", Bool),
