@@ -50,13 +50,8 @@ def test_duet_exception_catching(duet: sy.Duet) -> None:
     assert len(guest.store) == 1
     assert len(duet.store) == 2
 
-    try:
-        guest.store[0].get()  # raises AuthorizationException
+    with pytest.raises(AuthorizationException):
+        guest.store[0].get()
 
-        assert False  # we should never get here
-
-    except AuthorizationException:
-        pass
-    finally:
-        del xp
-        del xp2
+    del xp
+    del xp2
