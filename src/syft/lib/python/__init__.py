@@ -216,6 +216,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__imul__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__imod__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__ipow__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Float.__pos__", "syft.lib.python.Float", Float),
+        ("syft.lib.python.Float.conjugate", "syft.lib.python.Float", Float),
         # String Methods
         ("syft.lib.python.String.__add__", "syft.lib.python.String", String),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool", Bool),
