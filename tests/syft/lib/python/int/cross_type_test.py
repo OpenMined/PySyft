@@ -44,7 +44,7 @@ def test_api_sanity_check():
     py_int = 42
     sy_int_API = set(dir(sy_int))
     py_int_API = set(dir(py_int))
-    sy_int_method_count = 29  # warning this changes when we add methods
+    sy_int_method_count = 30  # warning this changes when we add methods
 
     assert len(py_int_API - sy_int_API) == 0
     # immutable opeartors on the ID
