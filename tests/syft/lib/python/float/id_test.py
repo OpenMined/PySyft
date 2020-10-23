@@ -105,15 +105,6 @@ def test_id_imul():
     assert res.id == test_float.id
 
 
-def test_id_int():
-    res = test_float.__int__()
-    py_res = python_float.__int__()
-
-    assert res == py_res
-    assert res.id
-    assert res.id != test_float.id
-
-
 def test_id_ipow():
     res = test_float.__ipow__(other)
     assert res.id == test_float.id
@@ -276,12 +267,6 @@ def test_id_rtruediv():
     assert res.id != test_float.id
 
 
-def test_id_sizeof():
-    res = test_float.__sizeof__()
-    assert res.id
-    assert res.id != test_float.id
-
-
 def test_id_sub():
     res = test_float.__sub__(other)
     py_res = python_float.__sub__(other)
@@ -346,7 +331,7 @@ def test_id_hex():
 
 
 def test_id_imag():
-    res = test_float.imag
+    res = test_float.imag()
     py_res = python_float.imag
 
     assert res == py_res
@@ -364,9 +349,14 @@ def test_id_is_integer():
 
 
 def test_id_real():
-    res = test_float.real
+    res = test_float.real()
     py_res = python_float.real
 
     assert res == py_res
     assert res.id
     assert res.id != test_float.id
+
+
+def test_upcast():
+    assert Float(42.5).upcast() == 42.5
+    assert type(Float(42.5).upcast()) is float

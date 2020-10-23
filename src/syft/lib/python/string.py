@@ -2,9 +2,10 @@
 from collections import UserString
 import sys
 from typing import Any
+from typing import Iterable
 from typing import List
+from typing import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -37,168 +38,331 @@ class String(UserString, PyPrimitive):
         return str(self)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def count(
-        self,
-        substring: Union[str, UserString],
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().count(substring, start_pos, end_pos)
+    def __add__(self, other: Any) -> PyPrimitive:
+        res = super().__add__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __contains__(self, val: Union[str, PyPrimitive]) -> PyPrimitive:
-        res = super().__contains__(val)
+    def __eq__(self, other: Any) -> PyPrimitive:
+        res = super().__eq__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __float__(self) -> PyPrimitive:
+        res = super().__float__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __ge__(self, other: Any) -> PyPrimitive:
+        res = super().__ge__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, other: Any) -> PyPrimitive:
+        res = super().__getitem__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __gt__(self, other: Any) -> PyPrimitive:
+        res = super().__gt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __hash__(self) -> PyPrimitive:
+        res = super().__hash__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __int__(self) -> PyPrimitive:
+        res = super().__int__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> PyPrimitive:
+        # TODO fix this
+        res = super().__iter__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __le__(self, other: Any) -> PyPrimitive:
+        res = super().__le__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __len__(self) -> PyPrimitive:
+        res = super().__len__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __lt__(self, other: Any) -> PyPrimitive:
+        res = super().__lt__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __mod__(self, other: Any) -> PyPrimitive:
+        res = super().__mod__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __mul__(self, other: Any) -> PyPrimitive:
+        res = super().__mul__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __ne__(self, other: Any) -> PyPrimitive:
+        res = super().__ne__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __reversed__(self) -> PyPrimitive:
+        res = super().__reversed__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __sizeof__(self) -> PyPrimitive:
+        res = super().__sizeof__()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __str__(self) -> str:
+        return super().__str__()
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def capitalize(self) -> PyPrimitive:
+        res = super().capitalize()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def casefold(self) -> PyPrimitive:
+        res = super().casefold()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def center(self, width: int) -> PyPrimitive:
+        res = super().center(width)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def count(self, sub: Any, start: int, end: int) -> PyPrimitive:
+        res = super().count(sub, start, end)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def encode(self, encoding: Any, errors: Any) -> PyPrimitive:
+        res = super().encode(encoding, errors)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def endswith(
-        self,
-        val: Union[str, Tuple[str, ...]],
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
+        self, suffix: Any, start: int = 0, end: int = sys.maxsize
     ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().endswith(val, start_pos, end_pos)
+        res = super().endswith(suffix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def startswith(
-        self,
-        val: Union[str, Tuple[str, ...]],
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().startswith(val, start_pos, end_pos)
+    def expandtabs(self, tabsize: int = 8) -> PyPrimitive:
+        res = super().expandtabs(tabsize)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def partition(self, val: str) -> PyPrimitive:
-        res = super().partition(val)
+    def find(self, sub: Any, start: int = 0, end: Optional[int] = None) -> PyPrimitive:
+        if end is None:
+            end = super().__len__()
+
+        res = super().find(sub, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def rpartition(self, val: str) -> PyPrimitive:
-        res = super().rpartition(val)
+    def format(self, *args: Any, **kwargs: Any) -> PyPrimitive:
+        res = super().format(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def splitlines(
-        self,
-        keepends: bool = False,
-    ) -> PyPrimitive:
-        res = super().splitlines(keepends)
+    def format_map(self, mapping: Mapping[Any, Any]) -> PyPrimitive:
+        res = super().format_map(mapping)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def find(
-        self,
-        val: Union[str, UserString],
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().find(val, start_pos, end_pos)
+    def index(self, sub: Any, start: int = 0, end: Optional[int] = None) -> PyPrimitive:
+        if end is None:
+            end = super().__len__()
+        res = super().index(sub, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def rfind(
-        self,
-        val: Union[str, UserString],
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().rfind(val, start_pos, end_pos)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def index(
-        self,
-        val: str,
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().index(val, start_pos, end_pos)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def rindex(
-        self,
-        val: str,
-        start: Optional[Union[int, None]] = None,
-        end: Optional[Union[int, None]] = None,
-    ) -> PyPrimitive:
-        start_pos = 0 if start is None else start
-        end_pos = len(self.data) if end is None else end
-        res = super().rindex(val, start_pos, end_pos)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def join(self, val: str) -> PyPrimitive:
-        res = super().join(val)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def isupper(self) -> PyPrimitive:
-        res = super().isupper()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def islower(self) -> PyPrimitive:
-        res = super().islower()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def isascii(self) -> PyPrimitive:
-        if sys.version_info >= (3, 7):
-            res = self.data.isascii()
-            return PrimitiveFactory.generate_primitive(value=res)
-        else:
-            raise AttributeError("'String' object has no attribute 'isascii'")
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def isalpha(self) -> PyPrimitive:
-        res = super().isalpha()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def isspace(self) -> PyPrimitive:
-        res = super().isspace()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
-    def istitle(self) -> PyPrimitive:
-        res = super().istitle()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=True)
     def isalnum(self) -> PyPrimitive:
         res = super().isalnum()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isalpha(self) -> PyPrimitive:
+        res = super().isalpha()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isdecimal(self) -> PyPrimitive:
+        res = super().isdecimal()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def isdigit(self) -> PyPrimitive:
         res = super().isdigit()
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def split(self, sep: Optional[str] = None, maxsplit: int = -1) -> PyPrimitive:
-        res = super().split(sep, maxsplit)
+    def isidentifier(self) -> PyPrimitive:
+        res = super().isidentifier()
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def rsplit(self, sep: Optional[str] = None, maxsplit: int = -1) -> PyPrimitive:
-        res = super().rsplit(sep, maxsplit)
+    def islower(self) -> PyPrimitive:
+        res = super().islower()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isnumeric(self) -> PyPrimitive:
+        res = super().isnumeric()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isprintable(self) -> PyPrimitive:
+        res = super().isprintable()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isspace(self) -> PyPrimitive:
+        res = super().isspace()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def istitle(self) -> PyPrimitive:
+        res = super().istitle()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def isupper(self) -> PyPrimitive:
+        res = super().isupper()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def join(self, seq: Iterable[Any]) -> PyPrimitive:
+        res = super().join(seq)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def ljust(self, width: int, *args: Any) -> PyPrimitive:
+        res = super().ljust(width, *args)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def lower(self) -> PyPrimitive:
+        res = super().lower()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def lstrip(self, chars: Optional[str] = " ") -> PyPrimitive:
+        res = super().lstrip(chars)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def partition(self, sep: Any) -> PyPrimitive:
+        res = super().partition(sep)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def replace(
+        self, oldvalue: Any, newvalue: Any, count: Optional[int] = None
+    ) -> PyPrimitive:
+        _count: int = super().__len__() if count is None else count
+        res = super().replace(oldvalue, newvalue, _count)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rfind(self, sub: Any, start: int = 0, end: Optional[int] = None) -> PyPrimitive:
+        _end: int = super().__len__() if end is None else end
+
+        res = super().rfind(sub, start, _end)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rindex(
+        self, sub: Any, start: int = 0, end: Optional[int] = None
+    ) -> PyPrimitive:
+        if end is None:
+            end = super().__len__()
+        res = super().rindex(sub, start, end)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rjust(self, width: int, *args: Any) -> PyPrimitive:
+        res = super().rjust(width, *args)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rpartition(self, sep: Any) -> PyPrimitive:
+        res = super().rpartition(sep)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rsplit(self, sep: Optional[Any] = " ", maxsplit: int = -1) -> PyPrimitive:
+        res = super().rsplit()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def rstrip(self, chars: Optional[Any] = ...) -> PyPrimitive:
+        res = super().rstrip(chars)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def split(self, sep: Optional[Any] = ..., maxsplit: int = -1) -> PyPrimitive:
+        res = super().split()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def splitlines(self, keepends: Any = ...) -> PyPrimitive:
+        res = super().splitlines()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def startswith(
+        self, prefix: Any, start: int = 0, end: int = sys.maxsize
+    ) -> PyPrimitive:
+        res = super().startswith(prefix, start, end)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def strip(self, chars: Optional[str] = " ") -> PyPrimitive:
+        res = super().strip(chars)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def swapcase(self) -> PyPrimitive:
+        res = super().swapcase()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def title(self) -> PyPrimitive:
+        res = super().title()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def translate(self, *args: Any) -> PyPrimitive:
+        res = super().translate(*args)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def upper(self) -> PyPrimitive:
+        res = super().upper()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def zfill(self, width: int) -> PyPrimitive:
+        res = super().zfill(width)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __contains__(self, val: Any) -> PyPrimitive:
+        res = super().__contains__(val)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @property

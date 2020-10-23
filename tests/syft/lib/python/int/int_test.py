@@ -7,6 +7,7 @@ import pytest
 
 # syft absolute
 from syft.lib.python.int import Int
+from syft.lib.python.int import IntWrapper
 
 VALID_UNDERSCORE_LITERALS = [
     "0_0_0",
@@ -651,3 +652,22 @@ def test_error_message() -> None:
     # lone surrogate in Unicode string
     check("123\ud800")
     check("123\ud800", 10)
+
+
+def test_protobof_schema():
+    assert Int.get_protobuf_schema()
+
+
+def test_bytes():
+    assert (
+        Int.from_bytes(Int(42).to_bytes(4, "big", signed=True), "big", signed=True)
+        == 42
+    )
+    assert (
+        Int.from_bytes(Int(-42).to_bytes(4, "big", signed=True), "big", signed=True)
+        == -42
+    )
+
+
+def test_wrapped_type():
+    assert IntWrapper.get_wrapped_type() is Int

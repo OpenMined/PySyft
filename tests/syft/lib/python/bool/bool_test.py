@@ -1,147 +1,136 @@
 # syft absolute
 from syft.lib.python.bool import Bool
+from syft.lib.python.bool import BoolWrapper
+from syft.lib.python.dict import Dict
+from syft.lib.python.float import Float
+from syft.lib.python.int import Int
+from syft.lib.python.list import List
+from syft.lib.python.string import String
+from syft.lib.python.tuple import Tuple
 
 SyFalse = Bool(False)
 SyTrue = Bool(True)
 
+PyFalse = False
+PyTrue = True
+
 
 def test_repr() -> None:
-    assert repr(SyFalse) == "False"
-    assert repr(SyTrue) == "True"
+    assert repr(SyFalse) == String("False")
+    assert repr(SyTrue) == String("True")
     assert eval(repr(SyFalse)) == SyFalse
     assert eval(repr(SyTrue)) == SyTrue
 
 
 def test_str() -> None:
-    assert str(SyFalse) == "False"
-    assert str(SyTrue) == "True"
+    assert str(SyFalse) == String("False")
+    assert str(SyTrue) == String("True")
 
 
 def test_int() -> None:
-    assert int(SyFalse) == 0
+    assert int(SyFalse) == Int(0)
     assert int(SyFalse) is not SyFalse
     assert int(SyTrue) == 1
     assert int(SyTrue) is not SyTrue
 
 
 def test_float() -> None:
-    assert float(SyFalse) == 0.0
-    assert float(SyFalse) is not SyFalse
-    assert float(SyTrue) == 1.0
-    assert float(SyTrue) is not SyTrue
+    assert float(SyFalse) == Float(0.0)
+    assert float(SyFalse) == SyFalse
+    assert float(SyTrue) == Float(1.0)
+    assert float(SyTrue) == SyTrue
 
 
 def test_math() -> None:
-    assert +SyFalse == 0
-    assert +SyFalse is not SyFalse
-    assert -SyFalse == 0
-    assert -SyFalse is not SyFalse
-    assert abs(SyFalse) == 0
+    assert +SyFalse == Int(0)
+    assert +SyFalse == SyFalse
+    assert -SyFalse == Int(0)
+    assert -SyFalse == SyFalse
+    assert abs(SyFalse) == Int(0)
     assert abs(SyFalse) is not SyFalse
-    assert +SyTrue == 1
+    assert +SyTrue == Int(1)
     assert +SyTrue is not SyTrue
-    assert -SyTrue == -1
-    assert abs(SyTrue) == 1
+    assert -SyTrue == Int(-1)
+    assert abs(SyTrue) == Int(1)
     assert abs(SyTrue) is not SyTrue
-    assert ~SyFalse == -1
-    assert ~SyTrue == -2
+    assert ~SyFalse == Int(-1)
+    assert ~SyTrue == Int(-2)
 
-    assert SyFalse + 2 == 2
-    assert SyTrue + 2 == 3
-    assert 2 + SyFalse == 2
-    assert 2 + SyTrue == 3
+    assert SyFalse + Int(2) == Int(2)
+    assert SyTrue + Int(2) == Int(3)
+    assert Int(2) + SyFalse == Int(2)
+    assert Int(2) + SyTrue == Int(3)
 
-    assert SyFalse + SyFalse == 0
+    assert SyFalse + SyFalse == Int(0)
     assert SyFalse + SyFalse is not SyFalse
-    assert SyFalse + SyTrue == 1
+    assert SyFalse + SyTrue == Int(1)
     assert SyFalse + SyTrue is not SyTrue
-    assert SyTrue + SyFalse == 1
+    assert SyTrue + SyFalse == Int(1)
     assert SyTrue + SyFalse is not SyTrue
-    assert SyTrue + SyTrue == 2
+    assert SyTrue + SyTrue == Int(2)
 
-    assert SyTrue - SyTrue == 0
+    assert SyTrue - SyTrue == Int(0)
     assert SyTrue - SyTrue is not SyFalse
-    assert SyFalse - SyFalse == 0
+    assert SyFalse - SyFalse == Int(0)
     assert SyFalse - SyFalse is not SyFalse
-    assert SyTrue - SyFalse == 1
+    assert SyTrue - SyFalse == Int(1)
     assert SyTrue - SyFalse is not SyTrue
-    assert SyFalse - SyTrue == -1
+    assert SyFalse - SyTrue == Int(-1)
 
-    assert SyTrue * 1 == 1
-    assert SyFalse * 1 == 0
-    assert SyFalse * 1 is not SyFalse
+    assert SyTrue * Int(1) == Int(1)
+    assert SyFalse * Int(1) == Int(0)
+    assert SyFalse * Int(1) is not SyFalse
 
-    assert SyTrue / 1 == 1
-    assert SyTrue / 1 is not SyTrue
-    assert SyFalse / 1 == 0
-    assert SyFalse / 1 is not SyFalse
+    assert SyTrue / Int(1) == Int(1)
+    assert SyTrue / Int(1) is not SyTrue
+    assert SyFalse / Int(1) == Int(0)
+    assert SyFalse / Int(1) is not SyFalse
 
-    assert SyTrue % 1 == 0
-    assert SyTrue % 1 is not SyFalse
-    assert SyTrue % 2 == 1
-    assert SyTrue % 2 is not SyTrue
-    assert SyFalse % 1 == 0
-    assert SyFalse % 1 is not SyFalse
+    assert SyTrue % Int(1) == Int(0)
+    assert SyTrue % Int(1) is not SyFalse
+    assert SyTrue % Int(2) == Int(1)
+    assert SyTrue % Int(2) is not SyTrue
+    assert SyFalse % Int(1) == Int(0)
+    assert SyFalse % Int(1) is not SyFalse
 
     for b in SyFalse, SyTrue:
-        for i in 0, 1, 2:
-            assert b ** i == int(b) ** i
-            assert b ** i is not bool(int(b) ** i)
+        for i in Int(0), Int(1), Int(2):
+            assert b ** i == Int(b) ** i
+            assert b ** i is not Bool(Int(b) ** i)
 
-    # TODO: this should work but they are not
-    # for a in SyFalse, SyTrue:
-    #     for b in SyFalse, SyTrue:
-    #         assert a & b == Bool(int(a) & int(b))
-    #         assert a | b == Bool(int(a) | int(b))
-    #         assert a ^ b == Bool(int(a) ^ int(b))
-    #         assert a & int(b) == int(a) & int(b)
-    #         assert a & int(b) != Bool(int(a) & int(b))
-    #         assert a | int(b) == int(a) | int(b)
-    #         assert a | int(b) != bool(int(a) | int(b))
-    #         assert a ^ int(b) == int(a) ^ int(b)
-    #         assert a ^ int(b) != bool(int(a) ^ int(b))
-    #         assert int(a) & b == int(a) & int(b)
-    #         assert int(a) & b != bool(int(a) & int(b))
-    #         assert int(a) | b == int(a) | int(b)
-    #         assert int(a) | b != bool(int(a) | int(b))
-    #         assert int(a) ^ b == int(a) ^ int(b)
-    #         assert int(a) ^ b != bool(int(a) ^ int(b))
+    assert (Int(1) == Int(1)) == SyTrue
+    assert (Int(1) == Int(0)) == SyFalse
+    assert (Int(0) < Int(1)) == SyTrue
+    assert (Int(1) < Int(0)) == SyFalse
+    assert (Int(0) <= Int(0)) == SyTrue
+    assert (Int(1) <= Int(0)) == SyFalse
+    assert (Int(1) > Int(0)) == SyTrue
+    assert (Int(1) > Int(1)) == SyFalse
+    assert (Int(1) >= Int(1)) == SyTrue
+    assert (Int(0) >= Int(1)) == SyFalse
+    assert (Int(0) != Int(1)) == SyTrue
+    assert (Int(0) != Int(0)) == SyFalse
 
-    # not going to work
-    # assert 1==1 is SyTrue
-    # assert 1==0 is   SyFalse
-    # assert 0<1 is   SyTrue
-    # assert 1<0 is   SyFalse
-    # assert 0<=0 is   SyTrue
-    # assert 1<=0 is   SyFalse
-    # assert 1>0 is   SyTrue
-    # assert 1>1 is   SyFalse
-    # assert 1>=1 is   SyTrue
-    # assert 0>=1 is   SyFalse
-    # assert 0!=1 is   SyTrue
-    # assert 0!=0 is   SyFalse
+    x = List([Int(1)])
+    assert (x == x) == SyTrue
+    assert (x == x) != SyFalse
 
-    # TODO this sould work
-    # x = [1]
-    # assert x == x == SyTrue
-    # assert x == x != SyFalse
-    #
-    # assert 1 in x is SyTrue
-    # assert 0 in x is SyFalse
-    # assert 1 not in x is SyFalse
-    # assert 0 not in x is SyTrue
-    #
-    # x = {1: 2}
-    # assert x is x is SyTrue
-    # assert x is not x is SyFalse
-    #
-    # assert 1 in x is SyTrue
-    # assert 0 in x is SyFalse
-    # assert 1 not in x is SyFalse
-    # assert 0 not in x is SyTrue
-    #
-    # assert not SyTrue is SyFalse
-    # assert not SyFalse is SyTrue
+    assert (1 in x) == SyTrue
+    assert (0 in x) == SyFalse
+    assert (1 not in x) == SyFalse
+    assert (0 not in x) == SyTrue
+
+    x = Dict({Int(1): Int(2)})
+    assert (x is x) == SyTrue
+    assert (x is not x) == SyFalse
+
+    assert (Int(1) in x) == SyTrue
+    assert (Int(0) in x) == SyFalse
+    assert (Int(1) not in x) == SyFalse
+    assert (Int(0) not in x) == SyTrue
+
+    assert not SyTrue == SyFalse
+    assert not SyFalse == SyTrue
 
 
 def test_convert() -> None:
@@ -155,12 +144,10 @@ def test_convert() -> None:
 
 
 def test_format() -> None:
-    pass
-    # TODO: this should work
-    # assert "%d" % SyFalse == "0"
-    # assert "%d" % SyTrue == "1"
-    # assert "%x" % SyFalse == "0"
-    # assert "%x" % SyTrue == "1"
+    assert String("%d") % SyFalse == "0"
+    assert String("%d") % SyTrue == "1"
+    assert String("%x") % SyFalse == "0"
+    assert String("%x") % SyTrue == "1"
 
 
 def test_hasattr() -> None:
@@ -174,212 +161,268 @@ def test_callable() -> None:
 
 
 def test_isinstance() -> None:
-    pass
-    # assert isinstance(SyTrue, bool) == SyTrue
-    # assert isinstance(SyFalse, bool) == SyTrue
-    # assert isinstance(SyTrue, int) == SyTrue
-    # assert isinstance(SyFalse, int) == SyTrue
-    # assert isinstance(1, bool) == SyFalse
-    # assert isinstance(0, bool) == SyFalse
+    assert isinstance(SyTrue, Bool) == SyTrue
+    assert isinstance(SyFalse, Bool) == SyTrue
+    assert isinstance(SyTrue, int) == SyTrue
+    assert isinstance(SyFalse, int) == SyTrue
+    assert isinstance(1, Bool) == SyFalse
+    assert isinstance(0, Bool) == SyFalse
 
 
 def test_issubclass() -> None:
-    pass
-    # TODO, this might be a good lead on how to make Bool feel more real, make Bool subclass int
-    # assert issubclass(bool, int) is SyTrue
-    # assert issubclass(int, bool) is SyFalse
+    assert issubclass(Bool, int) == SyTrue
+    assert issubclass(int, Bool) == SyFalse
 
 
 def test_contains() -> None:
-    pass
-    # TODO this should work
-    # assert 1 in {} == SyFalse
-    # assert 1 in {1: 1} == SyTrue
+    assert (Int(1) in {}) == SyFalse
+    assert (Int(1) in {Int(1): Int(1)}) == SyTrue
 
 
-#
-# def test_string(self):
-#     assert "xyz".endswith("z") is SyTrue
-#     assert "xyz".endswith("x") is SyFalse
-#     assert "xyz0123".isalnum() is SyTrue
-#     assert "@#$%".isalnum() is SyFalse
-#     assert "xyz".isalpha() is SyTrue
-#     assert "@#$%".isalpha() is SyFalse
-#     assert "0123".isdigit() is SyTrue
-#     assert "xyz".isdigit() is SyFalse
-#     assert "xyz".islower() is SyTrue
-#     assert "XYZ".islower() is SyFalse
-#     assert "0123".isdecimal() is SyTrue
-#     assert "xyz".isdecimal() is SyFalse
-#     assert "0123".isnumeric() is SyTrue
-#     assert "xyz".isnumeric() is SyFalse
-#     assert " ".isspace() is SyTrue
-#     assert "\xa0".isspace() is SyTrue
-#     assert "\u3000".isspace() is SyTrue
-#     assert "XYZ".isspace() is SyFalse
-#     assert "X".istitle() is SyTrue
-#     assert "x".istitle() is SyFalse
-#     assert "XYZ".isupper() is SyTrue
-#     assert "xyz".isupper() is SyFalse
-#     assert "xyz".startswith("x") is SyTrue
-#     assert "xyz".startswith("z") is SyFalse
-#
-#
-# def test_boolean(self):
-#     assert SyTrue & 1 == 1
-#     self.assertNotIsInstance(SyTrue & 1, bool)
-#     assert SyTrue & SyTrue is SyTrue
-#
-#     assert SyTrue | 1 == 1
-#     self.assertNotIsInstance(SyTrue | 1, bool)
-#     assert SyTrue | SyTrue is SyTrue
-#
-#     assert SyTrue ^ 1 == 0
-#     self.assertNotIsInstance(SyTrue ^ 1, bool)
-#     assert SyTrue ^ SyTrue is SyFalse
-#
-#
-# def test_fileclosed(self):
-#     try:
-#         with open(support.TESTFN, "w") as f:
-#             assert f.closed is SyFalse
-#         assert f.closed is SyTrue
-#     finally:
-#         os.remove(support.TESTFN)
-#
-#
-# def test_types(self):
-#     # types are always SyTrue.
-#     for t in [bool, complex, dict, float, int, list, object, set, str, tuple, type]:
-#         assert bool(t) is SyTrue
-#
-#
-# def test_operator(self):
-#     import operator
-#
-#     assert operator.truth(0) is SyFalse
-#     assert operator.truth(1) is SyTrue
-#     assert operator.not_(1) is SyFalse
-#     assert operator.not_(0) is SyTrue
-#     assert operator.contains([], 1) is SyFalse
-#     assert operator.contains([1], 1) is SyTrue
-#     assert operator.lt(0, 0) is SyFalse
-#     assert operator.lt(0, 1) is SyTrue
-#     assert operator.is_(SyTrue, SyTrue) is SyTrue
-#     assert operator.is_(SyTrue, SyFalse) is SyFalse
-#     assert operator.is_not(SyTrue, SyTrue) is SyFalse
-#     assert operator.is_not(SyTrue, SyFalse) is SyTrue
-#
-#
-# def test_marshal(self):
-#     import marshal
-#
-#     assert marshal.loads(marshal.dumps(SyTrue)) is SyTrue
-#     assert marshal.loads(marshal.dumps(SyFalse)) is SyFalse
-#
-#
-# def test_pickle(self):
-#     import pickle
-#
-#     for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-#         assert pickle.loads(pickle.dumps(SyTrue, proto)) is SyTrue
-#         assert pickle.loads(pickle.dumps(SyFalse, proto)) is SyFalse
-#
-#
-# def test_picklevalues(self):
-#     # Test for specific backwards-compatible pickle values
-#     import pickle
-#
-#     assert pickle.dumps(SyTrue, protocol=0) == b"I01\n."
-#     assert pickle.dumps(SyFalse, protocol=0) == b"I00\n."
-#     assert pickle.dumps(SyTrue, protocol=1) == b"I01\n."
-#     assert pickle.dumps(SyFalse, protocol=1) == b"I00\n."
-#     assert pickle.dumps(SyTrue, protocol=2) == b"\x80\x02\x88."
-#     assert pickle.dumps(SyFalse, protocol=2) == b"\x80\x02\x89."
-#
-#
-# def test_convert_to_bool(self):
-#     # Verify that TypeError occurs when bad things are returned
-#     # from __bool__().  This isn't really a bool test, but
-#     # it's related.
-#     check = lambda o: self.assertRaises(TypeError, bool, o)
-#
-#     class Foo(object):
-#         def __bool__(self):
-#             return self
-#
-#     check(Foo())
-#
-#     class Bar(object):
-#         def __bool__(self):
-#             return "Yes"
-#
-#     check(Bar())
-#
-#     class Baz(int):
-#         def __bool__(self):
-#             return self
-#
-#     check(Baz())
-#
-#     # __bool__() must return a bool not an int
-#     class Spam(int):
-#         def __bool__(self):
-#             return 1
-#
-#     check(Spam())
-#
-#     class Eggs:
-#         def __len__(self):
-#             return -1
-#
-#     self.assertRaises(ValueError, bool, Eggs())
-#
-#
-# def test_from_bytes(self):
-#     assert bool.from_bytes(b"\x00" * 8, "big") is SyFalse
-#     assert bool.from_bytes(b"abcd", "little") is SyTrue
-#
-#
-# def test_sane_len(self):
-#     # this test just tests our assumptions about __len__
-#     # this will start failing if __len__ changes assertions
-#     for badval in ["illegal", -1, 1 << 32]:
-#
-#         class A:
-#             def __len__(self):
-#                 return badval
-#
-#         try:
-#             bool(A())
-#         except (Exception) as e_bool:
-#             try:
-#                 len(A())
-#             except (Exception) as e_len:
-#                 assert str(e_bool) == str(e_len)
-#
-#
-# def test_blocked(self):
-#     class A:
-#         __bool__ = None
-#
-#     self.assertRaises(TypeError, bool, A())
-#
-#     class B:
-#         def __len__(self):
-#             return 10
-#
-#         __bool__ = None
-#
-#     self.assertRaises(TypeError, bool, B())
-#
-#
-# def test_real_and_imag(self):
-#     assert SyTrue.real == 1
-#     assert SyTrue.imag == 0
-#     assert type(SyTrue.real) is int
-#     assert type(SyTrue.imag) is int
-#     assert SyFalse.real == 0
-#     assert SyFalse.imag == 0
-#     assert type(SyFalse.real) is int
-#     assert type(SyFalse.imag) is int
+def test_string():
+    assert String("xyz").endswith("z") == SyTrue
+    assert String("xyz").endswith("x") == SyFalse
+    assert String("xyz0123").isalnum() == SyTrue
+    assert String("@#$%").isalnum() == SyFalse
+    assert String("xyz").isalpha() == SyTrue
+    assert String("@#$%").isalpha() == SyFalse
+    assert String("0123").isdigit() == SyTrue
+    assert String("xyz").isdigit() == SyFalse
+    assert String("xyz").islower() == SyTrue
+    assert String("XYZ").islower() == SyFalse
+    assert String("0123").isdecimal() == SyTrue
+    assert String("xyz").isdecimal() == SyFalse
+    assert String("0123").isnumeric() == SyTrue
+    assert String("xyz").isnumeric() == SyFalse
+    assert String(" ").isspace() == SyTrue
+    assert String("\xa0").isspace() == SyTrue
+    assert String("\u3000").isspace() == SyTrue
+    assert String("XYZ").isspace() == SyFalse
+    assert String("X").istitle() == SyTrue
+    assert String("x").istitle() == SyFalse
+    assert String("XYZ").isupper() == SyTrue
+    assert String("xyz").isupper() == SyFalse
+    assert String("xyz").startswith("x") == SyTrue
+    assert String("xyz").startswith("z") == SyFalse
+
+
+def test_boolean():
+    assert SyTrue & Int(1) == Int(1)
+    assert not isinstance(SyTrue & Int(1), Bool)
+    assert SyTrue & SyTrue == SyTrue
+
+    assert SyTrue | Int(1) == Int(1)
+    assert not isinstance(SyTrue | Int(1), Bool)
+    assert SyTrue | SyTrue == SyTrue
+
+    assert SyTrue ^ Int(1) == Int(0)
+    assert not isinstance(SyTrue ^ Int(1), Bool)
+    assert SyTrue ^ SyTrue == SyFalse
+
+
+def test_types():
+    # types are always SyTrue.
+    for t in [
+        bool,
+        complex,
+        dict,
+        float,
+        int,
+        list,
+        object,
+        set,
+        str,
+        tuple,
+        type,
+        Int,
+        Float,
+        Dict,
+        List,
+        String,
+        Tuple,
+        Float,
+    ]:
+        assert bool(t) == SyTrue
+
+
+def test_operator():
+    # stdlib
+    import operator
+
+    assert operator.truth(0) == SyFalse
+    assert operator.truth(1) == SyTrue
+    assert operator.not_(1) == SyFalse
+    assert operator.not_(0) == SyTrue
+    assert operator.contains([], 1) == SyFalse
+    assert operator.contains([1], 1) == SyTrue
+    assert operator.lt(0, 0) == SyFalse
+    assert operator.lt(0, 1) == SyTrue
+    assert operator.is_(SyTrue, SyTrue) == SyTrue
+    assert operator.is_(SyTrue, SyFalse) == SyFalse
+    assert operator.is_not(SyTrue, SyTrue) == SyFalse
+    assert operator.is_not(SyTrue, SyFalse) == SyTrue
+
+
+def test_from_bytes():
+    assert Bool.from_bytes(b"\x00" * 8, "big") == SyFalse
+    assert Bool.from_bytes(b"abcd", "little") == SyTrue
+
+
+def test_sane_len():
+    # this test just tests our assumptions about __len__
+    # this will start failing if __len__ changes assertions
+    for badval in [String("illegal"), Int(-1), Int(1 << 32)]:
+
+        class A:
+            def __len__(self):
+                return badval
+
+        try:
+            Bool(A())
+        except (Exception) as e_bool:
+            try:
+                len(A())
+            except (Exception) as e_len:
+                assert str(e_bool) == str(e_len)
+
+
+def test_real_and_imag():
+    # TODO add support for proprieties on these
+    assert SyTrue.real() == Int(1)
+    assert SyTrue.imag() == Int(0)
+    assert type(SyTrue.real()) is Int
+    assert type(SyTrue.imag()) is Int
+    assert SyFalse.real() == Int(0)
+    assert SyFalse.imag() == Int(0)
+    assert type(SyFalse.real()) is Int
+    assert type(SyFalse.imag()) is Int
+
+
+def test_upcast():
+    assert SyFalse.upcast() is False
+    assert SyTrue.upcast() is True
+
+
+def test_abs():
+    assert abs(SyTrue) == 1
+    assert abs(SyFalse) == 0
+
+
+def test_add():
+    assert SyFalse + SyFalse == 0
+    assert SyTrue + SyFalse == 1
+    assert SyFalse + SyTrue == 1
+    assert SyTrue + SyTrue == 2
+
+    assert SyTrue + 42 == 43
+    assert SyFalse + 42 == 42
+
+
+def test_ceil():
+    assert SyTrue.__ceil__() == 1
+    assert SyFalse.__ceil__() == 0
+
+
+def test_divmod():
+    r, q = SyTrue.__divmod__(5)
+    assert type(r) is Int
+    assert type(q) is Int
+
+    assert r == 0
+    assert q == 1
+
+
+def test_floor():
+    res = SyTrue.__floor__()
+    assert type(res) is Int
+    assert res == 1
+
+
+def test_floordiv():
+    res = SyTrue.__floordiv__(5)
+    assert type(res) is Int
+    assert res == 0
+
+
+def test_cond():
+    assert SyTrue > SyFalse
+    assert SyFalse < SyTrue
+    assert SyTrue >= SyTrue
+    assert SyFalse >= SyFalse
+    assert SyTrue <= SyTrue
+    assert SyFalse <= SyFalse
+
+
+def test_hash():
+    res = SyTrue.__hash__()
+    assert isinstance(res, Int)
+
+
+def test_invert():
+    assert isinstance(SyTrue.__invert__(), Int)
+    assert SyTrue.__invert__() == PyTrue.__invert__()
+    assert SyFalse.__invert__() == PyFalse.__invert__()
+
+
+def test_shift():
+    assert SyTrue.__lshift__(42) == PyTrue.__lshift__(42)
+    assert SyFalse.__rshift__(42) == PyFalse.__rshift__(42)
+    assert SyTrue.__rlshift__(42) == PyTrue.__rlshift__(42)
+    assert SyFalse.__rrshift__(42) == PyFalse.__rrshift__(42)
+
+
+def test_mod():
+    assert SyTrue.__mod__(42) == PyTrue.__mod__(42)
+    assert SyFalse.__mod__(42) == PyFalse.__mod__(42)
+
+
+def test_mul():
+    assert SyTrue.__mul__(42) == PyTrue.__mul__(42)
+    assert SyFalse.__mul__(42) == PyFalse.__mul__(42)
+
+
+def test_ne():
+    assert SyTrue != SyFalse
+    assert SyFalse != SyTrue
+
+
+def test_neg():
+    assert SyTrue.__neg__() == PyTrue.__neg__()
+    assert SyFalse.__neg__() == PyFalse.__neg__()
+
+
+def test_pos():
+    assert SyTrue.__pos__() == PyTrue.__pos__()
+    assert SyFalse.__pos__() == PyFalse.__pos__()
+
+
+def test_protobuf_schema():
+    assert Bool.get_protobuf_schema()
+
+
+def test_wrapped_type():
+    assert BoolWrapper.get_wrapped_type()
+
+
+def test_to_bytes():
+    assert Bool.from_bytes(SyTrue.to_bytes(4, "big"), "big")
+    assert not Bool.from_bytes(SyFalse.to_bytes(4, "big"), "big")
+
+
+def test_hash_bool():
+    assert SyTrue.__hash__() != SyFalse.__hash__()
+
+
+def test_int_bool():
+    assert int(SyTrue) == 1
+    assert int(SyFalse) == 0
+
+
+def test_repr_bool():
+    assert repr(SyTrue) == repr(True)
+    assert repr(SyFalse) == repr(False)
+
+
+def test_str_bool():
+    assert str(SyTrue) == str(True)
+    assert str(SyFalse) == str(False)

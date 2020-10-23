@@ -1,6 +1,8 @@
 # stdlib
 from collections import UserList
 from typing import Any
+from typing import Callable
+from typing import Iterable
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
@@ -16,11 +18,18 @@ from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
+from .iterator import Iterator
+from .none import SyNone
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
+
+
+class ListIterator(Iterator):
+    def __init__(self, _ref: Iterable):
+        super().__init__(_ref=_ref)
 
 
 class List(UserList, PyPrimitive):
@@ -32,6 +41,7 @@ class List(UserList, PyPrimitive):
         UserList.__init__(self, value)
 
         self._id: UID = id if id else UID()
+        self._index = 0
 
     @property
     def id(self) -> UID:
@@ -84,11 +94,6 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __delattr__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__delattr__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__delitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -119,6 +124,13 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
+    def sort(
+        self, key: Optional[Callable] = None, reverse: bool = False
+    ) -> SyPrimitiveRet:
+        super().sort(key=key, reverse=reverse)
+        return SyNone
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> Any:
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
@@ -133,27 +145,19 @@ class List(UserList, PyPrimitive):
         return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> Any:
-        # TODO: remove temp hack
-        if type(self).__name__ == "generator":
-            return type(self).__iter__(self)
-        res = super().__iter__()
-        return res
-
-    # hack for working around generators
-    # list doesnt have __next__ but converting a generator that thinks its a list
-    # requires this method
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __next__(self) -> Any:
-        if type(self).__name__ == "generator":
-            return type(self).__next__(self)
-        raise NotImplementedError
+    def __iter__(self) -> ListIterator:
+        return ListIterator(self)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
         res = super().copy()
         res._id = UID()
         return res
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def append(self, item: Any) -> SyPrimitiveRet:
+        super().append(item)
+        return SyNone
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, other: Any) -> SyPrimitiveRet:

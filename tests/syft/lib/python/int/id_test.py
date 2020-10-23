@@ -34,15 +34,6 @@ def test_id_and():
     assert res.id != test_int.id
 
 
-def test_id_bool():
-    res = test_int.__bool__()
-    py_res = python_int.__bool__()
-
-    assert res == py_res
-    assert res.id
-    assert res.id != test_int.id
-
-
 def test_id_ceil():
     res = test_int.__ceil__()
     py_res = python_int.__ceil__()
@@ -148,15 +139,6 @@ def test_id_imul():
 
     assert res.id
     assert res.id == test_int.id
-
-
-def test_id_int():
-    res = test_int.__int__()
-    py_res = python_int.__int__()
-
-    assert res == py_res
-    assert res.id
-    assert res.id != test_int.id
 
 
 def test_id_invert():

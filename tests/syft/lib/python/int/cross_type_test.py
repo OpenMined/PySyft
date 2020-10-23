@@ -39,19 +39,6 @@ binop = [
 ]
 
 
-def test_api_sanity_check():
-    sy_int = Int(42)
-    py_int = 42
-    sy_int_API = set(dir(sy_int))
-    py_int_API = set(dir(py_int))
-    sy_int_method_count = 30  # warning this changes when we add methods
-
-    assert len(py_int_API - sy_int_API) == 0
-    # immutable opeartors on the ID
-    # warning this changes when we add methods
-    assert len(sy_int_API - py_int_API) == sy_int_method_count
-
-
 @pytest.mark.parametrize("op", binop)
 @pytest.mark.parametrize(
     "py_obj", [42, 42.0, "42", True, False, None, 42 + 5j, [42], {42: 42}]
