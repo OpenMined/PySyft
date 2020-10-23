@@ -8,11 +8,13 @@ import torch as th
 import syft as sy
 from syft.core.common.uid import UID
 from syft.lib.python.dict import Dict
+from syft.lib.python.int import Int
+from syft.lib.python.string import String
 from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
 
 def test_dict_creation() -> None:
-    d1 = {"t1": 1, "t2": 2}
+    d1 = {String("t1"): 1, String("t2"): 2}
     dict1 = Dict(d1)
     assert type(getattr(dict1, "id", None)) is UID
 
@@ -33,7 +35,7 @@ def test_dict_serde() -> None:
     t1 = th.tensor([1, 2])
     t2 = th.tensor([1, 3])
 
-    syft_list = Dict({"t1": t1, "t2": t2})
+    syft_list = Dict({Int(1): t1, Int(2): t2})
     assert type(getattr(syft_list, "id", None)) is UID
 
     serialized = syft_list._object2proto()
@@ -52,10 +54,7 @@ def test_list_send() -> None:
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
-    t1 = th.tensor([1, 2])
-    t2 = th.tensor([1, 3])
-
-    syft_list = Dict({"t1": t1, "t2": t2})
+    syft_list = Dict({String("t1"): String("test"), String("t2"): String("test")})
     ptr = syft_list.send(alice_client)
     # Check pointer type
     assert ptr.__class__.__name__ == "DictPointer"
