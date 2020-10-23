@@ -117,6 +117,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.count", "syft.lib.python.Int", Int),
         # Bool methods - quite there
         ("syft.lib.python.Bool.__abs__", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.__eq__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Bool.__add__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__and__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Bool.__ceil__", "syft.lib.python.Bool", Int),
@@ -155,6 +156,14 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Bool.__sub__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__truediv__", "syft.lib.python.Int", Int),
         ("syft.lib.python.Bool.__xor__", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.__trunc__", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.conjugate", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.bit_length", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.as_integer_ratio", "syft.lib.python.Tuple", Tuple),
+        ("syft.lib.python.Bool.numerator", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.real", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.imag", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Bool.denominator", "syft.lib.python.Int", Int),
         # Float methods - subject to further change due
         ("syft.lib.python.Float.__add__", "syft.lib.python.Float", Float),
         ("syft.lib.python.Float.__truediv__", "syft.lib.python.Float", Float),
@@ -340,6 +349,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Int.imag", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.numerator", "syft.lib.python.Int", Int),
         ("syft.lib.python.Int.conjugate", "syft.lib.python.Int", Int),
+        ("syft.lib.python.Int.__trunc__", "syft.lib.python.Int", Int),
         # Tuple
         ("syft.lib.python.Tuple.__add__", "syft.lib.python.Tuple", Tuple),
         ("syft.lib.python.Tuple.__contains__", "syft.lib.python.Bool", Bool),

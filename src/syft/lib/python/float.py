@@ -138,9 +138,9 @@ class Float(float, PyPrimitive):
         )
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __int__(self) -> SyPrimitiveRet:
+    def __int__(self) -> int:
         res = super().__int__()
-        return PrimitiveFactory.generate_primitive(value=res)
+        return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __neg__(self) -> SyPrimitiveRet:

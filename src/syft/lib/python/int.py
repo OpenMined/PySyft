@@ -65,9 +65,9 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __int__(self) -> PyPrimitive:
+    def __int__(self) -> int:
         res = super().__int__()
-        return PrimitiveFactory.generate_primitive(value=res)
+        return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __invert__(self) -> SyPrimitiveRet:
@@ -80,41 +80,18 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __bool__(self) -> SyPrimitiveRet:
-        res = super().__bool__()
+    def __bool__(self) -> bool:
+        return super().__bool__()
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __divmod__(self, other: Any) -> SyPrimitiveRet:
+        res = super().__divmod__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __divmod__(
-        self, other: Any
-    ) -> Union[Tuple[PyPrimitive, PyPrimitive], NotImplementedType]:
-        res = super().__divmod__(other)
-
-        if res is NotImplemented:
-            return res  # type: ignore
-
-        q, r = res
-
-        return (
-            PrimitiveFactory.generate_primitive(value=q),
-            PrimitiveFactory.generate_primitive(value=r),
-        )
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdivmod__(
-        self, other: Any
-    ) -> Union[Tuple[PyPrimitive, PyPrimitive], NotImplementedType]:
+    def __rdivmod__(self, other: Any) -> SyPrimitiveRet:
         res = super().__rdivmod__(other)
-
-        if res is NotImplemented:
-            return res  # type: ignore
-
-        q, r = res
-
-        return (
-            PrimitiveFactory.generate_primitive(value=q),
-            PrimitiveFactory.generate_primitive(value=r),
-        )
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __radd__(self, other: Any) -> SyPrimitiveRet:
@@ -194,7 +171,7 @@ class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, other: Any) -> SyPrimitiveRet:
         res = super().__pow__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rpow__(self, other: Any) -> SyPrimitiveRet:
@@ -359,41 +336,35 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        s, u = super().as_integer_ratio()
-        return (
-            PrimitiveFactory.generate_primitive(value=s),
-            PrimitiveFactory.generate_primitive(value=u),
-        )
+        tpl = super().as_integer_ratio()
+        return PrimitiveFactory.generate_primitive(value=tpl)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def bit_length(self) -> SyPrimitiveRet:
         res = super().bit_length()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
     @syft_decorator(typechecking=True, prohibit_args=False)
     def denominator(self) -> SyPrimitiveRet:
         res = super().denominator
         return PrimitiveFactory.generate_primitive(value=res)
 
+    @staticmethod
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def from_bytes(cls, bytes: Any, *, signed: Any = ...) -> SyPrimitiveRet:
-        res = super().from_bytes(cls, bytes, signed=signed)
+    def from_bytes(bytes: Any, byteorder: str, *, signed: Any = True) -> SyPrimitiveRet:
+        res = int.from_bytes(bytes, byteorder, signed=signed)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
     @syft_decorator(typechecking=True, prohibit_args=False)
     def imag(self) -> SyPrimitiveRet:
         res = super().imag
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
     @syft_decorator(typechecking=True, prohibit_args=False)
     def numerator(self) -> int:
         res = super().numerator
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
     @syft_decorator(typechecking=True, prohibit_args=False)
     def real(self) -> int:
         res = super().real
@@ -404,8 +375,7 @@ class Int(int, PyPrimitive):
         res = super().conjugate()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def to_bytes(self, length: int, byteorder: str, *, signed: bool = ...) -> bytes:
-        # TODO add this when we add bytes support
+    def to_bytes(self, length: int, byteorder: str, signed: bool = True) -> bytes:
         return super().to_bytes(length, byteorder, signed=signed)
 
 

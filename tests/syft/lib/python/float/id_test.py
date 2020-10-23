@@ -105,15 +105,6 @@ def test_id_imul():
     assert res.id == test_float.id
 
 
-def test_id_int():
-    res = test_float.__int__()
-    py_res = python_float.__int__()
-
-    assert res == py_res
-    assert res.id
-    assert res.id != test_float.id
-
-
 def test_id_ipow():
     res = test_float.__ipow__(other)
     assert res.id == test_float.id

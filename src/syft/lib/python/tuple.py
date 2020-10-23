@@ -28,7 +28,18 @@ class TupleIterator(Iterator):
 class Tuple(tuple, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, *args: Any):
-        pass
+        self._id = UID()
+
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(cls, *args: Any) -> SyPrimitiveRet:
@@ -101,15 +112,14 @@ class Tuple(tuple, PyPrimitive):
     def _proto2object(proto: Tuple_PB) -> "Tuple":
         id_: UID = deserialize(blob=proto.id)
         value = [deserialize(blob=element) for element in proto.data]
-        new_list = Tuple(value=value)
+        new_list = Tuple(value)
         new_list._id = id_
         return new_list
 
-    @staticmethod
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
-        downcasted = [downcast(value=element) for element in self.data]
+        downcasted = [downcast(value=element) for element in self]
         data = [serialize(obj=element) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
 
