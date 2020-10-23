@@ -1,5 +1,8 @@
 # Contributors Guidelines to PySyft
 
+This documentation contains a set of guidelines to help you during the contribution process.
+We are happy to welcome all the contributions from anyone willing to resolve the bugs in the code present and fix any issues in this repository. You can even help us in developing some new features by raising relevant issues that will be reviewed by the PySyft Team.
+
 ## Getting Started
 
 ### Learn Git and Github
@@ -21,7 +24,22 @@ On <https://github.com/OpenMined/PySyft/issues> you can find all open Issues. Yo
 To contribute to PySyft you will need to fork the OpenMind/PySyft repository.
 Then you can work risk-free on your fork.
 
-You will just need to fork once. After that you can call `git fetch upstream` and `git pull 'branch-name'` before you do your local changes to get the remote changes and be up-to-date
+- Fork this Repository. This will create a local copy (Remote Repository) of this repository to your Github profile. Keep a reference to the original project in `upstream` remote.
+```
+$ git clone https://github.com/<your-username>/<repo-name>
+$ cd <repo-name>
+$ git remote add upstream https://github.com/<upstream-owner>/<repo-name>
+```
+
+### Syncing a Forked Repository
+
+To sync your fork (remote) with the OpenMined/PySyft (upstream) repository please see this [Guide](https://help.github.com/articles/syncing-a-fork/) on how to sync your fork or follow the given commands.
+
+```
+$ git remote update
+$ git checkout <branch-name>
+$ git rebase upstream/<branch-name>
+``` 
 
 ### Setting up Pre-Commit Hook
 
@@ -33,9 +51,6 @@ Then you just need to call `pre-commit install`
 
 This can all also be done by running `make install_hooks`
 
-### Syncing a Forked Repository
-
-To sync your fork with the OpenMined/PySyft repository please see this [Guide](https://help.github.com/articles/syncing-a-fork/) on how to sync your fork.
 
 ### Installing PySyft after Cloning Repository
 
@@ -182,3 +197,8 @@ After each commit GitHub Actions will check your new code against the formatting
 We will only merge PRs that pass the GitHub Actions checks.
 
 If your check fails, don't worry, you will still be able to make changes and make your code pass the checks.
+
+### Support
+
+For support in contributing to this project and like to follow along with any code changes to the library, please join the #code_pysyft Slack channel. [Click here to join our Slack community!](https://slack.openmined.org/)
+
