@@ -43,6 +43,12 @@ class _SyNone(PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
+        if isinstance(other, _SyNone):
+            return PrimitiveFactory.generate_primitive(value=True)
+
+        if other is None:
+            return PrimitiveFactory.generate_primitive(value=True)
+
         res = self.upcast().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 

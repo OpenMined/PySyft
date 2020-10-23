@@ -1,6 +1,7 @@
 # stdlib
 from collections import UserList
 from typing import Any
+from typing import Callable
 from typing import Iterable
 from typing import List as TypeList
 from typing import Optional
@@ -18,12 +19,13 @@ from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator
+from .none import SyNone
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
-from .none import SyNone
+
 
 class ListIterator(Iterator):
     def __init__(self, _ref: Iterable):
@@ -92,11 +94,6 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __delattr__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__delattr__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__delitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -126,8 +123,9 @@ class List(UserList, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def sort(self) -> SyPrimitiveRet:
-        super().sort()
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def sort(self, key: Callable = None, reverse: bool = False) -> SyPrimitiveRet:
+        super().sort(key=key, reverse=reverse)
         return SyNone
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -153,6 +151,11 @@ class List(UserList, PyPrimitive):
         res = super().copy()
         res._id = UID()
         return res
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def append(self, item: Any) -> SyPrimitiveRet:
+        super().append(item)
+        return SyNone
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, other: Any) -> SyPrimitiveRet:
