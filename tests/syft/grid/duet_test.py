@@ -1,3 +1,6 @@
+# stdlib
+from typing import Tuple
+
 # third party
 import pytest
 import torch as th
@@ -8,7 +11,8 @@ from syft.core.node.common.service.auth import AuthorizationException
 
 
 @pytest.mark.slow
-def test_duet_send_and_get(duet: sy.Duet) -> None:
+def test_duet_send_and_get(duet_wrapper: Tuple[sy.Duet, str]) -> None:
+    duet, _ = duet_wrapper
     x = th.tensor([1, 2, 3])
     xp = x.send(duet)
 
@@ -21,13 +25,14 @@ def test_duet_send_and_get(duet: sy.Duet) -> None:
 
 
 @pytest.mark.slow
-def test_duet_searchable_functionality(duet: sy.Duet) -> None:
+def test_duet_searchable_functionality(duet_wrapper: Tuple[sy.Duet, str]) -> None:
+    duet, url = duet_wrapper
     xp = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet)
     xp2 = (
         th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet, searchable=True)
     )
 
-    guest = sy.Duet(domain_url="http://127.0.0.1:5002/")
+    guest = sy.Duet(domain_url=url)
 
     assert len(guest.store) == 1
     assert len(duet.store) == 2
@@ -39,13 +44,14 @@ def test_duet_searchable_functionality(duet: sy.Duet) -> None:
 
 
 @pytest.mark.slow
-def test_duet_exception_catching(duet: sy.Duet) -> None:
+def test_duet_exception_catching(duet_wrapper: Tuple[sy.Duet, str]) -> None:
+    duet, url = duet_wrapper
     xp = th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet)
     xp2 = (
         th.tensor([1, 2, 3]).tag("some", "diabetes", "data").send(duet, searchable=True)
     )
 
-    guest = sy.Duet(domain_url="http://127.0.0.1:5001/")
+    guest = sy.Duet(domain_url=url)
 
     assert len(guest.store) == 1
     assert len(duet.store) == 2

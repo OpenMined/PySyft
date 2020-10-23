@@ -7,9 +7,12 @@
     https://pytest.org/latest/plugins.html
 """
 # stdlib
+import os
+import re
 from typing import Any
 from typing import Generator
 from typing import List
+from typing import Tuple
 
 # third party
 import _pytest
@@ -50,18 +53,46 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture
-def duet() -> Generator[sy.Duet, None, None]:
+def duet_wrapper() -> Generator[Tuple[sy.Duet, str], None, None]:
     address = "127.0.0.1"
-    port = 5001
+    allowed_port_range = set(range(5001, 5500))
 
     class DuetWrapper:
-        def __enter__(self) -> sy.Duet:
-            self.duet = sy.Duet(host=address, port=port)
-            return self.duet
+        def __init__(self) -> None:
+            self.port = 5001
+
+            """
+                If running the tests using multiple processes/threads
+                we need to open the duet on different ports such that
+                we would not have a port collision
+            """
+
+            worker_name = os.environ.get("PYTEST_XDIST_WORKER", "")
+            worker_number = re.search(r"\d$", worker_name)
+
+            """ The workers have the label master or gw[number] - we extract the number
+            and use that as offset for a new port where "number" starts from 0
+            """
+            offset_port = 0
+            if worker_number:
+                offset_port = 1 + int(worker_number.group())
+
+            self.port += offset_port
+
+            if self.port not in allowed_port_range:
+                raise ValueError(
+                    f"The port {self.port} is not in the range [5001:5500)"
+                )
+
+            self.url = f"http://{address}:{self.port}/"
+
+        def __enter__(self) -> Tuple[sy.Duet, str]:
+            self.duet = sy.Duet(host=address, port=self.port)
+            return self.duet, self.url
 
         def __exit__(self, *args: List[Any]) -> bool:
             self.duet.stop()
             return True
 
-    with DuetWrapper() as duet:
-        yield duet
+    with DuetWrapper() as duet_wrapper:
+        yield duet_wrapper
