@@ -23,7 +23,7 @@ from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
-
+from .none import SyNone
 
 class ListIterator(Iterator):
     def __init__(self, _ref: Iterable):
@@ -125,6 +125,10 @@ class List(UserList, PyPrimitive):
     def __sizeof__(self) -> SyPrimitiveRet:
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
+
+    def sort(self) -> SyPrimitiveRet:
+        super().sort()
+        return SyNone
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> Any:

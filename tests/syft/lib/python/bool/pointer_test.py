@@ -72,11 +72,9 @@ inputs = {
 }
 
 properties = ["denominator", "numerator", "imag", "real"]
+objects = [(True, sy_true, sy_true_ptr), (False, sy_false, sy_false_ptr)]
 
-
-@pytest.mark.parametrize(
-    "test_objects", [(True, sy_true, sy_true_ptr), (False, sy_false, sy_false_ptr)]
-)
+@pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())
 def test_pointer_objectives(test_objects, func):
     py_obj, sy_obj, remote_sy_obj = test_objects
