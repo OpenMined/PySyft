@@ -20,13 +20,11 @@ class ReplicatedSharingTensor(AbstractTensor):
         if plain_text is not None and players:
             if isinstance(plain_text, torch.LongTensor):
                 return self.__share_secret(plain_text, players)
-            elif plain_text is ReplicatedSharingTensor:
+            if plain_text is ReplicatedSharingTensor:
                 return plain_text.child
-            else:
-                dtype = plain_text.dtype if hasattr(plain_text, "dtype") else type(plain_text)
-                raise ValueError(f"Expected torch.(int64/long) but got {dtype}")
-        else:
-            return None
+            dtype = plain_text.dtype if hasattr(plain_text, "dtype") else type(plain_text)
+            raise ValueError(f"Expected torch.(int64/long) but got {dtype}")
+        return None
 
     def __share_secret(self, plain_text, workers):
         number_of_shares = len(workers)
@@ -74,10 +72,7 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def retrieve_shares(self):
         pointers = self.retrieve_pointers()
-        shares = []
-        for pointer in pointers:
-            shares.append(pointer.copy().get())
-        return shares
+        return [p.copy().get() for p in pointers]
 
     def retrieve_pointers(self):
         shares_map = self.__get_shares_map()
@@ -152,12 +147,11 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def unfold(self, kernel_size, padding=0):
         image = self
-        image = image.__apply_to_shares(torch.Tensor.double)
-        image = image.__apply_to_shares(
-            torch.nn.functional.unfold, kernel_size=kernel_size, padding=padding
+        return (
+            image.__apply_to_shares(torch.Tensor.double)
+            .__apply_to_shares(torch.nn.functional.unfold, kernel_size=kernel_size, padding=padding)
+            .__apply_to_shares(torch.Tensor.long)
         )
-        image = image.__apply_to_shares(torch.Tensor.long)
-        return image
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):
@@ -189,11 +183,12 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __private_linear_operation(self, secret, operator):
         x, y = self.__get_shares_map(), secret.__get_shares_map()
         players = self.__get_players()
-        z = {
-            player: (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
-            for player in players
-        }
-        return ReplicatedSharingTensor().__set_shares_map(z)
+        return ReplicatedSharingTensor().__set_shares_map(
+            {
+                player: (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
+                for player in players
+            }
+        )
 
     def __public_multiplication_operation(self, plain_text, operator):
         players = self.__get_players()
@@ -243,14 +238,15 @@ class ReplicatedSharingTensor(AbstractTensor):
         """
         shares_map = self.__get_shares_map()
         players = self.__get_players()
-        shares_map = {
-            player: (
-                function(shares_map[player][0], *args, **kwargs),
-                function(shares_map[player][1], *args, **kwargs),
-            )
-            for player in players
-        }
-        return ReplicatedSharingTensor().__set_shares_map(shares_map)
+        return ReplicatedSharingTensor().__set_shares_map(
+            {
+                player: (
+                    function(shares_map[player][0], *args, **kwargs),
+                    function(shares_map[player][1], *args, **kwargs),
+                )
+                for player in players
+            }
+        )
 
     def __get_players(self):
         return list(self.__get_shares_map().keys())
