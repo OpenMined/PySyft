@@ -9,6 +9,8 @@ Useful papers are:
 
 Note that the protocols are quite different in aspect from those papers
 """
+from typing import List
+
 import math
 import numpy as np
 import shaloop
@@ -45,7 +47,7 @@ N_CORES = max(4, multiprocessing.cpu_count())
 MULTI_LIMIT = 50_000
 
 
-def _get_items(partitions):
+def _get_items(partitions: List):
     list_items = [[] for _ in range(len(partitions[0]))]
     for partition in partitions:
         for i, item in enumerate(partition):
@@ -59,7 +61,7 @@ def _get_items(partitions):
     return list_items
 
 
-def _get_primitives(list_items):
+def _get_primitives(list_items: List):
     primitives = []
     for items in list_items:
         if isinstance(items[0], np.ndarray):
@@ -70,7 +72,7 @@ def _get_primitives(list_items):
     return primitives
 
 
-def keygen(n_values, op):
+def keygen(n_values: int, op: str):
     """
     Run FSS keygen in parallel to accelerate the offline part of the protocol
 
@@ -98,7 +100,7 @@ def keygen(n_values, op):
     raise ValueError(f"{op} is an unsupported operation.")
 
 
-def fss_op(x1, x2, op="eq"):
+def fss_op(x1, x2, op: str = "eq"):
     """
     Define the workflow for a binary operation using Function Secret Sharing
 
@@ -186,7 +188,7 @@ def fss_op(x1, x2, op="eq"):
 
 # share level
 @allow_command
-def mask_builder(x1, x2, op):
+def mask_builder(x1, x2, op: str):
     if not isinstance(x1, int):
         worker = x1.owner
         numel = x1.numel()
@@ -203,7 +205,7 @@ def mask_builder(x1, x2, op):
 
 # share level
 @allow_command
-def evaluate(b, x_masked, op, dtype):
+def evaluate(b, x_masked, op: str, dtype):
     if op == "eq":
         return eq_evaluate(b, x_masked)
     elif op == "comp":
@@ -281,7 +283,7 @@ class DPF:
     """Distributed Point Function - used for equality"""
 
     @staticmethod
-    def keygen(n_values=1):
+    def keygen(n_values: int = 1):
         alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
         beta = np.array([1])
         α = bit_decomposition(alpha)
@@ -339,7 +341,7 @@ class DIF:
     """Distributed Point Function - used for comparison"""
 
     @staticmethod
-    def keygen(n_values=1):
+    def keygen(n_values: int = 1):
         alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
         α = bit_decomposition(alpha)
         s, σ, t, τ, CW, CW_leaf = (
@@ -421,7 +423,7 @@ class DIF:
         return out.sum(axis=0).astype(np.int64).reshape(original_shape)
 
 
-def compress(CWi, alpha_i, op=EQ):
+def compress(CWi, alpha_i, op: int = EQ):
     """Compression technique which reduces the size of the CWi by dropping some
     non-necessary randomness.
 
@@ -442,7 +444,7 @@ def compress(CWi, alpha_i, op=EQ):
         )
 
 
-def uncompress(_CWi, op=EQ):
+def uncompress(_CWi, op: int = EQ):
     """Decompress the compressed CWi by duplicating the randomness to recreate
     the original shape."""
     if op == EQ:
@@ -616,7 +618,7 @@ split_helpers = {
 }
 
 
-def split(list_, idx):
+def split(list_, idx: int):
     return split_helpers[idx](list_)
 
 
