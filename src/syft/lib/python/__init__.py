@@ -280,6 +280,10 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.String.upper", "syft.lib.python.String", String),
         ("syft.lib.python.String.zfill", "syft.lib.python.String", String),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool", Bool),
+        ("syft.lib.python.String.__rmul__", "syft.lib.python.String", String),
+        ("syft.lib.python.String.endswith", "syft.lib.python.Bool", Bool),
+        ("syft.lib.python.String.isascii", "syft.lib.python.Bool", Bool),
+        ("syft.lib.python.String.istitle", "syft.lib.python.Bool", Bool),
         # Dict methods
         ("syft.lib.python.Dict.__contains__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Dict.__eq__", "syft.lib.python.Bool", Bool),
