@@ -69,8 +69,8 @@ jobs:
           pip install bandit
           bandit -r src -ll
 
-      - name: Install pytorch 1
-        if: !startsWith(runner.os, 'Windows')
+      - name: Install pytorch Linux/MacOS
+        if: startsWith(runner.os, 'Windows') != true
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
@@ -87,7 +87,7 @@ jobs:
           pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
 
-      - name: Install pytorch 2
+      - name: Install pytorch Windows
         if: startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
