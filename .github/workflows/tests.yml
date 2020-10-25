@@ -10,7 +10,7 @@ on:
       - "setup.cfg"
 
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
     paths:
       - "**.py"
       - "setup.cfg"
@@ -20,9 +20,9 @@ jobs:
     strategy:
       max-parallel: 24
       matrix:
-        os: [windows-latest]
-        python-version: [3.8, 3.7, 3.6]
-        torch-version: [1.5.0, 1.5.1, 1.6.0]
+        os: [ windows-latest ]
+        python-version: [ 3.8, 3.7, 3.6 ]
+        torch-version: [ 1.5.0, 1.5.1, 1.6.0 ]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -69,7 +69,7 @@ jobs:
           pip install bandit
           bandit -r src -ll
 
-      - name: Install pytorch (Linux/MacOS)
+      - name: Install pytorch Linux, MacOS
         if: !startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
@@ -88,7 +88,7 @@ jobs:
           pip install torchvision==${TORCHVISION_VERSION}
 
 
-      - name: Install pytorch (Windows)
+      - name: Install pytorch Windows
         if: startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
@@ -113,7 +113,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [ 3.8 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -157,7 +157,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [ 3.8 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -192,9 +192,9 @@ jobs:
     strategy:
       max-parallel: 24
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: [3.8, 3.7, 3.6]
-        torch-version: [1.5.0, 1.5.1, 1.6.0]
+        os: [ ubuntu-latest, macos-latest ]
+        python-version: [ 3.8, 3.7, 3.6 ]
+        torch-version: [ 1.5.0, 1.5.1, 1.6.0 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -253,7 +253,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [ 3.8 ]
 
     steps:
       - uses: actions/checkout@v2
