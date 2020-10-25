@@ -99,7 +99,7 @@ jobs:
           } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
               $env:TORCHVISION_VERSION="0.7"
           }
-          pip install torch==$env:TORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Run normal tests without coverage
         run: |
