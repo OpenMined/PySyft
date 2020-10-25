@@ -1,4 +1,4 @@
-"""In this test suite, we load the allowlist.json and run through all the tests based
+"""In this test suite, we load the allowlist_test.json and run through all the tests based
 on what expected inputs and return types are provided by the json file.
 """
 
@@ -298,6 +298,7 @@ for op in BASIC_OPS:
             inputs,
             [is_property],
             [return_type],
+            [True, False]
         )
     )
 
@@ -343,7 +344,7 @@ for op in BASIC_OPS:
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "tensor_type, op_name, self_tensor, _args, is_property, return_type", TEST_DATA
+    "tensor_type, op_name, self_tensor, _args, is_property, return_type, is_parameter", TEST_DATA
 )
 def test_all_allowlisted_tensor_methods(
     tensor_type: str,
@@ -352,6 +353,7 @@ def test_all_allowlisted_tensor_methods(
     _args: Union[str, List, bool, None],
     is_property: bool,
     return_type: str,
+    is_parameter: bool,
 ) -> None:
 
     support_data = {}
@@ -367,6 +369,7 @@ def test_all_allowlisted_tensor_methods(
         "_args": _args,
         "is_property": is_property,
         "return_type": return_type,
+        "is_parameter": is_parameter,
     }
 
     try:
@@ -383,6 +386,9 @@ def test_all_allowlisted_tensor_methods(
             th.tensor(self_tensor, dtype=t_type),
             th.tensor(self_tensor, dtype=t_type),
         )
+
+        if is_parameter:
+            self_tensor = th.nn.Parameter(data=self_tensor, requires_grad=False)
 
         # we dont have .id's by default anymore
         # self_tensor_copy.id = self_tensor.id  # type: ignore
