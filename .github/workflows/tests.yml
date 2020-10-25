@@ -20,7 +20,7 @@ jobs:
     strategy:
       max-parallel: 24
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [windows-latest]
         python-version: [3.8, 3.7, 3.6]
         torch-version: [1.5.0, 1.5.1, 1.6.0]
 
@@ -49,6 +49,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Windows')
+        with:
+          path: %LOCALAPPDATA%\pip\Cache
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
       - name: Cache packages
         uses: actions/cache@v2
         id: cache-reqs
@@ -61,7 +69,8 @@ jobs:
           pip install bandit
           bandit -r src -ll
 
-      - name: Run normal tests without coverage
+      - name: Install pytorch (Linux/MacOS)
+        if: !startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
@@ -75,8 +84,25 @@ jobs:
           then
               TORCHVISION_VERSION="0.7"
           fi
-          pip install torch==$TORCH_VERSION
+          pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
+
+
+      - name: Install pytorch (Windows)
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          }
+          pip install torch==$env:TORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Run normal tests without coverage
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
@@ -101,14 +127,6 @@ jobs:
         if: startsWith(runner.os, 'Linux')
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'macOS')
-        with:
-          path: ~/Library/Caches/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
@@ -150,17 +168,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'macOS')
-        with:
-          path: ~/Library/Caches/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
