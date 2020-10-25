@@ -102,6 +102,7 @@ jobs:
           pip install torch==$env:TORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Run normal tests without coverage
+        run: |
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
