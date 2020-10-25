@@ -52,7 +52,7 @@ jobs:
       - uses: actions/cache@v2
         if: startsWith(runner.os, 'Windows')
         with:
-          path: %LOCALAPPDATA%\pip\Cache
+          path: '%LOCALAPPDATA%\pip\Cache'
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
