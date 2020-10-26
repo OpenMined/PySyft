@@ -4,15 +4,15 @@ import logging
 
 from flask import Response, request
 
-from ...codes import RESPONSE_MSG
-from ...exceptions import (
+from ..codes import RESPONSE_MSG
+from ..exceptions import (
     UserNotFoundError,
     RoleNotFoundError,
     AuthorizationError,
     PyGridError,
     MissingRequestKeyError,
 )
-from ...core.database import Role, User, db
+from ..database import Role, User, db
 
 
 def create_role(current_user, private_key, role_fields):
