@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -24,6 +25,7 @@ class HTTPConnection(ClientConnection):
     @syft_decorator(typechecking=True)
     def __init__(self, url: str) -> None:
         self.base_url = url
+        self.session_token: Optional[Dict[str, str]] = None
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
@@ -88,20 +90,40 @@ class HTTPConnection(ClientConnection):
         # Serialize SyftMessage object
         json_msg = msg.json()
 
+        # If session token active
+        if self.session_token:
+            header = {"token": self.session_token}
+        else:
+            header = {}
+
         # Perform HTTP request using base_url as a root address
-        r = requests.post(url=self.base_url + HTTPConnection.SYFT_ROUTE, json=json_msg)
+        r = requests.post(
+            url=self.base_url + HTTPConnection.SYFT_ROUTE, json=json_msg, headers=header
+        )
 
         # Return request's response object
         # r.text provides the response body as a str
         return r
 
     def login(self, credentials: Dict) -> Tuple:
-        response = json.loads(
-            requests.post(
-                url=self.base_url + HTTPConnection.LOGIN_ROUTE, data=credentials
-            ).text
+        # Login request
+        response = requests.post(
+            url=self.base_url + HTTPConnection.LOGIN_ROUTE, json=credentials
         )
-        return (response["metadata"], response["key"])
+
+        # Response
+        content = json.loads(response.text)
+
+        # If fail
+        if response.status_code != requests.codes.ok:
+            raise Exception(content["error"])
+
+        # If success
+        # Save session token
+        self.session_token = content["token"]
+
+        # Return node metadata / user private key
+        return (content["metadata"], content["key"])
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> str:
