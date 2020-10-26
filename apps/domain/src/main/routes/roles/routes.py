@@ -4,8 +4,8 @@ import logging
 
 from flask import Response, request
 
-from ...codes import RESPONSE_MSG
-from ...exceptions import (
+from ...core.codes import RESPONSE_MSG
+from ...core.exceptions import (
     UserNotFoundError,
     RoleNotFoundError,
     InvalidCredentialsError,
@@ -15,7 +15,13 @@ from ...exceptions import (
 )
 from .blueprint import roles_blueprint as roles_route
 from ..auth import error_handler, token_required_factory
-from .role_ops import create_role, get_role, get_all_roles, put_role, delete_role
+from ...core.roles.role_ops import (
+    create_role,
+    get_role,
+    get_all_roles,
+    put_role,
+    delete_role,
+)
 from ...core.database import db, Role, User, model_to_json
 
 expected_fields = (
