@@ -185,7 +185,6 @@ class Class(Callable):
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)
 
-            # STep 4: return pointer
             # Step 4: return pointer
             return ptr
 
