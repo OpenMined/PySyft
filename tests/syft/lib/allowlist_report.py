@@ -25,7 +25,7 @@ import torch as th  # noqa: E402
 # syft absolute
 from syft.lib.torch import allowlist  # noqa: E402
 
-TORCH_VERSION = version.parse(th.__version__)
+TORCH_VERSION = version.parse(th.__version__.split("+")[0])
 py_ver = sys.version_info
 PYTHON_VERSION = version.parse(f"{py_ver.major}.{py_ver.minor}")
 OS_NAME = platform.system().lower()

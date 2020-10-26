@@ -12,7 +12,7 @@ from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
 from .allowlist import allowlist
 
-TORCH_VERSION = version.parse(torch.__version__)
+TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:

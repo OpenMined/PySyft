@@ -20,7 +20,8 @@ def get_signing_key() -> SigningKey:
     return SigningKey(bytes.fromhex(key))
 
 
-def test_init_without_event_loop() -> None:
+@pytest.mark.asyncio
+async def test_init_without_event_loop() -> None:
     nest_asyncio.apply()
 
     domain = Domain(name="test")
