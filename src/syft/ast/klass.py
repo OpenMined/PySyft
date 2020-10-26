@@ -241,7 +241,6 @@ class Class(Callable):
         )
         aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
         aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
-        aggressive_set_attr(obj=outer_self.ref, name="hex", attr=Serializable.hex)
 
 
 def ispointer(obj: Any) -> bool:

@@ -41,6 +41,7 @@ class DictTest(unittest.TestCase):
         self.assertEqual(Dict(), {})
         self.assertIsNot(Dict(), {})
 
+    @pytest.mark.slow
     def test_literal_constructor(self):
         # check literal constructor for different sized dicts
         # (to exercise the BUILD_MAP oparg).
@@ -331,6 +332,7 @@ class DictTest(unittest.TestCase):
         self.assertEqual({}.copy(), {})
         self.assertRaises(TypeError, d.copy, None)
 
+    @pytest.mark.slow
     def test_copy_fuzz(self):
         for dict_size in [10, 100, 1000]:  # TODO: 10000, 100000
             dict_size = random.randrange(dict_size // 2, dict_size + dict_size // 2)
@@ -461,6 +463,7 @@ class DictTest(unittest.TestCase):
         self.assertEqual(hashed2.hash_count, 1)
         self.assertEqual(hashed1.eq_count + hashed2.eq_count, 1)
 
+    @pytest.mark.slow
     def test_popitem(self):
         # dict.popitem()
         for copymode in -1, +1:
@@ -1343,6 +1346,7 @@ class DictTest(unittest.TestCase):
 
         self.check_reentrant_insertion(mutate)
 
+    @pytest.mark.slow
     def test_merge_and_mutate(self):
         class X:
             def __hash__(self):

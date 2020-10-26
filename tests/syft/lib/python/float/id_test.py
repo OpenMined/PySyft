@@ -308,7 +308,7 @@ def test_id_as_integer_ratio():
 @pytest.mark.xfail
 def test_id_binary():
     # TODO finish this when we have bytes support
-    pass
+    assert True is False
 
 
 def test_id_conjugate():
@@ -320,7 +320,6 @@ def test_id_conjugate():
     assert res.id != test_float.id
 
 
-@pytest.mark.xfail
 def test_id_hex():
     res = test_float.hex()
     py_res = python_float.hex()
