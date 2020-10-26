@@ -1932,7 +1932,7 @@
       "backward": {
         "profile": "default",
         "inputs": ["self"],
-        "return_type": "syft.lib.python.SyNone",
+        "return_type": "syft.lib.python._SyNone",
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
