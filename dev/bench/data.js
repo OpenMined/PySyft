@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1603200068867,
+  "lastUpdate": 1603719793392,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Python Benchmark with pytestbenchmark": [
@@ -118,6 +118,65 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.03749463073792496",
             "extra": "mean: 1.2128765103999855 sec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rladhkstn8@gmail.com",
+            "name": "Wansoo Kim",
+            "username": "marload"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d811ef1e91e5e2c84fbbf1edf61e6983380b4d16",
+          "message": "fix C408 (#4714)",
+          "timestamp": "2020-10-26T15:31:40+02:00",
+          "tree_id": "7db2dad963525036d86878c80a06636fc6668eae",
+          "url": "https://github.com/OpenMined/PySyft/commit/d811ef1e91e5e2c84fbbf1edf61e6983380b4d16"
+        },
+        "date": 1603719792876,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_maclaurin",
+            "value": 12.455787598056613,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00045463175625117355",
+            "extra": "mean: 80.28396374999384 msec\nrounds: 12"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_exp",
+            "value": 0.051801081478899884,
+            "unit": "iter/sec",
+            "range": "stddev: 0.13785062743523468",
+            "extra": "mean: 19.304616263800007 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_chebyshev",
+            "value": 0.8173405065642716,
+            "unit": "iter/sec",
+            "range": "stddev: 0.020007859500412593",
+            "extra": "mean: 1.2234802899999977 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_sigmoid",
+            "value": 0.8049765682566539,
+            "unit": "iter/sec",
+            "range": "stddev: 0.015185792705637212",
+            "extra": "mean: 1.2422721845999944 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_chebyshev",
+            "value": 0.8287430129408001,
+            "unit": "iter/sec",
+            "range": "stddev: 0.006991693104589301",
+            "extra": "mean: 1.2066466737999917 sec\nrounds: 5"
           }
         ]
       }
