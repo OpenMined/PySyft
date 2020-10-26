@@ -10,9 +10,14 @@ from flask import Response
 from flask import current_app as app
 from flask import request
 
-from ...codes import RESPONSE_MSG
-from ...core.database import db, Group, Role, User, UserGroup
-from ...exceptions import (
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
+
+from ..codes import RESPONSE_MSG
+from ..node import node
+from ..database import db, Group, Role, User, UserGroup, expand_user_object
+from ..exceptions import (
     AuthorizationError,
     GroupNotFoundError,
     InvalidCredentialsError,
@@ -48,7 +53,7 @@ def identify_user(private_key):
     return user, user_role
 
 
-def signup_user(private_key, email, password, role):
+def signup_user(email, password, role=None, private_key=None):
     user_role = None
     user = None
 
@@ -60,7 +65,8 @@ def signup_user(private_key, email, password, role):
     if private_key is not None and (user is None or user_role is None):
         raise InvalidCredentialsError
 
-    private_key = token_hex(32)
+    # generate a signing key
+    private_key = SigningKey.generate()
     salt, hashed = salt_and_hash_password(password, 12)
     no_user = len(db.session.query(User).all()) == 0
 
@@ -73,7 +79,7 @@ def signup_user(private_key, email, password, role):
             email=email,
             hashed_password=hashed,
             salt=salt,
-            private_key=private_key,
+            private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
             role=role,
         )
     elif role is not None and user_role is not None and user_role.can_create_users:
@@ -83,7 +89,7 @@ def signup_user(private_key, email, password, role):
             email=email,
             hashed_password=hashed,
             salt=salt,
-            private_key=private_key,
+            private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
             role=role,
         )
     else:
@@ -95,20 +101,24 @@ def signup_user(private_key, email, password, role):
             email=email,
             hashed_password=hashed,
             salt=salt,
-            private_key=private_key,
+            private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
             role=role,
         )
 
     db.session.add(new_user)
     db.session.commit()
 
-    return new_user
+    # Add the new key in verify_key_registry
+    node.guest_verify_key_registry.add(private_key.verify_key)
+    user = expand_user_object(new_user)
+    return {"user": user}
 
 
-def login_user(private_key, email, password):
+def login_user(email, password):
     password = password.encode("UTF-8")
 
-    user = User.query.filter_by(email=email, private_key=private_key).first()
+    user = User.query.filter_by(email=email).first()
+
     if user is None:
         raise InvalidCredentialsError
 
@@ -118,12 +128,16 @@ def login_user(private_key, email, password):
     if checkpw(password, salt + hashed):
         token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
         token = token.decode("UTF-8")
-        return token
+        return {
+            "token": token,
+            "key": user.private_key,
+            "metadata": node.get_metadata_for_client(),
+        }
     else:
         raise InvalidCredentialsError
 
 
-def get_all_users(current_user, private_key):
+def get_all_users(current_user):
     user_role = Role.query.get(current_user.role)
     if user_role is None:
         raise RoleNotFoundError
@@ -132,10 +146,12 @@ def get_all_users(current_user, private_key):
         raise AuthorizationError
 
     users = User.query.all()
-    return users
+    users = [expand_user_object(user) for user in users]
+    return {"users": users}
 
 
-def get_specific_user(current_user, private_key, user_id):
+def get_specific_user(current_user, user_id):
+    user_id = int(user_id)
     user_role = Role.query.get(current_user.role)
     if user_role is None:
         raise RoleNotFoundError
@@ -147,10 +163,11 @@ def get_specific_user(current_user, private_key, user_id):
     if user is None:
         raise UserNotFoundError
 
-    return user
+    return {"user": expand_user_object(user)}
 
 
-def change_user_email(current_user, private_key, email, user_id):
+def change_user_email(current_user, email, user_id):
+    user_id = int(user_id)
     user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
@@ -164,11 +181,11 @@ def change_user_email(current_user, private_key, email, user_id):
     setattr(edited_user, "email", email)
     db.session.commit()
 
-    return edited_user
+    return {"user": expand_user_object(edited_user)}
 
 
-def change_user_role(current_user, private_key, role, user_id):
-    if user_id == 1:  # can't change Owner
+def change_user_role(current_user, role, user_id):
+    if int(user_id) == 1:  # can't change Owner
         raise AuthorizationError
 
     user_role = db.session.query(Role).get(current_user.role)
@@ -177,7 +194,7 @@ def change_user_role(current_user, private_key, role, user_id):
 
     if user_role is None:
         raise RoleNotFoundError
-    if user_id != current_user.id and not user_role.can_create_users:
+    if int(user_id) != current_user.id and not user_role.can_create_users:
         raise AuthorizationError
     # Only Owners can create other Owners
     if role == owner_role and current_user.id != owner_role:
@@ -188,10 +205,11 @@ def change_user_role(current_user, private_key, role, user_id):
     setattr(edited_user, "role", int(role))
     db.session.commit()
 
-    return edited_user
+    return {"user": expand_user_object(edited_user)}
 
 
-def change_user_password(current_user, private_key, password, user_id):
+def change_user_password(current_user, password, user_id):
+    user_id = int(user_id)
     user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
@@ -207,10 +225,11 @@ def change_user_password(current_user, private_key, password, user_id):
     setattr(edited_user, "hashed_password", hashed)
     db.session.commit()
 
-    return edited_user
+    return {"user": expand_user_object(edited_user)}
 
 
-def change_user_groups(current_user, private_key, groups, user_id):
+def change_user_groups(current_user, groups, user_id):
+    user_id = int(user_id)
     user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
@@ -235,10 +254,11 @@ def change_user_groups(current_user, private_key, groups, user_id):
 
     db.session.commit()
 
-    return edited_user
+    return {"user": expand_user_object(edited_user)}
 
 
-def delete_user(current_user, private_key, user_id):
+def delete_user(current_user, user_id):
+    user_id = int(user_id)
     user_role = db.session.query(Role).get(current_user.role)
     edited_user = db.session.query(User).get(user_id)
 
@@ -252,10 +272,10 @@ def delete_user(current_user, private_key, user_id):
     db.session.delete(edited_user)
     db.session.commit()
 
-    return edited_user
+    return {"user": expand_user_object(edited_user)}
 
 
-def search_users(current_user, private_key, filters, group):
+def search_users(current_user, filters):
     user_role = db.session.query(Role).get(current_user.role)
 
     if user_role is None:
@@ -271,5 +291,5 @@ def search_users(current_user, private_key, filters, group):
             query = query.join(UserGroup).filter(UserGroup.group.in_([group]))
 
     users = query.all()
-
-    return users
+    users = [expand_user_object(user) for user in users]
+    return {"users": users}
