@@ -10,10 +10,9 @@ from flask import current_app as app
 from flask import request
 
 
-from ...codes import RESPONSE_MSG
 from .blueprint import users_blueprint as user_route
 from ..auth import error_handler, token_required_factory
-from ...exceptions import (
+from ...core.exceptions import (
     AuthorizationError,
     GroupNotFoundError,
     InvalidCredentialsError,
@@ -22,8 +21,11 @@ from ...exceptions import (
     RoleNotFoundError,
     UserNotFoundError,
 )
+
+from ...core.codes import RESPONSE_MSG
+from ...core.task_handler import task_handler
 from ...core.database import db, Group, Role, User, UserGroup, expand_user_object
-from .user_ops import (
+from ...core.users.user_ops import (
     change_user_email,
     change_user_groups,
     change_user_password,
@@ -53,24 +55,15 @@ token_required = token_required_factory(get_token, format_result)
 
 
 @user_route.route("", methods=["POST"])
-def signup_user_route():
-    def route_logic():
-        private_key = user = user_role = None
-        private_key = request.headers.get("private-key")
-        data = loads(request.data)
-        password = data.get("password")
-        email = data.get("email")
-        role = data.get("role")
+def create_user():
+    content = request.get_json(silent=True)
 
-        if email is None or password is None:
-            raise MissingRequestKeyError
-
-        user = signup_user(private_key, email, password, role)
-        user = expand_user_object(user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic)
+    status_code, response_body = task_handler(
+        route_function=signup_user,
+        data=content,
+        mandatory={"password": MissingRequestKeyError, "email": MissingRequestKeyError},
+        optional=["role"],
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -78,22 +71,19 @@ def signup_user_route():
 
 
 @user_route.route("/login", methods=["POST"])
-def login_user_route():
-    def route_logic():
-        data = loads(request.data)
-        email = data.get("email")
-        password = data.get("password")
-        private_key = request.headers.get("private-key")
+def login_route():
+    # Get request body
+    content = loads(request.data)
 
-        if email is None or password is None or private_key is None:
-            raise MissingRequestKeyError
-
-        token = login_user(private_key, email, password)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "token": token}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic)
-
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=login_user,
+        data=content,
+        mandatory={
+            "password": MissingRequestKeyError,
+            "email": MissingRequestKeyError,
+        },
+    )
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
@@ -102,21 +92,15 @@ def login_user_route():
 @user_route.route("", methods=["GET"])
 @token_required
 def get_all_users_route(current_user):
-    def route_logic(current_user):
-        private_key = request.headers.get("private-key")
-        if private_key is None:
-            raise MissingRequestKeyError
 
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        users = get_all_users(current_user, private_key)
-        users = [expand_user_object(user) for user in users]
-        response_body = {RESPONSE_MSG.SUCCESS: True, "users": users}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user)
-
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=get_all_users,
+        data={"current_user": current_user},
+        mandatory={
+            "current_user": MissingRequestKeyError,
+        },
+    )
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
@@ -125,21 +109,15 @@ def get_all_users_route(current_user):
 @user_route.route("/<user_id>", methods=["GET"])
 @token_required
 def get_specific_user_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        private_key = request.headers.get("private-key")
-        if private_key is None:
-            raise MissingRequestKeyError
-
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        user = get_specific_user(current_user, private_key, user_id)
-        user = expand_user_object(user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=get_specific_user,
+        data={"current_user": current_user, "user_id": user_id},
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -149,23 +127,21 @@ def get_specific_user_route(current_user, user_id):
 @user_route.route("/<user_id>/email", methods=["PUT"])
 @token_required
 def change_user_email_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        data = loads(request.data)
-        email = data.get("email")
-        private_key = request.headers.get("private-key")
+    # Get request body
+    content = loads(request.data)
+    content["current_user"] = current_user
+    content["user_id"] = user_id
 
-        if email is None or private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        user = change_user_email(current_user, private_key, email, user_id)
-        user = expand_user_object(user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=change_user_email,
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+            "email": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -175,23 +151,21 @@ def change_user_email_route(current_user, user_id):
 @user_route.route("/<user_id>/role", methods=["PUT"])
 @token_required
 def change_user_role_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        data = loads(request.data)
-        role = data.get("role")
-        private_key = request.headers.get("private-key")
+    # Get request body
+    content = loads(request.data)
+    content["current_user"] = current_user
+    content["user_id"] = user_id
 
-        if role is None or private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        edited_user = change_user_role(current_user, private_key, role, user_id)
-        edited_user = expand_user_object(edited_user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=change_user_role,
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+            "role": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -201,24 +175,21 @@ def change_user_role_route(current_user, user_id):
 @user_route.route("/<user_id>/password", methods=["PUT"])
 @token_required
 def change_user_password_role(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        data = loads(request.data)
-        password = data.get("password")
-        private_key = request.headers.get("private-key")
+    # Get request body
+    content = loads(request.data)
+    content["current_user"] = current_user
+    content["user_id"] = user_id
 
-        if password is None or private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        edited_user = change_user_password(current_user, private_key, password, user_id)
-        edited_user = expand_user_object(edited_user)
-
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=change_user_password,
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+            "password": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -228,23 +199,21 @@ def change_user_password_role(current_user, user_id):
 @user_route.route("/<user_id>/groups", methods=["PUT"])
 @token_required
 def change_user_groups_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        data = loads(request.data)
-        groups = data.get("groups")
-        private_key = request.headers.get("private-key")
+    # Get request body
+    content = loads(request.data)
+    content["current_user"] = current_user
+    content["user_id"] = user_id
 
-        if groups is None or private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        edited_user = change_user_groups(current_user, private_key, groups, user_id)
-        edited_user = expand_user_object(edited_user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=change_user_groups,
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+            "groups": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -254,21 +223,20 @@ def change_user_groups_route(current_user, user_id):
 @user_route.route("/<user_id>", methods=["DELETE"])
 @token_required
 def delete_user_role(current_user, user_id):
-    def route_logic(current_user, user_id):
-        user_id = int(user_id)
-        private_key = request.headers.get("private-key")
+    # Get request body
+    content = {}
+    content["current_user"] = current_user
+    content["user_id"] = user_id
 
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        edited_user = delete_user(current_user, private_key, user_id)
-        edited_user = expand_user_object(edited_user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=delete_user,
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "user_id": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -278,27 +246,20 @@ def delete_user_role(current_user, user_id):
 @user_route.route("/search", methods=["POST"])
 @token_required
 def search_users_route(current_user):
-    def route_logic(current_user):
-        filters = loads(request.data)
-        email = filters.get("email")
-        role = filters.get("role")
-        group = filters.get("group")
+    # Get request body
+    content = loads(request.data)
+    content["current_user"] = current_user
+    content["filters"] = content
 
-        private_key = request.headers.get("private-key")
-
-        if email is None and role is None and group is None:
-            raise MissingRequestKeyError
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        users = search_users(current_user, private_key, filters, group)
-        users = [expand_user_object(user) for user in users]
-        response_body = {RESPONSE_MSG.SUCCESS: True, "users": users}
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user)
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=search_users,  # REVIEW @Benardi
+        data=content,
+        mandatory={
+            "current_user": MissingRequestKeyError,
+            "filters": MissingRequestKeyError,
+        },
+    )
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
