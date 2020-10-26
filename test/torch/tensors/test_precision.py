@@ -355,8 +355,6 @@ def test_torch_mul(workers):
     assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
 
 
-
-
 def test_torch_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
