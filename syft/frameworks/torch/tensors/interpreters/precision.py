@@ -281,6 +281,9 @@ class FixedPrecisionTensor(AbstractTensor):
         which is inherent to these operations in the fixed precision setting
         """
         changed_sign = False
+        if isinstance(other, float):
+            other = torch.tensor(other).fix_precision().child
+
         if isinstance(other, FixedPrecisionTensor):
             if self.precision_fractional != other.precision_fractional:
                 raise ValueError(
@@ -292,10 +295,6 @@ class FixedPrecisionTensor(AbstractTensor):
         if isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             new_self = self.child
             new_other = other
-        elif isinstance(other, float):
-            raise NotImplementedError(
-                "Can't multiply or divide a FixedPrecisionTensor with a float value"
-            )
 
         elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             other.child, torch.Tensor

@@ -294,6 +294,10 @@ def test_torch_sub_():
 def test_torch_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
+    z = x / 2.1
+    assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
+
     # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
@@ -349,6 +353,8 @@ def test_torch_mul(workers):
 
     z = x * y
     assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
+
+
 
 
 def test_torch_div(workers):
