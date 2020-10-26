@@ -1,89 +1,305 @@
-from nacl.encoding import HexEncoder
+from datetime import datetime, timedelta
+from json import dumps, loads
+from json.decoder import JSONDecodeError
+from secrets import token_hex
+
+import jwt
+from bcrypt import checkpw, gensalt, hashpw
+from flask import Response
+from flask import current_app as app
+from flask import request
+
+
+from ...codes import RESPONSE_MSG
 from .blueprint import users_blueprint as user_route
-from flask import request, Response
-import json
-from ...core.node import node
+from ..auth import error_handler, token_required_factory
+from ...exceptions import (
+    AuthorizationError,
+    GroupNotFoundError,
+    InvalidCredentialsError,
+    MissingRequestKeyError,
+    PyGridError,
+    RoleNotFoundError,
+    UserNotFoundError,
+)
+from ...core.database import db, Group, Role, User, UserGroup, expand_user_object
+from .user_ops import (
+    change_user_email,
+    change_user_groups,
+    change_user_password,
+    change_user_role,
+    delete_user,
+    get_all_users,
+    get_specific_user,
+    login_user,
+    search_users,
+    signup_user,
+)
 
 
-@user_route.route("/", methods=["POST"])
-def create_user():
-    mock_response = {"msg": "User created succesfully!"}
+def get_token(*args, **kwargs):
+    token = request.headers.get("token")
+    if token is None:
+        raise MissingRequestKeyError
+
+    return token
+
+
+def format_result(response_body, status_code, mimetype):
+    return Response(dumps(response_body), status=status_code, mimetype=mimetype)
+
+
+token_required = token_required_factory(get_token, format_result)
+
+
+@user_route.route("", methods=["POST"])
+def signup_user_route():
+    def route_logic():
+        private_key = user = user_role = None
+        private_key = request.headers.get("private-key")
+        data = loads(request.data)
+        password = data.get("password")
+        email = data.get("email")
+        role = data.get("role")
+
+        if email is None or password is None:
+            raise MissingRequestKeyError
+
+        user = signup_user(private_key, email, password, role)
+        user = expand_user_object(user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/", methods=["GET"])
-def get_all_users():
-    mock_response = {"users": ["Bob", "Alice", "James"]}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>", methods=["GET"])
-def get_specific_user(user_id):
-    mock_response = {"user": {"name": "Bob", "id": user_id}}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/search", methods=["POST"])
-def search_users():
-    mock_response = {"users": ["Bob", "Alice", "James"]}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>/email", methods=["PUT"])
-def change_email(user_id):
-    mock_response = {"msg": "User email was changed succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>/password", methods=["PUT"])
-def change_password(user_id):
-    mock_response = {"msg": "User password was changed succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>/role", methods=["PUT"])
-def change_role(user_id):
-    mock_response = {"msg": "User role was changed succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>/groups", methods=["PUT"])
-def change_groups(user_id):
-    mock_response = {"msg": "User groups was changed succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
-    )
-
-
-@user_route.route("/<user_id>", methods=["DELETE"])
-def delete_user(user_id):
-    mock_response = {"msg": "User was deleted succesfully!"}
-    return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @user_route.route("/login", methods=["POST"])
-def user_login():
-    mock_response = {
-        "msg": "Successfully logged in!",
-        "key": node.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
-        "metadata": node.get_metadata_for_client(),
-    }
+def login_user_route():
+    def route_logic():
+        data = loads(request.data)
+        email = data.get("email")
+        password = data.get("password")
+        private_key = request.headers.get("private-key")
+
+        if email is None or password is None or private_key is None:
+            raise MissingRequestKeyError
+
+        token = login_user(private_key, email, password)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "token": token}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("", methods=["GET"])
+@token_required
+def get_all_users_route(current_user):
+    def route_logic(current_user):
+        private_key = request.headers.get("private-key")
+        if private_key is None:
+            raise MissingRequestKeyError
+
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        users = get_all_users(current_user, private_key)
+        users = [expand_user_object(user) for user in users]
+        response_body = {RESPONSE_MSG.SUCCESS: True, "users": users}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>", methods=["GET"])
+@token_required
+def get_specific_user_route(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        private_key = request.headers.get("private-key")
+        if private_key is None:
+            raise MissingRequestKeyError
+
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        user = get_specific_user(current_user, private_key, user_id)
+        user = expand_user_object(user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>/email", methods=["PUT"])
+@token_required
+def change_user_email_route(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        data = loads(request.data)
+        email = data.get("email")
+        private_key = request.headers.get("private-key")
+
+        if email is None or private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        user = change_user_email(current_user, private_key, email, user_id)
+        user = expand_user_object(user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>/role", methods=["PUT"])
+@token_required
+def change_user_role_route(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        data = loads(request.data)
+        role = data.get("role")
+        private_key = request.headers.get("private-key")
+
+        if role is None or private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        edited_user = change_user_role(current_user, private_key, role, user_id)
+        edited_user = expand_user_object(edited_user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>/password", methods=["PUT"])
+@token_required
+def change_user_password_role(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        data = loads(request.data)
+        password = data.get("password")
+        private_key = request.headers.get("private-key")
+
+        if password is None or private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        edited_user = change_user_password(current_user, private_key, password, user_id)
+        edited_user = expand_user_object(edited_user)
+
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>/groups", methods=["PUT"])
+@token_required
+def change_user_groups_route(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        data = loads(request.data)
+        groups = data.get("groups")
+        private_key = request.headers.get("private-key")
+
+        if groups is None or private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        edited_user = change_user_groups(current_user, private_key, groups, user_id)
+        edited_user = expand_user_object(edited_user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/<user_id>", methods=["DELETE"])
+@token_required
+def delete_user_role(current_user, user_id):
+    def route_logic(current_user, user_id):
+        user_id = int(user_id)
+        private_key = request.headers.get("private-key")
+
+        if private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        edited_user = delete_user(current_user, private_key, user_id)
+        edited_user = expand_user_object(edited_user)
+        response_body = {RESPONSE_MSG.SUCCESS: True, "user": edited_user}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user, user_id)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@user_route.route("/search", methods=["POST"])
+@token_required
+def search_users_route(current_user):
+    def route_logic(current_user):
+        filters = loads(request.data)
+        email = filters.get("email")
+        role = filters.get("role")
+        group = filters.get("group")
+
+        private_key = request.headers.get("private-key")
+
+        if email is None and role is None and group is None:
+            raise MissingRequestKeyError
+        if private_key is None:
+            raise MissingRequestKeyError
+        if private_key != current_user.private_key:
+            raise InvalidCredentialsError
+
+        users = search_users(current_user, private_key, filters, group)
+        users = [expand_user_object(user) for user in users]
+        response_body = {RESPONSE_MSG.SUCCESS: True, "users": users}
+        return response_body
+
+    status_code, response_body = error_handler(route_logic, current_user)
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
     )

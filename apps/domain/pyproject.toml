@@ -19,6 +19,7 @@ flask_sqlalchemy = "^2.4.4"
 flask_migrate = "^2.5.3"
 sqlalchemy_mixins = "^1.2.1"
 PyJWT = "^1.7.1"
+bcrypt = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"

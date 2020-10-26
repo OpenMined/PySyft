@@ -12,9 +12,11 @@ class BaseModel(db.Model, AllFeaturesMixin):
     pass
 
 
+from .groups.groups import Group
+from .groups.usergroup import UserGroup
 from .roles.roles import Role, create_role
 from .users.user import User, create_user
-from .utils import model_to_json
+from .utils import model_to_json, expand_user_object
 
 
 def set_database_config(app, test_config=None, verbose=False):
