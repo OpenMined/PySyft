@@ -1931,15 +1931,23 @@
       },
       "backward": {
         "profile": "default",
-        "skip": [{ "lte_version": "1.6.0" }]
+        "inputs": ["self"],
+        "return_type": "syft.lib.python.SyNone",
+        "not_available": [
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.6.0"
+          }
+        ]
       },
       "item": {
-        "profile": "default",
+        "profile": "tensor_method_noinput",
+        "tensors": ["tensor1_1element"],
         "skip": [{ "lte_version": "1.6.0" }]
       },
       "__getitem__": {
         "profile": "default",
-        "skip": [{ "lte_version": "1.6.0" }]
+        "inputs": [false, true, 0, 1]
       }
     }
   }

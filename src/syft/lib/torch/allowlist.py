@@ -89,6 +89,7 @@ allowlist["torch.zeros_like"] = "torch.Tensor"
 
 # SECTION - The capital Tensor constructor
 allowlist["torch.Tensor"] = "torch.Tensor"
+allowlist["torch.tensor"] = "torch.Tensor"
 
 # SECTION - Tensor methods with special version requirements
 allowlist[
@@ -398,6 +399,8 @@ allowlist["torch.Tensor.var"] = "torch.Tensor"
 allowlist["torch.Tensor.view_as"] = "torch.Tensor"
 allowlist["torch.Tensor.view"] = "torch.Tensor"
 allowlist["torch.Tensor.zero_"] = "torch.Tensor"
+allowlist["torch.Tensor.backward"] = "syft.lib.python.SyNone"
+allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are untested
@@ -613,13 +616,13 @@ allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 # allowlist["torch.Tensor.unflatten"] = "unknown"
 # allowlist["torch.Tensor.values"] = "unknown"
 
+
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
 # --------------------------------------------------------------------------------------
 # required for MNIST but marked as skip in the allowlist_test.json
-allowlist["torch.Tensor.backward"] = "syft.lib.python.SyNone"  # no test
 allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
-allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
+
 
 # hashes are not matching
 # allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
