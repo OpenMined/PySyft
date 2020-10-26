@@ -212,7 +212,6 @@ def test_uid_hex_serialization() -> None:
         "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
         "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
     )
-    assert uid.hex() == blob
     assert uid.to_hex() == blob
     assert uid.serialize(to_hex=True) == blob
 

@@ -244,8 +244,12 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().imag)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def conjugate(self) -> float:
+    def conjugate(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().conjugate())
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def hex(self) -> SyPrimitiveRet:
+        return PrimitiveFactory.generate_primitive(value=self.upcast().hex())
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __hash__(self) -> int:

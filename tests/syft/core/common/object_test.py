@@ -210,7 +210,6 @@ def test_object_with_id_hex_serialization() -> None:
         "227b5c2269645c223a207b5c2276616c75655c223a205c222b7875775a3175335"
         "4456d2b7a75634171776f5646413d3d5c227d7d227d"
     )
-    assert obj.hex() == blob
     assert obj.to_hex() == blob
     assert obj.serialize(to_hex=True) == blob
 
