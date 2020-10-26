@@ -33,7 +33,7 @@ from syft.lib.torch import allowlist
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
-TORCH_VERSION = version.parse(th.__version__)
+TORCH_VERSION = version.parse(th.__version__.split("+")[0])
 py_ver = sys.version_info
 PYTHON_VERSION = version.parse(f"{py_ver.major}.{py_ver.minor}")
 OS_NAME = platform.system().lower()
