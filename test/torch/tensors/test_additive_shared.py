@@ -178,8 +178,8 @@ def test_add(workers):
     t = torch.tensor([1, 2, 3])
     x = torch.tensor([1, 2, 3]).share(bob, alice)
 
-    y = (x + x).get()
-
+    x_ = (x + x)
+    y = x_.get()
     # 3 workers
     assert (y == (t + t)).all()
 

@@ -72,6 +72,7 @@ class AdditiveSharingTensor(AbstractTensor):
         crypto_provider=None,
         tags=None,
         description=None,
+        with_mac=False,
     ):
         """Initializes an Additive Sharing Tensor, whose behaviour is to split a
         single tensor into shares, distribute the shares amongst several machines,
@@ -92,6 +93,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 which this tensor should be searchable for
             description: an optional string describing the purpose of the
                 tensor
+            with_mac: an option bool for checking the share validity
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
@@ -163,6 +165,11 @@ class AdditiveSharingTensor(AbstractTensor):
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
+
+        self.with_mac = with_mac
+        if self.with_mac:
+            self.alphas = None
+            self.macs = None
 
         self.protocol = protocol
 
@@ -294,6 +301,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share)
                 self.owner.de_register_obj(share)
 
+        if self._mac_invalid(shares):
+            raise ValueError("Values does not pass Mac check")
+
         # For dtype values long and int modulo is automatically handled by native torch tensors
         result = self.modulo(sum(shares))
         return result
@@ -322,6 +332,9 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = self.generate_shares(
             self.child, n_workers=len(owners), random_type=self.torch_dtype
         )
+
+        if self.with_mac:
+            shares = self._calculate_mac(shares, n_workers=len(owners))
 
         shares_dict = {}
         for share, owner in zip(shares, owners):
@@ -501,6 +514,41 @@ class AdditiveSharingTensor(AbstractTensor):
 
     __add__ = add
     __radd__ = add
+
+    def _mac_invalid(self, shares):
+        # TODO: Incomplete
+        # shares = [[2,4,6],[mac],[alpha]]
+        # mac = sum([share[1] for share in shares])
+        # alpha_times_x = sum([share[2] for share in shares])
+        # res = mac - alpha_times_x
+        x = sum([share[0] for share in shares])
+        mac_shares = sum([share[1] for share in shares])
+        alpha_shares = sum([share[2] for share in shares])
+        crypt_res_0 = mac_shares[0] - alpha_shares[0] * sum(shares)
+        crypt_res_1 = mac_shares[1] - alpha_shares[1] * sum(shares)
+        crypt_totl = crypt_res_0 + crypt_res_1
+
+        mac_res = []
+        for share in sum(shares):
+            mac = share[1]
+            alpha_times_x = share[2]
+            mac_res.append(mac - alpha_times_x)
+        res = sum(mac_res)
+
+        return res
+
+    def _calculate_mac(self, shares, n_workers):
+        random_type = torch.LongTensor if self.torch_dtype == torch.int64 else torch.IntTensor
+
+        if not self.alphas:
+            self.alphas = random_type(shares[0].shape).random_(self.min_value, self.max_value).data
+        if not self.macs:
+            self.macs = self.alphas * sum(shares)
+
+        mac_shares = self.generate_shares(self.macs, n_workers=n_workers, random_type=self.torch_dtype)
+        alpha_shares = self.generate_shares(self.alphas, n_workers=n_workers, random_type=self.torch_dtype)
+
+        return [torch.stack([share, mac, alpha]) for share, mac, alpha in zip(shares, mac_shares, alpha_shares)]
 
     @overloaded.method
     def sub(self, shares: dict, other):

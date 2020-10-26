@@ -1020,6 +1020,7 @@ class TorchTensor(AbstractTensor):
                         dtype=dtype,
                         crypto_provider=crypto_provider,
                         owner=self.owner,
+                        with_mac=True,
                     )
                     .on(self.copy(), wrap=False)
                     .share_secret(*owners)
