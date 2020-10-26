@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import sys
+import tempfile
 import time
 from typing import Any
 from typing import Generator
@@ -30,8 +31,7 @@ ADDR_REPOSITORY = (
 # for local debugging
 def get_loopback_path() -> str:
     loopback_file = "duet_loopback.json"
-    # needs to be deterministic, will need updating for Windows
-    return str(Path("/tmp") / loopback_file)  # nosec
+    return str(Path(tempfile.gettempdir()) / loopback_file)
 
 
 class bcolors:
