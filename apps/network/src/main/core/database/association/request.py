@@ -2,8 +2,8 @@ from .. import BaseModel, db
 
 
 class AssociationRequest(BaseModel):
-    """ Association Request.
-    
+    """Association Request.
+
     Columns:
         id (Integer, Primary Key): Cycle ID.
         date (TIME): Start time.
@@ -21,7 +21,6 @@ class AssociationRequest(BaseModel):
     address = db.Column(db.String(255))
     accepted = db.Column(db.Boolean(), default=False)
     pending = db.Column(db.Boolean(), default=True)
-
 
     def __str__(self):
         return f"< Association Request id : {self.id}, Name: {self.name}, Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"
