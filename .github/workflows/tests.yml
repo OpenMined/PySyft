@@ -8,12 +8,14 @@ on:
     paths:
       - "**.py"
       - "setup.cfg"
+      - ".github/workflows/tests.yml"
 
   pull_request:
     types: [ opened, synchronize, reopened ]
     paths:
       - "**.py"
       - "setup.cfg"
+      - ".github/workflows/tests.yml"
 
 jobs:
   python-tests:
