@@ -2947,6 +2947,7 @@ def test_mul():
     # checkraises(OverflowError, 10000*'abc', '__mul__', 2000000000)
 
 
+@pytest.mark.slow
 def test_join():
     checkequal(
         python.String("a b c d"),

@@ -69,6 +69,7 @@ mapping = {0: generate_0, 1: generate_1}
 objects = [0, 1]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())
 def test_pointer_objectives(test_objects, func):
@@ -115,6 +116,7 @@ def test_pointer_objectives(test_objects, func):
         # assert sy_obj == remote_sy_obj.get()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 def test_iterator(test_objects):
     py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
@@ -132,6 +134,7 @@ def test_iterator(test_objects):
         assert sy_elem == rsy_elem.get()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 def test_reversed_iterator(test_objects):
     py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
