@@ -33,7 +33,7 @@ def benchmark_share_get(workers, protocol, dtype, n_workers):
     )
 
     share_holders = [alice, bob, charlie]
-    kwargs = dict(protocol=protocol, crypto_provider=james, dtype=dtype)
+    kwargs = {"protocol": protocol, "crypto_provider": james, "dtype": dtype}
 
     t = torch.tensor([1, 2, 3])
 
@@ -120,7 +120,7 @@ def benchmark_max_pool2d(workers, protocol, prec_frac):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
@@ -211,7 +211,7 @@ def benchmark_avg_pool2d(workers, protocol, prec_frac):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
@@ -305,7 +305,7 @@ def benchmark_batch_norm(workers, protocol, training, prec_frac):
 
     args = (alice, bob)
     syft.local_worker.clients = args
-    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     model = nn.BatchNorm2d(4, momentum=0)
     if training:
