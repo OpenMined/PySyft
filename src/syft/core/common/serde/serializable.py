@@ -254,15 +254,6 @@ class Serializable(metaclass=MetaSerializable):
         return self.serialize(to_hex=True)
 
     @syft_decorator(typechecking=True)
-    def hex(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a hex object.
-
-        :return: a hex string
-        :rtype: str
-        """
-        return self.serialize(to_hex=True)
-
-    @syft_decorator(typechecking=True)
     def serialize(
         self,
         to_proto: bool = True,

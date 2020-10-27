@@ -2,8 +2,6 @@
 from typing import Any
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -18,7 +16,6 @@ from ...proto.lib.python.int_pb2 import Int as Int_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
-from .util import NotImplementedType
 from .util import SyPrimitiveRet
 
 
@@ -65,9 +62,9 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __int__(self) -> PyPrimitive:
+    def __int__(self) -> int:
         res = super().__int__()
-        return PrimitiveFactory.generate_primitive(value=res)
+        return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __invert__(self) -> SyPrimitiveRet:
@@ -80,41 +77,18 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __bool__(self) -> SyPrimitiveRet:
-        res = super().__bool__()
+    def __bool__(self) -> bool:
+        return super().__bool__()
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __divmod__(self, other: Any) -> SyPrimitiveRet:
+        res = super().__divmod__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __divmod__(
-        self, other: Any
-    ) -> Union[Tuple[PyPrimitive, PyPrimitive], NotImplementedType]:
-        res = super().__divmod__(other)
-
-        if res is NotImplemented:
-            return res  # type: ignore
-
-        q, r = res
-
-        return (
-            PrimitiveFactory.generate_primitive(value=q),
-            PrimitiveFactory.generate_primitive(value=r),
-        )
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __rdivmod__(
-        self, other: Any
-    ) -> Union[Tuple[PyPrimitive, PyPrimitive], NotImplementedType]:
+    def __rdivmod__(self, other: Any) -> SyPrimitiveRet:
         res = super().__rdivmod__(other)
-
-        if res is NotImplemented:
-            return res  # type: ignore
-
-        q, r = res
-
-        return (
-            PrimitiveFactory.generate_primitive(value=q),
-            PrimitiveFactory.generate_primitive(value=r),
-        )
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __radd__(self, other: Any) -> SyPrimitiveRet:
@@ -194,7 +168,7 @@ class Int(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __pow__(self, other: Any) -> SyPrimitiveRet:
         res = super().__pow__(other)
-        return PrimitiveFactory.generate_primitive(res)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __rpow__(self, other: Any) -> SyPrimitiveRet:
@@ -328,11 +302,11 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__hash__())
 
     # add tests
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __neg__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__neg__())
 
-    @syft_decorator(typechecking=True)
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def __pos__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__pos__())
 
@@ -357,38 +331,49 @@ class Int(int, PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Int_PB
 
-    # def as_integer_ratio(self) -> Tuple[int, Literal[1]]:
-    #     #TODO add this
-    #     pass
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def as_integer_ratio(self) -> SyPrimitiveRet:
+        tpl = super().as_integer_ratio()
+        return PrimitiveFactory.generate_primitive(value=tpl)
 
-    def bit_length(self) -> int:
-        # TODO add this
-        pass
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def bit_length(self) -> SyPrimitiveRet:
+        res = super().bit_length()
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    def denominator(self) -> int:
-        # TODO add this
-        pass
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def denominator(self) -> SyPrimitiveRet:
+        res = super().denominator
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    # def from_bytes(cls, bytes: Union[Iterable[int], SupportsBytes], byteorder: str, *,
-    #                signed: bool = ...) -> int:
-    #     #TODO add this
-    #     pass
+    @staticmethod
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def from_bytes(bytes: Any, byteorder: str, *, signed: Any = True) -> SyPrimitiveRet:
+        res = int.from_bytes(bytes, byteorder, signed=signed)
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    def imag(self) -> int:
-        # TODO add this
-        pass
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def imag(self) -> SyPrimitiveRet:
+        res = super().imag
+        return PrimitiveFactory.generate_primitive(value=res)
 
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def numerator(self) -> int:
-        # TODO add this
-        pass
+        res = super().numerator
+        return PrimitiveFactory.generate_primitive(value=res)
 
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def real(self) -> int:
-        # TODO add this
-        pass
+        res = super().real
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    def to_bytes(self, length: int, byteorder: str, *, signed: bool = ...) -> bytes:
-        # TODO add this
-        pass
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def conjugate(self) -> SyPrimitiveRet:
+        res = super().conjugate()
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    def to_bytes(self, length: int, byteorder: str, signed: bool = True) -> bytes:
+        return super().to_bytes(length, byteorder, signed=signed)
 
 
 class IntWrapper(StorableObject):

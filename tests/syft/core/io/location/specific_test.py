@@ -214,7 +214,7 @@ def test_hex_serialization() -> None:
         "5646413d3d5c227d2c205c226e616d655c223a205c22546573745c227d227d"
     )
 
-    assert obj.hex() == blob
+    assert obj.to_hex() == blob
     assert obj.to_hex() == blob
     assert obj.serialize(to_hex=True) == blob
 

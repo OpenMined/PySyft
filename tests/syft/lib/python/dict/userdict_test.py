@@ -36,10 +36,6 @@ class UserDictTest:
         # item sequence constructor
         self.assertEqual(Dict([("one", 1), ("two", 2)]), d2)
         with self.assertWarnsRegex(DeprecationWarning, "'dict'"):
-            left = Dict(dict=[("one", 1), ("two", 2)])
-            right = d2
-            print("left", left, type(left))
-            print("right", right, type(right))
             self.assertEqual(Dict(dict=[("one", 1), ("two", 2)]), d2)
         # both together
         self.assertEqual(Dict([("one", 1), ("two", 2)], two=3, three=5), d3)
@@ -154,10 +150,6 @@ class UserDictTest:
         for kw in "self", "other", "iterable":
             self.assertEqual(list(Dict(**{kw: 42}).items()), [(kw, 42)])
 
-        a = list(Dict({}, dict=42).items())
-        b = [("dict", 42)]
-        print("left", a, type(a))
-        print("right", b, type(b))
         self.assertEqual(list(Dict({}, dict=42).items()), [("dict", 42)])
         self.assertEqual(list(Dict({}, dict=None).items()), [("dict", None)])
         with self.assertWarnsRegex(DeprecationWarning, "'dict'"):

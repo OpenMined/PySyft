@@ -12,7 +12,7 @@ from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
 from .allowlist import allowlist
 
-TORCH_VERSION = version.parse(torch.__version__)
+TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -38,6 +38,9 @@ def create_torch_ast() -> Globals:
     for method, return_type_name_or_dict in allowlist.items():
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
+            if return_type == "unknown":
+                # this allows us to import them for testing
+                continue
             ast.add_path(
                 path=method, framework_reference=torch, return_type_name=return_type
             )
