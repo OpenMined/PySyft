@@ -22,6 +22,22 @@ from .tuple import Tuple
 from .none import SyNone  # NOQA
 
 
+for syft_type in [
+    Bool,
+    Complex,
+    Dict,
+    Float,
+    Int,
+    SyNone,
+    _SyNone,
+    Any,
+    PyPrimitive,
+    String,
+    Tuple,
+]:
+    syft_type.__module__ = __name__
+
+
 def get_parent(path: str, root: TypeAny) -> Module:
     parent = root
     for step in path.split(".")[:-1]:
