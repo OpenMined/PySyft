@@ -1127,13 +1127,13 @@ class TorchTensor(AbstractTensor):
             no_wrap = kwargs.pop("no_wrap", False)
             dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
-            kwargs_share = dict(
-                crypto_provider=crypto_provider,
-                requires_grad=requires_grad,
-                no_wrap=no_wrap,
-                protocol=protocol,
-                dtype=dtype,
-            )
+            kwargs_share = {
+                "crypto_provider": crypto_provider,
+                "requires_grad": requires_grad,
+                "no_wrap": no_wrap,
+                "protocol": protocol,
+                "dtype": dtype,
+            }
 
             if not inplace:
                 x_shared = self.fix_prec(**kwargs_fix_prec).share(*workers, **kwargs_share)
