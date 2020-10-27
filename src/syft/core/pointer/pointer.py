@@ -103,7 +103,8 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
-from ..store.storeable_object import StorableObject
+import time
+import torch
 
 
 # TODO: Fix the Client, Address, Location confusion
@@ -145,22 +146,43 @@ class Pointer(AbstractPointer):
 
     def get(
         self,
-    ) -> StorableObject:
+        request_block: bool = False,
+    ) -> Any:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
-        :return: returns the downloaded data
-        :rtype: StorableObject
+        :return: returns the downloaded data, or the dummy value tensor([0) in case of request_block timed out
+        :rtype: Any
         """
-        obj_msg = GetObjectAction(
-            obj_id=self.id_at_location,
-            address=self.client.address,
-            reply_to=self.client.address,
-        )
 
-        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+        if request_block:
+            from ..node.domain.service import RequestStatus
 
-        return response.obj
+            response_status = self.request(block=True)
+
+            if response_status == RequestStatus.Accepted:
+                obj_msg = GetObjectAction(
+                    obj_id=self.id_at_location,
+                    address=self.client.address,
+                    reply_to=self.client.address,
+                )
+
+                response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+
+                return response.obj
+
+            # returning dummy_value tensor([0]) when the request is either rejected or timed out
+            return torch.tensor([0])
+        else:
+            obj_msg = GetObjectAction(
+                obj_id=self.id_at_location,
+                address=self.client.address,
+                reply_to=self.client.address,
+            )
+
+            response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+
+            return response.obj
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:
@@ -243,7 +265,8 @@ class Pointer(AbstractPointer):
         request_name: str = "",
         name: str = "",
         reason: str = "",
-    ) -> None:
+        block: bool = False,
+    ) -> Any:
         """Method that requests access to the data on which the pointer points to.
 
         Example:
@@ -295,6 +318,35 @@ class Pointer(AbstractPointer):
         print("Request Message Id:" + str(msg.id))
 
         self.client.send_immediate_msg_without_reply(msg=msg)
+
+        if block:
+            from ..node.domain.service import RequestAnswerMessage, RequestStatus
+            from ..node.domain.service.accept_or_deny_request_service import (
+                AcceptOrDenyRequestMessage,
+            )
+
+            status_msg = RequestAnswerMessage(
+                request_id=msg.id,
+                address=self.client.address,
+                reply_to=self.client.address,
+            )
+            time.sleep(20)
+            response = self.client.send_immediate_msg_with_reply(msg=status_msg)
+
+            if response.status == RequestStatus.Pending:
+                deny_msg = AcceptOrDenyRequestMessage(
+                    address=self.client.address,
+                    accept=False,
+                    request_id=msg.id,
+                )
+                self.client.send_immediate_msg_without_reply(msg=deny_msg)
+                print("Request timed out, skipping call")
+
+            elif response.status == RequestStatus.Rejected:
+                print("Request rejected, skipping call")
+
+            return response.status
+        return
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible
