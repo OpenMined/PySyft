@@ -67,10 +67,6 @@ Then you just need to call `pre-commit install`
 
 This can all also be done by running `make install_hooks`
 
-### Syncing a Forked Repository
-
-To sync your fork with the OpenMined/PySyft repository please see this [Guide](https://help.github.com/articles/syncing-a-fork/) on how to sync your fork.
-
 ### Installing PySyft after Cloning Repository
 
 To install the development version of the package, once the `dev` version of the requirements have been satisified, one should:
