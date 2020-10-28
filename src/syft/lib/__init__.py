@@ -17,7 +17,6 @@ def create_lib_ast() -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-
     # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast
