@@ -165,7 +165,11 @@ class Pointer(AbstractPointer):
         return response.obj
 
     def get(
-        self, request_block: bool = False, timeout_secs: int = 20
+        self,
+        request_block: bool = False,
+        timeout_secs: int = 20,
+        request_name: str = "",
+        reason: str = "",
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -179,7 +183,12 @@ class Pointer(AbstractPointer):
         if not request_block:
             return self._get()
         else:
-            response_status = self.request(block=True, timeout_secs=timeout_secs)
+            response_status = self.request(
+                request_name=request_name,
+                reason=reason,
+                block=True,
+                timeout_secs=timeout_secs,
+            )
             if (
                 response_status is not None
                 and response_status == RequestStatus.Accepted
@@ -267,7 +276,6 @@ class Pointer(AbstractPointer):
     def request(
         self,
         request_name: str = "",
-        name: str = "",
         reason: str = "",
         block: bool = False,
         timeout_secs: int = 20,
@@ -279,7 +287,7 @@ class Pointer(AbstractPointer):
         .. code-block::
 
             # data holder domain
-            domain_1 = Domain(name="Data holder")
+            domain_1 = Domain(request_name="Data holder")
 
             # data
             tensor = th.tensor([1, 2, 3])
@@ -306,11 +314,6 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestMessage
 
-        # optional kwarg to set name
-        request_name = request_name
-        if len(name) > 0:
-            request_name = name
-
         msg = RequestMessage(
             request_name=request_name,
             request_description=reason,
@@ -330,14 +333,25 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestAnswerMessage
             from ..node.domain.service import RequestStatus
 
-            print("> Waiting for Blocking Request", end="")
+            output_string = "> Waiting for Blocking Request\n"
+            if len(request_name) > 0:
+                output_string += f"{request_name}"
+            if len(reason) > 0:
+                output_string += f": {reason}"
+            if len(request_name) > 0 or len(request_name) > 0:
+                if len(output_string) > 0 and output_string[-1] != ".":
+                    output_string += "."
+                output_string += "\n"
+            if sy.VERBOSE:
+                output_string += f"{msg.id}\n"
+            print(f"\n{output_string}", end="")
             status = None
             start = time.time()
 
             while True:
                 now = time.time()
                 if now - start > timeout_secs:
-                    print("\n> Blocking Request Timed Out")
+                    print(f"\n> Blocking Request Timeout after {timeout_secs} seconds")
                     return status
 
                 status_msg = RequestAnswerMessage(
@@ -353,6 +367,10 @@ class Pointer(AbstractPointer):
                     print(".", end="")
                 else:
                     # accepted or rejected lets exit
+                    status_text = "REJECTED"
+                    if status == RequestStatus.Accepted:
+                        status_text = "ACCEPTED"
+                    print(f"\n> Blocking Request {status_text}")
                     return status
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
