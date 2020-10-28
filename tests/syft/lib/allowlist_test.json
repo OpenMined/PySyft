@@ -177,7 +177,8 @@
           { "data_types": ["float16"], "lte_version": "1.5.1" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "gte_version": "1.7.0"
+            "gte_version": "1.6.0",
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -188,7 +189,8 @@
           { "data_types": ["float16"], "lte_version": "1.5.1" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "gte_version": "1.7.0"
+            "gte_version": "1.6.0",
+            "lte_version": "1.6.0"
           }
         ]
       },
