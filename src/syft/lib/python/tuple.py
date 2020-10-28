@@ -2,6 +2,7 @@
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -16,9 +17,11 @@ from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
+from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
+from .util import upcast
 
 
 class TupleIterator(Iterator):
@@ -90,8 +93,13 @@ class Tuple(tuple, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __getitem__(self, item: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(value=super().__getitem__(item))
+    def __getitem__(self, item: Any) -> Union[SyPrimitiveRet, Any]:
+        value = super().__getitem__(item)
+        if isprimitive(value=value):
+            return PrimitiveFactory.generate_primitive(value=value)
+        else:
+            # we can have torch.Tensor and other types
+            return value
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, __value: Any) -> SyPrimitiveRet:
@@ -107,21 +115,21 @@ class Tuple(tuple, PyPrimitive):
     def __iter__(self) -> SyPrimitiveRet:
         return TupleIterator(self)
 
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def _proto2object(proto: Tuple_PB) -> "Tuple":
-        id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element) for element in proto.data]
-        new_list = Tuple(value)
-        new_list._id = id_
-        return new_list
-
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
         data = [serialize(obj=element) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def _proto2object(proto: Tuple_PB) -> "Tuple":
+        id_: UID = deserialize(blob=proto.id)
+        value = [upcast((deserialize(blob=element))) for element in proto.data]
+        new_list = Tuple(value)
+        new_list._id = id_
+        return new_list
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

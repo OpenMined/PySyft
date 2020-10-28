@@ -1,4 +1,5 @@
 # stdlib
+from collections import OrderedDict
 from typing import Optional
 
 # third party
@@ -56,7 +57,17 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
 
-        ser = self.obj.serialize()
+        # TODO: Fix this hack
+        if isinstance(self.obj, OrderedDict):
+            # convert the OrderedDict to a normal dict and then a Dict
+            # syft relative
+            from .....lib.python.primitive_factory import PrimitiveFactory
+
+            sy_dict = PrimitiveFactory.generate_primitive(value=dict(self.obj))
+            ser = sy_dict.serialize()
+        else:
+            ser = self.obj.serialize()
+
         # TODO: Fix this hack
         # we need to check if the serialize chain creates a storable if not
         # we need to go use the serializable_wrapper_type
