@@ -132,6 +132,7 @@ def test_module() -> None:
 
     # assert vanilla_model.modules == sy_model._modules
     assert len(vanilla_model.modules) == len(sy_model.modules)
+    assert len(sy_model.modules) == 6
     for _, module in sy_model.modules.items():
         # we cant do module == module, but the str repr of the modules should be equal
         assert str(module) == str(vanilla_model.modules.pop(0))

@@ -23,7 +23,9 @@ class Module:
 
     # this is how we catch the modules being set during subclass init
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
-        if "torch.nn.modules" in full_name_with_qualname(klass=type(value)):
+        # this is torch.nn.modules.X here and torch.nn.X here in the notebook?
+        match = "torch.nn"
+        if match in full_name_with_qualname(klass=type(value)):
             modules = self.__dict__.get("_modules")
             if modules is not None:
                 modules[name] = value
@@ -61,10 +63,13 @@ class Module:
         return OrderedDict()
 
     # local list of remote ListPointers of TensorPointers
-    def parameters(self, params_list: Any = [], recurse: bool = True) -> List[Any]:
-        # params_list = torch.python.List()
+    def parameters(self, recurse: bool = True) -> List[Any]:
+        params_list: List[Any] = []
+        # if we have at least 1 remote parameter list we can just concatenate them all
         for _, module in self.modules.items():
             param_pointers = module.parameters()
+            if type(params_list) is list and len(params_list) == 0:
+                params_list = param_pointers
             params_list += param_pointers
         return params_list
 
