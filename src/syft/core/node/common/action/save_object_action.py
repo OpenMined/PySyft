@@ -37,36 +37,34 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # save the object to the store
-        node.store.store(
-            obj=StorableObject(
-                # ignoring this - the fundamental problem is that we can't force the classes
-                # we want to use to subclass from something without creating wrappers for
-                # everything which are mandatory for all operations. It's plausible that we
-                # will have to do this - but for now we aren't so we need to simply assume
-                # that we're adding ids to things. I don't like it though - wish there was a
-                # better way. But we want to support other frameworks so - gotta do it.
-                id=self.obj.id,  # type: ignore
-                data=self.obj,
-                tags=(
-                    # QUESTION: do we want None or an empty []
-                    self.obj.tags  # type: ignore
-                    if hasattr(self.obj, "tags")
-                    else None
-                ),
-                description=(
-                    self.obj.description  # type: ignore
-                    if hasattr(self.obj, "description")
-                    else ""
-                ),
-                search_permissions={All(): None}
-                if self.anyone_can_search_for_this
-                else {},
-                read_permissions={
-                    node.verify_key: node.id,
-                    verify_key: None,  # we dont have the passed in sender's UID
-                },
-            )
+        obj = StorableObject(
+            # ignoring this - the fundamental problem is that we can't force the classes
+            # we want to use to subclass from something without creating wrappers for
+            # everything which are mandatory for all operations. It's plausible that we
+            # will have to do this - but for now we aren't so we need to simply assume
+            # that we're adding ids to things. I don't like it though - wish there was a
+            # better way. But we want to support other frameworks so - gotta do it.
+            id=self.obj_id,
+            data=self.obj,
+            tags=(
+                # QUESTION: do we want None or an empty []
+                self.obj.tags  # type: ignore
+                if hasattr(self.obj, "tags")
+                else None
+            ),
+            description=(
+                self.obj.description  # type: ignore
+                if hasattr(self.obj, "description")
+                else ""
+            ),
+            search_permissions={All(): None} if self.anyone_can_search_for_this else {},
+            read_permissions={
+                node.verify_key: node.id,
+                verify_key: None,  # we dont have the passed in sender's UID
+            },
         )
+
+        node.store.store(obj=obj)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:
