@@ -667,89 +667,90 @@ allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 
 # MNIST
 # Misc
-# allowlist["torch.manual_seed"] = "torch.Generator"
-# allowlist["torch.Generator"] = "torch.Generator"
-# allowlist["torch.Generator.get_state"] = "torch.Tensor"
-# allowlist["torch.Generator.set_state"] = "torch.Generator"
+allowlist["torch.manual_seed"] = "torch.Generator"
+allowlist["torch.Generator"] = "torch.Generator"
+allowlist["torch.Generator.get_state"] = "torch.Tensor"
+allowlist["torch.Generator.set_state"] = "torch.Generator"
+allowlist["torch.exp"] = "torch.Tensor"
 
 # Modules
-# allowlist["torch.nn.Module"] = "torch.nn.Module"
-# allowlist["torch.nn.Module.__call__"] = "torch.nn.Tensor"
-# allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
-# allowlist["torch.nn.Module.train"] = "torch.nn.Module"
-# allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
-# allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
+allowlist["torch.nn.Module"] = "torch.nn.Module"
+allowlist["torch.nn.Module.__call__"] = "torch.nn.Tensor"
+allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Module.train"] = "torch.nn.Module"
+allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
+allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
 
-# allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
-# allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
-# allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
-# allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
-# allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
-# allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
 
-# allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
-# allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
-# allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
-# allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
-# allowlist["torch.nn.Dropout2d.cuda"] = "torch.nn.Dropout2d"
-# allowlist["torch.nn.Dropout2d.cpu"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d.cuda"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.Dropout2d.cpu"] = "torch.nn.Dropout2d"
 
-# allowlist["torch.nn.Linear"] = "torch.nn.Linear"
-# allowlist["torch.nn.Linear.__call__"] = "torch.nn.Linear"
-# allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
-# allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
-# allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
-# allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.__call__"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
 
 # DataLoader
-# allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
-# allowlist["torch.utils.data.DataLoader.dataset"] = "torchvision.datasets.VisionDataset"
-# allowlist[
-#     "torch.utils.data.DataLoader.__iter__"
-# ] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-# allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-# ] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
-# ] = "syft.lib.python.Int"
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
-# ] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
+allowlist[
+    "torch.utils.data.DataLoader.__iter__"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
+] = "syft.lib.python.Int"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
 
 # working for part
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
-# ] = "torch.Tensor"
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
-# ] = "torch.Tensor"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
+] = "torch.Tensor"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
+] = "torch.Tensor"
 
 # we are returning syft.lib.python.List so that we can __getitem__ on the return of
 # enumerate(train_loader)
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
-# ] = "syft.lib.python.List"
-# allowlist[
-#     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
-# ] = "syft.lib.python.List"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
+] = "syft.lib.python.List"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
+] = "syft.lib.python.List"
 
 # Functional
-# allowlist["torch.nn.functional.relu"] = "torch.Tensor"
-# allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
-# allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
-# allowlist["torch.nn.functional.nll_loss"] = "torch.Tensor"
-# allowlist["torch.flatten"] = "torch.Tensor"
+allowlist["torch.nn.functional.relu"] = "torch.Tensor"
+allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
+allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
+allowlist["torch.nn.functional.nll_loss"] = "torch.Tensor"
+allowlist["torch.flatten"] = "torch.Tensor"
 
 # Optimizers
-# allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
-# allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
-# allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python.SyNone"
-# allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python.SyNone"
-# allowlist["torch.optim.Adadelta.step"] = "syft.lib.python.SyNone"
+allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
+allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
+allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adadelta.step"] = "syft.lib.python._SyNone"
 
-# allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
-# allowlist["torch.autograd.grad_mode.no_grad"] = "torch.autograd.grad_mode.no_grad"
-# allowlist["torch.autograd.grad_mode.no_grad.__enter__"] = "syft.lib.python.SyNone"
-# allowlist["torch.autograd.grad_mode.no_grad.__exit__"] = "syft.lib.python.SyNone"
+# Autograd
+allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
+allowlist["torch.autograd.grad_mode.no_grad"] = "torch.autograd.grad_mode.no_grad"
+allowlist["torch.autograd.grad_mode.no_grad.__enter__"] = "syft.lib.python._SyNone"
+allowlist["torch.autograd.grad_mode.no_grad.__exit__"] = "syft.lib.python._SyNone"
