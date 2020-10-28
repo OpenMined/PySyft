@@ -17,5 +17,6 @@ allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normaliz
 # allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.List"
 # allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.List"
 allowlist["torchvision.datasets.MNIST"] = "torchvision.datasets.MNIST"
+allowlist["torchvision.datasets.MNIST.__len__"] = "syft.lib.python.Int"
 allowlist["torchvision.datasets.VisionDataset"] = "torchvision.datasets.VisionDataset"
 allowlist["torchvision.datasets.VisionDataset.__len__"] = "syft.lib.python.Int"
