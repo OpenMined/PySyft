@@ -1736,7 +1736,8 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "gte_version": "1.7.0" }
         ]
       },
       "sub_": {
@@ -1921,7 +1922,8 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          { "data_types": ["float16"], "gte_version": "1.7.0" }
         ]
       },
       "view_as": {
