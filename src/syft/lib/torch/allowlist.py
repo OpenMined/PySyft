@@ -760,3 +760,18 @@ allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
 allowlist["torch.autograd.grad_mode.no_grad"] = "torch.autograd.grad_mode.no_grad"
 allowlist["torch.autograd.grad_mode.no_grad.__enter__"] = "syft.lib.python._SyNone"
 allowlist["torch.autograd.grad_mode.no_grad.__exit__"] = "syft.lib.python._SyNone"
+
+
+allowlist["torch.nn.Sequential"] = "torch.nn.Sequential"
+allowlist["torch.nn.Sequential.cpu"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.Sequential.cuda"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.Sequential.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Sequential.train"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.Sequential.eval"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.Sequential.__call__"] = "torch.Tensor"
+
+allowlist["torch.nn.ReLU"] = "torch.nn.ReLU"
+allowlist["torch.nn.MaxPool2d"] = "torch.nn.MaxPool2d"
+allowlist["torch.nn.Flatten"] = "torch.nn.Flatten"
+allowlist["torch.nn.Softmax"] = "torch.nn.Softmax"
+allowlist["torch.nn.LogSoftmax"] = "torch.nn.LogSoftmax"
