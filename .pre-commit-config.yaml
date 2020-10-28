@@ -6,7 +6,6 @@ repos:
       - id: check-docstring-first
       - id: check-json
       - id: check-added-large-files
-        exclude: examples/pytorch/word_language_model/original/data/
       - id: check-yaml
       - id: debug-statements
       - id: name-tests-test
@@ -16,7 +15,7 @@ repos:
     rev: 3.8.3
     hooks:
       - id: flake8
-        exclude: ^(src/syft/proto|examples/pytorch)
+        exclude: ^(src/syft/proto|examples/duet)
   - repo: https://github.com/psf/black
     rev: 20.8b1
     hooks:
@@ -25,7 +24,7 @@ repos:
     rev: v0.782
     hooks:
       - id: mypy
-        exclude: ^(src/syft/proto|tests/syft/lib/python|examples/pytorch)
+        exclude: ^(src/syft/proto|tests/syft/lib/python|examples/duet)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
