@@ -110,6 +110,13 @@ def test_from_string() -> None:
     assert uid == uid_comp
 
 
+def test_from_string_exception() -> None:
+    """Tests that UID throws exception when invalid string is given. """
+
+    with pytest.raises(Exception):
+        UID.from_string(value="Hello world")
+
+
 # --------------------- SERDE ---------------------
 
 
