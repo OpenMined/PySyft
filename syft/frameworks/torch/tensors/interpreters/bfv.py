@@ -1,10 +1,8 @@
 import syft as sy
-
 import numpy as np
 import torch as th
 
 from syft.generic.abstract.tensor import AbstractTensor
-
 from syft.generic.frameworks.hook.hook_args import (
     get_child,
     register_backward_func,
@@ -215,7 +213,7 @@ class BFVTensor(AbstractTensor):
         class
         """
 
-        def add(x, y):
+        def add(self, other):
             """
             You can write the function to overload in the most natural
             way, so this will be called whenever you call torch.add on
@@ -228,7 +226,7 @@ class BFVTensor(AbstractTensor):
         # Just register it using the module variable
         module.add = add
 
-        def mul(x, y):
+        def mul(self, other):
             """
             You can write the function to overload in the most natural
             way, so this will be called whenever you call torch.add on
@@ -278,21 +276,22 @@ class BFVTensor(AbstractTensor):
 
         return tensor
 
-    def prepareEncryptor(self, key):
+    def prepareEncoder(self):
         if self.encoder is None:
             self.encoder = IntegerEncoder(self.context)
+
+    def prepareEncryptor(self, key):
+        self.prepareEncoder()
         if self.encryptor is None:
             self.encryptor = Encryptor(self.context, key)
 
     def prepareDecryptor(self, private_key):
-        if self.encoder is None:
-            self.encoder = IntegerEncoder(self.context)
+        self.prepareEncoder()
         if self.decryptor is None:
             self.decryptor = Decryptor(self.context, private_key)
 
     def prepareEvaluator(self):
-        if self.encoder is None:
-            self.encoder = IntegerEncoder(self.context)
+        self.prepareEncoder()
         if self.evaluator is None:
             self.evaluator = Evaluator(self.context)
 
