@@ -68,7 +68,7 @@ class Module:
 
     # local list of remote ListPointers of TensorPointers
     def parameters(self, params_list: Any = [], recurse: bool = True) -> List[Any]:
-        # params_list = torch.python.List()
+        # params_list must be a remote List
         for _, module in self.modules.items():
             param_pointers = module.parameters()
             params_list += param_pointers
@@ -94,12 +94,12 @@ class Module:
 
     # easy way to check the weights have changed
     def sum_layers(self) -> None:
-        for _, m in self.modules.items():
+        for n, m in self.modules.items():
             if hasattr(m, "state_dict"):
                 for k, v in m.state_dict().items():
                     if hasattr(v, "sum"):
                         s = v.sum().item()
-                        log = f"> Layer sum({k}): {s}"
+                        log = f"> Layer {n} sum({k}): {s}"
                         print(log)
                         logger.debug(log)
 
