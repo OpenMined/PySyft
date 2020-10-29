@@ -145,9 +145,7 @@ class Pointer(AbstractPointer):
         self.description = description
         self.gc_enabled = True
 
-    def _get(
-        self,
-    ) -> StorableObject:
+    def _get(self, delete_obj: bool = True) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -156,19 +154,21 @@ class Pointer(AbstractPointer):
         """
 
         logger.debug(
-            f"> GetObjectAction for obj_id/id_at_location={self.id_at_location}"
+            f"> GetObjectAction for id_at_location={self.id_at_location} "
+            + f"with delete_obj={delete_obj}"
         )
         obj_msg = GetObjectAction(
             id_at_location=self.id_at_location,
             address=self.client.address,
             reply_to=self.client.address,
+            delete_obj=delete_obj,
         )
 
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
         return response.obj
 
-    def get(
+    def get_copy(
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
@@ -181,11 +181,33 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
+        return self.get(
+            request_block=request_block,
+            timeout_secs=timeout_secs,
+            request_name=request_name,
+            reason=reason,
+            delete_obj=False,
+        )
+
+    def get(
+        self,
+        request_block: bool = False,
+        timeout_secs: int = 20,
+        request_name: str = "",
+        reason: str = "",
+        delete_obj: bool = True,
+    ) -> Optional[StorableObject]:
+        """Method to download a remote object from a pointer object if you have the right
+        permissions. Optionally can block while waiting for approval.
+
+        :return: returns the downloaded data
+        :rtype: Optional[StorableObject]
+        """
         # syft relative
         from ..node.domain.service import RequestStatus
 
         if not request_block:
-            return self._get()
+            return self._get(delete_obj=delete_obj)
         else:
             response_status = self.request(
                 request_name=request_name,
@@ -197,7 +219,7 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get()
+                return self._get(delete_obj=delete_obj)
 
         return None
 

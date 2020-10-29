@@ -29,6 +29,31 @@ def test_parameter_vm_remote_operation() -> None:
     # assert len(alice.store._objects) == 0
 
 
+def test_get_copy() -> None:
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    x = th.nn.Parameter(th.randn(3, 3))
+
+    xp = x.send(alice_client)
+
+    y = xp + xp
+
+    assert len(alice.store._objects) == 2
+
+    y.get_copy()
+
+    # no deletion of the object
+    assert len(alice.store._objects) == 2
+
+    # TODO: put thought into garbage collection and then
+    #  uncoment this.
+    # del xp
+    #
+    # assert len(alice.store._objects) == 0
+
+
 def test_parameter_serde() -> None:
     param = th.nn.parameter.Parameter(th.tensor([1.0, 2, 3]), requires_grad=True)
     # Setting grad manually to check it is passed through serialization

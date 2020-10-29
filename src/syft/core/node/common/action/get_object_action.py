@@ -136,8 +136,10 @@ class GetObjectAction(ImmediateActionWithReply):
         address: Address,
         reply_to: Address,
         msg_id: Optional[UID] = None,
+        delete_obj: bool = True,
     ):
         self.id_at_location = id_at_location
+        self.delete_obj = delete_obj
 
         # the logger needs self.id_at_location to be set already - so we call this later
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -166,16 +168,19 @@ class GetObjectAction(ImmediateActionWithReply):
             obj = storeable_object.data
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
-            try:
-                # TODO: send EventualActionWithoutReply to delete the object at the node's
-                # convenience instead of definitely having to delete it now
-                logger.debug(
-                    f"Calling delete on Object with ID {self.id_at_location} in store."
-                )
-                del node.store[self.id_at_location]
-            except Exception as e:
-                log = f"Failed to delete Object with ID {self.id_at_location} in store. {e}"
-                raise Exception(log)
+            if self.delete_obj:
+                try:
+                    # TODO: send EventualActionWithoutReply to delete the object at the node's
+                    # convenience instead of definitely having to delete it now
+                    logger.debug(
+                        f"Calling delete on Object with ID {self.id_at_location} in store."
+                    )
+                    del node.store[self.id_at_location]
+                except Exception as e:
+                    log = f"Failed to delete Object with ID {self.id_at_location} in store. {e}"
+                    raise Exception(log)
+            else:
+                logger.debug(f"Copying Object with ID {self.id_at_location} in store.")
 
             logger.debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
@@ -210,6 +215,7 @@ class GetObjectAction(ImmediateActionWithReply):
             msg_id=self.id.proto(),
             address=self.address.proto(),
             reply_to=self.reply_to.proto(),
+            delete_obj=self.delete_obj,
         )
 
     @staticmethod
@@ -232,6 +238,7 @@ class GetObjectAction(ImmediateActionWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
+            delete_obj=proto.delete_obj,
         )
 
     @staticmethod
