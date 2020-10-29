@@ -7,6 +7,7 @@ from typing import ValuesView
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 
 # syft relative
 from . import ObjectStore
@@ -59,19 +60,17 @@ class MemoryStore(ObjectStore):
     def values(self) -> ValuesView[AbstractStorableObject]:
         return self._objects.values()
 
-    @syft_decorator(typechecking=True)
-    def store(self, obj: AbstractStorableObject) -> None:
-        # TODO: obj should be just "object" and the attributes
-        #  of StoreableObject should be put in the metadatastore
-        self._objects[obj.id] = obj
-
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, key: UID) -> bool:
         return key in self._objects.keys()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, key: UID) -> AbstractStorableObject:
-        return self._objects[key]
+        try:
+            return self._objects[key]
+        except Exception as e:
+            logger.trace(f"MemoryStore get item error {key} {e}")
+            raise e
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: UID, value: AbstractStorableObject) -> None:

@@ -336,6 +336,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
+            logger.error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
@@ -406,7 +407,8 @@ class Node(AbstractNode):
             # in tests
             if not isinstance(e, DuplicateRequestException):
                 logger.error(e)
-                pass
+                # TODO: A lot of tests are depending on this raise which seems bad
+                raise e
 
             # TODO: finish code to send ExceptionMessage back
             # if isinstance(e, DuplicateRequestException):
@@ -445,25 +447,28 @@ class Node(AbstractNode):
             )
             # Process Message here
             if not msg.is_valid:
+                logger.error(f"Message is not valid. {msg}")
                 raise Exception("Message is not valid.")
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
 
             except KeyError as e:
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise KeyError(
+                log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "
                     + f"{type(msg.message)} because there is no service running to process it."
                     + f"{e}"
                 )
+                logger.error(log)
+                self.ensure_services_have_been_registered_error_if_not()
+                raise KeyError(log)
 
-            return service.process(
+            result = service.process(
                 node=self,
                 msg=msg.message,
                 verify_key=msg.verify_key,
             )
+            return result
 
         else:
             logger.debug(

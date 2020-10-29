@@ -7,7 +7,7 @@ import "proto/core/store/store_object.proto";
 import "proto/core/io/address.proto";
 
 message GetObjectAction {
-  syft.core.common.UID obj_id = 1;
+  syft.core.common.UID id_at_location = 1;
   syft.core.common.UID msg_id = 2;
   syft.core.io.Address address = 3;
   syft.core.io.Address reply_to = 4;

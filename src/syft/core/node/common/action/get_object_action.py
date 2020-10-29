@@ -3,6 +3,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -126,44 +127,64 @@ class GetObjectAction(ImmediateActionWithReply):
     containing the object is sent back to the asker.
 
     Attributes:
-         obj_id: the id of the object asked for.
+         id_at_location: the pointer id of the object asked for.
     """
 
     def __init__(
         self,
-        obj_id: UID,
+        id_at_location: UID,
         address: Address,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
-        self.obj_id = obj_id
+        self.id_at_location = id_at_location
 
-        # the logger needs self.obj_id to be set already - so we call this later
+        # the logger needs self.id_at_location to be set already - so we call this later
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
     def execute_action(
         self, node: AbstractNode, verify_key: VerifyKey
     ) -> ImmediateSyftMessageWithoutReply:
+        try:
+            try:
+                storeable_object = node.store[self.id_at_location]
+            except Exception as e:
+                log = f"Unable to Get Object with ID {self.id_at_location} from the store. {e}"
+                logger.trace(f"After exception the store holds? {node.store.keys()}")
+                raise Exception(log)
 
-        storeable_object = node.store[self.obj_id]
+            if verify_key not in storeable_object.read_permissions:
+                log = (
+                    f"You do not have permission to .get() Object with ID: {self.id_at_location}"
+                    + "Please submit a request."
+                )
+                raise AuthorizationException(log)
 
-        if verify_key not in storeable_object.read_permissions:
-            raise AuthorizationException(
-                "You do not have permission to .get() this tensor. Please submit a request."
+            obj = storeable_object.data
+            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
+
+            try:
+                # TODO: send EventualActionWithoutReply to delete the object at the node's
+                # convenience instead of definitely having to delete it now
+                logger.debug(
+                    f"Calling delete on Object with ID {self.id_at_location} in store."
+                )
+                del node.store[self.id_at_location]
+            except Exception as e:
+                log = f"Failed to delete Object with ID {self.id_at_location} in store. {e}"
+                raise Exception(log)
+
+            logger.debug(
+                f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
             )
-
-        obj = storeable_object.data
-        msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
-
-        # TODO: send EventualActionWithoutReply to delete the object at the node's
-        # convenience instead of definitely having to delete it now
-        del node.store[self.obj_id]
-
-        return msg
+            return msg
+        except Exception as e:
+            logger.error(e)
+            raise e
 
     @property
     def pprint(self) -> str:
-        return f"GetObjectAction({self.obj_id})"
+        return f"GetObjectAction({self.id_at_location})"
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:
@@ -182,7 +203,7 @@ class GetObjectAction(ImmediateActionWithReply):
             object.
         """
         return GetObjectAction_PB(
-            obj_id=self.obj_id.proto(),
+            id_at_location=self.id_at_location.proto(),
             msg_id=self.id.proto(),
             address=self.address.proto(),
             reply_to=self.reply_to.proto(),
@@ -204,7 +225,7 @@ class GetObjectAction(ImmediateActionWithReply):
         """
 
         return GetObjectAction(
-            obj_id=_deserialize(blob=proto.obj_id),
+            id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),

@@ -155,8 +155,11 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
+        logger.debug(
+            f"> GetObjectAction for obj_id/id_at_location={self.id_at_location}"
+        )
         obj_msg = GetObjectAction(
-            obj_id=self.id_at_location,
+            id_at_location=self.id_at_location,
             address=self.client.address,
             reply_to=self.client.address,
         )
@@ -415,7 +418,7 @@ class Pointer(AbstractPointer):
         if self.gc_enabled:
             # Create the delete message
             msg = GarbageCollectObjectAction(
-                obj_id=self.id_at_location, address=self.client.address
+                id_at_location=self.id_at_location, address=self.client.address
             )
 
             # Send the message

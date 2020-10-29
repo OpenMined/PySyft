@@ -176,7 +176,7 @@ class Class(Callable):
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location,
+                id_at_location=ptr.id_at_location,
                 obj=self,
                 address=client.address,
                 anyone_can_search_for_this=searchable,

@@ -78,26 +78,15 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         logger.debug(
             f"> Executing {ChildNodeLifecycleService.pprint()} {msg.pprint} on {node.pprint}"
         )
-        # Step 1: Store the client to the child in our object store.
-        # QUESTION: Now that these are serialized Address not Full Client
-        # What do we want to store and which id do we want?
-        # Is it target_id? Or one of the 4 locations?
-        # It seems like the key is the "address" from a message so this needs to be
-        # the intended future address, but which one?
-        # Currently this is working:
-        # msg.child_node_client_address.target_id.id
-        """
-        # old code
-        # id=msg.child_node_client_address.id, data=msg.child_node_client_address,
-        """
         addr = msg.child_node_client_address
-        obj_id = msg.lookup_id  # TODO: Fix, see above
-        node.store.store(obj=StorableObject(id=obj_id, data=addr))
+        lookup_id = msg.lookup_id  # TODO: Fix, see above
+
+        node.store[lookup_id] = StorableObject(id=lookup_id, data=addr)
 
         logger.debug(
             (
                 f"> Saving 💾 {addr.pprint} {addr.target_emoji()} with "
-                + f"Key: {obj_id} ➡️ {node.store.pprint}"
+                + f"Key: {lookup_id} ➡️ {type(node.store)}"
             )
         )
 
@@ -129,17 +118,8 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
             logger.debug(f"> Forwarding {msg.pprint} to {addr.target_emoji()}")
             return None
         except Exception as e:
-            print(f"{location} not on nodes in_memory_client. {e}")
+            logger.error(f"{location} not on nodes in_memory_client. {e}")
             pass
-
-        """"
-        # old code had child_node_client which was a real object not a serialized address
-        heritage_msg = HeritageUpdateMessage(
-            new_ancestry_address=node, address=msg.child_node_client
-        )
-
-        msg.child_node_client.send_immediate_msg_without_reply(msg=heritage_msg)
-        """
         return None
 
     @staticmethod
