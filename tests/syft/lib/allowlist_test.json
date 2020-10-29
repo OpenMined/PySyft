@@ -720,6 +720,12 @@
           { "data_types": ["float16"], "lte_version": "1.5.1" }
         ]
       },
+      "angle": {
+        "profile": "tensor_method_noinput",
+        "not_available": [
+          { "data_types": ["bool"] }
+        ]
+      },
       "argmax": {
         "profile": "tensor_method_noinput",
         "not_available": [
