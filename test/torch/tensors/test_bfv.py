@@ -719,65 +719,74 @@ def test_fv_relin_exceptions(val1, val2):
 
 
 @pytest.mark.parametrize(
-    "val1, val2, ans",
+    "val1, val2",
     [
-        (th.tensor([1]), th.tensor([-1]), th.tensor([0])),
-        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6]), th.tensor([5, 7, 9])),
+        (th.tensor([1]), th.tensor([-1])),
+        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6])),
         (
             th.tensor([[1, 2, 3], [4, 5, 6]]),
             th.tensor([[-1, -2, 3], [4, -5, 6]]),
-            th.tensor([[0, 0, 6], [8, 0, 12]]),
         ),
     ],
 )
-def test_bfv_tensor_add(val1, val2, ans):
+def test_bfv_tensor_add(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keygenerator = KeyGenerator(ctx)
     keys = keygenerator.keygen()
+    ans = val1.add(val2)
 
     op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    assert th.all(th.eq((op1 + val2).decrypt(private_key=keys[0]), ans))
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    # assert th.all(th.eq((val1 + op2).decrypt(private_key=keys[0]), ans))
+
     assert th.all(th.eq((op1 + op2).decrypt(private_key=keys[0]), ans))
 
 
 @pytest.mark.parametrize(
-    "val1, val2, ans",
+    "val1, val2",
     [
-        (th.tensor([1]), th.tensor([-1]), th.tensor([-1])),
-        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6]), th.tensor([4, 10, 18])),
+        (th.tensor([1]), th.tensor([-1])),
+        (th.tensor([1, 2, 3]), th.tensor([4, 5, 6])),
         (
             th.tensor([[1, 2, 3], [4, 5, 6]]),
             th.tensor([[-1, -2, 3], [4, -5, 6]]),
-            th.tensor([[-1, -4, 9], [16, -25, 36]]),
         ),
     ],
 )
-def test_bfv_tensor_mul(val1, val2, ans):
+def test_bfv_tensor_mul(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keygenerator = KeyGenerator(ctx)
     keys = keygenerator.keygen()
+    ans = val1.mul(val2)
 
     op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    assert th.all(th.eq((op1 * val2).decrypt(private_key=keys[0]), ans))
+
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    # assert th.all(th.eq((val1 * op2).decrypt(private_key=keys[0]), ans))
+
     assert th.all(th.eq((op1 * op2).decrypt(private_key=keys[0]), ans))
 
 
 @pytest.mark.parametrize(
-    "val1, val2, ans",
+    "val1, val2",
     [
         (
             th.tensor([[1, 2, 3], [4, 5, 6]]),
             th.Tensor([[-1, -2], [-3, -4], [-5, -6]]),
-            th.tensor([[-22, -28], [-49, -64]]),
         ),
     ],
 )
-def test_bfv_tensor_mm(val1, val2, ans):
+def test_bfv_tensor_mm(val1, val2):
     ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [30, 30]), 64))
     keygenerator = KeyGenerator(ctx)
     keys = keygenerator.keygen()
     relin_key = keygenerator.get_relin_keys()
+    ans = val1.mm(val2.long())
 
     op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    # assert th.all(th.eq(op1.mm(val2, relin_key=relin_key).decrypt(private_key=keys[0]), ans))
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
+    # assert th.all(th.eq((val1 * op2).decrypt(private_key=keys[0]), ans))
     assert th.all(th.eq(op1.mm(op2, relin_key=relin_key).decrypt(private_key=keys[0]), ans))
