@@ -25,3 +25,4 @@ allowlist_report_*.html
 allowlist_test_support*.jsonl
 examples/duet/data/*
 examples/duet/mnist/data/*
+**/*.log

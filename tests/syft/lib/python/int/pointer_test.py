@@ -7,7 +7,6 @@ import pytest
 # syft absolute
 import syft as sy
 
-sy.VERBOSE = False
 alice = sy.VirtualMachine(name="alice")
 alice_client = alice.get_root_client()
 remote_python = alice_client.syft.lib.python

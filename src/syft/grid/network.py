@@ -14,7 +14,6 @@ from flask import request
 from nacl.encoding import HexEncoder
 
 # syft absolute
-import syft as sy
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
@@ -23,7 +22,6 @@ from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
 
-sy.VERBOSE = False
 app = Flask(__name__)
 
 network = Network(name="om-net")

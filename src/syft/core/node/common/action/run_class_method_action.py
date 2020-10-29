@@ -55,7 +55,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
 
-        # logging (sy.VERBOSE) needs .path to exist before calling
+        # logging needs .path to exist before calling
         # this which is why i've put this super().__init__ down here
         super().__init__(address=address, msg_id=msg_id)
 

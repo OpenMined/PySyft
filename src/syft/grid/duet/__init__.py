@@ -180,7 +180,6 @@ def launch_duet(
     #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
 
     print("\nimport syft as sy")
-    print("sy.VERBOSE=False")
     print(
         "duet = sy.join_duet('"
         + bcolors.BOLD

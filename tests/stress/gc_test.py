@@ -1,7 +1,11 @@
-import syft as sy
+# stdlib
+import gc
+
+# third party
 import torch
 
-import gc
+# syft absolute
+import syft as sy
 
 
 def test_same_var_for_ptr_gc() -> None:

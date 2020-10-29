@@ -4,8 +4,8 @@ from typing import Iterable
 from typing import List
 from typing import Type
 
-# syft absolute
-import syft as sy
+# third party
+from loguru import logger
 
 # syft relative
 from ...decorators import syft_decorator
@@ -183,8 +183,7 @@ class ObjectStore(ABC):
         return output
 
     def post_init(self) -> None:
-        if sy.VERBOSE:
-            print(f"> Creating {self.pprint}")
+        logger.debug(f"> Creating {self.pprint}")
 
     @property
     def class_name(self) -> str:
