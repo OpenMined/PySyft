@@ -222,6 +222,7 @@ class Client(AbstractNodeClient):
             if isinstance(response.message, ExceptionMessage):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
+                logger.error(str(exception))
                 raise exception
             else:
                 return response.message

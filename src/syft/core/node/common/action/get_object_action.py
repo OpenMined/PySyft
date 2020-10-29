@@ -149,8 +149,11 @@ class GetObjectAction(ImmediateActionWithReply):
             try:
                 storeable_object = node.store[self.id_at_location]
             except Exception as e:
-                log = f"Unable to Get Object with ID {self.id_at_location} from the store. {e}"
-                logger.trace(f"After exception the store holds? {node.store.keys()}")
+                log = (
+                    f"Unable to Get Object with ID {self.id_at_location} from store. "
+                    + f"Possible dangling Pointer. {e}"
+                )
+
                 raise Exception(log)
 
             if verify_key not in storeable_object.read_permissions:
