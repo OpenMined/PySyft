@@ -158,6 +158,7 @@ class GetObjectAction(ImmediateActionWithReply):
         # TODO: send EventualActionWithoutReply to delete the object at the node's
         # convenience instead of definitely having to delete it now
         del node.store[self.obj_id]
+
         return msg
 
     @property

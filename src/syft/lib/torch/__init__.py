@@ -52,7 +52,9 @@ def create_torch_ast() -> Globals:
                     path=method, framework_reference=torch, return_type_name=return_type
                 )
         else:
-            print(f"Skipping torch.{method} not supported in {TORCH_VERSION}")
+            pass
+            # TODO: Replace with logging
+            # print(f"Skipping {method} not supported in {TORCH_VERSION}")
 
     for klass in ast.classes:
         klass.create_pointer_class()

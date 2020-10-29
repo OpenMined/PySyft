@@ -14,7 +14,7 @@ def test_duet_send_and_get() -> None:
     x = th.tensor([1, 2, 3])
     xp = x.send(duet)
 
-    assert xp.id_at_location == x.id
+    assert len(duet.store) == 1
 
     yp = xp + xp
 

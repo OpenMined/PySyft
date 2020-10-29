@@ -81,6 +81,7 @@ Example:
 
 """
 # stdlib
+import time
 from typing import Any
 from typing import List
 from typing import Optional
@@ -143,7 +144,7 @@ class Pointer(AbstractPointer):
         self.description = description
         self.gc_enabled = True
 
-    def get(
+    def _get(
         self,
     ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -152,6 +153,7 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: StorableObject
         """
+
         obj_msg = GetObjectAction(
             obj_id=self.id_at_location,
             address=self.client.address,
@@ -161,6 +163,39 @@ class Pointer(AbstractPointer):
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
         return response.obj
+
+    def get(
+        self,
+        request_block: bool = False,
+        timeout_secs: int = 20,
+        request_name: str = "",
+        reason: str = "",
+    ) -> Optional[StorableObject]:
+        """Method to download a remote object from a pointer object if you have the right
+        permissions. Optionally can block while waiting for approval.
+
+        :return: returns the downloaded data
+        :rtype: Optional[StorableObject]
+        """
+        # syft relative
+        from ..node.domain.service import RequestStatus
+
+        if not request_block:
+            return self._get()
+        else:
+            response_status = self.request(
+                request_name=request_name,
+                reason=reason,
+                block=True,
+                timeout_secs=timeout_secs,
+            )
+            if (
+                response_status is not None
+                and response_status == RequestStatus.Accepted
+            ):
+                return self._get()
+
+        return None
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:
@@ -241,9 +276,10 @@ class Pointer(AbstractPointer):
     def request(
         self,
         request_name: str = "",
-        name: str = "",
         reason: str = "",
-    ) -> None:
+        block: bool = False,
+        timeout_secs: int = 20,
+    ) -> Any:
         """Method that requests access to the data on which the pointer points to.
 
         Example:
@@ -251,7 +287,7 @@ class Pointer(AbstractPointer):
         .. code-block::
 
             # data holder domain
-            domain_1 = Domain(name="Data holder")
+            domain_1 = Domain(request_name="Data holder")
 
             # data
             tensor = th.tensor([1, 2, 3])
@@ -272,16 +308,11 @@ class Pointer(AbstractPointer):
         :type reason: str
 
         .. note::
-            This method should be usen when the remote data associated with the pointer wants to be
+            This method should be used when the remote data associated with the pointer wants to be
             downloaded locally (or use .get() on the pointer).
         """
         # syft relative
         from ..node.domain.service import RequestMessage
-
-        # optional kwarg to set name
-        request_name = request_name
-        if len(name) > 0:
-            request_name = name
 
         msg = RequestMessage(
             request_name=request_name,
@@ -292,9 +323,55 @@ class Pointer(AbstractPointer):
             requester_verify_key=self.client.verify_key,
         )
 
-        print("Request Message Id:" + str(msg.id))
-
         self.client.send_immediate_msg_without_reply(msg=msg)
+
+        if not block:
+            return None
+        else:
+
+            # syft relative
+            from ..node.domain.service import RequestAnswerMessage
+            from ..node.domain.service import RequestStatus
+
+            output_string = "> Waiting for Blocking Request\n"
+            if len(request_name) > 0:
+                output_string += f"{request_name}"
+            if len(reason) > 0:
+                output_string += f": {reason}"
+            if len(request_name) > 0 or len(request_name) > 0:
+                if len(output_string) > 0 and output_string[-1] != ".":
+                    output_string += "."
+                output_string += "\n"
+            if sy.VERBOSE:
+                output_string += f"{msg.id}\n"
+            print(f"\n{output_string}", end="")
+            status = None
+            start = time.time()
+
+            while True:
+                now = time.time()
+                if now - start > timeout_secs:
+                    print(f"\n> Blocking Request Timeout after {timeout_secs} seconds")
+                    return status
+
+                status_msg = RequestAnswerMessage(
+                    request_id=msg.id,
+                    address=self.client.address,
+                    reply_to=self.client.address,
+                )
+
+                response = self.client.send_immediate_msg_with_reply(msg=status_msg)
+                status = response.status
+                if response.status == RequestStatus.Pending:
+                    time.sleep(1)
+                    print(".", end="")
+                else:
+                    # accepted or rejected lets exit
+                    status_text = "REJECTED"
+                    if status == RequestStatus.Accepted:
+                        status_text = "ACCEPTED"
+                    print(f"\n> Blocking Request {status_text}")
+                    return status
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible

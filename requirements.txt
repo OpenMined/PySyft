@@ -25,6 +25,7 @@ flask
 forbiddenfruit>=0.1.3
 isort
 jinja2
+matplotlib
 nbconvert
 pandas
 protobuf

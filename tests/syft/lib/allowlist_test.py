@@ -379,9 +379,12 @@ def test_all_allowlisted_tensor_methods(
 
         # Step 3: Create the object we're going to call a method on
         # NOTE: we need a second copy because some methods mutate tensor before we send
+        requires_grad = False
+        if op_name == "backward":
+            requires_grad = True
         self_tensor, self_tensor_copy = (
-            th.tensor(self_tensor, dtype=t_type),
-            th.tensor(self_tensor, dtype=t_type),
+            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
+            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
         )
 
         # we dont have .id's by default anymore
@@ -393,7 +396,7 @@ def test_all_allowlisted_tensor_methods(
         if _args is None:
             args = []
         elif _args == "self":
-            args = [th.tensor(self_tensor, dtype=t_type)]
+            args = [th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)]
         elif isinstance(_args, list):
             args = [th.tensor(_args, dtype=t_type)]
         else:
