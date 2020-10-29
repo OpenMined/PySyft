@@ -384,6 +384,7 @@ class Node(AbstractNode):
                 msg=msg, router=self.immediate_msg_without_reply_router
             )
         except Exception as e:
+            logger.error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
             if isinstance(e, DuplicateRequestException):
                 private_log_msg = "An DuplicateRequestException has been triggered"
