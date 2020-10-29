@@ -1,11 +1,11 @@
 # stdlib
 from random import randint
-from typing import Any
 from typing import List
 from typing import Union
 
 # third party
 from forbiddenfruit import curse
+from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -125,7 +125,25 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 def obj2pointer_type(obj: object) -> type:
     fqn = get_fully_qualified_name(obj=obj)
-    ref = syft.lib_ast(fqn, return_callable=True)
+
+    # fix fqn types having the wrong path
+    # converts: syft.lib.python.list.List
+    # into    : syft.lib.python.List
+    if fqn.startswith("syft.lib.python"):
+        parts = fqn.split(".")
+        klass = parts[-1]
+        fixed: List[str] = []
+        for p in parts:
+            if p.lower() != klass.lower():
+                fixed.append(p)
+        fixed.append(klass)
+        fqn = ".".join(fixed)
+
+    try:
+        ref = syft.lib_ast(fqn, return_callable=True)
+    except Exception as e:
+        logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
+        # TODO maybe return AnyPointer?
     return ref.pointer_type
 
 
@@ -144,14 +162,6 @@ def char_emoji(hex_chars: str) -> str:
         offset = ord(char)
         code += offset - hex_base
     return chr(base + code)
-
-
-# this helps loop over a pointer because iter and len are expecting things that
-# we cant provide just yet
-# TODO: Improve / or remove with better solution
-def syrange(ptr: Any) -> Any:
-    for i in range(ptr.__len__().get()):
-        yield ptr[i]
 
 
 left_name = [

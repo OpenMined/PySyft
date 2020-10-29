@@ -88,6 +88,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 
 # syft absolute
 import syft as sy
@@ -343,34 +344,44 @@ class Pointer(AbstractPointer):
                     output_string += "."
                 output_string += "\n"
             output_string += f"{msg.id}\n"
+            logger.debug(output_string)
             print(f"\n{output_string}", end="")
             status = None
             start = time.time()
 
+            last_check: float = 0.0
             while True:
                 now = time.time()
                 if now - start > timeout_secs:
-                    print(f"\n> Blocking Request Timeout after {timeout_secs} seconds")
+                    log = f"\n> Blocking Request Timeout after {timeout_secs} seconds"
+                    logger.debug(log)
+                    print(log)
                     return status
 
-                status_msg = RequestAnswerMessage(
-                    request_id=msg.id,
-                    address=self.client.address,
-                    reply_to=self.client.address,
-                )
+                # only check once every second
+                if now - last_check > 1:
+                    last_check = now
+                    logger.debug(f"> Sending another Request Message {now - start}")
+                    status_msg = RequestAnswerMessage(
+                        request_id=msg.id,
+                        address=self.client.address,
+                        reply_to=self.client.address,
+                    )
 
-                response = self.client.send_immediate_msg_with_reply(msg=status_msg)
-                status = response.status
-                if response.status == RequestStatus.Pending:
-                    time.sleep(1)
-                    print(".", end="")
-                else:
-                    # accepted or rejected lets exit
-                    status_text = "REJECTED"
-                    if status == RequestStatus.Accepted:
-                        status_text = "ACCEPTED"
-                    print(f"\n> Blocking Request {status_text}")
-                    return status
+                    response = self.client.send_immediate_msg_with_reply(msg=status_msg)
+                    status = response.status
+                    if response.status == RequestStatus.Pending:
+                        time.sleep(1)
+                        print(".", end="")
+                    else:
+                        # accepted or rejected lets exit
+                        status_text = "REJECTED"
+                        if status == RequestStatus.Accepted:
+                            status_text = "ACCEPTED"
+                        log = f"\n> Blocking Request {status_text}"
+                        logger.debug(log)
+                        print(log)
+                        return status
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible

@@ -18,9 +18,7 @@ from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .string import String
 from .tuple import Tuple
-
-from .none import SyNone  # NOQA
-
+from .none import SyNone
 
 for syft_type in [
     Bool,

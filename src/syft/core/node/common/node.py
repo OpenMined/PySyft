@@ -350,9 +350,10 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
+                logger.error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            print(private_log_msg)
+            logger.error(private_log_msg)
 
             # send the public exception back
             response = ExceptionMessage(
@@ -396,14 +397,16 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
+                logger.error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            print(private_log_msg)
+            logger.error(private_log_msg)
 
             # we still want to raise for now due to certain exceptions we expect
             # in tests
             if not isinstance(e, DuplicateRequestException):
-                raise e
+                logger.error(e)
+                pass
 
             # TODO: finish code to send ExceptionMessage back
             # if isinstance(e, DuplicateRequestException):
