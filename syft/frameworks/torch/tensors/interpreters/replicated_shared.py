@@ -8,8 +8,17 @@ from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
-    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None, id=None):
-        super().__init__(owner=owner, id=id)
+    def __init__(
+        self,
+        plain_text=None,
+        players=None,
+        ring_size=None,
+        owner=None,
+        id=None,
+        tags=None,
+        description=None,
+    ):
+        super().__init__(owner=owner, id=id, tags=tags, description=description)
         self.ring_size = ring_size or 2 ** 32
         shares_map = self.__validate_input(plain_text, players)
         self.child = shares_map
