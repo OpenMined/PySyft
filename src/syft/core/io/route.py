@@ -89,9 +89,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
+from loguru import logger
 
 # syft relative
 from ...decorators import syft_decorator
@@ -163,8 +161,7 @@ class SoloRoute(Route):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        if sy.VERBOSE:
-            print(f"> Routing {msg.pprint} via {self.pprint}")
+        logger.debug(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(

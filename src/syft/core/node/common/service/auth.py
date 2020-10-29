@@ -3,10 +3,8 @@ from typing import Callable
 from typing import Optional
 
 # third party
+from loguru import logger
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from ....common.message import SyftMessage
@@ -27,25 +25,21 @@ def service_auth(
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
         ) -> Optional[SyftMessage]:
-            if sy.VERBOSE:
-                print(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
+            logger.debug(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
 
             if root_only:
-                if sy.VERBOSE:
-                    keys = (
-                        f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
-                        + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
-                    )
-                    print(keys)
+                keys = (
+                    f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
+                    + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
+                )
+                logger.debug(keys)
                 if verify_key != node.root_verify_key:
-                    if sy.VERBOSE:
-                        print(f"> ❌ Auth FAILED {msg.pprint}")
+                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "You are not Authorized to access this service"
                     )
                 else:
-                    if sy.VERBOSE:
-                        print(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
+                    logger.debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif existing_users_only:
                 if verify_key not in node.guest_verify_key_registry:

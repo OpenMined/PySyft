@@ -342,8 +342,7 @@ class Pointer(AbstractPointer):
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
                 output_string += "\n"
-            if sy.VERBOSE:
-                output_string += f"{msg.id}\n"
+            output_string += f"{msg.id}\n"
             print(f"\n{output_string}", end="")
             status = None
             start = time.time()

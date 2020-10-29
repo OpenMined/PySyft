@@ -19,11 +19,9 @@ from typing import TypeVar
 from typing import Union
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from ....decorators import syft_decorator
@@ -296,8 +294,7 @@ class Node(AbstractNode):
 
     @property
     def known_child_nodes(self) -> List[Address]:
-        if sy.VERBOSE:
-            print(f"> {self.pprint} Getting known Children Nodes")
+        logger.debug(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
             return [
                 client
@@ -318,8 +315,7 @@ class Node(AbstractNode):
                 )
             ]
         else:
-            if sy.VERBOSE:
-                print(f"> Node {self.pprint} has no children")
+            logger.debug(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
@@ -369,20 +365,18 @@ class Node(AbstractNode):
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
         res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        if sy.VERBOSE:
-            output = (
-                f"> {self.pprint} Signing {res_msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-            )
-            print(output)
+        output = (
+            f"> {self.pprint} Signing {res_msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+        )
+        logger.debug(output)
         return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        if sy.VERBOSE:
-            print(f"> Received {msg.pprint} @ {self.pprint}")
+        logger.debug(f"> Received {msg.pprint} @ {self.pprint}")
         try:
             self.process_message(
                 msg=msg, router=self.immediate_msg_without_reply_router
@@ -441,13 +435,11 @@ class Node(AbstractNode):
 
         self.message_counter += 1
 
-        if sy.VERBOSE:
-            print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
+        logger.debug(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
         if self.message_is_for_me(msg=msg):
-            if sy.VERBOSE:
-                print(
-                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-                )
+            logger.debug(
+                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+            )
             # Process Message here
             if not msg.is_valid:
                 raise Exception("Message is not valid.")
@@ -471,10 +463,9 @@ class Node(AbstractNode):
             )
 
         else:
-            if sy.VERBOSE:
-                print(
-                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
-                )
+            logger.debug(
+                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+            )
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
