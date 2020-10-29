@@ -32,7 +32,7 @@ This takes place potentially with hundreds, or thousands of devices simultaneous
 
 _Note:_ For posterity sake, we previously used to refer to this process as "static federated learning".
 
-![Cycled MCFL](https://github.com/OpenMined/PyGrid/blob/dev/assets/MCFL-cycled.png?raw=true)
+![Cycled MCFL](assets/MCFL-cycled.png)
 
 #### Data-centric FL
 
@@ -54,13 +54,13 @@ _Note:_ For posterity sake, we previously used to refer to this process as "dyna
 
 Technically speaking, it isn't required to run a Network when performing data-centric federated learning. Alternatively, as a data owner, you may opt to only run a Node, but participate in a Network hosted by someone else. The Network host will not have access to your data.
 
-![Node-only DCFL](https://github.com/OpenMined/PyGrid/blob/dev/assets/DCFL-node.png?raw=true)
+![Node-only DCFL](assets/DCFL-node.png)
 
 **Network-based data-centric FL**
 
 Many times you will wat to use a Network to allow multiple Nodes to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Nodes. PyGrid doesn't prescribe one way to organize Nodes and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
 
-![Network-based DCFL](https://github.com/OpenMined/PyGrid/blob/dev/assets/DCFL-network.png?raw=true)
+![Network-based DCFL](assets/DCFL-network.png)
 
 ## Getting started
 
@@ -118,6 +118,7 @@ docker build ./apps/network --file ./apps/network/Dockerfile --tag openmined/gri
 #### Running a Node
 
 > ##### Installation
+>
 > First install [`poetry`](https://python-poetry.org/docs/) and run `poetry install` in `apps/node`
 
 To start the PyGrid Node manually, run:
