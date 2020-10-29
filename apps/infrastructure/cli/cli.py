@@ -1,19 +1,21 @@
 import json
 import os
-from pprint import pformat
+import time
+from pathlib import Path
 
 import click
+import requests
 
-from .providers.aws import AWS
-from .providers.azure import AZURE
-from .providers.gcp import GCP
+from .provider_utils import aws, azure, gcp
 from .utils import COLORS, Config, colored
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
 
 @click.group()
-@click.option("--output-file", default="config.json")
+@click.option(
+    "--output-file", default=f"config_{time.strftime('%Y-%m-%d_%H%M%S')}.json"
+)
 @pass_config
 def cli(config, output_file):
     """OpenMined CLI for Infrastructure Management.
@@ -25,7 +27,11 @@ def cli(config, output_file):
     >>> pygrid deploy --provider azure --app network
     """
     click.echo(colored("Welcome to OpenMined PyGrid CLI!"))
-    config.output_file = output_file
+
+    ## ROOT Directory
+    config.pygrid_root_path = str(Path.home() / ".pygrid/cli/")
+    os.makedirs(config.pygrid_root_path, exist_ok=True)
+    config.output_file = f"{config.pygrid_root_path}/{output_file}"
 
 
 @cli.command()
@@ -45,49 +51,71 @@ def cli(config, output_file):
 )
 @pass_config
 def deploy(config, provider, app):
-    click.echo(f"Starting the deployment on {colored(provider)}...")
     config.provider = provider.lower()
+
+    credentials = Config()
+
+    ## credentials file
+    with open(
+        click.prompt(
+            f"Please enter path to your  {colored(f'{config.provider} credentials')} json file",
+            type=str,
+            default=f"{Path.home()}/.{config.provider}/credentials.json",
+        ),
+        "r",
+    ) as f:
+        credentials.cloud = json.load(f)
 
     ## Get app config and arguments
     config.app = Config(name=app.lower())
-    get_app_arguments(config)
 
-    ## credentials file
-    config.credentials = click.prompt(
-        f"Please enter a your cloud deployment {colored('credentials')} file",
-        type=str,
-        default=f"~/.{config.provider}/credentials.json",
+    ## Deployment type
+    config.deployment_type = (
+        "serverless"
+        if click.confirm(f"Do you want to deploy serverless?")
+        else "serverfull"
     )
 
     ## Websockets
-    if click.confirm(f"Will you need to support Websockets?"):
-        if config.provider != "aws":
-            config.deployment_type = "serverfull"
-        elif click.confirm(f"Do you want to deploy serverless?"):
-            config.deployment_type = "serverless"
+    config.websockets = (
+        True if click.confirm(f"Will you need to support Websockets?") else False
+    )
 
-    elif click.confirm(f"Do you want to deploy serverless?"):
-        click.echo("we are going to serverless deployment!")
-        config.deployment_type = "serverless"
+    get_app_arguments(config)
 
     ## Prompting user to provide configuration for the selected cloud
     if config.provider == "aws":
-        provider = AWS(config)
+        config.vpc = aws.get_vpc_config()
     elif config.provider == "gcp":
-        provider = GCP(config)
+        pass
     elif config.provider == "azure":
-        provider = AZURE(config)
+        pass
+
+    ## Database
+    credentials.db = aws.get_db_config()
 
     if click.confirm(
         f"""Your current configration are: \n\n{colored((json.dumps(vars(config), indent=2, default=lambda o: o.__dict__)))} \n\nContinue?"""
     ):
-        provider.deploy()
+
+        config.credentials = credentials
+
+        url = "http://localhost:5000/"
+        data = json.dumps(vars(config), indent=2, default=lambda o: o.__dict__)
+        r = requests.post(url, json=data)
+
+        if r.status_code == 200:
+            print(f"Your PyGrid {config.app.name} was deployed successfully")
+        else:
+            print(
+                f"There was an issue with deploying your Pygrid {config.app.name}. Please try again."
+            )
 
 
 def get_app_arguments(config):
     if config.app.name == "node":
         config.app.id = click.prompt(
-            f"PyGrid Node ID", type=str, default=os.environ.get("NODE_ID", None),
+            f"PyGrid Node ID", type=str, default=os.environ.get("NODE_ID", None)
         )
         config.app.port = click.prompt(
             f"Port number of the socket.io server",
@@ -104,31 +132,22 @@ def get_app_arguments(config):
             type=str,
             default=os.environ.get("NETWORK", None),
         )
-        config.app.num_replicas = click.prompt(
-            f"Number of replicas to provide fault tolerance to model hosting",
-            type=int,
-            default=os.environ.get("NUM_REPLICAS", None),
-        )
-        config.app.start_local_db = click.prompt(
-            f"Start local db (If this flag is used a SQLAlchemy DB URI is generated to use a local db)",
-            type=bool,
-            default=False,
-        )
-    elif config.app.name == "network":
+        # TODO: Validate if this is related to data-centric or model-centric and is it requried?
+        # config.app.num_replicas = click.prompt(
+        #     f"Number of replicas to provide fault tolerance to model hosting",
+        #     type=int,
+        #     default=os.environ.get("NUM_REPLICAS", None),
+        # )
+    elif config.app.name == "network" and config.deployment_type == "serverfull":
         config.app.port = click.prompt(
             f"Port number of the socket.io server",
             type=str,
             default=os.environ.get("GRID_NETWORK_PORT", "7000"),
         )
         config.app.host = click.prompt(
-            f"GridNerwork host",
+            f"Grid Network host",
             type=str,
             default=os.environ.get("GRID_NETWORK_HOST", "0.0.0.0"),
-        )
-        config.app.start_local_db = click.prompt(
-            f"Start local db (If this flag is used a SQLAlchemy DB URI is generated to use a local db)",
-            type=bool,
-            default=False,
         )
     else:
         # TODO: Workers arguments

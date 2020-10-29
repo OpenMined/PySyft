@@ -34,6 +34,9 @@ docs/_build/
 **/.terraform/*
 **/**/builds/*
 
+# Local terraform files
+**/*.tf.json
+
 # .tfstate files
 *.tfstate
 *.tfstate.*

@@ -43,7 +43,7 @@ class AZURE(Provider):
 
     def build(self) -> bool:
         self.resource_group = terrascript.resource.azurerm_resource_group(
-            "resource_group", name="resource_group", location=self.azure.location,
+            "resource_group", name="resource_group", location=self.azure.location
         )
         self.tfscript += self.resource_group
 
@@ -81,9 +81,7 @@ class AZURE(Provider):
         self.update_script()
         return TF.validate()
 
-    def deploy_network(
-        self, name: str = "pygridmetwork", apply: bool = True,
-    ):
+    def deploy_network(self, name: str = "pygridmetwork", apply: bool = True):
         virtual_machine = terrascript.resource.azurerm_virtual_machine(
             name,
             name=name,
@@ -109,7 +107,7 @@ class AZURE(Provider):
                 "admin_username": "testadmin",
                 "admin_password": "Password1234!",
             },
-            os_profile_linux_config={"disable_password_authentication": False,},
+            os_profile_linux_config={"disable_password_authentication": False},
             custom_data=f"""
                 {base_setup}
                 \ncd /PyGrid/apps/network
@@ -122,9 +120,7 @@ class AZURE(Provider):
 
         self.update_script()
 
-    def deploy_node(
-        self, apply: bool = True,
-    ):
+    def deploy_node(self, apply: bool = True):
         virtual_machine = terrascript.resource.azurerm_virtual_machine(
             name,
             name=name,
@@ -150,7 +146,7 @@ class AZURE(Provider):
                 "admin_username": "testadmin",
                 "admin_password": "Password1234!",
             },
-            os_profile_linux_config={"disable_password_authentication": False,},
+            os_profile_linux_config={"disable_password_authentication": False},
             custom_data=f"""
                 {base_setup}
                 \ncd /PyGrid/apps/node
@@ -179,7 +175,7 @@ class AZURE(Provider):
                     "name": "location",
                     "message": "Please select your desired location",
                     "choices": az.locations_list(),
-                },
+                }
             ],
             style=styles.second,
         )["location"]
@@ -191,7 +187,7 @@ class AZURE(Provider):
                     "name": "address_space",
                     "message": "Please provide your VPC address_space",
                     "default": "10.0.0.0/16",
-                },
+                }
             ],
             style=styles.second,
         )["address_space"]
@@ -203,7 +199,7 @@ class AZURE(Provider):
                     "name": "address_prefix",
                     "message": "Please provide subnet address_prefix",
                     "default": "10.0.0.0/24",
-                },
+                }
             ],
             style=styles.second,
         )["address_prefix"]

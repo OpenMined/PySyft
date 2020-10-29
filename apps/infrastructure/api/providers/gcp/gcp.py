@@ -96,26 +96,24 @@ class GCP(Provider):
             network="default",
             allow={
                 "protocol": "tcp",
-                "ports": ["80", "443", "5000-5999", "6000-6999", "7000-7999",],
+                "ports": ["80", "443", "5000-5999", "6000-6999", "7000-7999"],
             },
         )
         self.tfscript += self.firewall
 
         self.pygrid_ip = terrascript.resource.google_compute_address(
-            f"pygrid-{app}", name=f"pygrid-{app}",
+            f"pygrid-{app}", name=f"pygrid-{app}"
         )
         self.tfscript += self.pygrid_ip
 
         self.tfscript += terrascript.output(
-            f"pygrid-{app}_ip", value="${" + self.pygrid_ip.address + "}",
+            f"pygrid-{app}_ip", value="${" + self.pygrid_ip.address + "}"
         )
 
         self.update_script()
         return TF.validate()
 
-    def deploy_network(
-        self, name: str = "pygridnetwork", apply: bool = True,
-    ):
+    def deploy_network(self, name: str = "pygridnetwork", apply: bool = True):
         images = self.config.gcp.images
         image_type = self.config.gcp.image_type
         image = terrascript.data.google_compute_image(
@@ -148,9 +146,7 @@ class GCP(Provider):
 
         return TF.apply()
 
-    def deploy_node(
-        self, name: str = "pygridnode", apply: bool = True,
-    ):
+    def deploy_node(self, name: str = "pygridnode", apply: bool = True):
         images = self.config.gcp.images
         image_type = self.config.gcp.image_type
         image = terrascript.data.google_compute_image(
@@ -166,7 +162,7 @@ class GCP(Provider):
             machine_type=self.config.gcp.machine_type,
             zone=self.config.gcp.zone,
             boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={"network": "default", "access_config": {},},
+            network_interface={"network": "default", "access_config": {}},
             metadata_startup_script=f"""
                 {base_setup}
                 \ncd /PyGrid/apps/node
@@ -195,7 +191,7 @@ class GCP(Provider):
                     "name": "project_id",
                     "message": "Please select your project_id",
                     "choices": gcp.projects_list(),
-                },
+                }
             ],
             style=styles.second,
         )["project_id"]
@@ -208,7 +204,7 @@ class GCP(Provider):
                     "message": "Please select your desired GCP region",
                     "default": "us-central1",
                     "choices": gcp.regions_list(),
-                },
+                }
             ],
             style=styles.second,
         )["region"]
@@ -220,7 +216,7 @@ class GCP(Provider):
                     "name": "zone",
                     "message": "Please select your desired GCP zone",
                     "choices": gcp.zones_list(region),
-                },
+                }
             ],
             style=styles.second,
         )["zone"]
@@ -232,7 +228,7 @@ class GCP(Provider):
                     "name": "machine_type",
                     "message": "Please select your desired Machine type",
                     "choices": gcp.machines_type(zone),
-                },
+                }
             ],
             style=styles.second,
         )["machine_type"]
@@ -245,7 +241,7 @@ class GCP(Provider):
                     "name": "image_type",
                     "message": "Please select your desired Machine type",
                     "choices": images.keys(),
-                },
+                }
             ],
             style=styles.second,
         )["image_type"]

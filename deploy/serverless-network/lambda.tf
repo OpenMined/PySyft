@@ -9,7 +9,7 @@ module "lambda" {
 
   function_name = "pygrid-network"
   description   = "Network hosted by American Medical Association"
-  publish       = true    # To automate increasing versions
+  publish       = true # To automate increasing versions
 
   runtime     = "python3.6"
   source_path = local.function_path
@@ -23,10 +23,10 @@ module "lambda" {
   ]
 
   environment_variables = {
-    DB_NAME = var.database_name
+    DB_NAME        = var.database_name
     DB_CLUSTER_ARN = module.aurora.this_rds_cluster_arn
     DB_SECRET_ARN  = aws_secretsmanager_secret.database-secret.arn
-    SECRET_KEY = "Do-we-need-this-in-deployed-version"  # TODO: Clarify this
+    SECRET_KEY     = "Do-we-need-this-in-deployed-version" # TODO: Clarify this
   }
 
   allowed_triggers = {
