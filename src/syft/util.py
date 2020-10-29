@@ -109,7 +109,7 @@ def get_fully_qualified_name(obj: object) -> str:
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
-        print(f"Failed to get FQN: {e}")
+        logger.error(f"Failed to get FQN: {e}")
     return fqn
 
 
@@ -124,25 +124,40 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 
 def obj2pointer_type(obj: object) -> type:
-    fqn = get_fully_qualified_name(obj=obj)
-
-    # fix fqn types having the wrong path
-    # converts: syft.lib.python.list.List
-    # into    : syft.lib.python.List
-    if fqn.startswith("syft.lib.python"):
-        parts = fqn.split(".")
-        klass = parts[-1]
-        fixed: List[str] = []
-        for p in parts:
-            if p.lower() != klass.lower():
-                fixed.append(p)
-        fixed.append(klass)
-        fqn = ".".join(fixed)
+    try:
+        fqn = get_fully_qualified_name(obj=obj)
+    except Exception as e:
+        # sometimes the object doesn't have a __module__ so you need to use the type
+        # like: collections.OrderedDict
+        logger.debug(
+            f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+        )
+        fqn = get_fully_qualified_name(obj=type(obj))
 
     try:
         ref = syft.lib_ast(fqn, return_callable=True)
     except Exception as e:
-        logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
+        logger.error(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
+        # try one more time by removing the class parent module name
+        try:
+            # fix fqn types having the wrong path
+            # converts: syft.lib.python.list.List
+            # into    : syft.lib.python.List
+            # converts: duet.lib_ast.torch.optim.adadelta.Adadelta
+            # into    : duet.lib_ast.torch.optim.Adadelta
+            parts = fqn.split(".")
+            klass = parts[-1]
+            fixed: List[str] = []
+            for p in parts:
+                if p.lower() != klass.lower():
+                    fixed.append(p)
+            fixed.append(klass)
+            fqn = ".".join(fixed)
+            logger.debug(f"Trying to fix path to {type(obj)} {fqn} in lib_ast. {e}")
+            ref = syft.lib_ast(fqn, return_callable=True)
+            logger.debug(f"Hacky fix worked {type(obj)} {fqn} in lib_ast. {e}")
+        except Exception as e:
+            logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
         # TODO maybe return AnyPointer?
     return ref.pointer_type
 

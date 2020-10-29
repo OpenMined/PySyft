@@ -686,6 +686,7 @@ allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
+allowlist["torch.nn.Module.state_dict"] = "syft.lib.python.Dict"
 
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
@@ -693,6 +694,7 @@ allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
+allowlist["torch.nn.Conv2d.state_dict"] = "syft.lib.python.Dict"
 
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
@@ -707,6 +709,7 @@ allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
+allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.Dict"
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"

@@ -13,21 +13,6 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets
 from torchvision import transforms
 
-remote = nn.Sequential(
-    nn.Conv2d(1, 32, 3, 1),
-    nn.ReLU(),
-    nn.Conv2d(32, 64, 3, 1),
-    nn.ReLU(),
-    nn.MaxPool2d(2),
-    nn.Dropout2d(0.25),
-    nn.Flatten(),
-    nn.Linear(200, 128),
-    nn.ReLU(),
-    nn.Dropout2d(0.5),
-    nn.Linear(128, 10),
-    nn.LogSoftmax(),
-)
-
 
 class Net(nn.Module):
     def __init__(self):

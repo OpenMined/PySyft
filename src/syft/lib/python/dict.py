@@ -4,6 +4,7 @@ from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 import warnings
 
 # third party
@@ -19,9 +20,11 @@ from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
+from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
+from .util import upcast
 
 
 class KeysIterator(Iterator):
@@ -125,9 +128,13 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __getitem__(self, key: Any) -> SyPrimitiveRet:
+    def __getitem__(self, key: Any) -> Union[SyPrimitiveRet, Any]:
         res = super().__getitem__(key)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __gt__(self, other: Any) -> SyPrimitiveRet:
@@ -170,10 +177,6 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __str__(self) -> str:
-        return super().__str__()
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> SyPrimitiveRet:
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
@@ -192,7 +195,7 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def items(self) -> SyPrimitiveRet:
+    def items(self) -> Union[SyPrimitiveRet, Any]:
         res = list((super().items()))
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -224,22 +227,26 @@ class Dict(UserDict, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def clear(self) -> SyPrimitiveRet:
-        res = super().clear()
+        # we get the None return and create a SyNone
+        # this is to make sure someone doesn't rewrite the method to return nothing
+        res = super().clear()  # pylint: disable=E1111
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dict_PB:
         id_ = serialize(obj=self.id)
-        keys = [serialize(obj=element) for element in self.data.keys()]
-        values = [serialize(obj=element) for element in self.data.values()]
+        keys = [serialize(obj=downcast(value=element)) for element in self.data.keys()]
+        values = [
+            serialize(obj=downcast(value=element)) for element in self.data.values()
+        ]
         return Dict_PB(id=id_, keys=keys, values=values)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Dict_PB) -> "Dict":
         id_: UID = deserialize(blob=proto.id)
-        values = [deserialize(blob=downcast(value=element)) for element in proto.values]
-        keys = [deserialize(blob=downcast(value=element)) for element in proto.keys]
+        values = [deserialize(blob=upcast(value=element)) for element in proto.values]
+        keys = [deserialize(blob=upcast(value=element)) for element in proto.keys]
         new_dict = Dict(dict(zip(keys, values)))
         new_dict._id = id_
         return new_dict

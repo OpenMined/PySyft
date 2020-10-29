@@ -98,7 +98,7 @@ sys.path.append(str(Path(__file__)))
 # do you want verbose logging to help with debugging?
 # logger.add(sys.stderr, level="INFO")
 logger.remove()  # remove default logger
-logger.add(sys.stderr, level="INFO")  # default to logging level INFO
+logger.add(sys.stderr, enqueue=True, level="INFO")  # default to logging level INFO
 logger.debug("Logging loaded")
 
 LOG_FILE = "syft_{time}.log"

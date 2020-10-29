@@ -41,6 +41,13 @@ def downcast_args_and_kwargs(
     return (downcasted_args, downcasted_kwargs)
 
 
+def upcast(value: Any) -> Any:
+    upcast_method = getattr(value, "upcast", None)
+    if upcast_method is not None:
+        return upcast_method()
+    return value
+
+
 def upcast_args_and_kwargs(
     args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any]
 ) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -50,20 +57,10 @@ def upcast_args_and_kwargs(
     upcasted_kwargs = {}
     for arg in args:
         # try to upcast if possible
-        upcast_method = getattr(arg, "upcast", None)
-        # if we decide to ShadowWrap NoneType we would need to check here
-        if upcast_method is not None:
-            upcasted_args.append(upcast_method())
-        else:
-            upcasted_args.append(arg)
+        upcasted_args.append(upcast(value=arg))
 
     for k, arg in kwargs.items():
         # try to upcast if possible
-        upcast_method = getattr(arg, "upcast", None)
-        # if we decide to ShadowWrap NoneType we would need to check here
-        if upcast_method is not None:
-            upcasted_kwargs[k] = upcast_method()
-        else:
-            upcasted_kwargs[k] = arg
+        upcasted_kwargs[k] = upcast(value=arg)
 
     return (upcasted_args, upcasted_kwargs)
