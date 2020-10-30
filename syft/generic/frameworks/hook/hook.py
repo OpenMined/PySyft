@@ -144,18 +144,21 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
             """
             Operate the hooking
             """
-            def match_natural2fixprec(t1,t2):
+            def match_natural2fixprec(t1, t2):
                 """
-                Wrap a natural tensor to match a FixedPrecisionTensor, with the same attribute values.
-                
+                Wrap a natural tensor to match a FixedPrecisionTensor, and with
+                the same attribute values.
+
                 Args:
                     t1: a natural tensor
                     t2: a FixedPrecisionTensor
                 Return:
                     a FixedPrecisionTensor
                 """
-                t1 = type(t2.child)(**t2.child.get_class_attributes()).on(t1,wrap=False).fix_precision()
-                if t2.is_wrapper: t1 = t1.wrap()
+                t1 = type(t2.child)(**t2.child.get_class_attributes()).on(t1, wrap=False)
+                t1 = t1.fix_precision()
+                if t2.is_wrapper:
+                    t1 = t1.wrap()
                 return t1
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
@@ -168,7 +171,7 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                     # that we could accidentally serialize and send a tensor in the
                     # arguments
                     if not isinstance(args[0].child, PointerTensor):
-                        self = match_natural2fixprec(self,args[0])
+                        self = match_natural2fixprec(self, args[0])
                         args = [args[0]]
                         return overloaded_native_method(self, *args, **kwargs)
 
@@ -204,7 +207,7 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                             # a security class
 
                             _args = []
-                            arg0 = match_natural2fixprec(args[0],self)
+                            arg0 = match_natural2fixprec(args[0], self)
                             _args.append(arg0)
                             for a in args[1:]:
                                 _args.append(a)

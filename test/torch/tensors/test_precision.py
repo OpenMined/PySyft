@@ -419,7 +419,7 @@ def test_torch_div2():
     z1 = (x / y).float_prec()
     z2 = (y / x).float_prec()
     assert z1 == torch.tensor(2.5)
-    assert z2 == torch.tensor(0.4)    
+    assert z2 == torch.tensor(0.4)
 
 
 def test_inplace_operations():
