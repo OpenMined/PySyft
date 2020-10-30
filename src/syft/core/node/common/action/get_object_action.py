@@ -82,9 +82,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
                 raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
 
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            obj=ser,
+            msg_id=self.id.serialize(), address=self.address.serialize(), obj=ser,
         )
 
     @staticmethod

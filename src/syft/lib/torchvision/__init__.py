@@ -37,9 +37,7 @@ def create_torchvision_ast() -> Globals:
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             ast.add_path(
-                path=method,
-                framework_reference=tv,
-                return_type_name=return_type,
+                path=method, framework_reference=tv, return_type_name=return_type,
             )
         else:
             print(

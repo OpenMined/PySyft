@@ -290,9 +290,9 @@ class Serializable(metaclass=MetaSerializable):
 
         """
 
-
         if to_json or to_binary or to_hex:
             import syft as sy
+
             sy.logger.debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)

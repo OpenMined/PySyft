@@ -58,7 +58,6 @@ def _deserialize(
 
     import syft as sy
 
-
     if from_hex:
 
         blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
@@ -71,6 +70,7 @@ def _deserialize(
     sy.logger.debug(blob)
     if from_json or from_binary or from_hex:
         import syft as sy
+
         sy.logger.debug(blob)
         json_message = json_format.Parse(text=blob, message=JsonMessage())
 

@@ -465,9 +465,7 @@ class Node(AbstractNode):
                 raise KeyError(log)
 
             result = service.process(
-                node=self,
-                msg=msg.message,
-                verify_key=msg.verify_key,
+                node=self, msg=msg.message, verify_key=msg.verify_key,
             )
             return result
 
@@ -478,13 +476,11 @@ class Node(AbstractNode):
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
-                    node=self,
-                    msg=msg,
+                    node=self, msg=msg,
                 )
             if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
-                    node=self,
-                    msg=msg,
+                    node=self, msg=msg,
                 )
         return None
 

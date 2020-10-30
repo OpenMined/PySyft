@@ -22,10 +22,7 @@ class Callable(ast.attribute.Attribute):
     """A method, function, or constructor which can be directly executed"""
 
     def __call__(
-        self,
-        *args: Tuple[Any, ...],
-        return_callable: bool = False,
-        **kwargs: Any,
+        self, *args: Tuple[Any, ...], return_callable: bool = False, **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
         if (
             hasattr(self, "client")

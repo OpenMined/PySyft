@@ -229,13 +229,7 @@ def test_proto_serialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     loc = SpecificLocation(id=uid, name="Test Location")
-    obj = Address(
-        name="Test Address",
-        network=loc,
-        domain=loc,
-        device=loc,
-        vm=loc,
-    )
+    obj = Address(name="Test Address", network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
         name="Test Address",
@@ -260,12 +254,7 @@ def test_proto_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     loc = SpecificLocation(id=uid, name="Test Location")
 
-    obj = Address(
-        network=loc,
-        domain=loc,
-        device=loc,
-        vm=loc,
-    )
+    obj = Address(network=loc, domain=loc, device=loc, vm=loc,)
 
     blob = Address.get_protobuf_schema()(
         has_network=True,

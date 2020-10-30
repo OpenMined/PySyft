@@ -273,9 +273,7 @@ def test_rindex():
 
 def test_lower():
     checkequal(
-        python.String("hello"),
-        python.String("HeLLo"),
-        "lower",
+        python.String("hello"), python.String("HeLLo"), "lower",
     )
     checkequal(python.String("hello"), python.String("hello"), "lower")
     checkraises(TypeError, python.String("hello"), "lower", 42)

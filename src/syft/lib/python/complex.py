@@ -153,11 +153,7 @@ class Complex(complex, PyPrimitive):
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Complex_PB) -> "Complex":
-        return Complex(
-            id=deserialize(blob=proto.id),
-            real=proto.real,
-            imag=proto.imag,
-        )
+        return Complex(id=deserialize(blob=proto.id), real=proto.real, imag=proto.imag,)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -55,9 +55,7 @@ class Class(Callable):
             different methods each time with a different internal attr_path_and_name variable."""
 
             def run_class_method(
-                __self: Any,
-                *args: Tuple[Any, ...],
-                **kwargs: Any,
+                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
             ) -> object:
                 # we want to get the return type which matches the attr_path_and_name
                 # so we ask lib_ast for the return type name that matches out
