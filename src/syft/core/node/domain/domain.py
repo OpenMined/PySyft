@@ -1,5 +1,5 @@
 # stdlib
-import threading
+import asyncio
 import time
 from typing import Any
 from typing import Dict
@@ -20,6 +20,7 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
+from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
 from ..common.node import Node
 from ..device import Device
@@ -89,16 +90,8 @@ class Domain(Node):
 
         self.post_init()
 
-        # run this in a thread
-        self.request_handler_thread = threading.Thread(target=self.run_handlers)
-        self.running = True
-        self.request_handler_thread.start()
-
-    def __del__(self) -> None:
-        self.running = False
-        self.request_handler_thread.join()
-        if self.request_handler_thread is not None:
-            del self.request_handler_thread
+        # run the handlers in an asyncio future
+        asyncio.ensure_future(self.run_handlers())
 
     @property
     def icon(self) -> str:
@@ -188,14 +181,39 @@ class Domain(Node):
                 handled = True
 
         # print or log rules can execute multiple times
-        if "print_local" in handler:
-            print_local = handler["print_local"]
-            if print_local:
-                print(f"Printing Request {request} and Contents TODO")
-        if "log_local" in handler:
-            log_local = handler["log_local"]
-            if log_local:
-                logger.info(f"Logging Request {request} and Contents TODO")
+        if "print_local" in handler or "log_local" in handler:
+            # get a copy of the item
+            obj = None
+            try:
+                obj_msg = GetObjectAction(
+                    id_at_location=request.object_id,
+                    address=request.owner_address,
+                    reply_to=self.address,
+                    delete_obj=False,
+                )
+
+                service = self.immediate_msg_with_reply_router[type(obj_msg)]
+                response = service.process(
+                    node=self, msg=obj_msg, verify_key=self.root_verify_key
+                )
+                obj = response.obj
+            except Exception as e:
+                logger.critical(f"Exception getting object. {e}")
+
+            log = f"> Request {request.request_name}:"
+            if len(request.request_description) > 0:
+                log += f" {request.request_description}"
+            log += f"\nValue: {obj}"
+
+            # if these are enabled output them
+            if "print_local" in handler:
+                print_local = handler["print_local"]
+                if print_local:
+                    print(log)
+            if "log_local" in handler:
+                log_local = handler["log_local"]
+                if log_local:
+                    logger.info(log)
 
         # block the loop from handling this again, until the cleanup removes it
         # after a period of timeout
@@ -243,9 +261,9 @@ class Domain(Node):
         self.requests = alive_requests
 
     @syft_decorator(typechecking=True)
-    def run_handlers(self) -> None:
+    async def run_handlers(self) -> None:
         while True:
-            time.sleep(0.2)
+            await asyncio.sleep(0.2)
             self.clean_up_handlers()
             self.clean_up_requests()
             if len(self.request_handlers) > 0:

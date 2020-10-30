@@ -104,7 +104,15 @@ class Module:
                         logger.debug(log)
 
     # copy the weights, there are blocking requests so make sure to respond
-    def copy_remote_state(self, remote_model: Any, skip_layers: List[str] = []) -> None:
+    def copy_remote_state(
+        self,
+        remote_model: Any,
+        request_name: str,
+        reason: str,
+        timeout_secs: int,
+        delete_obj: bool = False,
+        skip_layers: List[str] = [],
+    ) -> None:
         # loop over models module pointers
         for n, m in remote_model.modules.items():
             try:
@@ -126,10 +134,10 @@ class Module:
                         logger.debug(log)
                         state_dict = sd_ptr.get(
                             request_block=True,
-                            request_name="copy_state_dict",
-                            reason="To run test and inference locally",
-                            timeout_secs=30,
-                            delete_obj=False,
+                            request_name=request_name,
+                            reason=reason,
+                            timeout_secs=timeout_secs,
+                            delete_obj=delete_obj,
                         )
                         # iterate through the key, values
                         # weights and biases should be in there

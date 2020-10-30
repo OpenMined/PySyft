@@ -285,11 +285,13 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
                 f"> Updating Request Handlers with existing: {existing_handlers}"
             )
             new_keys = set(msg.handler.keys())
+            new_values = msg.handler.values()
             if existing_handlers is not None:
                 for existing_handler in existing_handlers:
                     keys = set(existing_handler.keys())
                     keys.remove("created_time")  # the new handler has none
-                    if keys == new_keys:
+                    values = [existing_handler[key] for key in keys]
+                    if keys == new_keys and set(new_values) == set(values):
                         # if keep is True we will add a new one
                         # if keep is False we will drop this anyway
                         continue

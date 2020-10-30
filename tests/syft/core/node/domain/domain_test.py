@@ -1,7 +1,9 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
+from syft.core.common.message import SyftMessage
 from syft.core.node.domain import Domain
 from syft.core.node.domain.service import RequestStatus
 
@@ -107,3 +109,22 @@ def test_domain_request_accepted() -> None:
     )
 
     assert RequestStatus.Accepted == response
+
+
+def test_domain_is_for_me_exception() -> None:
+    domain_1 = Domain(name="remote domain")
+
+    with pytest.raises(Exception):
+        msg = SyftMessage()
+        domain_1.message_is_for_me(msg)
+
+    # @syft_decorator(typechecking=True)
+    # def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
+
+    #     # this needs to be defensive by checking domain_id NOT domain.id or it breaks
+    #     try:
+    #         return msg.address.domain_id == self.id and msg.address.device is None
+    #     except Exception as e:
+    #         error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+    #         print(error)
+    #         return False
