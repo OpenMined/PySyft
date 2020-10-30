@@ -8,7 +8,8 @@ from syft.core.node.domain import Domain
 from syft.core.node.domain.service import RequestStatus
 
 
-def test_domain_creation() -> None:
+@pytest.mark.asyncio
+async def test_domain_creation() -> None:
     Domain(name="test domain")
 
 
