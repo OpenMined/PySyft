@@ -304,7 +304,7 @@ class Pointer(AbstractPointer):
         request_name: str = "",
         reason: str = "",
         block: bool = False,
-        timeout_secs: int = 20,
+        timeout_secs: Optional[int] = None,
     ) -> Any:
         """Method that requests access to the data on which the pointer points to.
 
@@ -340,6 +340,14 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestMessage
 
+        # if you request non-blocking you don't need a timeout
+        # if you request blocking you need a timeout, so lets set a default on here
+        # a timeout of 0 would be a way to say don't block my local notebook but if the
+        # duet partner has a rule configured it will get executed first before the
+        # request would time out
+        if timeout_secs is None and block is False:
+            timeout_secs = -1  # forever
+
         msg = RequestMessage(
             request_name=request_name,
             request_description=reason,
@@ -347,13 +355,19 @@ class Pointer(AbstractPointer):
             owner_address=self.client.address,
             object_id=self.id_at_location,
             requester_verify_key=self.client.verify_key,
+            timeout_secs=timeout_secs,
         )
 
         self.client.send_immediate_msg_without_reply(msg=msg)
 
+        # wait long enough for it to arrive and trigger a handler
+        time.sleep(0.5)
+
         if not block:
             return None
         else:
+            if timeout_secs is None:
+                timeout_secs = 30  # default if not explicitly set
 
             # syft relative
             from ..node.domain.service import RequestAnswerMessage
@@ -376,37 +390,49 @@ class Pointer(AbstractPointer):
 
             last_check: float = 0.0
             while True:
-                now = time.time()
-                if now - start > timeout_secs:
-                    log = f"\n> Blocking Request Timeout after {timeout_secs} seconds"
-                    logger.debug(log)
-                    print(log)
-                    return status
+                try:
+                    now = time.time()
+                    # won't run on the first pass because status is None which allows
+                    # for remote request handlers to auto respond before timeout
 
-                # only check once every second
-                if now - last_check > 1:
-                    last_check = now
-                    logger.debug(f"> Sending another Request Message {now - start}")
-                    status_msg = RequestAnswerMessage(
-                        request_id=msg.id,
-                        address=self.client.address,
-                        reply_to=self.client.address,
-                    )
-
-                    response = self.client.send_immediate_msg_with_reply(msg=status_msg)
-                    status = response.status
-                    if response.status == RequestStatus.Pending:
-                        time.sleep(1)
-                        print(".", end="")
-                    else:
-                        # accepted or rejected lets exit
-                        status_text = "REJECTED"
-                        if status == RequestStatus.Accepted:
-                            status_text = "ACCEPTED"
-                        log = f"\n> Blocking Request {status_text}"
+                    if now - start > timeout_secs:
+                        log = (
+                            f"\n> Blocking Request Timeout after {timeout_secs} seconds"
+                        )
                         logger.debug(log)
                         print(log)
                         return status
+
+                    # only check once every second
+                    if now - last_check > 1:
+                        last_check = now
+                        logger.debug(f"> Sending another Request Message {now - start}")
+                        status_msg = RequestAnswerMessage(
+                            request_id=msg.id,
+                            address=self.client.address,
+                            reply_to=self.client.address,
+                        )
+
+                        response = self.client.send_immediate_msg_with_reply(
+                            msg=status_msg
+                        )
+                        status = response.status
+                        if response.status == RequestStatus.Pending:
+                            time.sleep(1)
+                            print(".", end="")
+                        else:
+                            # accepted or rejected lets exit
+                            status_text = "REJECTED"
+                            if status == RequestStatus.Accepted:
+                                status_text = "ACCEPTED"
+                            log = f"\n> Blocking Request {status_text}"
+                            logger.debug(log)
+                            print(log)
+                            return status
+                except Exception as e:
+                    logger.error(f"Exception while running blocking request. {e}")
+                    # escape the while loop
+                    return status
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible

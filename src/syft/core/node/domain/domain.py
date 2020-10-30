@@ -1,14 +1,20 @@
 # stdlib
+import threading
+import time
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....lib.python import String
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -25,6 +31,8 @@ from .service import RequestService
 from .service import RequestStatus
 from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
 from .service.get_all_requests_service import GetAllRequestsService
+from .service.request_handler_service import GetAllRequestHandlersService
+from .service.request_handler_service import UpdateRequestHandlerService
 
 
 class Domain(Node):
@@ -56,16 +64,17 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
         )
-
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
         self.immediate_services_without_reply.append(RequestService)
         self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
+        self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
         self.immediate_services_with_reply.append(GetAllRequestsService)
+        self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
@@ -75,8 +84,21 @@ class Domain(Node):
         # TODO: add default compute type
 
         self._register_services()
+        self.request_handlers: List[Dict[str, Any]] = []
+        self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
+
+        # run this in a thread
+        self.request_handler_thread = threading.Thread(target=self.run_handlers)
+        self.running = True
+        self.request_handler_thread.start()
+
+    def __del__(self) -> None:
+        self.running = False
+        self.request_handler_thread.join()
+        if self.request_handler_thread is not None:
+            del self.request_handler_thread
 
     @property
     def icon(self) -> str:
@@ -135,3 +157,106 @@ class Domain(Node):
 
         # must have been rejected
         return RequestStatus.Rejected
+
+    @syft_decorator(typechecking=True)
+    def check_handler(
+        self, handler: Dict[Union[str, String], Any], request: RequestMessage
+    ) -> bool:
+        logger.debug(f"Check handler {handler} against {request}")
+        if (
+            "request_name" in handler
+            and handler["request_name"] != ""
+            and handler["request_name"] != request.request_name
+        ):
+            # valid request_name doesnt match so ignore this handler
+            logger.debug(f"Ignoring request handler {handler} against {request}")
+            return False
+
+        # we only want to accept or deny once
+        handled = False
+        if "action" in handler:
+            action = handler["action"]
+            if action == "accept":
+                logger.debug(f"Calling accept on request: {request.id}")
+                request.destination_node_if_available = self
+                request.accept()
+                handled = True
+            elif action == "deny":
+                logger.debug(f"Calling deny on request: {request.id}")
+                request.destination_node_if_available = self
+                request.deny()
+                handled = True
+
+        # print or log rules can execute multiple times
+        if "print_local" in handler:
+            print_local = handler["print_local"]
+            if print_local:
+                print(f"Printing Request {request} and Contents TODO")
+        if "log_local" in handler:
+            log_local = handler["log_local"]
+            if log_local:
+                logger.info(f"Logging Request {request} and Contents TODO")
+
+        # block the loop from handling this again, until the cleanup removes it
+        # after a period of timeout
+        if handled:
+            self.handled_requests[request.id] = time.time()
+        return handled
+
+    def clean_up_handlers(self) -> None:
+        # this makes sure handlers with timeout expire
+        now = time.time()
+        alive_handlers = []
+        if len(self.request_handlers) > 0:
+            for handler in self.request_handlers:
+                if "timeout_secs" in handler and handler["timeout_secs"] != -1:
+                    if now - handler["created_time"] > handler["timeout_secs"]:
+                        continue
+                alive_handlers.append(handler)
+        self.request_handlers = alive_handlers
+
+    def clean_up_requests(self) -> None:
+        # this allows a request to be re-handled if the handler somehow failed
+        now = time.time()
+        processing_wait_secs = 5
+        reqs_to_remove = []
+        for req in self.handled_requests.keys():
+            handle_time = self.handled_requests[req]
+            if now - handle_time > processing_wait_secs:
+                reqs_to_remove.append(req)
+
+        for req in reqs_to_remove:
+            del self.handled_requests[req]
+
+        alive_requests: List[RequestMessage] = []
+        for request in self.requests:
+            if request.timeout_secs is not None and request.timeout_secs > -1:
+                if request.arrival_time is None:
+                    logger.critical(f"Request has no arrival time. {request.id}")
+                    request.set_arrival_time(arrival_time=time.time())
+                arrival_time = getattr(request, "arrival_time", float(now))
+                if now - arrival_time > request.timeout_secs:
+                    # this request has expired
+                    continue
+            alive_requests.append(request)
+
+        self.requests = alive_requests
+
+    @syft_decorator(typechecking=True)
+    def run_handlers(self) -> None:
+        while True:
+            time.sleep(0.2)
+            self.clean_up_handlers()
+            self.clean_up_requests()
+            if len(self.request_handlers) > 0:
+                for request in self.requests:
+                    # check if we have previously already handled this in an earlier iter
+                    if request.id not in self.handled_requests:
+                        for handler in self.request_handlers:
+                            handled = self.check_handler(
+                                handler=handler, request=request
+                            )
+                            if handled:
+                                # we handled the request so we can exit the loop
+                                break
+            self.run_handlers()

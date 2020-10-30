@@ -103,7 +103,7 @@ def test_fail_accept_request_message() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Accept Message."):
         request.accept()
 
 
@@ -116,7 +116,7 @@ def test_fail_deny_request_message() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Deny Message."):
         request.deny()
 
 
@@ -129,5 +129,5 @@ def test_fail_process_request_service() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Deny Message."):
         request.deny()

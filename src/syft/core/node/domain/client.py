@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -9,6 +11,7 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from ....lib.python import String
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -61,6 +64,36 @@ class RequestQueueClient:
 
     def __repr__(self) -> str:
         return repr(self.requests)
+
+    def add_handler(self, request_handler: Dict[str, Any]) -> None:
+        self.update_handler(request_handler, keep=True)
+
+    def remove_handler(self, request_handler: Dict[str, Any]) -> None:
+        self.update_handler(request_handler, keep=False)
+
+    def update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
+        # syft absolute
+        from syft.core.node.domain.service.request_handler_service import (
+            UpdateRequestHandlerMessage,
+        )
+
+        msg = UpdateRequestHandlerMessage(
+            address=self.client.address, handler=request_handler, keep=keep
+        )
+        self.client.send_immediate_msg_without_reply(msg=msg)
+
+    @property
+    def handlers(self) -> List[Dict[Union[str, String], Any]]:
+        # syft absolute
+        from syft.core.node.domain.service.request_handler_service import (
+            GetAllRequestHandlersMessage,
+        )
+
+        msg = GetAllRequestHandlersMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
+        return handlers
 
     @property
     def pandas(self) -> pd.DataFrame:

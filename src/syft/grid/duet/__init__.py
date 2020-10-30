@@ -239,11 +239,10 @@ def launch_duet(
     out_duet = my_domain.get_root_client()
 
     if logging:
-        begin_duet_logger(my_domain)
+        begin_duet_logger(my_domain=my_domain)
     print()
 
     return out_duet
-    # return duet
 
 
 def join_duet(
