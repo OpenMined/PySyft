@@ -5,6 +5,7 @@ from typing import cast
 # third party
 from google.protobuf import json_format
 from google.protobuf.message import Message
+from base64 import b64decode
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -20,6 +21,7 @@ def _deserialize(
     from_json: bool = False,
     from_binary: bool = False,
     from_hex: bool = False,
+    from_real_binary: bool = False,
 ) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default
 
@@ -72,6 +74,14 @@ def _deserialize(
         protobuf_type = obj_type.get_protobuf_schema()
         schema_data = json_message.content
         blob = json_format.Parse(text=schema_data, message=protobuf_type())
+
+    elif from_real_binary:
+        pb_message = JsonMessage()
+        pb_message.ParseFromString(blob)
+        obj_type = index_syft_by_module_name(fully_qualified_name=pb_message.obj_type)
+        protobuf_type = obj_type.get_protobuf_schema()
+        blob = protobuf_type()
+        blob.ParseFromString(b64decode(pb_message.content))
 
     elif not from_proto:
         raise ValueError("Please pick the format of the data on the deserialization")

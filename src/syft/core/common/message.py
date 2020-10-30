@@ -71,7 +71,7 @@ class SyftMessage(AbstractMessage):
         super().__init__(id=msg_id)
         self.post_init()
 
-    def sign(self, signing_key: SigningKey) -> SignedMessageT:
+    def sign(self, signing_key: SigningKey, serialization_opts = None) -> SignedMessageT:
         """
         It's important for all messages to be able to prove who they were sent from.
         This method endows every message with the ability for someone to "sign" (with a hash of the message)
@@ -87,7 +87,12 @@ class SyftMessage(AbstractMessage):
         logger.debug(
             f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
         )
-        signed_message = signing_key.sign(self.serialize(to_binary=True))
+
+        if serialization_opts is None:
+            serialization_opts = {"to_real_binary": True}
+
+        serialized_message = self.serialize(**serialization_opts)
+        signed_message = signing_key.sign(serialized_message)
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -138,10 +143,25 @@ class SignedMessage(SyftMessage):
 
     @property
     def message(self) -> "SyftMessage":
+        logger.warning("GETTER MESSAGE")
         if self.cached_deseralized_message is None:
             self.cached_deseralized_message = _deserialize(
-                blob=self.serialized_message, from_binary=True
+                blob=self.serialized_message, from_real_binary=True
             )
+        return self.cached_deseralized_message  # type: ignore
+
+    def get_message(self, deserialization_opts = None):
+        if self.cached_deseralized_message is None:
+
+            if deserialization_opts is None:
+                deserialization_opts = {'from_real_binary':  True}
+
+            self.cached_deseralized_message = _deserialize(
+                blob=self.serialized_message, **deserialization_opts
+            )
+
+        logger.debug("GET MESSAGE")
+        logger.debug(self.cached_deseralized_message)
         return self.cached_deseralized_message  # type: ignore
 
     @property

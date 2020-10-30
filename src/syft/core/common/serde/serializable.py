@@ -9,6 +9,7 @@ from typing import Union
 from google.protobuf import json_format
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from base64 import b64encode
 
 # Fixes python3.6
 # however API changed between versions so typing_extensions smooths this over:
@@ -260,6 +261,7 @@ class Serializable(metaclass=MetaSerializable):
         to_json: bool = False,
         to_binary: bool = False,
         to_hex: bool = False,
+        to_real_binary: bool = False,
     ) -> Union[str, bytes, Message]:
         """Serialize the object according to the parameters.
 
@@ -311,6 +313,13 @@ class Serializable(metaclass=MetaSerializable):
 
             # then to_hex was true
             return bytes(blob, "utf-8").hex()
+
+        elif to_real_binary:
+            blob = self._object2proto().SerializeToString()
+            message_pb = JsonMessage(
+                obj_type=get_fully_qualified_name(obj=self), content=b64encode(blob)
+            )
+            return message_pb.SerializeToString()
 
         elif to_proto:
             return type(self)._object2proto(self)

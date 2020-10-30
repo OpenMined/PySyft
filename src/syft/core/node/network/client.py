@@ -45,6 +45,8 @@ class NetworkClient(Client):
         )
 
         self.post_init()
+        self.serialization_opts = {'to_binary': True}
+        self.deserialization_opts = {'from_binary': True}
 
     @property
     def id(self) -> UID:

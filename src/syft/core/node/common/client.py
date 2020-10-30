@@ -75,6 +75,9 @@ class Client(AbstractNodeClient):
         else:
             self.signing_key = signing_key
 
+        self.serialization_opts = {"to_real_binary": True}
+        self.deserialization_opts = {"from_real_binary": True}
+
         # if verify key isn't provided, get verify key from signing key
         if verify_key is None:
             self.verify_key = self.signing_key.verify_key
@@ -213,19 +216,27 @@ class Client(AbstractNodeClient):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
             logger.debug(output)
-            msg = msg.sign(signing_key=self.signing_key)
+            msg = msg.sign(signing_key=self.signing_key, serialization_opts=self.serialization_opts)
 
+        logger.debug("MESSAGE")
+        logger.debug(self)
+        logger.debug(self.serialization_opts)
+        logger.debug(msg.to_json())
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
+        logger.debug("RESPONSE")
+        logger.debug(response)
         if response.is_valid:
             # check if we have an ExceptionMessage to trigger a local exception
             # from a remote exception that we caused
-            if isinstance(response.message, ExceptionMessage):
-                exception_msg = response.message
-                exception = exception_msg.exception_type(exception_msg.exception_msg)
+            response_msg = response.get_message(deserialization_opts=self.deserialization_opts)
+            logger.debug("DESER RESPONSE")
+            logger.debug(response_msg.to_json())
+            if isinstance(response_msg, ExceptionMessage):
+                exception = response_msg.exception_type(response_msg.exception_msg)
                 logger.error(str(exception))
                 raise exception
             else:
-                return response.message
+                return response_msg
 
         raise Exception(
             "Response was signed by a fake key or was corrupted in transit."
@@ -248,7 +259,7 @@ class Client(AbstractNodeClient):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
             logger.debug(output)
-            msg = msg.sign(signing_key=self.signing_key)
+            msg = msg.sign(signing_key=self.signing_key, serialization_opts=self.serialization_opts)
         logger.debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
