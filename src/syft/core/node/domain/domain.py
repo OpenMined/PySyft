@@ -259,4 +259,3 @@ class Domain(Node):
                             if handled:
                                 # we handled the request so we can exit the loop
                                 break
-            self.run_handlers()
