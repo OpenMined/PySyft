@@ -81,6 +81,7 @@ import asyncio
 from typing import Any
 from typing import Optional
 from typing import Union
+import random
 
 # third party
 from aiortc import RTCDataChannel
@@ -475,8 +476,11 @@ class WebRTCConnection(BidirectionalConnection):
             # Enqueue the message to be sent to the target.
             self.producer_pool.put_nowait(msg)
 
+            r = random.randint(0, 100000)
             # Wait for the response checking the consumer queue.
+            logger.debug(f"> Before send_sync_message blocking {r}")
             response = await self.consumer_pool.get()
+            logger.debug(f"> After send_sync_message blocking {r}")
 
             return response
         except Exception as e:
