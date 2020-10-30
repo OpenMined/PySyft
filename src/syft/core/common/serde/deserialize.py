@@ -56,6 +56,9 @@ def _deserialize(
     :rtype: Serializable
     """
 
+    import syft as sy
+
+
     if from_hex:
 
         blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
@@ -64,9 +67,12 @@ def _deserialize(
 
         blob = str(blob, "utf-8")  # type: ignore
 
+    sy.logger.debug("Deserializing blob")
+    sy.logger.debug(blob)
     if from_json or from_binary or from_hex:
-
-        json_message = json_format.Parse(text=cast(str, blob), message=JsonMessage())
+        import syft as sy
+        sy.logger.debug(blob)
+        json_message = json_format.Parse(text=blob, message=JsonMessage())
 
         obj_type = index_syft_by_module_name(fully_qualified_name=json_message.obj_type)
         protobuf_type = obj_type.get_protobuf_schema()

@@ -290,13 +290,13 @@ class Serializable(metaclass=MetaSerializable):
 
         """
 
-        if to_json or to_binary or to_hex:
 
+        if to_json or to_binary or to_hex:
+            import syft as sy
+            sy.logger.debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
-            blob = json_format.MessageToJson(
-                message=self._object2proto(), indent=None  # type: ignore # indent=None
-            )
+            blob = self._object2proto().SerializeToString()
             blob = json_format.MessageToJson(
                 message=JsonMessage(
                     obj_type=get_fully_qualified_name(obj=self), content=blob
@@ -306,8 +306,11 @@ class Serializable(metaclass=MetaSerializable):
 
             if to_json:
                 return blob
+
             if to_binary:
-                return bytes(blob, "utf-8")
+                res = bytes(blob, "utf-8")
+                sy.logger.debug(res)
+                return res
 
             # then to_hex was true
             return bytes(blob, "utf-8").hex()
