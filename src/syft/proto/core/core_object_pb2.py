@@ -24,7 +24,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1cproto/core/core_object.proto\x12\tsyft.core\x1a%proto/core/common/common_object.proto"C\n\nCoreObject\x12\x35\n\rcommon_object\x18\x01 \x01(\x0b\x32\x1e.syft.core.common.CommonObjectb\x06proto3',
-    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+    ],
 )
 
 

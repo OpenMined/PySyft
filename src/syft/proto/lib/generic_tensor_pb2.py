@@ -22,7 +22,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1eproto/lib/generic_tensor.proto\x12\x08syft.lib\x1a\x1cproto/lib/numpy/tensor.proto"B\n\rGenericTensor\x12\x31\n\x0cnumpy_tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.numpy.TensorProtob\x06proto3',
-    dependencies=[proto_dot_lib_dot_numpy_dot_tensor__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_lib_dot_numpy_dot_tensor__pb2.DESCRIPTOR,
+    ],
 )
 
 
