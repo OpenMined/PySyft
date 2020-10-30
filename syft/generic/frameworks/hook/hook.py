@@ -144,6 +144,7 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
             """
             Operate the hooking
             """
+
             def match_natural2fixprec(t1, t2):
                 """
                 Wrap a natural tensor to match a FixedPrecisionTensor, and with
