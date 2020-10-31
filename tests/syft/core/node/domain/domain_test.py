@@ -22,6 +22,7 @@ def test_domain_serde() -> None:
     _ = tensor.send(domain_1_client)
 
 
+@pytest.mark.asyncio
 def test_domain_request_pending() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
@@ -83,6 +84,7 @@ def test_domain_request_denied() -> None:
     assert RequestStatus.Rejected == response
 
 
+@pytest.mark.asyncio
 def test_domain_request_accepted() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])

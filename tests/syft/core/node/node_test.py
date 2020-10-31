@@ -131,6 +131,7 @@ def test_send_message_from_device_client_to_vm() -> None:
     )
 
 
+@pytest.mark.asyncio
 def test_send_message_from_domain_client_to_vm() -> None:
     # Register a 🍰 with a 📱
     # Register a 📱 with a 🏰

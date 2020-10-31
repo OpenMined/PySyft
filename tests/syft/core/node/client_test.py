@@ -1,8 +1,12 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 
 
-def test_client_from_metadata() -> None:
+@pytest.mark.asyncio
+async def test_client_from_metadata() -> None:
 
     domain = sy.Domain(name="duet")
 
