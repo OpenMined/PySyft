@@ -62,6 +62,8 @@ from .service.obj_search_permission_service import (
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
 
+
+from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
 
@@ -267,19 +269,21 @@ class Node(AbstractNode):
         )
 
     @syft_decorator(typechecking=True)
-    def get_root_client(self, routes: List[Route] = []) -> ClientT:
+    def get_root_client(self, routes: List[Route] = None) -> ClientT:
+        if routes is None:
+            routes = []
+
         client = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
 
-    def get_metadata_for_client(self) -> str:
-        metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
+    def get_metadata_for_client(self) -> Metadata_PB:
+        return Metadata_PB(
+            name=self.name,
+            id=self.id.serialize(),
+            network=self.target_id.serialize()
+        )
 
-        metadata["spec_location"] = self.target_id.json()
-        metadata["name"] = self.name
-        metadata["id"] = self.id.json()
-
-        return json.dumps(metadata)
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -453,7 +457,6 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
-
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "
@@ -465,7 +468,9 @@ class Node(AbstractNode):
                 raise KeyError(log)
 
             result = service.process(
-                node=self, msg=msg.message, verify_key=msg.verify_key,
+                node=self,
+                msg=msg.message,
+                verify_key=msg.verify_key,
             )
             return result
 
@@ -476,11 +481,13 @@ class Node(AbstractNode):
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
-                    node=self, msg=msg,
+                    node=self,
+                    msg=msg,
                 )
             if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
-                    node=self, msg=msg,
+                    node=self,
+                    msg=msg,
                 )
         return None
 

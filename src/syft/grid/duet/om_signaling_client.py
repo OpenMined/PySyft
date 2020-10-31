@@ -8,7 +8,9 @@ WebRTC_HOST = (
 )
 
 
-def register(url: str = WebRTC_HOST,) -> SignalingClient:
+def register(
+    url: str = WebRTC_HOST,
+) -> SignalingClient:
     client = SignalingClient(
         url=url, conn_type=HTTPConnection, client_type=NetworkClient
     )

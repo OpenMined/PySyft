@@ -106,9 +106,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
 
         # upcast our args in case the method only accepts the original types
-        (upcasted_args, upcasted_kwargs,) = lib.python.util.upcast_args_and_kwargs(
-            resolved_args, resolved_kwargs
-        )
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)

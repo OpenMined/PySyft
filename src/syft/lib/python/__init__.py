@@ -50,7 +50,12 @@ def add_modules(ast: Globals, modules: TypeList[str]) -> None:
 
         parent.add_attr(
             attr_name=attr_name,
-            attr=Module(attr_name, module, None, return_type_name="",),
+            attr=Module(
+                attr_name,
+                module,
+                None,
+                return_type_name="",
+            ),
         )
 
 

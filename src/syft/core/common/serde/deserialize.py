@@ -8,7 +8,7 @@ from google.protobuf.message import Message
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ....proto.util.json_message_pb2 import JsonMessage
+from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
 from .serializable import Serializable
 
@@ -17,9 +17,7 @@ from .serializable import Serializable
 def _deserialize(
     blob: Union[str, dict, bytes, Message],
     from_proto: bool = True,
-    from_json: bool = False,
-    from_binary: bool = False,
-    from_hex: bool = False,
+    from_bytes: bool = False,
 ) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default
 
@@ -56,31 +54,17 @@ def _deserialize(
     :rtype: Serializable
     """
 
+    # syft absolute
     import syft as sy
 
-    if from_hex:
-
-        blob = str(bytes.fromhex(cast(str, blob)), "utf-8")
-
-    elif from_binary:
-
-        blob = str(blob, "utf-8")  # type: ignore
-
-    sy.logger.debug("Deserializing blob")
-    sy.logger.debug(blob)
-    if from_json or from_binary or from_hex:
-        import syft as sy
-
+    if from_bytes:
         sy.logger.debug(blob)
-        json_message = json_format.Parse(text=blob, message=JsonMessage())
-
-        obj_type = index_syft_by_module_name(fully_qualified_name=json_message.obj_type)
+        data_message = DataMessage()
+        data_message.ParseFromString(blob)
+        obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
         protobuf_type = obj_type.get_protobuf_schema()
-        schema_data = json_message.content
-        blob = json_format.Parse(text=schema_data, message=protobuf_type())
-
-    elif not from_proto:
-        raise ValueError("Please pick the format of the data on the deserialization")
+        blob = protobuf_type()
+        blob.ParseFromString(data_message.content)
 
     try:
         # lets try to lookup the type we are deserializing

@@ -220,7 +220,10 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
 @final
 class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None,
+        self,
+        address: Address,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
@@ -292,7 +295,10 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
 @final
 class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, address: Address, peer_id: str, msg_id: Optional[UID] = None,
+        self,
+        address: Address,
+        peer_id: str,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.peer_id = peer_id
@@ -542,7 +548,9 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
 @final
 class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, address: Address, msg_id: Optional[UID] = None,
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
 
@@ -563,7 +571,8 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
             object.
         """
         return SignalingRequestsNotFound_PB(
-            msg_id=self.id.serialize(), address=self.address.serialize(),
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
         )
 
     @staticmethod
@@ -612,7 +621,9 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
 @final
 class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, address: Address, msg_id: Optional[UID] = None,
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
 
@@ -633,11 +644,14 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
             object.
         """
         return InvalidLoopBackRequest_PB(
-            msg_id=self.id.serialize(), address=self.address.serialize(),
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
         )
 
     @staticmethod
-    def _proto2object(proto: InvalidLoopBackRequest_PB,) -> "InvalidLoopBackRequest":
+    def _proto2object(
+        proto: InvalidLoopBackRequest_PB,
+    ) -> "InvalidLoopBackRequest":
         """Creates a InvalidLoopBackRequest from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -680,7 +694,9 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
 @final
 class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, address: Address, msg_id: Optional[UID] = None,
+        self,
+        address: Address,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
 
@@ -701,11 +717,14 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return CloseConnectionMessage_PB(
-            msg_id=self.id.serialize(), address=self.address.serialize(),
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
         )
 
     @staticmethod
-    def _proto2object(proto: CloseConnectionMessage_PB,) -> "CloseConnectionMessage":
+    def _proto2object(
+        proto: CloseConnectionMessage_PB,
+    ) -> "CloseConnectionMessage":
         """Creates a InvalidLoopBackRequest from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -749,7 +768,9 @@ class RegisterDuetPeerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode, msg: Union[RegisterNewPeerMessage], verify_key: VerifyKey,
+        node: AbstractNode,
+        msg: Union[RegisterNewPeerMessage],
+        verify_key: VerifyKey,
     ) -> PeerSuccessfullyRegistered:
         peer_id = secrets.token_hex(nbytes=16)
         node.signaling_msgs[peer_id] = {VerifyKey: verify_key, SyftMessage: {}}

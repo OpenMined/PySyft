@@ -9,9 +9,11 @@ $ python src/syft/grid/example_nodes/network.py
 """
 
 # third party
+import flask
 from flask import Flask
 from flask import request
 from nacl.encoding import HexEncoder
+from flask import Response
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -20,31 +22,40 @@ from syft.core.common.serde.deserialize import _deserialize
 from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
-
+from syft.grid.services.signaling_service import RegisterDuetPeerService
 app = Flask(__name__)
 
 network = Network(name="om-net")
 
 network.immediate_services_without_reply.append(PushSignalingService)
 network.immediate_services_with_reply.append(PullSignalingService)
+network.immediate_services_with_reply.append(RegisterDuetPeerService)
 network._register_services()  # re-register all services including SignalingService
 
 
 @app.route("/metadata")
 def get_metadata() -> str:
-    return network.get_metadata_for_client()
-
+    r = Response(response=network.get_metadata_for_client().SerializeToString(),
+                 status=200,
+                 )
+    r.headers['Content-Type'] = 'application/octet-stream'
+    return r
 
 @app.route("/", methods=["POST"])
 def process_network_msgs() -> str:
-    json_msg = request.get_json()
-    obj_msg = _deserialize(blob=json_msg, from_json=True)
+    data = flask.request.get_data()
+    obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+        print(f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch")
         reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
-        return reply.json()
+        r = Response(response=reply.serialize(to_binary=True), status=200)
+        r.headers['Content-Type'] = 'application/octet-stream'
+        return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+        print(f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch")
         network.recv_immediate_msg_without_reply(msg=obj_msg)
     else:
+        print(f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch")
         network.recv_eventual_msg_without_reply(msg=obj_msg)
     return ""
 

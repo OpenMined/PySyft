@@ -191,7 +191,6 @@ class Duet(DomainClient):
                 # give up task queue priority, giving
                 # computing time to the next task.
                 msg = await self._push_msg_queue.get()
-
                 # If self.push_msg_queue.get() returned a message (SignalingOfferMessage,SignalingAnswerMessage)
                 # send it to the signaling server.
                 self.signaling_client.send_immediate_msg_without_reply(msg=msg)

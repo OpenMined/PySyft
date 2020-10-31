@@ -55,7 +55,9 @@ class Class(Callable):
             different methods each time with a different internal attr_path_and_name variable."""
 
             def run_class_method(
-                __self: Any, *args: Tuple[Any, ...], **kwargs: Any,
+                __self: Any,
+                *args: Tuple[Any, ...],
+                **kwargs: Any,
             ) -> object:
                 # we want to get the return type which matches the attr_path_and_name
                 # so we ask lib_ast for the return type name that matches out
@@ -233,14 +235,9 @@ class Class(Callable):
         )
         aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
         aggressive_set_attr(
-            obj=outer_self.ref, name="to_json", attr=Serializable.to_json
-        )
-        aggressive_set_attr(obj=outer_self.ref, name="json", attr=Serializable.json)
-        aggressive_set_attr(
             obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
         )
         aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
-        aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
 
 
 def ispointer(obj: Any) -> bool:

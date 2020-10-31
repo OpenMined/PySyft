@@ -31,7 +31,8 @@ def test_domain_request_pending() -> None:
     domain_2 = Domain(name="my domain")
 
     data_ptr_domain_1.request(
-        request_name="My Request", reason="I'd lke to see this pointer",
+        request_name="My Request",
+        reason="I'd lke to see this pointer",
     )
 
     requested_object = data_ptr_domain_1.id_at_location

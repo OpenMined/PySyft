@@ -257,7 +257,10 @@ class Float(float, PyPrimitive):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Float_PB:
-        return Float_PB(id=serialize(obj=self.id), data=self,)
+        return Float_PB(
+            id=serialize(obj=self.id),
+            data=self,
+        )
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":

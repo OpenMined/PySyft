@@ -139,7 +139,9 @@ def begin_duet_logger(my_domain: Domain) -> None:
 
 
 def launch_duet(
-    logging: bool = True, network_url: str = "", loopback: bool = False,
+    logging: bool = True,
+    network_url: str = "",
+    loopback: bool = False,
 ) -> WebRTCDuet:
     print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
@@ -244,7 +246,9 @@ def launch_duet(
 
 
 def join_duet(
-    target_id: str = "", network_url: str = "", loopback: bool = False,
+    target_id: str = "",
+    network_url: str = "",
+    loopback: bool = False,
 ) -> WebRTCDuet:
     if target_id == "" and loopback is False:
         cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'

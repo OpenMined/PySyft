@@ -39,7 +39,7 @@ from ...node.common.service.obj_search_service import ObjectSearchMessage
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-
+from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -107,15 +107,14 @@ class Client(AbstractNodeClient):
 
     @staticmethod
     def deserialize_client_metadata_from_node(
-        metadata: str,
+        metadata,
     ) -> Tuple[SpecificLocation, str, UID]:
-
-        m_dict = json.loads(metadata)
-        spec_location = _deserialize(blob=m_dict["spec_location"], from_json=True)
-        name = m_dict["name"]
-        id = _deserialize(blob=m_dict["id"], from_json=True)
-
-        return spec_location, name, id
+        metadata_pb = Metadata_PB()
+        metadata_pb.ParseFromString(metadata)
+        network = _deserialize(metadata_pb.network)
+        name = metadata_pb.name
+        id = _deserialize(metadata_pb.id)
+        return network, name, id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()

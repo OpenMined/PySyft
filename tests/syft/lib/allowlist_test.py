@@ -291,7 +291,14 @@ for op in BASIC_OPS:
             inputs.append(input)
 
     combinations = list(
-        product(data_types, [op], tensors, inputs, [is_property], [return_type],)
+        product(
+            data_types,
+            [op],
+            tensors,
+            inputs,
+            [is_property],
+            [return_type],
+        )
     )
 
     skipped_combinations = set()

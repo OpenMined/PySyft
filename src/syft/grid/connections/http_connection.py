@@ -30,11 +30,9 @@ class HTTPConnection(ClientConnection):
 
         # Serializes SignedImmediateSyftMessageWithReply in json format
         # and send it using HTTP protocol
-        blob = self._send_msg(msg=msg).text
-
+        blob = self._send_msg(msg=msg).content
         # Deserialize node's response
-        response = _deserialize(blob=blob, from_json=True)
-
+        response = _deserialize(blob=blob, from_bytes=True)
         # Return SignedImmediateSyftMessageWithoutReply
         return response
 
@@ -75,21 +73,21 @@ class HTTPConnection(ClientConnection):
         SyftMessage
         :rtype: requests.Response
         """
-        # Serialize SyftMessage object
-        json_msg = msg.json()
 
         # Perform HTTP request using base_url as a root address
-        r = requests.post(url=self.base_url, json=json_msg)
+        r = requests.post(url=self.base_url,
+                          data=msg.binary(),
+                          headers={'Content-Type': 'application/octet-stream'})
 
         # Return request's response object
         # r.text provides the response body as a str
         return r
 
     @syft_decorator(typechecking=True)
-    def _get_metadata(self) -> str:
+    def _get_metadata(self) -> bytes:
         """Request Node's metadata
 
         :return: returns node metadata
         :rtype: str
         """
-        return requests.get(self.base_url + "/metadata").text
+        return requests.get(self.base_url + "/metadata").content

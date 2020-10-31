@@ -22,6 +22,9 @@ class SignalingClient(object):
         # Use Signaling Server metadata
         # to build client route
         conn = conn_type(url=url)  # type: ignore
+
+        print(conn._get_metadata())
+
         (
             spec_location,
             name,

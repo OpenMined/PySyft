@@ -40,7 +40,10 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         id_pb = self.id_at_location.serialize()
         addr = self.address.serialize()
 
-        return GarbageCollectObjectAction_PB(id_at_location=id_pb, address=addr,)
+        return GarbageCollectObjectAction_PB(
+            id_at_location=id_pb,
+            address=addr,
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -51,7 +54,10 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         id_at_location = _deserialize(blob=proto.id_at_location)
         addr = _deserialize(blob=proto.address)
 
-        return GarbageCollectObjectAction(id_at_location=id_at_location, address=addr,)
+        return GarbageCollectObjectAction(
+            id_at_location=id_at_location,
+            address=addr,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -17,7 +17,7 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
-from ....proto.util.json_message_pb2 import JsonMessage
+from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
 
@@ -209,24 +209,6 @@ class Serializable(metaclass=MetaSerializable):
         return self.serialize(to_proto=True)
 
     @syft_decorator(typechecking=True)
-    def to_json(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a JSON object.
-
-        :return: a JSON string
-        :rtype: str
-        """
-        return self.serialize(to_json=True)
-
-    @syft_decorator(typechecking=True)
-    def json(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a JSON object.
-
-        :return: a JSON string
-        :rtype: str
-        """
-        return self.serialize(to_json=True)
-
-    @syft_decorator(typechecking=True)
     def to_binary(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
@@ -245,21 +227,10 @@ class Serializable(metaclass=MetaSerializable):
         return self.serialize(to_binary=True)
 
     @syft_decorator(typechecking=True)
-    def to_hex(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a hex object.
-
-        :return: a hex string
-        :rtype: str
-        """
-        return self.serialize(to_hex=True)
-
-    @syft_decorator(typechecking=True)
     def serialize(
         self,
         to_proto: bool = True,
-        to_json: bool = False,
         to_binary: bool = False,
-        to_hex: bool = False,
     ) -> Union[str, bytes, Message]:
         """Serialize the object according to the parameters.
 
@@ -290,30 +261,18 @@ class Serializable(metaclass=MetaSerializable):
 
         """
 
-        if to_json or to_binary or to_hex:
+        if to_binary:
+            # syft absolute
             import syft as sy
 
             sy.logger.debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
             blob = self._object2proto().SerializeToString()
-            blob = json_format.MessageToJson(
-                message=JsonMessage(
-                    obj_type=get_fully_qualified_name(obj=self), content=blob
-                ),
-                indent=None,  # type: ignore # indent=None
+            blob = DataMessage(
+                obj_type=get_fully_qualified_name(obj=self), content=blob
             )
-
-            if to_json:
-                return blob
-
-            if to_binary:
-                res = bytes(blob, "utf-8")
-                sy.logger.debug(res)
-                return res
-
-            # then to_hex was true
-            return bytes(blob, "utf-8").hex()
+            return blob.SerializeToString()
 
         elif to_proto:
             return type(self)._object2proto(self)
