@@ -330,6 +330,9 @@ class Node(AbstractNode):
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
+            logger.debug(
+                f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
+            )
             # try to process message
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
@@ -378,7 +381,9 @@ class Node(AbstractNode):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        logger.debug(f"> Received {msg.pprint} @ {self.pprint}")
+        logger.debug(
+            f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
+        )
         try:
             self.process_message(
                 msg=msg, router=self.immediate_msg_without_reply_router

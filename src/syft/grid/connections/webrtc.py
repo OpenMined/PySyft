@@ -78,10 +78,11 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+import random
+import time
 from typing import Any
 from typing import Optional
 from typing import Union
-import random
 
 # third party
 from aiortc import RTCDataChannel
@@ -385,7 +386,14 @@ class WebRTCConnection(BidirectionalConnection):
         """
         # Execute node services now
         try:
+            r = random.randint(0, 100000)
+            logger.debug(
+                f"> Before recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
+            )
             reply = self.node.recv_immediate_msg_with_reply(msg=msg)
+            logger.debug(
+                f"> After recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
+            )
             return reply
         except Exception as e:
             log = f"Got an exception in WebRTCConnection recv_immediate_msg_with_reply. {e}"
@@ -398,7 +406,14 @@ class WebRTCConnection(BidirectionalConnection):
     ) -> None:
         """ Executes requests instantly. """
         try:
+            r = random.randint(0, 100000)
+            logger.debug(
+                f"> Before recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
+            )
             self.node.recv_immediate_msg_without_reply(msg=msg)
+            logger.debug(
+                f"> After recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
+            )
         except Exception as e:
             log = f"Got an exception in WebRTCConnection recv_immediate_msg_without_reply. {e}"
             logger.error(log)
@@ -469,21 +484,51 @@ class WebRTCConnection(BidirectionalConnection):
             # To ensure the sequence of sending / receiving messages
             # it's necessary to keep only a unique reference for reading
             # inputs (producer) and outputs (consumer).
-
+            r = random.randint(0, 100000)
             # To be able to perform this method synchronously (waiting for the reply)
             # without blocking async methods, we need to use queues.
 
             # Enqueue the message to be sent to the target.
-            self.producer_pool.put_nowait(msg)
+            logger.debug(f"> Before send_sync_message producer_pool.put blocking {r}")
+            # self.producer_pool.put_nowait(msg)
+            await self.producer_pool.put(msg)
+            logger.debug(f"> After send_sync_message producer_pool.put blocking {r}")
 
-            r = random.randint(0, 100000)
             # Wait for the response checking the consumer queue.
-            logger.debug(f"> Before send_sync_message blocking {r}")
-            response = await self.consumer_pool.get()
-            logger.debug(f"> After send_sync_message blocking {r}")
+            logger.debug(
+                f"> Before send_sync_message consumer_pool.get blocking {r} {msg}"
+            )
+            logger.debug(
+                f"> Before send_sync_message consumer_pool.get blocking {r} {msg.message}"
+            )
+            before = time.time()
+            timeout_secs = 15
 
+            response = asyncio.run(
+                self.async_check(before=before, timeout_secs=timeout_secs, r=r)
+            )
+
+            logger.debug(f"> After send_sync_message consumer_pool.get blocking {r}")
             return response
         except Exception as e:
             log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
             logger.error(log)
             raise e
+
+    async def async_check(
+        self, before: float, timeout_secs: int, r: float
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        while True:
+            await asyncio.sleep(0.1)
+            try:
+                response = self.consumer_pool.get_nowait()
+                return response
+            except Exception as e:
+                now = time.time()
+                logger.debug(
+                    f"> During send_sync_message consumer_pool.get blocking {r}. {e}"
+                )
+                if now - before > timeout_secs:
+                    log = f"send_sync_message timeout {timeout_secs} {r}"
+                    logger.critical(log)
+                    raise Exception(log)

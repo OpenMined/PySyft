@@ -390,11 +390,13 @@ class Pointer(AbstractPointer):
 
             last_check: float = 0.0
             while True:
+                now = time.time()
+                log = f"\n> INSIDE Request BLOCK {now - start} seconds {now - start > timeout_secs}"
+                logger.debug(log)
+                print(log)
                 try:
-                    now = time.time()
                     # won't run on the first pass because status is None which allows
                     # for remote request handlers to auto respond before timeout
-
                     if now - start > timeout_secs:
                         log = (
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
@@ -412,7 +414,9 @@ class Pointer(AbstractPointer):
                             address=self.client.address,
                             reply_to=self.client.address,
                         )
-
+                        logger.debug(
+                            f"> JUST BEFORE asyncio block???? {status_msg.id} {msg.id}"
+                        )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg
                         )
@@ -420,6 +424,7 @@ class Pointer(AbstractPointer):
                         if response.status == RequestStatus.Pending:
                             time.sleep(1)
                             print(".", end="")
+                            continue
                         else:
                             # accepted or rejected lets exit
                             status_text = "REJECTED"
