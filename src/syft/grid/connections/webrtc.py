@@ -111,7 +111,7 @@ except ImportError:  # pragma: no cover
     from asyncio.events import _get_running_loop as get_running_loop  # pragma: no cover
 
 
-message_cooldown = 0.025
+message_cooldown = 0.0
 
 
 class WebRTCConnection(BidirectionalConnection):
@@ -154,10 +154,10 @@ class WebRTCConnection(BidirectionalConnection):
         # async  messages.
         try:
             self.producer_pool: asyncio.Queue = asyncio.Queue(
-                loop=self.loop, maxsize=500
+                loop=self.loop,
             )  # Request Messages / Request Responses
             self.consumer_pool: asyncio.Queue = asyncio.Queue(
-                loop=self.loop, maxsize=500
+                loop=self.loop,
             )  # Request Responses
 
             # Initialize a PeerConnection structure
@@ -552,11 +552,12 @@ class WebRTCConnection(BidirectionalConnection):
             try:
                 psize = self.producer_pool.qsize()
                 csize = self.consumer_pool.qsize()
+                async_task_count = len(asyncio.all_tasks())
                 producer_watermark = max(producer_watermark, psize)
                 consumer_watermark = max(consumer_watermark, csize)
                 log = (
                     f"{self.node.name} PQ: {psize} / {producer_watermark} - "
-                    + f"CQ: {csize} / {consumer_watermark}"
+                    + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
                 )
                 print(log)
                 logger.critical(log)
