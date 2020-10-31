@@ -11,9 +11,8 @@ $ python src/syft/grid/example_nodes/network.py
 # third party
 import flask
 from flask import Flask
-from flask import request
-from nacl.encoding import HexEncoder
 from flask import Response
+from nacl.encoding import HexEncoder
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -23,6 +22,7 @@ from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
+
 app = Flask(__name__)
 
 network = Network(name="om-net")
@@ -34,30 +34,43 @@ network._register_services()  # re-register all services including SignalingServ
 
 
 @app.route("/metadata")
-def get_metadata() -> str:
-    r = Response(response=network.get_metadata_for_client().SerializeToString(),
-                 status=200,
-                 )
-    r.headers['Content-Type'] = 'application/octet-stream'
+def get_metadata() -> flask.Response:
+    metadata = network.get_metadata_for_client()
+    metadata_proto = metadata.serialize()
+    r = Response(
+        response=metadata_proto.SerializeToString(),
+        status=200,
+    )
+    r.headers["Content-Type"] = "application/octet-stream"
     return r
 
+
 @app.route("/", methods=["POST"])
-def process_network_msgs() -> str:
+def process_network_msgs() -> flask.Response:
     data = flask.request.get_data()
     obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
-        print(f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch")
+        print(
+            f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch"
+        )
         reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
-        r = Response(response=reply.serialize(to_binary=True), status=200)
-        r.headers['Content-Type'] = 'application/octet-stream'
+        r = Response(response=reply.serialize(to_bytes=True), status=200)
+        r.headers["Content-Type"] = "application/octet-stream"
         return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        print(f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch")
+        print(
+            f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
+        )
         network.recv_immediate_msg_without_reply(msg=obj_msg)
+        r = Response(status=200)
+        return r
     else:
-        print(f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch")
+        print(
+            f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
+        )
         network.recv_eventual_msg_without_reply(msg=obj_msg)
-    return ""
+        r = Response(status=200)
+        return r
 
 
 def run() -> None:

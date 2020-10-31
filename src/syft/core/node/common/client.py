@@ -1,5 +1,4 @@
 # stdlib
-import json
 import sys
 from typing import Any
 from typing import Dict
@@ -20,6 +19,7 @@ from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
+from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
@@ -39,7 +39,7 @@ from ...node.common.service.obj_search_service import ObjectSearchMessage
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
-from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+
 
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
@@ -107,14 +107,12 @@ class Client(AbstractNodeClient):
 
     @staticmethod
     def deserialize_client_metadata_from_node(
-        metadata,
+        metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(metadata)
-        network = _deserialize(metadata_pb.network)
-        name = metadata_pb.name
-        id = _deserialize(metadata_pb.id)
-        return network, name, id
+        # string of bytes
+        print("WHAT TYPE", metadata, type(metadata))
+        meta = _deserialize(blob=metadata)
+        return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()

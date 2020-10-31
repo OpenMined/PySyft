@@ -87,7 +87,7 @@ class SyftMessage(AbstractMessage):
         logger.debug(
             f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
         )
-        signed_message = signing_key.sign(self.serialize(to_binary=True))
+        signed_message = signing_key.sign(self.serialize(to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type

@@ -217,16 +217,12 @@ class Class(Callable):
         def serialize(  # type: ignore
             self,
             to_proto: bool = True,
-            to_json: bool = False,
-            to_binary: bool = False,
-            to_hex: bool = False,
+            to_bytes: bool = False,
         ) -> Union[str, bytes, Message]:
             return _serialize(
                 obj=self,
                 to_proto=to_proto,
-                to_json=to_json,
-                to_binary=to_binary,
-                to_hex=to_hex,
+                to_bytes=to_bytes,
             )
 
         aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
@@ -234,10 +230,13 @@ class Class(Callable):
             obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
         )
         aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
+        to_bytes_attr = "to_bytes"
+        # int has a to_bytes already, so we can use _to_bytes internally
+        if hasattr(outer_self.ref, to_bytes_attr):
+            to_bytes_attr = "_to_bytes"
         aggressive_set_attr(
-            obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
+            obj=outer_self.ref, name=to_bytes_attr, attr=Serializable.to_bytes
         )
-        aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
 
 
 def ispointer(obj: Any) -> bool:

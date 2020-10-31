@@ -9,7 +9,7 @@ def test_client_from_metadata() -> None:
     client_metadata = domain.get_metadata_for_client()
 
     spec_location, name, id = sy.DomainClient.deserialize_client_metadata_from_node(
-        metadata=client_metadata
+        metadata=client_metadata.serialize()
     )
 
     assert domain.domain == spec_location

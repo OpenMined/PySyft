@@ -9,7 +9,6 @@ Do NOT (without talking to trask):
 """
 
 # stdlib
-import json
 from typing import Any
 from typing import Dict
 from typing import List
@@ -46,6 +45,7 @@ from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
+from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
@@ -62,8 +62,6 @@ from .service.obj_search_permission_service import (
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
 
-
-from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
 
@@ -269,21 +267,13 @@ class Node(AbstractNode):
         )
 
     @syft_decorator(typechecking=True)
-    def get_root_client(self, routes: List[Route] = None) -> ClientT:
-        if routes is None:
-            routes = []
-
+    def get_root_client(self, routes: List[Route] = []) -> ClientT:
         client = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
 
-    def get_metadata_for_client(self) -> Metadata_PB:
-        return Metadata_PB(
-            name=self.name,
-            id=self.id.serialize(),
-            network=self.target_id.serialize()
-        )
-
+    def get_metadata_for_client(self) -> Metadata:
+        return Metadata(name=self.name, id=self.id, node=self.target_id)
 
     @property
     def known_nodes(self) -> List[Client]:
