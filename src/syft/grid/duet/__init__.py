@@ -13,7 +13,6 @@ import requests
 
 # syft relative
 from ...core.node.domain.domain import Domain
-from .duet import Duet  # noqa: F401
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 

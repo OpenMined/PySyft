@@ -87,7 +87,7 @@ class SyftMessage(AbstractMessage):
         logger.debug(
             f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
         )
-        signed_message = signing_key.sign(self.serialize(to_binary=True))
+        signed_message = signing_key.sign(self.serialize(to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -140,7 +140,7 @@ class SignedMessage(SyftMessage):
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
             self.cached_deseralized_message = _deserialize(
-                blob=self.serialized_message, from_binary=True
+                blob=self.serialized_message, from_bytes=True
             )
         return self.cached_deseralized_message  # type: ignore
 
@@ -170,7 +170,7 @@ class SignedMessage(SyftMessage):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
         # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = _deserialize(blob=proto.message, from_binary=True)
+        sub_message = _deserialize(blob=proto.message, from_bytes=True)
         address = sub_message.address
 
         # proto.obj_type is final subclass callee for example ReprMessage

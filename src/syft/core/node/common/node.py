@@ -9,7 +9,6 @@ Do NOT (without talking to trask):
 """
 
 # stdlib
-import json
 from typing import Any
 from typing import Dict
 from typing import List
@@ -46,6 +45,7 @@ from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
+from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
@@ -272,14 +272,8 @@ class Node(AbstractNode):
         self.root_verify_key = client.verify_key
         return client
 
-    def get_metadata_for_client(self) -> str:
-        metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
-
-        metadata["spec_location"] = self.target_id.json()
-        metadata["name"] = self.name
-        metadata["id"] = self.id.json()
-
-        return json.dumps(metadata)
+    def get_metadata_for_client(self) -> Metadata:
+        return Metadata(name=self.name, id=self.id, node=self.target_id)
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -458,7 +452,6 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
-
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "

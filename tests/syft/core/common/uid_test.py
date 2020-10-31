@@ -10,7 +10,6 @@ Table of Contents:
 """
 
 # stdlib
-import json
 import uuid
 
 # third party
@@ -160,76 +159,27 @@ def test_uid_proto_deserialization() -> None:
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
 
-def test_uid_json_serialization() -> None:
-    """Tests that JSON UID serialization works as expected"""
+# def test_uid_binary_serialization() -> None:
+#     """Tests that binary UID serializes as expected"""
 
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    content = {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}
-    main = {"objType": "syft.core.common.uid.UID", "content": json.dumps(content)}
-    blob = json.dumps(main)
+#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     blob = (
+#         b'{"objType": "syft.core.common.uid.UID", "content": '
+#         b'"{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
+#     )
 
-    assert uid.json() == blob
-    assert uid.to_json() == blob
-    assert uid.serialize(to_json=True) == blob
-
-
-def test_uid_json_deserialization() -> None:
-    """Tests that JSON UID deserialization works as expected"""
-
-    content = {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}
-    main = {"objType": "syft.core.common.uid.UID", "content": json.dumps(content)}
-
-    blob = json.dumps(main)
-    obj = sy.deserialize(blob=blob, from_json=True)
-    assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     assert uid.binary() == blob
+#     assert uid.to_bytes() == blob
+#     assert uid.serialize(to_bytes=True) == blob
 
 
-def test_uid_binary_serialization() -> None:
-    """Tests that binary UID serializes as expected"""
+# def test_uid_binary_deserialization() -> None:
+#     """Test that binary deserialization works as expected"""
 
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = (
-        b'{"objType": "syft.core.common.uid.UID", "content": '
-        b'"{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
-    )
+#     blob = (
+#         b'{"objType": "syft.core.common.uid.UID", '
+#         b'"content": "{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
+#     )
 
-    assert uid.binary() == blob
-    assert uid.to_binary() == blob
-    assert uid.serialize(to_binary=True) == blob
-
-
-def test_uid_binary_deserialization() -> None:
-    """Test that binary deserialization works as expected"""
-
-    blob = (
-        b'{"objType": "syft.core.common.uid.UID", '
-        b'"content": "{\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}"}'
-    )
-
-    obj = sy.deserialize(blob=blob, from_binary=True)
-    assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-
-
-def test_uid_hex_serialization() -> None:
-    """Tests that hex UID serializes as expected"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e7569"
-        "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
-        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
-    )
-    assert uid.to_hex() == blob
-    assert uid.serialize(to_hex=True) == blob
-
-
-def test_uid_hex_deserialization() -> None:
-    """Test that hex deserialization works as expected"""
-
-    blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e7569"
-        "642e554944222c2022636f6e74656e74223a20227b5c2276616c75655c223a205c2"
-        "22b7875775a31753354456d2b7a75634171776f5646413d3d5c227d227d"
-    )
-    obj = sy.deserialize(blob=blob, from_hex=True)
-    assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+#     obj = sy.deserialize(blob=blob, from_bytes=True)
+#     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))

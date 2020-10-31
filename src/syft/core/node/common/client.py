@@ -1,5 +1,4 @@
 # stdlib
-import json
 import sys
 from typing import Any
 from typing import Dict
@@ -20,6 +19,7 @@ from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
+from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
@@ -107,15 +107,11 @@ class Client(AbstractNodeClient):
 
     @staticmethod
     def deserialize_client_metadata_from_node(
-        metadata: str,
+        metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
-
-        m_dict = json.loads(metadata)
-        spec_location = _deserialize(blob=m_dict["spec_location"], from_json=True)
-        name = m_dict["name"]
-        id = _deserialize(blob=m_dict["id"], from_json=True)
-
-        return spec_location, name, id
+        # string of bytes
+        meta = _deserialize(blob=metadata)
+        return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = lib_ast.copy()

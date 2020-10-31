@@ -8,6 +8,7 @@ from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.io.connection import ClientConnection
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 
 class HTTPConnection(ClientConnection):
@@ -28,13 +29,11 @@ class HTTPConnection(ClientConnection):
         :rtype: SignedImmediateSyftMessageWithoutReply
         """
 
-        # Serializes SignedImmediateSyftMessageWithReply in json format
+        # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
-        blob = self._send_msg(msg=msg).text
-
+        blob = self._send_msg(msg=msg).content
         # Deserialize node's response
-        response = _deserialize(blob=blob, from_json=True)
-
+        response = _deserialize(blob=blob, from_bytes=True)
         # Return SignedImmediateSyftMessageWithoutReply
         return response
 
@@ -48,7 +47,7 @@ class HTTPConnection(ClientConnection):
         ClientConnection.send_immediate_msg_without_reply
 
         """
-        # Serializes SignedImmediateSyftMessageWithoutReply in json format
+        # Serializes SignedImmediateSyftMessageWithoutReply
         # and send it using HTTP protocol
         self._send_msg(msg=msg)
 
@@ -75,21 +74,26 @@ class HTTPConnection(ClientConnection):
         SyftMessage
         :rtype: requests.Response
         """
-        # Serialize SyftMessage object
-        json_msg = msg.json()
 
         # Perform HTTP request using base_url as a root address
-        r = requests.post(url=self.base_url, json=json_msg)
+        r = requests.post(
+            url=self.base_url,
+            data=msg.binary(),
+            headers={"Content-Type": "application/octet-stream"},
+        )
 
         # Return request's response object
         # r.text provides the response body as a str
         return r
 
     @syft_decorator(typechecking=True)
-    def _get_metadata(self) -> str:
+    def _get_metadata(self) -> Metadata_PB:
         """Request Node's metadata
 
         :return: returns node metadata
-        :rtype: str
+        :rtype: str of bytes
         """
-        return requests.get(self.base_url + "/metadata").text
+        data: bytes = requests.get(self.base_url + "/metadata").content
+        metadata_pb = Metadata_PB()
+        metadata_pb.ParseFromString(data)
+        return metadata_pb

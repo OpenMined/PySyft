@@ -29,6 +29,7 @@ source code.
 
 # stdlib
 import asyncio
+from typing import Optional
 
 # third party
 from loguru import logger
@@ -36,6 +37,7 @@ from nacl.signing import SigningKey
 
 # syft relative
 from ...core.io.route import SoloRoute
+from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
 from ...decorators.syft_decorator_impl import syft_decorator
@@ -114,7 +116,7 @@ class Duet(DomainClient):
 
         # This attribute will be setted during the signaling messages exchange,
         # and used to create a SoloRoute for the both sides.
-        self._client_metadata = ""
+        self._client_metadata: Optional[Metadata] = None
 
         # Start async tasks and wait until one of them finishes.
         # As mentioned before, these tasks can be finished by two reasons:
@@ -124,15 +126,15 @@ class Duet(DomainClient):
             asyncio.run(self.notify())
 
             # If client_metadata != None, then the connection was created successfully.
-            if self._client_metadata:
+            if self._client_metadata is not None:
                 # Deserialize client's metadata in order to obtain
                 # PySyft's location structure
-                (
+                (  # type: ignore
                     spec_location,
                     name,
-                    client_id,
+                    _,
                 ) = DomainClient.deserialize_client_metadata_from_node(
-                    metadata=self._client_metadata
+                    metadata=self._client_metadata.serialize()
                 )
 
                 # Create a SoloRoute
@@ -191,7 +193,6 @@ class Duet(DomainClient):
                 # give up task queue priority, giving
                 # computing time to the next task.
                 msg = await self._push_msg_queue.get()
-
                 # If self.push_msg_queue.get() returned a message (SignalingOfferMessage,SignalingAnswerMessage)
                 # send it to the signaling server.
                 self.signaling_client.send_immediate_msg_without_reply(msg=msg)
