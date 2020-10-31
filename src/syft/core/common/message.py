@@ -155,7 +155,7 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        logger.debug(f"> {self.icon} -> Proto 🔢")
+        logger.debug(f"> {self.icon} -> Proto 🔢 {self.id}")
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(

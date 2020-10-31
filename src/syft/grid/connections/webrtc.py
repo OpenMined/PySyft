@@ -111,6 +111,9 @@ except ImportError:  # pragma: no cover
     from asyncio.events import _get_running_loop as get_running_loop  # pragma: no cover
 
 
+message_cooldown = 0.025
+
+
 class WebRTCConnection(BidirectionalConnection):
     loop: Any
 
@@ -151,10 +154,10 @@ class WebRTCConnection(BidirectionalConnection):
         # async  messages.
         try:
             self.producer_pool: asyncio.Queue = asyncio.Queue(
-                loop=self.loop
+                loop=self.loop, maxsize=500
             )  # Request Messages / Request Responses
             self.consumer_pool: asyncio.Queue = asyncio.Queue(
-                loop=self.loop
+                loop=self.loop, maxsize=500
             )  # Request Responses
 
             # Initialize a PeerConnection structure
@@ -166,6 +169,9 @@ class WebRTCConnection(BidirectionalConnection):
             # was established.
             self.channel: Optional[RTCDataChannel] = None
             self._client_address: Optional[Address] = None
+
+            asyncio.ensure_future(self.heartbeat())
+
         except Exception as e:
             log = f"Got an exception in WebRTCConnection __init__. {e}"
             logger.error(log)
@@ -300,8 +306,10 @@ class WebRTCConnection(BidirectionalConnection):
                 # computing time to the next task.
                 msg = await self.producer_pool.get()
 
+                await asyncio.sleep(message_cooldown)
                 # If self.producer_pool.get() returned a message
                 # send it as a binary using the RTCDataChannel.
+                # logger.critical(f"> Sending MSG {msg.message} ID: {msg.id}")
                 self.channel.send(msg.to_bytes())  # type: ignore
         except Exception as e:
             log = f"Got an exception in WebRTCConnection producer. {e}"
@@ -453,7 +461,8 @@ class WebRTCConnection(BidirectionalConnection):
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
         try:
-            self.producer_pool.put_nowait(msg)
+            asyncio.run(self.producer_pool.put(msg))
+            time.sleep(message_cooldown)
         except Exception as e:
             log = f"Got an exception in WebRTCConnection send_immediate_msg_without_reply. {e}"
             logger.error(log)
@@ -465,7 +474,8 @@ class WebRTCConnection(BidirectionalConnection):
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
         try:
-            self.producer_pool.put_nowait(msg)
+            asyncio.run(self.producer_pool.put(msg))
+            time.sleep(message_cooldown)
         except Exception as e:
             log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
             logger.error(log)
@@ -501,12 +511,13 @@ class WebRTCConnection(BidirectionalConnection):
             logger.debug(
                 f"> Before send_sync_message consumer_pool.get blocking {r} {msg.message}"
             )
-            before = time.time()
-            timeout_secs = 15
+            # before = time.time()
+            # timeout_secs = 15
 
-            response = asyncio.run(
-                self.async_check(before=before, timeout_secs=timeout_secs, r=r)
-            )
+            response = await self.consumer_pool.get()
+
+            #  asyncio.run()
+            # self.async_check(before=before, timeout_secs=timeout_secs, r=r)
 
             logger.debug(f"> After send_sync_message consumer_pool.get blocking {r}")
             return response
@@ -519,7 +530,7 @@ class WebRTCConnection(BidirectionalConnection):
         self, before: float, timeout_secs: int, r: float
     ) -> SignedImmediateSyftMessageWithoutReply:
         while True:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(message_cooldown)
             try:
                 response = self.consumer_pool.get_nowait()
                 return response
@@ -532,3 +543,34 @@ class WebRTCConnection(BidirectionalConnection):
                     log = f"send_sync_message timeout {timeout_secs} {r}"
                     logger.critical(log)
                     raise Exception(log)
+
+    async def heartbeat(self) -> None:
+        producer_watermark = 0
+        consumer_watermark = 0
+        while True:
+            await asyncio.sleep(5)
+            try:
+                psize = self.producer_pool.qsize()
+                csize = self.consumer_pool.qsize()
+                producer_watermark = max(producer_watermark, psize)
+                consumer_watermark = max(consumer_watermark, csize)
+                log = (
+                    f"{self.node.name} PQ: {psize} / {producer_watermark} - "
+                    + f"CQ: {csize} / {consumer_watermark}"
+                )
+                print(log)
+                logger.critical(log)
+
+                if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
+                    log = f"☠️ HEART BEAT DEAD! {self.node.name}"
+                    print(log)
+                    logger.critical(log)
+                # else:
+                #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
+                #     print(log)
+                #     logger.critical(log)
+            except Exception as e:
+                log = f"HEART BEAT exception in {self.node.name}. {e}"
+                print(log)
+                logger.critical(log)
+                raise Exception(log)
