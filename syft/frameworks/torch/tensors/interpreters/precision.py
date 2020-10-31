@@ -282,7 +282,8 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         changed_sign = False
         if isinstance(other, float):
-            other = torch.tensor(other).fix_precision().child
+            other = torch.tensor(other).fix_prec(precision_fractional=self.precision_fractional)
+            other = other.child
 
         if isinstance(other, FixedPrecisionTensor):
             if self.precision_fractional != other.precision_fractional:
