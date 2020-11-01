@@ -929,7 +929,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __gt__(self, other):
-        return (other + 1) <= self
+        return -self <= -(other + 1)
 
     def ge(self, other):
         return (self - other).positive()
