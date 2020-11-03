@@ -281,8 +281,8 @@ class FixedPrecisionTensor(AbstractTensor):
         which is inherent to these operations in the fixed precision setting
         """
         changed_sign = False
-        if isinstance(other, float):
-            other = torch.tensor(other).fix_prec(precision_fractional=self.precision_fractional)
+        if isinstance(other, (float, torch.FloatTensor)):
+            other = torch.tensor(other).fix_prec(**self.get_class_attributes())
             other = other.child
 
         if isinstance(other, FixedPrecisionTensor):
