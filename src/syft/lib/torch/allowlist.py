@@ -646,8 +646,8 @@ allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, flo
 # allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
 # allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
 # allowlist["torch.Tensor.take"] = "torch.Tensor" # requires long tensor input only
-# allowlist["torch.Tensor.transpose_"] = "torch.Tensor" # requires two inputs
-# allowlist["torch.Tensor.transpose"] = "torch.Tensor" # requires two inputs
+allowlist["torch.Tensor.transpose_"] = "torch.Tensor"  # requires two inputs
+allowlist["torch.Tensor.transpose"] = "torch.Tensor"  # requires two inputs
 # allowlist["torch.Tensor.unfold"] = "torch.Tensor" # requires three inputs
 # allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
 # allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor" # requires Union / Tuple
@@ -688,6 +688,9 @@ allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
 allowlist["torch.nn.Module.state_dict"] = "syft.lib.python.Dict"
 
+### Specific Modules
+
+# Conv2D
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
@@ -696,6 +699,27 @@ allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.state_dict"] = "syft.lib.python.Dict"
 
+# There are multiple ways in which you can access the Conv module
+# Using: torch.nn.Conv2d.__module__ gives back torch.nn.modules.conv
+# Also you can use torch.nn.modules.Conv2d
+allowlist["torch.nn.modules.Conv2d"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.Conv2d.__call__"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.Conv2d.train"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.Conv2d.cuda"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.Conv2d.cpu"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.Conv2d.state_dict"] = "syft.lib.python.Dict"
+
+allowlist["torch.nn.modules.conv.Conv2d"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.conv.Conv2d.__call__"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.conv.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.conv.Conv2d.train"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.conv.Conv2d.cuda"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.conv.Conv2d.cpu"] = "torch.nn.Conv2d"
+allowlist["torch.nn.modules.conv.Conv2d.state_dict"] = "syft.lib.python.Dict"
+
+
+# Dropout Module
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
@@ -703,6 +727,22 @@ allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cuda"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cpu"] = "torch.nn.Dropout2d"
 
+allowlist["torch.nn.modules.Dropout2d"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.Dropout2d.__call__"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.Dropout2d.train"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.Dropout2d.cuda"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.Dropout2d.cpu"] = "torch.nn.Dropout2d"
+
+allowlist["torch.nn.modules.dropout.Dropout2d"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.dropout.Dropout2d.__call__"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.dropout.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.dropout.Dropout2d.train"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.dropout.Dropout2d.cuda"] = "torch.nn.Dropout2d"
+allowlist["torch.nn.modules.dropout.Dropout2d.cpu"] = "torch.nn.Dropout2d"
+
+
+# Linear Module
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.__call__"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
@@ -710,6 +750,24 @@ allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.Dict"
+
+allowlist["torch.nn.modules.Linear"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.Linear.__call__"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.Linear.train"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.Linear.cuda"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.Linear.cpu"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.Linear.state_dict"] = "syft.lib.python.Dict"
+
+
+allowlist["torch.nn.modules.linear.Linear"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.linear.Linear.__call__"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.linear.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.linear.Linear.train"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.linear.Linear.cuda"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.linear.Linear.cpu"] = "torch.nn.Linear"
+allowlist["torch.nn.modules.linear.Linear.state_dict"] = "syft.lib.python.Dict"
+
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
@@ -753,10 +811,15 @@ allowlist["torch.flatten"] = "torch.Tensor"
 
 # Optimizers
 allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
-allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
-allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adadelta.step"] = "syft.lib.python._SyNone"
+
+allowlist["torch.optim.adadelta.Adadelta"] = "torch.optim.Adadelta"
+allowlist["torch.optim.adadelta.Adadelta.zero_grad"] = "torch.optim.Adadelta"
+allowlist["torch.optim.adadelta.Adadelta.step"] = "torch.optim.Adadelta"
+
+allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
+allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python._SyNone"
 
 # Autograd
 allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
@@ -765,6 +828,7 @@ allowlist["torch.autograd.grad_mode.no_grad.__enter__"] = "syft.lib.python._SyNo
 allowlist["torch.autograd.grad_mode.no_grad.__exit__"] = "syft.lib.python._SyNone"
 
 
+# Sequential
 allowlist["torch.nn.Sequential"] = "torch.nn.Sequential"
 allowlist["torch.nn.Sequential.cpu"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.cuda"] = "syft.lib.python._SyNone"
@@ -773,8 +837,47 @@ allowlist["torch.nn.Sequential.train"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.eval"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.__call__"] = "torch.Tensor"
 
-allowlist["torch.nn.ReLU"] = "torch.nn.ReLU"
+allowlist["torch.nn.modules.Sequential"] = "torch.nn.Sequential"
+allowlist["torch.nn.modules.Sequential.cpu"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.Sequential.cuda"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.Sequential.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.Sequential.train"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.Sequential.eval"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.Sequential.__call__"] = "torch.Tensor"
+
+allowlist["torch.nn.modules.container.Sequential"] = "torch.nn.Sequential"
+allowlist["torch.nn.modules.container.Sequential.cpu"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.container.Sequential.cuda"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.container.Sequential.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.modules.container.Sequential.train"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.container.Sequential.eval"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.modules.container.Sequential.__call__"] = "torch.Tensor"
+
+
+# MaxPool
 allowlist["torch.nn.MaxPool2d"] = "torch.nn.MaxPool2d"
+allowlist["torch.nn.modules.MaxPool2d"] = "torch.nn.MaxPool2d"
+allowlist["torch.nn.modules.pooling.MaxPool2d"] = "torch.nn.MaxPool2d"
+
+# Flatten
 allowlist["torch.nn.Flatten"] = "torch.nn.Flatten"
+allowlist["torch.nn.modules.Flatten"] = "torch.nn.Flatten"
+allowlist["torch.nn.modules.flatten.Flatten"] = "torch.nn.Flatten"
+
+
+### Activations
+
+# ReLU
+allowlist["torch.nn.ReLU"] = "torch.nn.ReLU"
+allowlist["torch.nn.modules.ReLU"] = "torch.nn.ReLU"
+allowlist["torch.nn.modules.activation.ReLU"] = "torch.nn.ReLU"
+
+# Softmax
 allowlist["torch.nn.Softmax"] = "torch.nn.Softmax"
+allowlist["torch.nn.modules.Softmax"] = "torch.nn.Softmax"
+allowlist["torch.nn.modules.activation.Softmax"] = "torch.nn.Softmax"
+
+# LogSoftMax
 allowlist["torch.nn.LogSoftmax"] = "torch.nn.LogSoftmax"
+allowlist["torch.nn.modules.LogSoftmax"] = "torch.nn.LogSoftmax"
+allowlist["torch.nn.modules.activation.LogSoftmax"] = "torch.nn.LogSoftmax"
