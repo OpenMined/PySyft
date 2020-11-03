@@ -86,14 +86,14 @@ class Module:
 
     # zero them so we know they are copied
     def zero_layers(self) -> None:
-        for _, m in self.modules.items():
+        for m in self.modules.values():
             if hasattr(m, "weight"):
                 m.weight.requires_grad_(False).zero_()
             if hasattr(m, "bias"):
                 m.bias.requires_grad_(False).zero_()
 
     # easy way to check the weights have changed
-    def sum_layers(self) -> None:
+    def debug_sum_layers(self) -> None:
         for n, m in self.modules.items():
             if hasattr(m, "state_dict"):
                 for k, v in m.state_dict().items():
@@ -148,7 +148,7 @@ class Module:
                             if hasattr(local_m, key_str):
                                 # if the downloaded value is not a Parameter
                                 # its a tensor so we need to convert it
-                                if not issubclass(type(value), torch.nn.Parameter):
+                                if not isinstance(value, torch.nn.Parameter):
                                     value = torch.nn.Parameter(value)
 
                                 # set it

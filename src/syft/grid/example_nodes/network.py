@@ -7,6 +7,8 @@ For example:
 $ python src/syft/grid/example_nodes/network.py
 
 """
+# stdlib
+import os
 
 # third party
 import flask
@@ -80,8 +82,10 @@ def run() -> None:
     print("====================================")
     # this signing_key is to aid in local development and is not used in the real
     # PyGrid implementation
+    PORT = os.getenv("PORT", 5000)
+    print(f"Starting Node on PORT: {PORT}")
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    app.run()
+    app.run(host="0.0.0.0", port=int(PORT))  # nosec
 
 
 run()
