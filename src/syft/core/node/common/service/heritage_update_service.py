@@ -10,10 +10,8 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from .....decorators import syft_decorator
@@ -70,10 +68,9 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey
     ) -> None:
-        if sy.VERBOSE:
-            print(
-                f"> Executing {HeritageUpdateService.pprint()} {msg.pprint} on {node.pprint}"
-            )
+        logger.debug(
+            f"> Executing {HeritageUpdateService.pprint()} {msg.pprint} on {node.pprint}"
+        )
         addr = msg.new_ancestry_address
 
         if addr.network is not None:
@@ -92,12 +89,10 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
                     in_memory_client = node.in_memory_client_registry[location_id]
                     # we need to sign here with the current node not the destination side
                     in_memory_client.send_immediate_msg_without_reply(msg=msg)
-                    if sy.VERBOSE:
-                        print(f"> Flowing {msg.pprint} to {addr.target_emoji()}")
+                    logger.debug(f"> Flowing {msg.pprint} to {addr.target_emoji()}")
                     return None
                 except Exception as e:
-                    if sy.VERBOSE:
-                        print(f"{location_id} not on nodes in_memory_client. {e}")
+                    logger.debug(f"{location_id} not on nodes in_memory_client. {e}")
                     pass
             except Exception as e:
                 print(e)

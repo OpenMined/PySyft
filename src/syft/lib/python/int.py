@@ -372,8 +372,21 @@ class Int(int, PyPrimitive):
         res = super().conjugate()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def to_bytes(self, length: int, byteorder: str, signed: bool = True) -> bytes:
-        return super().to_bytes(length, byteorder, signed=signed)
+    # method signature override
+    def to_bytes(
+        self,
+        length: Optional[int] = None,
+        byteorder: Optional[str] = None,
+        signed: Optional[bool] = True,
+    ) -> bytes:
+        if length is not None and byteorder is not None and signed is not None:
+            return super().to_bytes(length=length, byteorder=byteorder, signed=signed)
+        else:
+            # get our serializable method
+            _to_bytes = getattr(self, "_to_bytes", None)
+            if _to_bytes is not None:
+                return _to_bytes.__call__()
+        return b""
 
 
 class IntWrapper(StorableObject):

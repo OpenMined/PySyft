@@ -11,7 +11,6 @@ Table of Contents:
 """
 
 # stdlib
-import json
 import uuid
 
 # third party
@@ -122,7 +121,7 @@ def test_object_with_id_proto_serialization() -> None:
 
 
 def test_object_with_id_proto_deserialization() -> None:
-    """Tests that default UID deserialization works as expected - from JSON"""
+    """Tests that default UID deserialization works as expected"""
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
@@ -133,41 +132,6 @@ def test_object_with_id_proto_deserialization() -> None:
     assert obj == obj2
 
 
-def test_object_with_id_json_serialization() -> None:
-    """Tests that JSON ObjectWithID serialization works as expected"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = ObjectWithID(id=uid)
-
-    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
-    main = {
-        "objType": "syft.core.common.object.ObjectWithID",
-        "content": json.dumps(content),
-    }
-    blob = json.dumps(main)
-
-    assert obj.json() == blob
-    assert obj.to_json() == blob
-    assert obj.serialize(to_json=True) == blob
-
-
-def test_object_with_id_json_deserialization() -> None:
-    """Tests that JSON ObjectWithID deserialization works as expected"""
-
-    content = {"id": {"value": "+xuwZ1u3TEm+zucAqwoVFA=="}}
-    main = {
-        "objType": "syft.core.common.object.ObjectWithID",
-        "content": json.dumps(content),
-    }
-    blob = json.dumps(main)
-
-    obj = sy.deserialize(blob=blob, from_json=True)
-
-    assert obj == ObjectWithID(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    )
-
-
 def test_object_with_id_binary_serialization() -> None:
     """Tests that binary ObjectWithID serializes as expected"""
 
@@ -175,56 +139,23 @@ def test_object_with_id_binary_serialization() -> None:
     obj = ObjectWithID(id=uid)
 
     blob = (
-        b'{"objType": "syft.core.common.object.ObjectWithID", "content":'
-        b' "{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
+        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
+        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
 
     assert obj.binary() == blob
-    assert obj.to_binary() == blob
-    assert obj.serialize(to_binary=True) == blob
+    assert obj.to_bytes() == blob
+    assert obj.serialize(to_bytes=True) == blob
 
 
 def test_object_with_id_binary_deserialization() -> None:
     """Test that binary ObjectWithID deserialization works as expected"""
 
     blob = (
-        b'{"objType": "syft.core.common.object.ObjectWithID", "content": '
-        b'"{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
+        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
+        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
-    obj = sy.deserialize(blob=blob, from_binary=True)
-    assert obj == ObjectWithID(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    )
-
-
-def test_object_with_id_hex_serialization() -> None:
-    """Tests that hex ObjectWithID serializes as expected"""
-
-    obj = ObjectWithID(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    )
-
-    blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e6f"
-        "626a6563742e4f626a656374576974684944222c2022636f6e74656e74223a20"
-        "227b5c2269645c223a207b5c2276616c75655c223a205c222b7875775a3175335"
-        "4456d2b7a75634171776f5646413d3d5c227d7d227d"
-    )
-    assert obj.to_hex() == blob
-    assert obj.serialize(to_hex=True) == blob
-
-
-def test_object_with_id_hex_deserialization() -> None:
-    """Test that hex ObjectWithID deserialization works as expected"""
-
-    blob = (
-        "7b226f626a54797065223a2022737966742e636f72652e636f6d6d6f6e2e6f"
-        "626a6563742e4f626a656374576974684944222c2022636f6e74656e74223a20"
-        "227b5c2269645c223a207b5c2276616c75655c223a205c222b7875775a3175335"
-        "4456d2b7a75634171776f5646413d3d5c227d7d227d"
-    )
-
-    obj = sy.deserialize(blob=blob, from_hex=True)
+    obj = sy.deserialize(blob=blob, from_bytes=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )

@@ -6,11 +6,9 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
@@ -103,8 +101,7 @@ class Address(Serializable):
         return output
 
     def post_init(self) -> None:
-        if sy.VERBOSE:
-            print(f"> Creating {self.pprint}")
+        logger.debug(f"> Creating {self.pprint}")
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:

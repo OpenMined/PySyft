@@ -7,6 +7,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.service.auth import AuthorizationException
 
 
 def test_torch_remote_tensor_register() -> None:
@@ -84,13 +85,8 @@ def test_torch_no_read_permissions() -> None:
     ptr.client = guest_bob
 
     # this should trigger an exception
-    with pytest.raises(Exception) as exception:
+    with pytest.raises(AuthorizationException):
         ptr.get()
-
-    assert (
-        str(exception.value)
-        == "You do not have permission to .get() this tensor. Please submit a request."
-    )
 
     x = th.tensor([1, 2, 3, 4])
 

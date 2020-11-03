@@ -13,7 +13,6 @@ import requests
 
 # syft relative
 from ...core.node.domain.domain import Domain
-from .duet import Duet  # noqa: F401
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -143,7 +142,7 @@ def launch_duet(
     network_url: str = "",
     loopback: bool = False,
 ) -> WebRTCDuet:
-    print("🎤  🎸  ♪♪♪ starting duet ♫♫♫  🎻  🎹\n")
+    print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
@@ -154,10 +153,10 @@ def launch_duet(
     )
 
     print("♫♫♫ >")
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
 
     if not network_url:
         network_url = get_available_network()
+    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
@@ -175,12 +174,11 @@ def launch_duet(
         + bcolors.HEADER
         + "STEP 1:"
         + bcolors.ENDC
-        + " Send the following code to your duet partner!"
+        + " Send the following code to your Duet Partner!"
     )
     #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
 
     print("\nimport syft as sy")
-    print("sy.VERBOSE=False")
     print(
         "duet = sy.join_duet('"
         + bcolors.BOLD
@@ -208,7 +206,7 @@ def launch_duet(
     print("♫♫♫ >         your duet partner send it to you and enter it below!")
     print()
     if loopback is False:
-        target_id = input("♫♫♫ > Duet Partner's Client Id:")  # nosec
+        target_id = input("♫♫♫ > Duet Partner's Client ID:")  # nosec
     else:
         target_id = ""
         print(
@@ -240,11 +238,10 @@ def launch_duet(
     out_duet = my_domain.get_root_client()
 
     if logging:
-        begin_duet_logger(my_domain)
+        begin_duet_logger(my_domain=my_domain)
     print()
 
     return out_duet
-    # return duet
 
 
 def join_duet(
@@ -266,9 +263,10 @@ def join_duet(
     )
 
     print("♫♫♫ >")
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at network_url: ")
+
     if not network_url:
         network_url = get_available_network()
+    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
@@ -297,12 +295,23 @@ def join_duet(
     print("♫♫♫ > ...waiting for partner to connect...")
     if loopback:
         loopback_config = {}
-        with open(get_loopback_path(), "r") as f:
-            loopback_config = json.loads(f.read())
-            if "server_id" in loopback_config:
-                target_id = loopback_config["server_id"]
-            else:
-                raise Exception("No loopback file. start the Duet Data Owner first")
+        target_id = ""
+        while target_id == "":
+            try:
+                with open(get_loopback_path(), "r") as f:
+                    loopback_config = json.loads(f.read())
+                    # only continue once the server has overwritten the file
+                    # with only its new server_id
+                    if (
+                        "server_id" in loopback_config
+                        and "client_id" not in loopback_config
+                    ):
+                        target_id = str(loopback_config["server_id"])
+                    else:
+                        time.sleep(0.5)
+            except Exception as e:
+                print(e)
+                break
 
         loopback_config["client_id"] = signaling_client.duet_id
 

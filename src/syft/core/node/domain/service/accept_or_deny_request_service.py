@@ -11,11 +11,9 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 from typing_extensions import final
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
@@ -119,9 +117,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
     ) -> None:
-
-        if sy.VERBOSE:
-            print((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
+        logger.debug((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
         if msg.accept:
             request_id = msg.request_id
             for req in node.requests:
@@ -133,15 +129,14 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         ] = req.id
                         node.requests.remove(req)
 
-                        if sy.VERBOSE:
-                            print(
-                                f"> Accepting Request:{request_id} {request_id.emoji()}"
-                            )
-                            print(
-                                "> Adding can_read for 🔑 "
-                                + f"{key_emoji(key=req.requester_verify_key)} to "
-                                + f"Store UID {req.object_id} {req.object_id.emoji()}"
-                            )
+                        logger.debug(
+                            f"> Accepting Request:{request_id} {request_id.emoji()}"
+                        )
+                        logger.debug(
+                            "> Adding can_read for 🔑 "
+                            + f"{key_emoji(key=req.requester_verify_key)} to "
+                            + f"Store UID {req.object_id} {req.object_id.emoji()}"
+                        )
                         return None
 
         else:
@@ -155,8 +150,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         or verify_key == req.requester_verify_key
                     ):
                         node.requests.remove(req)
-                        if sy.VERBOSE:
-                            print(f"> Rejecting Request:{request_id}")
+                        logger.debug(f"> Rejecting Request:{request_id}")
                         return None
 
     @staticmethod

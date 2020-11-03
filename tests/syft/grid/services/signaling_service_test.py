@@ -48,14 +48,20 @@ def test_signaling_offer_message_serde() -> None:
     blob = msg.serialize()
     msg2 = sy.deserialize(blob=blob)
 
+    msg_metadata = bob_vm.get_metadata_for_client()
+    msg2_metadata = msg2.host_metadata
+
     assert msg.id == msg2.id
     assert msg.address == target
     assert msg.payload == msg2.payload
     assert msg2.payload == "SDP"
-    assert msg2.host_metadata == bob_vm.get_metadata_for_client()
     assert msg2.host_peer == host_id
     assert msg2.target_peer == target_id
     assert msg == msg2
+
+    assert msg_metadata.name == msg2_metadata.name
+    assert msg_metadata.node == msg2_metadata.node
+    assert msg_metadata.id == msg2_metadata.id
 
 
 def test_signaling_answer_message_serde() -> None:
@@ -71,18 +77,23 @@ def test_signaling_answer_message_serde() -> None:
         target_peer=target_id,
         host_peer=host_id,
     )
+    msg_metadata = bob_vm.get_metadata_for_client()
 
     blob = msg.serialize()
     msg2 = sy.deserialize(blob=blob)
+    msg2_metadata = msg2.host_metadata
 
     assert msg.id == msg2.id
     assert msg.address == target
     assert msg.payload == msg2.payload
     assert msg2.payload == "SDP"
-    assert msg2.host_metadata == bob_vm.get_metadata_for_client()
     assert msg2.host_peer == host_id
     assert msg2.target_peer == target_id
     assert msg == msg2
+
+    assert msg_metadata.name == msg2_metadata.name
+    assert msg_metadata.node == msg2_metadata.node
+    assert msg_metadata.id == msg2_metadata.id
 
 
 def test_signaling_answer_pull_request_message_serde() -> None:
@@ -302,10 +313,11 @@ def test_loopback_answer_signaling_service() -> None:
 
     host_id = om_network_client.send_immediate_msg_with_reply(msg=msg).peer_id
 
+    metadata = alice_vm.get_metadata_for_client()
     answer_msg = SignalingAnswerMessage(
         address=om_network.address,
         payload="SDP",
-        host_metadata=alice_vm.get_metadata_for_client(),
+        host_metadata=metadata,
         target_peer=host_id,
         host_peer=host_id,
     )

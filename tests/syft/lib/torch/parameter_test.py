@@ -1,3 +1,6 @@
+# stdlib
+import gc
+
 # third party
 import torch as th
 
@@ -22,11 +25,35 @@ def test_parameter_vm_remote_operation() -> None:
 
     assert len(alice.store._objects) == 1
 
-    # TODO: put thought into garbage collection and then
-    #  uncoment this.
-    # del xp
-    #
-    # assert len(alice.store._objects) == 0
+    del xp
+
+    gc.collect()
+
+    assert len(alice.store._objects) == 0
+
+
+def test_get_copy() -> None:
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    x = th.nn.Parameter(th.randn(3, 3))
+
+    xp = x.send(alice_client)
+
+    y = xp + xp
+
+    assert len(alice.store._objects) == 2
+
+    y.get_copy()
+
+    # no deletion of the object
+    assert len(alice.store._objects) == 2
+
+    del xp
+    gc.collect()
+
+    assert len(alice.store._objects) == 1
 
 
 def test_parameter_serde() -> None:

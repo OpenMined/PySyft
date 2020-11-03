@@ -176,7 +176,7 @@ class Class(Callable):
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location,
+                id_at_location=ptr.id_at_location,
                 obj=self,
                 address=client.address,
                 anyone_can_search_for_this=searchable,
@@ -217,16 +217,12 @@ class Class(Callable):
         def serialize(  # type: ignore
             self,
             to_proto: bool = True,
-            to_json: bool = False,
-            to_binary: bool = False,
-            to_hex: bool = False,
+            to_bytes: bool = False,
         ) -> Union[str, bytes, Message]:
             return _serialize(
                 obj=self,
                 to_proto=to_proto,
-                to_json=to_json,
-                to_binary=to_binary,
-                to_hex=to_hex,
+                to_bytes=to_bytes,
             )
 
         aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
@@ -234,15 +230,13 @@ class Class(Callable):
             obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
         )
         aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
+        to_bytes_attr = "to_bytes"
+        # int has a to_bytes already, so we can use _to_bytes internally
+        if hasattr(outer_self.ref, to_bytes_attr):
+            to_bytes_attr = "_to_bytes"
         aggressive_set_attr(
-            obj=outer_self.ref, name="to_json", attr=Serializable.to_json
+            obj=outer_self.ref, name=to_bytes_attr, attr=Serializable.to_bytes
         )
-        aggressive_set_attr(obj=outer_self.ref, name="json", attr=Serializable.json)
-        aggressive_set_attr(
-            obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
-        )
-        aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
-        aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
 
 
 def ispointer(obj: Any) -> bool:

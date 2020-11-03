@@ -13,14 +13,12 @@ from .dict import Dict
 from .float import Float
 from .int import Int
 from .list import List
+from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .string import String
 from .tuple import Tuple
-
-from .none import SyNone  # NOQA
-
 
 for syft_type in [
     Bool,

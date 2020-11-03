@@ -71,7 +71,7 @@ def test_store_item() -> None:
         tags=["dummy", "tensor"],
     )
 
-    store.store(obj=obj1)
+    store[id1] = obj1
     assert id1 in store
     assert len(store) == 1
 

@@ -43,6 +43,7 @@ from pathlib import Path
 import sys
 
 # third party
+from loguru import logger  # noqa: F401
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
@@ -70,7 +71,6 @@ from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.decorators import type_hints  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
-from syft.grid.duet.duet import Duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
@@ -95,4 +95,9 @@ sys.path.append(str(Path(__file__)))
 # LIBRARY CONFIG
 
 # do you want verbose logging to help with debugging?
-VERBOSE = True
+# logger.add(sys.stderr, level="INFO")
+logger.remove()  # remove default logger
+logger.add(sys.stderr, enqueue=True, level="INFO")  # default to logging level INFO
+logger.debug("Logging loaded")
+
+LOG_FILE = "syft_{time}.log"

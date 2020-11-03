@@ -104,33 +104,13 @@ Protobuf
 
     obj_again = sy.deserialize(blob=proto_obj, from_proto=True)
 
-JSON
-****
-
-.. code::
-
-    json_obj = obj.serialize(to_json=True)
-    json_obj = obj.to_json()
-    json_obj = obj.json()
-
-    print(json_obj)
-    # >>> {
-    # >>>   "objType": "syft.core.common.object.ObjectWithID",
-    # >>>   "id": {
-    # >>>     "objType": "syft.core.common.uid.UID",
-    # >>>     "value": "+xuwZ1u3TEm+zucAqwoVFA=="
-    # >>>   }
-    # >>> }
-
-    obj_again = sy.deserialize(blob=proto_obj, from_json=True)
-
 Binary
 ******
 
 .. code::
 
-    binary_obj = obj.serialize(to_binary=True)
-    binary_obj = obj.to_binary()
+    binary_obj = obj.serialize(to_bytes=True)
+    binary_obj = obj.to_bytes()
     binary_obj = obj.binary()
 
     # print(binary_obj)
@@ -138,7 +118,7 @@ Binary
     # >>> "id": {    "objType": "syft.core.common.uid.UID",
     # >>> "value": "+xuwZ1u3TEm+zucAqwoVFA=="  }}'
 
-    obj_again = sy.deserialize(blob=proto_obj, from_binary=True)
+    obj_again = sy.deserialize(blob=proto_obj, from_bytes=True)
 
 Now we can continue with the class definition for the Serializable class, which
 is the parent class for all serializable objects within Syft.

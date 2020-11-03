@@ -9,7 +9,6 @@ Do NOT (without talking to trask):
 """
 
 # stdlib
-import json
 from typing import Any
 from typing import Dict
 from typing import List
@@ -19,11 +18,9 @@ from typing import TypeVar
 from typing import Union
 
 # third party
+from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from ....decorators import syft_decorator
@@ -48,6 +45,7 @@ from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
+from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.heritage_update_service import HeritageUpdateService
@@ -274,14 +272,8 @@ class Node(AbstractNode):
         self.root_verify_key = client.verify_key
         return client
 
-    def get_metadata_for_client(self) -> str:
-        metadata: Dict[str, Union[Address, Optional[str], Location]] = {}
-
-        metadata["spec_location"] = self.target_id.json()
-        metadata["name"] = self.name
-        metadata["id"] = self.id.json()
-
-        return json.dumps(metadata)
+    def get_metadata_for_client(self) -> Metadata:
+        return Metadata(name=self.name, id=self.id, node=self.target_id)
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -296,8 +288,7 @@ class Node(AbstractNode):
 
     @property
     def known_child_nodes(self) -> List[Address]:
-        if sy.VERBOSE:
-            print(f"> {self.pprint} Getting known Children Nodes")
+        logger.debug(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
             return [
                 client
@@ -318,8 +309,7 @@ class Node(AbstractNode):
                 )
             ]
         else:
-            if sy.VERBOSE:
-                print(f"> Node {self.pprint} has no children")
+            logger.debug(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
@@ -334,12 +324,16 @@ class Node(AbstractNode):
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
+            logger.debug(
+                f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
+            )
             # try to process message
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
             )
 
         except Exception as e:
+            logger.error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
@@ -354,9 +348,10 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
+                logger.error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            print(private_log_msg)
+            logger.error(private_log_msg)
 
             # send the public exception back
             response = ExceptionMessage(
@@ -369,25 +364,26 @@ class Node(AbstractNode):
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
         res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        if sy.VERBOSE:
-            output = (
-                f"> {self.pprint} Signing {res_msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-            )
-            print(output)
+        output = (
+            f"> {self.pprint} Signing {res_msg.pprint} with "
+            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+        )
+        logger.debug(output)
         return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        if sy.VERBOSE:
-            print(f"> Received {msg.pprint} @ {self.pprint}")
+        logger.debug(
+            f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
+        )
         try:
             self.process_message(
                 msg=msg, router=self.immediate_msg_without_reply_router
             )
         except Exception as e:
+            logger.error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
             if isinstance(e, DuplicateRequestException):
                 private_log_msg = "An DuplicateRequestException has been triggered"
@@ -402,13 +398,16 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
+                logger.error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            print(private_log_msg)
+            logger.error(private_log_msg)
 
             # we still want to raise for now due to certain exceptions we expect
             # in tests
             if not isinstance(e, DuplicateRequestException):
+                logger.error(e)
+                # TODO: A lot of tests are depending on this raise which seems bad
                 raise e
 
             # TODO: finish code to send ExceptionMessage back
@@ -441,40 +440,39 @@ class Node(AbstractNode):
 
         self.message_counter += 1
 
-        if sy.VERBOSE:
-            print(f"> Processing 📨 {msg.pprint} @ {self.pprint}")
+        logger.debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
         if self.message_is_for_me(msg=msg):
-            if sy.VERBOSE:
-                print(
-                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-                )
+            logger.debug(
+                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
+            )
             # Process Message here
             if not msg.is_valid:
+                logger.error(f"Message is not valid. {msg}")
                 raise Exception("Message is not valid.")
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
-
             except KeyError as e:
-                self.ensure_services_have_been_registered_error_if_not()
-
-                raise KeyError(
+                log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "
                     + f"{type(msg.message)} because there is no service running to process it."
                     + f"{e}"
                 )
+                logger.error(log)
+                self.ensure_services_have_been_registered_error_if_not()
+                raise KeyError(log)
 
-            return service.process(
+            result = service.process(
                 node=self,
                 msg=msg.message,
                 verify_key=msg.verify_key,
             )
+            return result
 
         else:
-            if sy.VERBOSE:
-                print(
-                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
-                )
+            logger.debug(
+                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+            )
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(

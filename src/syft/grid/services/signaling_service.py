@@ -18,6 +18,7 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...core.node.abstract.node import AbstractNode
+from ...core.node.common.metadata import Metadata
 from ...core.node.common.service.auth import service_auth
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
@@ -376,7 +377,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         payload: str,
-        host_metadata: str,
+        host_metadata: Metadata,
         target_peer: str,
         host_peer: str,
         msg_id: Optional[UID] = None,
@@ -407,7 +408,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             payload=self.payload,
-            host_metadata=self.host_metadata,
+            host_metadata=self.host_metadata.serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -431,7 +432,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             payload=proto.payload,
-            host_metadata=proto.host_metadata,
+            host_metadata=_deserialize(blob=proto.host_metadata),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
         )
@@ -464,7 +465,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         payload: str,
-        host_metadata: str,
+        host_metadata: Metadata,
         target_peer: str,
         host_peer: str,
         msg_id: Optional[UID] = None,
@@ -491,11 +492,12 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return SignalingAnswerMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             payload=self.payload,
-            host_metadata=self.host_metadata,
+            host_metadata=self.host_metadata.serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -519,7 +521,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             payload=proto.payload,
-            host_metadata=proto.host_metadata,
+            host_metadata=_deserialize(blob=proto.host_metadata),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
         )

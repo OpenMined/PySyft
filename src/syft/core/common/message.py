@@ -7,12 +7,10 @@ from typing import TypeVar
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # syft relative
 from ...core.common.object import ObjectWithID
@@ -49,11 +47,10 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
         return f"{self.icon} ({self.class_name})"
 
     def post_init(self) -> None:
-        if sy.VERBOSE:
-            init_reason = "Creating"
-            if "signed" in self.class_name.lower():
-                init_reason += " Signed"
-            print(f"> {init_reason} {self.pprint} {self.id.emoji()}")
+        init_reason = "Creating"
+        if "signed" in self.class_name.lower():
+            init_reason += " Signed"
+        logger.debug(f"> {init_reason} {self.pprint} {self.id.emoji()}")
 
 
 class SyftMessage(AbstractMessage):
@@ -87,11 +84,10 @@ class SyftMessage(AbstractMessage):
             A :class:`SignedMessage`
 
         """
-        if sy.VERBOSE:
-            print(
-                f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
-            )
-        signed_message = signing_key.sign(self.serialize(to_binary=True))
+        logger.debug(
+            f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
+        )
+        signed_message = signing_key.sign(self.serialize(to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -144,7 +140,7 @@ class SignedMessage(SyftMessage):
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
             self.cached_deseralized_message = _deserialize(
-                blob=self.serialized_message, from_binary=True
+                blob=self.serialized_message, from_bytes=True
             )
         return self.cached_deseralized_message  # type: ignore
 
@@ -159,8 +155,7 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        if sy.VERBOSE:
-            print(f"> {self.icon} -> Proto 🔢")
+        logger.debug(f"> {self.icon} -> Proto 🔢 {self.id}")
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
@@ -175,7 +170,7 @@ class SignedMessage(SyftMessage):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
         # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = _deserialize(blob=proto.message, from_binary=True)
+        sub_message = _deserialize(blob=proto.message, from_bytes=True)
         address = sub_message.address
 
         # proto.obj_type is final subclass callee for example ReprMessage
@@ -194,11 +189,10 @@ class SignedMessage(SyftMessage):
             message=proto.message,
         )
 
-        if sy.VERBOSE:
-            icon = "🤷🏾‍♀️"
-            if hasattr(obj, "icon"):
-                icon = obj.icon
-            print(f"> {icon} <- 🔢 Proto")
+        icon = "🤷🏾‍♀️"
+        if hasattr(obj, "icon"):
+            icon = obj.icon
+        logger.debug(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
             raise TypeError(
