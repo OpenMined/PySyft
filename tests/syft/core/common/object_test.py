@@ -132,33 +132,33 @@ def test_object_with_id_proto_deserialization() -> None:
     assert obj == obj2
 
 
-# def test_object_with_id_binary_serialization() -> None:
-#     """Tests that binary ObjectWithID serializes as expected"""
+def test_object_with_id_binary_serialization() -> None:
+    """Tests that binary ObjectWithID serializes as expected"""
 
-#     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-#     obj = ObjectWithID(id=uid)
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = ObjectWithID(id=uid)
 
-#     blob = (
-#         b'{"objType": "syft.core.common.object.ObjectWithID", "content":'
-#         b' "{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
-#     )
+    blob = (
+        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
+        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+    )
 
-#     assert obj.binary() == blob
-#     assert obj.to_bytes() == blob
-#     assert obj.serialize(to_bytes=True) == blob
+    assert obj.binary() == blob
+    assert obj.to_bytes() == blob
+    assert obj.serialize(to_bytes=True) == blob
 
 
-# def test_object_with_id_binary_deserialization() -> None:
-#     """Test that binary ObjectWithID deserialization works as expected"""
+def test_object_with_id_binary_deserialization() -> None:
+    """Test that binary ObjectWithID deserialization works as expected"""
 
-#     blob = (
-#         b'{"objType": "syft.core.common.object.ObjectWithID", "content": '
-#         b'"{\\"id\\": {\\"value\\": \\"+xuwZ1u3TEm+zucAqwoVFA==\\"}}"}'
-#     )
-#     obj = sy.deserialize(blob=blob, from_bytes=True)
-#     assert obj == ObjectWithID(
-#         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-#     )
+    blob = (
+        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
+        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+    )
+    obj = sy.deserialize(blob=blob, from_bytes=True)
+    assert obj == ObjectWithID(
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    )
 
 
 # ----------------------- CHILDREN -----------------------

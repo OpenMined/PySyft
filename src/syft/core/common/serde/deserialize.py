@@ -3,7 +3,6 @@ from typing import Union
 
 # third party
 from google.protobuf.message import Message
-from loguru import logger
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
@@ -46,7 +45,6 @@ def _deserialize(
     """
 
     if from_bytes:
-        logger.debug(blob)
         data_message = DataMessage()
         data_message.ParseFromString(blob)
         obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)

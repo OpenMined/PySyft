@@ -126,3 +126,34 @@ def test_proto_deserialization() -> None:
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)
     assert obj == obj2
+
+
+def test_binary_serialization() -> None:
+    """Tests that binary SpecificLocation serializes as expected"""
+
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    obj = SpecificLocation(id=uid, name="Test")
+
+    blob = (
+        b"\n/syft.core.io.location.specific.SpecificLocation\x12\x1a\n\x12\n\x10"
+        + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
+    )
+
+    assert obj.binary() == blob
+    assert obj.to_bytes() == blob
+    assert obj.serialize(to_bytes=True) == blob
+
+
+def test_binary_deserialization() -> None:
+    """Test that binary SpecificLocation deserialization works as expected"""
+
+    blob = (
+        b"\n/syft.core.io.location.specific.SpecificLocation\x12\x1a\n\x12\n\x10"
+        + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
+    )
+
+    obj = sy.deserialize(blob=blob, from_bytes=True)
+    assert obj == SpecificLocation(
+        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)),
+        name="Test",
+    )
