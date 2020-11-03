@@ -13,6 +13,7 @@ async def test_domain_creation() -> None:
     Domain(name="test domain")
 
 
+@pytest.mark.asyncio
 def test_domain_serde() -> None:
 
     domain_1 = Domain(name="domain 1")
@@ -52,6 +53,7 @@ def test_domain_request_pending() -> None:
     assert RequestStatus.Pending == response
 
 
+@pytest.mark.asyncio
 def test_domain_request_denied() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
@@ -114,6 +116,7 @@ def test_domain_request_accepted() -> None:
     assert RequestStatus.Accepted == response
 
 
+@pytest.mark.asyncio
 def test_domain_is_for_me_exception() -> None:
     domain_1 = Domain(name="remote domain")
 
