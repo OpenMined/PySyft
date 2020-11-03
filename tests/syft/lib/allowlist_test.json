@@ -197,20 +197,18 @@
       "__floordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
+          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
           { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
         ]
       },
       "__rfloordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
           { "data_types": ["bfloat16"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
+          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
           {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.7.0"
+            "data_types": ["uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -257,7 +255,7 @@
           { "data_types": ["float16"], "lte_version": "1.5.1" },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.7.0"
+            "lte_version": "1.6.0"
           }
         ]
       },
@@ -277,7 +275,7 @@
         "not_available": [
           { "data_types": ["bool"], "lte_version": "1.7.0" },
           { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "floor_divide_": {
@@ -285,7 +283,7 @@
         "not_available": [
           { "data_types": ["bool"], "lte_version": "1.7.0" },
           { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "__mod__": {
@@ -310,15 +308,13 @@
       "remainder": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" }
         ]
       },
       "remainder_": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" }
         ]
       },
       "square": {
@@ -326,17 +322,17 @@
         "min_version": "1.5.0",
         "not_available": [
           { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
         ]
       },
       "square_": {
         "profile": "tensor_method_noinput",
         "min_version": "1.5.0",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "true_divide": {
@@ -368,7 +364,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.7.0"
+            "lte_version": "1.6.0"
           },
           { "data_types": ["float16"], "lte_version": "1.5.1" }
         ]
@@ -432,7 +428,7 @@
       "__lt__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.7.0" }]
+        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
       },
       "__matmul__": {
         "profile": "default",
@@ -621,8 +617,7 @@
       "__ifloordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
+          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
           { "data_types": ["bfloat16"], "lte_version": "1.5.1" },
           { "lte_version": "1.5.0" }
         ]
@@ -1163,7 +1158,7 @@
         "tensors": ["tensor1"],
         "inputs": ["self"],
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" }
+          { "data_types": ["bool", "float16"], "lte_version": "1.6.0" }
         ]
       },
       "ge_": {
@@ -1333,13 +1328,13 @@
       "logical_not_": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "logical_not": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
         ]
       },
       "logical_xor_": {
@@ -1355,11 +1350,11 @@
       },
       "lt_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.7.0" }]
+        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
       },
       "lt": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.7.0" }]
+        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
       },
       "matmul": {
         "profile": "default",
@@ -1377,7 +1372,8 @@
         "tensors": ["tensor2"],
         "inputs": ["self"],
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" }
+          { "data_types": ["bool", "float16"], "lte_version": "1.6.0" },
+          { "data_types": ["bool"], "lte_version": "1.7.0" }
         ]
       },
       "mul_": {
@@ -1390,7 +1386,7 @@
       "mul": {
         "profile": "default",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
+          { "data_types": ["bool"], "lte_version": "1.6.0" },
           { "data_types": ["float16"], "lte_version": "1.5.1" }
         ]
       },
@@ -1444,8 +1440,7 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
         ]
       },
       "output_nr": {
@@ -1461,8 +1456,7 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
         ]
       },
       "pow_": {
