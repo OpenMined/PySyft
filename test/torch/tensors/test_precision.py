@@ -694,13 +694,13 @@ def test_dtype():
 
 
 def test_ndim():
-    x = torch.rand(2,3,4).fix_prec()
+    x = torch.rand(2, 3, 4).fix_prec()
     assert x.ndim == 3
 
 
 def test_T():
-    x = torch.rand(2,3,4).fix_prec()
-    assert x.T.shape == torch.Size([4,3,2])
+    x = torch.rand(2, 3, 4).fix_prec()
+    assert x.T.shape == torch.Size([4, 3, 2])
 
 
 def test_reconstruct(workers):
