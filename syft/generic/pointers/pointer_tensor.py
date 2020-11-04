@@ -418,11 +418,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     @property
     def ndim(self):
-	return self.dim()
+        return self.dim()
 
     @property
     def T(self):
-    	return self.permute(tuple(range(self.ndim-1,-1,-1)))
+        return self.permute(tuple(range(self.ndim - 1, -1, -1)))
 
     def fix_prec(self, *args, **kwargs):
         """
