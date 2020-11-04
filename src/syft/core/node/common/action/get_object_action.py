@@ -169,7 +169,11 @@ class GetObjectAction(ImmediateActionWithReply):
 
                 raise Exception(log)
 
-            if verify_key not in storeable_object.read_permissions:
+            # if you are not the root user check if your verify_key has read_permission
+            if (
+                verify_key != node.root_verify_key
+                and verify_key not in storeable_object.read_permissions
+            ):
                 log = (
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
                     + "Please submit a request."

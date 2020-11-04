@@ -127,7 +127,7 @@ class UID(Serializable):
         readable representations of other objects."""
 
         no_dash = str(self.value).replace("-", "")
-        return f"<UID:{no_dash}>"
+        return f"<UID: {no_dash}>"
 
     @syft_decorator(typechecking=True)
     def char_emoji(self, hex_chars: str) -> str:

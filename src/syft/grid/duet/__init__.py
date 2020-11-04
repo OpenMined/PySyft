@@ -206,7 +206,13 @@ def launch_duet(
     print("♫♫♫ >         your duet partner send it to you and enter it below!")
     print()
     if loopback is False:
-        target_id = input("♫♫♫ > Duet Partner's Client ID:")  # nosec
+        while True:
+            target_id = input("♫♫♫ > Duet Partner's Client ID:")  # nosec
+            if len(target_id) == 32:
+                break
+            else:
+                print("Error: Invalid Client ID. Please try again.")
+
     else:
         target_id = ""
         print(

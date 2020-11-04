@@ -67,10 +67,15 @@ class Module:
         return OrderedDict()
 
     # local list of remote ListPointers of TensorPointers
-    def parameters(self, params_list: Any = [], recurse: bool = True) -> List[Any]:
-        # params_list must be a remote List
+    def parameters(self, recurse: bool = True) -> List[Any]:
+        duet = None
+        params_list = None
         for _, module in self.modules.items():
             param_pointers = module.parameters()
+            if duet is None:
+                duet = param_pointers.location
+                # params_list must be a remote List
+                params_list = duet.syft.lib.python.List()
             params_list += param_pointers
         return params_list
 
