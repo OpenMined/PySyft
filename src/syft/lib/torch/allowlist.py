@@ -194,6 +194,78 @@ allowlist["torch.Tensor.true_divide_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
+allowlist["torch.Tensor.absolute_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.absolute"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.acosh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.acosh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.asinh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.atanh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.deg2rad_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.deg2rad"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.fliplr"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.flipud"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.isfinite"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.isinf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.isnan"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.logaddexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.logaddexp2"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.logcumsumexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.rad2deg_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.rad2deg"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
 
 # SECTION - Added in 1.7.0
 
@@ -248,12 +320,8 @@ allowlist["torch.Tensor.__xor__"] = "torch.Tensor"
 allowlist["torch.Tensor._version"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.abs_"] = "torch.Tensor"
 allowlist["torch.Tensor.abs"] = "torch.Tensor"
-allowlist["torch.Tensor.absolute_"] = "torch.Tensor"
-allowlist["torch.Tensor.absolute"] = "torch.Tensor"
 allowlist["torch.Tensor.acos_"] = "torch.Tensor"
 allowlist["torch.Tensor.acos"] = "torch.Tensor"
-allowlist["torch.Tensor.acosh_"] = "torch.Tensor"
-allowlist["torch.Tensor.acosh"] = "torch.Tensor"
 allowlist["torch.Tensor.add_"] = "torch.Tensor"
 allowlist["torch.Tensor.add"] = "torch.Tensor"
 allowlist["torch.Tensor.all"] = "torch.Tensor"
@@ -265,14 +333,10 @@ allowlist["torch.Tensor.argmin"] = "torch.Tensor"
 allowlist["torch.Tensor.argsort"] = "torch.Tensor"
 allowlist["torch.Tensor.asin_"] = "torch.Tensor"
 allowlist["torch.Tensor.asin"] = "torch.Tensor"
-allowlist["torch.Tensor.asinh_"] = "torch.Tensor"
-allowlist["torch.Tensor.asinh"] = "torch.Tensor"
 allowlist["torch.Tensor.atan_"] = "torch.Tensor"
 allowlist["torch.Tensor.atan"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2"] = "torch.Tensor"
-allowlist["torch.Tensor.atanh_"] = "torch.Tensor"
-allowlist["torch.Tensor.atanh"] = "torch.Tensor"
 allowlist["torch.Tensor.backward"] = "syft.lib.python._SyNone"
 allowlist["torch.Tensor.bernoulli_"] = "torch.Tensor"
 allowlist["torch.Tensor.bernoulli"] = "torch.Tensor"
@@ -308,8 +372,6 @@ allowlist["torch.Tensor.cumprod"] = "torch.Tensor"
 allowlist["torch.Tensor.cumsum"] = "torch.Tensor"
 allowlist["torch.Tensor.data_ptr"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.data"] = "torch.Tensor"
-allowlist["torch.Tensor.deg2rad_"] = "torch.Tensor"
-allowlist["torch.Tensor.deg2rad"] = "torch.Tensor"
 allowlist["torch.Tensor.dense_dim"] = "torch.Tensor"
 allowlist["torch.Tensor.dequantize"] = "torch.Tensor"
 allowlist["torch.Tensor.det"] = "torch.Tensor"
@@ -345,8 +407,6 @@ allowlist["torch.Tensor.fill_"] = "torch.Tensor"
 allowlist["torch.Tensor.fill_diagonal_"] = "torch.Tensor"
 allowlist["torch.Tensor.flatten"] = "torch.Tensor"
 allowlist["torch.Tensor.flip"] = "torch.Tensor"
-allowlist["torch.Tensor.fliplr"] = "torch.Tensor"
-allowlist["torch.Tensor.flipud"] = "torch.Tensor"
 allowlist["torch.Tensor.float"] = "torch.Tensor"
 allowlist["torch.Tensor.floor_"] = "torch.Tensor"
 allowlist["torch.Tensor.floor"] = "torch.Tensor"
@@ -386,9 +446,6 @@ allowlist["torch.Tensor.is_shared"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_signed"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_sparse"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.isclose"] = "torch.Tensor"
-allowlist["torch.Tensor.isfinite"] = "torch.Tensor"
-allowlist["torch.Tensor.isinf"] = "torch.Tensor"
-allowlist["torch.Tensor.isnan"] = "torch.Tensor"
 allowlist["torch.Tensor.le_"] = "torch.Tensor"
 allowlist["torch.Tensor.le"] = "torch.Tensor"
 allowlist["torch.Tensor.lgamma_"] = "torch.Tensor"
@@ -403,9 +460,6 @@ allowlist["torch.Tensor.log1p_"] = "torch.Tensor"
 allowlist["torch.Tensor.log1p"] = "torch.Tensor"
 allowlist["torch.Tensor.log2_"] = "torch.Tensor"
 allowlist["torch.Tensor.log2"] = "torch.Tensor"
-allowlist["torch.Tensor.logaddexp"] = "torch.Tensor"
-allowlist["torch.Tensor.logaddexp2"] = "torch.Tensor"
-allowlist["torch.Tensor.logcumsumexp"] = "torch.Tensor"
 allowlist["torch.Tensor.logdet"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_not_"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_not"] = "torch.Tensor"
@@ -455,8 +509,6 @@ allowlist["torch.Tensor.q_per_channel_scales"] = "torch.Tensor"
 allowlist["torch.Tensor.q_per_channel_zero_points"] = "torch.Tensor"
 allowlist["torch.Tensor.q_scale"] = "syft.lib.python.Float"
 allowlist["torch.Tensor.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.rad2deg_"] = "torch.Tensor"
-allowlist["torch.Tensor.rad2deg"] = "torch.Tensor"
 allowlist["torch.Tensor.random_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
