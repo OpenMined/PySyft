@@ -657,10 +657,16 @@ allowlist["torch.Tensor.zero_"] = "torch.Tensor"
 # allowlist["torch.Tensor.vdot"] = "unknown" # 1.7.0
 
 # --------------------------------------------------------------------------------------
-# SECTION - Tensor methods with specific issues or require a special test combination
+# SECTION - Ops required for Functionality which aren't currently tested yet
 # --------------------------------------------------------------------------------------
 # required for MNIST but marked as skip in the allowlist_test.json
 allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
+# required for wikitext2 but marked as skip in the allowlist_tests.json
+allowlist["torch.Tensor.narrow"] = "torch.Tensor"  # requires multiple inputs
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods with specific issues or require a special test combination
+# --------------------------------------------------------------------------------------
 
 # allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
 # allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
@@ -737,7 +743,7 @@ allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, flo
 # allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
 # allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
 # allowlist["torch.Tensor.narrow_copy"] = "torch.Tensor"  # requires multiple args
-# allowlist["torch.Tensor.narrow"] = "unknown" # requires multiple inputs
+
 # allowlist["torch.Tensor.new_full"] = "unknown" # requires multiple inputs
 # allowlist["torch.Tensor.numpy"] = "numpy.ndarray"  # requires numpy.ndarray
 # allowlist["torch.Tensor.ormqr"] = "unknown"  # requires two tensors as arguments

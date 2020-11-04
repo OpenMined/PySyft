@@ -3698,6 +3698,10 @@
         "profile": "default",
         "return_type": "syft.lib.python.List",
         "inputs": [null, 0]
+      },
+      "narrow": {
+        "profile": "default",
+        "skip": [{ "lte_version": "1.7.0", "reason": "no_test" }]
       }
     }
   }
