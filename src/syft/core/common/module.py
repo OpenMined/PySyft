@@ -73,7 +73,7 @@ class Module:
         for _, module in self.modules.items():
             param_pointers = module.parameters()
             if duet is None:
-                duet = param_pointers.location
+                duet = param_pointers.client
                 # params_list must be a remote List
                 params_list = duet.syft.lib.python.List()
             params_list += param_pointers
