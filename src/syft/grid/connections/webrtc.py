@@ -547,7 +547,7 @@ class WebRTCConnection(BidirectionalConnection):
     async def heartbeat(self) -> None:
         producer_watermark = 0
         consumer_watermark = 0
-        while True:
+        while False:
             await asyncio.sleep(5)
             try:
                 psize = self.producer_pool.qsize()
