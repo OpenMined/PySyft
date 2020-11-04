@@ -14,7 +14,7 @@ import time
 from typing import Any
 from typing import Dict
 from typing import Iterable
-from typing import List
+from typing import List as ListType
 from typing import Union
 
 # third party
@@ -26,6 +26,8 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft.core.pointer.pointer import Pointer
+from syft.lib.python import List
+from syft.lib.python import String
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
@@ -93,7 +95,7 @@ def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
 # inputs 0 or 1. Since the primary variation of test combinations relates to their
 # tensors, inputs and the data types associated with them
 def check_skip(
-    combination: List,
+    combination: ListType,
     skip_rule: Dict[str, Any],
     lib_version: Union[version.Version, version.LegacyVersion],
 ) -> bool:
@@ -229,6 +231,7 @@ TEST_DATA = []
 for op in BASIC_OPS:
     skip = []
     not_available = []
+    deterministic = True
     if op not in TEST_JSON["tests"]["torch.Tensor"]:
         # there is no custom configuration so we will test all supported combinations
         dtypes = ["common"]
@@ -259,6 +262,9 @@ for op in BASIC_OPS:
         # grab not_available rules
         if "not_available" in meta:
             not_available += meta["not_available"]
+
+        if "deterministic" in meta:
+            deterministic = meta["deterministic"]
 
         # this is the minimum version of the library required to run this test
         # which should match the values in the actual allowlist.py
@@ -298,6 +304,7 @@ for op in BASIC_OPS:
             inputs,
             [is_property],
             [return_type],
+            [deterministic],
         )
     )
 
@@ -307,7 +314,9 @@ for op in BASIC_OPS:
         # skips are temporary
         for skip_rule in skip:
             if check_skip(
-                combination=combination, skip_rule=skip_rule, lib_version=TORCH_VERSION
+                combination=list(combination),
+                skip_rule=skip_rule,
+                lib_version=TORCH_VERSION,
             ):
                 # we use str(combination) so that we can hash the entire combination
                 skipped_combinations.add(str(combination))
@@ -315,7 +324,9 @@ for op in BASIC_OPS:
         # not available are features we cant or wont test because they arent supported
         for na_rule in not_available:
             if check_skip(
-                combination=combination, skip_rule=na_rule, lib_version=TORCH_VERSION
+                combination=list(combination),
+                skip_rule=na_rule,
+                lib_version=TORCH_VERSION,
             ):
                 # we use str(combination) so that we can hash the entire combination
                 not_available_combinations.add(str(combination))
@@ -343,15 +354,17 @@ for op in BASIC_OPS:
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "tensor_type, op_name, self_tensor, _args, is_property, return_type", TEST_DATA
+    "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
+    TEST_DATA,
 )
 def test_all_allowlisted_tensor_methods(
     tensor_type: str,
     op_name: str,
-    self_tensor: List,
-    _args: Union[str, List, bool, None],
+    self_tensor: ListType,
+    _args: Union[str, ListType, bool, None],
     is_property: bool,
     return_type: str,
+    deterministic: bool,
 ) -> None:
 
     support_data = {}
@@ -367,6 +380,7 @@ def test_all_allowlisted_tensor_methods(
         "_args": _args,
         "is_property": is_property,
         "return_type": return_type,
+        "deterministic": deterministic,
     }
 
     try:
@@ -380,7 +394,7 @@ def test_all_allowlisted_tensor_methods(
         # Step 3: Create the object we're going to call a method on
         # NOTE: we need a second copy because some methods mutate tensor before we send
         requires_grad = False
-        if op_name == "backward":
+        if op_name in ["backward", "retain_grad"]:
             requires_grad = True
         self_tensor, self_tensor_copy = (
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
@@ -390,7 +404,7 @@ def test_all_allowlisted_tensor_methods(
         # we dont have .id's by default anymore
         # self_tensor_copy.id = self_tensor.id  # type: ignore
 
-        args: List[Any] = []
+        args: ListType[Any] = []
 
         # Step 4: Create the arguments we're going to pass the method on
         if _args is None:
@@ -447,7 +461,7 @@ def test_all_allowlisted_tensor_methods(
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
-        argsp: List[Any] = []
+        argsp: ListType[Any] = []
         if len(args) > 0 and not is_property:
             argsp = [
                 arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
@@ -478,15 +492,20 @@ def test_all_allowlisted_tensor_methods(
         # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
         try:
             # only do single value comparisons, do lists, tuples etc below in the else
-            if not hasattr(target_result, "__len__") and (
-                isprimitive(value=target_result)
-                or issubclass(type(local_result), PyPrimitive)
+            if (
+                issubclass(type(local_result), (str, String))
+                or not hasattr(target_result, "__len__")
+                and (
+                    isprimitive(value=target_result)
+                    or issubclass(type(local_result), PyPrimitive)
+                )
             ):
                 # check that it matches functionally
-                if issubclass(type(target_result), float):
-                    assert local_result + target_result == approx(2 * target_result)
-                else:
-                    assert local_result == target_result
+                if deterministic:
+                    if issubclass(type(target_result), float):
+                        assert local_result + target_result == approx(2 * target_result)
+                    else:
+                        assert local_result == target_result
 
                 # convert target_result for type comparison below
                 target_result = PrimitiveFactory.generate_primitive(value=target_result)
@@ -499,76 +518,75 @@ def test_all_allowlisted_tensor_methods(
 
                 # to handle tuple return types for now we just make sure everything
                 # is in a list of at least 1 size and then iterate over it
+                delist = False
                 if type(local_result) is not list:
+                    delist = True
                     local_result = [local_result]
                     target_result = [target_result]
 
-                for i, local_item in enumerate(local_result):
-                    target_item = target_result[i]
-
-                    try:
-                        # if they don't match we can try to remove NaN's
-                        if not (local_item == target_item).all():
-
-                            # Set all NaN to 0
-                            # If we have two tensors like
-                            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
-                            # those are not equal
-                            # Tensor.isnan was added in torch 1.6
-                            # so we need to do torch.isnan(tensor)
-
-                            # th.isnan fails on some versions of torch or methods for
-                            # example the op T / t() and the data_type float16 on
-                            # RuntimeError: "ne_cpu" not implemented for 'Half'
-                            nan_mask = th.isnan(local_item)
-
-                            # check if any of the elements are actually NaN because
-                            # assigning to some masked positions fails on some versions
-                            # of torch and some methods so its best to avoid unless
-                            # actually needed
-                            if any(nan_mask.view(-1)):
-                                # Use the same mask for local and target
-                                local_item[nan_mask] = 0
-                                target_item[nan_mask] = 0
-
-                            # Step 13: Ensure we got the same result locally (using
-                            # normal pytorch) as we did remotely using Syft pointers to
-                            # communicate with remote torch objects
-                            assert (local_item == target_item).all()
-                    except Exception as e:
-                        # if the issue is with equality of the data_type we can try
-                        # comparing them with numpy
-                        if "eq_cpu" in str(e):
-                            assert (local_item.numpy() == target_item.numpy()).all()
+                if deterministic:
+                    for i, local_item in enumerate(local_result):
+                        target_item = target_result[i]
+                        if issubclass(type(target_item), th.Tensor) and issubclass(
+                            type(local_item), th.Tensor
+                        ):
+                            assert compare_tensors(left=target_item, right=local_item)
                         else:
-                            # otherwise lets just raise the exception
-                            raise e
+                            for left, right in zip(local_item, target_item):
+                                assert left + right == approx(2 * left)
+
+                if delist:
+                    # debox the tensors if they were not lists originally
+                    local_result = local_result[0]
+                    target_result = target_result[0]
 
             # make sure the return types match
+            if isprimitive(value=target_result):
+                target_result = PrimitiveFactory.generate_primitive(value=target_result)
+
+            if isprimitive(value=local_result):
+                local_result = PrimitiveFactory.generate_primitive(value=local_result)
             assert type(local_result) == type(target_result)
 
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if hasattr(local_result, "__len__"):
-                if type(local_result) is list and len(local_result) == 1:
-                    local_result = local_result[0]  # unpack
+            if hasattr(local_result, "__len__") and not issubclass(
+                type(local_result), (th.Tensor, str, String)
+            ):
+                if issubclass(type(local_result), (list, List)) and issubclass(
+                    type(target_result), (list, List)
+                ):
+                    assert len(local_result) == len(target_result)
+                    for left, right in zip(local_result, target_result):
+                        assert type(left) == type(right)
+                        if deterministic:
+                            if issubclass(type(left), th.Tensor) and issubclass(
+                                type(right), th.Tensor
+                            ):
+                                assert compare_tensors(left=left, right=right)
+                            else:
+                                for left, right in zip(local_item, target_item):
+                                    assert left + right == approx(2 * left)
                 else:
                     # TODO: Fix this when we find one
                     raise Exception("Unsupported Union return type")
 
             # make sure the return type matches the specified allowlist return type
-            local_type = full_name_with_qualname(klass=type(local_result))
-            python_types = "syft.lib.python"
-            if local_type.startswith(python_types) and return_type.startswith(
-                python_types
-            ):
-                # python types seem to resolve as both int.Int and .Int causing issues
-                # in the match
-                assert local_type.split(".")[-1] == return_type.split(".")[-1]
+            if not issubclass(type(local_result), th.Tensor):
+                local_type = full_name_with_qualname(
+                    klass=type(PrimitiveFactory.generate_primitive(value=local_result))
+                )
+                python_types = "syft.lib.python"
+                if local_type.startswith(python_types) and return_type.startswith(
+                    python_types
+                ):
+                    # python types seem to resolve as both int.Int and .Int causing issues
+                    # in the match
+                    assert local_type.split(".")[-1] == return_type.split(".")[-1]
 
-            else:
-                assert local_type == return_type
+                else:
+                    assert local_type == return_type
 
             # Test Passes
             support_data["status"] = "pass"
@@ -580,9 +598,51 @@ def test_all_allowlisted_tensor_methods(
             raise e
 
     except Exception as e:
+        print(f"Test Exception: {e}")
         support_data["status"] = "fail"
         write_support_result(support_data)
         debug_data["exception"] = str(e)
         debug_data["exception_type"] = type(e)
         write_error_debug(debug_data)
         raise e
+
+
+def compare_tensors(left: th.Tensor, right: th.Tensor) -> bool:
+    try:
+        # if they don't match we can try to remove NaN's
+        if not (left == right).all():
+            # Set all NaN to 0
+            # If we have two tensors like
+            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+            # those are not equal
+            # Tensor.isnan was added in torch 1.6
+            # so we need to do torch.isnan(tensor)
+
+            # th.isnan fails on some versions of torch or methods for
+            # example the op T / t() and the data_type float16 on
+            # RuntimeError: "ne_cpu" not implemented for 'Half'
+            nan_mask = th.isnan(left)
+
+            # check if any of the elements are actually NaN because
+            # assigning to some masked positions fails on some versions
+            # of torch and some methods so its best to avoid unless
+            # actually needed
+            if any(nan_mask.view(-1)):
+                # Use the same mask for local and target
+                left[nan_mask] = 0
+                right[nan_mask] = 0
+
+            # Step 13: Ensure we got the same result locally (using
+            # normal pytorch) as we did remotely using Syft pointers to
+            # communicate with remote torch objects
+            assert (left == right).all()
+        return True
+    except Exception as e:
+        # if the issue is with equality of the data_type we can try
+        # comparing them with numpy
+        if "eq_cpu" in str(e):
+            assert (left.numpy() == right.numpy()).all()
+            return True
+        else:
+            # otherwise lets just raise the exception
+            raise e

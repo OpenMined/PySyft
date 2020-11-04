@@ -4,7 +4,7 @@
 pipenv --venv
 if test $? -eq 0
 then
-    versions=( "0.6" "0.6.1" "0.7" )
+    versions=( "0.6" "0.6.1" "0.7" "0.8.1" )
     for version in "${versions[@]}"
     do
         pip uninstall -y torchvision

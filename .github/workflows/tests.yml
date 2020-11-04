@@ -24,7 +24,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
-        torch-version: [1.5.0, 1.5.1, 1.6.0]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -85,6 +85,9 @@ jobs:
           elif [ $TORCH_VERSION = "1.6.0" ]
           then
               TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
           fi
           pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
@@ -100,6 +103,8 @@ jobs:
               $env:TORCHVISION_VERSION="0.6.1"
           } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
               $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -190,14 +195,14 @@ jobs:
           pytest -m fast -n auto
 
   python-slow-tests:
-    runs-on: ubuntu-latest
     strategy:
       max-parallel: 27
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
-        torch-version: [1.5.0, 1.5.1, 1.6.0]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
 
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
 
@@ -229,11 +234,11 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Run allowlist tests
+      - name: Install pytorch Linux/MacOS
+        if: startsWith(runner.os, 'Windows') != true
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          echo "CPUs: $(nproc --all)"
           if [ $TORCH_VERSION = "1.5.0" ]
           then
               TORCHVISION_VERSION="0.6.0"
@@ -243,9 +248,31 @@ jobs:
           elif [ $TORCH_VERSION = "1.6.0" ]
           then
               TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
           fi
-          pip install torch==$TORCH_VERSION
+          pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
+
+      - name: Install pytorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Run allowlist tests
+        run: |
           pip install -r requirements.txt
           pip install -e .
           pytest -m slow --cov-fail-under 0 -n auto
