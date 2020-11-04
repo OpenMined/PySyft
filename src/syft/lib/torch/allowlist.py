@@ -53,7 +53,6 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor._values"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.dtype"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET - talk to TRASK
 # allowlist["torch.Tensor.has_names"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist["torch.Tensor.hex"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.record_stream"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST#
 # allowlist["torch.Tensor.register_hook"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.share_memory_"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
@@ -63,13 +62,8 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.where"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 
 # SECTION - Tensor methods which have serde issues
-# allowlist["torch.Tensor.json"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist["torch.Tensor.to_binary"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_dense"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist["torch.Tensor.to_hex"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist["torch.Tensor.to_json"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_mkldnn"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
-# allowlist["torch.Tensor.to_proto"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
 # --------------------------------------------------------------------------------------
@@ -199,6 +193,21 @@ allowlist["torch.Tensor.true_divide_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
+
+# SECTION - Deprecated in 1.7.0
+
+allowlist["torch.Tensor.binary"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.6.0",
+}
+
+allowlist["torch.Tensor.describe"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.6.0",
+}
+
+# SECTION - Added in 1.7.0
+
 
 # SECTION - Tensor methods
 allowlist["torch.Tensor.__abs__"] = "torch.Tensor"
@@ -401,13 +410,48 @@ allowlist["torch.Tensor.var"] = "torch.Tensor"
 allowlist["torch.Tensor.view_as"] = "torch.Tensor"
 allowlist["torch.Tensor.view"] = "torch.Tensor"
 allowlist["torch.Tensor.zero_"] = "torch.Tensor"
-allowlist["torch.tensor"] = "torch.Tensor"
 
+
+# # new
+allowlist["torch.Tensor._version"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.all"] = "torch.Tensor"
+allowlist["torch.Tensor.allclose"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.any"] = "torch.Tensor"
+allowlist["torch.Tensor.argmin"] = "torch.Tensor"
+allowlist["torch.Tensor.argsort"] = "torch.Tensor"
+allowlist["torch.Tensor.bernoulli_"] = "torch.Tensor"
+allowlist["torch.Tensor.bernoulli"] = "torch.Tensor"
+allowlist["torch.Tensor.bfloat16"] = "torch.Tensor"
+allowlist["torch.Tensor.bincount"] = "torch.Tensor"
+allowlist["torch.Tensor.chunk"] = "syft.lib.python.List"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are untested
 # --------------------------------------------------------------------------------------
 
+# allowlist["torch.Tensor.absolute_"] = "unknown"
+# allowlist["torch.Tensor.absolute"] = "unknown"
+# allowlist["torch.Tensor.acosh_"] = "unknown"
+# allowlist["torch.Tensor.acosh"] = "unknown"
+# allowlist["torch.Tensor.as_subclass"] = "unknown"
+# allowlist["torch.Tensor.asinh_"] = "unknown"
+# allowlist["torch.Tensor.asinh"] = "unknown"
+# allowlist["torch.Tensor.atanh_"] = "unknown"
+# allowlist["torch.Tensor.atanh"] = "unknown"
+# allowlist["torch.Tensor.cholesky_solve"] = "unknown"
+# allowlist["torch.Tensor.deg2rad_"] = "unknown"
+# allowlist["torch.Tensor.deg2rad"] = "unknown"
+# allowlist["torch.Tensor.fliplr"] = "unknown"
+# allowlist["torch.Tensor.flipud"] = "unknown"
+# allowlist["torch.Tensor.isfinite"] = "unknown"
+# allowlist["torch.Tensor.isinf"] = "unknown"
+# allowlist["torch.Tensor.isnan"] = "unknown"
+# allowlist["torch.Tensor.istft"] = "unknown"
+# allowlist["torch.Tensor.logaddexp"] = "unknown"
+# allowlist["torch.Tensor.logaddexp2"] = "unknown"
+# allowlist["torch.Tensor.logcumsumexp"] = "unknown"
+# allowlist["torch.Tensor.rad2deg_"] = "unknown"
+# allowlist["torch.Tensor.rad2deg"] = "unknown"
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires complex or 1.6.0?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires complex or 1.6.0?
 # allowlist["torch.Tensor._version"] = "unknown"
@@ -439,14 +483,12 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.bernoulli"] = "unknown"
 # allowlist["torch.Tensor.bfloat16"] = "unknown"
 # allowlist["torch.Tensor.binary"] = "unknown"
-# allowlist["torch.Tensor.bincount"] = "unknown"
 # allowlist["torch.Tensor.bmm"] = "unknown"
 # allowlist["torch.Tensor.bool"] = "unknown"
 # allowlist["torch.Tensor.byte"] = "unknown"
 # allowlist["torch.Tensor.cauchy_"] = "unknown"
 # allowlist["torch.Tensor.cholesky_inverse"] = "unknown"
 # allowlist["torch.Tensor.cholesky"] = "unknown"
-# allowlist["torch.Tensor.chunk"] = "unknown"
 # allowlist["torch.Tensor.coalesce"] = "unknown"
 # allowlist["torch.Tensor.conj"] = "unknown"
 # allowlist["torch.Tensor.contiguous"] = "unknown"
@@ -490,7 +532,6 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.grad"] = "unknown"
 # allowlist["torch.Tensor.hardshrink"] = "unknown"
 # allowlist["torch.Tensor.histc"] = "unknown"
-# allowlist["torch.Tensor.id"] = "unknown"
 # allowlist["torch.Tensor.ifft"] = "unknown"
 # allowlist["torch.Tensor.index_add_"] = "unknown"
 # allowlist["torch.Tensor.index_add"] = "unknown"
@@ -540,7 +581,6 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.mvlgamma_"] = "unknown"
 # allowlist["torch.Tensor.mvlgamma"] = "unknown"
 # allowlist["torch.Tensor.narrow_copy"] = "unknown"
-# allowlist["torch.Tensor.narrow"] = "unknown"
 # allowlist["torch.Tensor.ndimension"] = "unknown"
 # allowlist["torch.Tensor.nelement"] = "unknown"
 # allowlist["torch.Tensor.new_empty"] = "unknown"
@@ -556,7 +596,6 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.polygamma_"] = "unknown"
 # allowlist["torch.Tensor.polygamma"] = "unknown"
 # allowlist["torch.Tensor.prelu"] = "unknown"
-# allowlist["torch.Tensor.proto"] = "unknown"
 # allowlist["torch.Tensor.put_"] = "unknown"
 # allowlist["torch.Tensor.q_per_channel_axis"] = "unknown"
 # allowlist["torch.Tensor.q_per_channel_scales"] = "unknown"
@@ -607,7 +646,6 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.sum_to_size"] = "unknown"
 # allowlist["torch.Tensor.svd"] = "unknown"
 # allowlist["torch.Tensor.symeig"] = "unknown"
-# allowlist["torch.Tensor.tag"] = "unknown"
 # allowlist["torch.Tensor.tolist"] = "unknown"
 # allowlist["torch.Tensor.topk"] = "unknown"
 # allowlist["torch.Tensor.triangular_solve"] = "unknown"
@@ -616,7 +654,77 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # allowlist["torch.Tensor.unbind"] = "unknown"
 # allowlist["torch.Tensor.unflatten"] = "unknown"
 # allowlist["torch.Tensor.values"] = "unknown"
-
+# allowlist["torch.Tensor.__complex__"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.amax"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.amin"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arccos"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arccos_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arccosh"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arccosh_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arcsin"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arcsin_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arcsinh"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arcsinh_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arctan"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arctan_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arctanh"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.arctanh_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.clip"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.clip_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.count_nonzero"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.divide"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.divide_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.exp2"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.exp2_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.fix"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.fix_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.gcd"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.gcd_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.greater"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.greater_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.greater_equal"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.greater_equal_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.heaviside"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.heaviside_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.hypot"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.hypot_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.i0"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.i0_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.isneginf"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.isposinf"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.isreal"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.lcm"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.lcm_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.less"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.less_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.less_equal"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.less_equal_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.logit"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.logit_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.matrix_exp"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.maximum"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.minimum"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.movedim"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.multiply"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.multiply_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.nanquantile"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.nansum"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.negative"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.negative_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.nextafter"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.nextafter_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.outer"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.quantile"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.sgn"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.sgn_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.signbit"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.subtract"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.subtract_"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.unsafe_chunk"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.unsafe_split"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.unsafe_split_with_sizes"] = "unknown" # 1.7.0
+# allowlist["torch.Tensor.vdot"] = "unknown" # 1.7.0
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
@@ -624,8 +732,8 @@ allowlist["torch.tensor"] = "torch.Tensor"
 # required for MNIST but marked as skip in the allowlist_test.json
 allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
 
-
 # hashes are not matching
+# allowlist["torch.Tensor.narrow"] = "unknown" # requires multiple inputs
 # allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
 # allowlist["torch.Tensor.__setitem__"] = "torch.Tensor"
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
@@ -651,6 +759,25 @@ allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, flo
 # allowlist["torch.Tensor.unfold"] = "torch.Tensor" # requires three inputs
 # allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
 # allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor" # requires Union / Tuple
+# allowlist["torch.Tensor.addbmm"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addbmm_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addcdiv_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addcdiv"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addcmul_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addcmul"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addmm_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addmm"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addmv_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addmv"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addr_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.addr"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.align_as"] = "torch.Tensor" # named args
+# allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named args
+# allowlist["torch.Tensor.apply_"] = "torch.Tensor" # takes a callable
+# allowlist["torch.Tensor.as_strided_"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.as_strided"] = "torch.Tensor" # multiple args?
+# allowlist["torch.Tensor.baddbmm_"] = # multiple args?
+# allowlist["torch.Tensor.baddbmm"] = # multiple args?
 
 
 # --------------------------------------------------------------------------------------

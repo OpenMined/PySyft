@@ -499,50 +499,20 @@ def test_all_allowlisted_tensor_methods(
 
                 # to handle tuple return types for now we just make sure everything
                 # is in a list of at least 1 size and then iterate over it
+                delist = False
                 if type(local_result) is not list:
+                    delist = True
                     local_result = [local_result]
                     target_result = [target_result]
 
                 for i, local_item in enumerate(local_result):
                     target_item = target_result[i]
+                    assert compare_tensors(left=target_item, right=local_item)
 
-                    try:
-                        # if they don't match we can try to remove NaN's
-                        if not (local_item == target_item).all():
-
-                            # Set all NaN to 0
-                            # If we have two tensors like
-                            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
-                            # those are not equal
-                            # Tensor.isnan was added in torch 1.6
-                            # so we need to do torch.isnan(tensor)
-
-                            # th.isnan fails on some versions of torch or methods for
-                            # example the op T / t() and the data_type float16 on
-                            # RuntimeError: "ne_cpu" not implemented for 'Half'
-                            nan_mask = th.isnan(local_item)
-
-                            # check if any of the elements are actually NaN because
-                            # assigning to some masked positions fails on some versions
-                            # of torch and some methods so its best to avoid unless
-                            # actually needed
-                            if any(nan_mask.view(-1)):
-                                # Use the same mask for local and target
-                                local_item[nan_mask] = 0
-                                target_item[nan_mask] = 0
-
-                            # Step 13: Ensure we got the same result locally (using
-                            # normal pytorch) as we did remotely using Syft pointers to
-                            # communicate with remote torch objects
-                            assert (local_item == target_item).all()
-                    except Exception as e:
-                        # if the issue is with equality of the data_type we can try
-                        # comparing them with numpy
-                        if "eq_cpu" in str(e):
-                            assert (local_item.numpy() == target_item.numpy()).all()
-                        else:
-                            # otherwise lets just raise the exception
-                            raise e
+                if delist:
+                    # debox the tensors if they were not lists originally
+                    local_result = local_result[0]
+                    target_result = target_result[0]
 
             # make sure the return types match
             assert type(local_result) == type(target_result)
@@ -550,25 +520,38 @@ def test_all_allowlisted_tensor_methods(
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if hasattr(local_result, "__len__"):
-                if type(local_result) is list and len(local_result) == 1:
-                    local_result = local_result[0]  # unpack
+            if hasattr(local_result, "__len__") and not issubclass(
+                type(local_result), th.Tensor
+            ):
+                if type(local_result) is list and type(target_result) is list:
+                    assert len(local_result) == len(target_result)
+                    for left, right in zip(local_result, target_result):
+                        if issubclass(type(left), th.Tensor) and issubclass(
+                            type(right), th.Tensor
+                        ):
+                            assert compare_tensors(left=left, right=right)
+                        else:
+                            assert type(left) == type(right)
+                            assert left == right
                 else:
                     # TODO: Fix this when we find one
                     raise Exception("Unsupported Union return type")
 
             # make sure the return type matches the specified allowlist return type
-            local_type = full_name_with_qualname(klass=type(local_result))
-            python_types = "syft.lib.python"
-            if local_type.startswith(python_types) and return_type.startswith(
-                python_types
-            ):
-                # python types seem to resolve as both int.Int and .Int causing issues
-                # in the match
-                assert local_type.split(".")[-1] == return_type.split(".")[-1]
+            if not issubclass(type(local_result), th.Tensor):
+                local_type = full_name_with_qualname(
+                    klass=type(PrimitiveFactory.generate_primitive(value=local_result))
+                )
+                python_types = "syft.lib.python"
+                if local_type.startswith(python_types) and return_type.startswith(
+                    python_types
+                ):
+                    # python types seem to resolve as both int.Int and .Int causing issues
+                    # in the match
+                    assert local_type.split(".")[-1] == return_type.split(".")[-1]
 
-            else:
-                assert local_type == return_type
+                else:
+                    assert local_type == return_type
 
             # Test Passes
             support_data["status"] = "pass"
@@ -586,3 +569,44 @@ def test_all_allowlisted_tensor_methods(
         debug_data["exception_type"] = type(e)
         write_error_debug(debug_data)
         raise e
+
+
+def compare_tensors(left: th.Tensor, right: th.Tensor) -> bool:
+    try:
+        # if they don't match we can try to remove NaN's
+        if not (left == right).all():
+            # Set all NaN to 0
+            # If we have two tensors like
+            # local = [Nan, 0, 1] and remote = [0, Nan, 1]
+            # those are not equal
+            # Tensor.isnan was added in torch 1.6
+            # so we need to do torch.isnan(tensor)
+
+            # th.isnan fails on some versions of torch or methods for
+            # example the op T / t() and the data_type float16 on
+            # RuntimeError: "ne_cpu" not implemented for 'Half'
+            nan_mask = th.isnan(left)
+
+            # check if any of the elements are actually NaN because
+            # assigning to some masked positions fails on some versions
+            # of torch and some methods so its best to avoid unless
+            # actually needed
+            if any(nan_mask.view(-1)):
+                # Use the same mask for local and target
+                left[nan_mask] = 0
+                right[nan_mask] = 0
+
+            # Step 13: Ensure we got the same result locally (using
+            # normal pytorch) as we did remotely using Syft pointers to
+            # communicate with remote torch objects
+            assert (left == right).all()
+        return True
+    except Exception as e:
+        # if the issue is with equality of the data_type we can try
+        # comparing them with numpy
+        if "eq_cpu" in str(e):
+            assert (left.numpy() == right.numpy()).all()
+            return True
+        else:
+            # otherwise lets just raise the exception
+            raise e
