@@ -693,6 +693,16 @@ def test_dtype():
     )
 
 
+def test_ndim():
+    x = torch.rand(2,3,4).fix_prec()
+    assert x.ndim == 3
+
+
+def test_T():
+    x = torch.rand(2,3,4).fix_prec()
+    assert x.T.shape == torch.Size([4,3,2])
+
+
 def test_reconstruct(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     plain_text = torch.tensor([3, -7, 11])

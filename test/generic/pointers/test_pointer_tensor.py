@@ -378,6 +378,19 @@ def test_get_remote_shape(workers):
     y = x + x
     assert y.shape == torch.Size([5])
 
+def test_get_remote_ndim(workers):
+    """Test pointer.ndim functionality"""
+    bob = worker["bob"]
+    x = th.rand(2,3,4).send(bob)
+    assert x.ndim == 3
+
+def test_remote_T(workers):
+    """Test pointer.T functionality"""
+    bob = worker["bob"]
+    x = th.rand(2,3,4).send(bob)
+    y = x.T
+    assert y.shape == torch.Size([4,3,2])
+
 
 def test_remote_function_with_multi_ouput(workers):
     """

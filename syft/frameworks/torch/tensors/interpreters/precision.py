@@ -92,6 +92,14 @@ class FixedPrecisionTensor(AbstractTensor):
     def data(self):
         return self
 
+    @property
+    def ndim(self):
+	return self.dim()
+
+    @property
+    def T(self):
+	return self.permute(tuple(range(self.ndim-1,-1,-1)))
+
     @data.setter
     def data(self, new_data):
         self.child = new_data.child

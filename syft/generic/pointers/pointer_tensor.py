@@ -416,6 +416,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def dim(self) -> int:
         return len(self.shape)
 
+    @property
+    def ndim(self):
+	return self.dim()
+
+    @property
+    def T(self):
+    	return self.permute(tuple(range(self.ndim-1,-1,-1)))
+
     def fix_prec(self, *args, **kwargs):
         """
         Send a command to remote worker to transform a tensor to fix_precision
