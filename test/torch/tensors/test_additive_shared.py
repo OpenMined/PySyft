@@ -741,17 +741,6 @@ def test_eq(workers, protocol):
 
     assert (x == y).get().float_prec()
 
-    # for x as AST and  y as FPT
-    # we currently support this set of operation only for fss protocol
-    x = (
-        torch.tensor([-3.1])
-        .fix_prec()
-        .share(*args, crypto_provider=crypto_provider, protocol="fss")
-    )
-    y = torch.tensor([-3.1]).fix_prec()
-
-    assert (x == y).get().float_prec()
-
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 @pytest.mark.parametrize("force_preprocessing", [True, False])
@@ -1375,3 +1364,23 @@ def test_comp_ast_fpt(workers, protocol, force_preprocessing):
     assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
     assert ((x > y).get().float_prec() == (t1 > t2)).all()
     assert ((x < y).get().float_prec() == (t1 < t2)).all()
+
+
+@pytest.mark.parametrize("protocol", ["fss"])
+def test_eq_ast_fpt(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    # for x as AST and  y as FPT
+    # we currently support this set of operation only for fss protocol
+    x = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([-3.1]).fix_prec()
+
+    assert (x == y).get().float_prec()
