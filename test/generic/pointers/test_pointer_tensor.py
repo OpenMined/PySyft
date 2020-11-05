@@ -389,9 +389,13 @@ def test_get_remote_ndim(workers):
 def test_remote_T(workers):
     """Test pointer.T functionality"""
     bob = workers["bob"]
-    x = th.rand(2, 3, 4).send(bob)
-    y = x.T
-    assert y.shape == torch.Size([4, 3, 2])
+    x = th.rand(2, 3, 4)
+    bob_x = x.send(bob)
+    bob_xT = bob_x.T
+    assert bob_x.shape == torch.Size([2, 3, 4])
+    assert bob_xT.shape == torch.Size([4, 3, 2])
+    assert (bob_x.get() == x).all()
+    assert (bob_xT.get() == x.T).all()
 
 
 def test_remote_function_with_multi_ouput(workers):

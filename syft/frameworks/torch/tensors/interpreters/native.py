@@ -195,7 +195,7 @@ class TorchTensor(AbstractTensor):
     @property
     def T(self):
         if self.is_wrapper:
-            return self.child.T
+            return self.child.T.wrap()
         else:
             return self.native_T
 
