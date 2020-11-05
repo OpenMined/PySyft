@@ -383,10 +383,20 @@ class StoreClient:
 
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):
+            matches = 0
+            match_obj: Optional[Pointer] = None
             for obj in self.store:
                 if key == str(obj.id_at_location.value):
                     return obj
-            raise KeyError("No such request found for string id:" + str(key))
+                if key in obj.tags:
+                    matches += 1
+                    match_obj = obj
+            if matches == 1 and match_obj is not None:
+                return match_obj
+            elif matches > 1:
+                raise KeyError("More than one item with tag:" + str(key))
+
+            raise KeyError("No such request found for id:" + str(key))
         if isinstance(key, int):
             return self.store[key]
         else:

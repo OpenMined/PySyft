@@ -165,15 +165,79 @@ class Domain(Node):
             logger.debug(f"Ignoring request handler {handler} against {request}")
             return False
 
+        obj = None
+
+        # TODO: refactor this horrid mess
         # we only want to accept or deny once
         handled = False
         if "action" in handler:
             action = handler["action"]
             if action == "accept":
-                logger.debug(f"Calling accept on request: {request.id}")
-                request.destination_node_if_available = self
-                request.accept()
-                handled = True
+                logger.debug(f"Check accept {handler} against {request}")
+                element_quota = 0
+                if "element_quota" in handler:
+                    element_quota = handler["element_quota"]
+                logger.debug(
+                    f"Check handler element quota {element_quota} against {request}"
+                )
+                if element_quota > 0:
+                    try:
+                        if obj is None:
+                            obj_msg = GetObjectAction(
+                                id_at_location=request.object_id,
+                                address=request.owner_address,
+                                reply_to=self.address,
+                                delete_obj=False,
+                            )
+
+                            service = self.immediate_msg_with_reply_router[
+                                type(obj_msg)
+                            ]
+                            response = service.process(
+                                node=self, msg=obj_msg, verify_key=self.root_verify_key
+                            )
+                            obj = response.obj
+                    except Exception as e:
+                        logger.critical(f"Exception getting object. {e}")
+
+                    elements = 0
+                    nelement = getattr(obj, "nelement", None)
+                    if nelement is not None:
+                        print(nelement)
+                        elements = int(nelement())
+                        print("elmenets ype", type(elements))
+                        if elements < 1:
+                            length = getattr(obj, "__len__", None)
+                            if length is not None:
+                                elements = int(length())
+                                print("length type", type(elements))
+                    elements = max(1, elements)
+
+                    remaining = element_quota - elements
+                    if remaining >= 0:
+                        print("handler before", handler)
+                        handler["element_quota"] = remaining  # save?
+                        print("handler after save", handler)
+                        logger.debug(f"Calling accept on request: {request.id}")
+                        request.destination_node_if_available = self
+                        request.accept()
+                        handled = True
+                    else:
+                        logger.debug(
+                            f"insufficient element_quota {element_quota} for "
+                            + f"{elements}. Calling deny on request: {request.id}"
+                        )
+                        request.destination_node_if_available = self
+                        request.deny()
+                        handled = True
+                else:
+                    logger.debug(
+                        f"insufficient element_quota {element_quota} for {elements}."
+                        + f"Calling deny on request: {request.id}"
+                    )
+                    request.destination_node_if_available = self
+                    request.deny()
+                    handled = True
             elif action == "deny":
                 logger.debug(f"Calling deny on request: {request.id}")
                 request.destination_node_if_available = self
@@ -183,20 +247,21 @@ class Domain(Node):
         # print or log rules can execute multiple times
         if "print_local" in handler or "log_local" in handler:
             # get a copy of the item
-            obj = None
-            try:
-                obj_msg = GetObjectAction(
-                    id_at_location=request.object_id,
-                    address=request.owner_address,
-                    reply_to=self.address,
-                    delete_obj=False,
-                )
 
-                service = self.immediate_msg_with_reply_router[type(obj_msg)]
-                response = service.process(
-                    node=self, msg=obj_msg, verify_key=self.root_verify_key
-                )
-                obj = response.obj
+            try:
+                if obj is None:
+                    obj_msg = GetObjectAction(
+                        id_at_location=request.object_id,
+                        address=request.owner_address,
+                        reply_to=self.address,
+                        delete_obj=False,
+                    )
+
+                    service = self.immediate_msg_with_reply_router[type(obj_msg)]
+                    response = service.process(
+                        node=self, msg=obj_msg, verify_key=self.root_verify_key
+                    )
+                    obj = response.obj
             except Exception as e:
                 logger.critical(f"Exception getting object. {e}")
 

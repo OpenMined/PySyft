@@ -65,13 +65,66 @@ class RequestQueueClient:
     def __repr__(self) -> str:
         return repr(self.requests)
 
-    def add_handler(self, request_handler: Dict[str, Any]) -> None:
-        self.update_handler(request_handler, keep=True)
+    def add_handler(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+        element_quota: int = 100,
+    ) -> None:
+        handler_opts = self._validate_options(
+            action=action,
+            print_local=print_local,
+            log_local=log_local,
+            name=name,
+            timeout_secs=timeout_secs,
+            element_quota=element_quota,
+        )
 
-    def remove_handler(self, request_handler: Dict[str, Any]) -> None:
-        self.update_handler(request_handler, keep=False)
+        self._update_handler(handler_opts, keep=True)
 
-    def update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
+    def remove_handler(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+    ) -> None:
+        handler_opts = self._validate_options(
+            action=action,
+            print_local=print_local,
+            log_local=log_local,
+            name=name,
+            timeout_secs=timeout_secs,
+        )
+
+        self._update_handler(handler_opts, keep=False)
+
+    def _validate_options(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+        element_quota: int = 100,
+    ) -> Dict[str, Any]:
+        handler_opts: Dict[str, Any] = {}
+        if action not in ["accept", "deny"]:
+            raise Exception("Action must be 'accept' or 'deny'")
+        handler_opts["action"] = action
+        handler_opts["print_local"] = bool(print_local)
+        handler_opts["log_local"] = bool(log_local)
+        if name is not None and name != "":
+            handler_opts["name"] = str(name)
+        handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
+        handler_opts["element_quota"] = max(0, int(element_quota))
+        return handler_opts
+
+    def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
         from syft.core.node.domain.service.request_handler_service import (
             UpdateRequestHandlerMessage,
