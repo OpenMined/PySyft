@@ -1,7 +1,7 @@
 # stdlib
-from typing import Dict
+from collections import OrderedDict
 from typing import KeysView
-from typing import Set
+from typing import List
 from typing import Union
 from typing import ValuesView
 
@@ -30,15 +30,15 @@ class MemoryStore(ObjectStore):
 
     def __init__(self) -> None:
         super().__init__()
-        self._objects: Dict[UID, AbstractStorableObject] = {}
+        self._objects: OrderedDict[UID, AbstractStorableObject] = OrderedDict()
         self._search_engine = None
         self.post_init()
 
     def get_object(self, id: UID) -> Union[AbstractStorableObject, None]:
         return self._objects.get(id, None)
 
-    def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
-        return {obj for obj in self.values() if isinstance(obj.data, obj_type)}
+    def get_objects_of_type(self, obj_type: type) -> List[AbstractStorableObject]:
+        return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:

@@ -23,7 +23,7 @@ user should:
 
     .. code-block::
 
-        pointer_object.request(request_name = "Request name", reason = "Request reason")
+        pointer_object.request(name = "Request name", reason = "Request reason")
 
     2.1 - The data owner has to approve the request (check the domain node docs).
     2.2 - The data user checks if the request has been approved (check the domain node docs).
@@ -61,7 +61,7 @@ Example:
 
     # creating a request to access the data
     data_ptr_domain_1.request(
-        request_name="My Request", reason="I'd lke to see this pointer"
+        name="My Request", reason="I'd lke to see this pointer"
     )
 
     # getting the remote id of the object
@@ -172,7 +172,7 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
@@ -184,7 +184,7 @@ class Pointer(AbstractPointer):
         return self.get(
             request_block=request_block,
             timeout_secs=timeout_secs,
-            request_name=request_name,
+            name=name,
             reason=reason,
             delete_obj=False,
         )
@@ -193,7 +193,7 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
         delete_obj: bool = True,
     ) -> Optional[StorableObject]:
@@ -210,7 +210,7 @@ class Pointer(AbstractPointer):
             return self._get(delete_obj=delete_obj)
         else:
             response_status = self.request(
-                request_name=request_name,
+                name=name,
                 reason=reason,
                 block=True,
                 timeout_secs=timeout_secs,
@@ -301,7 +301,7 @@ class Pointer(AbstractPointer):
 
     def request(
         self,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
@@ -313,7 +313,7 @@ class Pointer(AbstractPointer):
         .. code-block::
 
             # data holder domain
-            domain_1 = Domain(request_name="Data holder")
+            domain_1 = Domain(name="Data holder")
 
             # data
             tensor = th.tensor([1, 2, 3])
@@ -325,10 +325,10 @@ class Pointer(AbstractPointer):
             data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
 
             # requesting access to the pointer
-            data_ptr_domain_1.request(request_name="My Request", reason="Research project.")
+            data_ptr_domain_1.request(name="My Request", reason="Research project.")
 
-        :param request_name: The title of the request that the data owner is going to see.
-        :type request_name: str
+        :param name: The title of the request that the data owner is going to see.
+        :type name: str
         :param reason: The description of the request. This is the reason why you want to have
         access to the data.
         :type reason: str
@@ -349,7 +349,7 @@ class Pointer(AbstractPointer):
             timeout_secs = -1  # forever
 
         msg = RequestMessage(
-            request_name=request_name,
+            name=name,
             request_description=reason,
             address=self.client.address,
             owner_address=self.client.address,
@@ -374,11 +374,11 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestStatus
 
             output_string = "> Waiting for Blocking Request\n"
-            if len(request_name) > 0:
-                output_string += f"{request_name}"
+            if len(name) > 0:
+                output_string += f"{name}"
             if len(reason) > 0:
                 output_string += f": {reason}"
-            if len(request_name) > 0 or len(request_name) > 0:
+            if len(name) > 0 or len(name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
             logger.debug(output_string)

@@ -174,6 +174,9 @@ class Class(Callable):
                 description=self.description if hasattr(self, "description") else "",
             )
 
+            if searchable:
+                ptr.gc_enabled = False
+
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
                 id_at_location=ptr.id_at_location,

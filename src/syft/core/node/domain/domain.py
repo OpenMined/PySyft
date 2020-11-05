@@ -157,11 +157,11 @@ class Domain(Node):
     ) -> bool:
         logger.debug(f"Check handler {handler} against {request}")
         if (
-            "request_name" in handler
-            and handler["request_name"] != ""
-            and handler["request_name"] != request.request_name
+            "name" in handler
+            and handler["name"] != ""
+            and handler["name"] != request.name
         ):
-            # valid request_name doesnt match so ignore this handler
+            # valid name doesnt match so ignore this handler
             logger.debug(f"Ignoring request handler {handler} against {request}")
             return False
 
@@ -200,7 +200,7 @@ class Domain(Node):
             except Exception as e:
                 logger.critical(f"Exception getting object. {e}")
 
-            log = f"> Request {request.request_name}:"
+            log = f"> Request {request.name}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"

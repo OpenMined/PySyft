@@ -99,7 +99,7 @@ class RequestQueueClient:
     def pandas(self) -> pd.DataFrame:
         request_lines = [
             {
-                "Request Name": request.request_name,
+                "Name": request.name,
                 "Reason": request.request_description,
                 "Request ID": request.id,
                 "Requested Object's ID": request.object_id,

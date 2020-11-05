@@ -35,7 +35,7 @@ class RequestStatus(Enum):
 
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
-    __slots__ = ["request_name", "request_description", "request_id"]
+    __slots__ = ["name", "request_description", "request_id"]
 
     def __init__(
         self,
@@ -43,7 +43,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         address: Address,
         requester_verify_key: VerifyKey,
         owner_address: Address,
-        request_name: str = "",
+        name: str = "",
         request_description: str = "",
         request_id: Optional[UID] = None,
         owner_client_if_available: Optional[Client] = None,
@@ -53,7 +53,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         if request_id is None:
             request_id = UID()
         super().__init__(address=address, msg_id=request_id)
-        self.request_name = request_name
+        self.name = name
         self.request_description = request_description
         self.request_id = request_id
         self.requester_verify_key = requester_verify_key
@@ -129,7 +129,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestMessage_PB:
         msg = RequestMessage_PB()
-        msg.request_name = self.request_name
+        msg.name = self.name
         msg.request_description = self.request_description
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
         msg.target_address.CopyFrom(serialize(obj=self.address))
@@ -149,7 +149,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def _proto2object(proto: RequestMessage_PB) -> "RequestMessage":
         request_msg = RequestMessage(
             request_id=deserialize(blob=proto.request_id),
-            request_name=proto.request_name,
+            name=proto.name,
             request_description=proto.request_description,
             address=deserialize(blob=proto.target_address),
             object_id=deserialize(blob=proto.object_id),

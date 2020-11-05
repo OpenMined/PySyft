@@ -6,8 +6,11 @@ import tempfile
 import time
 from typing import Any
 from typing import Generator
+from typing import Optional
 
 # third party
+from IPython.core.display import Image
+from IPython.core.display import display
 import nest_asyncio
 import requests
 
@@ -25,6 +28,8 @@ except RuntimeError as e:
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
+
+LOGO_URL = Path("../../..") / "logo.png"
 
 
 # for local debugging
@@ -137,18 +142,39 @@ def begin_duet_logger(my_domain: Domain) -> None:
     counterThread().start()
 
 
+def duet(
+    target_id: Optional[str] = None,
+    logging: bool = True,
+    network_url: str = "",
+    loopback: bool = False,
+) -> WebRTCDuet:
+    if target_id is not None:
+        return join_duet(
+            target_id=target_id, loopback=loopback, network_url=network_url
+        )
+    else:
+        return launch_duet(logging=logging, network_url=network_url, loopback=loopback)
+
+
 def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
 ) -> WebRTCDuet:
+    display(
+        Image(
+            LOGO_URL,
+            width=400,
+            unconfined=True,
+        )
+    )
     print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
         + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in alpha. Do not use this to protect real-world data.\n"
+        + "in beta. Use at your own risk.\n"
         + "\033[0m"
     )
 
@@ -180,7 +206,7 @@ def launch_duet(
 
     print("\nimport syft as sy")
     print(
-        "duet = sy.join_duet('"
+        "duet = sy.duet('"
         + bcolors.BOLD
         + signaling_client.duet_id
         + bcolors.ENDC
@@ -211,7 +237,7 @@ def launch_duet(
             if len(target_id) == 32:
                 break
             else:
-                print("Error: Invalid Client ID. Please try again.")
+                print("    > Error: Invalid Client ID. Please try again.")
 
     else:
         target_id = ""
@@ -255,6 +281,13 @@ def join_duet(
     network_url: str = "",
     loopback: bool = False,
 ) -> WebRTCDuet:
+    display(
+        Image(
+            LOGO_URL,
+            width=400,
+            unconfined=True,
+        )
+    )
     if target_id == "" and loopback is False:
         cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
         raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
@@ -264,7 +297,7 @@ def join_duet(
         ":"
         + "\033[1m"
         + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in alpha. Do not use this to protect real-world data.\n"
+        + "in beta. Use at your own risk.\n"
         + "\033[0m"
     )
 

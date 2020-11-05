@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n4proto/core/node/domain/service/request_message.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa9\x02\n\x0eRequestMessage\x12)\n\nrequest_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12(\n\tobject_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0crequest_name\x18\x03 \x01(\t\x12\x1b\n\x13request_description\x18\x04 \x01(\t\x12-\n\x0etarget_address\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12,\n\rowner_address\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x1c\n\x14requester_verify_key\x18\x07 \x01(\x0c\x12\x14\n\x0ctimeout_secs\x18\x08 \x01(\x05\x62\x06proto3',
+    serialized_pb=b'\n4proto/core/node/domain/service/request_message.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa1\x02\n\x0eRequestMessage\x12)\n\nrequest_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12(\n\tobject_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13request_description\x18\x04 \x01(\t\x12-\n\x0etarget_address\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12,\n\rowner_address\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x1c\n\x14requester_verify_key\x18\x07 \x01(\x0c\x12\x14\n\x0ctimeout_secs\x18\x08 \x01(\x05\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -80,8 +80,8 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="request_name",
-            full_name="syft.core.node.domain.service.RequestMessage.request_name",
+            name="name",
+            full_name="syft.core.node.domain.service.RequestMessage.name",
             index=2,
             number=3,
             type=9,
@@ -203,7 +203,7 @@ _REQUESTMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=156,
-    serialized_end=453,
+    serialized_end=445,
 )
 
 _REQUESTMESSAGE.fields_by_name[

@@ -223,7 +223,7 @@ class Module:
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
         delete_obj: bool = False,
     ) -> Optional["Module"]:
@@ -249,7 +249,7 @@ class Module:
 
                 module_repr = repr_ptr.get(
                     request_block=request_block,
-                    request_name=request_name,
+                    name=name,
                     reason=reason,
                     timeout_secs=timeout_secs,
                 )
@@ -276,7 +276,7 @@ class Module:
                         logger.debug(log)
                         state_dict = sd_ptr.get(
                             request_block=request_block,
-                            request_name=request_name,
+                            name=name,
                             reason=reason,
                             timeout_secs=timeout_secs,
                             delete_obj=delete_obj,
