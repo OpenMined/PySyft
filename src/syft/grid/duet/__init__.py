@@ -29,7 +29,7 @@ ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
 
-LOGO_URL = Path("../../..") / "logo.png"
+LOGO_URL = Path("../../../docs/img") / "logo.png"
 
 
 # for local debugging
