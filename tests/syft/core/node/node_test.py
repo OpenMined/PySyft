@@ -21,8 +21,8 @@ def get_verify_key() -> VerifyKey:
 def test_to_string() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
 
-    assert str(bob_vm) == f"VirtualMachine:Bob:{bob_vm.id}"
-    assert bob_vm.__repr__() == f"VirtualMachine:Bob:{bob_vm.id}"
+    assert str(bob_vm) == f"VirtualMachine: Bob: {bob_vm.id}"
+    assert bob_vm.__repr__() == f"VirtualMachine: Bob: {bob_vm.id}"
 
 
 def test_send_message_from_vm_client_to_vm() -> None:

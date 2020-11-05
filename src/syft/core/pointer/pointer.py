@@ -381,8 +381,6 @@ class Pointer(AbstractPointer):
             if len(request_name) > 0 or len(request_name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
-                output_string += "\n"
-            output_string += f"{msg.id}\n"
             logger.debug(output_string)
             print(f"\n{output_string}", end="")
             status = None
@@ -391,9 +389,6 @@ class Pointer(AbstractPointer):
             last_check: float = 0.0
             while True:
                 now = time.time()
-                log = f"\n> INSIDE Request BLOCK {now - start} seconds {now - start > timeout_secs}"
-                logger.debug(log)
-                print(log)
                 try:
                     # won't run on the first pass because status is None which allows
                     # for remote request handlers to auto respond before timeout
@@ -413,9 +408,6 @@ class Pointer(AbstractPointer):
                             request_id=msg.id,
                             address=self.client.address,
                             reply_to=self.client.address,
-                        )
-                        logger.debug(
-                            f"> JUST BEFORE asyncio block???? {status_msg.id} {msg.id}"
                         )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg

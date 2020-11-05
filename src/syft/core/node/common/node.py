@@ -558,4 +558,5 @@ class Node(AbstractNode):
         self.services_registered = True
 
     def __repr__(self) -> str:
-        return f"{self.node_type}:{self.name}:{self.id}"
+        no_dash = str(self.id).replace("-", "")
+        return f"{self.node_type}: {self.name}: {no_dash}"

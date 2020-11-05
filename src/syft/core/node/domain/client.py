@@ -182,4 +182,5 @@ class DomainClient(Client):
         raise Exception("This client points to a device, you don't need a VM Location.")
 
     def __repr__(self) -> str:
-        return f"<DomainClient:{self.id}>"
+        no_dash = str(self.id).replace("-", "")
+        return f"<{type(self).__name__}: {no_dash}>"

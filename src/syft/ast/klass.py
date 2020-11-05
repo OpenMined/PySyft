@@ -35,7 +35,7 @@ class Class(Callable):
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
     def __repr__(self) -> str:
-        return f"<Class:{self.name}>"
+        return f"{self.name}"
 
     @property
     def pointer_type(self) -> Union[Callable, CallableT]:

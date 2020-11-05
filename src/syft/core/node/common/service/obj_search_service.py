@@ -208,7 +208,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    ptr_type = obj2pointer_type(obj.data)
+                    ptr_type = obj2pointer_type(obj=obj.data)
                     ptr = ptr_type(
                         client=node,
                         id_at_location=obj.id,

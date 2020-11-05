@@ -115,4 +115,4 @@ class NetworkClient(Client):
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Network:{self.name}>"
+        return f"<{type(self).__name__}: {self.name}>"

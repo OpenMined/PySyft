@@ -1,18 +1,77 @@
 # stdlib
+import ast
 from collections import OrderedDict
+import sys
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
 from loguru import logger
 import torch
 
+# syft relative
+from ...decorators import syft_decorator
+
 
 # circular imports when using the syft.lib.full_name_with_qualname version
 def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
+
+
+def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
+    # for example: repr_str = Conv2d(...).extra_repr()
+    # produces:    > str("1, 32, kernel_size=(3, 3), stride=(1, 1)")
+    # then we just have to split it into args and kwargs
+    # using ast.literal_eval we can use python to give us the real primitive types
+    # from the strings in a safe way
+    # str("1 ") becomes int(1)
+    # str("(1, 2) ") becomes tuple(1, 2)
+    args: List[Any] = []
+    kwargs: Dict[Any, Any] = {}
+    parts = repr_str.split(",")
+
+    # tuples are split by commas as well, so we will keep a tab on open parentheses
+    # then concat with "," until we find a close parentheses
+    # TODO: make work nested with a count and add tests
+    para_open = False
+    buffer = ""
+    for part in parts:
+        try:
+            if "(" in part:
+                para_open = True
+                buffer = ""
+            if para_open is True:
+                buffer += part + ","
+                if ")" in part:
+                    # remove trailing ,
+                    part = buffer[:-1]
+                    buffer = ""
+                    para_open = False
+                else:
+                    continue
+
+            string = part.strip()
+            if "=" not in string:
+                # its an arg
+                arg = ast.literal_eval(string)
+                args.append(arg)
+            else:
+                # its a kwarg
+                kv = string.split("=")
+                key = str(kv[0])
+                string = kv[1].strip()
+                value = ast.literal_eval(string)
+                kwargs[key.strip()] = value
+        except Exception as e:
+            log = f"ast.literal_eval failed to parse part: {string}. {e}"
+            print(log)
+            logger.debug(log)
+
+    return (args, kwargs)
 
 
 class Module:
@@ -21,7 +80,25 @@ class Module:
     interface. We will need to support both torch Modules and Module Pointers.
     """
 
-    def __init__(self) -> None:
+    @syft_decorator(typechecking=True)
+    def __init__(self, torch_ref: Any) -> None:
+        # the remote torch means the model is remote
+        self.remote = None
+        self.local = None
+        self.duet = None
+        if "syft" in full_name_with_qualname(klass=type(torch_ref)):
+            log = "> Creating remote model"
+            print(log)
+            logger.debug(log)
+            self.is_local = False
+        else:
+            # otherwise we have a local model
+            log = "> Creating local model"
+            print(log)
+            logger.debug(log)
+            self.is_local = True
+
+        self.torch_ref = torch_ref
         self.training = False
         self._modules: OrderedDict[str, Module] = OrderedDict()
 
@@ -67,16 +144,21 @@ class Module:
         return OrderedDict()
 
     # local list of remote ListPointers of TensorPointers
-    def parameters(self, recurse: bool = True) -> List[Any]:
-        duet = None
-        params_list = None
+    def parameters(self, recurse: bool = True) -> Optional[List[Any]]:
+        params_list: Optional[List[Any]] = None
+
+        if self.is_local is True:
+            # we are local so use normal torch params
+            params_list = []
         for _, module in self.modules.items():
-            param_pointers = module.parameters()
-            if duet is None:
-                duet = param_pointers.client
-                # params_list must be a remote List
-                params_list = duet.syft.lib.python.List()
-            params_list += param_pointers
+            params = module.parameters(recurse)
+            if params_list is None:
+                # only on remote create a remote list so we can concat the param list
+                # pointers without having to actually get them
+                self.duet = params.client
+                params_list = self.duet.syft.lib.python.List()  # type: ignore
+            # either way lets concat them until we have a big list of parameters
+            params_list += params
         return params_list
 
     def cuda(self, device: Any) -> "Module":
@@ -89,6 +171,133 @@ class Module:
             module.cpu()
         return self
 
+    def send(self, client: Any) -> Any:
+        if not self.is_local:
+            print("> This model is remote so try calling .get()")
+            return
+        else:
+            log = "> Sending local model"
+            print(log)
+            logger.debug(log)
+            remote_model = Module(torch_ref=client.torch)
+            remote_model.duet = client
+            remote_model.is_local = False
+
+            # copy the forward method
+            remote_model.forward = self.forward
+            for name, module in self.modules.items():
+                fqn = full_name_with_qualname(klass=type(module))
+                klass = client.lib_ast(fqn, return_callable=True, obj_type=type(module))
+                module_repr = module.extra_repr()
+                args, kwargs = repr_to_kwargs(repr_str=module_repr)
+                remote_module_ptr = klass(*args, **kwargs)
+                remote_model.__setattr__(name=name, value=remote_module_ptr)
+
+                # if the remote module has state_dict lets get it
+                if hasattr(module, "state_dict") and hasattr(
+                    remote_module_ptr, "load_state_dict"
+                ):
+                    local_state_ord_dict = module.state_dict()
+                    # cast to dict because OrderedDict is not supported
+
+                    # get a blocking copy of the state_dict
+                    log = f"  Sending local layer: {name}"
+                    print(log)
+                    logger.debug(log)
+                    # cant import Dict / PrimitiveFactory due to circular imports
+                    remote_state_dict_ptr = client.syft.lib.python.Dict(
+                        dict(local_state_ord_dict)
+                    )
+                    # iterate through the key, values
+                    # weights and biases should be in there
+                    remote_module_ptr.load_state_dict(remote_state_dict_ptr)
+
+            log = "\n> Finished sending local model <\n\n"
+            print(log)
+            logger.debug(log)
+            self.remote = remote_model
+            return self.remote
+
+    def get(
+        self,
+        request_block: bool = False,
+        timeout_secs: int = 20,
+        request_name: str = "",
+        reason: str = "",
+        delete_obj: bool = False,
+    ) -> None:
+        if self.is_local:
+            log = "> This model is local. Maybe you meant to call .send()?"
+            print(log)
+            logger.debug(log)
+            return
+        else:
+            log = "> Downloading remote model"
+            print(log)
+            logger.debug(log)
+            # loop over models module pointers
+            local_model = Module(torch_ref=torch)
+            local_model.duet = self.duet
+            local_model.is_local = True
+            # copy the forward method
+            local_model.forward = self.forward
+
+            for name, module in self.modules.items():
+                module_parts = module.path_and_name.split(".")
+                klass_name = module_parts.pop()
+                klass = getattr(sys.modules[".".join(module_parts)], klass_name)
+                repr_ptr = module.extra_repr()
+
+                module_repr = repr_ptr.get(
+                    request_block=request_block,
+                    request_name=request_name,
+                    reason=reason,
+                    timeout_secs=timeout_secs,
+                )
+
+                if module_repr is None:
+                    print(f"  Request for {name} extra_repr failed, skipping layer")
+                    continue
+
+                args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
+                local_module = klass(*args, **kwargs)
+
+                # the local real module has been set on the sy module
+                local_model.__setattr__(name=name, value=local_module)
+
+                try:
+                    # if the remote module has state_dict lets get it
+                    if hasattr(module, "state_dict") and hasattr(
+                        local_module, "load_state_dict"
+                    ):
+                        sd_ptr = module.state_dict()
+                        # get a blocking copy of the state_dict
+                        log = f"  Downloading remote layer: {name}"
+                        print(log)
+                        logger.debug(log)
+                        state_dict = sd_ptr.get(
+                            request_block=request_block,
+                            request_name=request_name,
+                            reason=reason,
+                            timeout_secs=timeout_secs,
+                            delete_obj=delete_obj,
+                        )
+                        # iterate through the key, values
+                        # weights and biases should be in there
+                        if state_dict is not None:
+                            # TODO: support torch.nn.modules.module._IncompatibleKeys
+                            local_module.load_state_dict(state_dict)
+                        else:
+                            print(f"  Failed to get {name} state_dict, skipping layer.")
+
+                except Exception as e:
+                    logger.error(f"  Failed to download remote state for {name}. {e}")
+
+            log = "\n> Finished downloading remote model <\n\n"
+            print(log)
+            logger.debug(log)
+            return local_model
+
     # zero them so we know they are copied
     def zero_layers(self) -> None:
         for m in self.modules.values():
@@ -99,70 +308,17 @@ class Module:
 
     # easy way to check the weights have changed
     def debug_sum_layers(self) -> None:
+        print("> Summing layers for debugging: ")
         for n, m in self.modules.items():
             if hasattr(m, "state_dict"):
-                for k, v in m.state_dict().items():
+                if self.is_local:
+                    state_dict = m.state_dict()
+                else:
+                    state_dict = m.state_dict().get()
+
+                for k, v in state_dict.items():
                     if hasattr(v, "sum"):
                         s = v.sum().item()
-                        log = f"> Layer {n} sum({k}): {s}"
+                        log = f"  Layer {n} sum({k}): {s}"
                         print(log)
                         logger.debug(log)
-
-    # copy the weights, there are blocking requests so make sure to respond
-    def copy_remote_state(
-        self,
-        remote_model: Any,
-        request_name: str,
-        reason: str,
-        timeout_secs: int,
-        delete_obj: bool = False,
-        skip_layers: List[str] = [],
-    ) -> None:
-        # loop over models module pointers
-        for n, m in remote_model.modules.items():
-            try:
-                if n in skip_layers:
-                    log = f"> Skipping: {n}"
-                    print(log)
-                    logger.debug(log)
-                    continue
-                if hasattr(self, n):
-                    # get the equivalent layer for the local model
-                    local_m = getattr(self, n)
-
-                    # if the remote layer has a state_dict
-                    if hasattr(m, "state_dict"):
-                        sd_ptr = m.state_dict()
-                        # get a blocking copy of the state_dict
-                        log = f"> Downloading remote: {n}"
-                        print(log)
-                        logger.debug(log)
-                        state_dict = sd_ptr.get(
-                            request_block=True,
-                            request_name=request_name,
-                            reason=reason,
-                            timeout_secs=timeout_secs,
-                            delete_obj=delete_obj,
-                        )
-                        # iterate through the key, values
-                        # weights and biases should be in there
-                        for key, value in state_dict.items():
-                            key_str = key.upcast()
-                            # if the local models module has the same property
-                            # e.g. .weight or .bias
-                            if hasattr(local_m, key_str):
-                                # if the downloaded value is not a Parameter
-                                # its a tensor so we need to convert it
-                                if not isinstance(value, torch.nn.Parameter):
-                                    value = torch.nn.Parameter(value)
-
-                                # set it
-                                setattr(local_m, key_str, value)
-                                log = f">> Setting {key_str} copy on local {n}"
-                                print(log)
-                                logger.debug(log)
-                log = "> Finished downloading model"
-                print(log)
-                logger.debug(log)
-            except Exception as e:
-                logger.error(f"Failed to download remote state for {n}. {e}")

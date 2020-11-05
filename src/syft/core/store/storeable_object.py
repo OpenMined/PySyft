@@ -198,7 +198,7 @@ class StorableObject(AbstractStorableObject):
 
     def __repr__(self) -> str:
         return (
-            "<Storable:"
+            "<Storable: "
             + self.data.__repr__().replace("\n", "").replace("  ", " ")
             + ">"
         )
