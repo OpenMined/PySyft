@@ -1,6 +1,7 @@
 # stdlib
 import ast
 from collections import OrderedDict
+import copy
 import sys
 from typing import Any
 from typing import Dict
@@ -82,9 +83,12 @@ class Module:
 
     @syft_decorator(typechecking=True)
     def __init__(self, torch_ref: Any) -> None:
+        self.setup(torch_ref=torch_ref)
+
+    def setup(self, torch_ref: Any) -> None:
         # the remote torch means the model is remote
-        self.remote = None
-        self.local = None
+        self.remote_model: Optional["Module"] = None
+        self.local_model: Optional["Module"] = None
         self.duet = None
         if "syft" in full_name_with_qualname(klass=type(torch_ref)):
             log = "> Creating remote model"
@@ -102,8 +106,8 @@ class Module:
         self.training = False
         self._modules: OrderedDict[str, Module] = OrderedDict()
 
-    # this is how we catch the modules being set during subclass init
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
+        # this is how we catch the modules being set during subclass init
         # bug where torch.nn.modules isnt the full name on some imports
         # TODO: fix this properly
         if "torch.nn" in full_name_with_qualname(klass=type(value)):
@@ -130,11 +134,10 @@ class Module:
     def eval(self) -> "Module":
         return self.train(False)
 
-    def forward(self, x: Any) -> Any:
-        raise NotImplementedError
-
-    def __call__(self, input: Any) -> Any:
-        return self.forward(x=input)
+    def __call__(
+        self, *args: Union[List[Any], Tuple[Any, ...]], **kwargs: Dict[Any, Any]
+    ) -> Any:
+        return self.forward(*args, **kwargs)
 
     @property
     def modules(self) -> OrderedDict:
@@ -179,19 +182,17 @@ class Module:
             log = "> Sending local model"
             print(log)
             logger.debug(log)
-            remote_model = Module(torch_ref=client.torch)
+            remote_model = copy.copy(self)
+            remote_model.setup(torch_ref=client.torch)
             remote_model.duet = client
-            remote_model.is_local = False
 
-            # copy the forward method
-            remote_model.forward = self.forward
             for name, module in self.modules.items():
                 fqn = full_name_with_qualname(klass=type(module))
                 klass = client.lib_ast(fqn, return_callable=True, obj_type=type(module))
                 module_repr = module.extra_repr()
                 args, kwargs = repr_to_kwargs(repr_str=module_repr)
                 remote_module_ptr = klass(*args, **kwargs)
-                remote_model.__setattr__(name=name, value=remote_module_ptr)
+                remote_model.__setattr__(name, remote_module_ptr)
 
                 # if the remote module has state_dict lets get it
                 if hasattr(module, "state_dict") and hasattr(
@@ -215,8 +216,8 @@ class Module:
             log = "\n> Finished sending local model <\n\n"
             print(log)
             logger.debug(log)
-            self.remote = remote_model
-            return self.remote
+            self.remote_model = remote_model
+            return self.remote_model
 
     def get(
         self,
@@ -225,22 +226,20 @@ class Module:
         request_name: str = "",
         reason: str = "",
         delete_obj: bool = False,
-    ) -> None:
+    ) -> Optional["Module"]:
         if self.is_local:
             log = "> This model is local. Maybe you meant to call .send()?"
             print(log)
             logger.debug(log)
-            return
+            return None
         else:
             log = "> Downloading remote model"
             print(log)
             logger.debug(log)
-            # loop over models module pointers
-            local_model = Module(torch_ref=torch)
+
+            local_model = copy.copy(self)
+            local_model.setup(torch_ref=torch)
             local_model.duet = self.duet
-            local_model.is_local = True
-            # copy the forward method
-            local_model.forward = self.forward
 
             for name, module in self.modules.items():
                 module_parts = module.path_and_name.split(".")
@@ -263,7 +262,7 @@ class Module:
                 local_module = klass(*args, **kwargs)
 
                 # the local real module has been set on the sy module
-                local_model.__setattr__(name=name, value=local_module)
+                local_model.__setattr__(name, local_module)
 
                 try:
                     # if the remote module has state_dict lets get it
@@ -296,7 +295,8 @@ class Module:
             log = "\n> Finished downloading remote model <\n\n"
             print(log)
             logger.debug(log)
-            return local_model
+            self.local_model = local_model
+            return self.local_model
 
     # zero them so we know they are copied
     def zero_layers(self) -> None:
