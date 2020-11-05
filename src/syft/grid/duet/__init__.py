@@ -134,7 +134,8 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     sys.stdout.write("\r" + out)
                 iterator += 1
 
-    counterThread().start()
+    if hasattr(sys.stdout, "parent_header"):
+        counterThread().start()
 
 
 def launch_duet(
