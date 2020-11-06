@@ -154,6 +154,64 @@ class Domain(Node):
         return RequestStatus.Rejected
 
     @syft_decorator(typechecking=True)
+    def _get_object(self, request: RequestMessage) -> Optional[Any]:
+        try:
+            obj_msg = GetObjectAction(
+                id_at_location=request.object_id,
+                address=request.owner_address,
+                reply_to=self.address,
+                delete_obj=False,
+            )
+
+            service = self.immediate_msg_with_reply_router[type(obj_msg)]
+            response = service.process(
+                node=self, msg=obj_msg, verify_key=self.root_verify_key
+            )
+            if response:
+                obj = getattr(response, "obj", None)
+                if obj is not None:
+                    return obj
+        except Exception as e:
+            logger.critical(f"Exception getting object for {request}. {e}")
+        return None
+
+    def _count_elements(self, obj: object) -> int:
+        elements = 1
+
+        nelement = getattr(obj, "nelement", None)
+        if nelement is not None:
+            elements = max(elements, int(nelement()))
+
+        length = getattr(obj, "__len__", None)
+        if length is not None:
+            elements = max(elements, int(length()))
+
+        return elements
+
+    def _accept(self, request: RequestMessage) -> None:
+        logger.debug(f"Calling accept on request: {request.id}")
+        request.destination_node_if_available = self
+        request.accept()
+
+    def _deny(self, request: RequestMessage) -> None:
+        logger.debug(f"Calling deny on request: {request.id}")
+        request.destination_node_if_available = self
+        request.deny()
+
+    def _try_deduct_quota(
+        self, handler: Dict[Union[str, String], Any], obj: Any
+    ) -> bool:
+        if "action" in handler and handler["action"] == "accept":
+            element_count = self._count_elements(obj=obj)
+            result = handler["element_quota"] - element_count
+            if result >= 0:
+                # the request will be accepted so lets decrement the quota
+                handler["element_quota"] = max(0, result)
+                return True
+
+        return False
+
+    @syft_decorator(typechecking=True)
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
@@ -167,106 +225,41 @@ class Domain(Node):
             logger.debug(f"Ignoring request handler {handler} against {request}")
             return False
 
+        # if we have any of these three rules we will need to get the object to
+        # print it, log it, or check its quota
         obj = None
+        if (
+            ("print_local" in handler)
+            or ("log_local" in handler)
+            or ("element_quota" in handler)
+        ):
+            obj = self._get_object(request=request)
 
-        # TODO: refactor this horrid mess
         # we only want to accept or deny once
         handled = False
-        if "action" in handler:
+
+        # check quota and reject first
+        if "element_quota" in handler:
+            if not self._try_deduct_quota(handler=handler, obj=obj):
+                logger.debug(
+                    f"> Rejecting {request} element_quota={handler['element_quota']}"
+                )
+                self._deny(request=request)
+                handled = True
+
+        # if not rejected based on quota keep checking
+        if "action" in handler and not handled:
             action = handler["action"]
             if action == "accept":
                 logger.debug(f"Check accept {handler} against {request}")
-                element_quota = 0
-                if "element_quota" in handler:
-                    element_quota = handler["element_quota"]
-                logger.debug(
-                    f"Check handler element quota {element_quota} against {request}"
-                )
-                if element_quota > 0:
-                    try:
-                        if obj is None:
-                            obj_msg = GetObjectAction(
-                                id_at_location=request.object_id,
-                                address=request.owner_address,
-                                reply_to=self.address,
-                                delete_obj=False,
-                            )
-
-                            service = self.immediate_msg_with_reply_router[
-                                type(obj_msg)
-                            ]
-                            response = service.process(
-                                node=self, msg=obj_msg, verify_key=self.root_verify_key
-                            )
-                            obj = response.obj
-                    except Exception as e:
-                        logger.critical(f"Exception getting object. {e}")
-
-                    elements = 0
-                    nelement = getattr(obj, "nelement", None)
-                    if nelement is not None:
-                        print(nelement)
-                        elements = int(nelement())
-                        print("elmenets ype", type(elements))
-                        if elements < 1:
-                            length = getattr(obj, "__len__", None)
-                            if length is not None:
-                                elements = int(length())
-                                print("length type", type(elements))
-                    elements = max(1, elements)
-
-                    remaining = element_quota - elements
-                    if remaining >= 0:
-                        print("handler before", handler)
-                        handler["element_quota"] = remaining  # save?
-                        print("handler after save", handler)
-                        logger.debug(f"Calling accept on request: {request.id}")
-                        request.destination_node_if_available = self
-                        request.accept()
-                        handled = True
-                    else:
-                        logger.debug(
-                            f"insufficient element_quota {element_quota} for "
-                            + f"{elements}. Calling deny on request: {request.id}"
-                        )
-                        request.destination_node_if_available = self
-                        request.deny()
-                        handled = True
-                else:
-                    logger.debug(
-                        f"insufficient element_quota {element_quota} for {elements}."
-                        + f"Calling deny on request: {request.id}"
-                    )
-                    request.destination_node_if_available = self
-                    request.deny()
-                    handled = True
+                self._accept(request=request)
+                handled = True
             elif action == "deny":
-                logger.debug(f"Calling deny on request: {request.id}")
-                request.destination_node_if_available = self
-                request.deny()
+                self._deny(request=request)
                 handled = True
 
-        # print or log rules can execute multiple times
+        # print or log rules can execute multiple times so no complex logic here
         if "print_local" in handler or "log_local" in handler:
-            # get a copy of the item
-
-            try:
-                if obj is None:
-                    obj_msg = GetObjectAction(
-                        id_at_location=request.object_id,
-                        address=request.owner_address,
-                        reply_to=self.address,
-                        delete_obj=False,
-                    )
-
-                    service = self.immediate_msg_with_reply_router[type(obj_msg)]
-                    response = service.process(
-                        node=self, msg=obj_msg, verify_key=self.root_verify_key
-                    )
-                    obj = response.obj
-            except Exception as e:
-                logger.critical(f"Exception getting object. {e}")
-
             log = f"> Request {request.name}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"

@@ -72,7 +72,7 @@ class RequestQueueClient:
         log_local: bool = False,
         name: Optional[str] = None,
         timeout_secs: int = -1,
-        element_quota: int = 100,
+        element_quota: Optional[int] = None,
     ) -> None:
         handler_opts = self._validate_options(
             action=action,
@@ -110,7 +110,7 @@ class RequestQueueClient:
         log_local: bool = False,
         name: Optional[str] = None,
         timeout_secs: int = -1,
-        element_quota: int = 100,
+        element_quota: Optional[int] = None,
     ) -> Dict[str, Any]:
         handler_opts: Dict[str, Any] = {}
         if action not in ["accept", "deny"]:
@@ -121,7 +121,8 @@ class RequestQueueClient:
         if name is not None and name != "":
             handler_opts["name"] = str(name)
         handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
-        handler_opts["element_quota"] = max(0, int(element_quota))
+        if element_quota is not None:
+            handler_opts["element_quota"] = max(0, int(element_quota))
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
