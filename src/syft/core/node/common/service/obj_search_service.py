@@ -37,9 +37,7 @@ from .node_service import ImmediateNodeServiceWithReply
 
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
-    def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
-    ):
+    def __init__(self, address: Address, reply_to: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
         the sender is allowed to see. In the future we'll add support so that
@@ -198,10 +196,9 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has an All() class in it.
-                contains_all_in_permissions = False
-                for key in obj.search_permissions.keys():
-                    if isinstance(key, All):
-                        contains_all_in_permissions = True
+                contains_all_in_permissions = any(
+                    key is All for key in obj.search_permissions.keys()
+                )
 
                 if (
                     verify_key in obj.search_permissions.keys()
