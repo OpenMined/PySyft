@@ -1,7 +1,6 @@
 # stdlib
 from abc import ABC
 from typing import Iterable
-from typing import List
 from typing import Type
 
 # third party
@@ -68,16 +67,6 @@ class ObjectStore(ABC):
 
         Returns:
             Iterable[StorableObject]: an iterable containing the keys of the store.
-        """
-        raise NotImplementedError
-
-    @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject) -> None:
-        """
-        Method to store an object based on its own UID in the store.
-
-        Args:
-            obj (StorableObject): the object to be stored.
         """
         raise NotImplementedError
 
@@ -162,7 +151,7 @@ class ObjectStore(ABC):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def get_objects_of_type(self, obj_type: Type) -> List[AbstractStorableObject]:
+    def get_objects_of_type(self, obj_type: Type) -> Iterable[AbstractStorableObject]:
         raise NotImplementedError
 
     @property

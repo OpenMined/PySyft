@@ -55,6 +55,7 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
     ):
         super().__init__(
             name=name,
@@ -64,6 +65,7 @@ class Domain(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            db_path=db_path,
         )
         # specific location with name
         self.domain = SpecificLocation(name=self.name)

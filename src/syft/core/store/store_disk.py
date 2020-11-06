@@ -1,22 +1,23 @@
 # stdlib
 from pathlib import Path
 import tempfile
-from typing import List
+from typing import Iterable
 from typing import Optional
 
 # third party
+from loguru import logger
 from sqlitedict import SqliteDict
 from typing_extensions import Final
 
 # syft relative
 from ...decorators import syft_decorator
+from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
 
+
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.
-
-
 class DiskObjectStore(ObjectStore):
     def __init__(self, db_path: Optional[str] = None):
         super().__init__()
@@ -27,9 +28,33 @@ class DiskObjectStore(ObjectStore):
         self.db: Final = SqliteDict(db_path)
         self.search_engine = None
 
-    @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject) -> None:
-        self.db[obj.id] = obj.serialize()
+    def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
+        # TODO: this wont fly long term
+        obj_types = []
+        for value in self.values():
+            if isinstance(value.data, obj_type):
+                obj_types.append(value)
+        return obj_types
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, key: UID) -> StorableObject:
+        try:
+            blob = self.db[str(key.value)]
+            value = _deserialize(blob=blob, from_bytes=True)
+            return value
+        except Exception as e:
+            logger.trace(f"{type(self)} get item error {key} {e}")
+            raise e
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __setitem__(self, key: UID, value: StorableObject) -> None:
+        try:
+            blob = value.serialize(to_bytes=True)
+            self.db[str(key.value)] = blob
+            self.db.commit(blocking=False)
+        except Exception as e:
+            logger.trace(f"{type(self)} set item error {key} {type(value)} {e}")
+            raise e
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
@@ -44,25 +69,30 @@ class DiskObjectStore(ObjectStore):
         return self.db.__len__()
 
     @syft_decorator(typechecking=True)
-    def keys(self) -> List[UID]:
-        return self.db.keys()
+    def keys(self) -> Iterable[UID]:
+        key_strings = self.db.keys()
+        return [UID.from_string(key_string) for key_string in key_strings]
 
     @syft_decorator(typechecking=True)
-    def values(self) -> List[StorableObject]:
-        return self.db.values()
+    def values(self) -> Iterable[StorableObject]:
+        values = []
+        for blob in self.db.values():
+            value = _deserialize(blob=blob, from_bytes=True)
+            values.append(value)
+
+        return values
 
     @syft_decorator(typechecking=True)
     def __contains__(self, item: UID) -> bool:
-        return item in self.db
-
-    @syft_decorator(typechecking=True)
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
-        self.db[key] = value.serialize()
-        self.db.commit(blocking=False)
+        return str(item.value) in self.db
 
     @syft_decorator(typechecking=True)
     def __delitem__(self, key: UID) -> None:
-        del self.db[key]
+        try:
+            del self.db[str(key.value)]
+        except Exception as e:
+            logger.trace(f"{type(self)} del item error {key} {e}")
+            raise e
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:

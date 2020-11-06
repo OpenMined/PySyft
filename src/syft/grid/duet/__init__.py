@@ -1,5 +1,6 @@
 # stdlib
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -9,8 +10,6 @@ from typing import Generator
 from typing import Optional
 
 # third party
-from IPython.core.display import Image
-from IPython.core.display import display
 import nest_asyncio
 import requests
 
@@ -30,6 +29,16 @@ ADDR_REPOSITORY = (
 )
 
 LOGO_URL = Path("../../../docs/img") / "logo.png"
+
+
+try:
+    # third party
+    from IPython.core.display import Image
+    from IPython.core.display import display
+
+    jupyter = True
+except ImportError:
+    jupyter = False
 
 
 # for local debugging
@@ -147,27 +156,32 @@ def duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
+    db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if target_id is not None:
         return join_duet(
             target_id=target_id, loopback=loopback, network_url=network_url
         )
     else:
-        return launch_duet(logging=logging, network_url=network_url, loopback=loopback)
+        return launch_duet(
+            logging=logging, network_url=network_url, loopback=loopback, db_path=db_path
+        )
 
 
 def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
+    db_path: Optional[str] = None,
 ) -> WebRTCDuet:
-    display(
-        Image(
-            LOGO_URL,
-            width=400,
-            unconfined=True,
+    if os.path.isfile(LOGO_URL) and jupyter:
+        display(
+            Image(
+                LOGO_URL,
+                width=400,
+                unconfined=True,
+            )
         )
-    )
     print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
@@ -220,7 +234,7 @@ def launch_duet(
         with open(get_loopback_path(), "w") as f:
             f.write(json.dumps(loopback_config))
 
-    my_domain = Domain(name="Launcher")
+    my_domain = Domain(name="Launcher", db_path=db_path)
 
     print(
         "\n♫♫♫ > "
@@ -281,13 +295,14 @@ def join_duet(
     network_url: str = "",
     loopback: bool = False,
 ) -> WebRTCDuet:
-    display(
-        Image(
-            LOGO_URL,
-            width=400,
-            unconfined=True,
+    if os.path.isfile(LOGO_URL) and jupyter:
+        display(
+            Image(
+                LOGO_URL,
+                width=400,
+                unconfined=True,
+            )
         )
-    )
     if target_id == "" and loopback is False:
         cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
         raise Exception(f"You must enter a Duet Server ID like this: {cmd}")

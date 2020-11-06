@@ -5,7 +5,7 @@ import "proto/core/common/common_object.proto";
 import "proto/core/store/store_object.proto";
 
 message Dict {
-  repeated syft.core.store.StorableObject keys = 1;
-  repeated syft.core.store.StorableObject values = 2;
+  repeated bytes keys = 1;
+  repeated bytes values = 2;
   syft.core.common.UID id = 3;
 }

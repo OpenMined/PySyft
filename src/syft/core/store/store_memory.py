@@ -1,7 +1,7 @@
 # stdlib
 from collections import OrderedDict
+from typing import Iterable
 from typing import KeysView
-from typing import List
 from typing import Union
 from typing import ValuesView
 
@@ -37,7 +37,7 @@ class MemoryStore(ObjectStore):
     def get_object(self, id: UID) -> Union[AbstractStorableObject, None]:
         return self._objects.get(id, None)
 
-    def get_objects_of_type(self, obj_type: type) -> List[AbstractStorableObject]:
+    def get_objects_of_type(self, obj_type: type) -> Iterable[AbstractStorableObject]:
         return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
 
     @syft_decorator(typechecking=True)
