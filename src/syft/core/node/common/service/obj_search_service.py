@@ -37,7 +37,9 @@ from .node_service import ImmediateNodeServiceWithReply
 
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
-    def __init__(self, address: Address, reply_to: Address, msg_id: Optional[UID] = None):
+    def __init__(
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
+    ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
         the sender is allowed to see. In the future we'll add support so that

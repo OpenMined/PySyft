@@ -64,7 +64,9 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchPermissionUpdateMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            target_verify_key=bytes(self.target_verify_key) if self.target_verify_key else None,
+            target_verify_key=bytes(self.target_verify_key)
+            if self.target_verify_key
+            else None,
             target_object_id=self.target_object_id.serialize(),
             add_instead_of_remove=self.add_instead_of_remove,
         )
@@ -127,9 +129,13 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
     ) -> None:
         target_verify_key = msg.target_verify_key or All
         if msg.add_instead_of_remove:
-            node.store[msg.target_object_id].search_permissions[target_verify_key] = msg.id
+            node.store[msg.target_object_id].search_permissions[
+                target_verify_key
+            ] = msg.id
         else:
-            node.store[msg.target_object_id].search_permissions.pop(target_verify_key, None)
+            node.store[msg.target_object_id].search_permissions.pop(
+                target_verify_key, None
+            )
 
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:

@@ -106,7 +106,9 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
-from ..node.common.service.obj_search_permission_service import ObjectSearchPermissionUpdateMessage
+from ..node.common.service.obj_search_permission_service import (
+    ObjectSearchPermissionUpdateMessage,
+)
 from ..store.storeable_object import StorableObject
 
 
@@ -217,7 +219,10 @@ class Pointer(AbstractPointer):
                 block=True,
                 timeout_secs=timeout_secs,
             )
-            if response_status is not None and response_status == RequestStatus.Accepted:
+            if (
+                response_status is not None
+                and response_status == RequestStatus.Accepted
+            ):
                 return self._get(delete_obj=delete_obj)
 
         return None
@@ -265,7 +270,9 @@ class Pointer(AbstractPointer):
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
 
-        points_to_type = sy.lib_ast(proto.points_to_object_with_path, return_callable=True)
+        points_to_type = sy.lib_ast(
+            proto.points_to_object_with_path, return_callable=True
+        )
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
@@ -395,7 +402,9 @@ class Pointer(AbstractPointer):
                     # won't run on the first pass because status is None which allows
                     # for remote request handlers to auto respond before timeout
                     if now - start > timeout_secs:
-                        log = f"\n> Blocking Request Timeout after {timeout_secs} seconds"
+                        log = (
+                            f"\n> Blocking Request Timeout after {timeout_secs} seconds"
+                        )
                         logger.debug(log)
                         print(log)
                         return status
@@ -409,8 +418,12 @@ class Pointer(AbstractPointer):
                             address=self.client.address,
                             reply_to=self.client.address,
                         )
-                        logger.debug(f"> JUST BEFORE asyncio block???? {status_msg.id} {msg.id}")
-                        response = self.client.send_immediate_msg_with_reply(msg=status_msg)
+                        logger.debug(
+                            f"> JUST BEFORE asyncio block???? {status_msg.id} {msg.id}"
+                        )
+                        response = self.client.send_immediate_msg_with_reply(
+                            msg=status_msg
+                        )
                         status = response.status
                         if response.status == RequestStatus.Pending:
                             time.sleep(1)
