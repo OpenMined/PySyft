@@ -128,10 +128,17 @@ def login_user(email, password):
     if checkpw(password, salt + hashed):
         token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
         token = token.decode("UTF-8")
+        print(
+            "Metadata before: ",
+            node.get_metadata_for_client().serialize().SerializeToString(),
+        )
         return {
             "token": token,
             "key": user.private_key,
-            "metadata": node.get_metadata_for_client(),
+            "metadata": node.get_metadata_for_client()
+            .serialize()
+            .SerializeToString()
+            .decode("ISO-8859-1"),
         }
     else:
         raise InvalidCredentialsError
