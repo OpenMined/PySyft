@@ -8,6 +8,7 @@ from typing import Optional
 from typing import Union
 
 # syft relative
+from .. import python
 from ...core.common import UID
 from ...decorators import syft_decorator
 from .primitive_interface import PyPrimitive
@@ -21,6 +22,7 @@ primitives = [
     float,
     int,
     list,
+    tuple,
     None,
     NoneType,
     str,
@@ -35,6 +37,7 @@ PrimitiveType = Union[
     complex,
     float,
     int,
+    tuple,
     list,
     None,
     NoneType,
@@ -64,33 +67,31 @@ class PrimitiveFactory(ABC):
         recurse: bool = False,
     ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
         # syft relative
-        from .bool import Bool
-        from .complex import Complex
-        from .dict import Dict
-        from .float import Float
-        from .int import Int
-        from .list import List
-        from .none import SyNone
-        from .string import String
 
         if isinstance(value, PyPrimitive):
             return value
 
+        if value is ...:
+            return value
+
         if isinstance(value, bool):
-            return Bool(value=value, id=id)
+            return python.Bool(value=value, id=id)
 
         if isinstance(value, int):
-            return Int(value=value, id=id)
+            return python.Int(value=value, id=id)
 
         if isinstance(value, float):
-            return Float(value=value, id=id)
+            return python.Float(value=value, id=id)
 
         if isinstance(value, complex):
-            return Complex(real=value.real, imag=value.imag, id=id)
+            return python.Complex(real=value.real, imag=value.imag, id=id)
+
+        if isinstance(value, tuple):
+            return python.Tuple(value)
 
         if type(value) in [list, UserList]:
             if not recurse:
-                return List(value=value, id=id)
+                return python.List(value=value, id=id)
             else:
                 # allow recursive primitive downcasting
                 new_list = []
@@ -104,14 +105,14 @@ class PrimitiveFactory(ABC):
                             )
                         else:
                             new_list.append(val)
-                return List(value=new_list, id=id)
+                return python.List(value=new_list, id=id)
 
         if type(value) in [dict, UserDict]:
             if not recurse:
-                new_dict = Dict(value)
+                new_dict = python.Dict(value)
             else:
                 # allow recursive primitive downcasting
-                new_dict = Dict()
+                new_dict = python.Dict()
                 if value is not None:
                     items = getattr(value, "items", None)
                     if items is not None:
@@ -128,10 +129,9 @@ class PrimitiveFactory(ABC):
             return new_dict
 
         if type(value) in [str, UserString]:
-            return String(value=value, id=id)
+            return python.String(value=value, id=id)
 
         if value is NotImplemented:
             return value
 
-        none: SyNone = SyNone()
-        return none
+        return python.SyNone

@@ -49,5 +49,6 @@ message TensorData {
 
 message TensorProto {
   TensorData tensor = 1;
-  TensorData grad = 2;
+  bool requires_grad = 2;
+  TensorData grad = 3;
 }

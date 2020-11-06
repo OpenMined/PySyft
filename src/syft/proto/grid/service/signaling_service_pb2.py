@@ -18,6 +18,9 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.core.node.common import (
+    metadata_pb2 as proto_dot_core_dot_node_dot_common_dot_metadata__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/grid/service/signaling_service.proto",
@@ -25,9 +28,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x90\x01\n\x16RegisterNewPeerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"|\n\x1aPeerSuccessfullyRegistered\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07peer_id\x18\x03 \x01(\t"\xb7\x01\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x15\n\rhost_metadata\x18\x04 \x01(\t\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xb6\x01\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x15\n\rhost_metadata\x18\x04 \x01(\t\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xb9\x01\n\x17OfferPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"\xba\x01\n\x18\x41nswerPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"j\n\x19SignalingRequestsNotFound\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16InvalidLoopBackRequest\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16\x43loseConnectionMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a%proto/core/node/common/metadata.proto\x1a\x1bproto/core/io/address.proto"\x90\x01\n\x16RegisterNewPeerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"|\n\x1aPeerSuccessfullyRegistered\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07peer_id\x18\x03 \x01(\t"\xd8\x01\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x36\n\rhost_metadata\x18\x04 \x01(\x0b\x32\x1f.syft.core.node.common.Metadata\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xd7\x01\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x36\n\rhost_metadata\x18\x04 \x01(\x0b\x32\x1f.syft.core.node.common.Metadata\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xb9\x01\n\x17OfferPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"\xba\x01\n\x18\x41nswerPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"j\n\x19SignalingRequestsNotFound\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16InvalidLoopBackRequest\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16\x43loseConnectionMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_node_dot_common_dot_metadata__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
 )
@@ -107,8 +111,8 @@ _REGISTERNEWPEERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=134,
-    serialized_end=278,
+    serialized_start=173,
+    serialized_end=317,
 )
 
 
@@ -186,8 +190,8 @@ _PEERSUCCESSFULLYREGISTERED = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=280,
-    serialized_end=404,
+    serialized_start=319,
+    serialized_end=443,
 )
 
 
@@ -261,11 +265,11 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
             full_name="syft.grid.service.SignalingAnswerMessage.host_metadata",
             index=3,
             number=4,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -322,8 +326,8 @@ _SIGNALINGANSWERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=407,
-    serialized_end=590,
+    serialized_start=446,
+    serialized_end=662,
 )
 
 
@@ -397,11 +401,11 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
             full_name="syft.grid.service.SignalingOfferMessage.host_metadata",
             index=3,
             number=4,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -458,8 +462,8 @@ _SIGNALINGOFFERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=593,
-    serialized_end=775,
+    serialized_start=665,
+    serialized_end=880,
 )
 
 
@@ -575,8 +579,8 @@ _OFFERPULLREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=778,
-    serialized_end=963,
+    serialized_start=883,
+    serialized_end=1068,
 )
 
 
@@ -692,8 +696,8 @@ _ANSWERPULLREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=966,
-    serialized_end=1152,
+    serialized_start=1071,
+    serialized_end=1257,
 )
 
 
@@ -752,8 +756,8 @@ _SIGNALINGREQUESTSNOTFOUND = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1154,
-    serialized_end=1260,
+    serialized_start=1259,
+    serialized_end=1365,
 )
 
 
@@ -812,8 +816,8 @@ _INVALIDLOOPBACKREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1262,
-    serialized_end=1365,
+    serialized_start=1367,
+    serialized_end=1470,
 )
 
 
@@ -872,8 +876,8 @@ _CLOSECONNECTIONMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1367,
-    serialized_end=1470,
+    serialized_start=1472,
+    serialized_end=1575,
 )
 
 _REGISTERNEWPEERMESSAGE.fields_by_name[
@@ -897,12 +901,18 @@ _SIGNALINGANSWERMESSAGE.fields_by_name[
 _SIGNALINGANSWERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALINGANSWERMESSAGE.fields_by_name[
+    "host_metadata"
+].message_type = proto_dot_core_dot_node_dot_common_dot_metadata__pb2._METADATA
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SIGNALINGOFFERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALINGOFFERMESSAGE.fields_by_name[
+    "host_metadata"
+].message_type = proto_dot_core_dot_node_dot_common_dot_metadata__pb2._METADATA
 _OFFERPULLREQUESTMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID

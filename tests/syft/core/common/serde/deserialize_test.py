@@ -6,9 +6,7 @@ from syft.core.common.serde.deserialize import _deserialize
 
 
 def test_fail_deserialize_no_format() -> None:
-    with raises(
-        ValueError, match="Please pick the format of the data on the deserialization"
-    ):
+    with raises(TypeError):
         _deserialize(blob="to deserialize", from_proto=False)
 
 

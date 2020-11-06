@@ -11,6 +11,7 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
@@ -193,30 +194,30 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     ) -> ObjectSearchReplyMessage:
         results: List[Pointer] = list()
 
-        for obj in node.store.get_objects_of_type(obj_type=object):
+        try:
+            for obj in node.store.get_objects_of_type(obj_type=object):
+                # if this tensor allows anyone to search for it, then one of its keys
+                # has an All() class in it.
+                contains_all_in_permissions = False
+                for key in obj.search_permissions.keys():
+                    if isinstance(key, All):
+                        contains_all_in_permissions = True
 
-            # if this tensor allows anyone to search for it, then one of its keys
-            # has an All() class in it.
-            contains_all_in_permissions = False
-            for key in obj.search_permissions.keys():
-                if isinstance(key, All):
-                    contains_all_in_permissions = True
-
-            if (
-                verify_key in obj.search_permissions.keys()
-                or verify_key == node.root_verify_key
-                or contains_all_in_permissions
-            ):
-
-                ptr_type = obj2pointer_type(obj.data)
-                ptr = ptr_type(
-                    client=node,
-                    id_at_location=obj.id,
-                    tags=obj.tags,
-                    description=obj.description,
-                )
-
-                results.append(ptr)
+                if (
+                    verify_key in obj.search_permissions.keys()
+                    or verify_key == node.root_verify_key
+                    or contains_all_in_permissions
+                ):
+                    ptr_type = obj2pointer_type(obj.data)
+                    ptr = ptr_type(
+                        client=node,
+                        id_at_location=obj.id,
+                        tags=obj.tags,
+                        description=obj.description,
+                    )
+                    results.append(ptr)
+        except Exception as e:
+            logger.error(f"Error searching store. {e}")
 
         return ObjectSearchReplyMessage(address=msg.reply_to, results=results)
 

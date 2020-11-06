@@ -78,6 +78,8 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+import random
+import time
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -88,6 +90,7 @@ from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
+from loguru import logger
 
 # syft relative
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
@@ -106,6 +109,9 @@ try:
 except ImportError:  # pragma: no cover
     # stdlib
     from asyncio.events import _get_running_loop as get_running_loop  # pragma: no cover
+
+
+message_cooldown = 0.0
 
 
 class WebRTCConnection(BidirectionalConnection):
@@ -128,34 +134,48 @@ class WebRTCConnection(BidirectionalConnection):
         # defined beforehand.
         try:
             self.loop = get_running_loop()
-            print("♫♫♫ > ...using a running event loop...")
+            log = "♫♫♫ > ...using a running event loop..."
+            logger.debug(log)
+            print(log)
         except RuntimeError as e:
             self.loop = None
-            print(f"♫♫♫ > ...error getting a running event Loop... {e}")
+            log = f"♫♫♫ > ...error getting a running event Loop... {e}"
+            logger.error(log)
+            print(log)
 
         if self.loop is None:
-            print("♫♫♫ > ...creating a new event loop...")
+            log = "♫♫♫ > ...creating a new event loop..."
+            print(log)
+            logger.debug(log)
             self.loop = asyncio.new_event_loop()
 
         # Message pool (High Priority)
         # These queues will be used to manage
         # async  messages.
-        self.producer_pool: asyncio.Queue = asyncio.Queue(
-            loop=self.loop
-        )  # Request Messages / Request Responses
-        self.consumer_pool: asyncio.Queue = asyncio.Queue(
-            loop=self.loop
-        )  # Request Responses
+        try:
+            self.producer_pool: asyncio.Queue = asyncio.Queue(
+                loop=self.loop,
+            )  # Request Messages / Request Responses
+            self.consumer_pool: asyncio.Queue = asyncio.Queue(
+                loop=self.loop,
+            )  # Request Responses
 
-        # Initialize a PeerConnection structure
-        self.peer_connection = RTCPeerConnection()
+            # Initialize a PeerConnection structure
+            self.peer_connection = RTCPeerConnection()
 
-        # Set channel descriptor as None
-        # This attribute will be used for external classes
-        # in order to verify if the connection channel
-        # was established.
-        self.channel: Optional[RTCDataChannel] = None
-        self._client_address: Optional[Address] = None
+            # Set channel descriptor as None
+            # This attribute will be used for external classes
+            # in order to verify if the connection channel
+            # was established.
+            self.channel: Optional[RTCDataChannel] = None
+            self._client_address: Optional[Address] = None
+
+            asyncio.ensure_future(self.heartbeat())
+
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection __init__. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
@@ -166,37 +186,42 @@ class WebRTCConnection(BidirectionalConnection):
         :return: returns a signaling offer payload containing local description.
         :rtype: str
         """
-        # Use the Peer Connection structure to
-        # set the channel as a RTCDataChannel.
-        self.channel = self.peer_connection.createDataChannel("datachannel")
+        try:
+            # Use the Peer Connection structure to
+            # set the channel as a RTCDataChannel.
+            self.channel = self.peer_connection.createDataChannel("datachannel")
 
-        # This method will be called by as a callback
-        # function by the aioRTC lib when the when
-        # the connection opens.
-        @self.channel.on("open")
-        async def on_open() -> None:  # type : ignore
-            self.__producer_task = asyncio.ensure_future(self.producer())
+            # This method will be called by as a callback
+            # function by the aioRTC lib when the when
+            # the connection opens.
+            @self.channel.on("open")
+            async def on_open() -> None:  # type : ignore
+                self.__producer_task = asyncio.ensure_future(self.producer())
 
-        # This method is the aioRTC "consumer" task
-        # and will be running as long as connection remains.
-        # At this point we're just setting the method behavior
-        # It'll start running after the connection opens.
-        @self.channel.on("message")
-        async def on_message(message: Union[bin, str]) -> None:  # type: ignore
-            # Forward all received messages to our own consumer method.
-            await self.consumer(msg=message)
+            # This method is the aioRTC "consumer" task
+            # and will be running as long as connection remains.
+            # At this point we're just setting the method behavior
+            # It'll start running after the connection opens.
+            @self.channel.on("message")
+            async def on_message(message: Union[bin, str]) -> None:  # type: ignore
+                # Forward all received messages to our own consumer method.
+                await self.consumer(msg=message)
 
-        # Set peer_connection to generate an offer message type.
-        await self.peer_connection.setLocalDescription(
-            await self.peer_connection.createOffer()
-        )
+            # Set peer_connection to generate an offer message type.
+            await self.peer_connection.setLocalDescription(
+                await self.peer_connection.createOffer()
+            )
 
-        # Generates the local description structure
-        # and serialize it to string afterwards.
-        local_description = object_to_string(self.peer_connection.localDescription)
+            # Generates the local description structure
+            # and serialize it to string afterwards.
+            local_description = object_to_string(self.peer_connection.localDescription)
 
-        # Return the Offer local_description payload.
-        return local_description
+            # Return the Offer local_description payload.
+            return local_description
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection _set_offer. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     async def _set_answer(self, payload: str) -> str:
@@ -209,54 +234,64 @@ class WebRTCConnection(BidirectionalConnection):
         :rtype: str
         """
 
-        @self.peer_connection.on("datachannel")
-        def on_datachannel(channel: RTCDataChannel) -> None:
-            self.channel = channel
+        try:
 
-            self.__producer_task = asyncio.ensure_future(self.producer())
+            @self.peer_connection.on("datachannel")
+            def on_datachannel(channel: RTCDataChannel) -> None:
+                self.channel = channel
 
-            @self.channel.on("message")
-            async def on_message(message: Union[bin, str]) -> None:  # type: ignore
-                await self.consumer(msg=message)
+                self.__producer_task = asyncio.ensure_future(self.producer())
 
-        return await self._process_answer(payload=payload)
+                @self.channel.on("message")
+                async def on_message(message: Union[bin, str]) -> None:  # type: ignore
+                    await self.consumer(msg=message)
+
+            return await self._process_answer(payload=payload)
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection _set_answer. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     async def _process_answer(self, payload: str) -> Union[str, None]:
-
         # Converts payload received by
         # the other peer in aioRTC Object
         # instance.
-        msg = object_from_string(payload)
+        try:
+            msg = object_from_string(payload)
 
-        # Check if Object instance is a
-        # description of RTC Session.
-        if isinstance(msg, RTCSessionDescription):
+            # Check if Object instance is a
+            # description of RTC Session.
+            if isinstance(msg, RTCSessionDescription):
 
-            # Use the target's network address/metadata
-            # to set the remote description of this peer.
-            # This will basically say to this peer how to find/connect
-            # with to other peer.
-            await self.peer_connection.setRemoteDescription(msg)
+                # Use the target's network address/metadata
+                # to set the remote description of this peer.
+                # This will basically say to this peer how to find/connect
+                # with to other peer.
+                await self.peer_connection.setRemoteDescription(msg)
 
-            # If it's an offer message type,
-            # generates your own local description
-            # and send it back in order to tell
-            # to the other peer how to find you.
-            if msg.type == "offer":
-                # Set peer_connection to generate an offer message type.
-                await self.peer_connection.setLocalDescription(
-                    await self.peer_connection.createAnswer()
-                )
+                # If it's an offer message type,
+                # generates your own local description
+                # and send it back in order to tell
+                # to the other peer how to find you.
+                if msg.type == "offer":
+                    # Set peer_connection to generate an offer message type.
+                    await self.peer_connection.setLocalDescription(
+                        await self.peer_connection.createAnswer()
+                    )
 
-                # Generates the local description structure
-                # and serialize it to string afterwards.
-                local_description = object_to_string(
-                    self.peer_connection.localDescription
-                )
+                    # Generates the local description structure
+                    # and serialize it to string afterwards.
+                    local_description = object_to_string(
+                        self.peer_connection.localDescription
+                    )
 
-                # Returns the answer peer's local description
-                return local_description
+                    # Returns the answer peer's local description
+                    return local_description
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection _process_answer. {e}"
+            logger.error(log)
+            raise e
         return None
 
     @syft_decorator(typechecking=True)
@@ -264,67 +299,89 @@ class WebRTCConnection(BidirectionalConnection):
         # Async task to send messages to the other side.
         # These messages will be enqueued by PySyft Node Clients
         # by using PySyft routes and ClientConnection's inheritance.
-        while True:
-            # If self.producer_pool is empty
-            # give up task queue priority, giving
-            # computing time to the next task.
-            msg = await self.producer_pool.get()
+        try:
+            while True:
+                # If self.producer_pool is empty
+                # give up task queue priority, giving
+                # computing time to the next task.
+                msg = await self.producer_pool.get()
 
-            # If self.producer_pool.get() returned a message
-            # send it as a binary using the RTCDataChannel.
-            self.channel.send(msg.to_binary())  # type: ignore
+                await asyncio.sleep(message_cooldown)
+                # If self.producer_pool.get() returned a message
+                # send it as a binary using the RTCDataChannel.
+                # logger.critical(f"> Sending MSG {msg.message} ID: {msg.id}")
+                self.channel.send(msg.to_bytes())  # type: ignore
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection producer. {e}"
+            logger.error(log)
+            raise e
 
     def close(self) -> None:
-        # Build Close Message to warn the other peer
-        bye_msg = CloseConnectionMessage(address=Address())
+        try:
+            # Build Close Message to warn the other peer
+            bye_msg = CloseConnectionMessage(address=Address())
 
-        self.channel.send(bye_msg.to_binary())  # type: ignore
+            self.channel.send(bye_msg.to_bytes())  # type: ignore
 
-        # Finish async tasks related with this connection
-        self._finish_coroutines()
+            # Finish async tasks related with this connection
+            self._finish_coroutines()
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection close. {e}"
+            logger.error(log)
+            raise e
 
     def _finish_coroutines(self) -> None:
-        asyncio.run(self.peer_connection.close())
-        self.__producer_task.cancel()
+        try:
+            asyncio.run(self.peer_connection.close())
+            self.__producer_task.cancel()
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection _finish_coroutines. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     async def consumer(self, msg: bin) -> None:  # type: ignore
-        # Async task to receive/process messages sent by the other side.
-        # These messages will be sent by the other peer
-        # as a service requests or responses for requests made by
-        # this connection previously (ImmediateSyftMessageWithReply).
+        try:
+            # Async task to receive/process messages sent by the other side.
+            # These messages will be sent by the other peer
+            # as a service requests or responses for requests made by
+            # this connection previously (ImmediateSyftMessageWithReply).
 
-        # Deserialize the received message
-        _msg = _deserialize(blob=msg, from_binary=True)
+            # Deserialize the received message
+            _msg = _deserialize(blob=msg, from_bytes=True)
 
-        # Check if it's NOT  a response generated by a previous request
-        # made by the client instance that uses this connection as a route.
-        # PS: The "_client_address" attribute will be defined during
-        # Node Client initialization.
-        if _msg.address != self._client_address:
-            # If it's a new service request, route it properly
-            # using the node instance owned by this connection.
+            # Check if it's NOT  a response generated by a previous request
+            # made by the client instance that uses this connection as a route.
+            # PS: The "_client_address" attribute will be defined during
+            # Node Client initialization.
+            if _msg.address != self._client_address:
+                # If it's a new service request, route it properly
+                # using the node instance owned by this connection.
 
-            # Immediate message with reply
-            if isinstance(_msg, SignedImmediateSyftMessageWithReply):
-                reply = self.recv_immediate_msg_with_reply(msg=_msg)
-                await self.producer_pool.put(reply)
+                # Immediate message with reply
+                if isinstance(_msg, SignedImmediateSyftMessageWithReply):
+                    reply = self.recv_immediate_msg_with_reply(msg=_msg)
+                    await self.producer_pool.put(reply)
 
-            # Immediate message without reply
-            elif isinstance(_msg, SignedImmediateSyftMessageWithoutReply):
-                self.recv_immediate_msg_without_reply(msg=_msg)
+                # Immediate message without reply
+                elif isinstance(_msg, SignedImmediateSyftMessageWithoutReply):
+                    self.recv_immediate_msg_without_reply(msg=_msg)
 
-            elif isinstance(_msg, CloseConnectionMessage):
-                # Just finish async tasks related with this connection
-                self._finish_coroutines()
+                elif isinstance(_msg, CloseConnectionMessage):
+                    # Just finish async tasks related with this connection
+                    self._finish_coroutines()
 
-            # Eventual message without reply
+                # Eventual message without reply
+                else:
+                    self.recv_eventual_msg_without_reply(msg=_msg)
+
+            # If it's true, the message will have the client's address as destination.
             else:
-                self.recv_eventual_msg_without_reply(msg=_msg)
-
-        # If it's true, the message will have the client's address as destination.
-        else:
-            await self.consumer_pool.put(_msg)
+                await self.consumer_pool.put(_msg)
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection consumer. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
@@ -336,22 +393,51 @@ class WebRTCConnection(BidirectionalConnection):
         :rtype: SignedImmediateSyftMessageWithoutReply
         """
         # Execute node services now
-        reply = self.node.recv_immediate_msg_with_reply(msg=msg)
-        return reply
+        try:
+            r = random.randint(0, 100000)
+            logger.debug(
+                f"> Before recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
+            )
+            reply = self.node.recv_immediate_msg_with_reply(msg=msg)
+            logger.debug(
+                f"> After recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
+            )
+            return reply
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection recv_immediate_msg_with_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         """ Executes requests instantly. """
-        self.node.recv_immediate_msg_without_reply(msg=msg)
+        try:
+            r = random.randint(0, 100000)
+            logger.debug(
+                f"> Before recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
+            )
+            self.node.recv_immediate_msg_without_reply(msg=msg)
+            logger.debug(
+                f"> After recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
+            )
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection recv_immediate_msg_without_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """ Executes requests eventually. """
-        self.node.recv_eventual_msg_without_reply(msg=msg)
+        try:
+            self.node.recv_eventual_msg_without_reply(msg=msg)
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection recv_eventual_msg_without_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=False)
     def send_immediate_msg_with_reply(
@@ -362,21 +448,38 @@ class WebRTCConnection(BidirectionalConnection):
         :return: returns an instance of SignedImmediateSyftMessageWithReply.
         :rtype: SignedImmediateSyftMessageWithReply
         """
-        return asyncio.run(self.send_sync_message(msg=msg))
+        try:
+            return asyncio.run(self.send_sync_message(msg=msg))
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection send_immediate_msg_with_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
-        self.producer_pool.put_nowait(msg)
+        try:
+            asyncio.run(self.producer_pool.put(msg))
+            time.sleep(message_cooldown)
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection send_immediate_msg_without_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         """" Sends low priority messages without waiting for their reply. """
-        self.producer_pool.put_nowait(msg)
+        try:
+            asyncio.run(self.producer_pool.put(msg))
+            time.sleep(message_cooldown)
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
+            logger.error(log)
+            raise e
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(
@@ -387,18 +490,88 @@ class WebRTCConnection(BidirectionalConnection):
         :return: returns an instance of SignedImmediateSyftMessageWithoutReply.
         :rtype: SignedImmediateSyftMessageWithoutReply
         """
+        try:
+            # To ensure the sequence of sending / receiving messages
+            # it's necessary to keep only a unique reference for reading
+            # inputs (producer) and outputs (consumer).
+            r = random.randint(0, 100000)
+            # To be able to perform this method synchronously (waiting for the reply)
+            # without blocking async methods, we need to use queues.
 
-        # To ensure the sequence of sending / receiving messages
-        # it's necessary to keep only a unique reference for reading
-        # inputs (producer) and outputs (consumer).
+            # Enqueue the message to be sent to the target.
+            logger.debug(f"> Before send_sync_message producer_pool.put blocking {r}")
+            # self.producer_pool.put_nowait(msg)
+            await self.producer_pool.put(msg)
+            logger.debug(f"> After send_sync_message producer_pool.put blocking {r}")
 
-        # To be able to perform this method synchronously (waiting for the reply)
-        # without blocking async methods, we need to use queues.
+            # Wait for the response checking the consumer queue.
+            logger.debug(
+                f"> Before send_sync_message consumer_pool.get blocking {r} {msg}"
+            )
+            logger.debug(
+                f"> Before send_sync_message consumer_pool.get blocking {r} {msg.message}"
+            )
+            # before = time.time()
+            # timeout_secs = 15
 
-        # Enqueue the message to be sent to the target.
-        self.producer_pool.put_nowait(msg)
+            response = await self.consumer_pool.get()
 
-        # Wait for the response checking the consumer queue.
-        response = await self.consumer_pool.get()
+            #  asyncio.run()
+            # self.async_check(before=before, timeout_secs=timeout_secs, r=r)
 
-        return response
+            logger.debug(f"> After send_sync_message consumer_pool.get blocking {r}")
+            return response
+        except Exception as e:
+            log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
+            logger.error(log)
+            raise e
+
+    async def async_check(
+        self, before: float, timeout_secs: int, r: float
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        while True:
+            await asyncio.sleep(message_cooldown)
+            try:
+                response = self.consumer_pool.get_nowait()
+                return response
+            except Exception as e:
+                now = time.time()
+                logger.debug(
+                    f"> During send_sync_message consumer_pool.get blocking {r}. {e}"
+                )
+                if now - before > timeout_secs:
+                    log = f"send_sync_message timeout {timeout_secs} {r}"
+                    logger.critical(log)
+                    raise Exception(log)
+
+    async def heartbeat(self) -> None:
+        producer_watermark = 0
+        consumer_watermark = 0
+        while True:
+            await asyncio.sleep(5)
+            try:
+                psize = self.producer_pool.qsize()
+                csize = self.consumer_pool.qsize()
+                async_task_count = len(asyncio.all_tasks())
+                producer_watermark = max(producer_watermark, psize)
+                consumer_watermark = max(consumer_watermark, csize)
+                log = (
+                    f"{self.node.name} PQ: {psize} / {producer_watermark} - "
+                    + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
+                )
+                print(log)
+                logger.critical(log)
+
+                if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
+                    log = f"☠️ HEART BEAT DEAD! {self.node.name}"
+                    print(log)
+                    logger.critical(log)
+                # else:
+                #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
+                #     print(log)
+                #     logger.critical(log)
+            except Exception as e:
+                log = f"HEART BEAT exception in {self.node.name}. {e}"
+                print(log)
+                logger.critical(log)
+                raise Exception(log)

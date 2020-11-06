@@ -402,7 +402,7 @@ Step 1 - Install Git
 --------------------
 
 Here is the download link for Git on windows:  `Git for Windows <https://gitforwindows.org/>`_
-or in case you are lazy! you can use  `Github for Desktop. <https://desktop.github.com/>`_
+Note: You need git in your path or the `pip install -e .` will fail.
 
 Step 2 - Install Microsoft Build tools
 --------------------------------------

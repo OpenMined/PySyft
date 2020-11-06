@@ -7,6 +7,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.service.auth import AuthorizationException
 
 
 def test_torch_remote_tensor_register() -> None:
@@ -20,14 +21,37 @@ def test_torch_remote_tensor_register() -> None:
 
     assert len(alice.store) == 1
 
-    # TODO: Fix this from deleting the object in the store due to the variable
-    # ptr being assigned a second time and triggering __del__ on the old variable
-    # ptr used to be assigned to (Even though its new assignment is the same object)
-    # ptr = x.send(alice_client)
-    # assert len(alice.store) == 1  # Same id
+    ptr = x.send(alice_client)
+    gc.collect()
+
+    # the previous objects get deleted because we overwrite
+    # ptr - we send a message to delete that object
+    assert len(alice.store) == 1
 
     ptr.get()
     assert len(alice.store) == 0  # Get removes the object
+
+
+def test_torch_remote_tensor_with_alias_send() -> None:
+    """Test sending tensor on the remote worker with alias send method."""
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    x = th.tensor([-1, 0, 1, 2, 3, 4])
+    ptr = x.send_to(alice_client)
+
+    assert len(alice.store) == 1
+
+    # TODO: Fix this from deleting the object in the store due to the variable
+    # see above
+    # ptr = x.send_to(alice_client)
+
+    data = ptr.get()
+
+    assert len(alice.store) == 0  # Get removes the object
+
+    assert x.equal(data)  # Check if send data and received data are equal
 
 
 def test_torch_serde() -> None:
@@ -61,13 +85,8 @@ def test_torch_no_read_permissions() -> None:
     ptr.client = guest_bob
 
     # this should trigger an exception
-    with pytest.raises(Exception) as exception:
+    with pytest.raises(AuthorizationException):
         ptr.get()
-
-    assert (
-        str(exception.value)
-        == "You do not have permission to .get() this tensor. Please submit a request."
-    )
 
     x = th.tensor([1, 2, 3, 4])
 

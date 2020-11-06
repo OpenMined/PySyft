@@ -4,6 +4,7 @@ from unittest.mock import patch
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import pytest
 from pytest import mark
 from pytest import raises
 
@@ -48,6 +49,7 @@ def test_request_message() -> None:
     assert msg.requester_verify_key == get_verify_key()
 
 
+@pytest.mark.asyncio
 @mark.parametrize("method_name", ["accept", "approve"])
 def test_accept(method_name: str) -> None:
     node = Domain(name="remote domain")
@@ -71,6 +73,7 @@ def test_accept(method_name: str) -> None:
         assert mock_send_msg.call_args[1]["msg"].request_id == request.id
 
 
+@pytest.mark.asyncio
 @mark.parametrize("method_name", ["deny", "reject", "withdraw"])
 def test_deny(method_name: str) -> None:
     node = Domain(name="remote domain")
@@ -103,7 +106,7 @@ def test_fail_accept_request_message() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Accept Message."):
         request.accept()
 
 
@@ -116,7 +119,7 @@ def test_fail_deny_request_message() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Deny Message."):
         request.deny()
 
 
@@ -129,5 +132,5 @@ def test_fail_process_request_service() -> None:
         owner_address=addr,
     )
 
-    with raises(Exception, match="No owner_client_if_available"):
+    with raises(Exception, match="No way to dispatch Deny Message."):
         request.deny()

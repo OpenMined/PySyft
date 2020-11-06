@@ -24,7 +24,6 @@ def syft_decorator(
     def decorator(function: Callable) -> Callable:
 
         if typechecking:
-
             function = type_hints(function, prohibit_args=prohibit_args)
 
         def wrapper(*args: Tuple[Any], **kwargs: Dict[Any, Any]) -> Callable:

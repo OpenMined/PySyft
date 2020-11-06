@@ -143,7 +143,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
-        node.store.store(obj=result)
+        node.store[self.id_at_location] = result
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:

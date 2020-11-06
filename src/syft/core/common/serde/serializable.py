@@ -6,9 +6,9 @@ from typing import Type
 from typing import Union
 
 # third party
-from google.protobuf import json_format
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 
 # Fixes python3.6
 # however API changed between versions so typing_extensions smooths this over:
@@ -17,7 +17,7 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
-from ....proto.util.json_message_pb2 import JsonMessage
+from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
 
@@ -151,7 +151,7 @@ class Serializable(metaclass=MetaSerializable):
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as .json(), .binary(), etc) know how to convert the object into
+        implemented here (such as .binary(), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message
@@ -209,31 +209,13 @@ class Serializable(metaclass=MetaSerializable):
         return self.serialize(to_proto=True)
 
     @syft_decorator(typechecking=True)
-    def to_json(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a JSON object.
-
-        :return: a JSON string
-        :rtype: str
-        """
-        return self.serialize(to_json=True)
-
-    @syft_decorator(typechecking=True)
-    def json(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a JSON object.
-
-        :return: a JSON string
-        :rtype: str
-        """
-        return self.serialize(to_json=True)
-
-    @syft_decorator(typechecking=True)
-    def to_binary(self) -> bytes:
+    def to_bytes(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_binary=True)
+        return self.serialize(to_bytes=True)
 
     @syft_decorator(typechecking=True)
     def binary(self) -> bytes:
@@ -242,33 +224,13 @@ class Serializable(metaclass=MetaSerializable):
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_binary=True)
-
-    @syft_decorator(typechecking=True)
-    def to_hex(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a hex object.
-
-        :return: a hex string
-        :rtype: str
-        """
-        return self.serialize(to_hex=True)
-
-    @syft_decorator(typechecking=True)
-    def hex(self) -> str:
-        """A convenience method to convert any subclass of Serializable into a hex object.
-
-        :return: a hex string
-        :rtype: str
-        """
-        return self.serialize(to_hex=True)
+        return self.serialize(to_bytes=True)
 
     @syft_decorator(typechecking=True)
     def serialize(
         self,
         to_proto: bool = True,
-        to_json: bool = False,
-        to_binary: bool = False,
-        to_hex: bool = False,
+        to_bytes: bool = False,
     ) -> Union[str, bytes, Message]:
         """Serialize the object according to the parameters.
 
@@ -288,38 +250,22 @@ class Serializable(metaclass=MetaSerializable):
 
         :param to_proto: set this flag to TRUE if you want to return a protobuf object
         :type to_proto: bool
-        :param to_json: set this flag to TRUE if you want to return a json object
-        :type to_json: bool
-        :param to_binary: set this flag to TRUE if you want to return a binary object
-        :type to_binary: bool
-        :param to_hex: set this flag to TRUE if you want to return a hex string object
-        :type to_hex: bool
+        :param to_bytes: set this flag to TRUE if you want to return a binary object
+        :type to_bytes: bool
         :return: a serialized form of the object on which serialize() is called.
         :rtype: Union[str, bytes, Message]
 
         """
 
-        if to_json or to_binary or to_hex:
-
+        if to_bytes:
+            logger.debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
-            blob = json_format.MessageToJson(
-                message=self._object2proto(), indent=None  # type: ignore # indent=None
+            blob = self._object2proto().SerializeToString()
+            blob = DataMessage(
+                obj_type=get_fully_qualified_name(obj=self), content=blob
             )
-            blob = json_format.MessageToJson(
-                message=JsonMessage(
-                    obj_type=get_fully_qualified_name(obj=self), content=blob
-                ),
-                indent=None,  # type: ignore # indent=None
-            )
-
-            if to_json:
-                return blob
-            if to_binary:
-                return bytes(blob, "utf-8")
-
-            # then to_hex was true
-            return bytes(blob, "utf-8").hex()
+            return blob.SerializeToString()
 
         elif to_proto:
             return type(self)._object2proto(self)
@@ -327,7 +273,7 @@ class Serializable(metaclass=MetaSerializable):
             raise Exception(
                 """You must specify at least one deserialization format using
                             one of the arguments of the serialize() method such as:
-                            to_proto, to_json, to_binary, or to_hex."""
+                            to_proto, to_bytes."""
             )
 
     @staticmethod

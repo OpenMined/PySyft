@@ -164,17 +164,19 @@ class Class(Callable):
                 id_ = UID()
                 self.id = id_
 
+            id_at_location = UID()
+
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
-                id_at_location=self.id,
+                id_at_location=id_at_location,
                 tags=self.tags if hasattr(self, "tags") else list(),
                 description=self.description if hasattr(self, "description") else "",
             )
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
-                obj_id=ptr.id_at_location,
+                id_at_location=ptr.id_at_location,
                 obj=self,
                 address=client.address,
                 anyone_can_search_for_this=searchable,
@@ -183,11 +185,16 @@ class Class(Callable):
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)
 
-            # STep 4: return pointer
+            # Step 4: return pointer
             return ptr
+
+        def send_to(self: Any, client: Any, searchable: bool = False) -> Pointer:
+            # alias method to send method.
+            return send(self=self, client=client, searchable=searchable)
 
         # using curse because Numpy tries to lock down custom attributes
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
+        aggressive_set_attr(obj=outer_self.ref, name="send_to", attr=send_to)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
@@ -210,16 +217,12 @@ class Class(Callable):
         def serialize(  # type: ignore
             self,
             to_proto: bool = True,
-            to_json: bool = False,
-            to_binary: bool = False,
-            to_hex: bool = False,
+            to_bytes: bool = False,
         ) -> Union[str, bytes, Message]:
             return _serialize(
                 obj=self,
                 to_proto=to_proto,
-                to_json=to_json,
-                to_binary=to_binary,
-                to_hex=to_hex,
+                to_bytes=to_bytes,
             )
 
         aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
@@ -227,16 +230,13 @@ class Class(Callable):
             obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
         )
         aggressive_set_attr(obj=outer_self.ref, name="proto", attr=Serializable.proto)
+        to_bytes_attr = "to_bytes"
+        # int has a to_bytes already, so we can use _to_bytes internally
+        if hasattr(outer_self.ref, to_bytes_attr):
+            to_bytes_attr = "_to_bytes"
         aggressive_set_attr(
-            obj=outer_self.ref, name="to_json", attr=Serializable.to_json
+            obj=outer_self.ref, name=to_bytes_attr, attr=Serializable.to_bytes
         )
-        aggressive_set_attr(obj=outer_self.ref, name="json", attr=Serializable.json)
-        aggressive_set_attr(
-            obj=outer_self.ref, name="to_binary", attr=Serializable.to_binary
-        )
-        aggressive_set_attr(obj=outer_self.ref, name="binary", attr=Serializable.binary)
-        aggressive_set_attr(obj=outer_self.ref, name="to_hex", attr=Serializable.to_hex)
-        aggressive_set_attr(obj=outer_self.ref, name="hex", attr=Serializable.hex)
 
 
 def ispointer(obj: Any) -> bool:

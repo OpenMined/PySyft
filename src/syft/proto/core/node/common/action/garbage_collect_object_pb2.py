@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n:proto/core/node/common/action/garbage_collect_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"k\n\x1aGarbageCollectObjectAction\x12%\n\x06obj_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n:proto/core/node/common/action/garbage_collect_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"s\n\x1aGarbageCollectObjectAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -42,8 +42,8 @@ _GARBAGECOLLECTOBJECTACTION = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="obj_id",
-            full_name="syft.core.node.common.action.GarbageCollectObjectAction.obj_id",
+            name="id_at_location",
+            full_name="syft.core.node.common.action.GarbageCollectObjectAction.id_at_location",
             index=0,
             number=1,
             type=11,
@@ -89,11 +89,11 @@ _GARBAGECOLLECTOBJECTACTION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=160,
-    serialized_end=267,
+    serialized_end=275,
 )
 
 _GARBAGECOLLECTOBJECTACTION.fields_by_name[
-    "obj_id"
+    "id_at_location"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GARBAGECOLLECTOBJECTACTION.fields_by_name[
     "address"

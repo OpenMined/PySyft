@@ -7,12 +7,12 @@ from syft.core.node.common.action.get_object_action import GetObjectAction
 
 def test_get_object_action_serde() -> None:
     msg = GetObjectAction(
-        obj_id=UID(), address=Address(), reply_to=Address(), msg_id=UID()
+        id_at_location=UID(), address=Address(), reply_to=Address(), msg_id=UID()
     )
     blob = msg.serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
-    assert msg.obj_id == msg2.obj_id
+    assert msg.id_at_location == msg2.id_at_location
     assert msg.address == msg2.address
     assert msg.reply_to == msg2.reply_to

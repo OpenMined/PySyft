@@ -31,9 +31,12 @@ class TorchTensorWrapper(StorableObject):
         proto = Tensor_PB()
         proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value))
 
-        grad = getattr(self.value, "grad", None)
-        if grad is not None:
-            proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
+        proto.requires_grad = getattr(self.value, "requires_grad", False)
+
+        if proto.requires_grad:
+            grad = getattr(self.value, "grad", None)
+            if grad is not None:
+                proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
 
         return proto
 
@@ -42,6 +45,8 @@ class TorchTensorWrapper(StorableObject):
         tensor = protobuf_tensor_deserializer(proto.tensor)
         if proto.HasField("grad"):
             tensor.grad = protobuf_tensor_deserializer(proto.grad)
+
+        tensor.requires_grad_(proto.requires_grad)
 
         return tensor
 

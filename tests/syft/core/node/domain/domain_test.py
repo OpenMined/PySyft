@@ -1,15 +1,19 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
+from syft.core.common.message import SyftMessage
 from syft.core.node.domain import Domain
 from syft.core.node.domain.service import RequestStatus
 
 
-def test_domain_creation() -> None:
+@pytest.mark.asyncio
+async def test_domain_creation() -> None:
     Domain(name="test domain")
 
 
+@pytest.mark.asyncio
 def test_domain_serde() -> None:
 
     domain_1 = Domain(name="domain 1")
@@ -19,6 +23,7 @@ def test_domain_serde() -> None:
     _ = tensor.send(domain_1_client)
 
 
+@pytest.mark.asyncio
 def test_domain_request_pending() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
@@ -29,7 +34,8 @@ def test_domain_request_pending() -> None:
     domain_2 = Domain(name="my domain")
 
     data_ptr_domain_1.request(
-        request_name="My Request", reason="I'd lke to see this pointer"
+        request_name="My Request",
+        reason="I'd lke to see this pointer",
     )
 
     requested_object = data_ptr_domain_1.id_at_location
@@ -47,6 +53,7 @@ def test_domain_request_pending() -> None:
     assert RequestStatus.Pending == response
 
 
+@pytest.mark.asyncio
 def test_domain_request_denied() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
@@ -79,6 +86,7 @@ def test_domain_request_denied() -> None:
     assert RequestStatus.Rejected == response
 
 
+@pytest.mark.asyncio
 def test_domain_request_accepted() -> None:
     domain_1 = Domain(name="remote domain")
     tensor = th.tensor([1, 2, 3])
@@ -106,3 +114,12 @@ def test_domain_request_accepted() -> None:
     )
 
     assert RequestStatus.Accepted == response
+
+
+@pytest.mark.asyncio
+def test_domain_is_for_me_exception() -> None:
+    domain_1 = Domain(name="remote domain")
+
+    with pytest.raises(Exception):
+        msg = SyftMessage()
+        domain_1.message_is_for_me(msg)
