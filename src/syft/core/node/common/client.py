@@ -386,7 +386,7 @@ class StoreClient:
             matches = 0
             match_obj: Optional[Pointer] = None
             for obj in self.store:
-                if key == str(obj.id_at_location.value):
+                if key in str(obj.id_at_location.value).replace("-", ""):
                     return obj
                 if key in obj.tags:
                     matches += 1
