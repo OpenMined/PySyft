@@ -12,11 +12,13 @@ import json
 
 @root_route.route("/pysyft", methods=["POST"])
 def root_route():
-    json_msg = request.get_json()
-    obj_msg = _deserialize(blob=json_msg, from_json=True)
+    data = request.get_data()
+    obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
         reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
-        return reply.json()
+        r = Response(response=reply.serialize(to_bytes=True), status=200)
+        r.headers["Content-Type"] = "application/octet-stream"
+        return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         node.recv_immediate_msg_without_reply(msg=obj_msg)
     else:
