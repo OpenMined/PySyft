@@ -46,7 +46,7 @@ def connect(
                 name,
                 client_id,
             ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
-
+            
             # Create a new Solo Route using the selected connection type
             route = SoloRoute(destination=spec_location, connection=conn)
 

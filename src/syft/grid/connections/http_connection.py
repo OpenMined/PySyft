@@ -75,7 +75,6 @@ class HTTPConnection(ClientConnection):
         # and send it using HTTP protocol
         self._send_msg(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def _send_msg(self, msg: SyftMessage) -> requests.Response:
         """Serializes Syft messages in json format and send it using HTTP protocol.
 
@@ -88,20 +87,30 @@ class HTTPConnection(ClientConnection):
         # Serialize SyftMessage object
         json_msg = msg.json()
 
+        if self.session_token:
+            header = {"token": self.session_token}
+        else:
+            header = {}
+
         # Perform HTTP request using base_url as a root address
-        r = requests.post(url=self.base_url + HTTPConnection.SYFT_ROUTE, json=json_msg)
+        r = requests.post(
+            url=self.base_url + HTTPConnection.SYFT_ROUTE, json=json_msg, headers=header
+        )
 
         # Return request's response object
         # r.text provides the response body as a str
         return r
 
     def login(self, credentials: Dict) -> Tuple:
-        response = json.loads(
-            requests.post(
-                url=self.base_url + HTTPConnection.LOGIN_ROUTE, data=credentials
-            ).text
+        response = requests.post(
+            url=self.base_url + HTTPConnection.LOGIN_ROUTE, json=credentials
         )
-        return (response["metadata"], response["key"])
+        content = json.loads(response.text)
+        if response.status_code != requests.codes.ok:
+            raise Exception(content["error"])
+
+        self.session_token = content["token"]
+        return (content["metadata"], content["key"])
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> str:
