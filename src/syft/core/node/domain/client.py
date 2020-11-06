@@ -92,6 +92,7 @@ class RequestQueueClient:
         log_local: bool = False,
         name: Optional[str] = None,
         timeout_secs: int = -1,
+        element_quota: Optional[int] = None,
     ) -> None:
         handler_opts = self._validate_options(
             action=action,
@@ -99,9 +100,18 @@ class RequestQueueClient:
             log_local=log_local,
             name=name,
             timeout_secs=timeout_secs,
+            element_quota=element_quota,
         )
 
         self._update_handler(handler_opts, keep=False)
+
+    def clear_handlers(self) -> None:
+        for handler in self.handlers:
+            new_dict = {}
+            del handler["created_time"]
+            for k, v in handler.items():
+                new_dict[str(k)] = v
+            self.remove_handler(**new_dict)
 
     def _validate_options(
         self,
