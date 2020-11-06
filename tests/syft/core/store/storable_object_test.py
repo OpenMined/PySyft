@@ -21,7 +21,8 @@ def test_serde_storable_obj() -> None:
 
     blob = sy.serialize(obj=obj)
 
-    sy.deserialize(blob=blob)
+    obj2 = sy.deserialize(blob=blob)
+    assert obj2 == obj.data
 
 
 # def test_serde_storable_obj_with_wrapped_class() -> None:

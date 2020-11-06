@@ -43,6 +43,7 @@ class TorchTensorWrapper(StorableObject):
     @staticmethod
     def _data_proto2object(proto: Tensor_PB) -> th.Tensor:
         tensor = protobuf_tensor_deserializer(proto.tensor)
+
         if proto.HasField("grad"):
             tensor.grad = protobuf_tensor_deserializer(proto.grad)
 
