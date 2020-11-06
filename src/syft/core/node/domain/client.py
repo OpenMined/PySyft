@@ -238,3 +238,10 @@ class DomainClient(Client):
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
+
+    def update_vars(self) -> None:
+        for ptr in self.store.store:  # type: ignore
+            tags = getattr(ptr, "tags", None)
+            if tags is not None:
+                for tag in tags:
+                    globals()[tag] = ptr
