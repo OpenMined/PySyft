@@ -2,6 +2,8 @@
 import ast
 from collections import OrderedDict
 import copy
+import os
+from pathlib import Path
 import sys
 from typing import Any
 from typing import Dict
@@ -173,6 +175,89 @@ class Module:
         for _, module in self.modules.items():
             module.cpu()
         return self
+
+    def load_state_dict(self, input: Union[str, os.PathLike, Dict[str, Any]]) -> None:
+        if not self.is_local:
+            print("> This model is remote so try calling .get()")
+            return None
+        else:
+            state_dict = {}
+            if isinstance(input, (str, os.PathLike)):
+                try:
+                    file_path = Path(input)
+                    if os.path.exists(file_path):
+                        with open(Path(input), "rb") as f:
+                            state_dict = torch.load(f)
+                except Exception as e:
+                    log = f"  Failed to load state dict from path: {file_path}. {e}"
+                    print(log)
+                    logger.critical(log)
+            else:
+                state_dict = dict(input)
+
+            if issubclass(type(state_dict), dict):
+                print("> Loading model weights")
+                layers: Dict[str, Any] = {}
+                for save_key, values in state_dict.items():
+                    parts = save_key.split(".")
+                    if len(parts) < 2:
+                        print(f"  state dict key is too short: {save_key}")
+                        continue
+                    layer = parts[0]
+                    attr = parts[1]
+                    if layer not in layers:
+                        layers[layer] = {}
+                    layers[layer][attr] = values
+
+                for layer, sd in layers.items():
+                    local_layer = getattr(self, layer, None)
+                    if local_layer is not None and hasattr(
+                        local_layer, "load_state_dict"
+                    ):
+                        d = local_layer.load_state_dict(sd)
+                        print(f"{layer} state dict loaded with: {d}")
+                    else:
+                        print(f"  Model doesnt have layer {layer}")
+
+                print("> Finished loading weights")
+
+            else:
+                print(
+                    f"  Invalid input: {type(input)}. "
+                    + "Try inputting a state_dict or .pth file."
+                )
+        return None
+
+    def state_dict(self) -> Optional[Dict[str, Any]]:
+        if not self.is_local:
+            print("> This model is remote so try calling .get()")
+            return None
+        else:
+            print("> Saving model weights")
+            model_state_dict = OrderedDict()
+            for name, module in self.modules.items():
+                if hasattr(module, "state_dict"):
+                    for k, v in module.state_dict().items():
+                        save_key = f"{name}.{k}"
+                        model_state_dict[save_key] = v
+
+            print("> Finished saving weights")
+            return model_state_dict
+
+    def save(self, path: Union[str, bytes, os.PathLike]) -> None:
+        if not self.is_local:
+            print("> This model is remote so try calling .get()")
+            return
+        else:
+            state_dict = self.state_dict()
+            torch.save(state_dict, path)
+
+    def load(self, path: Union[str, os.PathLike]) -> None:
+        if not self.is_local:
+            print("> This model is remote so try calling .get()")
+            return
+        else:
+            self.load_state_dict(input=path)
 
     def send(self, client: Any) -> Any:
         if not self.is_local:
