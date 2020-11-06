@@ -431,6 +431,12 @@ class Pointer(AbstractPointer):
                     return status
 
     def make_searchable(self, target_verify_key: Optional[VerifyKey] = None) -> None:
+        """Make the object pointed at searchable for other people. If target_verify_key is not specified, the
+        object will be searchable by anyone.
+
+        :param target_verify_key: The verify_key of the client to which we want to give search permission.
+        :type target_verify_key: Optional[VerifyKey]
+        """
         msg = ObjectSearchPermissionUpdateMessage(
             add_instead_of_remove=True,
             target_verify_key=target_verify_key,
