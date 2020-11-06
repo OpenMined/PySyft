@@ -120,6 +120,11 @@ class Client(AbstractNodeClient):
 
             for attr_name, attr in self.lib_ast.attrs.items():
                 setattr(self, attr_name, attr)
+                if attr_name == "syft":
+                    try:
+                        setattr(self, "python", attr.lib.python)
+                    except Exception as e:
+                        print(f"Failed to set python attribute on client. {e}")
 
     def add_me_to_my_address(self) -> None:
         raise NotImplementedError
