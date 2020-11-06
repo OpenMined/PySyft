@@ -26,7 +26,8 @@ from syft.generic.utils import remote
 λ = 127  # security parameter
 n = 32  # bit precision
 λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
-assert λs == 2
+if λs != 2:
+    raise ValueError("Check the value of security parameter")
 
 no_wrap = {"no_wrap": True}
 
@@ -40,8 +41,33 @@ EQ = 0
 COMP = 1
 
 # number of processes
-N_CORES = 8
+N_CORES = max(4, multiprocessing.cpu_count())
 MULTI_LIMIT = 50_000
+
+
+def _get_items(partitions):
+    list_items = [[] for _ in range(len(partitions[0]))]
+    for partition in partitions:
+        for i, item in enumerate(partition):
+            if isinstance(item, tuple):
+                if len(list_items[i]) == 0:
+                    list_items[i] = [[] for _ in range(len(item))]
+                for j, it in enumerate(item):
+                    list_items[i][j].append(it)
+            else:
+                list_items[i].append(item)
+    return list_items
+
+
+def _get_primitives(list_items):
+    primitives = []
+    for items in list_items:
+        if isinstance(items[0], np.ndarray):
+            primitive = concat(*items, axis=-1)
+        else:
+            primitive = tuple(concat(*its, axis=-1) for its in items)
+        primitives.append(primitive)
+    return primitives
 
 
 def keygen(n_values, op):
@@ -54,44 +80,22 @@ def keygen(n_values, op):
     """
     if op == "eq":
         return DPF.keygen(n_values=n_values)
-    elif op == "comp":
-        if n_values > MULTI_LIMIT:
-            multiprocessing_args = []
-            slice_size = math.ceil(n_values / N_CORES)
-            for j in range(N_CORES):
-                n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
-                process_args = (n_instances,)  # TODO add a seed element for the PRG?
-                multiprocessing_args.append(process_args)
-            p = multiprocessing.Pool()
-            partitions = p.starmap(DIF.keygen, multiprocessing_args)
-            p.close()
-            list_items = [[] for _ in range(len(partitions[0]))]
-            for idx, partition in enumerate(partitions):
-                for i, item in enumerate(partition):
-                    if isinstance(item, tuple):
-                        if len(list_items[i]) == 0:
-                            list_items[i] = [[] for _ in range(len(item))]
-                        for j, it in enumerate(item):
-                            list_items[i][j].append(it)
-                    else:
-                        list_items[i].append(item)
-
-            primitives = []
-            for items in list_items:
-                if isinstance(items[0], np.ndarray):
-                    primitive = concat(*items, axis=-1)
-                    primitives.append(primitive)
-                else:
-                    list_primitives = []
-                    for its in items:
-                        list_primitives.append(concat(*its, axis=-1))
-                    primitives.append(tuple(list_primitives))
-
-            return primitives
-        else:
+    if op == "comp":
+        if n_values <= MULTI_LIMIT:
             return DIF.keygen(n_values)
-    else:
-        raise ValueError
+        multiprocessing_args = []
+        slice_size = math.ceil(n_values / N_CORES)
+        for j in range(N_CORES):
+            n_instances = min((j + 1) * slice_size, n_values) - j * slice_size
+            process_args = (n_instances,)  # TODO add a seed element for the PRG?
+            multiprocessing_args.append(process_args)
+
+        with multiprocessing.Pool() as p:
+            partitions = p.starmap(DIF.keygen, multiprocessing_args)
+
+        list_items = _get_items(partitions)
+        return _get_primitives(list_items)
+    raise ValueError(f"{op} is an unsupported operation.")
 
 
 def fss_op(x1, x2, op="eq"):
@@ -478,7 +482,8 @@ def bit_decomposition(x):
 
 
 def randbit(shape):
-    assert len(shape) == 3
+    if len(shape) != 3:
+        raise ValueError("size of shape is not 3")
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
     randvalues = np.random.randint(0, 2 ** 64, size=shape_with_bytes, dtype=np.uint64)
@@ -498,16 +503,22 @@ def split_last_bit(buffer):
 def G(seed):
     """Pseudo Random Generator λ -> 2(λ + 1)"""
 
-    assert len(seed.shape) == 2
+    if len(seed.shape) != 2:
+        raise ValueError("size of seed shape needs to be 2")
+
     n_values = seed.shape[1]
-    assert seed.shape[0] == λs
+
+    if seed.shape[0] != λs:
+        raise ValueError("check the security parameter and seed shape")
+
     x = seed
     x = x.T
     dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
     x2 = x.view(dtype=dt1)
     x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    assert x.shape == (n_values, 2 * 8)
+    if x.shape != (n_values, 2 * 8):
+        raise ValueError(f"shape of x needs to be ({n_values}, 16)")
 
     out = np.empty((n_values, 4 * 8), dtype=np.uint8)
 
@@ -540,16 +551,21 @@ def H(seed, idx=0):
     h0 is erased by h1
     """
 
-    assert len(seed.shape) == 2
+    if len(seed.shape) != 2:
+        raise ValueError("size of seed shape needs to be 2")
     n_values = seed.shape[1]
-    assert seed.shape[0] == λs
+
+    if seed.shape[0] != λs:
+        raise ValueError("check the security parameter and seed shape")
+
     x = seed
     x = x.T
     dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
     x2 = x.view(dtype=dt1)
     x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    assert x.shape == (n_values, 2 * 8)
+    if x.shape != (n_values, 2 * 8):
+        raise ValueError(f"shape of x needs to be ({n_values}, 16)")
 
     if (n_values, idx) not in empty_dict:
         # 64 bytes are needed to store a sha512

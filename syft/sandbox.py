@@ -1,10 +1,18 @@
 import importlib
+import numpy as np
 
 from syft.frameworks.torch.hook.hook import TorchHook
 from syft.workers.virtual import VirtualWorker
 from syft.grid.private_grid import PrivateGridNetwork
 
 from syft.exceptions import DependencyError
+
+try:
+    from tensorflow.keras import datasets
+
+    tf_datasets_available = True
+except ImportError:
+    tf_datasets_available = False
 
 
 def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
@@ -53,6 +61,24 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
                 )
                 .describe(dataset["DESCR"])
             )
+
+            return data, target
+
+        def load_tf(func, *tags):
+            num_of_records = 10000
+            """Int: num_of_records is a configurable limit for the cifar10
+            and fashion_mnist datasets.
+            since it is a huge dataset and it requires a lot of memory resources"""
+
+            ((train_images, train_labels), (test_images, test_labels)) = func()
+            data = np.concatenate([train_images, test_images])
+            target = np.concatenate([train_labels, test_labels])
+
+            data = data[0:num_of_records]
+            target = target[0:num_of_records]
+
+            data = torch.IntTensor(data).tag(*(list(tags) + ["#data"])).describe(tags[0][1:])
+            target = torch.IntTensor(target).tag(*(list(tags) + ["#target"])).describe(tags[0][1:])
 
             return data, target
 
@@ -121,19 +147,27 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         diabetes = load_sklearn(load_diabetes, *["#diabetes"])
         if verbose:
             print("\t\t- Breast Cancer Dataset")
-        breast_cancer = load_sklearn(load_breast_cancer)
+        breast_cancer = load_sklearn(load_breast_cancer, *["#breast_cancer_dataset"])
         if verbose:
             print("\t- Digits Dataset")
-        digits = load_sklearn(load_digits)
+        digits = load_sklearn(load_digits, *["#digits_dataset"])
         if verbose:
             print("\t\t- Iris Dataset")
-        iris = load_sklearn(load_iris)
+        iris = load_sklearn(load_iris, *["#iris_dataset"])
         if verbose:
             print("\t\t- Wine Dataset")
-        wine = load_sklearn(load_wine)
+        wine = load_sklearn(load_wine, *["#wine_dataset"])
         if verbose:
             print("\t\t- Linnerud Dataset")
-        linnerud = load_sklearn(load_linnerud)
+        linnerud = load_sklearn(load_linnerud, *["#linnerrud_dataset"])
+        if tf_datasets_available:
+            if verbose:
+                print("\tLoading datasets from TensorFlow datasets...")
+                print("\t\t- fashion_mnist Dataset")
+            fashion_mnist = load_tf(datasets.fashion_mnist.load_data, *["#fashion_mnist"])
+            if verbose:
+                print("\t\t- cifar10 Dataset")
+            cifar10 = load_tf(datasets.cifar10.load_data, *["#cifar10"])
 
         workers = [bob, theo, jason, alice, andy, jon]
 
@@ -153,6 +187,11 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         distribute_dataset(wine[1], workers)
         distribute_dataset(linnerud[0], workers)
         distribute_dataset(linnerud[1], workers)
+        if tf_datasets_available:
+            distribute_dataset(fashion_mnist[0], workers)
+            distribute_dataset(fashion_mnist[1], workers)
+            distribute_dataset(cifar10[0], workers)
+            distribute_dataset(cifar10[1], workers)
 
     if verbose:
         print("\tCollecting workers into a VirtualGrid...")

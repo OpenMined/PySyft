@@ -25,27 +25,47 @@ class FalconHelper:
 
     @staticmethod
     def xor(
-        value: ReplicatedSharingTensor, other: Union[int, ReplicatedSharingTensor, torch.tensor]
-    ) -> ReplicatedSharingTensor:
-        assert value.ring_size == 2
-        return value + other - 2 * value * other
-
-    @classmethod
-    def select_shares(
-        cls,
-        b: ReplicatedSharingTensor,
-        x: ReplicatedSharingTensor,
-        y: ReplicatedSharingTensor,
+        value: ReplicatedSharingTensor, other: Union[int, ReplicatedSharingTensor, torch.LongTensor]
     ) -> ReplicatedSharingTensor:
         """
-        return: x if b=0 | y if b=1
-        """
-        c_2, c_l = cls.__generate_random_bit(x.players, ring_sizes=[2, x.ring_size])
-        b_xor_c = FalconHelper.xor(b, c_2).reconstruct()
-        d = c_l * (1 - 2 * b_xor_c) + b_xor_c
+        Compute the XOR value between value and other.
+        If value and other are both ints we should use the "^" operator.
 
-        selected_val = (y - x) * d + x
-        return selected_val
+        Args:
+            value (ReplicatedSharingTensor): RST with ring size of 2 or integer value in {0, 1}
+            other (int): integer with value in {0, 1}
+
+        Returns:
+            The XOR computation between value and other
+        """
+        is_wrapper = value.is_wrapper
+
+        if value.is_wrapper:
+            value = value.child
+
+        if torch.is_tensor(other) and other.is_wrapper:
+            other = other.child
+
+        if (not isinstance(value, ReplicatedSharingTensor)) or (value.ring_size != 2):
+            raise TypeError("First argument should be a RST with ring size 2")
+
+        if not any(
+            [
+                isinstance(other, ReplicatedSharingTensor) and other.ring_size == 2,
+                isinstance(other, int) and other in {0, 1},
+                isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
+            ]
+        ):
+            raise TypeError(
+                "Second argument should be RST "
+                "(with ring size of 2)/Integer/LongTensor values in {0, 1}"
+            )
+
+        result = value + other - 2 * value * other
+
+        if is_wrapper:
+            result = result.wrap()
+        return result
 
     @staticmethod
     def __generate_random_bit(players: list, ring_sizes: list) -> list:
@@ -97,3 +117,34 @@ class FalconHelper:
                 "expected int, float, torch tensor, or ReplicatedSharingTensor "
                 "but got {}".format(type(value))
             )
+
+    @staticmethod
+    def select_share(
+        b: ReplicatedSharingTensor,
+        x: ReplicatedSharingTensor,
+        y: ReplicatedSharingTensor,
+    ) -> ReplicatedSharingTensor:
+        """Select x or y depending on b
+
+        Args:
+            x (ReplicatedSharingTensor): RST that will be selected if b reconstructed is 0
+            y (ReplicatedSharingTensor): RST that will be selected if b reconstructed is 1
+            b (ReplicatedSharingTensor): RST of a bit
+
+        Return:
+            x if b == 0 else y
+        """
+
+        ring_size = x.ring_size
+        players = x.players
+        shape = x.shape
+
+        c = torch.randint(high=2, size=shape)
+        c_2 = c.share(*players, protocol="falcon", field=2)
+        c_L = c.share(*players, protocol="falcon", field=ring_size)
+
+        xor_b_c = FalconHelper.xor(b, c_2).reconstruct()
+        d = c_L * (1 - 2 * xor_b_c) + xor_b_c
+
+        selected_val = (y - x) * d + x
+        return selected_val

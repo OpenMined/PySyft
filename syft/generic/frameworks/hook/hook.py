@@ -7,10 +7,11 @@ from typing import List
 import syft
 from syft.exceptions import route_method_exception
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.hook.pointers import PointerHook
 from syft.generic.frameworks.hook.string import StringHook
 from syft.generic.frameworks.hook.tensors import TensorHook
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
 
 
@@ -195,6 +196,16 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                                 _args.append(a)
 
                             args = _args
+                        elif isinstance(
+                            self.child, PointerTensor
+                        ) and syft.framework.is_inplace_method(method_name):
+                            # under very specific conditions, ie inplace methods containing a
+                            # single argument which is a Tensor, we allow automatic sending of
+                            # this tensor. This is helpful to facilitate utilizing python code
+                            # of other library for remote execution
+                            # so clearly, this allows: pointer += tensor
+                            if isinstance(args[0], FrameworkTensor) and len(args) == 1:
+                                args[0].send_(self.child.location, no_wrap=True)
 
                         # Replace all torch tensor with their child attribute
                         new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(

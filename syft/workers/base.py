@@ -408,7 +408,11 @@ class BaseWorker(AbstractWorker):
         if not isinstance(workers, (list, tuple)):
             workers = [workers]
 
-        assert len(workers) > 0, "Please provide workers to receive the data"
+        if len(workers) <= 0:
+            raise RuntimeError(
+                "Please provide workers to receive the data, current size of workers: %d"
+                % len(workers)
+            )
 
         if len(workers) == 1:
             worker = workers[0]
@@ -589,7 +593,12 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+        self,
+        obj_id: Union[str, int],
+        location: "BaseWorker",
+        user=None,
+        reason: str = "",
+        get_copy: bool = False,
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -599,10 +608,11 @@ class BaseWorker(AbstractWorker):
                 location.
             user (object, optional): user credentials to perform user authentication.
             reason (string, optional): a description of why the data scientist wants to see it.
+            get_copy (bool): Setting get_copy True doesn't destroy remote.
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason, get_copy), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -853,7 +863,8 @@ class BaseWorker(AbstractWorker):
         """
         results = self.object_store.find_by_tag(tag)
         if results:
-            assert all(result.location.id == location.id for result in results)
+            if not all(result.location.id == location.id for result in results):
+                raise ValueError("All Tags are not of same location.")
             return results
         else:
             return self.request_search(tag, location=location)

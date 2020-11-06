@@ -55,7 +55,7 @@ NOTE: If you are using a virtual environment, please be sure to use the correct 
 
 ### Deploying Workers
 
-You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
+You can follow along [this example](./examples/tutorials/tutorial-websocket/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
@@ -116,13 +116,13 @@ or renaming/moving related classes can make unit tests fail because `proto.json`
 Use following process:
 
  1. Fork [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto) and create new branch.
- 2. In your PySyft branch, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto>=*`.
+ 2. In your PySyft branch, update `pip-dep/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto>=*`.
  3. Make required changes in your PySyft and syft-proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/syft-proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
  4. Create PRs in PySyft and syft-proto repos.
  5. PRs should pass CI checks.
  6. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
 ](https://pypi.org/project/syft-proto/#history).
- 7. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto>=<new version>`.
+ 7. Before merging PySyft PR, update `pip-dep/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto>=<new version>`.
 
 ### Documentation and Codestyle
 

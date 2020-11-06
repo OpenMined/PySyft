@@ -1,5 +1,6 @@
 from operator import add, sub, mul
 import torch
+from syft.generic.frameworks.hook import hook_args
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3, gen_alpha_2of3
@@ -64,6 +65,8 @@ class ReplicatedSharingTensor(AbstractTensor):
         plain_text_mod = self.__sum_shares(shares)
         plain_text = self.__map_modular_to_real(plain_text_mod)
         return plain_text
+
+    get = reconstruct
 
     def retrieve_shares(self):
         pointers = self.retrieve_pointers()
@@ -306,3 +309,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             out += f"{str(player.id)} ,"
         out = out[:-1]
         return out
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(ReplicatedSharingTensor)
