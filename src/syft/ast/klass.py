@@ -176,6 +176,9 @@ class Class(Callable):
 
             if searchable:
                 ptr.gc_enabled = False
+                var_name = what_is_name_of_variable(self)
+                print("var_name = ", var_name)
+                ptr.tag(var_name)
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
@@ -283,3 +286,10 @@ def pointerize_args_and_kwargs(
             pointer_kwargs[k] = arg
 
     return (pointer_args, pointer_kwargs)
+
+
+def what_is_name_of_variable(var: Any):
+    for name, variable in globals().items():
+        if id(var) == id(variable):
+            if "_" not in name:
+                return name
