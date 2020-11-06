@@ -311,7 +311,7 @@ class Domain(Node):
                 reqs_to_remove.append(req)
 
         for req in reqs_to_remove:
-            del self.handled_requests[req]
+            self.handled_requests.__delitem__(req)
 
         alive_requests: List[RequestMessage] = []
         for request in self.requests:

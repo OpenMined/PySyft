@@ -190,10 +190,12 @@ class GetObjectAction(ImmediateActionWithReply):
                     logger.debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
-                    del node.store[self.id_at_location]
+                    node.store.delete(key=self.id_at_location)
                 except Exception as e:
-                    log = f"Failed to delete Object with ID {self.id_at_location} in store. {e}"
-                    raise Exception(log)
+                    log = (
+                        f"> GetObjectAction delete exception {self.id_at_location} {e}"
+                    )
+                    logger.critical(log)
             else:
                 logger.debug(f"Copying Object with ID {self.id_at_location} in store.")
 

@@ -10,7 +10,6 @@ from typing import Union
 from google.protobuf.empty_pb2 import Empty as Empty_PB
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -87,7 +86,6 @@ class StorableObject(AbstractStorableObject):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
-        logger.critical(f"serialize a storeable object {type(self)}")
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
@@ -135,7 +133,6 @@ class StorableObject(AbstractStorableObject):
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: StorableObject_PB) -> object:
-        logger.critical(f"what are we deserializing ?{proto}")
 
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
@@ -144,7 +141,6 @@ class StorableObject(AbstractStorableObject):
         #  PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
         obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
-        logger.critical(f"FIX PYDOC? {obj_type} {proto.obj_type}")
 
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = obj_type.get_data_protobuf_schema()

@@ -116,7 +116,17 @@ class ObjectStore(ABC):
 
     @syft_decorator(typechecking=True)
     def __delitem__(self, key: UID) -> None:
+        self.delete(key=key)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def delete(self, key: UID) -> None:
         """
+        We should write custom deletion code so we can check if the item exists
+        and then ensure deletion is called at a single place and that full __delitem__
+        is used where possible instead of the weaker del ref count.
+        Also care needs to be taken to not capture the deleted item in the Exception
+        stack trace so it doesn't keep the item around longer.
+
         Method to remove an object from the store based on its UID.
 
         Args:

@@ -46,6 +46,11 @@ class DiskObjectStore(ObjectStore):
             logger.trace(f"{type(self)} get item error {key} {e}")
             raise e
 
+    def get_object(self, key: UID) -> Optional[StorableObject]:
+        if str(key.value) in self.db:
+            return self.__getitem__(key=key)
+        return None
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: UID, value: StorableObject) -> None:
         try:
@@ -86,13 +91,20 @@ class DiskObjectStore(ObjectStore):
     def __contains__(self, item: UID) -> bool:
         return str(item.value) in self.db
 
-    @syft_decorator(typechecking=True)
-    def __delitem__(self, key: UID) -> None:
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def delete(self, key: UID) -> None:
         try:
-            del self.db[str(key.value)]
+            obj = self.get_object(key=key)
+            if obj is not None:
+                self.db.__delitem__(str(key.value))
+            else:
+                logger.critical(f"{type(self)} __delitem__ error {key}.")
         except Exception as e:
-            logger.trace(f"{type(self)} del item error {key} {e}")
-            raise e
+            logger.critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __delitem__(self, key: UID) -> None:
+        self.delete(key=key)
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
