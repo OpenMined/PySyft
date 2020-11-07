@@ -461,7 +461,8 @@ class WebRTCConnection(BidirectionalConnection):
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
         try:
-            asyncio.run(self.producer_pool.put(msg))
+            # asyncio.run(self.producer_pool.put_nowait(msg))
+            self.producer_pool.put_nowait(msg)
             time.sleep(message_cooldown)
         except Exception as e:
             log = f"Got an exception in WebRTCConnection send_immediate_msg_without_reply. {e}"
