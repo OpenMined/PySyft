@@ -301,6 +301,10 @@ def test_torch_mul(workers):
     z = x * torch.tensor(2.1)
     assert (z.float_precision() == torch.tensor([2.100, 4.200, 6.3000])).all()
 
+    x = torch.tensor([2, 5, 7.0]).fix_precision(precision_fractional=4)
+    z = x * 5.5
+    assert (z.float_precision() == torch.tensor([11.0, 27.5, 38.5])).all()
+
     # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
@@ -367,6 +371,10 @@ def test_torch_div(workers):
 
     z = x / torch.tensor(2.1)
     assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
+
+    x = torch.tensor([2, 5, 7.0]).fix_precision(precision_fractional=4)
+    z = x / 5.5
+    assert (z.float_precision() == torch.tensor([0.3636, 0.9090, 1.2727])).all()
 
     # With scalar
     x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec()
