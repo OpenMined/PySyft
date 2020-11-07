@@ -331,7 +331,7 @@ class Domain(Node):
     @syft_decorator(typechecking=True)
     async def run_handlers(self) -> None:
         while True:
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.01)
             try:
                 # logger.debug("running HANDLER")
                 self.clean_up_handlers()

@@ -361,7 +361,7 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=msg)
 
         # wait long enough for it to arrive and trigger a handler
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         if not block:
             return None
@@ -414,7 +414,7 @@ class Pointer(AbstractPointer):
                         )
                         status = response.status
                         if response.status == RequestStatus.Pending:
-                            time.sleep(1)
+                            time.sleep(0.1)
                             print(".", end="")
                             continue
                         else:
