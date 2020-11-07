@@ -145,7 +145,7 @@ class Pointer(AbstractPointer):
         self.description = description
         self.gc_enabled = True
 
-    def _get(self, delete_obj: bool = True) -> StorableObject:
+    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -174,6 +174,7 @@ class Pointer(AbstractPointer):
         timeout_secs: int = 20,
         name: str = "",
         reason: str = "",
+        verbose: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -187,6 +188,7 @@ class Pointer(AbstractPointer):
             name=name,
             reason=reason,
             delete_obj=False,
+            verbose=verbose,
         )
 
     def get(
@@ -196,6 +198,7 @@ class Pointer(AbstractPointer):
         name: str = "",
         reason: str = "",
         delete_obj: bool = True,
+        verbose: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -207,19 +210,20 @@ class Pointer(AbstractPointer):
         from ..node.domain.service import RequestStatus
 
         if not request_block:
-            return self._get(delete_obj=delete_obj)
+            return self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 name=name,
                 reason=reason,
                 block=True,
                 timeout_secs=timeout_secs,
+                verbose=verbose,
             )
             if (
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj)
+                return self._get(delete_obj=delete_obj, verbose=verbose)
 
         return None
 
@@ -305,6 +309,7 @@ class Pointer(AbstractPointer):
         reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
+        verbose: bool = False,
     ) -> Any:
         """Method that requests access to the data on which the pointer points to.
 
@@ -373,16 +378,17 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestAnswerMessage
             from ..node.domain.service import RequestStatus
 
-            output_string = "> Waiting for Blocking Request\n"
+            output_string = "> Waiting for Blocking Request: "
             if len(name) > 0:
-                output_string += f"{name}"
+                output_string += f"  {name}"
             if len(reason) > 0:
                 output_string += f": {reason}"
             if len(name) > 0 or len(name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
             logger.debug(output_string)
-            print(f"\n{output_string}", end="")
+            if verbose:
+                print(f"\n{output_string}", end="")
             status = None
             start = time.time()
 
@@ -397,7 +403,8 @@ class Pointer(AbstractPointer):
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
                         logger.debug(log)
-                        print(log)
+                        if verbose:
+                            print(log)
                         return status
 
                     # only check once every second
@@ -415,16 +422,18 @@ class Pointer(AbstractPointer):
                         status = response.status
                         if response.status == RequestStatus.Pending:
                             time.sleep(0.1)
-                            print(".", end="")
+                            if verbose:
+                                print(".", end="")
                             continue
                         else:
                             # accepted or rejected lets exit
                             status_text = "REJECTED"
                             if status == RequestStatus.Accepted:
                                 status_text = "ACCEPTED"
-                            log = f"\n> Blocking Request {status_text}"
+                            log = f" {status_text}"
                             logger.debug(log)
-                            print(log)
+                            if verbose:
+                                print(log)
                             return status
                 except Exception as e:
                     logger.error(f"Exception while running blocking request. {e}")
