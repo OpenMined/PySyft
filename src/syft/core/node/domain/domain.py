@@ -109,8 +109,10 @@ class Domain(Node):
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
             return msg.address.domain_id == self.id and msg.address.device is None
-        except Exception as e:
-            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
+        except Exception as excp3:
+            error = (
+                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
+            )
             print(error)
             return False
 
@@ -171,22 +173,20 @@ class Domain(Node):
                 obj = getattr(response, "obj", None)
                 if obj is not None:
                     return obj
-        except Exception as e:
-            logger.critical(f"Exception getting object for {request}. {e}")
+        except Exception as excp1:
+            logger.critical(f"Exception getting object for {request}. {excp1}")
         return None
 
-    def _count_elements(self, obj: object) -> int:
-        elements = 1
+    def _count_elements(self, obj: object) -> (bool, int):
+        allowed = False
+        elements = 0
 
         nelement = getattr(obj, "nelement", None)
         if nelement is not None:
             elements = max(elements, int(nelement()))
+            allowed = True
 
-        length = getattr(obj, "__len__", None)
-        if length is not None:
-            elements = max(elements, int(length()))
-
-        return elements
+        return (allowed, elements)
 
     def _accept(self, request: RequestMessage) -> None:
         logger.debug(f"Calling accept on request: {request.id}")
@@ -202,12 +202,13 @@ class Domain(Node):
         self, handler: Dict[Union[str, String], Any], obj: Any
     ) -> bool:
         if "action" in handler and handler["action"] == "accept":
-            element_count = self._count_elements(obj=obj)
-            result = handler["element_quota"] - element_count
-            if result >= 0:
-                # the request will be accepted so lets decrement the quota
-                handler["element_quota"] = max(0, result)
-                return True
+            allowed, element_count = self._count_elements(obj=obj)
+            if allowed:
+                result = handler["element_quota"] - element_count
+                if result >= 0:
+                    # the request will be accepted so lets decrement the quota
+                    handler["element_quota"] = max(0, result)
+                    return True
 
         return False
 
@@ -215,14 +216,18 @@ class Domain(Node):
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
-        logger.debug(f"Check handler {handler} against {request}")
+        logger.debug(
+            f"HANDLER Check handler {handler} against {request.name} {request.request_id}"
+        )
         if (
             "name" in handler
             and handler["name"] != ""
             and handler["name"] != request.name
         ):
             # valid name doesnt match so ignore this handler
-            logger.debug(f"Ignoring request handler {handler} against {request}")
+            logger.debug(
+                f"HANDLER Ignoring request handler {handler} against {request}"
+            )
             return False
 
         # if we have any of these three rules we will need to get the object to
@@ -234,6 +239,7 @@ class Domain(Node):
             or ("element_quota" in handler)
         ):
             obj = self._get_object(request=request)
+            logger.debug(f"> HANDLER Got object {obj} for checking")
 
         # we only want to accept or deny once
         handled = False
@@ -242,7 +248,7 @@ class Domain(Node):
         if "element_quota" in handler:
             if not self._try_deduct_quota(handler=handler, obj=obj):
                 logger.debug(
-                    f"> Rejecting {request} element_quota={handler['element_quota']}"
+                    f"> HANDLER Rejecting {request} element_quota={handler['element_quota']}"
                 )
                 self._deny(request=request)
                 handled = True
@@ -260,7 +266,7 @@ class Domain(Node):
 
         # print or log rules can execute multiple times so no complex logic here
         if "print_local" in handler or "log_local" in handler:
-            log = f"> Request {request.name}:"
+            log = f"> HANDLER Request {request.name}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"
@@ -310,7 +316,9 @@ class Domain(Node):
         for request in self.requests:
             if request.timeout_secs is not None and request.timeout_secs > -1:
                 if request.arrival_time is None:
-                    logger.critical(f"Request has no arrival time. {request.id}")
+                    logger.critical(
+                        f"HANDLER Request has no arrival time. {request.id}"
+                    )
                     request.set_arrival_time(arrival_time=time.time())
                 arrival_time = getattr(request, "arrival_time", float(now))
                 if now - arrival_time > request.timeout_secs:
@@ -324,16 +332,21 @@ class Domain(Node):
     async def run_handlers(self) -> None:
         while True:
             await asyncio.sleep(0.2)
-            self.clean_up_handlers()
-            self.clean_up_requests()
-            if len(self.request_handlers) > 0:
-                for request in self.requests:
-                    # check if we have previously already handled this in an earlier iter
-                    if request.id not in self.handled_requests:
-                        for handler in self.request_handlers:
-                            handled = self.check_handler(
-                                handler=handler, request=request
-                            )
-                            if handled:
-                                # we handled the request so we can exit the loop
-                                break
+            try:
+                # logger.debug("running HANDLER")
+                self.clean_up_handlers()
+                self.clean_up_requests()
+                if len(self.request_handlers) > 0:
+                    for request in self.requests:
+                        # check if we have previously already handled this in an earlier iter
+                        if request.id not in self.handled_requests:
+                            for handler in self.request_handlers:
+                                handled = self.check_handler(
+                                    handler=handler, request=request
+                                )
+                                if handled:
+                                    # we handled the request so we can exit the loop
+                                    break
+            except Exception as excp2:
+                # logger.critical(f"HANDLER loop exception. {lol}")
+                print("HANDLER Exception in the while loop!!", excp2)
