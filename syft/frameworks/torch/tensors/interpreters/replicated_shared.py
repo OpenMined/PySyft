@@ -1,9 +1,11 @@
 from operator import add, sub, mul
+
 import torch
-from syft.generic.frameworks.hook import hook_args
+
 import syft
-from syft.generic.abstract.tensor import AbstractTensor
 from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3, gen_alpha_2of3
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
 
 
 class ReplicatedSharingTensor(AbstractTensor):
@@ -143,18 +145,6 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     __matmul__ = matmul
 
-    def pow(self, power):
-        assert power > 0
-        base, result = self, 1
-        while power > 0:
-            if power % 2 == 1:
-                result = result * base
-            power = power // 2
-            base = base * base
-        return result
-
-    __pow__ = pow
-
     def inject_bit(self, A):
         """
         change the ring_size of a shared bit from 2 to A
@@ -174,6 +164,12 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def view(self, *args, **kwargs):
         return self.__apply_to_shares(torch.Tensor.view, *args, *kwargs)
+
+    def flip(self, *args, **kwargs):
+        return self.__apply_to_shares(torch.Tensor.flip, *args, *kwargs)
+
+    def cumsum(self, *args, **kwargs):
+        return self.__apply_to_shares(torch.Tensor.cumsum, *args, *kwargs)
 
     def unfold(self, kernel_size, padding=0):
         image = self

@@ -1,11 +1,26 @@
-import torch
-import syft
-
-from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
+import math
 from typing import Union
+
+import torch
+
+import syft
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
+from syft.generic.utils import memorize
+
+
+@memorize
+def get_torch_dtype(field: int):
+    return torch.int64 if field > 2 ** 32 else torch.int32
+
+
+@memorize
+def get_n_bits(field: int):
+    return round(math.log(field, 2))
 
 
 class FalconHelper:
+    no_wrap = {"no_wrap": True}
+
     @classmethod
     def unfold(cls, image, kernel_size, padding):
         return cls.__switch_public_private(
@@ -46,12 +61,12 @@ class FalconHelper:
         if torch.is_tensor(other) and other.is_wrapper:
             other = other.child
 
-        if (not isinstance(value, ReplicatedSharingTensor)) or (value.ring_size != 2):
-            raise TypeError("First argument should be a RST with ring size 2")
+        if not isinstance(value, ReplicatedSharingTensor):
+            raise TypeError("First argument should be a RST")
 
         if not any(
             [
-                isinstance(other, ReplicatedSharingTensor) and other.ring_size == 2,
+                isinstance(other, ReplicatedSharingTensor),
                 isinstance(other, int) and other in {0, 1},
                 isinstance(other, torch.LongTensor) and ((other == 0) + (other == 1)).all(),
             ]
@@ -83,28 +98,39 @@ class FalconHelper:
         """
         return: x if beta = 0 | -x if beta = 1
         """
-        return x * (1 - beta * 2)
+        beta_ = 1 - beta * 2
+        # The order is important if the ring sizes are different.
+        # The left operand's ring size takes precedence.
+        return x * beta_
 
     @staticmethod
     def private_compare_preprocess(players, p=7, k=10):
-        beta = torch.randint(high=1, size=[1]).share(*players, protocol="falcon", field=2)
+        beta = torch.randint(high=2, size=[1]).share(
+            *players, protocol="falcon", field=2, **FalconHelper.no_wrap
+        )
         beta_p = beta.inject_bit(p)
         m = []
         for _ in range(k):
-            m_i = torch.tensor([0]).share(*players, protocol="falcon", field=p).rand_()
-            if ((m_i ** (p - 1)).reonsturct() == torch.tensor([1])).all():
-                m.append(m_i)
+            m_i = torch.randint(low=1, high=p, size=[1]).share(
+                *players, protocol="falcon", field=p, **FalconHelper.no_wrap
+            )
+            m.append(m_i)
         return {"beta": [beta, beta_p], "m": m}
 
     @staticmethod
-    def digitise(value: torch.Tensor, reverse=False):
-        digits = []
-        while value > 0:
-            digits.append(value % 10)
-            value = value // 10
-        if not reverse:
-            digits.reverse()
-        return digits
+    def decompose(tensor, field):
+        """decompose a tensor into its binary representation."""
+        torch_dtype = get_torch_dtype(field)
+        n_bits = get_n_bits(field)
+        powers = torch.arange(n_bits, dtype=torch_dtype)
+        if hasattr(tensor, "child") and isinstance(tensor.child, dict):
+            powers = powers.send(*list(tensor.child.keys()), **FalconHelper.no_wrap)
+        for _ in range(len(tensor.shape)):
+            powers = powers.unsqueeze(0)
+        tensor = tensor.unsqueeze(-1)
+        moduli = 2 ** powers
+        tensor = torch.fmod((tensor / moduli.type_as(tensor)), 2)
+        return tensor
 
     @staticmethod
     def __switch_public_private(value, public_function, private_function, *args, **kwargs):

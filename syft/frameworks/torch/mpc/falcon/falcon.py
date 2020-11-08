@@ -1,9 +1,14 @@
-import syft
+import torch
 
+import syft as sy
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
+l = 2 ** 5
+L = 2 ** l
+p = 37
 
-def conv2d(filters: syft.ReplicatedSharingTensor, image, padding=0):
+
+def conv2d(filters: sy.ReplicatedSharingTensor, image, padding=0):
     is_wrapper = filters.is_wrapper or image.is_wrapper
 
     if filters.is_wrapper:
@@ -23,3 +28,22 @@ def conv2d(filters: syft.ReplicatedSharingTensor, image, padding=0):
     if is_wrapper:
         result = result.wrap()
     return result
+
+
+def private_compare(x_bit_sh, r_bit, beta_b, m):
+    # 2)
+    u = FalconHelper.determine_sign(x_bit_sh - r_bit, beta_b)
+    # 3)
+    w = FalconHelper.xor(x_bit_sh, r_bit)
+    wc = w.flip(-1).cumsum(-1).flip(-1) - w
+    # 4)
+    c = u + wc + 1
+    c_p = c.reconstruct()
+    c_p = c_p.prod()
+    # 5)
+    d = (m * c_p).reconstruct()
+    beta_prime = torch.tensor([int(d != 0)]).share(
+        *x_bit_sh.players, protocol="falcon", field=2, **FalconHelper.no_wrap
+    )
+
+    return FalconHelper.xor(beta_b, beta_prime)
