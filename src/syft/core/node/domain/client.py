@@ -250,7 +250,7 @@ class DomainClient(Client):
         return f"<{type(self).__name__}: {no_dash}>"
 
     def update_vars(self, state: Any) -> Any:
-        for ptr in self.store.store:  # type: ignore
+        for ptr in self.store.store:
             tags = getattr(ptr, "tags", None)
             if tags is not None:
                 for tag in tags:

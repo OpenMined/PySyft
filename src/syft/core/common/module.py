@@ -318,6 +318,7 @@ class Module:
             logger.debug(log)
             return None
         else:
+            request_name = name
             log = "> Downloading remote model"
             print(log)
             logger.debug(log)
@@ -326,7 +327,7 @@ class Module:
             local_model.setup(torch_ref=torch)
             local_model.duet = self.duet
 
-            for name, module in self.modules.items():
+            for layer_name, module in self.modules.items():
                 module_parts = module.path_and_name.split(".")
                 klass_name = module_parts.pop()
                 klass = getattr(sys.modules[".".join(module_parts)], klass_name)
@@ -334,20 +335,22 @@ class Module:
 
                 module_repr = repr_ptr.get(
                     request_block=request_block,
-                    name=name,
+                    name=request_name,
                     reason=reason,
                     timeout_secs=timeout_secs,
                 )
 
                 if module_repr is None:
-                    print(f"  Request for {name} extra_repr failed, skipping layer")
+                    print(
+                        f"  Request for {request_name} extra_repr failed, skipping layer"
+                    )
                     continue
 
                 args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
                 local_module = klass(*args, **kwargs)
 
                 # the local real module has been set on the sy module
-                local_model.__setattr__(name, local_module)
+                local_model.__setattr__(layer_name, local_module)
 
                 try:
                     # if the remote module has state_dict lets get it
@@ -356,12 +359,12 @@ class Module:
                     ):
                         sd_ptr = module.state_dict()
                         # get a blocking copy of the state_dict
-                        log = f"  Downloading remote layer: {name}"
+                        log = f"  Downloading remote layer: {layer_name}"
                         print(log)
                         logger.debug(log)
                         state_dict = sd_ptr.get(
                             request_block=request_block,
-                            name=name,
+                            name=request_name,
                             reason=reason,
                             timeout_secs=timeout_secs,
                             delete_obj=delete_obj,
@@ -372,10 +375,14 @@ class Module:
                             # TODO: support torch.nn.modules.module._IncompatibleKeys
                             local_module.load_state_dict(state_dict)
                         else:
-                            print(f"  Failed to get {name} state_dict, skipping layer.")
+                            print(
+                                f"  Failed to get {layer_name} state_dict, skipping layer."
+                            )
 
                 except Exception as e:
-                    logger.error(f"  Failed to download remote state for {name}. {e}")
+                    logger.error(
+                        f"  Failed to download remote state for {layer_name}. {e}"
+                    )
 
             log = "\n> Finished downloading remote model <\n\n"
             print(log)

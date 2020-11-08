@@ -5,6 +5,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -177,7 +178,7 @@ class Domain(Node):
             logger.critical(f"Exception getting object for {request}. {excp1}")
         return None
 
-    def _count_elements(self, obj: object) -> (bool, int):
+    def _count_elements(self, obj: object) -> Tuple[bool, int]:
         allowed = False
         elements = 0
 
