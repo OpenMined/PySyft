@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1604581612422,
+  "lastUpdate": 1604874786986,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Python Benchmark with pytestbenchmark": [
@@ -236,6 +236,65 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.023097390537443672",
             "extra": "mean: 1.5185621968000078 sec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "xvtongye1986@163.com",
+            "name": "xvtongye",
+            "username": "xutongye"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4575a50f38b78728dafe2615aad9145dae17b085",
+          "message": "Add .ndim and .T to Tensor (OpenMined#4617) (#4773)\n\n* Add .ndim and .T to FixPrecisionTensor and PointerTensor (OpenMined#4617)\r\n\r\n* Add .ndim and .T to FixPrecisionTensor PointerTensor (OpenMined#4617)\r\n\r\n* Add .ndim .T to FixPrecisionTensor PointerTensor (OpenMined#4617)\r\n\r\n* Add .ndim .T to FixPrecisionTensor PointerTensor (OpenMined#4617)",
+          "timestamp": "2020-11-09T00:26:50+02:00",
+          "tree_id": "65cf8c3e8aec061339d8af1e7aaaeba956f0423c",
+          "url": "https://github.com/OpenMined/PySyft/commit/4575a50f38b78728dafe2615aad9145dae17b085"
+        },
+        "date": 1604874786399,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_maclaurin",
+            "value": 12.925640971921919,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0025414765062902428",
+            "extra": "mean: 77.36560238461502 msec\nrounds: 13"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_chebyshev",
+            "value": 0.8432242964290496,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0406869737640078",
+            "extra": "mean: 1.1859240823999926 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_exp",
+            "value": 0.05530001352270804,
+            "unit": "iter/sec",
+            "range": "stddev: 0.29825758696914934",
+            "extra": "mean: 18.08317821820001 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_sigmoid",
+            "value": 0.8805129046135505,
+            "unit": "iter/sec",
+            "range": "stddev: 0.017556721928650404",
+            "extra": "mean: 1.1357016969999905 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_chebyshev",
+            "value": 0.8602497004033761,
+            "unit": "iter/sec",
+            "range": "stddev: 0.018625928397618976",
+            "extra": "mean: 1.1624531801999978 sec\nrounds: 5"
           }
         ]
       }
