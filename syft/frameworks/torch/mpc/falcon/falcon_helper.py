@@ -83,15 +83,6 @@ class FalconHelper:
         return result
 
     @staticmethod
-    def __generate_random_bit(players: list, ring_sizes: list) -> list:
-        """
-        generates a random bit and and shares it in arbitrary number of ring_sizes
-        return: list [random bit shared in ring_size i]
-        """
-        bit = torch.randint(high=min(ring_sizes), size=[1])
-        return [bit.share(*players, protocol="falcon", field=ring_size) for ring_size in ring_sizes]
-
-    @staticmethod
     def determine_sign(
         x: ReplicatedSharingTensor, beta: ReplicatedSharingTensor
     ) -> ReplicatedSharingTensor:

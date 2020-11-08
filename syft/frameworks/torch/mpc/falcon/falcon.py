@@ -38,12 +38,13 @@ def private_compare(x_bit_sh, r_bit, beta_b, m):
     wc = w.flip(-1).cumsum(-1).flip(-1) - w
     # 4)
     c = u + wc + 1
-    c_p = c.reconstruct()
-    c_p = c_p.prod()
-    # 5)
+    # 6)
+    # TODO: Figure out how to do prod() privately?
+    c_p = c.reconstruct().prod()
     d = (m * c_p).reconstruct()
+    # 7)
     beta_prime = torch.tensor([int(d != 0)]).share(
         *x_bit_sh.players, protocol="falcon", field=2, **FalconHelper.no_wrap
     )
-
+    # 8)
     return FalconHelper.xor(beta_b, beta_prime)
