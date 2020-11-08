@@ -351,7 +351,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
         # We should always have wrappers
-        prep_simplify = [shares for shares in tensor.child.values()]
+        prep_simplify = list(tensor.child.values())
         chain = _simplify(prep_simplify)
 
         tensor.set_garbage_collect_data(False)
