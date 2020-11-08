@@ -35,8 +35,8 @@ def private_compare(x_bit_sh, r_bit, beta_b, m):
     u = FalconHelper.determine_sign(x_bit_sh - r_bit, beta_b)
     # 3)
     w = FalconHelper.xor(x_bit_sh, r_bit)
-    wc = w.flip(-1).cumsum(-1).flip(-1) - w
     # 4)
+    wc = w.flip(-1).cumsum(-1).flip(-1) - w
     c = u + wc + 1
     # 6)
     # TODO: Figure out how to do prod() privately?
