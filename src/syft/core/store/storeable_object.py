@@ -171,6 +171,10 @@ class StorableObject(AbstractStorableObject):
         result.tags = tags
         result.description = description
 
+        # default to empty
+        result.read_permissions = {}
+        result.search_permissions = {}
+
         # Step 7: get the read permissions
         if proto.read_permissions is not None and len(proto.read_permissions) > 0:
             result.read_permissions = _deserialize(

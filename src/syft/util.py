@@ -8,6 +8,8 @@ from forbiddenfruit import curse
 from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from .core.common.group import VerifyAll
+
 
 # syft absolute
 # breaking convention here because index_globals needs
@@ -150,9 +152,12 @@ def obj2pointer_type(obj: object) -> type:
 
 
 @syft_decorator(typechecking=True)
-def key_emoji(key: Union[bytes, SigningKey, VerifyKey]) -> str:
-    hex_chars = bytes(key).hex()[-8:]
-    return char_emoji(hex_chars=hex_chars)
+def key_emoji(key: Union[bytes, SigningKey, VerifyKey, VerifyAll]) -> str:
+    try:
+        hex_chars = bytes(key).hex()[-8:]
+        return char_emoji(hex_chars=hex_chars)
+    except Exception:
+        return "ALL"
 
 
 @syft_decorator(typechecking=True)
