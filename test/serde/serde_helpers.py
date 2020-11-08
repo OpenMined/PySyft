@@ -567,6 +567,45 @@ def make_additivesharingtensor(**kwargs):
     ]
 
 
+# ReplicatedSharingTensor
+def make_replicatedsharingtensor(**kwargs):
+    workers = kwargs["workers"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    tensor = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, james, protocol="falcon")
+    rst = tensor.child.child
+
+    def compare(detailed, original):
+        assert (
+            type(detailed)
+            == syft.frameworks.torch.tensors.interpreters.replicated_shared.ReplicatedSharingTensor
+        )
+        assert detailed.id == original.id
+        assert detailed.ring_size == original.ring_size
+        assert detailed.child.keys() == original.child.keys()
+        return True
+
+    code_rst = CODE[
+        syft.frameworks.torch.tensors.interpreters.replicated_shared.ReplicatedSharingTensor
+    ]
+    return [
+        {
+            "value": rst,
+            "simplified": (
+                code_rst,
+                (
+                    rst.id,  # (int or str) id
+                    rst.ring_size,
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], list(rst.child.values())
+                    ),  # (dict of AbstractTensor) simplified chain
+                    rst.get_garbage_collect_data(),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # FixedPrecisionTensor
 def make_fixedprecisiontensor(**kwargs):
     workers = kwargs["workers"]
@@ -1164,7 +1203,7 @@ def make_pointerplan(**kwargs):
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
-                    (CODE[set], ()),  # (set or None) tags
+                    None,  # (set or None) tags
                     False,  # (bool) garbage_collect_data
                 ),
             ),

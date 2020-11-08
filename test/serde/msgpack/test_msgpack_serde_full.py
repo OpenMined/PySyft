@@ -62,6 +62,9 @@ samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_l
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
+samples[
+    syft.frameworks.torch.tensors.interpreters.replicated_shared.ReplicatedSharingTensor
+] = make_replicatedsharingtensor
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 samples[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor] = make_paillier

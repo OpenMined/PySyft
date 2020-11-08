@@ -69,8 +69,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __distribute_shares(workers, shares):
         shares_map = {}
         for i in range(len(shares)):
-            pointer1 = shares[i].send(workers[i])
-            pointer2 = shares[(i + 1) % len(shares)].send(workers[i])
+            pointer1 = shares[i].copy().send(workers[i])
+            pointer2 = shares[(i + 1) % len(shares)].copy().send(workers[i])
             shares_map[workers[i]] = (pointer1, pointer2)
         return shares_map
 
@@ -282,22 +282,31 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def set_garbage_collect_data(self, value):
         shares = self.child
-        for _, shares in shares.items():
-            assert shares[0].is_wrapper == shares[1].is_wrapper
 
-            if shares[0].is_wrapper:
-                shares[0].child.garbage_collect_data = value
-                shares[1].child.garbage_collect_data = value
-            else:
-                shares[0].garbage_collect = value
-                shares[1].garbage_collect_data = value
+        for _, shares in shares.items():
+            assert shares[0].is_wrapper is True
+            assert shares[1].is_wrapper is True
+
+            shares[0].gc = value
+            shares[1].gc = value
 
     def get_garbage_collect_data(self):
         shares = self.child
         res = None
 
+        """ Select the first share """
+        ref_share = next(iter(shares.values()))[0]
+
+        is_wrapper = ref_share.is_wrapper
+        if is_wrapper:
+            ref_share = ref_share.child
+
+        gc_ref = ref_share.garbage_collect_data
+
         for worker, shares in shares.items():
-            assert shares[0].is_wrapper == shares[1].is_wrapper
+            assert shares[0].is_wrapper == is_wrapper
+            assert shares[1].is_wrapper == is_wrapper
+
             shares0_unwrap = shares[0]
             shares1_unwrap = shares[1]
 
@@ -306,11 +315,10 @@ class ReplicatedSharingTensor(AbstractTensor):
                 shares1_unwrap = shares[1].child
 
             """ Make sure the GC value is the same for all shares """
-            assert shares0_unwrap.garbage_collect_data == shares1_unwrap.garbage_collect_data
-            assert res is None or res == shares0_unwrap.garbage_collect_data
-            res = shares0_unwrap.garbage_collect_data
+            assert shares0_unwrap.garbage_collect_data == gc_ref
+            assert shares1_unwrap.garbage_collect_data == gc_ref
 
-        return res
+        return gc_ref
 
     @property
     def grad(self):
@@ -342,9 +350,11 @@ class ReplicatedSharingTensor(AbstractTensor):
 
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
-        tensor.set_garbage_collect_data(False)
+        # We should always have wrappers
+        prep_simplify = [shares for shares in tensor.child.values()]
+        chain = _simplify(prep_simplify)
 
-        chain = _simplify(tensor.child)
+        tensor.set_garbage_collect_data(False)
 
         return (
             _simplify(tensor.id),
@@ -377,10 +387,21 @@ class ReplicatedSharingTensor(AbstractTensor):
         )
 
         chain = _detail(chain)
-        tensor.child = chain
+        tensor.child = {}
+        for shares in chain:
+            assert shares[0].location == shares[1].location
+            assert shares[0].owner == shares[1].owner
+
+            if shares[0].location is not None:
+                # Remote
+                worker = shares[0].location
+            else:
+                # Local
+                worker = shares[0].owner.id
+
+            tensor.child[worker] = shares
 
         tensor.set_garbage_collect_data(garbage_collect)
-
         return tensor
 
     def __repr__(self):
