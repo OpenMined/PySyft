@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1604874786986,
+  "lastUpdate": 1604946304346,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Python Benchmark with pytestbenchmark": [
@@ -295,6 +295,65 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.018625928397618976",
             "extra": "mean: 1.1624531801999978 sec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rladhkstn8@gmail.com",
+            "name": "Wansoo Kim",
+            "username": "marload"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "35ea7282f484091070e0e2af6754902ec0cf34b1",
+          "message": "Add FPT support for mul or div operation with float scalar (#4713)\n\n* fix precision mul float\r\n\r\n* black formatting\r\n\r\n* fix\r\n\r\n* fix\r\n\r\n* fix\r\n\r\n* add test",
+          "timestamp": "2020-11-09T19:17:31+01:00",
+          "tree_id": "0ef30aa63787ecb10090ec1c3183b4f3df68b1b4",
+          "url": "https://github.com/OpenMined/PySyft/commit/35ea7282f484091070e0e2af6754902ec0cf34b1"
+        },
+        "date": 1604946300783,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_sigmoid",
+            "value": 0.6833566090402894,
+            "unit": "iter/sec",
+            "range": "stddev: 0.03828387625193371",
+            "extra": "mean: 1.463364789000002 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_chebyshev",
+            "value": 0.6840277454042656,
+            "unit": "iter/sec",
+            "range": "stddev: 0.038680069763382355",
+            "extra": "mean: 1.461929003199998 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_chebyshev",
+            "value": 0.7018277918328042,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0200241359279248",
+            "extra": "mean: 1.4248509558000364 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_exp",
+            "value": 0.0444034099567238,
+            "unit": "iter/sec",
+            "range": "stddev: 0.3432671168318469",
+            "extra": "mean: 22.520792907000033 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_maclaurin",
+            "value": 11.112433293124251,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005549676934449934",
+            "extra": "mean: 89.98929159995441 msec\nrounds: 5"
           }
         ]
       }
