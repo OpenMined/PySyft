@@ -124,6 +124,7 @@ class Client(AbstractNodeClient):
                     try:
                         python_attr = getattr(attr, "lib.python", None)
                         if python_attr is not None:
+                            # not working
                             setattr(self, "python", python_attr)  # type ignore
                     except Exception as e:
                         print(f"Failed to set python attribute on client. {e}")
