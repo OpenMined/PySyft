@@ -298,6 +298,11 @@ def test_torch_mul(workers):
     z = x * 2.1
     assert (z.float_precision() == torch.tensor([2.100, 4.200, 6.3000])).all()
 
+    x = torch.tensor([5, 7, 2.0]).fix_precision()
+    z = x * 1.5121
+    assert (z.float_precision() == torch.tensor([7.5600, 10.5840, 3.0240])).all()
+
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
     z = x * torch.tensor(2.1)
     assert (z.float_precision() == torch.tensor([2.100, 4.200, 6.3000])).all()
 
@@ -369,6 +374,11 @@ def test_torch_div(workers):
     z = x / 2.1
     assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
 
+    x = torch.tensor([5, 7, 2.0]).fix_precision()
+    z = x / 1.5121
+    assert (z.float_precision() == torch.tensor([3.3060, 4.6290, 1.3220])).all()
+
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
     z = x / torch.tensor(2.1)
     assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
 
