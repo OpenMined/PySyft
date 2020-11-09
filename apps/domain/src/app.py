@@ -17,8 +17,13 @@ import os
 # Extended Python imports
 from flask import Flask
 from flask_sockets import Sockets
+
 from geventwebsocket.websocket import Header
 from sqlalchemy_utils.functions import database_exists
+from nacl.signing import SigningKey
+from nacl.encoding import HexEncoder
+from syft.core.node.domain.domain import Domain
+
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
@@ -94,19 +99,33 @@ def create_app(
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
 
-    from main.core.database import db, set_database_config, seed_db
+    from main.core.database import db, set_database_config, seed_db, User, Role
+    from main.core.node import node
+    from main.core.task_handler import executor
 
     # Set SQLAlchemy configs
     set_database_config(app, test_config=test_config)
     s = app.app_context().push()
 
-    if database_exists(db.engine.url):
-        db.create_all()
-    else:
-        db.create_all()
+    db.create_all()
+
+    if not database_exists(db.engine.url) or app.config["TESTING"]:
         seed_db()
 
+    role = db.session.query(Role.id).filter_by(name="Owner").first()
+    user = User.query.filter_by(role=role.id).first()
+    if user:
+        global node
+        signing_key = SigningKey(user.private_key.encode("utf-8"), encoder=HexEncoder)
+        node.signing_key = signing_key
+        node.verify_key = node.signing_key.verify_key
+        node.root_verify_key = node.verify_key
     db.session.commit()
+
+    # Threads
+    executor.init_app(app)
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
 
     # Send app instance
     return app

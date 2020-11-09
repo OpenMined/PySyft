@@ -1,5 +1,6 @@
 from .blueprint import root_blueprint as root_route
 from ...core.node import node
+from ...core.task_handler import executor
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -9,9 +10,16 @@ from syft.core.common.serde.deserialize import _deserialize
 from flask import request, Response
 import json
 
+executor_running = False
+
 
 @root_route.route("/pysyft", methods=["POST"])
 def root_route():
+    global executor_running
+    if not executor_running:
+        executor.submit(node.run_handlers_thread)
+        executor_running = True
+
     data = request.get_data()
     obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):

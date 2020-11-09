@@ -79,7 +79,7 @@ def signup_user(email, password, role=None, private_key=None):
             email=email,
             hashed_password=hashed,
             salt=salt,
-            private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+            private_key=node.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
             role=role,
         )
     elif role is not None and user_role is not None and user_role.can_create_users:
@@ -128,10 +128,6 @@ def login_user(email, password):
     if checkpw(password, salt + hashed):
         token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
         token = token.decode("UTF-8")
-        print(
-            "Metadata before: ",
-            node.get_metadata_for_client().serialize().SerializeToString(),
-        )
         return {
             "token": token,
             "key": user.private_key,

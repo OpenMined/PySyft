@@ -1,5 +1,6 @@
 from .codes import RESPONSE_MSG
 from json.decoder import JSONDecodeError
+from flask_executor import Executor
 
 from .exceptions import (
     PyGridError,
@@ -10,6 +11,8 @@ from .exceptions import (
     MissingRequestKeyError,
     InvalidCredentialsError,
 )
+
+executor = Executor()
 
 
 def task_handler(route_function, data, mandatory, optional=[]):
