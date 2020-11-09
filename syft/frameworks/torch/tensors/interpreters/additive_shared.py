@@ -250,9 +250,10 @@ class AdditiveSharingTensor(AbstractTensor):
     @property
     def grad(self):
         """
-        Gradient makes no sense for Additive Shared Tensor, so we make it clear
-        that if someone query .grad on a Additive Shared Tensor it doesn't error
-        but returns grad and can't be set
+        Gradient makes no sense for Additive Shared Tensor
+        We make it clear that if someone query .grad on a Additive Shared Tensor it would
+        not throw and error
+        Return None such that it can not be set
         """
         return None
 

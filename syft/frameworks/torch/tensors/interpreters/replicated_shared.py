@@ -17,6 +17,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         id=None,
         tags=None,
         description=None,
+        shares=None
     ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
         self.ring_size = ring_size or 2 ** 32
@@ -284,11 +285,9 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares = self.child
 
         for _, shares in shares.items():
-            assert shares[0].is_wrapper is True
-            assert shares[1].is_wrapper is True
-
-            shares[0].gc = value
-            shares[1].gc = value
+            for share in shares:
+                assert share.is_wrapper is True
+                share.gc = value
 
     def get_garbage_collect_data(self):
         shares = self.child
@@ -304,28 +303,24 @@ class ReplicatedSharingTensor(AbstractTensor):
         gc_ref = ref_share.garbage_collect_data
 
         for worker, shares in shares.items():
-            assert shares[0].is_wrapper == is_wrapper
-            assert shares[1].is_wrapper == is_wrapper
+            for share in shares:
+                assert share.is_wrapper == is_wrapper
 
-            shares0_unwrap = shares[0]
-            shares1_unwrap = shares[1]
+                if share.is_wrapper:
+                    share = share.child
 
-            if shares[0].is_wrapper:
-                shares0_unwrap = shares[0].child
-                shares1_unwrap = shares[1].child
-
-            """ Make sure the GC value is the same for all shares """
-            assert shares0_unwrap.garbage_collect_data == gc_ref
-            assert shares1_unwrap.garbage_collect_data == gc_ref
+                """ Make sure the GC value is the same for all shares """
+                assert share.garbage_collect_data == gc_ref
 
         return gc_ref
 
     @property
     def grad(self):
         """
-        Gradient makes no sense for Replicated Shared Tensor, so we make it clear
-        that if someone query .grad on a Replicated Shared Tensor it doesn't error
-        but returns grad and can't be set
+        Gradient makes no sense for Replicated Shared Tensor
+        We make it clear that if someone query .grad on a Replicated Shared Tensor it would
+        not throw and error
+        Return None such that it can not be set
         """
         return None
 
@@ -389,15 +384,19 @@ class ReplicatedSharingTensor(AbstractTensor):
         chain = _detail(chain)
         tensor.child = {}
         for shares in chain:
-            assert shares[0].location == shares[1].location
-            assert shares[0].owner == shares[1].owner
+            ref_loc = shares[0].location
+            ref_owner = shares[0].owner
 
-            if shares[0].location is not None:
+            for share in shares:
+                assert share.location == ref_loc
+                assert share.owner == ref_owner
+
+            if ref_loc is not None:
                 # Remote
-                worker = shares[0].location
+                worker = ref_loc
             else:
                 # Local
-                worker = shares[0].owner.id
+                worker = ref_owner.id
 
             tensor.child[worker] = shares
 
