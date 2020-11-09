@@ -335,6 +335,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         """
         This function takes the attributes of a ReplicatedSharingTensor and saves them in a tuple
         Args:
+            worker (AbstractWorker): the worker that does the serialization
             tensor (ReplicatedSharingTensor): a ReplicatedSharingTensor
         Returns:
             tuple: a tuple holding the unique attributes of the replicated shared tensor

@@ -1172,6 +1172,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
+            worker (AbstractWorker): the worker that does the serialization
             tensor (AdditiveSharingTensor): a AdditiveSharingTensor
         Returns:
             tuple: a tuple holding the unique attributes of the additive shared tensor
