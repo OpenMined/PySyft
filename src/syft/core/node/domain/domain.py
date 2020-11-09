@@ -277,3 +277,22 @@ class Domain(Node):
                             if handled:
                                 # we handled the request so we can exit the loop
                                 break
+
+    @syft_decorator(typechecking=True)
+    def run_handlers_thread(self) -> None:
+        print("Running run_handlers_thread ... ")
+        while True:
+            time.sleep(0.5)
+            self.clean_up_handlers()
+            self.clean_up_requests()
+            if len(self.request_handlers) > 0:
+                for request in self.requests:
+                    # check if we have previously already handled this in an earlier iter
+                    if request.id not in self.handled_requests:
+                        for handler in self.request_handlers:
+                            handled = self.check_handler(
+                                handler=handler, request=request
+                            )
+                            if handled:
+                                # we handled the request so we can exit the loop
+                                break
