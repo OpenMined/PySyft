@@ -4,7 +4,7 @@ import numpy as np
 
 from syft.frameworks.torch.mpc.fss import DPF, DIF, n
 
-# Note: the FSS class is tested in the Rustfss package
+# Note: the FSS class is tested in the Sycret package
 # (Python wrapper level and Rust level)
 
 
@@ -22,8 +22,12 @@ def test_using_crypto_store(workers, op):
 
     print(f"Got keys {keys_a} {keys_b}")
 
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[:, 0:4]), dtype=np.uint32).astype(np.uint64)
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[:, 0:4]), dtype=np.uint32).astype(np.uint64)
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+        np.uint64
+    )
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+        np.uint64
+    )
 
     print(f"And alpha {alpha_a + alpha_b}")
 

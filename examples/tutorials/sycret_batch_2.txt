@@ -1,0 +1,750 @@
+(Wrapper)>[PointerTensor | me:96827241968 -> data_owner:88528530760]
+         68670440 function calls (64854235 primitive calls) in 165.687 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      2/1    0.000    0.000  165.687  165.687 {built-in method builtins.exec}
+        1    0.000    0.000  165.687  165.687 <string>:1(<module>)
+     76/1    0.001    0.000  165.687  165.687 module.py:522(__call__)
+        1    0.000    0.000  165.687  165.687 resnet.py:215(forward)
+        1    0.000    0.000  165.687  165.687 resnet.py:197(_forward_impl)
+ 78676/61    0.123    0.000  165.657    2.716 hook.py:315(overloaded_func)
+ 75475/61    0.258    0.000  165.657    2.716 native.py:305(handle_func_command)
+    62/61    0.002    0.000  165.652    2.716 precision.py:863(handle_func_command)
+    89656    0.156    0.000  124.515    0.001 base.py:290(send_msg)
+    38/21    0.000    0.000  104.860    4.993 __init__.py:33(method)
+      7/4    0.000    0.000  104.655   26.164 container.py:98(forward)
+        8    0.001    0.000  104.653   13.082 resnet.py:57(forward)
+       21    0.000    0.000  103.973    4.951 additive_shared.py:930(__ge__)
+       21    0.000    0.000  103.973    4.951 fss.py:318(le)
+    42/21    0.614    0.015  103.973    4.951 fss.py:114(fss_op)
+     4843    0.497    0.000   83.589    0.017 primitives.py:173(provide_primitives)
+    89656    0.038    0.000   81.965    0.001 virtual.py:9(_send_msg)
+    89656    0.231    0.000   81.927    0.001 virtual.py:14(_recv_msg)
+    89656    0.240    0.000   81.668    0.001 base.py:323(recv_msg)
+    43919    0.194    0.000   75.927    0.002 base.py:493(send_command)
+    24303    0.122    0.000   71.408    0.003 utils.py:43(remote_exec)
+       17    0.000    0.000   55.755    3.280 activation.py:93(forward)
+       18    0.000    0.000   55.753    3.097 additive_shared.py:1087(handle_func_command)
+       17    0.000    0.000   55.752    3.280 additive_shared.py:878(relu)
+       17    0.000    0.000   55.749    3.279 additive_shared.py:902(relu)
+    89656    0.062    0.000   54.294    0.001 message_handler.py:19(handle)
+    43919    0.049    0.000   52.508    0.001 message_handler.py:53(execute_tensor_command)
+    43919    0.295    0.000   52.454    0.001 message_handler.py:59(execute_computation_action)
+        2    0.000    0.000   50.175   25.088 functional.py:460(_pool2d)
+        1    0.000    0.000   50.171   50.171 pooling.py:138(forward)
+        1    0.000    0.000   50.171   50.171 functional.py:420(max_pool2d)
+     4822    0.015    0.000   49.086    0.010 additive_shared.py:523(_private_mul)
+9644/4822    0.304    0.000   49.069    0.010 spdz.py:125(spdz_mul)
+   174469    0.564    0.000   44.047    0.000 serde.py:15(serialize)
+   174469    0.534    0.000   43.483    0.000 serde.py:311(serialize)
+        3    0.000    0.000   42.951   14.317 functional.py:489(max_half_split)
+       20    0.001    0.000   42.135    2.107 batchnorm.py:84(forward)
+       20    0.001    0.000   42.122    2.106 functional.py:44(batch_norm)
+       20    0.025    0.001   40.548    2.027 precision.py:481(reciprocal)
+     7980    0.059    0.000   38.283    0.005 precision.py:264(mul_and_div)
+     6380    0.004    0.000   37.511    0.006 precision.py:368(mul)
+     6401    0.008    0.000   35.880    0.006 additive_shared.py:575(mul)
+       42    0.592    0.014   34.911    0.831 fss.py:228(evaluate)
+       42    0.001    0.000   34.319    0.817 fss.py:283(comp_evaluate)
+       42    0.001    0.000   34.297    0.817 fss.py:400(eval)
+       42   34.213    0.815   34.281    0.816 fss.py:55(eval)
+       21    0.000    0.000   33.164    1.579 primitives.py:269(build_separate_fss_keys)
+       21    0.000    0.000   33.163    1.579 fss.py:396(keygen)
+       21   33.161    1.579   33.163    1.579 fss.py:39(keygen)
+   174469    0.130    0.000   25.403    0.000 serde.py:50(deserialize)
+   174469    0.534    0.000   25.273    0.000 serde.py:377(deserialize)
+   174469    0.085    0.000   22.893    0.000 serde.py:263(_serialize_msgpack_simple)
+1717243/174469    2.013    0.000   22.808    0.000 serde.py:398(_simplify)
+   174469    0.152    0.000   20.056    0.000 serde.py:289(_serialize_msgpack_binary)
+256919/156433    0.324    0.000   19.423    0.000 native_serde.py:22(_simplify_collection)
+       20    0.000    0.000   17.289    0.864 conv.py:344(forward)
+       20    0.000    0.000   17.289    0.864 conv.py:334(conv2d_forward)
+       20    0.001    0.000   17.262    0.863 functional.py:204(conv2d)
+       21    0.001    0.000   14.182    0.675 precision.py:419(matmul)
+       21    0.000    0.000   14.116    0.672 additive_shared.py:627(matmul)
+   174469    0.782    0.000   13.766    0.000 __init__.py:29(packb)
+   174469    0.069    0.000   13.054    0.000 serde.py:363(_deserialize_msgpack_simple)
+1620794/174469    1.171    0.000   12.985    0.000 serde.py:500(_detail)
+   174469   12.984    0.000   12.984    0.000 {method 'pack' of 'msgpack._cmsgpack.Packer' objects}
+   174469    0.115    0.000   11.686    0.000 serde.py:346(_deserialize_msgpack_binary)
+    80478    0.383    0.000   11.034    0.000 torch_serde.py:106(_simplify_torch_tensor)
+     9686    0.016    0.000   10.901    0.001 message.py:939(simplify)
+     9644    0.099    0.000   10.775    0.001 spdz.py:63(spdz_compute)
+    63291    0.057    0.000   10.661    0.000 native_serde.py:156(_simplify_dictionary)
+145964/107168    0.234    0.000   10.116    0.000 native_serde.py:122(_detail_collection_tuple)
+    80478    0.356    0.000    8.176    0.000 torch_serde.py:165(_detail_torch_tensor)
+    80478    0.170    0.000    7.743    0.000 torch_serde.py:31(_serialize_tensor)
+    43919    0.038    0.000    7.555    0.000 message.py:136(simplify)
+    43919    0.028    0.000    7.347    0.000 computation.py:35(simplify)
+    43919    0.153    0.000    7.319    0.000 action.py:123(simplify)
+    80478    0.089    0.000    7.016    0.000 torch_serde.py:55(_deserialize_tensor)
+    80478    0.095    0.000    6.926    0.000 serde.py:43(torch_tensor_deserializer)
+    80478    0.402    0.000    6.831    0.000 serialization.py:448(load)
+11374/9725    0.043    0.000    6.821    0.001 overload.py:20(_hook_method_args)
+    80478    0.107    0.000    6.264    0.000 serde.py:36(torch_tensor_serializer)
+    80478    0.269    0.000    6.139    0.000 serialization.py:295(save)
+   174469    6.039    0.000    6.138    0.000 compression.py:86(_compress)
+       42    0.001    0.000    5.941    0.141 native_serde.py:316(_simplify_ndarray)
+       42    5.936    0.141    5.936    0.141 {method 'tobytes' of 'numpy.ndarray' objects}
+   174469    5.864    0.000    5.864    0.000 {msgpack._cmsgpack.unpackb}
+    43919    0.053    0.000    5.855    0.000 message.py:150(detail)
+   174469    5.708    0.000    5.708    0.000 compression.py:108(_decompress)
+    43919    0.057    0.000    5.617    0.000 computation.py:49(detail)
+    80478    0.599    0.000    5.611    0.000 serialization.py:331(_legacy_save)
+298473/298457    2.328    0.000    5.447    0.000 hook.py:141(overloaded_native_method)
+    80478    0.417    0.000    5.406    0.000 serialization.py:549(_legacy_load)
+    43919    0.112    0.000    5.289    0.000 action.py:145(detail)
+       42    0.001    0.000    4.888    0.116 context.py:114(Pool)
+       42    0.004    0.000    4.885    0.116 pool.py:155(__init__)
+       42    0.017    0.000    4.793    0.114 pool.py:227(_repopulate_pool)
+      336    0.012    0.000    4.748    0.014 process.py:101(start)
+      336    0.012    0.000    4.684    0.014 context.py:274(_Popen)
+  6038459    3.364    0.000    4.672    0.000 serde.py:69(wrapper)
+      336    0.005    0.000    4.668    0.014 popen_fork.py:16(__init__)
+      336    0.015    0.000    4.656    0.014 popen_fork.py:67(_launch)
+      336    4.576    0.014    4.597    0.014 {built-in method posix.fork}
+    16414    0.048    0.000    4.054    0.000 pointers.py:68(overloaded_pointer_method)
+     9686    0.021    0.000    3.947    0.000 message.py:956(detail)
+      168    0.001    0.000    3.818    0.023 threading.py:534(wait)
+      168    0.001    0.000    3.817    0.023 threading.py:264(wait)
+      678    3.815    0.006    3.815    0.006 {method 'acquire' of '_thread.lock' objects}
+       42    0.000    0.000    3.767    0.090 pool.py:270(starmap)
+       42    0.000    0.000    3.765    0.090 pool.py:650(get)
+       42    0.000    0.000    3.764    0.090 pool.py:647(wait)
+     1600    0.007    0.000    3.684    0.002 precision.py:240(__rsub__)
+    63291    0.025    0.000    3.638    0.000 native_serde.py:183(_detail_dictionary)
+61825/52181    0.057    0.000    3.571    0.000 native_serde.py:57(_detail_collection_list)
+    80480    1.172    0.000    3.505    0.000 {method 'dump' of '_pickle.Pickler' objects}
+       40    0.288    0.007    3.279    0.082 functional.py:78(_pre_conv)
+     4822    0.036    0.000    3.252    0.001 primitives.py:283(build_separate_triples)
+    80478    0.904    0.000    3.230    0.000 {method 'load' of '_pickle.Unpickler' objects}
+     6401    0.009    0.000    3.228    0.001 additive_shared.py:664(div)
+     4822    0.078    0.000    3.210    0.001 beaver.py:7(build_triple)
+     4801    0.025    0.000    3.138    0.001 precision.py:146(truncate)
+     6401    0.009    0.000    3.000    0.000 additive_shared.py:656(_public_div)
+     6401    0.017    0.000    2.990    0.000 additive_shared.py:662(<dictcomp>)
+    75414    0.106    0.000    2.665    0.000 native.py:406(_get_response)
+     1620    0.005    0.000    2.526    0.002 precision.py:218(sub)
+     1641    0.006    0.000    2.517    0.002 additive_shared.py:502(sub)
+     1674    0.016    0.000    2.372    0.001 additive_shared.py:454(_basic_arithmetic_op)
+   241434    0.870    0.000    2.059    0.000 base.py:933(serializer)
+    32808    0.051    0.000    1.996    0.000 object_pointer.py:329(__del__)
+   886730    0.572    0.000    1.991    0.000 serde.py:488(_detail_field)
+    32808    0.131    0.000    1.935    0.000 base.py:463(garbage)
+    80478    0.114    0.000    1.912    0.000 _utils.py:134(_rebuild_tensor_v2)
+    80478    0.184    0.000    1.798    0.000 _utils.py:128(_rebuild_tensor)
+       21    0.000    0.000    1.685    0.080 additive_shared.py:589(__mul__)
+     9686    0.018    0.000    1.556    0.000 message_handler.py:335(execute_worker_command)
+     9686    0.010    0.000    1.530    0.000 base.py:915(feed_crypto_primitive_store)
+     9686    0.154    0.000    1.520    0.000 primitives.py:206(add_primitives)
+  1590762    0.835    0.000    1.493    0.000 serialization.py:344(persistent_id)
+145703/144062    0.132    0.000    1.393    0.000 hook_args.py:528(two_fold)
+    82342    0.177    0.000    1.356    0.000 hook.py:559(new_tensor)
+  4694132    0.836    0.000    1.339    0.000 {built-in method builtins.isinstance}
+     1600    0.012    0.000    1.314    0.001 native.py:887(share)
+    52330    0.217    0.000    1.295    0.000 pointer_tensor.py:415(simplify)
+     1600    0.013    0.000    1.246    0.001 additive_shared.py:315(share_secret)
+    78696    0.141    0.000    1.238    0.000 hook_args.py:133(unwrap_args_from_function)
+   886730    0.742    0.000    1.237    0.000 proto.py:65(proto_type_info)
+    16066    0.090    0.000    1.229    0.000 additive_shared.py:334(generate_shares)
+     3200    0.014    0.000    1.182    0.000 hookable.py:38(hooked_method)
+     3200    0.019    0.000    1.160    0.000 native.py:428(send)
+     3200    0.022    0.000    1.128    0.000 base.py:367(send)
+     3200    0.005    0.000    1.023    0.000 base.py:581(send_obj)
+     1674    0.003    0.000    1.008    0.001 additive_shared.py:481(<dictcomp>)
+   241434    0.201    0.000    0.996    0.000 base.py:952(<listcomp>)
+    60466    0.977    0.000    0.977    0.000 functional.py:148(<listcomp>)
+    14466    0.062    0.000    0.967    0.000 spdz.py:21(spdz_mask)
+    39076    0.071    0.000    0.966    0.000 hook_args.py:636(register_response)
+     3282    0.005    0.000    0.943    0.000 additive_shared.py:515(<lambda>)
+     1600    0.005    0.000    0.899    0.001 additive_shared.py:34(zero_check)
+    39076    0.032    0.000    0.885    0.000 hook_args.py:779(<lambda>)
+    38699    0.870    0.000    0.870    0.000 {function _TensorBase.__sub__ at 0x7f2a7dc5d440}
+    80478    0.559    0.000    0.841    0.000 tensor.py:75(__reduce_ex__)
+     1600    0.004    0.000    0.838    0.001 additive_shared.py:547(_public_mul)
+   304940    0.403    0.000    0.836    0.000 id_provider.py:26(pop)
+     1600    0.005    0.000    0.833    0.001 additive_shared.py:573(<dictcomp>)
+   321912    0.829    0.000    0.829    0.000 {built-in method _pickle.load}
+    38813    0.053    0.000    0.828    0.000 hook_args.py:177(build_unwrap_args_from_function)
+     3202    0.007    0.000    0.820    0.000 object_pointer.py:193(handle_func_command)
+    48938    0.030    0.000    0.793    0.000 hook_args.py:757(<lambda>)
+     1600    0.002    0.000    0.778    0.000 precision.py:379(div)
+    48938    0.102    0.000    0.763    0.000 hook_args.py:708(register_tensor)
+    16066    0.742    0.000    0.742    0.000 {function _TensorBase.random_ at 0x7f2a7dcd5710}
+    24215    0.180    0.000    0.703    0.000 primitives.py:54(get_keys)
+    80436    0.684    0.000    0.684    0.000 {method '_write_file' of 'torch._C.LongStorageBase' objects}
+       21    0.661    0.031    0.661    0.031 {built-in method matmul}
+    82342    0.646    0.000    0.646    0.000 {built-in method tensor}
+    80436    0.637    0.000    0.637    0.000 {method '_set_from_file' of 'torch._C.LongStorageBase' objects}
+     9644    0.635    0.000    0.635    0.000 {built-in method randint}
+    35483    0.629    0.000    0.629    0.000 {function _TensorBase.__add__ at 0x7f2a7dcc5050}
+  6038459    0.611    0.000    0.611    0.000 serde.py:142(update)
+   160956    0.159    0.000    0.600    0.000 serialization.py:210(_open_file_like)
+    80478    0.426    0.000    0.593    0.000 serialization.py:47(_is_zipfile)
+   162820    0.215    0.000    0.556    0.000 object.py:182(_apply_args)
+    87838    0.084    0.000    0.548    0.000 computation.py:11(__init__)
+   272352    0.240    0.000    0.541    0.000 native.py:224(id)
+  1805278    0.253    0.000    0.520    0.000 {built-in method builtins.hasattr}
+   321912    0.509    0.000    0.509    0.000 {built-in method _pickle.dump}
+    68268    0.055    0.000    0.504    0.000 base.py:567(de_register_obj)
+  1010999    0.196    0.000    0.503    0.000 abc.py:137(__instancecheck__)
+     3200    0.003    0.000    0.492    0.000 message.py:247(simplify)
+    52330    0.129    0.000    0.487    0.000 pointer_tensor.py:447(detail)
+    36807    0.480    0.000    0.480    0.000 {built-in method mul}
+    87838    0.228    0.000    0.464    0.000 action.py:20(__init__)
+   160956    0.171    0.000    0.455    0.000 serialization.py:261(_should_read_directly)
+    68268    0.080    0.000    0.449    0.000 object_storage.py:54(de_register_obj)
+    28860    0.435    0.000    0.435    0.000 {built-in method cat}
+    80478    0.277    0.000    0.414    0.000 serialization.py:649(persistent_load)
+  1717243    0.407    0.000    0.407    0.000 serde.py:386(_simplify_field)
+    19697    0.101    0.000    0.395    0.000 hook_args.py:195(hook_response)
+  3588963    0.384    0.000    0.384    0.000 serde.py:118(simplifiers)
+  1137554    0.379    0.000    0.379    0.000 {built-in method builtins.getattr}
+     9665    0.022    0.000    0.377    0.000 {built-in method builtins.sum}
+77625/38813    0.133    0.000    0.374    0.000 hook_args.py:300(build_unwrap_args_with_rules)
+     3200    0.005    0.000    0.366    0.000 message.py:262(detail)
+    43919    0.063    0.000    0.356    0.000 message.py:120(computation)
+    75555    0.082    0.000    0.339    0.000 object.py:131(rgetattr)
+125957/85555    0.050    0.000    0.337    0.000 hook_args.py:356(<lambda>)
+    80478    0.327    0.000    0.327    0.000 {method 'set_' of 'torch._C._TensorBase' objects}
+   886730    0.313    0.000    0.313    0.000 proto.py:53(fullname)
+  1010999    0.306    0.000    0.307    0.000 {built-in method _abc._abc_instancecheck}
+        1    0.000    0.000    0.304    0.304 linear.py:86(forward)
+        1    0.000    0.000    0.304    0.304 functional.py:10(linear)
+        1    0.000    0.000    0.304    0.304 functional.py:1355(linear)
+       63    0.002    0.000    0.303    0.005 fss.py:203(mask_builder)
+        1    0.000    0.000    0.303    0.303 precision.py:822(addmm)
+77625/38813    0.151    0.000    0.301    0.000 hook_args.py:322(<listcomp>)
+   304941    0.246    0.000    0.298    0.000 id_provider.py:6(create_random_id)
+    21135    0.117    0.000    0.296    0.000 additive_shared.py:64(__init__)
+    32808    0.023    0.000    0.292    0.000 message.py:632(simplify)
+  1590762    0.280    0.000    0.280    0.000 __init__.py:125(is_storage)
+    19697    0.009    0.000    0.279    0.000 hook_args.py:511(<lambda>)
+243281/39034    0.085    0.000    0.251    0.000 hook_args.py:273(build_rule)
+    63794    0.061    0.000    0.251    0.000 tensor.py:11(__init__)
+    19656    0.026    0.000    0.244    0.000 hook_args.py:486(<lambda>)
+       84    0.000    0.000    0.241    0.003 _asarray.py:141(ascontiguousarray)
+       84    0.241    0.003    0.241    0.003 {built-in method numpy.array}
+   351352    0.139    0.000    0.236    0.000 action.py:111(_type_check)
+    12804    0.230    0.000    0.230    0.000 {function _TensorBase.__truediv__ at 0x7f2a7dc4f8c0}
+    75555    0.059    0.000    0.230    0.000 {built-in method _functools.reduce}
+77681/39034    0.102    0.000    0.227    0.000 hook_args.py:33(<lambda>)
+   131341    0.066    0.000    0.223    0.000 base.py:552(register_obj)
+    32808    0.031    0.000    0.222    0.000 message.py:647(detail)
+    80478    0.104    0.000    0.217    0.000 serialization.py:200(__init__)
+    19595    0.033    0.000    0.217    0.000 hook_args.py:80(<lambda>)
+   191154    0.120    0.000    0.214    0.000 native.py:95(tags)
+   160956    0.205    0.000    0.205    0.000 serialization.py:253(_is_compressed_file)
+    90627    0.060    0.000    0.204    0.000 hook_args.py:331(<lambda>)
+   160956    0.151    0.000    0.201    0.000 serialization.py:174(_is_path)
+  1417059    0.153    0.000    0.195    0.000 {built-in method builtins.len}
+    32808    0.048    0.000    0.194    0.000 pointer_tensor.py:52(__init__)
+    63794    0.116    0.000    0.189    0.000 object.py:16(__init__)
+  1878942    0.187    0.000    0.187    0.000 {method 'append' of 'list' objects}
+    96549    0.117    0.000    0.187    0.000 utils.py:16(__call__)
+    80478    0.048    0.000    0.186    0.000 tensor.py:153(initialize_tensor)
+  1512908    0.185    0.000    0.185    0.000 {method 'add' of 'set' objects}
+   886730    0.183    0.000    0.183    0.000 proto.py:34(code)
+   886730    0.181    0.000    0.181    0.000 proto.py:27(__init__)
+       44    0.177    0.004    0.177    0.004 {built-in method stack}
+   467865    0.118    0.000    0.177    0.000 tensor.py:21(has_child)
+214180/97856    0.048    0.000    0.176    0.000 hook_args.py:33(<genexpr>)
+   287908    0.089    0.000    0.172    0.000 native_serde.py:220(_detail_str)
+   151324    0.071    0.000    0.171    0.000 object.py:152(_getattr)
+   287908    0.093    0.000    0.171    0.000 native_serde.py:216(_simplify_str)
+     9665    0.170    0.000    0.170    0.000 {function _TensorBase.__radd__ at 0x7f2a7dc63d40}
+    48938    0.024    0.000    0.157    0.000 object_storage.py:38(register_obj)
+     9644    0.009    0.000    0.154    0.000 native.py:221(__eq__)
+        4    0.010    0.003    0.154    0.038 functional.py:311(_pre_pool)
+    32808    0.025    0.000    0.153    0.000 message_handler.py:209(handle_force_delete_object_msg)
+77361/38813    0.130    0.000    0.150    0.000 hook_args.py:359(build_get_tensor_type)
+    32808    0.054    0.000    0.146    0.000 object_pointer.py:42(__init__)
+    52138    0.063    0.000    0.142    0.000 object_storage.py:92(set_obj)
+   160956    0.095    0.000    0.140    0.000 serialization.py:277(_check_seekable)
+    80478    0.041    0.000    0.138    0.000 object.py:158(initialize_object)
+    80478    0.136    0.000    0.136    0.000 native.py:144(grad)
+   101076    0.070    0.000    0.128    0.000 object_storage.py:108(rm_obj)
+    32808    0.051    0.000    0.128    0.000 object_storage.py:132(force_rm_obj)
+    65907    0.064    0.000    0.127    0.000 hook_args.py:22(<lambda>)
+38779/38777    0.022    0.000    0.123    0.000 hook_args.py:522(tuple_one_fold)
+     9644    0.122    0.000    0.122    0.000 {function _TensorBase.eq at 0x7f2a7dc7ff80}
+    63292    0.027    0.000    0.119    0.000 utils.py:45(<genexpr>)
+     2126    0.003    0.000    0.118    0.000 popen_fork.py:25(poll)
+   177069    0.115    0.000    0.115    0.000 {built-in method builtins.sorted}
+     2093    0.115    0.000    0.115    0.000 {built-in method posix.waitpid}
+   781383    0.110    0.000    0.110    0.000 serde.py:130(inherited_simplifiers_found)
+   886730    0.106    0.000    0.106    0.000 serde.py:122(detailers)
+    16425    0.031    0.000    0.100    0.000 hook_args.py:92(unwrap_args_from_method)
+   174469    0.070    0.000    0.099    0.000 compression.py:27(_apply_compress_scheme)
+   781383    0.096    0.000    0.096    0.000 serde.py:134(no_simplifiers_found)
+    80478    0.059    0.000    0.091    0.000 _namedtensor_internals.py:18(check_serializing_named_tensor)
+    80478    0.052    0.000    0.087    0.000 serialization.py:145(location_tag)
+    86878    0.047    0.000    0.086    0.000 native.py:114(description)
+      121    0.002    0.000    0.085    0.001 hook.py:521(overloaded_attr)
+   287909    0.083    0.000    0.083    0.000 {method 'decode' of 'bytes' objects}
+   160956    0.080    0.000    0.080    0.000 {method 'fileno' of '_io._IOBase' objects}
+    89656    0.066    0.000    0.079    0.000 message_handler.py:16(supports)
+   287908    0.078    0.000    0.078    0.000 {method 'encode' of 'str' objects}
+    80478    0.038    0.000    0.076    0.000 native.py:104(tags)
+   211758    0.073    0.000    0.073    0.000 native.py:264(id)
+       38    0.000    0.000    0.073    0.002 util.py:182(__call__)
+        2    0.000    0.000    0.073    0.036 pool.py:571(_terminate_pool)
+      101    0.001    0.000    0.073    0.001 hook.py:100(overloaded_syft_method)
+        3    0.000    0.000    0.072    0.024 process.py:133(join)
+        3    0.000    0.000    0.072    0.024 popen_fork.py:41(wait)
+    80478    0.070    0.000    0.070    0.000 {method 'storage' of 'torch._C._TensorBase' objects}
+   118429    0.046    0.000    0.067    0.000 tensors.py:80(owner)
+     9851    0.020    0.000    0.065    0.000 precision.py:19(__init__)
+    16066    0.055    0.000    0.063    0.000 additive_shared.py:348(<listcomp>)
+    80478    0.048    0.000    0.063    0.000 serialization.py:154(default_restore_location)
+   160956    0.043    0.000    0.063    0.000 serialization.py:716(_maybe_decode_ascii)
+       33    0.000    0.000    0.062    0.002 additive_shared.py:483(add)
+       66    0.000    0.000    0.061    0.001 additive_shared.py:496(<lambda>)
+      126    0.001    0.000    0.061    0.000 threading.py:834(start)
+    52330    0.035    0.000    0.059    0.000 base.py:179(get_obj)
+     3200    0.005    0.000    0.057    0.000 native.py:580(create_pointer)
+    68972    0.042    0.000    0.056    0.000 {method 'throw' of 'generator' objects}
+   101424    0.056    0.000    0.056    0.000 native.py:130(shape)
+    80478    0.031    0.000    0.056    0.000 native.py:123(description)
+    80478    0.035    0.000    0.054    0.000 serialization.py:164(normalize_storage_type)
+    24303    0.045    0.000    0.053    0.000 utils.py:34(remote)
+   304941    0.053    0.000    0.053    0.000 {method 'random' of '_random.Random' objects}
+   160956    0.051    0.000    0.051    0.000 serialization.py:181(__init__)
+      336    0.006    0.000    0.051    0.000 process.py:53(_cleanup)
+   264568    0.050    0.000    0.050    0.000 tensors.py:86(owner)
+     3200    0.012    0.000    0.050    0.000 pointer_tensor.py:180(create_pointer)
+    80478    0.050    0.000    0.050    0.000 {method 'size' of 'torch._C._TensorBase' objects}
+     4843    0.047    0.000    0.049    0.000 exceptions.py:346(__init__)
+       40    0.001    0.000    0.049    0.001 functional.py:169(_post_conv)
+       44    0.047    0.001    0.047    0.001 {function _TensorBase.contiguous at 0x7f2a7dc4b830}
+   321912    0.047    0.000    0.047    0.000 {method 'read' of '_io.BytesIO' objects}
+   321912    0.046    0.000    0.046    0.000 {method 'seek' of '_io.BytesIO' objects}
+   103066    0.044    0.000    0.044    0.000 {method 'split' of 'str' objects}
+    24077    0.023    0.000    0.041    0.000 tensor.py:113(__len__)
+   482868    0.041    0.000    0.041    0.000 {built-in method builtins.ord}
+    80478    0.034    0.000    0.041    0.000 serialization.py:206(__exit__)
+       21    0.040    0.002    0.040    0.002 {function _TensorBase.__mod__ at 0x7f2a7dcc9440}
+     9648    0.038    0.000    0.038    0.000 {function _TensorBase.__bool__ at 0x7f2a7dc5d050}
+   252212    0.037    0.000    0.037    0.000 {method 'keys' of 'dict' objects}
+    27505    0.024    0.000    0.036    0.000 attributes.py:71(_command_guard)
+    80478    0.035    0.000    0.035    0.000 serialization.py:90(_cpu_tag)
+    19372    0.032    0.000    0.035    0.000 message.py:920(__init__)
+    77846    0.033    0.000    0.033    0.000 hook_args.py:518(one_fold)
+    80478    0.032    0.000    0.032    0.000 {method 'has_names' of 'torch._C._TensorBase' objects}
+    87838    0.032    0.000    0.032    0.000 message.py:75(__init__)
+   251188    0.031    0.000    0.031    0.000 {method 'values' of 'dict' objects}
+       29    0.000    0.000    0.030    0.001 precision.py:180(add)
+   174469    0.029    0.000    0.029    0.000 compression.py:65(apply_no_compression)
+     9686    0.011    0.000    0.029    0.000 base.py:897(create_worker_command_message)
+    89656    0.028    0.000    0.028    0.000 base.py:874(message_pending_time)
+   160956    0.027    0.000    0.027    0.000 serialization.py:184(__enter__)
+    80478    0.027    0.000    0.027    0.000 {method 'stride' of 'torch._C._TensorBase' objects}
+     3202    0.007    0.000    0.027    0.000 object_pointer.py:215(find_a_pointer)
+    80436    0.027    0.000    0.027    0.000 {method 'size' of 'torch._C.LongStorageBase' objects}
+    80478    0.026    0.000    0.026    0.000 hooks.py:51(warn_if_has_hooks)
+      231    0.000    0.000    0.026    0.000 hook_args.py:32(<lambda>)
+   203936    0.026    0.000    0.026    0.000 {method 'items' of 'dict' objects}
+    33754    0.021    0.000    0.026    0.000 torch_serde.py:329(_detail_torch_dtype)
+       84    0.026    0.000    0.026    0.000 {method 'astype' of 'numpy.ndarray' objects}
+      336    0.004    0.000    0.025    0.000 pool.py:152(Process)
+     9708    0.014    0.000    0.025    0.000 additive_shared.py:189(locations)
+    48938    0.025    0.000    0.025    0.000 {method 'pop' of 'list' objects}
+    52373    0.025    0.000    0.025    0.000 object_storage.py:70(get_obj)
+      170    0.007    0.000    0.024    0.000 hook_args.py:32(<listcomp>)
+      420    0.024    0.000    0.024    0.000 {built-in method posix.pipe}
+   241434    0.024    0.000    0.024    0.000 {method 'tell' of '_io.BytesIO' objects}
+      336    0.013    0.000    0.021    0.000 process.py:72(__init__)
+     1600    0.002    0.000    0.021    0.000 tensor.py:83(copy)
+    16334    0.021    0.000    0.021    0.000 additive_shared.py:237(get_class_attributes)
+       41    0.000    0.000    0.021    0.001 precision.py:257(t)
+      336    0.015    0.000    0.021    0.000 __init__.py:221(_releaseLock)
+       36    0.000    0.000    0.020    0.001 functional.py:2802(pad)
+   161124    0.020    0.000    0.020    0.000 {built-in method builtins.issubclass}
+       36    0.020    0.001    0.020    0.001 {built-in method constant_pad_nd}
+    27499    0.019    0.000    0.019    0.000 torch_serde.py:313(_detail_torch_size)
+     9600    0.009    0.000    0.019    0.000 base.py:610(get_worker)
+    80478    0.019    0.000    0.019    0.000 {method 'storage_offset' of 'torch._C._TensorBase' objects}
+      250    0.019    0.000    0.019    0.000 {function _TensorBase.reshape at 0x7f2a7dc4a830}
+    65616    0.019    0.000    0.019    0.000 message.py:623(__init__)
+    80478    0.018    0.000    0.018    0.000 serialization.py:728(_get_restore_location)
+       42    0.000    0.000    0.018    0.000 pool.py:250(_setup_queues)
+    80478    0.018    0.000    0.018    0.000 {method 'getvalue' of '_io.BytesIO' objects}
+       84    0.001    0.000    0.018    0.000 context.py:109(SimpleQueue)
+    80145    0.018    0.000    0.018    0.000 {built-in method time.time}
+       84    0.000    0.000    0.017    0.000 queues.py:330(__init__)
+     4822    0.016    0.000    0.017    0.000 {built-in method _warnings.warn}
+   160956    0.017    0.000    0.017    0.000 {method 'flush' of '_io.BytesIO' objects}
+    39458    0.016    0.000    0.016    0.000 hook_args.py:604(typed_identity)
+    32957    0.016    0.000    0.016    0.000 torch_attributes.py:151(is_inplace_method)
+    80478    0.016    0.000    0.016    0.000 serialization.py:100(_cpu_deserialize)
+      378    0.015    0.000    0.016    0.000 util.py:163(__init__)
+   129015    0.015    0.000    0.015    0.000 {method 'get' of 'dict' objects}
+      168    0.001    0.000    0.015    0.000 context.py:64(Lock)
+     3200    0.004    0.000    0.014    0.000 message_handler.py:163(handle_object_msg)
+     9872    0.014    0.000    0.014    0.000 precision.py:76(get_class_attributes)
+    65770    0.014    0.000    0.014    0.000 hook_args.py:24(<genexpr>)
+      168    0.000    0.000    0.013    0.000 synchronize.py:161(__init__)
+    38680    0.013    0.000    0.013    0.000 additive_shared.py:270(modulo)
+      168    0.006    0.000    0.013    0.000 synchronize.py:50(__init__)
+    16066    0.013    0.000    0.013    0.000 additive_shared.py:209(min_value)
+    27505    0.012    0.000    0.012    0.000 attributes.py:20(allowed_commands)
+    27499    0.012    0.000    0.012    0.000 torch_serde.py:309(_simplify_torch_size)
+     3202    0.006    0.000    0.010    0.000 pointer_tensor.py:608(<lambda>)
+     9708    0.010    0.000    0.010    0.000 additive_shared.py:192(<listcomp>)
+     1600    0.010    0.000    0.010    0.000 {function _TensorBase.type at 0x7f2a7dc4be60}
+    80478    0.010    0.000    0.010    0.000 serialization.py:187(__exit__)
+        8    0.000    0.000    0.010    0.001 precision.py:212(__iadd__)
+   125756    0.009    0.000    0.009    0.000 hook_args.py:20(<lambda>)
+    33754    0.009    0.000    0.009    0.000 torch_serde.py:325(_simplify_torch_dtype)
+    16066    0.008    0.000    0.008    0.000 additive_shared.py:215(max_value)
+        1    0.000    0.000    0.008    0.008 pooling.py:1030(forward)
+        1    0.000    0.000    0.007    0.007 functional.py:528(adaptive_avg_pool2d)
+        1    0.000    0.000    0.007    0.007 functional.py:440(avg_pool2d)
+      126    0.003    0.000    0.007    0.000 threading.py:763(__init__)
+    12012    0.006    0.000    0.007    0.000 hook_args.py:621(number_identity)
+      336    0.004    0.000    0.007    0.000 util.py:410(_flush_std_streams)
+    21257    0.007    0.000    0.007    0.000 tensor.py:55(on)
+    21418    0.006    0.000    0.006    0.000 hook_args.py:21(<lambda>)
+      380    0.006    0.000    0.006    0.000 {built-in method posix.close}
+     1092    0.001    0.000    0.006    0.000 {built-in method builtins.next}
+      126    0.006    0.000    0.006    0.000 {built-in method _thread.start_new_thread}
+    19697    0.006    0.000    0.006    0.000 {built-in method builtins.hash}
+     8254    0.005    0.000    0.005    0.000 hook.py:248(create_shape)
+        8    0.000    0.000    0.005    0.001 additive_shared.py:442(__getitem__)
+      168    0.000    0.000    0.005    0.000 synchronize.py:114(_make_name)
+       84    0.005    0.000    0.005    0.000 {built-in method numpy.zeros}
+  182/181    0.005    0.000    0.005    0.000 signal_handling.py:63(handler)
+       46    0.000    0.000    0.005    0.000 pointer_tensor.py:106(shape)
+     3200    0.003    0.000    0.005    0.000 hookable.py:16(reduce_chain_call)
+        8    0.000    0.000    0.005    0.001 additive_shared.py:427(_getitem_public)
+        8    0.000    0.000    0.005    0.001 additive_shared.py:440(<dictcomp>)
+       43    0.000    0.000    0.005    0.000 pointer_tensor.py:102(get_shape)
+     4822    0.005    0.000    0.005    0.000 spdz.py:194(<dictcomp>)
+       43    0.000    0.000    0.005    0.000 base.py:787(request_remote_tensor_shape)
+      168    0.001    0.000    0.004    0.000 tempfile.py:153(__next__)
+     3200    0.002    0.000    0.004    0.000 hookable.py:4(map_chain_call)
+       20    0.000    0.000    0.004    0.000 batchnorm.py:248(_check_input_dim)
+       44    0.000    0.000    0.004    0.000 hook_args.py:559(six_fold)
+      672    0.001    0.000    0.004    0.000 spdz.py:48(slice)
+     3200    0.003    0.000    0.004    0.000 base.py:666(_get_worker_based_on_id)
+    29390    0.003    0.000    0.003    0.000 hook_args.py:750(<lambda>)
+      168    0.000    0.000    0.003    0.000 tempfile.py:156(<listcomp>)
+      462    0.003    0.000    0.003    0.000 _weakrefset.py:81(add)
+      632    0.001    0.000    0.003    0.000 <frozen importlib._bootstrap>:1009(_handle_fromlist)
+    19372    0.003    0.000    0.003    0.000 message.py:50(__init__)
+     9709    0.003    0.000    0.003    0.000 {function _TensorBase.numel at 0x7f2a7dc634d0}
+        4    0.000    0.000    0.003    0.001 functional.py:396(_post_pool)
+      672    0.003    0.000    0.003    0.000 {method 'flush' of '_io.TextIOWrapper' objects}
+     6400    0.003    0.000    0.003    0.000 message.py:238(__init__)
+      512    0.002    0.000    0.003    0.000 {method 'join' of 'str' objects}
+     3200    0.002    0.000    0.003    0.000 native.py:277(_is_parameter)
+     1344    0.001    0.000    0.003    0.000 random.py:256(choice)
+       21    0.000    0.000    0.003    0.000 additive_shared.py:221(dim)
+     4822    0.003    0.000    0.003    0.000 beaver.py:57(<listcomp>)
+      168    0.000    0.000    0.003    0.000 threading.py:499(__init__)
+     6400    0.003    0.000    0.003    0.000 base.py:661(_get_worker)
+    19738    0.002    0.000    0.002    0.000 hook_args.py:477(<lambda>)
+     6274    0.002    0.000    0.002    0.000 functional.py:382(<listcomp>)
+       42    0.001    0.000    0.002    0.000 pool.py:375(_map_async)
+       25    0.000    0.000    0.002    0.000 additive_shared.py:194(shape)
+      338    0.002    0.000    0.002    0.000 {method 'copy' of 'dict' objects}
+      192    0.000    0.000    0.002    0.000 hook_args.py:689(build_register_response_function)
+       23    0.000    0.000    0.002    0.000 tensor.py:109(shape)
+      164    0.002    0.000    0.002    0.000 {function _TensorBase.permute at 0x7f2a7dc5a440}
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:978(_find_and_load)
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:948(_find_and_load_unlocked)
+      170    0.000    0.000    0.002    0.000 hook_args.py:354(<lambda>)
+      126    0.001    0.000    0.002    0.000 utils.py:20(_as_u8_array)
+       84    0.000    0.000    0.002    0.000 connection.py:506(Pipe)
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:663(_load_unlocked)
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap_external>:722(exec_module)
+        1    0.000    0.000    0.002    0.002 additive_shared.py:703(mean)
+     4822    0.002    0.000    0.002    0.000 primitives.py:300(<listcomp>)
+        1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap_external>:793(get_code)
+       42    0.000    0.000    0.002    0.000 native_serde.py:339(_detail_ndarray)
+      168    0.002    0.000    0.002    0.000 threading.py:216(__init__)
+      633    0.001    0.000    0.002    0.000 <frozen importlib._bootstrap>:416(parent)
+      168    0.000    0.000    0.002    0.000 util.py:148(register_after_fork)
+      146    0.000    0.000    0.002    0.000 hook_args.py:582(eight_fold)
+      336    0.002    0.000    0.002    0.000 {method 'release' of '_thread.RLock' objects}
+       42    0.001    0.000    0.001    0.000 _dtype.py:333(_name_get)
+        1    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap_external>:914(get_data)
+        1    0.001    0.001    0.001    0.001 {method 'read' of '_io.FileIO' objects}
+     1344    0.001    0.000    0.001    0.000 random.py:224(_randbelow)
+       61    0.000    0.000    0.001    0.000 tensor.py:24(wrap)
+       84    0.001    0.000    0.001    0.000 {built-in method numpy.frombuffer}
+     3202    0.001    0.000    0.001    0.000 exceptions.py:50(__init__)
+      122    0.001    0.000    0.001    0.000 {function _TensorBase.t at 0x7f2a7dc4f320}
+      168    0.001    0.000    0.001    0.000 weakref.py:165(__setitem__)
+       42    0.000    0.000    0.001    0.000 pool.py:676(__init__)
+      336    0.001    0.000    0.001    0.000 process.py:184(name)
+      192    0.001    0.000    0.001    0.000 hook_args.py:734(build_register_response)
+      176    0.001    0.000    0.001    0.000 {function _TensorBase.item at 0x7f2a7dc68560}
+       61    0.001    0.000    0.001    0.000 hook.py:251(create_wrapper)
+      672    0.001    0.000    0.001    0.000 process.py:85(<genexpr>)
+     3202    0.001    0.000    0.001    0.000 pointer_tensor.py:608(<genexpr>)
+      168    0.001    0.000    0.001    0.000 {method 'reshape' of 'numpy.ndarray' objects}
+     1275    0.001    0.000    0.001    0.000 {built-in method posix.getpid}
+      336    0.001    0.000    0.001    0.000 {method 'replace' of 'str' objects}
+        1    0.000    0.000    0.001    0.001 warnings.py:96(_showwarnmsg)
+        1    0.000    0.000    0.001    0.001 warnings.py:20(_showwarnmsg_impl)
+      132    0.000    0.000    0.001    0.000 utils.py:6(parse)
+        1    0.000    0.000    0.001    0.001 warnings.py:117(_formatwarnmsg)
+        1    0.000    0.000    0.001    0.001 warnings.py:35(_formatwarnmsg_impl)
+      338    0.001    0.000    0.001    0.000 {built-in method _thread.allocate_lock}
+      336    0.000    0.000    0.001    0.000 __init__.py:212(_acquireLock)
+        1    0.000    0.000    0.001    0.001 linecache.py:15(getline)
+        1    0.000    0.000    0.001    0.001 linecache.py:37(getlines)
+        1    0.000    0.000    0.001    0.001 linecache.py:82(updatecache)
+       42    0.000    0.000    0.001    0.000 _dtype.py:319(_name_includes_bit_suffix)
+       42    0.000    0.000    0.001    0.000 pool.py:631(__init__)
+      168    0.001    0.000    0.001    0.000 _internal.py:251(__init__)
+       42    0.000    0.000    0.001    0.000 hook_args.py:595(many_fold)
+      126    0.001    0.000    0.001    0.000 threading.py:728(_newname)
+      182    0.001    0.000    0.001    0.000 {built-in method torch._C._error_if_any_worker_fails}
+        1    0.000    0.000    0.000    0.000 tokenize.py:443(open)
+       21    0.000    0.000    0.000    0.000 fss.py:181(<listcomp>)
+       42    0.000    0.000    0.000    0.000 numerictypes.py:365(issubdtype)
+       42    0.000    0.000    0.000    0.000 {built-in method posix.cpu_count}
+       76    0.000    0.000    0.000    0.000 {built-in method torch._C._get_tracing_state}
+      168    0.000    0.000    0.000    0.000 {method 'append' of 'collections.deque' objects}
+        1    0.000    0.000    0.000    0.000 tokenize.py:350(detect_encoding)
+      186    0.000    0.000    0.000    0.000 module.py:562(__getattr__)
+      231    0.000    0.000    0.000    0.000 utils.py:16(_as_usize)
+      168    0.000    0.000    0.000    0.000 tempfile.py:142(rng)
+       21    0.000    0.000    0.000    0.000 hook_args.py:570(seven_fold)
+        1    0.000    0.000    0.000    0.000 tokenize.py:374(read_or_stop)
+        1    0.000    0.000    0.000    0.000 {method 'readline' of '_io.BufferedReader' objects}
+      399    0.000    0.000    0.000    0.000 {method 'cast' of 'CompiledFFI' objects}
+       42    0.000    0.000    0.000    0.000 hook_args.py:596(<genexpr>)
+      192    0.000    0.000    0.000    0.000 hook_args.py:750(<listcomp>)
+      640    0.000    0.000    0.000    0.000 {method 'rpartition' of 'str' objects}
+      141    0.000    0.000    0.000    0.000 hook_args.py:416(<lambda>)
+       29    0.000    0.000    0.000    0.000 hook_args.py:254(build_wrap_response_from_function)
+       43    0.000    0.000    0.000    0.000 message_handler.py:221(handle_get_shape_message)
+      138    0.000    0.000    0.000    0.000 threading.py:1225(current_thread)
+     2402    0.000    0.000    0.000    0.000 {method 'getrandbits' of '_random.Random' objects}
+     1756    0.000    0.000    0.000    0.000 hook_args.py:628(<lambda>)
+      128    0.000    0.000    0.000    0.000 hook_args.py:540(four_fold)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:523(_compile_bytecode)
+        1    0.000    0.000    0.000    0.000 {built-in method marshal.loads}
+       42    0.000    0.000    0.000    0.000 {method '_set_from_file' of 'torch._C.IntStorageBase' objects}
+      336    0.000    0.000    0.000    0.000 {method 'acquire' of '_thread.RLock' objects}
+      168    0.000    0.000    0.000    0.000 weakref.py:336(__new__)
+      565    0.000    0.000    0.000    0.000 util.py:48(debug)
+       84    0.000    0.000    0.000    0.000 numerictypes.py:293(issubclass_)
+       37    0.000    0.000    0.000    0.000 hook_args.py:532(three_fold)
+    65/10    0.000    0.000    0.000    0.000 abc.py:141(__subclasscheck__)
+    65/10    0.000    0.000    0.000    0.000 {built-in method _abc._abc_subclasscheck}
+       43    0.000    0.000    0.000    0.000 message.py:540(simplify)
+        2    0.000    0.000    0.000    0.000 queues.py:356(put)
+       84    0.000    0.000    0.000    0.000 {function _TensorBase.numpy at 0x7f2a7dc63dd0}
+      168    0.000    0.000    0.000    0.000 threading.py:252(_acquire_restore)
+      168    0.000    0.000    0.000    0.000 threading.py:255(_is_owned)
+        1    0.000    0.000    0.000    0.000 {method 'readlines' of '_io._IOBase' objects}
+       42    0.000    0.000    0.000    0.000 {method '_write_file' of 'torch._C.IntStorageBase' objects}
+       42    0.000    0.000    0.000    0.000 pool.py:538(close)
+      126    0.000    0.000    0.000    0.000 threading.py:1131(daemon)
+      336    0.000    0.000    0.000    0.000 process.py:196(daemon)
+      168    0.000    0.000    0.000    0.000 connection.py:117(__init__)
+      168    0.000    0.000    0.000    0.000 threading.py:240(__enter__)
+      560    0.000    0.000    0.000    0.000 hook.py:519(<lambda>)
+       42    0.000    0.000    0.000    0.000 {method 'view' of 'numpy.ndarray' objects}
+       42    0.000    0.000    0.000    0.000 utils.py:8(_as_i64_array)
+       42    0.000    0.000    0.000    0.000 {method 'put' of '_queue.SimpleQueue' objects}
+       36    0.000    0.000    0.000    0.000 _VF.py:11(__getattr__)
+      242    0.000    0.000    0.000    0.000 hook.py:518(dispatch)
+      168    0.000    0.000    0.000    0.000 threading.py:243(__exit__)
+        2    0.000    0.000    0.000    0.000 reduction.py:48(dumps)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:211(_call_with_frames_removed)
+        1    0.000    0.000    0.000    0.000 pool.py:10(<module>)
+       29    0.000    0.000    0.000    0.000 hook_args.py:456(build_wrap_response_with_rules)
+       42    0.000    0.000    0.000    0.000 fss.py:142(<listcomp>)
+      168    0.000    0.000    0.000    0.000 weakref.py:341(__init__)
+      168    0.000    0.000    0.000    0.000 _internal.py:305(data)
+      168    0.000    0.000    0.000    0.000 threading.py:249(_release_save)
+       11    0.000    0.000    0.000    0.000 re.py:180(search)
+       42    0.000    0.000    0.000    0.000 {method 'format' of 'str' objects}
+       42    0.000    0.000    0.000    0.000 _dtype.py:36(_kind_name)
+      168    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x559b28d49240}
+       86    0.000    0.000    0.000    0.000 message.py:531(__init__)
+        2    0.000    0.000    0.000    0.000 reduction.py:38(__init__)
+      390    0.000    0.000    0.000    0.000 process.py:90(_check_closed)
+       43    0.000    0.000    0.000    0.000 message_handler.py:260(get_obj)
+       16    0.000    0.000    0.000    0.000 process.py:144(is_alive)
+     1344    0.000    0.000    0.000    0.000 {method 'bit_length' of 'int' objects}
+      336    0.000    0.000    0.000    0.000 process.py:180(name)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:882(_find_spec)
+      168    0.000    0.000    0.000    0.000 synchronize.py:90(_make_methods)
+        9    0.000    0.000    0.000    0.000 {built-in method builtins.__build_class__}
+        4    0.000    0.000    0.000    0.000 tensor.py:25(wrapped)
+        2    0.000    0.000    0.000    0.000 {function _TensorBase.sum at 0x7f2a7dcc5cb0}
+       43    0.000    0.000    0.000    0.000 message.py:555(detail)
+      336    0.000    0.000    0.000    0.000 spdz.py:108(<lambda>)
+       42    0.000    0.000    0.000    0.000 {built-in method math.ceil}
+        6    0.000    0.000    0.000    0.000 utils.py:20(__missing__)
+       16    0.000    0.000    0.000    0.000 process.py:119(terminate)
+       62    0.000    0.000    0.000    0.000 hook_args.py:25(<lambda>)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1272(find_spec)
+       42    0.000    0.000    0.000    0.000 spdz.py:110(<listcomp>)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1240(_get_spec)
+       16    0.000    0.000    0.000    0.000 process.py:215(exitcode)
+        2    0.000    0.000    0.000    0.000 pool.py:562(_help_stuff_finish)
+       42    0.000    0.000    0.000    0.000 pool.py:639(ready)
+      132    0.000    0.000    0.000    0.000 threading.py:1116(daemon)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1356(find_spec)
+       16    0.000    0.000    0.000    0.000 popen_fork.py:61(terminate)
+      168    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.lock' objects}
+       11    0.000    0.000    0.000    0.000 re.py:271(_compile)
+      252    0.000    0.000    0.000    0.000 context.py:186(get_context)
+       36    0.000    0.000    0.000    0.000 tensors.py:106(dim)
+       43    0.000    0.000    0.000    0.000 {built-in method builtins.setattr}
+       42    0.000    0.000    0.000    0.000 {method 'size' of 'torch._C.IntStorageBase' objects}
+       42    0.000    0.000    0.000    0.000 spdz.py:111(<listcomp>)
+        2    0.000    0.000    0.000    0.000 connection.py:181(send_bytes)
+      304    0.000    0.000    0.000    0.000 threading.py:507(is_set)
+      168    0.000    0.000    0.000    0.000 context.py:196(get_start_method)
+        4    0.000    0.000    0.000    0.000 {built-in method posix.stat}
+       42    0.000    0.000    0.000    0.000 spdz.py:109(<listcomp>)
+       80    0.000    0.000    0.000    0.000 {built-in method posix.WIFSIGNALED}
+        4    0.000    0.000    0.000    0.000 threading.py:1092(is_alive)
+       16    0.000    0.000    0.000    0.000 popen_fork.py:51(_send_signal)
+       20    0.000    0.000    0.000    0.000 native.py:271(get_class_attributes)
+       29    0.000    0.000    0.000    0.000 hook_args.py:477(<listcomp>)
+      168    0.000    0.000    0.000    0.000 process.py:36(current_process)
+       21    0.000    0.000    0.000    0.000 fss.py:196(<dictcomp>)
+       42    0.000    0.000    0.000    0.000 {method 'item' of 'numpy.ndarray' objects}
+       10    0.000    0.000    0.000    0.000 threading.py:1050(_wait_for_tstate_lock)
+      140    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+       11    0.000    0.000    0.000    0.000 {method 'search' of 're.Pattern' objects}
+      155    0.000    0.000    0.000    0.000 {method 'discard' of 'set' objects}
+      141    0.000    0.000    0.000    0.000 hook_args.py:437(one_layer)
+        2    0.000    0.000    0.000    0.000 connection.py:390(_send_bytes)
+        2    0.000    0.000    0.000    0.000 {built-in method flatten}
+       42    0.000    0.000    0.000    0.000 _weakrefset.py:38(_remove)
+        6    0.000    0.000    0.000    0.000 native.py:388(_get_method)
+       16    0.000    0.000    0.000    0.000 {built-in method posix.kill}
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:74(_path_stat)
+       42    0.000    0.000    0.000    0.000 context.py:232(get_context)
+      159    0.000    0.000    0.000    0.000 {method 'values' of 'collections.OrderedDict' objects}
+      168    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.lock' objects}
+        8    0.000    0.000    0.000    0.000 connection.py:130(__del__)
+        6    0.000    0.000    0.000    0.000 threading.py:1012(join)
+        8    0.000    0.000    0.000    0.000 weakref.py:109(remove)
+      174    0.000    0.000    0.000    0.000 {method 'release' of '_thread.lock' objects}
+       42    0.000    0.000    0.000    0.000 {built-in method builtins.divmod}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:576(module_from_spec)
+      168    0.000    0.000    0.000    0.000 {built-in method builtins.id}
+       64    0.000    0.000    0.000    0.000 native_serde.py:293(_detail_slice)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:504(_init_module_attrs)
+        1    0.000    0.000    0.000    0.000 {built-in method io.open}
+        8    0.000    0.000    0.000    0.000 connection.py:360(_close)
+        7    0.000    0.000    0.000    0.000 container.py:94(__iter__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:147(__enter__)
+      141    0.000    0.000    0.000    0.000 hook_args.py:438(<lambda>)
+        2    0.000    0.000    0.000    0.000 connection.py:365(_send)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:93(_path_isfile)
+        6    0.000    0.000    0.000    0.000 threading.py:977(_stop)
+       80    0.000    0.000    0.000    0.000 {built-in method posix.WEXITSTATUS}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:84(_path_is_mode_type)
+       80    0.000    0.000    0.000    0.000 {built-in method posix.WIFEXITED}
+        2    0.000    0.000    0.000    0.000 {method 'update' of 'dict' objects}
+       64    0.000    0.000    0.000    0.000 native_serde.py:275(_simplify_slice)
+        2    0.000    0.000    0.000    0.000 {method 'acquire' of '_multiprocessing.SemLock' objects}
+        8    0.000    0.000    0.000    0.000 codecs.py:319(decode)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:157(_get_module_lock)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:403(cached)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:271(cache_from_source)
+        1    0.000    0.000    0.000    0.000 {method 'write' of '_io.TextIOWrapper' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method posix.write}
+       20    0.000    0.000    0.000    0.000 {method 'lower' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1351(_get_spec)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:369(_get_cached)
+        6    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:56(_path_join)
+       20    0.000    0.000    0.000    0.000 hook_args.py:613(none_identity)
+        2    0.000    0.000    0.000    0.000 _collections_abc.py:252(__subclasshook__)
+       38    0.000    0.000    0.000    0.000 util.py:44(sub_debug)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:318(__exit__)
+        6    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:58(<listcomp>)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:574(spec_from_file_location)
+        8    0.000    0.000    0.000    0.000 {built-in method _codecs.utf_8_decode}
+        1    0.000    0.000    0.000    0.000 tokenize.py:380(find_cookie)
+        1    0.000    0.000    0.000    0.000 warnings.py:415(__init__)
+       33    0.000    0.000    0.000    0.000 _collections_abc.py:392(__subclasshook__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:438(_classify_pyc)
+        8    0.000    0.000    0.000    0.000 {built-in method _weakref._remove_dead_weakref}
+        2    0.000    0.000    0.000    0.000 synchronize.py:94(__enter__)
+        1    0.000    0.000    0.000    0.000 pool.py:146(Pool)
+        6    0.000    0.000    0.000    0.000 _collections_abc.py:72(_check_methods)
+        1    0.000    0.000    0.000    0.000 codecs.py:309(__init__)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:51(_r_long)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:78(acquire)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:151(__exit__)
+        1    0.000    0.000    0.000    0.000 {built-in method _imp._fix_co_filename}
+        7    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        2    0.000    0.000    0.000    0.000 synchronize.py:97(__exit__)
+        3    0.000    0.000    0.000    0.000 process.py:225(ident)
+        8    0.000    0.000    0.000    0.000 _collections_abc.py:302(__subclasshook__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:951(path_stats)
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:222(_verbose_message)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:58(__init__)
+        1    0.000    0.000    0.000    0.000 {method 'seek' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 {method 'getbuffer' of '_io.BytesIO' objects}
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {method 'endswith' of 'str' objects}
+        3    0.000    0.000    0.000    0.000 {built-in method from_bytes}
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:311(__enter__)
+        2    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:62(_path_split)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:103(release)
+        6    0.000    0.000    0.000    0.000 {method 'locked' of '_thread.lock' objects}
+        2    0.000    0.000    0.000    0.000 connection.py:134(_check_closed)
+        2    0.000    0.000    0.000    0.000 {method '__exit__' of '_multiprocessing.SemLock' objects}
+        4    0.000    0.000    0.000    0.000 additive_shared.py:1085(<lambda>)
+        1    0.000    0.000    0.000    0.000 _collections_abc.py:271(__subclasshook__)
+        1    0.000    0.000    0.000    0.000 codecs.py:260(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:369(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:792(find_spec)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:401(_check_name_wrapper)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:471(_validate_timestamp_pyc)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:143(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:176(cb)
+        3    0.000    0.000    0.000    0.000 {built-in method posix.fspath}
+        5    0.000    0.000    0.000    0.000 {built-in method _imp.acquire_lock}
+        5    0.000    0.000    0.000    0.000 {built-in method _imp.release_lock}
+       14    0.000    0.000    0.000    0.000 {method 'rstrip' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method 'strip' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'bytes' objects}
+        6    0.000    0.000    0.000    0.000 utils.py:22(<dictcomp>)
+        2    0.000    0.000    0.000    0.000 connection.py:142(_check_writable)
+        2    0.000    0.000    0.000    0.000 {method '__enter__' of '_multiprocessing.SemLock' objects}
+        1    0.000    0.000    0.000    0.000 pool.py:53(RemoteTraceback)
+        1    0.000    0.000    0.000    0.000 pool.py:76(MaybeEncodingError)
+        1    0.000    0.000    0.000    0.000 pool.py:629(ApplyResult)
+        1    0.000    0.000    0.000    0.000 pool.py:715(IMapIterator)
+        1    0.000    0.000    0.000    0.000 pool.py:793(ThreadPool)
+        2    0.000    0.000    0.000    0.000 additive_shared.py:1070(select_worker)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 _collections_abc.py:349(__subclasshook__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:884(__init__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1203(_path_importer_cache)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:307(__init__)
+        4    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:321(<genexpr>)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:859(__exit__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:35(_new_module)
+        1    0.000    0.000    0.000    0.000 {built-in method _imp.is_frozen}
+        1    0.000    0.000    0.000    0.000 pool.py:59(ExceptionWithTraceback)
+        1    0.000    0.000    0.000    0.000 pool.py:674(MapResult)
+        1    0.000    0.000    0.000    0.000 pool.py:779(IMapUnorderedIterator)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:719(create_module)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:909(get_filename)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:424(has_location)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:719(find_spec)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:855(__enter__)
+        1    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:40(_relax_case)
+
+

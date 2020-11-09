@@ -14,7 +14,7 @@ import numpy as np
 import shaloop
 import multiprocessing
 import asyncio
-import rustfss
+import sycret
 import os
 
 import torch as th
@@ -46,6 +46,8 @@ COMP = 1
 # N_CORES = max(4, multiprocessing.cpu_count() - 1)
 
 N_CORES = max(4, multiprocessing.cpu_count())
+dpf = sycret.EqFactory(n_threads=N_CORES)
+dif = sycret.LeFactory(n_threads=N_CORES)
 
 
 # Cheap way?
@@ -322,14 +324,14 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        return rustfss.eq.keygen(n_values=n_values, n_threads=N_CORES)
+        return dpf.keygen(n_values=n_values)
 
     @staticmethod
     def eval(b, x, k_b):
         # x = x.astype(np.uint64)
         original_shape = x.shape
         x = x.reshape(-1)
-        flat_result = rustfss.eq.eval(b, x, k_b, n_threads=N_CORES)
+        flat_result = dpf.eval(b, x, k_b)
         return flat_result.astype(np.int64).reshape(original_shape)
         # return result
 
@@ -393,14 +395,14 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        return rustfss.le.keygen(n_values=n_values, n_threads=N_CORES)
+        return dif.keygen(n_values=n_values)
 
     @staticmethod
     def eval(b, x, k_b):
         # x = x.astype(np.uint64)
         original_shape = x.shape
         x = x.reshape(-1)
-        flat_result = rustfss.le.eval(b, x, k_b, n_threads=N_CORES)
+        flat_result = dif.eval(b, x, k_b)
         return flat_result.astype(np.int64).reshape(original_shape)
 
     @staticmethod
