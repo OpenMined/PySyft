@@ -17,7 +17,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         id=None,
         tags=None,
         description=None,
-        shares=None
+        shares=None,
     ):
         super().__init__(owner=owner, id=id, tags=tags, description=description)
         self.ring_size = ring_size or 2 ** 32
