@@ -1,6 +1,8 @@
 import syft
 import torch
 
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
+
 
 # interface
 def test_sharing(workers):
@@ -281,3 +283,25 @@ def test_remote_share(workers):
     rst.retrieve_shares()
 
     assert torch.all(rst.get() == x + 10)
+
+
+def test_send_share(workers):
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1, 2, 3], dtype=torch.long)
+
+    rst = x.share(bob, alice, james, protocol="falcon")
+
+    pointer_rst = rst.send(charlie)
+    pointer_rst = pointer_rst + 10
+
+    rst_local = pointer_rst.get()
+
+    assert isinstance(rst_local.child, ReplicatedSharingTensor)
+    assert torch.all(rst_local.get() == x + 10)
