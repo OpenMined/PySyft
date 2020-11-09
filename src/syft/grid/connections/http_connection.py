@@ -99,7 +99,7 @@ class HTTPConnection(ClientConnection):
 
         # Perform HTTP request using base_url as a root address
         r = requests.post(
-            url=self.base_url,
+            url=self.base_url + HTTPConnection.SYFT_ROUTE,
             data=msg.binary(),
             headers={"Content-Type": "application/octet-stream"},
         )
@@ -128,13 +128,16 @@ class HTTPConnection(ClientConnection):
         # If fail
         if response.status_code != requests.codes.ok:
             raise Exception(content["error"])
-
+        
+        metadata = content["metadata"].encode("ISO-8859-1")
+        metadata_pb = Metadata_PB()
+        metadata_pb.ParseFromString(metadata)
+        
         # If success
         # Save session token
         self.session_token = content["token"]
-
         # Return node metadata / user private key
-        return (content["metadata"], content["key"])
+        return (metadata_pb, content["key"])
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> Metadata_PB:
