@@ -319,7 +319,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         """
         Gradient makes no sense for Replicated Shared Tensor
         We make it clear that if someone query .grad on a Replicated Shared Tensor it would
-        not throw and error
+        not throw an error
         Return None such that it can not be set
         """
         return None
