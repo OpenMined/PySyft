@@ -4,7 +4,7 @@ from syft.federated.fl_job import FLJob
 
 
 class FLClient:
-    def __init__(self, url, auth_token, verbose=False):
+    def __init__(self, url, auth_token=None, verbose=False):
         self.url = url
         self.auth_token = auth_token
         self.worker_id = None
