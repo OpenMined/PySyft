@@ -5,6 +5,7 @@ from typing import Optional
 
 # third party
 from nacl.signing import SigningKey
+from nacl.encoding import HexEncoder
 
 # syft relative
 from ..core.io.connection import ClientConnection
@@ -40,7 +41,8 @@ def connect(
             # to build client route
             conn = conn_type(url=url)  # type: ignore
             metadata, user_key = conn.login(credentials=credentials)
-
+            user_key = SigningKey(user_key.encode("utf-8"), encoder=HexEncoder)
+            
             (
                 spec_location,
                 name,
@@ -62,8 +64,7 @@ def connect(
                 vm=location_args[VirtualMachineClient],
                 name=name,
                 routes=[route],
-                signing_key=signing_key,
-                verify_key=verify_key,
+                signing_key=user_key,
             )
 
         @syft_decorator(typechecking=True)
