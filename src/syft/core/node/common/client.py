@@ -122,10 +122,12 @@ class Client(AbstractNodeClient):
                 setattr(self, attr_name, attr)
                 if attr_name == "syft":
                     try:
-                        python_attr = getattr(attr, "lib.python", None)
-                        if python_attr is not None:
-                            # not working
-                            setattr(self, "python", python_attr)  # type ignore
+                        lib_attr = getattr(attr, "lib", None)
+                        if lib_attr is not None:
+                            python_attr = getattr(lib_attr, "python", None)
+                            if python_attr is not None:
+                                # not working
+                                setattr(self, "python", python_attr)  # type ignore
                     except Exception as e:
                         print(f"Failed to set python attribute on client. {e}")
 

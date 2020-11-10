@@ -187,8 +187,8 @@ def launch_duet(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
-        + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in beta. Use at your own risk.\n"
+        + " Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ >             Use at your own risk.\n"
         + "\033[0m"
     )
 
@@ -196,7 +196,7 @@ def launch_duet(
 
     if not network_url:
         network_url = get_available_network()
-    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
+    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
@@ -220,11 +220,11 @@ def launch_duet(
 
     print("\nimport syft as sy")
     print(
-        "duet = sy.duet('"
+        'duet = sy.duet("'
         + bcolors.BOLD
         + signaling_client.duet_id
         + bcolors.ENDC
-        + "')"
+        + '")'
     )
 
     # use a local file to automatically exchange duet ids
@@ -241,13 +241,13 @@ def launch_duet(
         + bcolors.HEADER
         + "STEP 2:"
         + bcolors.ENDC
-        + " The code above will print out a 'Client Id'. Have"
+        + " Running the code above will print out a 'Client ID'."
     )
-    print("♫♫♫ >         your duet partner send it to you and enter it below!")
+    print("♫♫♫ >         Have your duet partner send it to you and enter it below!")
     print()
     if loopback is False:
         while True:
-            target_id = input("♫♫♫ > Duet Partner's Client ID:")  # nosec
+            target_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
             if len(target_id) == 32:
                 break
             else:
@@ -306,13 +306,14 @@ def join_duet(
     if target_id == "" and loopback is False:
         cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
         raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
-    print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
+    print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
-        + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in beta. Use at your own risk.\n"
+        + " Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ >             Use at your own risk.\n"
+        + "\n♫♫♫ > \n"
         + "\033[0m"
     )
 
@@ -320,7 +321,7 @@ def join_duet(
 
     if not network_url:
         network_url = get_available_network()
-    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
+    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")

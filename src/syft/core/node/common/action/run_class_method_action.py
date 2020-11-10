@@ -8,6 +8,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -91,6 +92,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             mutating_internal = True
 
         resolved_self = node.store.get_object(key=self._self.id_at_location)
+        if resolved_self is None:
+            logger.critical(
+                f"execute_action on {self.path} failed due to missing object"
+                + f" at: {self._self.id_at_location}"
+            )
+            return
 
         result_read_permissions = resolved_self.read_permissions
 
