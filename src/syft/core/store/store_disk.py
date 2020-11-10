@@ -96,11 +96,11 @@ class DiskObjectStore(ObjectStore):
         try:
             obj = self.get_object(key=key)
             if obj is not None:
-                self.db.__delitem__(str(key.value))
+                del self.db[str(key.value)]
             else:
-                logger.critical(f"{type(self)} __delitem__ error {key}.")
+                logger.critical(f"{type(self)} delete error {key}.")
         except Exception as e:
-            logger.critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
+            logger.critical(f"{type(self)} Exception in delete {key}. {e}")
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, key: UID) -> None:

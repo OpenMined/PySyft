@@ -202,7 +202,8 @@ class Domain(Node):
     def _try_deduct_quota(
         self, handler: Dict[Union[str, String], Any], obj: Any
     ) -> bool:
-        if "action" in handler and handler["action"] == "accept":
+        action = handler.get("action", None)
+        if action == "accept":
             allowed, element_count = self._count_elements(obj=obj)
             if allowed:
                 result = handler["element_quota"] - element_count
@@ -220,11 +221,13 @@ class Domain(Node):
         logger.debug(
             f"HANDLER Check handler {handler} against {request.name} {request.request_id}"
         )
-        if (
-            "name" in handler
-            and handler["name"] != ""
-            and handler["name"] != request.name
-        ):
+        name = handler.get("name", None)
+        action = handler.get("action", None)
+        print_local = handler.get("print_local", None)
+        log_local = handler.get("log_local", None)
+        element_quota = handler.get("element_quota", None)
+
+        if name is not None and name != request.name.strip().lower():
             # valid name doesnt match so ignore this handler
             logger.debug(
                 f"HANDLER Ignoring request handler {handler} against {request}"
@@ -234,11 +237,7 @@ class Domain(Node):
         # if we have any of these three rules we will need to get the object to
         # print it, log it, or check its quota
         obj = None
-        if (
-            ("print_local" in handler)
-            or ("log_local" in handler)
-            or ("element_quota" in handler)
-        ):
+        if print_local or log_local or element_quota:
             obj = self._get_object(request=request)
             logger.debug(f"> HANDLER Got object {obj} for checking")
 
@@ -246,7 +245,7 @@ class Domain(Node):
         handled = False
 
         # check quota and reject first
-        if "element_quota" in handler:
+        if element_quota is not None:
             if not self._try_deduct_quota(handler=handler, obj=obj):
                 logger.debug(
                     f"> HANDLER Rejecting {request} element_quota={handler['element_quota']}"
@@ -255,8 +254,7 @@ class Domain(Node):
                 handled = True
 
         # if not rejected based on quota keep checking
-        if "action" in handler and not handled:
-            action = handler["action"]
+        if not handled:
             if action == "accept":
                 logger.debug(f"Check accept {handler} against {request}")
                 self._accept(request=request)
@@ -266,21 +264,18 @@ class Domain(Node):
                 handled = True
 
         # print or log rules can execute multiple times so no complex logic here
-        if "print_local" in handler or "log_local" in handler:
+        if print_local or log_local:
             log = f"> HANDLER Request {request.name}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"
 
             # if these are enabled output them
-            if "print_local" in handler:
-                print_local = handler["print_local"]
-                if print_local:
-                    print(log)
-            if "log_local" in handler:
-                log_local = handler["log_local"]
-                if log_local:
-                    logger.info(log)
+            if print_local:
+                print(log)
+
+            if log_local:
+                logger.info(log)
 
         # block the loop from handling this again, until the cleanup removes it
         # after a period of timeout
@@ -294,8 +289,10 @@ class Domain(Node):
         alive_handlers = []
         if len(self.request_handlers) > 0:
             for handler in self.request_handlers:
-                if "timeout_secs" in handler and handler["timeout_secs"] != -1:
-                    if now - handler["created_time"] > handler["timeout_secs"]:
+                timeout_secs = handler.get("timeout_secs", -1)
+                if timeout_secs != -1:
+                    created_time = handler.get("created_time", 0)
+                    if now - created_time > timeout_secs:
                         continue
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers

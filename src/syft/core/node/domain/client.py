@@ -128,8 +128,11 @@ class RequestQueueClient:
         handler_opts["action"] = action
         handler_opts["print_local"] = bool(print_local)
         handler_opts["log_local"] = bool(log_local)
-        if name is not None and name != "":
-            handler_opts["name"] = str(name)
+
+        if name is not None:
+            clean_name = str(name.strip().lower())
+            if clean_name:
+                handler_opts["name"] = clean_name
         handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
         if element_quota is not None:
             handler_opts["element_quota"] = max(0, int(element_quota))
@@ -249,7 +252,7 @@ class DomainClient(Client):
         no_dash = str(self.id).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
 
-    def update_vars(self, state: Any) -> Any:
+    def update_vars(self, state: dict) -> pd.DataFrame:
         for ptr in self.store.store:
             tags = getattr(ptr, "tags", None)
             if tags is not None:

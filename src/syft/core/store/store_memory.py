@@ -87,10 +87,6 @@ class MemoryStore(ObjectStore):
         except Exception as e:
             logger.critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __delitem__(self, key: UID) -> None:
-        self.delete(key=key)
-
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
         self._objects.clear()
