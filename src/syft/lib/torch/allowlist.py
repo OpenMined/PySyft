@@ -1475,15 +1475,46 @@ allowlist["torch.nn.Hardsigmoid.state_dict"] = "syft.lib.python.Dict"
 allowlist["torch.nn.Hardsigmoid.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Hardsigmoid.extra_repr"] = "syft.lib.python.String"
 
-allowlist["torch.nn.Hardswish"] = "torch.nn.Hardswish"
-allowlist["torch.nn.Hardswish.__call__"] = "torch.Tensor"
-allowlist["torch.nn.Hardswish.parameters"] = "syft.lib.python.List"
-allowlist["torch.nn.Hardswish.train"] = "torch.nn.Hardswish"
-allowlist["torch.nn.Hardswish.cuda"] = "torch.nn.Hardswish"
-allowlist["torch.nn.Hardswish.cpu"] = "torch.nn.Hardswish"
-allowlist["torch.nn.Hardswish.state_dict"] = "syft.lib.python.Dict"
-allowlist["torch.nn.Hardswish.load_state_dict"] = "syft.lib.python._SyNone"
-allowlist["torch.nn.Hardswish.extra_repr"] = "syft.lib.python.String"
+
+allowlist["torch.nn.Hardswish"] = {  # exists in # 1.6.0 +
+    "return_type": "torch.nn.Hardswish",
+    "min_version": "1.6.0",
+}
+
+allowlist["torch.nn.Hardswish.__call__"] = {  # exists in # 1.6.0 +
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+
+allowlist["torch.nn.Hardswish.parameters"] = {  # exists in # 1.6.0 +
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.6.0",
+}
+
+allowlist["torch.nn.Hardswish.train"] = {  # exists in # 1.6.0 +
+    "return_type": "torch.nn.Hardswish",
+    "min_version": "1.6.0",
+}
+allowlist["torch.nn.Hardswish.cuda"] = {  # exists in # 1.6.0 +
+    "return_type": "torch.nn.Hardswish",
+    "min_version": "1.6.0",
+}
+allowlist["torch.nn.Hardswish.cpu"] = {  # exists in # 1.6.0 +
+    "return_type": "torch.nn.Hardswish",
+    "min_version": "1.6.0",
+}
+allowlist["torch.nn.Hardswish.state_dict"] = {  # exists in # 1.6.0 +
+    "return_type": "syft.lib.python.Dict",
+    "min_version": "1.6.0",
+}
+allowlist["torch.nn.Hardswish.load_state_dict"] = {  # exists in # 1.6.0 +
+    "return_type": "syft.lib.python._SyNone",
+    "min_version": "1.6.0",
+}
+allowlist["torch.nn.Hardswish.extra_repr"] = {  # exists in # 1.6.0 +
+    "return_type": "syft.lib.python.String",
+    "min_version": "1.6.0",
+}
 
 allowlist["torch.nn.Hardtanh"] = "torch.nn.Hardtanh"
 allowlist["torch.nn.Hardtanh.__call__"] = "torch.Tensor"
