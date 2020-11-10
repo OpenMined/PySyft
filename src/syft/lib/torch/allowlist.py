@@ -857,7 +857,7 @@ allowlist["torch.nn.Embedding.cpu"] = "torch.nn.Embedding"
 allowlist["torch.nn.Embedding.state_dict"] = "syft.lib.python.Dict"
 
 allowlist["torch.nn.LSTM"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.__call__"] = "torch.Tensor"
+allowlist["torch.nn.LSTM.__call__"] = "syft.lib.python.List"
 allowlist["torch.nn.LSTM.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.LSTM.train"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.cuda"] = "torch.nn.LSTM"
