@@ -62,7 +62,7 @@ class ObjectStore:
                 more complex and needs to be explored. Is not supported at the
                 moment.
         """
-        if hasattr(obj, "id"):
+        if hasattr(obj, "_id"):
             self.rm_obj(obj.id)
         if hasattr(obj, "_owner"):
             del obj._owner
