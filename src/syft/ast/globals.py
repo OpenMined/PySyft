@@ -18,6 +18,22 @@ class Globals(Module):
     def __init__(self) -> None:
         super().__init__("globals")
 
+    def __call__(
+        self,
+        path: Union[str, List[str]] = [],
+        index: int = 0,
+        return_callable: bool = False,
+        obj_type: Optional[type] = None,
+    ) -> Optional[Union[Callable, CallableT]]:
+        if isinstance(path, str):
+            path = path.split(".")
+        return self.attrs[path[index]](
+            path=path,
+            index=index + 1,
+            return_callable=return_callable,
+            obj_type=obj_type,
+        )
+
     def add_path(
         self,
         path: Union[str, List[str]],

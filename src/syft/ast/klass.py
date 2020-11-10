@@ -35,7 +35,7 @@ class Class(Callable):
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
     def __repr__(self) -> str:
-        return f"<Class:{self.name}>"
+        return f"{self.name}"
 
     @property
     def pointer_type(self) -> Union[Callable, CallableT]:
@@ -173,6 +173,9 @@ class Class(Callable):
                 tags=self.tags if hasattr(self, "tags") else list(),
                 description=self.description if hasattr(self, "description") else "",
             )
+
+            if searchable:
+                ptr.gc_enabled = False
 
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(

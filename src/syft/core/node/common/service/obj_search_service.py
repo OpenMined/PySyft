@@ -24,7 +24,7 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
 from .....util import obj2pointer_type
-from ....common.group import All
+from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
@@ -200,7 +200,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # has an All() class in it.
                 contains_all_in_permissions = False
                 for key in obj.search_permissions.keys():
-                    if isinstance(key, All):
+                    if isinstance(key, VerifyAll):
                         contains_all_in_permissions = True
 
                 if (
@@ -208,7 +208,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    ptr_type = obj2pointer_type(obj.data)
+                    ptr_type = obj2pointer_type(obj=obj.data)
                     ptr = ptr_type(
                         client=node,
                         id_at_location=obj.id,

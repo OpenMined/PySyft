@@ -91,7 +91,8 @@ class ObjectWithID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<{type(self).__name__}:{self.id.value}>"
+        no_dash = str(self.id.value).replace("-", "")
+        return f"<{type(self).__name__}: {no_dash}>"
 
     @syft_decorator(typechecking=True)
     def repr_short(self) -> str:

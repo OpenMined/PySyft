@@ -1,7 +1,6 @@
 # stdlib
 from abc import ABC
 from typing import Iterable
-from typing import List
 from typing import Type
 
 # third party
@@ -72,16 +71,6 @@ class ObjectStore(ABC):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject) -> None:
-        """
-        Method to store an object based on its own UID in the store.
-
-        Args:
-            obj (StorableObject): the object to be stored.
-        """
-        raise NotImplementedError
-
-    @syft_decorator(typechecking=True)
     def __contains__(self, key: UID) -> bool:
         """
         Method to check if an UID is present in the store.
@@ -127,7 +116,17 @@ class ObjectStore(ABC):
 
     @syft_decorator(typechecking=True)
     def __delitem__(self, key: UID) -> None:
+        self.delete(key=key)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def delete(self, key: UID) -> None:
         """
+        We should write custom deletion code so we can check if the item exists
+        and then ensure deletion is called at a single place and that full __delitem__
+        is used where possible instead of the weaker del ref count.
+        Also care needs to be taken to not capture the deleted item in the Exception
+        stack trace so it doesn't keep the item around longer.
+
         Method to remove an object from the store based on its UID.
 
         Args:
@@ -162,7 +161,7 @@ class ObjectStore(ABC):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def get_objects_of_type(self, obj_type: Type) -> List[AbstractStorableObject]:
+    def get_objects_of_type(self, obj_type: Type) -> Iterable[AbstractStorableObject]:
         raise NotImplementedError
 
     @property
