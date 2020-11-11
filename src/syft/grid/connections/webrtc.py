@@ -345,29 +345,32 @@ class WebRTCConnection(BidirectionalConnection):
                 # logger.critical(f"> Sending MSG {msg.message} ID: {msg.id}")
                 data = msg.to_bytes()
                 data_len = len(data)
-                chunk_num = 0
-                done = False
-
-                def send_data_chunks():
-                    nonlocal chunk_num, data_len, done
-                    # Send chunks until buffered amount is big or we're done
-                    while (
-                            self.channel.bufferedAmount <= DC_MAX_BUFSIZE
-                    ) and not done:
-                        chunk = data[chunk_num * DC_MAX_CHUNK_SIZE:min((chunk_num + 1) * DC_MAX_CHUNK_SIZE, data_len)]
-                        self.channel.send(chunk)
-                        chunk_num += 1
-                        if chunk_num * DC_MAX_CHUNK_SIZE >= data_len:
-                            done = True
-                            self.channel.send(DC_CHUNK_END_SIGN)
-
-                    if not done:
-                        # Set listener for the next round of sending when buffer is empty
-                        self.channel.once("bufferedamountlow", send_data_chunks)
 
                 if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:
+                    chunk_num = 0
+                    done = False
+                    sent = asyncio.Future(loop=self.loop)
+
+                    def send_data_chunks():
+                        nonlocal chunk_num, data_len, done, sent
+                        # Send chunks until buffered amount is big or we're done
+                        while self.channel.bufferedAmount <= DC_MAX_BUFSIZE and not done:
+                            chunk = data[chunk_num * DC_MAX_CHUNK_SIZE:min((chunk_num + 1) * DC_MAX_CHUNK_SIZE, data_len)]
+                            self.channel.send(chunk)
+                            chunk_num += 1
+                            if chunk_num * DC_MAX_CHUNK_SIZE >= data_len:
+                                done = True
+                                self.channel.send(DC_CHUNK_END_SIGN)
+                                sent.set_result(True)
+
+                        if not done:
+                            # Set listener for the next round of sending when buffer is empty
+                            self.channel.once("bufferedamountlow", send_data_chunks)
+
                     self.channel.send(DC_CHUNK_START_SIGN)  # type: ignore
                     send_data_chunks()
+                    # Wait until all chunks are dispatched
+                    await sent
                 else:
                     self.channel.send(data)  # type: ignore
         except Exception as e:
