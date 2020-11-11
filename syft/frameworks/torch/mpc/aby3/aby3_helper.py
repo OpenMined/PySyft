@@ -1,6 +1,3 @@
-import torch
-
-from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 from syft.frameworks.torch.mpc.falcon.falcon_helper import FalconHelper
 
 

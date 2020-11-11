@@ -1,7 +1,6 @@
 import torch
 import syft
 
-from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
