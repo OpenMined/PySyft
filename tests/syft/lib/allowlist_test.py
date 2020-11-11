@@ -300,7 +300,7 @@ for op in BASIC_OPS:
                 if issubclass(type(v), str) and v in TEST_JSON["inputs"]:
                     resolved_args[k] = TEST_JSON["inputs"][v]
                 else:
-                    resolved_args[k]
+                    resolved_args[k] = v
             inputs.append(resolved_args)
         else:
             inputs.append(input)
@@ -425,16 +425,30 @@ def test_all_allowlisted_tensor_methods(
         elif isinstance(_args, dict):
             args = {}
             for k, v in _args.items():
+                arg_type = t_type
+                real_k = k
                 if isinstance(v, list):
-                    args[k] = th.tensor(v, dtype=t_type)
+                    if "_dtype_" in real_k:
+                        parts = real_k.split("_dtype_")
+                        real_k = parts[0]
+                        v_dtype_attr = parts[1]
+                        v_dtype = getattr(th, v_dtype_attr, None)
+                        if v_dtype is not None:
+                            arg_type = v_dtype
+
+                    if real_k.startswith("LIST_"):
+                        real_k = real_k.replace("LIST_", "")
+                        args[real_k] = v
+                    else:
+                        args[real_k] = th.tensor(v, dtype=arg_type)
                 elif v == "self":
-                    args[k] = [
+                    args[real_k] = [
                         th.tensor(
-                            self_tensor, dtype=t_type, requires_grad=requires_grad
+                            self_tensor, dtype=arg_type, requires_grad=requires_grad
                         )
                     ]
                 else:
-                    args[k] = v
+                    args[real_k] = v
         else:
             args = [PrimitiveFactory.generate_primitive(value=_args, recurse=True)]
 
