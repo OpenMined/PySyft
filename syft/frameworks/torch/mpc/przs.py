@@ -93,13 +93,13 @@ def gen_alpha_3of3(worker, shape=(1,), ring_size=RING_SIZE):
     return func(worker.id, shape=shape, ring_size=ring_size)
 
 
-def gen_alpha_2of3(worker, ring_size=RING_SIZE):
+def gen_alpha_2of3(worker, shape=(1,), ring_size=RING_SIZE):
     if worker == syft.local_worker:
         func = _generate_alpha_2of3
     else:
         func = remote(_generate_alpha_2of3, location=worker)
 
-    return func(worker.id, ring_size)
+    return func(worker.id, shape=shape, ring_size=ring_size)
 
 
 @allow_command
@@ -124,7 +124,7 @@ def _generate_alpha_3of3(worker_id, shape=(1,), ring_size=RING_SIZE):
 
 
 @allow_command
-def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
+def _generate_alpha_2of3(worker_id, shape=(1,), ring_size=RING_SIZE):
     """
     Generate 2 random numbers (alpha_i, alpha_i-1) using the two generators
     * generator cur - represents a generator initialized with this worker (i) seed
@@ -142,8 +142,8 @@ def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
     prev_gen = generators["prev"]
 
     alpha_cur, alpha_prev = (
-        __get_next_elem(cur_gen, ring_size),
-        __get_next_elem(prev_gen, ring_size),
+        __get_next_elem(cur_gen, shape=shape, ring_size=ring_size),
+        __get_next_elem(prev_gen, shape=shape, ring_size=ring_size),
     )
     return torch.tensor([alpha_cur.item(), alpha_prev.item()])
 
