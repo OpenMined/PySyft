@@ -5062,8 +5062,13 @@
         "return_type": "syft.lib.python.ValuesIndices",
         "not_available": [
           {
-            "data_types": ["bool", "float16"],
+            "data_types": ["float16"],
             "lte_version": "1.5.1",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.6.0",
             "reason": "no_cpu"
           },
           {
