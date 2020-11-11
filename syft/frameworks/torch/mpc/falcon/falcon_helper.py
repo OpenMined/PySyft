@@ -30,10 +30,21 @@ class FalconHelper:
         return image.unfold(kernel_size, padding)
 
     @staticmethod
-    def binary_to_arithmetic(shares: List[PointerTensor], players: List[AbstractWorker], ring_size: int = 2 * 32):
+    def convert_b2a(
+        shares: List[PointerTensor], players: List[AbstractWorker], ring_size: int = 2 * 32
+    ) -> ReplicatedSharingTensor:
         """
-        Since we shared the seeds for the PSRZ at the beginning we know
-        that zero_share_p0 + zero_share_p1 + zero_share_p2 == 0
+        Convert from binary (field 2) to arithmetic share
+
+        Args:
+            shares (List[PointerTensor]): Pointers to a share, since is replicated
+                two workers has it
+            players (List[AbstractWorker]): The workers involved in the protocol
+            ring_size (int): The new ring_size
+
+        Returns:
+            A ReplicatedSharingTensor
+
         """
 
         player0 = shares[0].location
@@ -41,9 +52,13 @@ class FalconHelper:
 
         shape = shares[0].shape
 
-        zero_share_p0 = gen_alpha_3of3(players[0], shape=shape).wrap()
-        zero_share_p1 = gen_alpha_3of3(players[1], shape=shape).wrap()
-        zero_share_p2 = gen_alpha_3of3(players[2], shape=shape).wrap()
+        """
+        Since we shared the seeds for the PSRZ at the beginning we know
+        that zero_share_p0 + zero_share_p1 + zero_share_p2 == 0
+        """
+        zero_share_p0 = gen_alpha_3of3(players[0], shape=shape, ring_size=ring_size).wrap()
+        zero_share_p1 = gen_alpha_3of3(players[1], shape=shape, ring_size=ring_size).wrap()
+        zero_share_p2 = gen_alpha_3of3(players[2], shape=shape, ring_size=ring_size).wrap()
 
         # RST for the zero share
         share_p0 = [zero_share_p0, zero_share_p1.copy().move(players[0])]
@@ -57,7 +72,6 @@ class FalconHelper:
         shares = {key: tuple(val) for key, val in arithmetic_shares.items()}
 
         return ReplicatedSharingTensor(shares=shares)
-
 
     @staticmethod
     def xor(

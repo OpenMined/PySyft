@@ -97,7 +97,7 @@ def test_determine_sign(beta, workers):
     assert (expected_plaintext == plaintext).all()
 
 
-def test_rst_wrapper(workers):
+def test_xor_rst_wrapper(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     workers = [bob, alice, james]
     x = torch.tensor([0, 1, 2])
@@ -109,7 +109,7 @@ def test_rst_wrapper(workers):
     assert FalconHelper.xor(rst_wrapper, other_wrapper).is_wrapper
 
 
-def test_rst_no_wrap(workers):
+def test_xor_rst_no_wrap(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     workers = [bob, alice, james]
     x = torch.tensor([0, 1, 2])
