@@ -34,13 +34,13 @@ class ABY3Helper:
         """
 
         # Step 1
-        rst1 = FalconHelper.binary_to_arithmetic((shares_p0[0], shares_p2[1]), players)
+        rst1 = FalconHelper.convert_b2a((shares_p0[0], shares_p2[1]), players)
 
         # Step 2
-        rst2 = FalconHelper.binary_to_arithmetic((shares_p1[0], shares_p0[1]), players)
+        rst2 = FalconHelper.convert_b2a((shares_p1[0], shares_p0[1]), players)
 
         # Step 3
-        rst3 = FalconHelper.binary_to_arithmetic((shares_p2[0], shares_p1[1]), players)
+        rst3 = FalconHelper.convert_b2a((shares_p2[0], shares_p1[1]), players)
 
         tmp = FalconHelper.xor(rst1, rst2)
         res = FalconHelper.xor(tmp, rst3)
