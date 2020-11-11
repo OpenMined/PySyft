@@ -36,7 +36,7 @@ class AbstractObject(ABC):
         """
         self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
-        self.tags = tags or set()
+        self.tags = tags
         self.description = description
         self.child = child
 
@@ -57,10 +57,11 @@ class AbstractObject(ABC):
         return self
 
     def tag(self, *tags: str) -> "AbstractObject":
-        self.tags = self.tags or set()
 
-        for tag in tags:
-            self.tags.add(tag)
+        if tags:
+            self.tags = self.tags or set()
+            for tag in tags:
+                self.tags.add(tag)
 
         self.owner.object_store.register_tags(self)
 

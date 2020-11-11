@@ -3,12 +3,23 @@ import torch
 from syft.generic.frameworks.hook import hook_args
 import syft
 from syft.generic.abstract.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.mpc.przs import PRZS, gen_alpha_3of3
 
 
 class ReplicatedSharingTensor(AbstractTensor):
-    def __init__(self, plain_text=None, players=None, ring_size=None, owner=None):
-        super().__init__(owner=owner)
+    def __init__(
+        self,
+        plain_text=None,
+        players=None,
+        ring_size=None,
+        owner=None,
+        id=None,
+        tags=None,
+        description=None,
+        shares=None,
+    ):
+        super().__init__(owner=owner, id=id, tags=tags, description=description)
         self.ring_size = ring_size or 2 ** 32
         shares_map = self.__validate_input(plain_text, players)
         self.child = shares_map
@@ -59,8 +70,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __distribute_shares(workers, shares):
         shares_map = {}
         for i in range(len(shares)):
-            pointer1 = shares[i].send(workers[i])
-            pointer2 = shares[(i + 1) % len(shares)].send(workers[i])
+            pointer1 = shares[i].copy().send(workers[i])
+            pointer2 = shares[(i + 1) % len(shares)].copy().send(workers[i])
             shares_map[workers[i]] = (pointer1, pointer2)
         return shares_map
 
@@ -269,6 +280,129 @@ class ReplicatedSharingTensor(AbstractTensor):
     @property
     def players(self):
         return self.__get_players()
+
+    def set_garbage_collect_data(self, value):
+        shares = self.child
+
+        for _, shares in shares.items():
+            for share in shares:
+                assert share.is_wrapper is True
+                share.gc = value
+
+    def get_garbage_collect_data(self):
+        shares = self.child
+        res = None
+
+        """ Select the first share """
+        ref_share = next(iter(shares.values()))[0]
+
+        is_wrapper = ref_share.is_wrapper
+        if is_wrapper:
+            ref_share = ref_share.child
+
+        gc_ref = ref_share.garbage_collect_data
+
+        for worker, shares in shares.items():
+            for share in shares:
+                assert share.is_wrapper == is_wrapper
+
+                if share.is_wrapper:
+                    share = share.child
+
+                """ Make sure the GC value is the same for all shares """
+                assert share.garbage_collect_data == gc_ref
+
+        return gc_ref
+
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Replicated Shared Tensor
+        We make it clear that if someone query .grad on a Replicated Shared Tensor it would
+        not throw an error
+        Return None such that it can not be set
+        """
+        return None
+
+    def backward(self, *args, **kwargs):
+        """Calling backward on Replicated Shared Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an RST (for example in create_grad_objects), so
+        we just ignore the call."""
+        pass
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, tensor: "ReplicatedSharingTensor") -> tuple:
+        """
+        This function takes the attributes of a ReplicatedSharingTensor and saves them in a tuple
+        Args:
+            worker (AbstractWorker): the worker that does the serialization
+            tensor (ReplicatedSharingTensor): a ReplicatedSharingTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the replicated shared tensor
+        Examples:
+            data = simplify(tensor)
+        """
+        _simplify = lambda x: syft.serde.msgpack.serde._simplify(worker, x)
+
+        # Don't delete the remote values of the shares at simplification
+        garbage_collect = tensor.get_garbage_collect_data()
+        # We should always have wrappers
+        prep_simplify = list(tensor.child.values())
+        chain = _simplify(prep_simplify)
+
+        tensor.set_garbage_collect_data(False)
+
+        return (
+            _simplify(tensor.id),
+            _simplify(tensor.ring_size),
+            chain,
+            garbage_collect,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "ReplicatedSharingTensor":
+        """
+            This function reconstructs a ReplicatedSharingTensor given it's attributes in
+        form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the ReplicatedSharingTensor
+        Returns:
+            ReplicatedSharingTensor: a ReplicatedSharingTensor
+        Examples:
+            shared_tensor = detail(data)
+        """
+        _detail = lambda x: syft.serde.msgpack.serde._detail(worker, x)
+
+        tensor_id, ring_size, chain, garbage_collect = tensor_tuple
+
+        tensor = ReplicatedSharingTensor(
+            owner=worker,
+            id=_detail(tensor_id),
+            ring_size=_detail(ring_size),
+        )
+
+        chain = _detail(chain)
+        tensor.child = {}
+        for shares in chain:
+            ref_loc = shares[0].location
+            ref_owner = shares[0].owner
+
+            for share in shares:
+                assert share.location == ref_loc
+                assert share.owner == ref_owner
+
+            if ref_loc is not None:
+                # Remote
+                worker = ref_loc
+            else:
+                # Local
+                worker = ref_owner.id
+
+            tensor.child[worker] = shares
+
+        tensor.set_garbage_collect_data(garbage_collect)
+        return tensor
 
     def __repr__(self):
         return self.__str__()
