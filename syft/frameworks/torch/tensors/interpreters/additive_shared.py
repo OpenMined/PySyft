@@ -250,9 +250,10 @@ class AdditiveSharingTensor(AbstractTensor):
     @property
     def grad(self):
         """
-        Gradient makes no sense for Additive Shared Tensor, so we make it clear
-        that if someone query .grad on a Additive Shared Tensor it doesn't error
-        but returns grad and can't be set
+        Gradient makes no sense for Additive Shared Tensor
+        We make it clear that if someone query .grad on a Additive Shared Tensor it would
+        not throw an error
+        Return None such that it can not be set
         """
         return None
 
@@ -477,7 +478,10 @@ class AdditiveSharingTensor(AbstractTensor):
                 *self.child.keys(), **self.get_class_attributes(), **no_wrap
             ).child
 
-        assert len(shares) == len(operand)
+        if len(shares) != len(operand):
+            raise ValueError(
+                f"Size of shares({len(shares)}) is not equal to that of operand({len(operand)})"
+            )
         return {worker: op(share, operand[worker]) for worker, share in shares.items()}
 
     @overloaded.method
@@ -530,10 +534,14 @@ class AdditiveSharingTensor(AbstractTensor):
                 summation form
         """
         # check to see that operation is either mul or matmul
-        assert equation == "mul" or equation == "matmul"
+        if equation != "mul" and equation != "matmul":
+            raise NotImplementedError(
+                f"Operation({equation}) is not possible, only mul or matmul are allowed"
+            )
         cmd = getattr(torch, equation)
 
-        assert isinstance(other, AdditiveSharingTensor)
+        if not isinstance(other, AdditiveSharingTensor):
+            raise TypeError("other is not an AdditiveSharingTensor")
 
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
@@ -563,7 +571,10 @@ class AdditiveSharingTensor(AbstractTensor):
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
-        assert equation == "mul" or equation == "matmul"
+        if equation != "mul" and equation != "matmul":
+            raise NotImplementedError(
+                f"Operation({equation}) is not possible, only mul or matmul are allowed"
+            )
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
             return {
@@ -671,7 +682,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
-        assert isinstance(modulus, int)
+        if not isinstance(modulus, int):
+            raise TypeError("modulus param should be an int instance.")
 
         return {worker: share % modulus for worker, share in shares.items()}
 
@@ -918,7 +930,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __gt__(self, other):
-        return (other + 1) <= self
+        return -self <= -(other + 1)
 
     def ge(self, other):
         return (self - other).positive()
@@ -1042,7 +1054,10 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             the max of the tensor self
         """
-        assert algorithm == "pairwise", "Other methods not supported for the moment"
+        if algorithm != "pairwise":
+            raise NotImplementedError(
+                "Other methods not supported for the moment, only pairwise supported for now"
+            )
 
         argmax_result = self.argmax(dim=dim, keepdim=keepdim, one_hot=True)
         if dim is not None:
@@ -1139,18 +1154,25 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def set_garbage_collect_data(self, value):
         shares = self.child
-        for _, share in shares.items():
+        for share in shares.values():
             share.garbage_collect_data = value
 
     def get_garbage_collect_data(self):
         shares = self.child
-        return {worker: share.garbage_collect_data for worker, share in shares.items()}
+        gc_data = None
+
+        for share in shares.values():
+            assert gc_data is None or gc_data == share.garbage_collect_data
+            gc_data = share.garbage_collect_data
+
+        return gc_data
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
+            worker (AbstractWorker): the worker that does the serialization
             tensor (AdditiveSharingTensor): a AdditiveSharingTensor
         Returns:
             tuple: a tuple holding the unique attributes of the additive shared tensor
@@ -1159,9 +1181,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         _simplify = lambda x: sy.serde.msgpack.serde._simplify(worker, x)
 
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = _simplify(tensor.child)
+        chain = _simplify(list(tensor.child.values()))
 
         # Don't delete the remote values of the shares at simplification
         garbage_collect = tensor.get_garbage_collect_data()
@@ -1205,9 +1225,15 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
-        if chain is not None:
-            chain = _detail(chain)
-            tensor.child = chain
+        chain = _detail(chain)
+        tensor.child = {}
+        for share in chain:
+            if share.location is not None:
+                # Remote
+                tensor.child[share.location.id] = share
+            else:
+                # Local
+                tensor.child[share.owner.id] = share
 
         tensor.set_garbage_collect_data(garbage_collect)
 

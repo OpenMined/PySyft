@@ -104,7 +104,8 @@ class TorchTensor(AbstractTensor):
         location = self.owner.get_worker(location)
 
         def callback(grad):
-            assert isinstance(grad, torch.Tensor), "Grad in callback should be a Tensor"
+            if not isinstance(grad, torch.Tensor):
+                raise TypeError("Grad in callback should be a Tensor")
             # the grad tensor is created by the torch backprop and might not be registered properly
             self.owner.register_obj(grad)
             pointer = PointerTensor(
@@ -157,7 +158,7 @@ class TorchTensor(AbstractTensor):
             if new_tags is not None:
                 self.child.tags = set(new_tags)
             else:
-                self.child.tags = set()
+                self.child.tags = None
         else:
             self._tags = new_tags
 
@@ -183,6 +184,20 @@ class TorchTensor(AbstractTensor):
             return self.child.shape
         else:
             return self.native_shape
+
+    @property
+    def ndim(self):
+        if self.is_wrapper:
+            return self.child.ndim
+        else:
+            return self.native_ndim
+
+    @property
+    def T(self):
+        if self.is_wrapper:
+            return self.child.T.wrap()
+        else:
+            return self.native_T
 
     @property
     def data(self):
@@ -1060,7 +1075,8 @@ class TorchTensor(AbstractTensor):
 
         """
 
-        assert isinstance(self.child, PointerTensor)
+        if not isinstance(self.child, PointerTensor):
+            raise TypeError("child should be a PointerTensor")
 
         ps = list(pointers)
         ps.append(self)
@@ -1125,13 +1141,13 @@ class TorchTensor(AbstractTensor):
             no_wrap = kwargs.pop("no_wrap", False)
             dtype = kwargs.get("dtype")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
-            kwargs_share = dict(
-                crypto_provider=crypto_provider,
-                requires_grad=requires_grad,
-                no_wrap=no_wrap,
-                protocol=protocol,
-                dtype=dtype,
-            )
+            kwargs_share = {
+                "crypto_provider": crypto_provider,
+                "requires_grad": requires_grad,
+                "no_wrap": no_wrap,
+                "protocol": protocol,
+                "dtype": dtype,
+            }
 
             if not inplace:
                 x_shared = self.fix_prec(**kwargs_fix_prec).share(*workers, **kwargs_share)

@@ -51,7 +51,8 @@ class Context:
         next_parms.set_coeff_modulus(next_coeff_modulus)
         next_param_id = next_parms.param_id
 
-        assert next_param_id != prev_parms_id
+        if next_param_id == prev_parms_id:
+            raise ValueError("next param can't be same as prev param")
 
         next_context_data = ContextData(next_parms)
         self.context_data_map[next_param_id] = next_context_data

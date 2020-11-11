@@ -55,7 +55,8 @@ class MultiPointerTensor(AbstractTensor):
 
         self.child = {}
         for c in children:
-            assert c.shape == children[0].shape
+            if c.shape != children[0].shape:
+                raise ValueError("Each entry in children should be of same shape.")
             self.child[c.location.id] = c
 
     def __str__(self):

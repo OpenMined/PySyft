@@ -110,10 +110,11 @@ class Action(ABC, SyftSerializable):
 
     def _type_check(self, field_name, expected_type):
         actual_value = getattr(self, field_name)
-        assert actual_value is None or isinstance(actual_value, expected_type), (
-            f"{field_name} must be {expected_type.__name__}, but was "
-            f"{type(actual_value).__name__}: {actual_value}."
-        )
+        if not (actual_value is None or isinstance(actual_value, expected_type)):
+            raise ValueError(
+                f"{field_name} must be {expected_type.__name__}, but was "
+                f"{type(actual_value).__name__}: {actual_value}."
+            )
 
     # These methods must be implemented by child classes in order to return the correct type
     # and to be detected by the serdes as serializable. They are therefore marked as abstract

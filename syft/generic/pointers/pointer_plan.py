@@ -107,9 +107,11 @@ class PointerPlan(ObjectPointer):
     def parameters(self) -> List:
         """Return a list of pointers to the plan parameters"""
 
-        assert (
-            len(self._locations) == 1
-        ), ".parameters() for PointerPlan with > 1 locations is currently not implemented."
+        if len(self._locations) != 1:
+            raise ValueError(
+                ".parameters() for PointerPlan with > 1 locations is currently not implemented."
+            )
+
         # TODO implement this feature using MultiPointerTensor
 
         location = self._locations[0]

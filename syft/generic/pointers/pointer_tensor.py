@@ -201,14 +201,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             cmd_name="register_callback_hook",
             target=self,
             args_=(),
-            kwargs_=dict(
+            kwargs_={
                 # args & kwargs are not provided, they will be filled by
                 # the remote party
-                message=TensorCommandMessage.computation(
+                "message": TensorCommandMessage.computation(
                     "trigger_hook_function", self.id, (), {}, None
                 ),
-                location=self.owner.id,
-            ),
+                "location": self.owner.id,
+            },
         )
         self.point_to_attr = point_to_attr
 
@@ -415,6 +415,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def dim(self) -> int:
         return len(self.shape)
+
+    @property
+    def ndim(self):
+        return self.dim()
+
+    @property
+    def T(self):
+        return self.permute(tuple(range(self.ndim - 1, -1, -1)))
 
     def fix_prec(self, *args, **kwargs):
         """
