@@ -294,6 +294,14 @@ for op in BASIC_OPS:
     for input in test_inputs:
         if issubclass(type(input), str) and input in TEST_JSON["inputs"]:
             inputs += TEST_JSON["inputs"][input]
+        elif issubclass(type(input), dict):
+            resolved_args = {}
+            for k, v in input.items():  # type: ignore
+                if issubclass(type(v), str) and v in TEST_JSON["inputs"]:
+                    resolved_args[k] = TEST_JSON["inputs"][v]
+                else:
+                    resolved_args[k]
+            inputs.append(resolved_args)
         else:
             inputs.append(input)
 
@@ -362,7 +370,7 @@ def test_all_allowlisted_tensor_methods(
     tensor_type: str,
     op_name: str,
     self_tensor: ListType,
-    _args: Union[str, ListType, bool, None],
+    _args: Union[str, ListType, Dict, bool, None],
     is_property: bool,
     return_type: str,
     deterministic: bool,
@@ -405,7 +413,7 @@ def test_all_allowlisted_tensor_methods(
         # we dont have .id's by default anymore
         # self_tensor_copy.id = self_tensor.id  # type: ignore
 
-        args: ListType[Any] = []
+        args: Union[ListType[Any], Dict[str, Any]]
 
         # Step 4: Create the arguments we're going to pass the method on
         if _args is None:
@@ -414,6 +422,19 @@ def test_all_allowlisted_tensor_methods(
             args = [th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)]
         elif isinstance(_args, list):
             args = [th.tensor(_args, dtype=t_type)]
+        elif isinstance(_args, dict):
+            args = {}
+            for k, v in _args.items():
+                if isinstance(v, list):
+                    args[k] = th.tensor(v, dtype=t_type)
+                elif v == "self":
+                    args[k] = [
+                        th.tensor(
+                            self_tensor, dtype=t_type, requires_grad=requires_grad
+                        )
+                    ]
+                else:
+                    args[k] = v
         else:
             args = [PrimitiveFactory.generate_primitive(value=_args, recurse=True)]
 
@@ -432,18 +453,31 @@ def test_all_allowlisted_tensor_methods(
         # in normal PyTorch. If it this is an invalid combination, abort the test
         try:
             if not is_property:
+                upcasted_args: Union[dict, list]
                 # this prevents things like syft.lib.python.bool.Bool from getting
                 # treated as an Int locally but then failing on the upcast to
                 # builtins.bool on the remote side
-                upcasted_args = []
-                for arg in args:
-                    upcast_attr = getattr(arg, "upcast", None)
-                    if upcast_attr is not None:
-                        upcasted_args.append(upcast_attr())
-                    else:
-                        upcasted_args.append(arg)
+                if isinstance(args, dict):
+                    upcasted_args = {}
+                    for k, arg in args.items():
+                        upcast_attr = getattr(arg, "upcast", None)
+                        if upcast_attr is not None:
+                            upcasted_args[k] = upcast_attr()
+                        else:
+                            upcasted_args[k] = arg
+                else:
+                    upcasted_args = []
+                    for arg in args:
+                        upcast_attr = getattr(arg, "upcast", None)
+                        if upcast_attr is not None:
+                            upcasted_args.append(upcast_attr())
+                        else:
+                            upcasted_args.append(arg)
 
-                target_result = target_op_method(*upcasted_args)
+                if issubclass(type(upcasted_args), dict):
+                    target_result = target_op_method(**upcasted_args)
+                else:
+                    target_result = target_op_method(*upcasted_args)
             else:
                 # we have a property and already have its value
                 target_result = target_op_method
@@ -464,9 +498,16 @@ def test_all_allowlisted_tensor_methods(
         xp = self_tensor_copy.send(alice_client)
         argsp: ListType[Any] = []
         if len(args) > 0 and not is_property:
-            argsp = [
-                arg.send(alice_client) if hasattr(arg, "send") else arg for arg in args
-            ]
+            if isinstance(args, dict):
+                argsp = [
+                    arg.send(alice_client) if hasattr(arg, "send") else arg
+                    for arg in args.values()
+                ]
+            else:
+                argsp = [
+                    arg.send(alice_client) if hasattr(arg, "send") else arg
+                    for arg in args
+                ]
 
         # Step 7: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)

@@ -408,6 +408,8 @@ allowlist["torch.Tensor.var"] = "torch.Tensor"
 allowlist["torch.Tensor.view_as"] = "torch.Tensor"
 allowlist["torch.Tensor.view"] = "torch.Tensor"
 allowlist["torch.Tensor.zero_"] = "torch.Tensor"
+allowlist["torch.Tensor.addbmm"] = "torch.Tensor"
+allowlist["torch.Tensor.addbmm_"] = "torch.Tensor"
 
 
 # --------------------------------------------------------------------------------------

@@ -79,11 +79,33 @@
         [4, 2, 5],
         [5, 4, 3]
       ]
+    ],
+    "tensor_m": [
+      [
+        [-1.58, -1.7569, 1.4155, -0.208, 0.2783],
+        [1.7592, 0.441, 0.1744, 0.4034, 1.0809],
+        [-0.0189, 0.3639, -0.4621, 0.3279, -0.6347]
+      ]
     ]
   },
   "inputs": {
     "all": ["self", [0], [1], 0, 1, true, false],
-    "all_nonzero": ["self", [1], 1, true]
+    "all_nonzero": ["self", [1], 1, true],
+    "tensor_batch1": [
+      [
+        [-0.3855, 1.4975, -0.0233, 0.9412],
+        [-1.3485, 1.5617, -0.7071, 1.1197],
+        [0.5733, 0.2611, 0.1095, -0.475]
+      ]
+    ],
+    "tensor_batch2": [
+      [
+        [-2.3476, -0.041, 1.4257, -1.9517, 2.6519],
+        [-1.1114, -0.13, 0.0506, -0.2334, 0.0215],
+        [0.7167, -0.6501, -0.5743, -0.7593, 0.874],
+        [1.2244, 1.0321, -0.5835, -0.6659, 1.5362]
+      ]
+    ]
   },
   "profiles": {
     "default": {
@@ -4825,7 +4847,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4838,7 +4860,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4860,7 +4882,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4881,7 +4903,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4902,7 +4924,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4914,7 +4936,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4936,7 +4958,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4948,8 +4970,13 @@
         "return_type": "syft.lib.python.ValuesIndices",
         "not_available": [
           {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.5.1",
+            "reason": "no_cpu"
+          },
+          {
             "data_types": ["bfloat16"],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4971,7 +4998,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4984,7 +5011,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -5006,7 +5033,7 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -5028,7 +5055,31 @@
               "int32",
               "int64"
             ],
-            "gte_version": "1.7.0",
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "addbmm": {
+        "profile": "default",
+        "tensors": ["tensor_m"],
+        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "addbmm_": {
+        "profile": "default",
+        "tensors": ["tensor_m"],
+        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "lte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
