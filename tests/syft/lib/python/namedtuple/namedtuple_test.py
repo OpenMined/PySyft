@@ -13,7 +13,11 @@ def test_torch_valuesindices_serde():
     indices = y.indices
 
     ser = y.serialize()
-    vi = ValuesIndices(values=values, indices=indices)
+    # horrible hack, we shouldnt be constructing these right now anyway
+    params = [None] * 15
+    params[0] = values
+    params[1] = indices
+    vi = ValuesIndices(*params)
     de = _deserialize(blob=ser)
 
     assert (de.values == y.values).all()
