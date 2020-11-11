@@ -17,6 +17,10 @@ message StorableObject {
   google.protobuf.Any data = 4;
   string description = 5;
   repeated string tags = 6;
+  // fix by making Dict not StorableObject
+  bytes read_permissions = 7;
+  // fix by making Dict not StorableObject
+  bytes search_permissions = 8;
 }
 
 message StoreObject {

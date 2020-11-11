@@ -34,14 +34,14 @@ def test_request_message() -> None:
         address=addr,
         requester_verify_key=get_verify_key(),
         owner_address=addr,
-        request_name="test request",
+        name="test request",
         request_description="test description",
     )
 
     deserialized_obj = serialize(obj=msg)
     new_obj = deserialize(blob=deserialized_obj)
 
-    assert msg.request_name == new_obj.request_name
+    assert msg.name == new_obj.name
     assert msg.request_description == new_obj.request_description
     assert msg.address == new_obj.address
     assert msg.owner_address == new_obj.owner_address

@@ -19,7 +19,7 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
-from ....common.group import All
+from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
@@ -127,7 +127,7 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         msg: ObjectSearchPermissionUpdateMessage,
         verify_key: VerifyKey,
     ) -> None:
-        target_verify_key = msg.target_verify_key or All
+        target_verify_key = msg.target_verify_key or VerifyAll
         if msg.add_instead_of_remove:
             node.store[msg.target_object_id].search_permissions[
                 target_verify_key

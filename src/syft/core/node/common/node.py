@@ -40,6 +40,7 @@ from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
+from ...store import DiskObjectStore
 from ...store import MemoryStore
 from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
@@ -99,6 +100,7 @@ class Node(AbstractNode):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
     ):
 
         # The node has a name - it exists purely to help the
@@ -115,7 +117,19 @@ class Node(AbstractNode):
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
-        self.store = MemoryStore()
+
+        if db_path is not None:
+            try:
+                self.store = DiskObjectStore(db_path=db_path)
+                log = f"Opened DiskObjectStore at {db_path}."
+                logger.debug(log)
+            except Exception as e:
+                log = f"Failed to open DiskObjectStore at {db_path}. {e}"
+                logger.critical(log)
+        else:
+            self.store = MemoryStore()
+            log = "Created MemoryStore."
+            logger.debug(log)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -558,4 +572,5 @@ class Node(AbstractNode):
         self.services_registered = True
 
     def __repr__(self) -> str:
-        return f"{self.node_type}:{self.name}:{self.id}"
+        no_dash = str(self.id).replace("-", "")
+        return f"{self.node_type}: {self.name}: {no_dash}"
