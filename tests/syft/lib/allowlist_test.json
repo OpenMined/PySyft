@@ -70,7 +70,16 @@
         [0.0, -0.3, 0.5]
       ]
     ],
-    "tensor_scalar": [[1]]
+    "tensor_scalar": [[1]],
+    "lstsq_a": [
+      [
+        [1.0, 1, 1],
+        [2, 3, 4],
+        [3, 5, 2],
+        [4, 2, 5],
+        [5, 4, 3]
+      ]
+    ]
   },
   "inputs": {
     "all": ["self", [0], [1], 0, 1, true, false],
@@ -2594,22 +2603,6 @@
           }
         ]
       },
-      "cummax": {
-        "profile": "default",
-        "inputs": [0],
-        "return_type": "syft.lib.python.ValuesIndices",
-        "not_available": [
-          {
-            "lte_version": "1.7.0",
-            "data_types": ["bfloat16", "float16"],
-            "reason": "no_cpu"
-          }
-        ]
-      },
-      "cummin": {
-        "profile": "default",
-        "inputs": [0]
-      },
       "cumprod": {
         "profile": "default",
         "inputs": [0],
@@ -2800,27 +2793,6 @@
           {
             "data_types": ["float16"],
             "lte_version": "1.5.1",
-            "reason": "no_cpu"
-          }
-        ]
-      },
-      "eig": {
-        "profile": "default",
-        "inputs": [null, false, true],
-        "tensors": ["tensor1"],
-        "not_available": [
-          {
-            "data_types": [
-              "bool",
-              "bfloat16",
-              "float16",
-              "uint8",
-              "int8",
-              "int16",
-              "int32",
-              "int64"
-            ],
-            "gte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]
@@ -4808,6 +4780,255 @@
           {
             "data_types": ["bool", "bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "cummax": {
+        "profile": "default",
+        "inputs": [0],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "lte_version": "1.7.0",
+            "data_types": ["bfloat16", "float16"],
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "cummin": {
+        "profile": "default",
+        "inputs": [0],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "lte_version": "1.7.0",
+            "data_types": ["bfloat16", "float16"],
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "eig": {
+        "profile": "default",
+        "inputs": [null, false, true],
+        "tensors": ["tensor2"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "kthvalue": {
+        "profile": "default",
+        "inputs": [1],
+        "tensors": ["tensor1"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "lstsq": {
+        "profile": "default",
+        "inputs": ["self"],
+        "tensors": ["lstsq_a"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "slogdet": {
+        "profile": "tensor_method_noinput",
+        "tensors": ["tensor2"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "qr": {
+        "profile": "tensor_method_noinput",
+        "tensors": ["tensor2"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "mode": {
+        "profile": "tensor_method_noinput",
+        "tensors": ["tensor2"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "solve": {
+        "profile": "default",
+        "tensors": ["tensor_cube"],
+        "inputs": ["self"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "sort": {
+        "profile": "default",
+        "tensors": ["tensor_cube"],
+        "inputs": [null],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "symeig": {
+        "profile": "default",
+        "tensors": ["tensor_cube"],
+        "inputs": [null],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "topk": {
+        "profile": "default",
+        "tensors": ["tensor1"],
+        "inputs": [1],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "triangular_solve": {
+        "profile": "default",
+        "tensors": ["tensor2"],
+        "inputs": ["self"],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "svd": {
+        "profile": "default",
+        "tensors": ["tensor2"],
+        "inputs": [null],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "gte_version": "1.7.0",
             "reason": "no_cpu"
           }
         ]

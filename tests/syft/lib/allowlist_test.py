@@ -28,6 +28,7 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
+from syft.lib.python import ValuesIndicesWrapper
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
@@ -491,16 +492,16 @@ def test_all_allowlisted_tensor_methods(
 
         # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
         try:
-            if full_name_with_qualname(klass=type(target_result)).startswith(
-                "torch.return_types."
-            ):
+            target_fqn = full_name_with_qualname(klass=type(target_result))
+            if target_fqn.startswith("torch.return_types."):
+                local_fqn = full_name_with_qualname(klass=type(local_result))
+                keys = ValuesIndicesWrapper.get_keys(klass_name=local_fqn)
                 # temporary work around while ValuesIndicesWrapper has storable attrs
-                assert compare_tensors(
-                    left=local_result.values, right=target_result.values
-                )
-                assert compare_tensors(
-                    left=local_result.indices, right=target_result.indices
-                )
+                for key in keys:
+                    assert compare_tensors(
+                        left=getattr(local_result, key, None),
+                        right=getattr(target_result, key, None),
+                    )
                 # finish the check for now
                 return
 

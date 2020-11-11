@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n#proto/lib/torch/valuesindices.proto\x12\x0esyft.lib.torch\x1a%proto/core/common/common_object.proto\x1a\x1cproto/lib/torch/tensor.proto"\xa2\x01\n\x12ValuesIndicesProto\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12*\n\x06values\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12+\n\x07indices\x18\x04 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
+    serialized_pb=b'\n#proto/lib/torch/valuesindices.proto\x12\x0esyft.lib.torch\x1a%proto/core/common/common_object.proto\x1a\x1cproto/lib/torch/tensor.proto"\x83\x01\n\x12ValuesIndicesProto\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x0c\n\x04keys\x18\x03 \x03(\t\x12*\n\x06values\x18\x04 \x03(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
@@ -80,15 +80,15 @@ _VALUESINDICESPROTO = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="values",
-            full_name="syft.lib.torch.ValuesIndicesProto.values",
+            name="keys",
+            full_name="syft.lib.torch.ValuesIndicesProto.keys",
             index=2,
             number=3,
-            type=11,
-            cpp_type=10,
-            label=1,
+            type=9,
+            cpp_type=9,
+            label=3,
             has_default_value=False,
-            default_value=None,
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -99,15 +99,15 @@ _VALUESINDICESPROTO = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="indices",
-            full_name="syft.lib.torch.ValuesIndicesProto.indices",
+            name="values",
+            full_name="syft.lib.torch.ValuesIndicesProto.values",
             index=3,
             number=4,
             type=11,
             cpp_type=10,
-            label=1,
+            label=3,
             has_default_value=False,
-            default_value=None,
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -127,7 +127,7 @@ _VALUESINDICESPROTO = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=125,
-    serialized_end=287,
+    serialized_end=256,
 )
 
 _VALUESINDICESPROTO.fields_by_name[
@@ -135,9 +135,6 @@ _VALUESINDICESPROTO.fields_by_name[
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _VALUESINDICESPROTO.fields_by_name[
     "values"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
-_VALUESINDICESPROTO.fields_by_name[
-    "indices"
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
 DESCRIPTOR.message_types_by_name["ValuesIndicesProto"] = _VALUESINDICESPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

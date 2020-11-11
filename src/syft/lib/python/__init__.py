@@ -18,6 +18,7 @@ from .float import Float
 from .int import Int
 from .list import List
 from .namedtuple import ValuesIndices
+from .namedtuple import ValuesIndicesWrapper
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
@@ -39,6 +40,7 @@ for syft_type in [
     String,
     Tuple,
     ValuesIndices,
+    ValuesIndicesWrapper,
 ]:
     syft_type.__module__ = __name__
 
@@ -432,6 +434,71 @@ def create_python_ast() -> Globals:
         ),
         (
             "syft.lib.python.ValuesIndices.indices",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.eigenvalues",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.eigenvectors",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.solution",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.QR",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.sign",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.logabsdet",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.Q",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.R",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.LU",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.cloned_coefficient",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.U",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.S",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.V",
             "torch.Tensor",
             torch.Tensor,
         ),
