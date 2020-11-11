@@ -491,6 +491,19 @@ def test_all_allowlisted_tensor_methods(
 
         # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
         try:
+            if full_name_with_qualname(klass=type(target_result)).startswith(
+                "torch.return_types."
+            ):
+                # temporary work around while ValuesIndicesWrapper has storable attrs
+                assert compare_tensors(
+                    left=local_result.values, right=target_result.values
+                )
+                assert compare_tensors(
+                    left=local_result.indices, right=target_result.indices
+                )
+                # finish the check for now
+                return
+
             # only do single value comparisons, do lists, tuples etc below in the else
             if (
                 issubclass(type(local_result), (str, String))

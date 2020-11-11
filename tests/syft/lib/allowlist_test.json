@@ -2596,7 +2596,15 @@
       },
       "cummax": {
         "profile": "default",
-        "inputs": [0]
+        "inputs": [0],
+        "return_type": "syft.lib.python.ValuesIndices",
+        "not_available": [
+          {
+            "lte_version": "1.7.0",
+            "data_types": ["bfloat16", "float16"],
+            "reason": "no_cpu"
+          }
+        ]
       },
       "cummin": {
         "profile": "default",

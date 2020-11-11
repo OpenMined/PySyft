@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+import "proto/core/common/common_object.proto";
+import "proto/lib/torch/tensor.proto";
+
+message ValuesIndicesProto {
+  syft.core.common.UID id = 1;
+  string obj_type = 2;
+  syft.lib.torch.TensorData values = 3;
+  syft.lib.torch.TensorData indices = 4;
+}

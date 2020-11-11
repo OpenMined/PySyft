@@ -868,6 +868,7 @@ allowlist["torch.Tensor.vdot"] = {
 # SECTION - Tensor methods which are untested
 # --------------------------------------------------------------------------------------
 
+allowlist["torch.Tensor.cummax"] = "syft.lib.python.ValuesIndices"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
@@ -916,7 +917,6 @@ allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, flo
 # allowlist["torch.Tensor.clamp_min_"] = "torch.Tensor"
 # allowlist["torch.Tensor.clamp_min"] = "torch.Tensor"
 # allowlist["torch.Tensor.clamp"] = "torch.Tensor"
-# allowlist["torch.Tensor.cummax"] = "torch.Tensor" # requires type torch.return_types.cummax
 # allowlist["torch.Tensor.cummin"] = "torch.Tensor" # requires type torch.return_types.cummin
 # allowlist["torch.Tensor.detach_"] = "torch.Tensor" # some issue with gradient_as_bucket_view
 # allowlist["torch.Tensor.device"] = "torch.device" # requires torch.device serde

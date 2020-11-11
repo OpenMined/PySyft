@@ -3,6 +3,9 @@ from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
+# third party
+import torch
+
 # syft relative
 from ...ast.globals import Globals
 from ...ast.klass import Class
@@ -14,6 +17,7 @@ from .dict import DictWrapper
 from .float import Float
 from .int import Int
 from .list import List
+from .namedtuple import ValuesIndices
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
@@ -34,6 +38,7 @@ for syft_type in [
     PyPrimitive,
     String,
     Tuple,
+    ValuesIndices,
 ]:
     syft_type.__module__ = __name__
 
@@ -106,6 +111,11 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
+        (
+            "syft.lib.python.ValuesIndices",
+            "syft.lib.python.ValuesIndices",
+            ValuesIndices,
+        ),
     ]
 
     methods = [
@@ -414,6 +424,17 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any", Any),
+        # ValueIndicies
+        (
+            "syft.lib.python.ValuesIndices.values",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.indices",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
     ]
 
     add_modules(ast, modules)
