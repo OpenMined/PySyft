@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1604946304346,
+  "lastUpdate": 1605078599991,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Python Benchmark with pytestbenchmark": [
@@ -354,6 +354,65 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.005549676934449934",
             "extra": "mean: 89.98929159995441 msec\nrounds: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "murarugeorgec@gmail.com",
+            "name": "George-Cristian Muraru",
+            "username": "gmuraru"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a61f2e71a72e6da6926232079122bef60d51ceb8",
+          "message": "Add remote share for RST (#4653)\n\n* Add remote RST\r\n\r\n* Apply suggestions from code review\r\n\r\nCo-authored-by: Théo Ryffel <theo.leffyr@gmail.com>\r\n\r\n* Fix issues\r\n\r\n* Add suggestion\r\n\r\n* Remove comments\r\n\r\n* Fix flake\r\n\r\n* Add syft-proto, tags, description\r\n\r\n* Add rst serde\r\n\r\n* Placeholder serialization\r\n\r\n* Fix flake8 issue\r\n\r\n* Fix comment and hardcoded values for shares\r\n\r\n* Format\r\n\r\n* Update syft/frameworks/torch/tensors/interpreters/replicated_shared.py\r\n\r\nCo-authored-by: Théo Ryffel <theo.leffyr@gmail.com>\r\n\r\n* Update syft/frameworks/torch/tensors/interpreters/additive_shared.py\r\n\r\nCo-authored-by: Théo Ryffel <theo.leffyr@gmail.com>\r\n\r\n* Add worker docstring\r\n\r\n* Add share and send\r\n\r\nCo-authored-by: Théo Ryffel <theo.leffyr@gmail.com>",
+          "timestamp": "2020-11-11T12:33:08+05:30",
+          "tree_id": "27b835b3609579c8073c7f8542b9717a4a19f60d",
+          "url": "https://github.com/OpenMined/PySyft/commit/a61f2e71a72e6da6926232079122bef60d51ceb8"
+        },
+        "date": 1605078596908,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_chebyshev",
+            "value": 0.6895318676622065,
+            "unit": "iter/sec",
+            "range": "stddev: 0.014368677584378781",
+            "extra": "mean: 1.4502592945999822 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_maclaurin",
+            "value": 10.478751948480209,
+            "unit": "iter/sec",
+            "range": "stddev: 0.002489611597901318",
+            "extra": "mean: 95.43121212493588 msec\nrounds: 8"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_sigmoid_exp",
+            "value": 0.04253747108596053,
+            "unit": "iter/sec",
+            "range": "stddev: 0.09995196690096644",
+            "extra": "mean: 23.508684801199887 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_sigmoid",
+            "value": 0.6736763727116021,
+            "unit": "iter/sec",
+            "range": "stddev: 0.026759087336755236",
+            "extra": "mean: 1.4843922697999914 sec\nrounds: 5"
+          },
+          {
+            "name": "benchmarks/frameworks/torch/mpc/pytestbenchmark/bench.py::test_tanh_chebyshev",
+            "value": 0.6778461995716487,
+            "unit": "iter/sec",
+            "range": "stddev: 0.03200058814810675",
+            "extra": "mean: 1.4752609082000163 sec\nrounds: 5"
           }
         ]
       }
