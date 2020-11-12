@@ -1287,6 +1287,10 @@ allowlist["torch.asinh_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
 }
+allowlist["torch.asinh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
 allowlist["torch.atanh_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",

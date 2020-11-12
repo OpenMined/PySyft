@@ -2384,7 +2384,8 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
-          }
+          },
+          { "lte_version": "1.5.1", "reason": "not_available" }
         ]
       },
       "asinh_": {
@@ -6096,6 +6097,11 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.5.1",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -6114,7 +6120,13 @@
         "profile": "default",
         "return_type": "syft.lib.python.List",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "LIST_split_sizes": [1] }]
+        "inputs": [{ "LIST_split_sizes": [1] }],
+        "not_available": [
+          {
+            "lte_version": "1.7.0",
+            "reason": "added_feature"
+          }
+        ]
       },
       "device": {
         "profile": "tensor_property_noinput",
@@ -6157,7 +6169,14 @@
       },
       "masked_select": {
         "profile": "default",
-        "inputs": [{ "mask_DTYPE_bool": [0] }]
+        "inputs": [{ "mask_DTYPE_bool": [0] }],
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "mv": {
         "profile": "default",
