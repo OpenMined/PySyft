@@ -6,7 +6,7 @@
   <br>
 </h1>
 <div align="center">
-  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=syft_0.3.0" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/syft_0.3.0"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/syft_0.3.0"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
+  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
 </div>
 
 
@@ -66,7 +66,7 @@ $ pip install syft
 ```
 
 This will auto-install PyTorch and other dependencies as required, to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/syft_0.3.0/CONTRIBUTING.md).
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 
 ## Documentation
 Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
@@ -94,7 +94,7 @@ Then update your duet notebooks to use the new `network_url=http://localhost:500
 ## Try out the Tutorials
 
 A comprehensive list of Duet Examples can be found
-[here](https://github.com/OpenMined/PySyft/tree/syft_0.3.0/examples/duet)
+[here](https://github.com/OpenMined/PySyft/tree/master/examples/duet)
 
 These tutorials cover how to operate common network types over the Duet API.
 
@@ -102,7 +102,7 @@ These tutorials cover how to operate common network types over the Duet API.
 
 ## Start Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/syft_0.3.0/CONTRIBUTING.md).
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
 Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
