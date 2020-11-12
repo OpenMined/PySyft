@@ -19,7 +19,6 @@ from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .string import String
 from .tuple import Tuple
-import torch
 
 for syft_type in [
     Bool,
