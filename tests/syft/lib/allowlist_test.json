@@ -6194,6 +6194,10 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.5.1",
+            "reason": "added_feature"
           }
         ]
       }
