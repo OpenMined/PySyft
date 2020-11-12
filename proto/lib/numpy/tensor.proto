@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+// this file is from
+// https://github.com/npuichigo/pytorch_lmdb_dataset/blob/master/proto/tensor.proto
+// which is licensed under Apache 2.0 according to
+// https://github.com/npuichigo/pytorch_lmdb_dataset/blob/master/proto/utils.py
+
+package syft.lib.numpy;
+
+// TensorProtos stores multiple TensorProto objects in one single proto.
+message TensorProtos { repeated TensorProto protos = 1; }
+
+// TensorProto stores serialized Tensor objects.
+message TensorProto {
+  // The dimensions in the tensor.
+  repeated int64 dims = 1;
+
+  // Data type
+  enum DataType {
+    UNDEFINED = 0;
+
+    // Basic types
+    FLOAT = 1;  // float
+    INT32 = 2;  // int
+    BYTE = 3;   // byte, when deserialized, is going to be restored as uint8
+    STRING = 4; // string
+
+    // Less-commonly used data types
+    BOOL = 5;     // bool
+    UINT8 = 6;    // uint8_t
+    INT8 = 7;     // int8_t
+    UINT16 = 8;   // uint16_t
+    INT16 = 9;    // int16_t
+    INT64 = 10;   // int64_t
+    FLOAT16 = 12; // at::Half
+    DOUBLE = 13;  // double
+  }
+  DataType data_type = 2;
+
+  // For float
+  repeated float float_data = 3;
+  // For int32, uint8, int8, uint16, int16, bool, and float16
+  // Note about float16: in storage we will basically convert float16 byte-wise
+  // to unsigned short and then store them in the int32_data field.
+  repeated int32 int32_data = 4;
+  // For bytes
+  bytes byte_data = 5;
+  // For strings
+  repeated bytes string_data = 6;
+  // For double
+  repeated double double_data = 7;
+  // For int64
+  repeated int64 int64_data = 8;
+}

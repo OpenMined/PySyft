@@ -3,81 +3,297 @@ name: Tests
 on:
   push:
     branches:
-    - master
+      - master
     paths:
-    - '**.py'
-    - 'pip-dep/**'
+      - '**.py'
+      - 'setup.cfg'
+      - '.github/workflows/tests.yml'
 
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - master
     paths:
-    - '**.py'
-    - 'pip-dep/**'
+      - '**.py'
+      - 'setup.cfg'
+      - '.github/workflows/tests.yml'
 
 jobs:
   python-tests:
+    strategy:
+      max-parallel: 27
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [3.8, 3.7, 3.6]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
 
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Windows')
+        with:
+          path: '%LOCALAPPDATA%\pip\Cache'
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Scan for security issues
+        run: |
+          pip install bandit
+          bandit -r src -ll
+
+      - name: Install pytorch Linux
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+          fi
+          pip install torch==${TORCH_VERSION}
+          pip install torchvision==${TORCHVISION_VERSION}
+
+      - name: Install pytorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Run normal tests without coverage
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pip freeze | grep torch
+          pytest -m fast --cov-fail-under 0 -n auto
+
+  python-linting:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
+      max-parallel: 1
       matrix:
-        python-version: [3.7]
+        python-version: [3.8]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1.1.2
-      id: cache-reqs
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
-    - name: Install PySyft dependencies
-      run: |
-        sudo apt-get update
-        python -m pip install --upgrade pip
-        hash -r
-        pip3 install -r pip-dep/requirements.txt
-        pip3 install -r pip-dep/requirements_dev.txt
-        pip3 install -r pip-dep/requirements_udacity.txt
-        pip3 install -r pip-dep/requirements_notebooks.txt
-        python setup.py install
-    - name: Install build tools
-      run: |
-        pip3 install flake8
-        #- pip3 install flake8-docstrings
-        pip3 install flake8-comprehensions
-        pip3 install pep8-naming
-        pip3 install codecov     
-    - name: Lint, format, and type-check
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 --config=.flake8 .
-        black --check .
-        # Run type checker in CI such that type errors can be identified and gradually addressed.
-        # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
-        mypy syft || echo "Type errors found, continuing build..."
-    - name: Check docstring coverage
-      run: |
-        interrogate -mvp syft/ -f 52.5
-    - name: Scan for security issues
-      run: |
-            bandit -r syft -ll
-    - name: Run tests
-      run: |
-        coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
-    - name: Check test coverage
-      run: |
-        coverage report --ignore-errors --fail-under 95 -m
-        # ensuring coverage of tests stays at 100 until entire coverage can be 100
-        coverage report --ignore-errors --fail-under 100 -m --include="test/*"
-    - name: Run codecov
-      run: |
-        bash <(curl -s https://codecov.io/bash) -t a74f260d-4d79-4591-a38b-77f81447c9fb -X gcov
-    - name: Build docs
-      run: |
-        # delete stale existing documentation if there's one
-        make -C ./docs/ clean
-        make -C ./docs/ html
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+
+      - uses: pre-commit/action@v2.0.0
+
+      - name: Run lint checks
+        run: |
+          set -e
+          pip install -r requirements.txt
+          ./scripts/build_proto.sh
+          pre-commit run --all-files
+
+  python-coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Check coverage
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pytest -m fast -n auto
+
+  python-slow-tests:
+    strategy:
+      max-parallel: 27
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [3.8, 3.7, 3.6]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Install pytorch Linux
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+          fi
+          pip install torch==${TORCH_VERSION}
+          pip install torchvision==${TORCHVISION_VERSION}
+
+      - name: Install pytorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Run allowlist tests
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pytest -m slow --cov-fail-under 0 -n auto
+
+  python-nb-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Run notebook API examples
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          ./scripts/nb_test.sh
+          pytest examples/api --cov-fail-under 0 -n auto

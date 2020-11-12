@@ -1,169 +1,193 @@
-# Introduction
+<h1 align="center">
+  <br>
+  <a href="http://duet.openmined.org/"><img src="docs/img/logo_big.png" alt="PySyft" width="200"></a>
+  <br>
+  A library for computing on data<br /> you do not own and cannot see
+  <br>
+</h1>
+<div align="center">
+  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
+</div>
 
-![](https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg)
-![](https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg)
-[![codecov](https://codecov.io/gh/openmined/PySyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/PySyft)
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
-[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
 
-
-PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
+PySyft is a Python library for secure and private Deep Learning. PySyft decouples
+private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
 and Encrypted Computation (like
 [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
-and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
+and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption)
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[white paper on Arxiv](https://arxiv.org/abs/1811.04017)
+[white paper on Arxiv](https://arxiv.org/abs/1811.04017).
 
 PySyft has also been explained in videos on YouTube:
+ - [PriCon Sep 2020 Duet Demo](https://www.youtube.com/watch?v=DppXfA6C8L8&ab_channel=OpenMined)
  - [Introduction to Privacy Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
  - [Differential Privacy & Federated Learning explained using PySyft by Jordan Harrod](https://www.youtube.com/watch?v=MOcTGM_UteM)
 
 ## Pre-Installation
 
-Optionally, we recommend that you install PySyft within the
-[Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html)
-virtual environment, for its simplicity in installation. If you are using
-Windows, we suggest installing [Anaconda and using the Anaconda
+PySyft is available on PyPI and Conda.
+
+We recommend that you install PySyft within a virtual environment like
+[Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html),
+due to its ease of use. If you are using Windows, we suggest installing
+[Anaconda and using the Anaconda
 Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
 work from the command line.
 
 ```bash
-conda create -n pysyft python=3.7
-conda activate pysyft # some older version of conda require "source activate pysyft" instead.
-conda install jupyter notebook==5.7.8 tornado==4.5.3
+$ conda create -n pysyft python=3.8
+$ conda activate pysyft
+$ conda install jupyter notebook
 ```
-**Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
-Another alternative is to use python venvs. Those are our preferred
-environments for development purposes. We provide a direct install
-instructions in our makefile.
+## Version Support
 
-```bash
-make venv
-```
+We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
+
+Python | Torch 1.5 | Torch 1.6 | Torch 1.7
+--- | --- | --- | ---
+3.6 | ✅ | ✅ | ✅
+3.7 | ✅ | ✅ | ✅
+3.8 | ✅ | ✅ | ✅
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.4
-
+### Pip
 ```bash
-pip install 'syft[udacity]'
+$ pip install syft
 ```
 
-This will auto-install the PyTorch and TF Encrypted
-dependencies, which are required for running the tutorials
-from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
-
-You can install syft without these dependencies with the usual
-`pip install syft`, but you will need to install framework
-dependencies (i.e. PyTorch, TensorFlow, or TF Encrypted)
-yourself. If you feel you've received an unexpected
-installation error related to PyTorch or TF Encrypted, please
-open an issue on Github or reach out to `#team_pysyft` in
-Slack.
-
-You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
+This will auto-install PyTorch and other dependencies as required, to run the
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 
 ## Documentation
 Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
 
-## Run Local Notebook Server
+## Duet Examples
 
-All the examples can be played with by running the command
-
-```bash
-make notebook
-```
-
-This assumes that you want to use a local virtual environment. It will install it
-independently to the conda environment if you already installed one, or any
-other virtual environment you might have set up.
-
-Once the jupyter notebook launches on your browser, select the pysyft
-kernel.
-
-## Use the Docker image
-
-Instead of installing all the dependencies on your computer,
-you can run a notebook server (which comes with Pysyft
-installed) using [Docker](https://www.docker.com/). All you
-will have to do is start the container like this:
+All the examples can be played with by launching Jupyter Notebook and navigating to
+the examples/duet folder.
 
 ```bash
-docker container run openmined/pysyft-notebook
+$ jupyter notebook
 ```
 
-You can use the provided link to access the jupyter notebook (the link is only accessible from your local machine).
+## WebRTC Signaling Server
+To facilitate peer-to-peer connections through firewalls we utilise WebRTC and a
+signaling server. After connection no traffic is sent to this server.
 
-> **_NOTE:_**
-> If you are using Docker Desktop for Mac, the port needs to be forwarded to localhost. In that case run docker with:
-> ```bash $ docker container run -p 8888:8888 openmined/pysyft-notebook ```
-> to forward port 8888 from the container's interface to port 8888 on localhost and then access the notebook via http://127.0.0.1:8888/?token=...
-
-
-You can also set the directory from which the server will serve notebooks (default is /workspace).
-
-```bash
-docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
+If you want to run your own signaling server simply run the command:
+```
+$ syft-network
 ```
 
-You could also build the image on your own and run it locally:
-
-```bash
-cd docker-images/pysyft-notebook/
-docker image build -t pysyft-notebook .
-docker container run pysyft-notebook
-```
-
-More information about how to use this image can be found [on docker hub](https://hub.docker.com/r/openmined/pysyft-notebook)
+Then update your duet notebooks to use the new `network_url=http://localhost:5000`
 
 ## Try out the Tutorials
 
-A comprehensive list of tutorials can be found
-[here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
+A comprehensive list of Duet Examples can be found
+[here](https://github.com/OpenMined/PySyft/tree/master/examples/duet)
 
-These tutorials cover how to perform techniques such as
-federated learning and differential privacy using PySyft.
+These tutorials cover how to operate common network types over the Duet API.
 
 ## High-level Architecture
 
-![alt text](art/PySyftArch.png "High-level Architecture")
-
 ## Start Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
+It covers all that you need to know to start contributing code to PySyft today.
 
-Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
+The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 
-We have written an installation example in [this colab notebook](https://colab.research.google.com/drive/14tNU98OKPsP55Y3IgFtXPfd4frqbkrxK), you can use it as is to start working with PySyft on the colab cloud, or use this setup to fix your installation locally.
+The latest version of PySyft is 0.3.0 however this software is still Beta. If you find
+a bug please file it in the GitHub issues.
 
 ## Organizational Contributions
-
 We are very grateful for contributions to PySyft from the following organizations!
-
 [<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="200" height="150"/>](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="200"/>](https://dropoutlabs.com/)
 --------------------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------
 
 ## Support
-For support in using this library, please join the **#lib_pysyft** Slack channel. If you’d like to follow along with any code changes to the library, please join the **#code_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
+For support in using this library, please join the **#lib_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Disclaimer
-
-Do NOT use this code to protect data (private or otherwise) - at present it is very insecure. Come back in a couple of months.
+This software is in early beta. Use at your own risk.
 
 ## License
-
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE)
-
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_large)
+
+## Description
+Most software libraries let you compute over information you own and see inside of
+machines you control. However, this means that you cannot compute on information without
+first obtaining (at least partial) ownership of that information. It also means that you
+cannot compute using machines without first obtaining control over those machines.
+This is very limiting to human collaboration in all areas of life and systematically
+drives the centralization of data, because you cannot work with a bunch of data without
+first putting it all in one (central) place.
+
+The Syft ecosystem seeks to change this system, allowing you to write software which can
+compute over information you do not own on machines you do not have (general) control
+over. This not only includes servers in the cloud, but also personal desktops, laptops,
+mobile phones, websites, and edge devices. Wherever your data wants to live in your
+ownership, the Syft ecosystem exists to help keep it there while allowing it to be
+used for computation.
+
+This library is the centerpiece of the Syft ecosystem. It has two primary purposes.
+You can either use PySyft to:
+
+1) *Dynamic:* Directly compute over data you cannot see.
+2) *Static:* Create static graphs of computation which can be deployed/scaled at a
+later date on different compute.
+
+The Syft ecosystem includes libraries which allow for communication with and computation
+over a variety of runtimes:
+
+- KotlinSyft (Android)
+- SwiftSyft (iOS)
+- syft.js (Web & Mobile)
+- PySyft (Python)
+
+However, the Syft ecosystem only focuses on consistent object
+serialization/deserialization, core abstractions, and algorithm design/execution across
+these languages. These libraries alone will not connect you with data in the real world.
+The Syft ecosystem is supported by the Grid ecosystem, which focuses on deployment,
+scalability, and other additional concerns around running real-world systems to compute
+over and process data (such as data compliance web applications).
+
+Syft is the library that defines objects, abstractions, and algorithms.
+Grid is the platform which lets you deploy them within a real institution
+(or on the open internet, but we don't yet recommend this). The Grid ecosystem includes:
+
+- GridNetwork - think of this like DNS for private data.
+  It helps you find remote data assets so that you can compute with them.
+- PyGrid - This is the gateway to an organization's data, responsible for permissions,
+  load balancing, and governance.
+- GridNode - This is an individual node within an organization's data center,
+  running executions requested by external parties.
+- GridMonitor - This is a UI which allows an institution to introspect and control
+  their PyGrid node and the GridNodes it manages.
+
+## Want to Use PySyft?
+If you would like to become a user of PySyft, please progress to our User Documentation.
+
+## Want to Develop PySyft?
+If you would like to become a developer of PySyft, please see our
+[Contributor Documentation](CONTRIBUTING.md).
+This documentation will help you setup your development environment, give you a roadmap
+for learning the codebase, and help you find your first project to contribute.
+
+## Note
+This project has been set up using PyScaffold. For details and usage information
+on PyScaffold see https://pyscaffold.org/.

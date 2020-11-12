@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message ExceptionMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.common.UID msg_id_causing_exception = 3;
+  string exception_type = 4;
+  string exception_msg = 5;
+}

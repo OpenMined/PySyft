@@ -20,5 +20,11 @@ docs/_modules
 .coverage
 .vscode/
 **/pip-wheel-metadata
-.ropeproject/
-pytest_benchmark_output.json
+allowlist_test_errors_*.jsonl
+allowlist_report_*.html
+allowlist_test_support*.jsonl
+examples/duet/data/*
+examples/duet/mnist/data/*
+**/*.log
+**/*.sqlite
+**/*.sqlite-journal
