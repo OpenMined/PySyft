@@ -89,6 +89,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from loguru import logger
+from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
@@ -105,6 +106,9 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.obj_search_permission_service import (
+    ObjectSearchPermissionUpdateMessage,
+)
 from ..store.storeable_object import StorableObject
 
 
@@ -439,6 +443,21 @@ class Pointer(AbstractPointer):
                     logger.error(f"Exception while running blocking request. {e}")
                     # escape the while loop
                     return status
+
+    def make_searchable(self, target_verify_key: Optional[VerifyKey] = None) -> None:
+        """Make the object pointed at searchable for other people. If target_verify_key is not specified, the
+        object will be searchable by anyone.
+
+        :param target_verify_key: The verify_key of the client to which we want to give search permission.
+        :type target_verify_key: Optional[VerifyKey]
+        """
+        msg = ObjectSearchPermissionUpdateMessage(
+            add_instead_of_remove=True,
+            target_verify_key=target_verify_key,
+            target_object_id=self.id_at_location,
+            address=self.client.address,
+        )
+        self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible
