@@ -424,12 +424,15 @@ def test_all_allowlisted_tensor_methods(
             args = [th.tensor(_args, dtype=t_type)]
         elif isinstance(_args, dict):
             args = {}
+            tuple_args = False
+            if len(_args) > 0 and "ALL_TUPLE_ARGS_" in list(_args.keys())[0]:
+                tuple_args = True
             for k, v in _args.items():
                 arg_type = t_type
                 real_k = k
                 if isinstance(v, list):
-                    if "_dtype_" in real_k:
-                        parts = real_k.split("_dtype_")
+                    if "_DTYPE_" in real_k:
+                        parts = real_k.split("_DTYPE_")
                         real_k = parts[0]
                         v_dtype_attr = parts[1]
                         v_dtype = getattr(th, v_dtype_attr, None)
@@ -437,8 +440,17 @@ def test_all_allowlisted_tensor_methods(
                             arg_type = v_dtype
 
                     if real_k.startswith("LIST_"):
+                        # use a normal list
                         real_k = real_k.replace("LIST_", "")
-                        args[real_k] = v
+                        if real_k.startswith("TENSOR_"):
+                            real_k = real_k.replace("TENSOR_", "")
+                            args[real_k] = [th.tensor(t, dtype=arg_type) for t in v]
+                        else:
+                            args[real_k] = v
+                    elif real_k.startswith("0d_"):
+                        # make a 0d tensor
+                        real_k = real_k.replace("0d_", "")
+                        args[real_k] = th.tensor(v[0], dtype=arg_type)
                     else:
                         args[real_k] = th.tensor(v, dtype=arg_type)
                 elif v == "self":
@@ -449,6 +461,8 @@ def test_all_allowlisted_tensor_methods(
                     ]
                 else:
                     args[real_k] = v
+            if tuple_args:
+                args = list(args.values())
         else:
             args = [PrimitiveFactory.generate_primitive(value=_args, recurse=True)]
 
@@ -601,8 +615,15 @@ def test_all_allowlisted_tensor_methods(
                         ):
                             assert compare_tensors(left=target_item, right=local_item)
                         else:
-                            for left, right in zip(local_item, target_item):
-                                assert left + right == approx(2 * left)
+                            if not hasattr(local_item, "__len__") and not hasattr(
+                                target_item, "__len__"
+                            ):
+                                assert local_item + target_item == approx(
+                                    2 * local_item
+                                )
+                            else:
+                                for left, right in zip(local_item, target_item):
+                                    assert left + right == approx(2 * left)
 
                 if delist:
                     # debox the tensors if they were not lists originally
@@ -634,6 +655,12 @@ def test_all_allowlisted_tensor_methods(
                                 type(right), th.Tensor
                             ):
                                 assert compare_tensors(left=left, right=right)
+                            elif not hasattr(local_item, "__len__") and not hasattr(
+                                target_item, "__len__"
+                            ):
+                                assert local_item + target_item == approx(
+                                    2 * local_item
+                                )
                             else:
                                 for left, right in zip(local_item, target_item):
                                     assert left + right == approx(2 * left)

@@ -43,6 +43,8 @@ all_attrs = tuple(
         "U",
         "S",
         "V",
+        "a",
+        "tau",
     ]
 )
 
@@ -143,6 +145,11 @@ class ValuesIndicesWrapper(StorableObject):
             keys.append(key1)
             keys.append(key2)
             keys.append(key3)
+        elif klass_name == "torch.return_types.geqrf":
+            key1 = "a"
+            key2 = "tau"
+            keys.append(key1)
+            keys.append(key2)
         else:
             # default
             key1 = "values"
@@ -262,6 +269,9 @@ def add_torch_return_types() -> None:
 
     svd = s.svd()
     supported_types.append(type(svd))
+
+    geqrf = s.geqrf()
+    supported_types.append(type(geqrf))
 
     for types in supported_types:
         aggressive_set_attr(

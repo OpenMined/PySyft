@@ -68,17 +68,6 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
 # --------------------------------------------------------------------------------------
-# SECTION - Torch functions used in the fast tests: $ pytest -m fast
-# --------------------------------------------------------------------------------------
-
-allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
-allowlist["torch.device"] = "torch.device"  # warning this must come before the attrs
-allowlist["torch.device.index"] = "syft.lib.python.Int"
-allowlist["torch.device.type"] = "syft.lib.python.String"
-allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
-allowlist["torch.zeros_like"] = "torch.Tensor"
-
-# --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
 
@@ -145,6 +134,12 @@ allowlist["torch.Tensor.addcdiv_"] = "torch.Tensor"
 allowlist["torch.Tensor.addcdiv"] = "torch.Tensor"
 allowlist["torch.Tensor.addcmul_"] = "torch.Tensor"
 allowlist["torch.Tensor.addcmul"] = "torch.Tensor"
+allowlist["torch.Tensor.addmm_"] = "torch.Tensor"
+allowlist["torch.Tensor.addmm"] = "torch.Tensor"
+allowlist["torch.Tensor.addmv_"] = "torch.Tensor"
+allowlist["torch.Tensor.addmv"] = "torch.Tensor"
+allowlist["torch.Tensor.addr_"] = "torch.Tensor"
+allowlist["torch.Tensor.addr"] = "torch.Tensor"
 allowlist["torch.Tensor.all"] = "torch.Tensor"
 allowlist["torch.Tensor.allclose"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.angle"] = "torch.Tensor"
@@ -161,6 +156,7 @@ allowlist["torch.Tensor.atan"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
 allowlist["torch.Tensor.atan2"] = "torch.Tensor"
 allowlist["torch.Tensor.backward"] = "syft.lib.python._SyNone"
+allowlist["torch.Tensor.baddbmm_"] = "torch.Tensor"
 allowlist["torch.Tensor.baddbmm"] = "torch.Tensor"
 allowlist["torch.Tensor.bernoulli_"] = "torch.Tensor"
 allowlist["torch.Tensor.bernoulli"] = "torch.Tensor"
@@ -455,6 +451,22 @@ allowlist["torch.Tensor.var"] = "torch.Tensor"
 allowlist["torch.Tensor.view_as"] = "torch.Tensor"
 allowlist["torch.Tensor.view"] = "torch.Tensor"
 allowlist["torch.Tensor.zero_"] = "torch.Tensor"
+allowlist["torch.Tensor.resize_as"] = "torch.Tensor"
+allowlist["torch.Tensor.cholesky"] = "torch.Tensor"
+allowlist["torch.Tensor.geqrf"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.index_fill_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_fill"] = "torch.Tensor"
+allowlist["torch.Tensor.index_put_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_put"] = "torch.Tensor"
+allowlist["torch.Tensor.geometric_"] = "torch.Tensor"
+allowlist["torch.Tensor.__setitem__"] = "syft.lib.python._SyNone"
+allowlist["torch.Tensor.take"] = "torch.Tensor"
+allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
+allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor"
+allowlist["torch.Tensor.index_select"] = "torch.Tensor"
+allowlist["torch.Tensor.masked_select"] = "torch.Tensor"
+allowlist["torch.Tensor.mv"] = "torch.Tensor"
+allowlist["torch.Tensor.istft"] = "torch.Tensor"
 
 
 # --------------------------------------------------------------------------------------
@@ -924,103 +936,92 @@ allowlist["torch.Tensor.vdot"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.7.0",
 }
+allowlist["torch.Tensor.movedim"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.7.0",
+}
 
 # --------------------------------------------------------------------------------------
-# SECTION - Tensor methods which are untested
+# SECTION - Tensor methods which are incomplete or untested but enabled
 # --------------------------------------------------------------------------------------
-
-# needs fixing
-# allowlist["torch.Tensor.baddbmm_"] = "torch.Tensor"
-# allowlist["torch.Tensor.addmv_"] = "torch.Tensor"
-# allowlist["torch.Tensor.addmv"] = "torch.Tensor"
-# allowlist["torch.Tensor.addmm_"] = "torch.Tensor"
-# allowlist["torch.Tensor.addmm"] = "torch.Tensor"
-# allowlist["torch.Tensor.addr_"] = "torch.Tensor"
-# allowlist["torch.Tensor.addr"] = "torch.Tensor"
-# allowlist["torch.Tensor.movedim"] = {
-#     "return_type": "torch.Tensor",
-#     "min_version": "1.7.0",
-# }
-
-# allowlist["torch.Tensor.istft"] = "torch.Tensor" # cant find an example
-# allowlist["torch.Tensor.index_fill_"] = "torch.Tensor" # 0-dimension tensors
-# allowlist["torch.Tensor.index_fill"] = "torch.Tensor" # 0-dimension tensors
-# allowlist["torch.Tensor.unflatten"] = "torch.Tensor"  # cant figure out params
-# allowlist["torch.Tensor.rename_"] = "torch.Tensor"  # named tensors
-# allowlist["torch.Tensor.rename"] = "torch.Tensor"  # named tensors
-# allowlist["torch.Tensor.refine_names"] = "torch.Tensor" # named tensors
-# allowlist["torch.Tensor.index_put_"] = "torch.Tensor" # needs tuple of tensors
-# allowlist["torch.Tensor.index_put"] = "torch.Tensor"  # needs tuple of tensors
+allowlist["torch.Tensor.device"] = "torch.device"
+allowlist["torch.Tensor.detach_"] = "torch.Tensor"
+# required for MNIST but marked as skip in the allowlist_test.json
+allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
+allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
+allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
 # --------------------------------------------------------------------------------------
-# required for MNIST but marked as skip in the allowlist_test.json
-allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
-
+# allowlist["torch.layout"] = "torch.layout"  # requires protobuf serialization
+# allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
+# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
+# allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
+# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
 # allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0 # probably wont work
-
-# allowlist["torch.Tensor.unsafe_split_with_sizes"] = {  # requires tuple input
-#     "return_type": "torch.Tensor",
-#     "min_version": "1.7.0",
-# }
 # Union[torch.Tensor, syft.lib.python.ValuesIndices]
 # allowlist["torch.Tensor.median"] = "syft.lib.python.ValuesIndices"
 # Union[torch.Tensor, syft.lib.python.ValuesIndices]
 # allowlist["torch.Tensor.max"] = "syft.lib.python.ValuesIndices"
 # Union[torch.Tensor, syft.lib.python.ValuesIndices]
 # allowlist["torch.Tensor.min"] = "syft.lib.python.ValuesIndices"
-
-# allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
-# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
-# allowlist["torch.Tensor.__setitem__"] = "torch.Tensor"
-# allowlist["torch.Tensor.align_as"] = "torch.Tensor" # named args
-# allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named args
-# allowlist["torch.Tensor.apply_"] = "torch.Tensor" # takes a callable
-# allowlist["torch.Tensor.as_subclass"] = "torch.Tensor" # needs subclass passed in
-# allowlist["torch.Tensor.cholesky"] = "torch.Tensor" # needs correct example tensors
-# allowlist["torch.Tensor.detach_"] = "torch.Tensor" # some issue with gradient_as_bucket_view
-# allowlist["torch.Tensor.device"] = "torch.device" # requires torch.device serde
-# allowlist["torch.Tensor.geometric_"] = "torch.Tensor" # needs correct input or tuples
-# allowlist["torch.Tensor.geqrf"] = "torch.Tensor"  # requires torch.return_types.geqrf
-# allowlist["torch.Tensor.grad"] = "unknown"  # example with grad
-# allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires complex or 1.6.0?
-# allowlist["torch.Tensor.index_select"] = "torch.Tensor"
-# allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
-# allowlist["torch.Tensor.map_"] = "unknown"  # requires callables
-# allowlist["torch.Tensor.map2_"] = "unknown"  # requires callables
-# allowlist["torch.Tensor.masked_select"] = "torch.Tensor"  # set input tensor data type
-# allowlist["torch.Tensor.mv"] = "unknown"  # needs the right tensor shapes
+# allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
+# allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
+# allowlist["torch.Tensor.qscheme"] = "unknown"  # requires quantized backend
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require named tensors
+# --------------------------------------------------------------------------------------
+# allowlist["torch.Tensor.unflatten"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.refine_names"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.rename_"] = "torch.Tensor"  # named tensors
+# allowlist["torch.Tensor.rename"] = "torch.Tensor"  # named tensors
+# allowlist["torch.Tensor.align_as"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named tensors
 # allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
 # allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require classes or callables or external libs
+# --------------------------------------------------------------------------------------
+# allowlist["torch.Tensor.apply_"] = "torch.Tensor" # requires a callable
+# allowlist["torch.Tensor.as_subclass"] = "torch.Tensor" # requires a subclass
+# allowlist["torch.Tensor.map_"] = "unknown"  # requires a callable
+# allowlist["torch.Tensor.map2_"] = "unknown"  # requires a callable
 # allowlist["torch.Tensor.numpy"] = "numpy.ndarray"  # requires numpy.ndarray
-# allowlist["torch.Tensor.qscheme"] = "unknown"  # requires  torch.qscheme
-# allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires complex or 1.6.0?
 # allowlist["torch.Tensor.reinforce"] = "unknown"  # requires reinforce
-# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
-# allowlist["torch.Tensor.size"] = "unknown"  # requires union and torch.size
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require sparse
+# --------------------------------------------------------------------------------------
 # allowlist["torch.Tensor.smm"] = "unknown"  # requires sparse tensors
-# allowlist["torch.Tensor.sparse_dim"] = "unknown"  # requires sparse
-# allowlist["torch.Tensor.sparse_mask"] = "unknown"  # requires sparse
-# allowlist["torch.Tensor.sspaddmm"] = "torch.Tensor"  # sparse?
-# allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse and multiple inputs
-# allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse and multiple inputs
-# allowlist["torch.Tensor.stride"] = "unknown"  # union type int or tuple / list
-# allowlist["torch.Tensor.take"] = "torch.Tensor" # requires long tensor input only
-# allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
-# allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor" # requires Union / Tuple
-# allowlist["torch.Tensor.values"] = "unknown"  # requires sparse
+# allowlist["torch.Tensor.sparse_dim"] = "unknown"  # requires sparse tensors
+# allowlist["torch.Tensor.sparse_mask"] = "unknown"  # requires sparse tensors
+# allowlist["torch.Tensor.sspaddmm"] = "torch.Tensor"  # requires sparse tensors
+# allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse tensors
+# allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse
+# allowlist["torch.Tensor.values"] = "unknown"  # requires sparse tensors
 
 # --------------------------------------------------------------------------------------
-# SECTION - Tensor methods which we wont support
+# SECTION - Torch functions used in the fast tests: $ pytest -m fast
 # --------------------------------------------------------------------------------------
-# allowlist["torch.Tensor.resize_as"] = "unknown" deprecated
 
-# SECTION - Other classes and modules
-# allowlist["torch.zeros"] = "torch.Tensor"
-# allowlist["torch.ones"] = "torch.Tensor"
-# allowlist["torch.median"] = "torch.Tensor"  # requires torch.return_types.median
+allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
+allowlist["torch.device"] = "torch.device"  # warning this must come before the attrs
+allowlist["torch.device.index"] = "syft.lib.python.Int"
+allowlist["torch.device.type"] = "syft.lib.python.String"
+allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
+allowlist["torch.zeros_like"] = "torch.Tensor"
+
+# --------------------------------------------------------------------------------------
+# SECTION - Torch functions which are enabled but supported above on torch.Tensor
+# --------------------------------------------------------------------------------------
 
 # SECTION - Parameter methods
 # torch.nn.Parameter is a subclass of torch.Tensor

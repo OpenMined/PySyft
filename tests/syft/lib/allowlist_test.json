@@ -88,6 +88,15 @@
         [-0.0189, 0.3639, -0.4621, 0.3279, -0.6347]
       ]
     ],
+    "tensor_m1": [
+      [
+        [
+          [-1.58, -1.7569, 1.4155, -0.208, 0.2783],
+          [1.7592, 0.441, 0.1744, 0.4034, 1.0809],
+          [-0.0189, 0.3639, -0.4621, 0.3279, -0.6347]
+        ]
+      ]
+    ],
     "addcdiv": [[[-0.1834, -2.8765, 0.7337]]],
     "addcdiv_": [
       [
@@ -96,6 +105,13 @@
           [2.0031, 1.457e1, 8.2361e-1],
           [9.6673e-1, 1.3053e2, -9.0004e-1]
         ]
+      ]
+    ],
+    "addmm_": [
+      [
+        [4.7494e-2, 3.6392e1, 1.0532],
+        [2.0031, 1.457e1, 8.2361e-1],
+        [9.6673e-1, 1.3053e2, -9.0004e-1]
       ]
     ],
     "addmv": [[0.1504, -0.7959]],
@@ -127,6 +143,38 @@
 
         [[-1.558], [0.1862], [-0.1135]]
       ]
+    ],
+    "cholesky": [
+      [
+        [2.6978, -1.4334, 0.5438],
+        [-1.4334, 1.6081, 0.4154],
+        [0.5438, 0.4154, 6.1836]
+      ]
+    ],
+    "mv": [
+      [
+        [1.7781, 1.0774, 1.5817],
+        [-1.0525, 1.3758, -0.572]
+      ]
+    ],
+    "istft": [
+      [
+        [
+          [
+            [-1, 0],
+            [1, 0],
+            [5, 0],
+            [7, 0]
+          ],
+
+          [
+            [1, 0],
+            [-1, 0],
+            [-1, 0],
+            [1, 0]
+          ]
+        ]
+      ]
     ]
   },
   "inputs": {
@@ -152,12 +200,10 @@
     "addmm_t1": [[0.6631], [0.258], [2.3557]],
     "addmm_t2": [[1.1798, 0.0179, -1.2341]],
     "addmv_t1": [
-      [
-        [-0.3324, -0.3911, -0.0245],
-        [-1.3825, -1.2105, -0.9572]
-      ]
+      [0.516, 0.1892, -0.9014],
+      [0.3056, 0.7414, -0.1793]
     ],
-    "addmv_t2": [[0.7692, -0.5182, 1.3254]],
+    "addmv_t2": [1.6445, -1.9641, 0.166],
     "addr_t1": [1, 2, 3],
     "addr_t2": [1, 2],
     "scatter_t1": [
@@ -197,7 +243,8 @@
     "lu_solve_t2": [
       [3, 2, 3],
       [1, 3, 3]
-    ]
+    ],
+    "mv_t1": [[-0.1316, 0.9306, -0.1602]]
   },
   "profiles": {
     "default": {
@@ -1692,6 +1739,10 @@
         "profile": "default",
         "inputs": ["self"]
       },
+      "resize_as": {
+        "profile": "default",
+        "inputs": ["self"]
+      },
       "rot90": {
         "profile": "default",
         "tensors": ["tensor2"],
@@ -2092,7 +2143,7 @@
       "item": {
         "profile": "tensor_method_noinput",
         "tensors": ["tensor1_1element"],
-        "skip": [{ "lte_version": "1.7.0" }]
+        "skip": [{ "lte_version": "1.7.0", "reason": "untested" }]
       },
       "__getitem__": {
         "profile": "default",
@@ -2653,8 +2704,24 @@
       },
       "cholesky": {
         "profile": "default",
-        "inputs": [null, false, true],
-        "tensors": ["tensor2"]
+        "inputs": [null],
+        "tensors": ["cholesky"],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "bfloat16",
+              "float16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "coalesce": {
         "profile": "tensor_method_noinput",
@@ -2808,21 +2875,6 @@
       },
       "detach": {
         "profile": "tensor_method_noinput"
-      },
-      "detach_": {
-        "profile": "tensor_method_noinput",
-        "tensors": ["tensor_scalar"],
-        "not_available": [
-          {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "gte_version": "1.7.0",
-            "reason": "no_cpu"
-          }
-        ]
-      },
-      "device": {
-        "profile": "tensor_property_noinput",
-        "return_type": "torch.device"
       },
       "diag_embed": {
         "profile": "default",
@@ -3346,10 +3398,6 @@
             "reason": "no_cpu"
           }
         ]
-      },
-      "masked_select": {
-        "profile": "default",
-        "inputs": [[false], [true]]
       },
       "matrix_power": {
         "profile": "default",
@@ -5277,7 +5325,7 @@
       },
       "baddbmm_": {
         "profile": "default",
-        "tensors": ["tensor_m"],
+        "tensors": ["tensor_m1"],
         "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
         "not_available": [
           {
@@ -5362,17 +5410,27 @@
             "data_types": ["bool"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0",
+            "reason": "no_cpu"
           }
         ]
       },
       "addmm_": {
         "profile": "default",
-        "tensors": ["addcdiv"],
+        "tensors": ["addmm_"],
         "inputs": [{ "mat1": "addmm_t1", "mat2": "addmm_t2" }],
         "not_available": [
           {
             "data_types": ["bool"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0",
             "reason": "no_cpu"
           }
         ]
@@ -5380,17 +5438,38 @@
       "addmv": {
         "profile": "default",
         "tensors": ["addmv"],
-        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }]
+        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }],
+        "not_available": [
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "addmv_": {
         "profile": "default",
         "tensors": ["addmv"],
-        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }]
+        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }],
+        "not_available": [
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "addr": {
         "profile": "default",
         "tensors": ["addr"],
-        "inputs": [{ "vec1": "addr_t1", "vec2": "addr_t2" }]
+        "inputs": [{ "vec1": "addr_t1", "vec2": "addr_t2" }],
+        "not_available": [
+          {
+            "data_types": ["float16", "bool"],
+            "lte_version": "1.6.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "addr_": {
         "profile": "default",
@@ -5400,6 +5479,11 @@
           {
             "data_types": ["bool"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0",
             "reason": "no_cpu"
           }
         ]
@@ -5492,7 +5576,7 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_dtype_int64": "scatter_t1", "src": "scatter_t2" }
+          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
         ],
         "not_available": [
           {
@@ -5506,7 +5590,7 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_dtype_int64": "scatter_t1", "src": "scatter_t2" }
+          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
         ],
         "not_available": [
           {
@@ -5520,7 +5604,7 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_dtype_int64": "scatter_t1", "src": "scatter_t2" }
+          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
         ],
         "not_available": [
           {
@@ -5534,7 +5618,7 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_dtype_int64": "scatter_t1", "src": "scatter_t2" }
+          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
         ],
         "not_available": [
           {
@@ -5609,7 +5693,7 @@
       "put_": {
         "profile": "default",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "index_dtype_int64": [0], "source": "tensor1_1element" }],
+        "inputs": [{ "index_DTYPE_int64": [0], "source": "tensor1_1element" }],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5621,7 +5705,7 @@
       "masked_fill": {
         "profile": "default",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "mask_dtype_bool": "tensor1_1element", "value": 0 }],
+        "inputs": [{ "mask_DTYPE_bool": "tensor1_1element", "value": 0 }],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5633,7 +5717,7 @@
       "masked_fill_": {
         "profile": "default",
         "tensors": ["tensor1_1element_1"],
-        "inputs": [{ "mask_dtype_bool": "tensor1_1element", "value": 0 }],
+        "inputs": [{ "mask_DTYPE_bool": "tensor1_1element", "value": 0 }],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5647,7 +5731,7 @@
         "tensors": ["tensor1_1element"],
         "inputs": [
           {
-            "mask_dtype_bool": "tensor1_1element",
+            "mask_DTYPE_bool": "tensor1_1element",
             "source": "tensor1_1element"
           }
         ],
@@ -5664,7 +5748,7 @@
         "tensors": ["tensor1_1element_1"],
         "inputs": [
           {
-            "mask_dtype_bool": "tensor1_1element",
+            "mask_DTYPE_bool": "tensor1_1element",
             "source": "tensor1_1element"
           }
         ],
@@ -5702,7 +5786,7 @@
         "inputs": [
           {
             "dim": 0,
-            "index_dtype_int64": "tensor0_1element_1"
+            "index_DTYPE_int64": "tensor0_1element_1"
           }
         ],
         "not_available": [
@@ -5719,7 +5803,7 @@
         "inputs": [
           {
             "dim": 1,
-            "index_dtype_int64": "index_copy_t1",
+            "index_DTYPE_int64": "index_copy_t1",
             "source": "index_copy_t2"
           }
         ],
@@ -5737,7 +5821,7 @@
         "inputs": [
           {
             "dim": 1,
-            "index_dtype_int64": "index_copy_t1",
+            "index_DTYPE_int64": "index_copy_t1",
             "source": "index_copy_t2"
           }
         ],
@@ -5807,7 +5891,7 @@
         "inputs": [
           {
             "LU_data": "lu_solve_t1",
-            "LU_pivots_dtype_int32": "lu_solve_t2"
+            "LU_pivots_DTYPE_int32": "lu_solve_t2"
           }
         ],
         "not_available": [
@@ -5833,7 +5917,7 @@
         "inputs": [
           {
             "dim": 1,
-            "index_dtype_int64": "index_copy_t1",
+            "index_DTYPE_int64": "index_copy_t1",
             "source": "index_copy_t2"
           }
         ],
@@ -5851,7 +5935,7 @@
         "inputs": [
           {
             "dim": 1,
-            "index_dtype_int64": "index_copy_t1",
+            "index_DTYPE_int64": "index_copy_t1",
             "source": "index_copy_t2"
           }
         ],
@@ -5880,14 +5964,239 @@
             "source": 0,
             "destination": 0
           }
+        ],
+        "not_available": [
+          {
+            "lte_version": "1.6.0",
+            "reason": "added_feature"
+          }
         ]
       },
-      "not_available": [
-        {
-          "lte_version": "1.6.0",
-          "reason": "added_feature"
-        }
-      ]
+      "geqrf": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [null],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "index_fill": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [{ "dim": 0, "0d_index_DTYPE_int64": [0], "value": 0 }],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "index_fill_": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [{ "dim": 0, "0d_index_DTYPE_int64": [0], "value": 0 }],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "index_put": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [
+          { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+        ]
+      },
+      "index_put_": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [
+          { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+        ]
+      },
+      "geometric_": {
+        "profile": "default",
+        "tensors": ["cholesky"],
+        "inputs": [0.1],
+        "deterministic": false,
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "__setitem__": {
+        "profile": "default",
+        "inputs": [{ "ALL_TUPLE_ARGS_key": 0, "value": 0 }],
+        "return_type": "syft.lib.python._SyNone"
+      },
+      "take": {
+        "profile": "default",
+        "inputs": [{ "index_DTYPE_int64": [0] }],
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "uniform_": {
+        "profile": "default",
+        "inputs": [null],
+        "deterministic": false,
+        "not_available": [
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "unique_consecutive": {
+        "profile": "default",
+        "inputs": [null],
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "unsafe_split_with_sizes": {
+        "profile": "default",
+        "return_type": "syft.lib.python.List",
+        "tensors": ["tensor1_1element"],
+        "inputs": [{ "LIST_split_sizes": [1] }]
+      },
+      "device": {
+        "profile": "tensor_property_noinput",
+        "return_type": "torch.device",
+        "skip": [{ "lte_version": "1.7.0", "reason": "untested" }]
+      },
+      "detach_": {
+        "profile": "default",
+        "inputs": [null],
+        "not_available": [
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ],
+        "skip": [
+          { "lte_version": "1.7.0", "reason": "DistributedDataParallel error" }
+        ]
+      },
+      "index_select": {
+        "profile": "default",
+        "inputs": [{ "dim": 0, "index_DTYPE_int64": [0] }],
+        "not_available": [
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "grad": {
+        "profile": "tensor_property_noinput",
+        "skip": [
+          {
+            "lte_version": "1.7.0",
+            "reason": "untested"
+          }
+        ]
+      },
+      "masked_select": {
+        "profile": "default",
+        "inputs": [{ "mask_DTYPE_bool": [0] }]
+      },
+      "mv": {
+        "profile": "default",
+        "tensors": ["mv"],
+        "inputs": ["mv_t1"],
+        "not_available": [
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "stride": {
+        "profile": "default",
+        "inputs": [null],
+        "return_type": "syft.lib.python.List"
+      },
+      "istft": {
+        "profile": "default",
+        "tensors": ["istft"],
+        "inputs": [{ "n_fft": 2, "hop_length": 2 }],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      }
     }
   }
 }
