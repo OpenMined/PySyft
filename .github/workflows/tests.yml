@@ -1,14 +1,6 @@
 name: Tests
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '**.py'
-      - 'setup.cfg'
-      - '.github/workflows/tests.yml'
-
   pull_request:
     branches:
       - master
