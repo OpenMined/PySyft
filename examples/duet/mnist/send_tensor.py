@@ -1,4 +1,5 @@
 # stdlib
+import multiprocessing as mp
 from multiprocessing import Process
 import time
 
@@ -8,8 +9,15 @@ import torch as th
 # syft absolute
 import syft as sy
 
+mp.set_start_method("spawn", force=True)
 
-def do():
+# Make sure to run the local network.py server first:
+#
+# $ syft-network
+#
+
+
+def do() -> None:
     # stdlib
     import asyncio
 
@@ -37,7 +45,7 @@ def do():
     print("DO: DONE")
 
 
-def ds():
+def ds() -> None:
     # stdlib
     import asyncio
 
