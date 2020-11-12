@@ -1,12 +1,13 @@
-# PySyft
-A library for computing on data you do not own and cannot see.
-
-![](https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg)
-![](https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg)
-[![codecov](https://codecov.io/gh/openmined/PySyft/branch/master/graph/badge.svg)](https://codecov.io/gh/openmined/PySyft)
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
-[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
+<h1 align="center">
+  <br>
+  <a href="http://duet.openmined.org/"><img src="docs/img/logo_big.png" alt="PySyft" width="200"></a>
+  <br>
+  A library for computing on data<br /> you do not own and cannot see
+  <br>
+</h1>
+<div align="center">
+  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
+</div>
 
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples
 private data from model training, using
@@ -14,16 +15,19 @@ private data from model training, using
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
 and Encrypted Computation (like
 [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
-and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
+and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption)
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
+
+_**Important note about PySyft 0.2.x:** For those looking for the PySyft 0.2.x codebase, it's since been branched off. [You can find it here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. If you're getting started with PySyft for the first time, please ignore this message and read on!_
 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[white paper on Arxiv](https://arxiv.org/abs/1811.04017)
+[white paper on Arxiv](https://arxiv.org/abs/1811.04017).
 
 PySyft has also been explained in videos on YouTube:
+ - [PriCon Sep 2020 Duet Demo](https://www.youtube.com/watch?v=DppXfA6C8L8&ab_channel=OpenMined)
  - [Introduction to Privacy Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
  - [Differential Privacy & Federated Learning explained using PySyft by Jordan Harrod](https://www.youtube.com/watch?v=MOcTGM_UteM)
@@ -47,7 +51,7 @@ $ conda install jupyter notebook
 
 ## Version Support
 
-We support Linux, MacOS and Windows and the following Python and Torch versions.
+We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
 
 Python | Torch 1.5 | Torch 1.6 | Torch 1.7
 --- | --- | --- | ---
@@ -62,11 +66,8 @@ Python | Torch 1.5 | Torch 1.6 | Torch 1.7
 $ pip install syft
 ```
 
-This will auto-install the PyTorch dependency, which is required for running the
-examples and tutorials.
-
-You can also install PySyft from source on a variety of operating systems by following
-this [installation guide](https://github.com/OpenMined/PySyft/blob/master/INSTALLATION.md).
+This will auto-install PyTorch and other dependencies as required, to run the
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 
 ## Documentation
 Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
@@ -110,10 +111,8 @@ The slack community is very friendly and great about quickly answering questions
 
 ## Troubleshooting
 
-We have written an installation example in
-[this colab notebook](https://colab.research.google.com/drive/14tNU98OKPsP55Y3IgFtXPfd4frqbkrxK),
-you can use it as is to start working with PySyft on the colab cloud, or use this setup
-to fix your installation locally.
+The latest version of PySyft is 0.3.0 however this software is still Beta. If you find
+a bug please file it in the GitHub issues.
 
 ## Organizational Contributions
 We are very grateful for contributions to PySyft from the following organizations!
@@ -121,11 +120,10 @@ We are very grateful for contributions to PySyft from the following organization
 --------------------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------
 
 ## Support
-For support in using this library, please join the **#lib_pysyft** Slack channel. If you’d like to follow along with any code changes to the library, please join the **#code_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
+For support in using this library, please join the **#lib_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Disclaimer
-Do NOT use this code to protect data (private or otherwise) - at present it is very insecure.
-Come back in a couple of months.
+This software is in early beta. Use at your own risk.
 
 ## License
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE)
@@ -192,5 +190,5 @@ This documentation will help you setup your development environment, give you a 
 for learning the codebase, and help you find your first project to contribute.
 
 ## Note
-This project has been set up using PyScaffold 3.2.3. For details and usage information
+This project has been set up using PyScaffold. For details and usage information
 on PyScaffold see https://pyscaffold.org/.

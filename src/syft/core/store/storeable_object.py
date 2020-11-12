@@ -10,6 +10,7 @@ from typing import Union
 from google.protobuf.empty_pb2 import Empty as Empty_PB
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -168,24 +169,32 @@ class StorableObject(AbstractStorableObject):
         )
 
         # just a backup
-        result.tags = tags
-        result.description = description
+        try:
+            result.tags = tags
+            result.description = description
 
-        # default to empty
-        result.read_permissions = {}
-        result.search_permissions = {}
+            # default to empty
+            result.read_permissions = {}
+            result.search_permissions = {}
 
-        # Step 7: get the read permissions
-        if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-            result.read_permissions = _deserialize(
-                blob=proto.read_permissions, from_bytes=True
-            )
+            # Step 7: get the read permissions
+            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
+                result.read_permissions = _deserialize(
+                    blob=proto.read_permissions, from_bytes=True
+                )
 
-        # Step 8: get the search permissions
-        if proto.search_permissions is not None and len(proto.search_permissions) > 0:
-            result.search_permissions = _deserialize(
-                blob=proto.search_permissions, from_bytes=True
-            )
+            # Step 8: get the search permissions
+            if (
+                proto.search_permissions is not None
+                and len(proto.search_permissions) > 0
+            ):
+                result.search_permissions = _deserialize(
+                    blob=proto.search_permissions, from_bytes=True
+                )
+        except Exception as e:
+            # torch.return_types.* namedtuple cant setattr
+            log = f"StorableObject {type(obj_type)} cant set attributes {e}"
+            logger.error(log)
 
         return result
 
