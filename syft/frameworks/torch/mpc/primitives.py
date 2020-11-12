@@ -99,16 +99,10 @@ class PrimitiveStorage:
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
         elif op in {"fss_eq", "fss_comp"}:
-            # print(f"Primitive stack: {primitive_stack}\n op {op}")
-            # Primitive stack is a list of keys arrays (2d numpy u8 arrays).
-            # TODO: should we get the most relevant stack? Generation/consumption algo.
-
-            # Block-primitives: the first line is the AES keys
+            # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
+            # For each primitive,s the first line is the AES keys
             available_instances = len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
-                # print(
-                #     f"Got {n_instances} keys for op {op} from the stack which had {available_instances} keys."
-                # )
                 keys = primitive_stack[0][0 : n_instances + 1]
                 if remove:
                     # Keep the AES keys and drop the first n_instance primitives.
@@ -119,45 +113,6 @@ class PrimitiveStorage:
                     )
                     primitive_stack[0] = primitive_stack[0][remaining_indices]
                 return keys
-                # keys = []
-                # # We iterate on the different elements that constitute a given primitive, for
-                # # example of the beaver triples, you would have 3 elements.
-                # for i, prim in enumerate(primitive_stack):
-                #     # We're selecting on the last dimension of the tensor because it's simpler for
-                #     # generating those primitives in crypto protocols
-                #     # [:] ~ [slice(None)]
-                #     # [:1] ~ [slice(1)]
-                #     # [1:] ~ [slice(1, None)]
-                #     # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
-                #     if isinstance(prim, tuple):
-
-                #         ps = []
-                #         left_ps = []
-                #         for p in prim:
-                #             n_dim = len(p.shape)
-                #             get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                #             remaining_slice = tuple(
-                #                 [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                #             )
-                #             ps.append(p[get_slice])
-                #             if remove:
-                #                 left_ps.append(p[remaining_slice])
-
-                #         keys.append(tuple(ps))
-                #         if remove:
-                #             primitive_stack[i] = tuple(left_ps)
-                #     else:
-                #         n_dim = len(prim.shape)
-                #         get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                #         remaining_slice = tuple(
-                #             [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                #         )
-
-                #         keys.append(prim[get_slice])
-                #         if remove:
-                #             primitive_stack[i] = prim[remaining_slice]
-
-                # return keys
             else:
                 if self._owner.verbose:
                     print(
@@ -190,7 +145,6 @@ class PrimitiveStorage:
 
         t = time.time()
         primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
-        # print(f"Builder returned {n_instances} primitives in {time.time() - t}.")
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -201,7 +155,6 @@ class PrimitiveStorage:
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
             self._owner.send_msg(worker_message, worker)
-            # print(f"Message sent {n_instances} primitives to {worker} in {time.time() - t}.")
 
     def add_primitives(self, types_primitives: dict):
         """
@@ -229,27 +182,8 @@ class PrimitiveStorage:
                     current_primitives = getattr(self, op)
 
                 else:
-                    # TODO: on the fly -> should not be used.
-                    # current_primitives = np.concatenate(current_primitives, primitives)
+                    # This branch never happens with on-the-fly primitives
                     current_primitives.append(primitives)
-
-                #         for i, primitive in enumerate(primitives):
-                #             if len(current_primitives[i]) == 0:
-                #                 current_primitives[i] = primitive
-
-                #             else:
-                #                 if isinstance(current_primitives[i], tuple):
-                #                     new_prims = []
-                #                     for cur_prim, prim in zip(current_primitives[i], primitive):
-                #                         new_prims.append(
-                #                             np.concatenate((cur_prim, prim), axis=len(prim.shape) - 1)
-                #                         )
-                #                     current_primitives[i] = tuple(new_prims)
-                #                 else:
-                #                     current_primitives[i] = np.concatenate(
-                #                         (current_primitives[i], primitive),
-                #                         axis=len(primitive.shape) - 1,
-                #                     )
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
 
