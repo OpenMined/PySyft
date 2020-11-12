@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - master
-      - syft_0.3.0
     paths:
       - '**.py'
       - 'setup.cfg'
       - '.github/workflows/tests.yml'
 
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - master
     paths:
       - '**.py'
       - 'setup.cfg'
