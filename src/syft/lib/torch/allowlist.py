@@ -466,7 +466,6 @@ allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor"
 allowlist["torch.Tensor.index_select"] = "torch.Tensor"
 allowlist["torch.Tensor.masked_select"] = "torch.Tensor"
 allowlist["torch.Tensor.mv"] = "torch.Tensor"
-allowlist["torch.Tensor.istft"] = "torch.Tensor"
 
 
 # --------------------------------------------------------------------------------------
@@ -658,6 +657,10 @@ allowlist["torch.Tensor.rad2deg_"] = {
     "min_version": "1.6.0",
 }
 allowlist["torch.Tensor.rad2deg"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.istft"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
 }
