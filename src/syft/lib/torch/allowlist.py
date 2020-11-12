@@ -62,30 +62,432 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.storage_type"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.where"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
 
+# SECTION - Torch functions which are insecure
+# allowlist["torch.where"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
+# allowlist["torch.storage"] = SECURITY WARNING: DO NOT ADD TO ALLOW LIST
+
 # SECTION - Tensor methods which have serde issues
 # allowlist["torch.Tensor.to_dense"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_mkldnn"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
 # --------------------------------------------------------------------------------------
-# SECTION - Torch functions used in the fast tests: $ pytest -m fast
-# --------------------------------------------------------------------------------------
-
-allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
-allowlist["torch.device"] = "torch.device"  # warning this must come before the attrs
-allowlist["torch.device.index"] = "syft.lib.python.Int"
-allowlist["torch.device.type"] = "syft.lib.python.String"
-allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
-allowlist["torch.zeros_like"] = "torch.Tensor"
-
-# --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
 
-# SECTION - The capital Tensor constructor
+# SECTION - The capital Tensor constructors
 allowlist["torch.Tensor"] = "torch.Tensor"
+allowlist["torch.BFloat16Tensor"] = "torch.Tensor"
+allowlist["torch.BoolTensor"] = "torch.Tensor"
+allowlist["torch.ByteTensor"] = "torch.Tensor"
+allowlist["torch.CharTensor"] = "torch.Tensor"
+allowlist["torch.DoubleTensor"] = "torch.Tensor"
+allowlist["torch.FloatTensor"] = "torch.Tensor"
+allowlist["torch.HalfTensor"] = "torch.Tensor"
+allowlist["torch.IntTensor"] = "torch.Tensor"
+allowlist["torch.LongTensor"] = "torch.Tensor"
+allowlist["torch.ShortTensor"] = "torch.Tensor"
 
+# SECTION - Tensor methods
+allowlist["torch.Tensor.__abs__"] = "torch.Tensor"
+allowlist["torch.Tensor.__add__"] = "torch.Tensor"
+allowlist["torch.Tensor.__and__"] = "torch.Tensor"
+allowlist["torch.Tensor.__eq__"] = "torch.Tensor"
+allowlist["torch.Tensor.__float__"] = "syft.lib.python.Float"
+allowlist["torch.Tensor.__ge__"] = "torch.Tensor"
+allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
+allowlist["torch.Tensor.__gt__"] = "torch.Tensor"
+allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.__iadd__"] = "torch.Tensor"
+allowlist["torch.Tensor.__iand__"] = "torch.Tensor"
+allowlist["torch.Tensor.__idiv__"] = "torch.Tensor"
+allowlist["torch.Tensor.__ilshift__"] = "torch.Tensor"
+allowlist["torch.Tensor.__imul__"] = "torch.Tensor"
+allowlist["torch.Tensor.__index__"] = "torch.Tensor"
+allowlist["torch.Tensor.__int__"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.__invert__"] = "torch.Tensor"
+allowlist["torch.Tensor.__ior__"] = "torch.Tensor"
+allowlist["torch.Tensor.__ipow__"] = "torch.Tensor"  # none implemented in 1.5.1
+allowlist["torch.Tensor.__irshift__"] = "torch.Tensor"
+allowlist["torch.Tensor.__isub__"] = "torch.Tensor"
+allowlist["torch.Tensor.__itruediv__"] = "torch.Tensor"
+allowlist["torch.Tensor.__ixor__"] = "torch.Tensor"
+allowlist["torch.Tensor.__le__"] = "torch.Tensor"
+allowlist["torch.Tensor.__long__"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.__lshift__"] = "torch.Tensor"
+allowlist["torch.Tensor.__lt__"] = "torch.Tensor"
+allowlist["torch.Tensor.__matmul__"] = "torch.Tensor"
+allowlist["torch.Tensor.__mod__"] = "torch.Tensor"
+allowlist["torch.Tensor.__mul__"] = "torch.Tensor"
+allowlist["torch.Tensor.__ne__"] = "torch.Tensor"
+allowlist["torch.Tensor.__neg__"] = "torch.Tensor"
+allowlist["torch.Tensor.__nonzero__"] = "torch.Tensor"
+allowlist["torch.Tensor.__or__"] = "torch.Tensor"
+allowlist["torch.Tensor.__pow__"] = "torch.Tensor"
+allowlist["torch.Tensor.__radd__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rdiv__"] = "torch.Tensor"
+allowlist["torch.Tensor.__reversed__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rmul__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rpow__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rshift__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rsub__"] = "torch.Tensor"
+allowlist["torch.Tensor.__rtruediv__"] = "torch.Tensor"
+allowlist["torch.Tensor.__setitem__"] = "syft.lib.python._SyNone"
+allowlist["torch.Tensor.__sub__"] = "torch.Tensor"
+allowlist["torch.Tensor.__truediv__"] = "torch.Tensor"
+allowlist["torch.Tensor.__xor__"] = "torch.Tensor"
+allowlist["torch.Tensor._version"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.abs_"] = "torch.Tensor"
+allowlist["torch.Tensor.abs"] = "torch.Tensor"
+allowlist["torch.Tensor.acos_"] = "torch.Tensor"
+allowlist["torch.Tensor.acos"] = "torch.Tensor"
+allowlist["torch.Tensor.add_"] = "torch.Tensor"
+allowlist["torch.Tensor.add"] = "torch.Tensor"
+allowlist["torch.Tensor.addbmm_"] = "torch.Tensor"
+allowlist["torch.Tensor.addbmm"] = "torch.Tensor"
+allowlist["torch.Tensor.addcdiv_"] = "torch.Tensor"
+allowlist["torch.Tensor.addcdiv"] = "torch.Tensor"
+allowlist["torch.Tensor.addcmul_"] = "torch.Tensor"
+allowlist["torch.Tensor.addcmul"] = "torch.Tensor"
+allowlist["torch.Tensor.addmm_"] = "torch.Tensor"
+allowlist["torch.Tensor.addmm"] = "torch.Tensor"
+allowlist["torch.Tensor.addmv_"] = "torch.Tensor"
+allowlist["torch.Tensor.addmv"] = "torch.Tensor"
+allowlist["torch.Tensor.addr_"] = "torch.Tensor"
+allowlist["torch.Tensor.addr"] = "torch.Tensor"
+allowlist["torch.Tensor.all"] = "torch.Tensor"
+allowlist["torch.Tensor.allclose"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.angle"] = "torch.Tensor"
+allowlist["torch.Tensor.any"] = "torch.Tensor"
+allowlist["torch.Tensor.argmax"] = "torch.Tensor"
+allowlist["torch.Tensor.argmin"] = "torch.Tensor"
+allowlist["torch.Tensor.argsort"] = "torch.Tensor"
+allowlist["torch.Tensor.as_strided_"] = "torch.Tensor"
+allowlist["torch.Tensor.as_strided"] = "torch.Tensor"
+allowlist["torch.Tensor.asin_"] = "torch.Tensor"
+allowlist["torch.Tensor.asin"] = "torch.Tensor"
+allowlist["torch.Tensor.atan_"] = "torch.Tensor"
+allowlist["torch.Tensor.atan"] = "torch.Tensor"
+allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
+allowlist["torch.Tensor.atan2"] = "torch.Tensor"
+allowlist["torch.Tensor.backward"] = "syft.lib.python._SyNone"
+allowlist["torch.Tensor.baddbmm_"] = "torch.Tensor"
+allowlist["torch.Tensor.baddbmm"] = "torch.Tensor"
+allowlist["torch.Tensor.bernoulli_"] = "torch.Tensor"
+allowlist["torch.Tensor.bernoulli"] = "torch.Tensor"
+allowlist["torch.Tensor.bfloat16"] = "torch.Tensor"
+allowlist["torch.Tensor.bincount"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_not_"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_not"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_xor_"] = "torch.Tensor"
+allowlist["torch.Tensor.bitwise_xor"] = "torch.Tensor"
+allowlist["torch.Tensor.bmm"] = "torch.Tensor"
+allowlist["torch.Tensor.bool"] = "torch.Tensor"
+allowlist["torch.Tensor.byte"] = "torch.Tensor"
+allowlist["torch.Tensor.cauchy_"] = "torch.Tensor"
+allowlist["torch.Tensor.ceil_"] = "torch.Tensor"
+allowlist["torch.Tensor.ceil"] = "torch.Tensor"
+allowlist["torch.Tensor.char"] = "torch.Tensor"
+allowlist["torch.Tensor.cholesky_inverse"] = "torch.Tensor"
+allowlist["torch.Tensor.cholesky_solve"] = "torch.Tensor"
+allowlist["torch.Tensor.cholesky"] = "torch.Tensor"
+allowlist["torch.Tensor.chunk"] = "syft.lib.python.List"
+allowlist["torch.Tensor.clamp_"] = "torch.Tensor"
+allowlist["torch.Tensor.clamp_max_"] = "torch.Tensor"
+allowlist["torch.Tensor.clamp_max"] = "torch.Tensor"
+allowlist["torch.Tensor.clamp_min_"] = "torch.Tensor"
+allowlist["torch.Tensor.clamp_min"] = "torch.Tensor"
+allowlist["torch.Tensor.clamp"] = "torch.Tensor"
+allowlist["torch.Tensor.clone"] = "torch.Tensor"
+allowlist["torch.Tensor.coalesce"] = "torch.Tensor"
+allowlist["torch.Tensor.conj"] = "torch.Tensor"
+allowlist["torch.Tensor.contiguous"] = "torch.Tensor"
+allowlist["torch.Tensor.copy_"] = "torch.Tensor"
+allowlist["torch.Tensor.cos_"] = "torch.Tensor"
+allowlist["torch.Tensor.cos"] = "torch.Tensor"
+allowlist["torch.Tensor.cosh_"] = "torch.Tensor"
+allowlist["torch.Tensor.cosh"] = "torch.Tensor"
+allowlist["torch.Tensor.cpu"] = "torch.Tensor"
+allowlist["torch.Tensor.cross"] = "torch.Tensor"
+allowlist["torch.Tensor.cuda"] = "torch.Tensor"
+allowlist["torch.Tensor.cummax"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.cummin"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.cumprod"] = "torch.Tensor"
+allowlist["torch.Tensor.cumsum"] = "torch.Tensor"
+allowlist["torch.Tensor.data_ptr"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.data"] = "torch.Tensor"
+allowlist["torch.Tensor.dense_dim"] = "torch.Tensor"
+allowlist["torch.Tensor.dequantize"] = "torch.Tensor"
+allowlist["torch.Tensor.det"] = "torch.Tensor"
+allowlist["torch.Tensor.detach"] = "torch.Tensor"
+allowlist["torch.Tensor.diag_embed"] = "torch.Tensor"
+allowlist["torch.Tensor.diag"] = "torch.Tensor"
+allowlist["torch.Tensor.diagflat"] = "torch.Tensor"
+allowlist["torch.Tensor.diagonal"] = "torch.Tensor"
+allowlist["torch.Tensor.digamma_"] = "torch.Tensor"
+allowlist["torch.Tensor.digamma"] = "torch.Tensor"
+allowlist["torch.Tensor.dim"] = "torch.Tensor"
+allowlist["torch.Tensor.dist"] = "torch.Tensor"
+allowlist["torch.Tensor.dot"] = "torch.Tensor"
+allowlist["torch.Tensor.double"] = "torch.Tensor"
+allowlist["torch.Tensor.eig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.element_size"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.eq_"] = "torch.Tensor"
+allowlist["torch.Tensor.eq"] = "torch.Tensor"
+allowlist["torch.Tensor.equal"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.erf_"] = "torch.Tensor"
+allowlist["torch.Tensor.erf"] = "torch.Tensor"
+allowlist["torch.Tensor.erfc_"] = "torch.Tensor"
+allowlist["torch.Tensor.erfc"] = "torch.Tensor"
+allowlist["torch.Tensor.erfinv_"] = "torch.Tensor"
+allowlist["torch.Tensor.erfinv"] = "torch.Tensor"
+allowlist["torch.Tensor.exp_"] = "torch.Tensor"
+allowlist["torch.Tensor.exp"] = "torch.Tensor"
+allowlist["torch.Tensor.expand_as"] = "torch.Tensor"
+allowlist["torch.Tensor.expand"] = "torch.Tensor"
+allowlist["torch.Tensor.expm1_"] = "torch.Tensor"
+allowlist["torch.Tensor.expm1"] = "torch.Tensor"
+allowlist["torch.Tensor.exponential_"] = "torch.Tensor"
+allowlist["torch.Tensor.fft"] = "torch.Tensor"
+allowlist["torch.Tensor.fill_"] = "torch.Tensor"
+allowlist["torch.Tensor.fill_diagonal_"] = "torch.Tensor"
+allowlist["torch.Tensor.flatten"] = "torch.Tensor"
+allowlist["torch.Tensor.flip"] = "torch.Tensor"
+allowlist["torch.Tensor.float"] = "torch.Tensor"
+allowlist["torch.Tensor.floor_"] = "torch.Tensor"
+allowlist["torch.Tensor.floor"] = "torch.Tensor"
+allowlist["torch.Tensor.fmod_"] = "torch.Tensor"
+allowlist["torch.Tensor.fmod"] = "torch.Tensor"
+allowlist["torch.Tensor.frac_"] = "torch.Tensor"
+allowlist["torch.Tensor.frac"] = "torch.Tensor"
+allowlist["torch.Tensor.gather"] = "torch.Tensor"
+allowlist["torch.Tensor.ge_"] = "torch.Tensor"
+allowlist["torch.Tensor.ge"] = "torch.Tensor"
+allowlist["torch.Tensor.geometric_"] = "torch.Tensor"
+allowlist["torch.Tensor.geqrf"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.ger"] = "torch.Tensor"
+allowlist["torch.Tensor.get_device"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.gt_"] = "torch.Tensor"
+allowlist["torch.Tensor.gt"] = "torch.Tensor"
+allowlist["torch.Tensor.half"] = "torch.Tensor"
+allowlist["torch.Tensor.hardshrink"] = "torch.Tensor"
+allowlist["torch.Tensor.histc"] = "torch.Tensor"
+allowlist["torch.Tensor.ifft"] = "torch.Tensor"
+allowlist["torch.Tensor.index_add_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_add"] = "torch.Tensor"
+allowlist["torch.Tensor.index_copy_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_copy"] = "torch.Tensor"
+allowlist["torch.Tensor.index_fill_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_fill"] = "torch.Tensor"
+allowlist["torch.Tensor.index_put_"] = "torch.Tensor"
+allowlist["torch.Tensor.index_put"] = "torch.Tensor"
+allowlist["torch.Tensor.index_select"] = "torch.Tensor"
+allowlist["torch.Tensor.indices"] = "torch.Tensor"
+allowlist["torch.Tensor.int_repr"] = "torch.Tensor"
+allowlist["torch.Tensor.int"] = "torch.Tensor"
+allowlist["torch.Tensor.inverse"] = "torch.Tensor"
+allowlist["torch.Tensor.irfft"] = "torch.Tensor"
+allowlist["torch.Tensor.is_coalesced"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_complex"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_contiguous"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_cuda"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_distributed"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_floating_point"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_leaf"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_mkldnn"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_nonzero"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_pinned"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_quantized"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_same_size"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_set_to"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_shared"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_signed"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.is_sparse"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.isclose"] = "torch.Tensor"
+allowlist["torch.Tensor.kthvalue"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.le_"] = "torch.Tensor"
+allowlist["torch.Tensor.le"] = "torch.Tensor"
+allowlist["torch.Tensor.lerp_"] = "torch.Tensor"
+allowlist["torch.Tensor.lerp"] = "torch.Tensor"
+allowlist["torch.Tensor.lgamma_"] = "torch.Tensor"
+allowlist["torch.Tensor.lgamma"] = "torch.Tensor"
+allowlist["torch.Tensor.log_"] = "torch.Tensor"
+allowlist["torch.Tensor.log_normal_"] = "torch.Tensor"
+allowlist["torch.Tensor.log_softmax"] = "torch.Tensor"
+allowlist["torch.Tensor.log"] = "torch.Tensor"
+allowlist["torch.Tensor.log10_"] = "torch.Tensor"
+allowlist["torch.Tensor.log10"] = "torch.Tensor"
+allowlist["torch.Tensor.log1p_"] = "torch.Tensor"
+allowlist["torch.Tensor.log1p"] = "torch.Tensor"
+allowlist["torch.Tensor.log2_"] = "torch.Tensor"
+allowlist["torch.Tensor.log2"] = "torch.Tensor"
+allowlist["torch.Tensor.logdet"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_not_"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_not"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_xor_"] = "torch.Tensor"
+allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
+allowlist["torch.Tensor.logsumexp"] = "torch.Tensor"
+allowlist["torch.Tensor.long"] = "torch.Tensor"
+allowlist["torch.Tensor.lstsq"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.lt_"] = "torch.Tensor"
+allowlist["torch.Tensor.lt"] = "torch.Tensor"
+allowlist["torch.Tensor.lu_solve"] = "torch.Tensor"
+allowlist["torch.Tensor.lu"] = "syft.lib.python.List"  # actually a tuple
+allowlist["torch.Tensor.masked_fill_"] = "torch.Tensor"
+allowlist["torch.Tensor.masked_fill"] = "torch.Tensor"
+allowlist["torch.Tensor.masked_scatter_"] = "torch.Tensor"
+allowlist["torch.Tensor.masked_scatter"] = "torch.Tensor"
+allowlist["torch.Tensor.masked_select"] = "torch.Tensor"
+allowlist["torch.Tensor.matmul"] = "torch.Tensor"
+allowlist["torch.Tensor.matrix_power"] = "torch.Tensor"
+allowlist["torch.Tensor.mean"] = "torch.Tensor"
+allowlist["torch.Tensor.mm"] = "torch.Tensor"
+allowlist["torch.Tensor.mode"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.mul_"] = "torch.Tensor"
+allowlist["torch.Tensor.mul"] = "torch.Tensor"
+allowlist["torch.Tensor.multinomial"] = "torch.Tensor"
+allowlist["torch.Tensor.mv"] = "torch.Tensor"
+allowlist["torch.Tensor.mvlgamma_"] = "torch.Tensor"
+allowlist["torch.Tensor.mvlgamma"] = "torch.Tensor"
+allowlist["torch.Tensor.narrow_copy"] = "torch.Tensor"
+allowlist["torch.Tensor.narrow"] = "torch.Tensor"
+allowlist["torch.Tensor.ndim"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.ndimension"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.ne_"] = "torch.Tensor"
+allowlist["torch.Tensor.ne"] = "torch.Tensor"
+allowlist["torch.Tensor.neg_"] = "torch.Tensor"
+allowlist["torch.Tensor.neg"] = "torch.Tensor"
+allowlist["torch.Tensor.nelement"] = "syft.lib.python.Int"  # is this INSECURE???
+allowlist["torch.Tensor.new_empty"] = "torch.Tensor"
+allowlist["torch.Tensor.new_full"] = "torch.Tensor"
+allowlist["torch.Tensor.new_ones"] = "torch.Tensor"
+allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
+allowlist["torch.Tensor.new_zeros"] = "torch.Tensor"
+allowlist["torch.Tensor.new"] = "torch.Tensor"
+allowlist["torch.Tensor.nonzero"] = "torch.Tensor"
+allowlist["torch.Tensor.norm"] = "torch.Tensor"
+allowlist["torch.Tensor.normal_"] = "torch.Tensor"
+allowlist["torch.Tensor.numel"] = "syft.lib.python.Int"  # is this INSECURE???
+allowlist["torch.Tensor.orgqr"] = "torch.Tensor"
+allowlist["torch.Tensor.ormqr"] = "torch.Tensor"
+allowlist["torch.Tensor.output_nr"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.permute"] = "torch.Tensor"
+allowlist["torch.Tensor.pin_memory"] = "torch.Tensor"
+allowlist["torch.Tensor.pinverse"] = "torch.Tensor"
+allowlist["torch.Tensor.polygamma_"] = "torch.Tensor"
+allowlist["torch.Tensor.polygamma"] = "torch.Tensor"
+allowlist["torch.Tensor.pow_"] = "torch.Tensor"
+allowlist["torch.Tensor.pow"] = "torch.Tensor"
+allowlist["torch.Tensor.prelu"] = "torch.Tensor"
+allowlist["torch.Tensor.prod"] = "torch.Tensor"
+allowlist["torch.Tensor.put_"] = "torch.Tensor"
+allowlist["torch.Tensor.q_per_channel_axis"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.q_per_channel_scales"] = "torch.Tensor"
+allowlist["torch.Tensor.q_per_channel_zero_points"] = "torch.Tensor"
+allowlist["torch.Tensor.q_scale"] = "syft.lib.python.Float"
+allowlist["torch.Tensor.q_zero_point"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.qr"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.random_"] = "torch.Tensor"
+allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
+allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
+allowlist["torch.Tensor.relu_"] = "torch.Tensor"
+allowlist["torch.Tensor.relu"] = "torch.Tensor"
+allowlist["torch.Tensor.renorm_"] = "torch.Tensor"
+allowlist["torch.Tensor.renorm"] = "torch.Tensor"
+allowlist["torch.Tensor.repeat_interleave"] = "torch.Tensor"
+allowlist["torch.Tensor.repeat"] = "torch.Tensor"
+allowlist["torch.Tensor.requires_grad_"] = "torch.Tensor"
+allowlist["torch.Tensor.requires_grad"] = "syft.lib.python.Bool"
+allowlist["torch.Tensor.reshape_as"] = "torch.Tensor"
+allowlist["torch.Tensor.reshape"] = "torch.Tensor"
+allowlist["torch.Tensor.resize_"] = "torch.Tensor"
+allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
+allowlist["torch.Tensor.resize_as"] = "torch.Tensor"
+allowlist["torch.Tensor.resize"] = "torch.Tensor"
+allowlist["torch.Tensor.retain_grad"] = "syft.lib.python._SyNone"
+allowlist["torch.Tensor.rfft"] = "torch.Tensor"
+allowlist["torch.Tensor.roll"] = "torch.Tensor"
+allowlist["torch.Tensor.rot90"] = "torch.Tensor"
+allowlist["torch.Tensor.round_"] = "torch.Tensor"
+allowlist["torch.Tensor.round"] = "torch.Tensor"
+allowlist["torch.Tensor.rsqrt_"] = "torch.Tensor"
+allowlist["torch.Tensor.rsqrt"] = "torch.Tensor"
+allowlist["torch.Tensor.scatter_"] = "torch.Tensor"
+allowlist["torch.Tensor.scatter_add_"] = "torch.Tensor"
+allowlist["torch.Tensor.scatter_add"] = "torch.Tensor"
+allowlist["torch.Tensor.scatter"] = "torch.Tensor"
+allowlist["torch.Tensor.select"] = "torch.Tensor"
+allowlist["torch.Tensor.set_"] = "torch.Tensor"
+allowlist["torch.Tensor.short"] = "torch.Tensor"
+allowlist["torch.Tensor.sigmoid_"] = "torch.Tensor"
+allowlist["torch.Tensor.sigmoid"] = "torch.Tensor"
+allowlist["torch.Tensor.sign_"] = "torch.Tensor"
+allowlist["torch.Tensor.sign"] = "torch.Tensor"
+allowlist["torch.Tensor.sin_"] = "torch.Tensor"
+allowlist["torch.Tensor.sin"] = "torch.Tensor"
+allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
+allowlist["torch.Tensor.sinh"] = "torch.Tensor"
+allowlist["torch.Tensor.slogdet"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.softmax"] = "torch.Tensor"
+allowlist["torch.Tensor.solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.sort"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.split_with_sizes"] = "syft.lib.python.List"  # tuple
+allowlist["torch.Tensor.split"] = "syft.lib.python.List"
+allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
+allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
+allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
+allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
+allowlist["torch.Tensor.std"] = "torch.Tensor"
+allowlist["torch.Tensor.stft"] = "torch.Tensor"
+allowlist["torch.Tensor.sub_"] = "torch.Tensor"
+allowlist["torch.Tensor.sub"] = "torch.Tensor"
+allowlist["torch.Tensor.sum_to_size"] = "torch.Tensor"
+allowlist["torch.Tensor.sum"] = "torch.Tensor"
+allowlist["torch.Tensor.svd"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.symeig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.t_"] = "torch.Tensor"
+allowlist["torch.Tensor.t"] = "torch.Tensor"
+allowlist["torch.Tensor.t"] = "torch.Tensor"
+allowlist["torch.Tensor.T"] = "torch.Tensor"
+allowlist["torch.Tensor.take"] = "torch.Tensor"
+allowlist["torch.Tensor.tan_"] = "torch.Tensor"
+allowlist["torch.Tensor.tan"] = "torch.Tensor"
+allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
+allowlist["torch.Tensor.tanh"] = "torch.Tensor"
+allowlist["torch.Tensor.to"] = "torch.Tensor"
+allowlist["torch.Tensor.tolist"] = "syft.lib.python.List"
+allowlist["torch.Tensor.topk"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.trace"] = "torch.Tensor"
+allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
+allowlist["torch.Tensor.transpose"] = "torch.Tensor"
+allowlist["torch.Tensor.triangular_solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.tril_"] = "torch.Tensor"
+allowlist["torch.Tensor.tril"] = "torch.Tensor"
+allowlist["torch.Tensor.triu_"] = "torch.Tensor"
+allowlist["torch.Tensor.triu"] = "torch.Tensor"
+allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
+allowlist["torch.Tensor.trunc"] = "torch.Tensor"
+allowlist["torch.Tensor.type_as"] = "torch.Tensor"
+allowlist["torch.Tensor.type"] = "syft.lib.python.String"
+allowlist["torch.Tensor.unbind"] = "syft.lib.python.List"
+allowlist["torch.Tensor.unfold"] = "torch.Tensor"
+allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
+allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor"
+allowlist["torch.Tensor.unique"] = "torch.Tensor"
+allowlist["torch.Tensor.unsqueeze_"] = "torch.Tensor"
+allowlist["torch.Tensor.unsqueeze"] = "torch.Tensor"
+allowlist["torch.Tensor.var"] = "torch.Tensor"
+allowlist["torch.Tensor.view_as"] = "torch.Tensor"
+allowlist["torch.Tensor.view"] = "torch.Tensor"
+allowlist["torch.Tensor.zero_"] = "torch.Tensor"
+
+
+# --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with special version requirements
+# --------------------------------------------------------------------------------------
+
+# SECTION - Tensor methods since 1.5.0
+
 allowlist[
     "torch.Tensor.__div__"
 ] = {  # exists in 1.4.0 but causes fatal exception on non floats
@@ -103,11 +505,6 @@ allowlist[
 ] = {  # exists in 1.4.0 but causes fatal exception on non floats
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
-}
-
-allowlist["torch.Tensor.__ifloordiv__"] = {
-    "return_type": "torch.Tensor",
-    "min_version": "1.5.1",
 }
 
 allowlist["torch.Tensor.bitwise_and"] = {
@@ -145,10 +542,6 @@ allowlist["torch.Tensor.floor_divide"] = {
 allowlist["torch.Tensor.floor_divide_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
-}
-allowlist["torch.Tensor.is_meta"] = {
-    "return_type": "syft.lib.python.Bool",
-    "min_version": "1.6.0",
 }
 allowlist["torch.Tensor.logical_and"] = {
     "return_type": "torch.Tensor",
@@ -194,6 +587,21 @@ allowlist["torch.Tensor.true_divide_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.5.0",
 }
+
+
+# SECTION - Tensor methods since 1.5.1
+
+allowlist["torch.Tensor.__ifloordiv__"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.5.1",
+}
+
+# SECTION - Tensor methods since 1.6.0
+
+allowlist["torch.Tensor.is_meta"] = {
+    "return_type": "syft.lib.python.Bool",
+    "min_version": "1.6.0",
+}
 allowlist["torch.Tensor.absolute_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
@@ -214,7 +622,15 @@ allowlist["torch.Tensor.asinh_"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
 }
+allowlist["torch.Tensor.asinh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
 allowlist["torch.Tensor.atanh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.Tensor.atanh"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
 }
@@ -266,537 +682,945 @@ allowlist["torch.Tensor.rad2deg"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.6.0",
 }
+allowlist["torch.Tensor.istft"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
 
-# SECTION - Added in 1.7.0
+# SECTION - Tensor methods since 1.7.0
 
-# SECTION - Tensor methods
-allowlist["torch.Tensor.__abs__"] = "torch.Tensor"
-allowlist["torch.Tensor.__add__"] = "torch.Tensor"
-allowlist["torch.Tensor.__and__"] = "torch.Tensor"
-allowlist["torch.Tensor.__eq__"] = "torch.Tensor"
-allowlist["torch.Tensor.__float__"] = "syft.lib.python.Float"
-allowlist["torch.Tensor.__ge__"] = "torch.Tensor"
-allowlist["torch.Tensor.__getitem__"] = "torch.Tensor"
-allowlist["torch.Tensor.__gt__"] = "torch.Tensor"
-allowlist["torch.Tensor.__hash__"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.__iadd__"] = "torch.Tensor"
-allowlist["torch.Tensor.__iand__"] = "torch.Tensor"
-allowlist["torch.Tensor.__idiv__"] = "torch.Tensor"
-allowlist["torch.Tensor.__ilshift__"] = "torch.Tensor"
-allowlist["torch.Tensor.__imul__"] = "torch.Tensor"
-allowlist["torch.Tensor.__index__"] = "torch.Tensor"
-allowlist["torch.Tensor.__int__"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.__invert__"] = "torch.Tensor"
-allowlist["torch.Tensor.__ior__"] = "torch.Tensor"
-allowlist["torch.Tensor.__ipow__"] = "torch.Tensor"  # none implemented in 1.5.1
-allowlist["torch.Tensor.__irshift__"] = "torch.Tensor"
-allowlist["torch.Tensor.__isub__"] = "torch.Tensor"
-allowlist["torch.Tensor.__itruediv__"] = "torch.Tensor"
-allowlist["torch.Tensor.__ixor__"] = "torch.Tensor"
-allowlist["torch.Tensor.__le__"] = "torch.Tensor"
-allowlist["torch.Tensor.__long__"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.__lshift__"] = "torch.Tensor"
-allowlist["torch.Tensor.__lt__"] = "torch.Tensor"
-allowlist["torch.Tensor.__matmul__"] = "torch.Tensor"
-allowlist["torch.Tensor.__mod__"] = "torch.Tensor"
-allowlist["torch.Tensor.__mul__"] = "torch.Tensor"
-allowlist["torch.Tensor.__ne__"] = "torch.Tensor"
-allowlist["torch.Tensor.__neg__"] = "torch.Tensor"
-allowlist["torch.Tensor.__nonzero__"] = "torch.Tensor"
-allowlist["torch.Tensor.__or__"] = "torch.Tensor"
-allowlist["torch.Tensor.__pow__"] = "torch.Tensor"
-allowlist["torch.Tensor.__radd__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rdiv__"] = "torch.Tensor"
-allowlist["torch.Tensor.__reversed__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rmul__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rpow__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rshift__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rsub__"] = "torch.Tensor"
-allowlist["torch.Tensor.__rtruediv__"] = "torch.Tensor"
-allowlist["torch.Tensor.__sub__"] = "torch.Tensor"
-allowlist["torch.Tensor.__truediv__"] = "torch.Tensor"
-allowlist["torch.Tensor.__xor__"] = "torch.Tensor"
-allowlist["torch.Tensor._version"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.abs_"] = "torch.Tensor"
-allowlist["torch.Tensor.abs"] = "torch.Tensor"
-allowlist["torch.Tensor.acos_"] = "torch.Tensor"
-allowlist["torch.Tensor.acos"] = "torch.Tensor"
-allowlist["torch.Tensor.add_"] = "torch.Tensor"
-allowlist["torch.Tensor.add"] = "torch.Tensor"
-allowlist["torch.Tensor.all"] = "torch.Tensor"
-allowlist["torch.Tensor.allclose"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.angle"] = "torch.Tensor"
-allowlist["torch.Tensor.any"] = "torch.Tensor"
-allowlist["torch.Tensor.argmax"] = "torch.Tensor"
-allowlist["torch.Tensor.argmin"] = "torch.Tensor"
-allowlist["torch.Tensor.argsort"] = "torch.Tensor"
-allowlist["torch.Tensor.asin_"] = "torch.Tensor"
-allowlist["torch.Tensor.asin"] = "torch.Tensor"
-allowlist["torch.Tensor.atan_"] = "torch.Tensor"
-allowlist["torch.Tensor.atan"] = "torch.Tensor"
-allowlist["torch.Tensor.atan2_"] = "torch.Tensor"
-allowlist["torch.Tensor.atan2"] = "torch.Tensor"
-allowlist["torch.Tensor.backward"] = "syft.lib.python._SyNone"
-allowlist["torch.Tensor.bernoulli_"] = "torch.Tensor"
-allowlist["torch.Tensor.bernoulli"] = "torch.Tensor"
-allowlist["torch.Tensor.bfloat16"] = "torch.Tensor"
-allowlist["torch.Tensor.bincount"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_not_"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_not"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_xor_"] = "torch.Tensor"
-allowlist["torch.Tensor.bitwise_xor"] = "torch.Tensor"
-allowlist["torch.Tensor.bmm"] = "torch.Tensor"
-allowlist["torch.Tensor.bool"] = "torch.Tensor"
-allowlist["torch.Tensor.byte"] = "torch.Tensor"
-allowlist["torch.Tensor.cauchy_"] = "torch.Tensor"
-allowlist["torch.Tensor.ceil_"] = "torch.Tensor"
-allowlist["torch.Tensor.ceil"] = "torch.Tensor"
-allowlist["torch.Tensor.char"] = "torch.Tensor"
-allowlist["torch.Tensor.cholesky_inverse"] = "torch.Tensor"
-allowlist["torch.Tensor.cholesky_solve"] = "torch.Tensor"
-allowlist["torch.Tensor.chunk"] = "syft.lib.python.List"
-allowlist["torch.Tensor.clone"] = "torch.Tensor"
-allowlist["torch.Tensor.coalesce"] = "torch.Tensor"
-allowlist["torch.Tensor.conj"] = "torch.Tensor"
-allowlist["torch.Tensor.contiguous"] = "torch.Tensor"
-allowlist["torch.Tensor.copy_"] = "torch.Tensor"
-allowlist["torch.Tensor.cos_"] = "torch.Tensor"
-allowlist["torch.Tensor.cos"] = "torch.Tensor"
-allowlist["torch.Tensor.cosh_"] = "torch.Tensor"
-allowlist["torch.Tensor.cosh"] = "torch.Tensor"
-allowlist["torch.Tensor.cpu"] = "torch.Tensor"
-allowlist["torch.Tensor.cross"] = "torch.Tensor"
-allowlist["torch.Tensor.cuda"] = "torch.Tensor"
-allowlist["torch.Tensor.cumprod"] = "torch.Tensor"
-allowlist["torch.Tensor.cumsum"] = "torch.Tensor"
-allowlist["torch.Tensor.data_ptr"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.data"] = "torch.Tensor"
-allowlist["torch.Tensor.dense_dim"] = "torch.Tensor"
-allowlist["torch.Tensor.dequantize"] = "torch.Tensor"
-allowlist["torch.Tensor.det"] = "torch.Tensor"
-allowlist["torch.Tensor.detach"] = "torch.Tensor"
-allowlist["torch.Tensor.diag_embed"] = "torch.Tensor"
-allowlist["torch.Tensor.diag"] = "torch.Tensor"
-allowlist["torch.Tensor.diagflat"] = "torch.Tensor"
-allowlist["torch.Tensor.diagonal"] = "torch.Tensor"
-allowlist["torch.Tensor.digamma_"] = "torch.Tensor"
-allowlist["torch.Tensor.digamma"] = "torch.Tensor"
-allowlist["torch.Tensor.dim"] = "torch.Tensor"
-allowlist["torch.Tensor.dist"] = "torch.Tensor"
-allowlist["torch.Tensor.dot"] = "torch.Tensor"
-allowlist["torch.Tensor.double"] = "torch.Tensor"
-allowlist["torch.Tensor.element_size"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.eq_"] = "torch.Tensor"
-allowlist["torch.Tensor.eq"] = "torch.Tensor"
-allowlist["torch.Tensor.equal"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.erf_"] = "torch.Tensor"
-allowlist["torch.Tensor.erf"] = "torch.Tensor"
-allowlist["torch.Tensor.erfc_"] = "torch.Tensor"
-allowlist["torch.Tensor.erfc"] = "torch.Tensor"
-allowlist["torch.Tensor.erfinv_"] = "torch.Tensor"
-allowlist["torch.Tensor.erfinv"] = "torch.Tensor"
-allowlist["torch.Tensor.exp_"] = "torch.Tensor"
-allowlist["torch.Tensor.exp"] = "torch.Tensor"
-allowlist["torch.Tensor.expand_as"] = "torch.Tensor"
-allowlist["torch.Tensor.expm1_"] = "torch.Tensor"
-allowlist["torch.Tensor.expm1"] = "torch.Tensor"
-allowlist["torch.Tensor.exponential_"] = "torch.Tensor"
-allowlist["torch.Tensor.fft"] = "torch.Tensor"
-allowlist["torch.Tensor.fill_"] = "torch.Tensor"
-allowlist["torch.Tensor.fill_diagonal_"] = "torch.Tensor"
-allowlist["torch.Tensor.flatten"] = "torch.Tensor"
-allowlist["torch.Tensor.flip"] = "torch.Tensor"
-allowlist["torch.Tensor.float"] = "torch.Tensor"
-allowlist["torch.Tensor.floor_"] = "torch.Tensor"
-allowlist["torch.Tensor.floor"] = "torch.Tensor"
-allowlist["torch.Tensor.fmod_"] = "torch.Tensor"
-allowlist["torch.Tensor.fmod"] = "torch.Tensor"
-allowlist["torch.Tensor.frac_"] = "torch.Tensor"
-allowlist["torch.Tensor.frac"] = "torch.Tensor"
-allowlist["torch.Tensor.ge_"] = "torch.Tensor"
-allowlist["torch.Tensor.ge"] = "torch.Tensor"
-allowlist["torch.Tensor.ger"] = "torch.Tensor"
-allowlist["torch.Tensor.get_device"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.gt_"] = "torch.Tensor"
-allowlist["torch.Tensor.gt"] = "torch.Tensor"
-allowlist["torch.Tensor.half"] = "torch.Tensor"
-allowlist["torch.Tensor.hardshrink"] = "torch.Tensor"
-allowlist["torch.Tensor.histc"] = "torch.Tensor"
-allowlist["torch.Tensor.ifft"] = "torch.Tensor"
-allowlist["torch.Tensor.indices"] = "torch.Tensor"
-allowlist["torch.Tensor.int_repr"] = "torch.Tensor"
-allowlist["torch.Tensor.int"] = "torch.Tensor"
-allowlist["torch.Tensor.inverse"] = "torch.Tensor"
-allowlist["torch.Tensor.irfft"] = "torch.Tensor"
-allowlist["torch.Tensor.is_coalesced"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_complex"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_contiguous"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_cuda"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_distributed"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_floating_point"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_leaf"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_mkldnn"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_nonzero"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_pinned"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_quantized"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_same_size"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_set_to"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_shared"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_signed"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.is_sparse"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.isclose"] = "torch.Tensor"
-allowlist["torch.Tensor.le_"] = "torch.Tensor"
-allowlist["torch.Tensor.le"] = "torch.Tensor"
-allowlist["torch.Tensor.lgamma_"] = "torch.Tensor"
-allowlist["torch.Tensor.lgamma"] = "torch.Tensor"
-allowlist["torch.Tensor.log_"] = "torch.Tensor"
-allowlist["torch.Tensor.log_normal_"] = "torch.Tensor"
-allowlist["torch.Tensor.log_softmax"] = "torch.Tensor"
-allowlist["torch.Tensor.log"] = "torch.Tensor"
-allowlist["torch.Tensor.log10_"] = "torch.Tensor"
-allowlist["torch.Tensor.log10"] = "torch.Tensor"
-allowlist["torch.Tensor.log1p_"] = "torch.Tensor"
-allowlist["torch.Tensor.log1p"] = "torch.Tensor"
-allowlist["torch.Tensor.log2_"] = "torch.Tensor"
-allowlist["torch.Tensor.log2"] = "torch.Tensor"
-allowlist["torch.Tensor.logdet"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_not_"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_not"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_xor_"] = "torch.Tensor"
-allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
-allowlist["torch.Tensor.logsumexp"] = "torch.Tensor"
-allowlist["torch.Tensor.long"] = "torch.Tensor"
-allowlist["torch.Tensor.lt_"] = "torch.Tensor"
-allowlist["torch.Tensor.lt"] = "torch.Tensor"
-allowlist["torch.Tensor.lu"] = "syft.lib.python.List"  # actually a tuple
-allowlist["torch.Tensor.matmul"] = "torch.Tensor"
-allowlist["torch.Tensor.matrix_power"] = "torch.Tensor"
-allowlist["torch.Tensor.mm"] = "torch.Tensor"
-allowlist["torch.Tensor.mul_"] = "torch.Tensor"
-allowlist["torch.Tensor.mul"] = "torch.Tensor"
-allowlist["torch.Tensor.mvlgamma_"] = "torch.Tensor"
-allowlist["torch.Tensor.mvlgamma"] = "torch.Tensor"
-allowlist["torch.Tensor.ndim"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.ndimension"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.ne_"] = "torch.Tensor"
-allowlist["torch.Tensor.ne"] = "torch.Tensor"
-allowlist["torch.Tensor.neg_"] = "torch.Tensor"
-allowlist["torch.Tensor.neg"] = "torch.Tensor"
-allowlist["torch.Tensor.nelement"] = "syft.lib.python.Int"  # is this INSECURE???
-allowlist["torch.Tensor.new_empty"] = "torch.Tensor"
-allowlist["torch.Tensor.new_ones"] = "torch.Tensor"
-allowlist["torch.Tensor.new_tensor"] = "torch.Tensor"
-allowlist["torch.Tensor.new_zeros"] = "torch.Tensor"
-allowlist["torch.Tensor.new"] = "torch.Tensor"
-allowlist["torch.Tensor.nonzero"] = "torch.Tensor"
-allowlist["torch.Tensor.norm"] = "torch.Tensor"
-allowlist["torch.Tensor.normal_"] = "torch.Tensor"
-allowlist["torch.Tensor.numel"] = "syft.lib.python.Int"  # is this INSECURE???
-allowlist["torch.Tensor.orgqr"] = "torch.Tensor"
-allowlist["torch.Tensor.output_nr"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.permute"] = "torch.Tensor"
-allowlist["torch.Tensor.pin_memory"] = "torch.Tensor"
-allowlist["torch.Tensor.pinverse"] = "torch.Tensor"
-allowlist["torch.Tensor.polygamma_"] = "torch.Tensor"
-allowlist["torch.Tensor.polygamma"] = "torch.Tensor"
-allowlist["torch.Tensor.pow_"] = "torch.Tensor"
-allowlist["torch.Tensor.pow"] = "torch.Tensor"
-allowlist["torch.Tensor.prelu"] = "torch.Tensor"
-allowlist["torch.Tensor.prod"] = "torch.Tensor"
-allowlist["torch.Tensor.q_per_channel_axis"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.q_per_channel_scales"] = "torch.Tensor"
-allowlist["torch.Tensor.q_per_channel_zero_points"] = "torch.Tensor"
-allowlist["torch.Tensor.q_scale"] = "syft.lib.python.Float"
-allowlist["torch.Tensor.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.random_"] = "torch.Tensor"
-allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
-allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
-allowlist["torch.Tensor.relu_"] = "torch.Tensor"
-allowlist["torch.Tensor.relu"] = "torch.Tensor"
-allowlist["torch.Tensor.repeat_interleave"] = "torch.Tensor"
-allowlist["torch.Tensor.repeat"] = "torch.Tensor"
-allowlist["torch.Tensor.requires_grad_"] = "torch.Tensor"
-allowlist["torch.Tensor.requires_grad"] = "syft.lib.python.Bool"
-allowlist["torch.Tensor.reshape_as"] = "torch.Tensor"
-allowlist["torch.Tensor.reshape"] = "torch.Tensor"
-allowlist["torch.Tensor.resize_"] = "torch.Tensor"
-allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
-allowlist["torch.Tensor.resize"] = "torch.Tensor"
-allowlist["torch.Tensor.retain_grad"] = "syft.lib.python._SyNone"
-allowlist["torch.Tensor.rfft"] = "torch.Tensor"
-allowlist["torch.Tensor.roll"] = "torch.Tensor"
-allowlist["torch.Tensor.rot90"] = "torch.Tensor"
-allowlist["torch.Tensor.round_"] = "torch.Tensor"
-allowlist["torch.Tensor.round"] = "torch.Tensor"
-allowlist["torch.Tensor.rsqrt_"] = "torch.Tensor"
-allowlist["torch.Tensor.rsqrt"] = "torch.Tensor"
-allowlist["torch.Tensor.set_"] = "torch.Tensor"
-allowlist["torch.Tensor.short"] = "torch.Tensor"
-allowlist["torch.Tensor.sigmoid_"] = "torch.Tensor"
-allowlist["torch.Tensor.sigmoid"] = "torch.Tensor"
-allowlist["torch.Tensor.sign_"] = "torch.Tensor"
-allowlist["torch.Tensor.sign"] = "torch.Tensor"
-allowlist["torch.Tensor.sin_"] = "torch.Tensor"
-allowlist["torch.Tensor.sin"] = "torch.Tensor"
-allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
-allowlist["torch.Tensor.sinh"] = "torch.Tensor"
-allowlist["torch.Tensor.softmax"] = "torch.Tensor"
-allowlist["torch.Tensor.split"] = "syft.lib.python.List"
-allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
-allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
-allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
-allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
-allowlist["torch.Tensor.std"] = "torch.Tensor"
-allowlist["torch.Tensor.sub_"] = "torch.Tensor"
-allowlist["torch.Tensor.sub"] = "torch.Tensor"
-allowlist["torch.Tensor.sum_to_size"] = "torch.Tensor"
-allowlist["torch.Tensor.sum"] = "torch.Tensor"
-allowlist["torch.Tensor.t_"] = "torch.Tensor"
-allowlist["torch.Tensor.t"] = "torch.Tensor"
-allowlist["torch.Tensor.t"] = "torch.Tensor"
-allowlist["torch.Tensor.T"] = "torch.Tensor"
-allowlist["torch.Tensor.tan_"] = "torch.Tensor"
-allowlist["torch.Tensor.tan"] = "torch.Tensor"
-allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
-allowlist["torch.Tensor.tanh"] = "torch.Tensor"
-allowlist["torch.Tensor.to"] = "torch.Tensor"
-allowlist["torch.Tensor.tolist"] = "syft.lib.python.List"
-allowlist["torch.Tensor.trace"] = "torch.Tensor"
-allowlist["torch.Tensor.tril_"] = "torch.Tensor"
-allowlist["torch.Tensor.tril"] = "torch.Tensor"
-allowlist["torch.Tensor.triu_"] = "torch.Tensor"
-allowlist["torch.Tensor.triu"] = "torch.Tensor"
-allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
-allowlist["torch.Tensor.trunc"] = "torch.Tensor"
-allowlist["torch.Tensor.type_as"] = "torch.Tensor"
-allowlist["torch.Tensor.type"] = "syft.lib.python.String"
-allowlist["torch.Tensor.unbind"] = "syft.lib.python.List"
-allowlist["torch.Tensor.unique"] = "torch.Tensor"
-allowlist["torch.Tensor.unsqueeze_"] = "torch.Tensor"
-allowlist["torch.Tensor.unsqueeze"] = "torch.Tensor"
-allowlist["torch.Tensor.var"] = "torch.Tensor"
-allowlist["torch.Tensor.view_as"] = "torch.Tensor"
-allowlist["torch.Tensor.view"] = "torch.Tensor"
-allowlist["torch.Tensor.zero_"] = "torch.Tensor"
+allowlist["torch.Tensor.__complex__"] = {
+    "return_type": "syft.lib.python.Complex",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.amax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.amin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arccos"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arccos_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arccosh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arccosh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arcsin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arcsin_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arcsinh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arcsinh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arctan"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arctan_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arctanh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.arctanh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.clip"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.clip_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.count_nonzero"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.divide"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.divide_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.exp2"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.exp2_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.fix"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.fix_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.gcd"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.gcd_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.greater"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.greater_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.greater_equal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.greater_equal_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.heaviside"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.heaviside_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.hypot"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.hypot_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.i0"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.i0_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.isneginf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.isposinf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.isreal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.lcm"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.lcm_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.less"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.less_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.less_equal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.less_equal_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.logit"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.logit_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.maximum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.minimum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.matrix_exp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.multiply"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.multiply_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.nanquantile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.nansum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.negative"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.negative_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.nextafter"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.nextafter_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.outer"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.quantile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.sgn"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.sgn_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.signbit"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.subtract"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.subtract_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.unsafe_chunk"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.unsafe_split"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.vdot"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.movedim"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.7.0",
+}
 
 # --------------------------------------------------------------------------------------
-# SECTION - Tensor methods which are untested
+# SECTION - Tensor methods which are incomplete or untested but enabled
 # --------------------------------------------------------------------------------------
-
-# allowlist["torch.Tensor.__complex__"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.amax"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.amin"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arccos"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arccos_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arccosh"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arccosh_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arcsin"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arcsin_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arcsinh"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arcsinh_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arctan"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arctan_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arctanh"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.arctanh_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.clip"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.clip_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.count_nonzero"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.divide"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.divide_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.exp2"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.exp2_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.fix"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.fix_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.gcd"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.gcd_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.greater"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.greater_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.greater_equal"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.greater_equal_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.heaviside"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.heaviside_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.hypot"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.hypot_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.i0"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.i0_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.isneginf"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.isposinf"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.isreal"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.lcm"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.lcm_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.less"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.less_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.less_equal"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.less_equal_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.logit"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.logit_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.matrix_exp"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.maximum"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.minimum"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.movedim"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.multiply"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.multiply_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.nanquantile"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.nansum"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.negative"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.negative_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.nextafter"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.nextafter_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.outer"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.quantile"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.sgn"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.sgn_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.signbit"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.subtract"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.subtract_"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.unsafe_chunk"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.unsafe_split"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.unsafe_split_with_sizes"] = "unknown" # 1.7.0
-# allowlist["torch.Tensor.vdot"] = "unknown" # 1.7.0
-
-# --------------------------------------------------------------------------------------
-# SECTION - Ops required for Functionality which aren't currently tested yet
-# --------------------------------------------------------------------------------------
+allowlist["torch.Tensor.device"] = "torch.device"
+allowlist["torch.Tensor.detach_"] = "torch.Tensor"
 # required for MNIST but marked as skip in the allowlist_test.json
 allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
-# required for wikitext2 but marked as skip in the allowlist_tests.json
-allowlist["torch.Tensor.narrow"] = "torch.Tensor"  # requires multiple inputs
+allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
+allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
+
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
 # --------------------------------------------------------------------------------------
-
-# allowlist["torch.layout"] = "torch.layout" # requires protobuf serialization
-# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
-# allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
-# allowlist["torch.Tensor.__setitem__"] = "torch.Tensor"
-# allowlist["torch.Tensor.addbmm_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addbmm"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addcdiv_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addcdiv"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addcmul_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addcmul"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addmm_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addmm"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addmv_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addmv"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addr_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.addr"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.align_as"] = "torch.Tensor" # named args
-# allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named args
-# allowlist["torch.Tensor.apply_"] = "torch.Tensor" # takes a callable
-# allowlist["torch.Tensor.as_strided_"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.as_strided"] = "torch.Tensor" # multiple args?
-# allowlist["torch.Tensor.as_subclass"] = "torch.Tensor" # needs subclass passed in
-# allowlist["torch.Tensor.baddbmm_"] = # multiple args?
-# allowlist["torch.Tensor.baddbmm"] = # multiple args?
-# allowlist["torch.Tensor.cholesky"] = "torch.Tensor" # needs correct example tensors
-# allowlist["torch.Tensor.clamp_"] = "torch.Tensor" # clamps need min max etc
-# allowlist["torch.Tensor.clamp_max_"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_max"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_min_"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp_min"] = "torch.Tensor"
-# allowlist["torch.Tensor.clamp"] = "torch.Tensor"
-# allowlist["torch.Tensor.cummax"] = "torch.Tensor" # requires type torch.return_types.cummax
-# allowlist["torch.Tensor.cummin"] = "torch.Tensor" # requires type torch.return_types.cummin
-# allowlist["torch.Tensor.detach_"] = "torch.Tensor" # some issue with gradient_as_bucket_view
-# allowlist["torch.Tensor.device"] = "torch.device" # requires torch.device serde
-# allowlist["torch.Tensor.eig"] = "torch.Tensor" # requires torch.return_types.eig
-# allowlist["torch.Tensor.expand"] = "torch.Tensor" # requires tuple input
-# allowlist["torch.Tensor.gather"] = "torch.Tensor" # needs multiple inputs
-# allowlist["torch.Tensor.geometric_"] = "torch.Tensor" # needs correct input or tuples
-# allowlist["torch.Tensor.geqrf"] = "torch.Tensor"  # requires torch.return_types.geqrf
-# allowlist["torch.Tensor.grad"] = "unknown"  # example with grad
-# allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires complex or 1.6.0?
-# allowlist["torch.Tensor.index_add_"] = "unknown" # requires three inputs
-# allowlist["torch.Tensor.index_add"] = "unknown"  # requires three inputs
-# allowlist["torch.Tensor.index_copy_"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.index_copy"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.index_fill_"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.index_fill"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.index_put_"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.index_put"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.index_select"] = "torch.Tensor"
-# allowlist["torch.Tensor.istft"] = "torch.Tensor" # needs args
-# allowlist["torch.Tensor.kthvalue"] = "unknown" # requires torch.return_types.kthvalue
+# allowlist["torch.layout"] = "torch.layout"  # requires protobuf serialization
 # allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
-# allowlist["torch.Tensor.lerp_"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.lerp"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.lstsq"] = "unknown"  # torch.return_types.lstsq
-# allowlist["torch.Tensor.lu_solve"] = "torch.Tensor" # requires multiple inputs
-# allowlist["torch.Tensor.map_"] = "unknown"  # requires callables
-# allowlist["torch.Tensor.map2_"] = "unknown"  # requires callables
-# allowlist["torch.Tensor.masked_fill_"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.masked_fill"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.masked_scatter_"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.masked_scatter"] = "unknown" # requires multiple inputs
-# allowlist["torch.Tensor.masked_select"] = "torch.Tensor"  # set input tensor data type
-# allowlist["torch.Tensor.max"] = "torch.Tensor" # requires torch.return_types.max
-# allowlist["torch.Tensor.mean"] = "torch.Tensor" # requires some test kwargs
-# allowlist["torch.Tensor.median"] = "unknown"  # requires torch.return_types.median
-# allowlist["torch.Tensor.min"] = "torch.Tensor" # requires some test kwargs
-# allowlist["torch.Tensor.mode"] = "unknown"  # requires torch.return_types.mode
-# allowlist["torch.Tensor.multinomial"] = "unknown"  # requires multiple args
-# allowlist["torch.Tensor.mv"] = "unknown"  # needs the right tensor shapes
+# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
+# allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
+# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
+# allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0 # probably wont work
+# Union[torch.Tensor, syft.lib.python.ValuesIndices]
+# allowlist["torch.Tensor.median"] = "syft.lib.python.ValuesIndices"
+# Union[torch.Tensor, syft.lib.python.ValuesIndices]
+# allowlist["torch.Tensor.max"] = "syft.lib.python.ValuesIndices"
+# Union[torch.Tensor, syft.lib.python.ValuesIndices]
+# allowlist["torch.Tensor.min"] = "syft.lib.python.ValuesIndices"
+# allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
+# allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
+# allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
+# allowlist["torch.Tensor.qscheme"] = "unknown"  # requires quantized backend
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require named tensors
+# --------------------------------------------------------------------------------------
+# allowlist["torch.Tensor.unflatten"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.refine_names"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.rename_"] = "torch.Tensor"  # named tensors
+# allowlist["torch.Tensor.rename"] = "torch.Tensor"  # named tensors
+# allowlist["torch.Tensor.align_as"] = "torch.Tensor" # named tensors
+# allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named tensors
 # allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
 # allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
-# allowlist["torch.Tensor.narrow_copy"] = "torch.Tensor"  # requires multiple args
 
-# allowlist["torch.Tensor.new_full"] = "unknown" # requires multiple inputs
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require classes or callables or external libs
+# --------------------------------------------------------------------------------------
+# allowlist["torch.Tensor.apply_"] = "torch.Tensor" # requires a callable
+# allowlist["torch.Tensor.as_subclass"] = "torch.Tensor" # requires a subclass
+# allowlist["torch.Tensor.map_"] = "unknown"  # requires a callable
+# allowlist["torch.Tensor.map2_"] = "unknown"  # requires a callable
 # allowlist["torch.Tensor.numpy"] = "numpy.ndarray"  # requires numpy.ndarray
-# allowlist["torch.Tensor.ormqr"] = "unknown"  # requires two tensors as arguments
-# allowlist["torch.Tensor.put_"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.qr"] = "unknown"  # requires torch.return_types.qr
-# allowlist["torch.Tensor.qscheme"] = "unknown"  # requires  torch.qscheme
-# allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires complex or 1.6.0?
-# allowlist["torch.Tensor.refine_names"] = "unknown" # requires multiple inputs
 # allowlist["torch.Tensor.reinforce"] = "unknown"  # requires reinforce
-# allowlist["torch.Tensor.rename_"] = "torch.Tensor"  # requires multiple inputs
-# allowlist["torch.Tensor.rename"] = "torch.Tensor"  # requires multiple inputs
-# allowlist["torch.Tensor.renorm_"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.renorm"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.scatter_"] = "torch.Tensor"  # requires multiple inputs
-# allowlist["torch.Tensor.scatter_add_"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.scatter_add"] = "unknown"  # requires multiple inputs
-# allowlist["torch.Tensor.scatter"] = "unknown"   # requires multiple inputs
-# allowlist["torch.Tensor.select"] = "unknown"   # requires multiple inputs
-# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
-# allowlist["torch.Tensor.size"] = "unknown"  # requires union and torch.size
-# allowlist["torch.Tensor.slogdet"] = "unknown"  # torch.return_types.slogdet
+
+# --------------------------------------------------------------------------------------
+# SECTION - Tensor methods which require sparse
+# --------------------------------------------------------------------------------------
 # allowlist["torch.Tensor.smm"] = "unknown"  # requires sparse tensors
-# allowlist["torch.Tensor.solve"] = "torch.Tensor"  # torch.return_types.solve
-# allowlist["torch.Tensor.sort"] = "unknown"  # torch.return_types.sort
-# allowlist["torch.Tensor.sparse_dim"] = "unknown"  # requires sparse
-# allowlist["torch.Tensor.sparse_mask"] = "unknown"  # requires sparse
-# allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse and multiple inputs
-# allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse and multiple inputs
-# allowlist["torch.Tensor.split_with_sizes"] = "unknown"  # requires tuples input
-# allowlist["torch.Tensor.sspaddmm"] = "unknown"  # multiple inputs
-# allowlist["torch.Tensor.stft"] = "unknown"  # multiple inputs
-# allowlist["torch.Tensor.stride"] = "unknown"  # union type int or tuple / list
-# allowlist["torch.Tensor.svd"] = "unknown"  # torch.return_types.svd
-# allowlist["torch.Tensor.symeig"] = "unknown"  #torch.return_types.symeig
-# allowlist["torch.Tensor.take"] = "torch.Tensor" # requires long tensor input only
-# allowlist["torch.Tensor.topk"] = "unknown"  # torch.return_types.topk
-# allowlist["torch.Tensor.transpose_"] = "torch.Tensor" # requires two inputs
-# allowlist["torch.Tensor.transpose"] = "torch.Tensor" # requires two inputs
-# allowlist["torch.Tensor.triangular_solve"] = "unknown"  # torch.return_types.triangular_solve
-# allowlist["torch.Tensor.unflatten"] = "unknown"  # requires multiple args
-# allowlist["torch.Tensor.unfold"] = "torch.Tensor" # requires three inputs
-# allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
-# allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor" # requires Union / Tuple
-# allowlist["torch.Tensor.values"] = "unknown"  # requires sparse
+# allowlist["torch.Tensor.sparse_dim"] = "unknown"  # requires sparse tensors
+# allowlist["torch.Tensor.sparse_mask"] = "unknown"  # requires sparse tensors
+# allowlist["torch.Tensor.sspaddmm"] = "torch.Tensor"  # requires sparse tensors
+# allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse tensors
+# allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse
+# allowlist["torch.Tensor.values"] = "unknown"  # requires sparse tensors
 
 # --------------------------------------------------------------------------------------
-# SECTION - Tensor methods which we wont support
+# SECTION - Torch functions enabled as torch.Tensor methods above
 # --------------------------------------------------------------------------------------
-# allowlist["torch.Tensor.resize_as"] = "unknown" deprecated
 
-# SECTION - Other classes and modules
-# allowlist["torch.zeros"] = "torch.Tensor"
-# allowlist["torch.ones"] = "torch.Tensor"
-# allowlist["torch.median"] = "torch.Tensor"  # requires torch.return_types.median
+allowlist["torch.abs_"] = "torch.Tensor"
+allowlist["torch.abs"] = "torch.Tensor"
+allowlist["torch.acos_"] = "torch.Tensor"
+allowlist["torch.acos"] = "torch.Tensor"
+allowlist["torch.add"] = "torch.Tensor"
+allowlist["torch.addbmm"] = "torch.Tensor"
+allowlist["torch.addcdiv"] = "torch.Tensor"
+allowlist["torch.addcmul"] = "torch.Tensor"
+allowlist["torch.addmm"] = "torch.Tensor"
+allowlist["torch.addmv_"] = "torch.Tensor"
+allowlist["torch.addmv"] = "torch.Tensor"
+allowlist["torch.addr"] = "torch.Tensor"
+allowlist["torch.all"] = "torch.Tensor"
+allowlist["torch.allclose"] = "syft.lib.python.Bool"
+allowlist["torch.angle"] = "torch.Tensor"
+allowlist["torch.any"] = "torch.Tensor"
+allowlist["torch.argmax"] = "torch.Tensor"
+allowlist["torch.argmin"] = "torch.Tensor"
+allowlist["torch.argsort"] = "torch.Tensor"
+allowlist["torch.as_strided_"] = "torch.Tensor"
+allowlist["torch.as_strided"] = "torch.Tensor"
+allowlist["torch.asin_"] = "torch.Tensor"
+allowlist["torch.asin"] = "torch.Tensor"
+allowlist["torch.atan_"] = "torch.Tensor"
+allowlist["torch.atan"] = "torch.Tensor"
+allowlist["torch.atan2"] = "torch.Tensor"
+allowlist["torch.baddbmm"] = "torch.Tensor"
+allowlist["torch.bernoulli"] = "torch.Tensor"
+allowlist["torch.bitwise_and"] = "torch.Tensor"
+allowlist["torch.bitwise_not"] = "torch.Tensor"
+allowlist["torch.bitwise_or"] = "torch.Tensor"
+allowlist["torch.bitwise_xor"] = "torch.Tensor"
+allowlist["torch.bmm"] = "torch.Tensor"
+allowlist["torch.ceil_"] = "torch.Tensor"
+allowlist["torch.ceil"] = "torch.Tensor"
+allowlist["torch.cholesky_inverse"] = "torch.Tensor"
+allowlist["torch.cholesky_solve"] = "torch.Tensor"
+allowlist["torch.cholesky"] = "torch.Tensor"
+allowlist["torch.chunk"] = "syft.lib.python.List"
+allowlist["torch.clamp_"] = "torch.Tensor"
+allowlist["torch.clamp_max_"] = "torch.Tensor"
+allowlist["torch.clamp_max"] = "torch.Tensor"
+allowlist["torch.clamp_min_"] = "torch.Tensor"
+allowlist["torch.clamp_min"] = "torch.Tensor"
+allowlist["torch.clamp"] = "torch.Tensor"
+allowlist["torch.clone"] = "torch.Tensor"
+allowlist["torch.conj"] = "torch.Tensor"
+allowlist["torch.cos_"] = "torch.Tensor"
+allowlist["torch.cos"] = "torch.Tensor"
+allowlist["torch.cosh_"] = "torch.Tensor"
+allowlist["torch.cosh"] = "torch.Tensor"
+allowlist["torch.cross"] = "torch.Tensor"
+allowlist["torch.cummax"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.cummin"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.cumprod"] = "torch.Tensor"
+allowlist["torch.cumsum"] = "torch.Tensor"
+allowlist["torch.dequantize"] = "torch.Tensor"
+allowlist["torch.det"] = "torch.Tensor"
+allowlist["torch.detach"] = "torch.Tensor"
+allowlist["torch.diag_embed"] = "torch.Tensor"
+allowlist["torch.diag"] = "torch.Tensor"
+allowlist["torch.diagflat"] = "torch.Tensor"
+allowlist["torch.diagonal"] = "torch.Tensor"
+allowlist["torch.digamma"] = "torch.Tensor"
+allowlist["torch.dist"] = "torch.Tensor"
+allowlist["torch.div"] = "torch.Tensor"
+allowlist["torch.dot"] = "torch.Tensor"
+allowlist["torch.eig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.eq"] = "torch.Tensor"
+allowlist["torch.equal"] = "syft.lib.python.Bool"
+allowlist["torch.erf_"] = "torch.Tensor"
+allowlist["torch.erf"] = "torch.Tensor"
+allowlist["torch.erfc_"] = "torch.Tensor"
+allowlist["torch.erfc"] = "torch.Tensor"
+allowlist["torch.erfinv"] = "torch.Tensor"
+allowlist["torch.exp_"] = "torch.Tensor"
+allowlist["torch.exp"] = "torch.Tensor"
+allowlist["torch.expm1_"] = "torch.Tensor"
+allowlist["torch.expm1"] = "torch.Tensor"
+allowlist["torch.fft"] = "torch.Tensor"
+allowlist["torch.fill_"] = "torch.Tensor"
+allowlist["torch.flatten"] = "torch.Tensor"
+allowlist["torch.flip"] = "torch.Tensor"
+allowlist["torch.floor_"] = "torch.Tensor"
+allowlist["torch.floor_divide"] = "torch.Tensor"
+allowlist["torch.floor"] = "torch.Tensor"
+allowlist["torch.fmod"] = "torch.Tensor"
+allowlist["torch.frac_"] = "torch.Tensor"
+allowlist["torch.frac"] = "torch.Tensor"
+allowlist["torch.gather"] = "torch.Tensor"
+allowlist["torch.ge"] = "torch.Tensor"
+allowlist["torch.geqrf"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.ger"] = "torch.Tensor"
+allowlist["torch.get_device"] = "syft.lib.python.Int"
+allowlist["torch.gt"] = "torch.Tensor"
+allowlist["torch.hardshrink"] = "torch.Tensor"
+allowlist["torch.histc"] = "torch.Tensor"
+allowlist["torch.ifft"] = "torch.Tensor"
+allowlist["torch.index_add"] = "torch.Tensor"
+allowlist["torch.index_copy"] = "torch.Tensor"
+allowlist["torch.index_fill"] = "torch.Tensor"
+allowlist["torch.index_put_"] = "torch.Tensor"
+allowlist["torch.index_put"] = "torch.Tensor"
+allowlist["torch.index_select"] = "torch.Tensor"
+allowlist["torch.int_repr"] = "torch.Tensor"
+allowlist["torch.inverse"] = "torch.Tensor"
+allowlist["torch.irfft"] = "torch.Tensor"
+allowlist["torch.is_complex"] = "syft.lib.python.Bool"
+allowlist["torch.is_distributed"] = "syft.lib.python.Bool"
+allowlist["torch.is_floating_point"] = "syft.lib.python.Bool"
+allowlist["torch.is_nonzero"] = "syft.lib.python.Bool"
+allowlist["torch.is_same_size"] = "syft.lib.python.Bool"
+allowlist["torch.is_signed"] = "syft.lib.python.Bool"
+allowlist["torch.isclose"] = "torch.Tensor"
+allowlist["torch.kthvalue"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.le"] = "torch.Tensor"
+allowlist["torch.lerp"] = "torch.Tensor"
+allowlist["torch.lgamma"] = "torch.Tensor"
+allowlist["torch.log_"] = "torch.Tensor"
+allowlist["torch.log_softmax"] = "torch.Tensor"
+allowlist["torch.log"] = "torch.Tensor"
+allowlist["torch.log10_"] = "torch.Tensor"
+allowlist["torch.log10"] = "torch.Tensor"
+allowlist["torch.log1p_"] = "torch.Tensor"
+allowlist["torch.log1p"] = "torch.Tensor"
+allowlist["torch.log2_"] = "torch.Tensor"
+allowlist["torch.log2"] = "torch.Tensor"
+allowlist["torch.logdet"] = "torch.Tensor"
+allowlist["torch.logical_and"] = "torch.Tensor"
+allowlist["torch.logical_not"] = "torch.Tensor"
+allowlist["torch.logical_or"] = "torch.Tensor"
+allowlist["torch.logical_xor"] = "torch.Tensor"
+allowlist["torch.logsumexp"] = "torch.Tensor"
+allowlist["torch.lstsq"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.lt"] = "torch.Tensor"
+allowlist["torch.lu_solve"] = "torch.Tensor"
+allowlist["torch.lu"] = "syft.lib.python.List"  # actually a tuple
+allowlist["torch.masked_fill"] = "torch.Tensor"
+allowlist["torch.masked_scatter"] = "torch.Tensor"
+allowlist["torch.masked_select"] = "torch.Tensor"
+allowlist["torch.matmul"] = "torch.Tensor"
+allowlist["torch.matrix_power"] = "torch.Tensor"
+allowlist["torch.mean"] = "torch.Tensor"
+allowlist["torch.mm"] = "torch.Tensor"
+allowlist["torch.mode"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.mul"] = "torch.Tensor"
+allowlist["torch.multinomial"] = "torch.Tensor"
+allowlist["torch.mv"] = "torch.Tensor"
+allowlist["torch.mvlgamma"] = "torch.Tensor"
+allowlist["torch.narrow"] = "torch.Tensor"
+allowlist["torch.ne"] = "torch.Tensor"
+allowlist["torch.neg_"] = "torch.Tensor"
+allowlist["torch.neg"] = "torch.Tensor"
+allowlist["torch.nonzero"] = "torch.Tensor"
+allowlist["torch.norm"] = "torch.Tensor"
+allowlist["torch.orgqr"] = "torch.Tensor"
+allowlist["torch.ormqr"] = "torch.Tensor"
+allowlist["torch.pinverse"] = "torch.Tensor"
+allowlist["torch.polygamma"] = "torch.Tensor"
+allowlist["torch.pow"] = "torch.Tensor"
+allowlist["torch.prelu"] = "torch.Tensor"
+allowlist["torch.q_per_channel_axis"] = "syft.lib.python.Int"
+allowlist["torch.q_per_channel_scales"] = "torch.Tensor"
+allowlist["torch.q_per_channel_zero_points"] = "torch.Tensor"
+allowlist["torch.q_scale"] = "syft.lib.python.Float"
+allowlist["torch.q_zero_point"] = "syft.lib.python.Int"
+allowlist["torch.qr"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.reciprocal_"] = "torch.Tensor"
+allowlist["torch.reciprocal"] = "torch.Tensor"
+allowlist["torch.relu_"] = "torch.Tensor"
+allowlist["torch.relu"] = "torch.Tensor"
+allowlist["torch.remainder"] = "torch.Tensor"
+allowlist["torch.renorm"] = "torch.Tensor"
+allowlist["torch.repeat_interleave"] = "torch.Tensor"
+allowlist["torch.reshape"] = "torch.Tensor"
+allowlist["torch.resize_as_"] = "torch.Tensor"
+allowlist["torch.rfft"] = "torch.Tensor"
+allowlist["torch.roll"] = "torch.Tensor"
+allowlist["torch.rot90"] = "torch.Tensor"
+allowlist["torch.round_"] = "torch.Tensor"
+allowlist["torch.round"] = "torch.Tensor"
+allowlist["torch.rsqrt_"] = "torch.Tensor"
+allowlist["torch.rsqrt"] = "torch.Tensor"
+allowlist["torch.scatter_add"] = "torch.Tensor"
+allowlist["torch.scatter"] = "torch.Tensor"
+allowlist["torch.select"] = "torch.Tensor"
+allowlist["torch.sigmoid_"] = "torch.Tensor"
+allowlist["torch.sigmoid"] = "torch.Tensor"
+allowlist["torch.sign"] = "torch.Tensor"
+allowlist["torch.sin_"] = "torch.Tensor"
+allowlist["torch.sin"] = "torch.Tensor"
+allowlist["torch.sinh_"] = "torch.Tensor"
+allowlist["torch.sinh"] = "torch.Tensor"
+allowlist["torch.slogdet"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.softmax"] = "torch.Tensor"
+allowlist["torch.solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.sort"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.split_with_sizes"] = "syft.lib.python.List"  # tuple
+allowlist["torch.split"] = "syft.lib.python.List"
+allowlist["torch.sqrt_"] = "torch.Tensor"
+allowlist["torch.sqrt"] = "torch.Tensor"
+allowlist["torch.square_"] = "torch.Tensor"
+allowlist["torch.square"] = "torch.Tensor"
+allowlist["torch.squeeze"] = "torch.Tensor"
+allowlist["torch.std"] = "torch.Tensor"
+allowlist["torch.stft"] = "torch.Tensor"
+allowlist["torch.sub"] = "torch.Tensor"
+allowlist["torch.sum"] = "torch.Tensor"
+allowlist["torch.svd"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.symeig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.t"] = "torch.Tensor"
+allowlist["torch.take"] = "torch.Tensor"
+allowlist["torch.tan_"] = "torch.Tensor"
+allowlist["torch.tan"] = "torch.Tensor"
+allowlist["torch.tanh_"] = "torch.Tensor"
+allowlist["torch.tanh"] = "torch.Tensor"
+allowlist["torch.topk"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.trace"] = "torch.Tensor"
+allowlist["torch.transpose"] = "torch.Tensor"
+allowlist["torch.triangular_solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.tril"] = "torch.Tensor"
+allowlist["torch.triu"] = "torch.Tensor"
+allowlist["torch.true_divide"] = "torch.Tensor"
+allowlist["torch.trunc_"] = "torch.Tensor"
+allowlist["torch.trunc"] = "torch.Tensor"
+allowlist["torch.unique_consecutive"] = "torch.Tensor"
+allowlist["torch.unique"] = "torch.Tensor"
+allowlist["torch.unsqueeze"] = "torch.Tensor"
+allowlist["torch.var"] = "torch.Tensor"
+allowlist["torch.unsafe_chunk"] = "syft.lib.python.List"
+
+# SECTION - Tensor functions since 1.6.0
+
+allowlist["torch.absolute"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.acosh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.acosh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.asinh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.asinh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.atanh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.atanh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.deg2rad_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.deg2rad"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.fliplr"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.flipud"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.isfinite"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.isinf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.isnan"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.logaddexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.logaddexp2"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.logcumsumexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.rad2deg_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.rad2deg"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+allowlist["torch.istft"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.6.0",
+}
+
+# SECTION - Tensor functions since 1.7.0
+
+allowlist["torch.amax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.amin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arccos"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arccos_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arccosh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arccosh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arcsin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arcsin_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arcsinh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arcsinh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arctan"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arctan_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arctanh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.arctanh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.clip"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.clip_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.count_nonzero"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.divide"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.exp2"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.exp2_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.fix"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.fix_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.gcd"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.gcd_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.greater"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.greater_equal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.heaviside"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.hypot"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.i0"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.i0_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.isneginf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.isposinf"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.isreal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.lcm"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.lcm_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.less"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.less_equal"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.logit"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.logit_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.maximum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.minimum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.matrix_exp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.multiply"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.nanquantile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.nansum"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.negative"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.negative_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.nextafter"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.outer"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.quantile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.sgn"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.signbit"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.subtract"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.unsafe_chunk"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.7.0",
+}
+allowlist["torch.unsafe_split"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.vdot"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.movedim"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torch.unsafe_split_with_sizes"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.7.0",
+}
+
+# --------------------------------------------------------------------------------------
+# SECTION - Torch functions not enabled yet
+# --------------------------------------------------------------------------------------
+
+# allowlist["torch.zero_"] = "torch.Tensor"
+# allowlist["torch.detach_"] = "torch.Tensor"
+# allowlist["torch.device"] = "torch.Tensor"
+# allowlist["torch.imag"] = "torch.Tensor"
+# allowlist["torch.layout"] = "torch.Tensor"
+# allowlist["torch.max"] = "torch.Tensor"
+# allowlist["torch.median"] = "torch.Tensor"
+# allowlist["torch.min"] = "torch.Tensor"
+# allowlist["torch.name"] = "torch.Tensor"
+# allowlist["torch.not_equal"] = "torch.Tensor"
+# allowlist["torch.qscheme"] = "torch.Tensor"
+# allowlist["torch.real"] = "torch.Tensor"
+# allowlist["torch.smm"] = "torch.Tensor"
+# allowlist["torch.sspaddmm"] = "torch.Tensor"
+
+
+# --------------------------------------------------------------------------------------
+# SECTION - Torch functions used in the fast tests: $ pytest -m fast
+# --------------------------------------------------------------------------------------
+
+allowlist["torch.cuda.is_available"] = "syft.lib.python.Bool"
+allowlist["torch.device"] = "torch.device"  # warning this must come before the attrs
+allowlist["torch.device.index"] = "syft.lib.python.Int"
+allowlist["torch.device.type"] = "syft.lib.python.String"
+allowlist["torch.random.initial_seed"] = "syft.lib.python.Int"
+allowlist["torch.zeros_like"] = "torch.Tensor"
+
+# --------------------------------------------------------------------------------------
+# SECTION - Torch functions which are enabled but supported above on torch.Tensor
+# --------------------------------------------------------------------------------------
 
 # SECTION - Parameter methods
 # torch.nn.Parameter is a subclass of torch.Tensor
@@ -805,7 +1629,6 @@ allowlist["torch.Tensor.narrow"] = "torch.Tensor"  # requires multiple inputs
 # method = method.replace("torch.Tensor.", "torch.nn.Parameter.")
 # allowlist["torch.nn.Parameter"] = "torch.nn.Parameter"
 
-# MNIST
 # Misc
 allowlist["torch.manual_seed"] = "torch.Generator"
 allowlist["torch.Generator"] = "torch.Generator"
@@ -855,23 +1678,6 @@ allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.Dict"
 allowlist["torch.nn.Linear.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
-
-allowlist["torch.nn.Embedding"] = "torch.nn.Embedding"
-allowlist["torch.nn.Embedding.__call__"] = "torch.Tensor"
-allowlist["torch.nn.Embedding.parameters"] = "syft.lib.python.List"
-allowlist["torch.nn.Embedding.train"] = "torch.nn.Embedding"
-allowlist["torch.nn.Embedding.cuda"] = "torch.nn.Embedding"
-allowlist["torch.nn.Embedding.cpu"] = "torch.nn.Embedding"
-allowlist["torch.nn.Embedding.state_dict"] = "syft.lib.python.Dict"
-
-allowlist["torch.nn.LSTM"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.__call__"] = "syft.lib.python.List"
-allowlist["torch.nn.LSTM.parameters"] = "syft.lib.python.List"
-allowlist["torch.nn.LSTM.train"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.cuda"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.cpu"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.state_dict"] = "syft.lib.python.Dict"
-
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
@@ -1610,7 +2416,7 @@ allowlist["torch.nn.LPPool2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LPPool2d.extra_repr"] = "syft.lib.python.String"
 
 allowlist["torch.nn.LSTM"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.__call__"] = "torch.Tensor"
+allowlist["torch.nn.LSTM.__call__"] = "syft.lib.python.List"
 allowlist["torch.nn.LSTM.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.LSTM.train"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.cuda"] = "torch.nn.LSTM"
