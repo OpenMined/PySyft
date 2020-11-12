@@ -1,15 +1,29 @@
+# stdlib
 from multiprocessing import Process
-import syft as sy
-import torch as th
 import time
+
+# third party
+import torch as th
+
+# syft absolute
+import syft as sy
 
 
 def do():
+    # stdlib
     import asyncio
+
     loop = asyncio.new_event_loop()
     asyncio._set_running_loop(loop)
-    _ = sy.logger.add(sink="syft_do.log", enqueue=True, colorize=False, diagnose=True, backtrace=True,
-                      level="TRACE", encoding="utf-8")
+    _ = sy.logger.add(
+        sink="syft_do.log",
+        enqueue=True,
+        colorize=False,
+        diagnose=True,
+        backtrace=True,
+        level="TRACE",
+        encoding="utf-8",
+    )
     duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000")
     duet.requests.add_handler(action="accept", name="gimme")
     t = th.randn(4000000)
@@ -24,19 +38,26 @@ def do():
 
 
 def ds():
+    # stdlib
     import asyncio
+
     loop = asyncio.new_event_loop()
     asyncio._set_running_loop(loop)
-    _ = sy.logger.add(sink="syft_ds.log", enqueue=True, colorize=False, diagnose=True, backtrace=True,level="TRACE", encoding="utf-8")
+    _ = sy.logger.add(
+        sink="syft_ds.log",
+        enqueue=True,
+        colorize=False,
+        diagnose=True,
+        backtrace=True,
+        level="TRACE",
+        encoding="utf-8",
+    )
     duet = sy.join_duet(loopback=True, network_url="http://localhost:5000")
     time.sleep(1)
     print("DS: Store: ", duet.store)
     start = time.time()
     t = duet.store[0].get(
-        request_block=True,
-        timeout_secs=30,
-        name="gimme",
-        delete_obj=False
+        request_block=True, timeout_secs=30, name="gimme", delete_obj=False
     )
     end = time.time()
     print("DS: Received in:", end - start)
@@ -44,7 +65,7 @@ def ds():
     print("DS: Tensor sum:", t.sum())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     p1 = Process(target=do)
     p1.start()
     p2 = Process(target=ds)
