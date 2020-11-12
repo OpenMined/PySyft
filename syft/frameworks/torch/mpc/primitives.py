@@ -137,7 +137,8 @@ class PrimitiveStorage:
             n_instances (int): how many of them are needed
             **kwargs: any parameters needed for the primitive builder
         """
-        assert isinstance(op, str)
+        if not isinstance(op, str):
+            raise TypeError("op should be a string")
 
         worker_types_primitives = defaultdict(dict)
 
@@ -164,7 +165,8 @@ class PrimitiveStorage:
             types_primitives: dict {op: str: primitives: list}
         """
         for op, primitives in types_primitives.items():
-            assert hasattr(self, op), f"Unknown crypto primitives {op}"
+            if not hasattr(self, op):
+                raise ValueError(f"Unknown crypto primitives {op}")
 
             current_primitives = getattr(self, op)
             if op in {"mul", "matmul"}:
@@ -201,9 +203,11 @@ class PrimitiveStorage:
         n = sy.frameworks.torch.mpc.fss.n
 
         def build_separate_fss_keys(n_party: int, n_instances: int = 100):
-            assert (
-                n_party == 2
-            ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
+            if n_party != 2:
+                raise AttributeError(
+                    f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
+                )
+
             keys_a, keys_b = fss_class.keygen(n_values=n_instances)
             return [keys_a, keys_b]
 
@@ -215,15 +219,20 @@ class PrimitiveStorage:
         """
 
         def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
-            assert n_party == 2, (
-                "Only 2 workers supported for the moment. "
-                "Please fill an issue if you have an urgent need."
-            )
+            if n_party != 2:
+                raise NotImplementedError(
+                    "Only 2 workers supported for the moment. "
+                    "Please fill an issue if you have an urgent need."
+                )
             shapes = kwargs["shapes"]  # should be a list of pairs of shapes
             if not isinstance(shapes, list):
                 # if shapes was not given a list, we check that it is a pair of two shapes,
                 # the one of x and y
-                assert len(shapes) == 2
+                if len(shapes) != 2:
+                    raise ValueError(
+                        "if shapes was not given a list, we check that it is a pair of two shapes, "
+                        "the one of x and y"
+                    )
                 shapes = [shapes]
 
             # get params and set default values

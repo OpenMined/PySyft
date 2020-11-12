@@ -300,6 +300,8 @@ class TorchHook(FrameworkHook):
     def __hook_properties(self, tensor_type):
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape
+        tensor_type.native_T = tensor_type.T
+        tensor_type.native_ndim = tensor_type.ndim
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor

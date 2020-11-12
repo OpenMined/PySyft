@@ -360,7 +360,8 @@ def _detail_ndarray(
     arr_dtype = serde._detail(worker, arr_representation[2])
     res = numpy.frombuffer(arr_representation[0], dtype=arr_dtype).reshape(arr_shape)
 
-    assert type(res) == numpy.ndarray
+    if type(res) != numpy.ndarray:
+        raise TypeError("res should be a numpy array.")
 
     return res
 
@@ -461,7 +462,11 @@ def _detail_numpy_number(
     nb_dtype = serde._detail(worker, nb_representation[1])
     nb = numpy.frombuffer(nb_representation[0], dtype=nb_dtype)[0]
 
-    assert type(nb) in [numpy.float32, numpy.float64, numpy.int32, numpy.int64]
+    if type(nb) not in [numpy.float32, numpy.float64, numpy.int32, numpy.int64]:
+        raise TypeError(
+            "Invalid type, nb_representation should be either of "
+            "[numpy.float32, numpy.float64, numpy.int32, numpy.int64]"
+        )
 
     return nb
 

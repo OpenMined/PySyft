@@ -1,8 +1,10 @@
-import syft as sy
 import torch
+import copy
+import logging
+import syft as sy
 from typing import Dict
 from typing import Any
-import logging
+from functools import reduce
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +41,15 @@ def add_model(dst_model, src_model):
         torch.nn.Module: the resulting model of the addition.
 
     """
-
-    params1 = src_model.named_parameters()
-    params2 = dst_model.named_parameters()
-    dict_params2 = dict(params2)
+    params1 = dst_model.state_dict().copy()
+    params2 = src_model.state_dict().copy()
     with torch.no_grad():
-        for name1, param1 in params1:
-            if name1 in dict_params2:
-                dict_params2[name1].set_(param1.data + dict_params2[name1].data)
-    return dst_model
+        for name1 in params1:
+            if name1 in params2:
+                params1[name1] = params1[name1] + params2[name1]
+    model = copy.deepcopy(dst_model)
+    model.load_state_dict(params1, strict=False)
+    return model
 
 
 def scale_model(model, scale):
@@ -60,12 +62,14 @@ def scale_model(model, scale):
         torch.nn.Module: the module with scaled parameters.
 
     """
-    params = model.named_parameters()
-    dict_params = dict(params)
+    params = model.state_dict().copy()
+    scale = torch.tensor(scale)
     with torch.no_grad():
-        for name, param in dict_params.items():
-            dict_params[name].set_(dict_params[name].data * scale)
-    return model
+        for name in params:
+            params[name] = params[name].type_as(scale) * scale
+    scaled_model = copy.deepcopy(model)
+    scaled_model.load_state_dict(params, strict=False)
+    return scaled_model
 
 
 def federated_avg(models: Dict[Any, torch.nn.Module]) -> torch.nn.Module:
@@ -82,11 +86,11 @@ def federated_avg(models: Dict[Any, torch.nn.Module]) -> torch.nn.Module:
     """
     nr_models = len(models)
     model_list = list(models.values())
-    model = type(model_list[0])()
-
-    for i in range(nr_models):
-        model = add_model(model, model_list[i])
-    model = scale_model(model, 1.0 / nr_models)
+    if nr_models > 1:
+        model = reduce(add_model, model_list)
+        model = scale_model(model, 1.0 / nr_models)
+    else:
+        model = copy.deepcopy(model_list[0])
     return model
 
 

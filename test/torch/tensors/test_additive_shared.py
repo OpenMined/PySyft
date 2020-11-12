@@ -37,7 +37,7 @@ def test_share_get(workers, protocol, dtype, n_workers):
         workers["james"],
     )
     share_holders = [alice, bob, charlie]
-    kwargs = dict(protocol=protocol, crypto_provider=james, dtype=dtype)
+    kwargs = {"protocol": protocol, "crypto_provider": james, "dtype": dtype}
 
     t = torch.tensor([1, 2, 3])
     x = t.share(*share_holders[:n_workers], **kwargs)
@@ -59,7 +59,7 @@ def test_share_inplace_consistency(workers, protocol, dtype, n_workers):
         workers["james"],
     )
     share_holders = [alice, bob, charlie]
-    kwargs = dict(protocol=protocol, crypto_provider=james, dtype=dtype)
+    kwargs = {"protocol": protocol, "crypto_provider": james, "dtype": dtype}
 
     x1 = torch.tensor([-1.0])
     x1.fix_precision_(dtype=dtype).share_(*share_holders[:n_workers], **kwargs)
@@ -336,7 +336,7 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
 
     # 2 workers
     args = (alice, bob)
-    kwargs = dict(dtype=dtype, protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"dtype": dtype, "protocol": protocol, "crypto_provider": crypto_provider}
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
@@ -401,7 +401,7 @@ def test_matmul(workers, protocol, force_preprocessing):
     )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
@@ -441,7 +441,7 @@ def test_public_mul(workers, protocol):
     )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     for y in [0, 1]:
         t = torch.tensor([-3.1, 1.0])
@@ -474,12 +474,13 @@ def test_public_mul(workers, protocol):
     # assert (z == (t * y)).all()
 
 
-def test_div(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_div(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     # With scalar
     t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
-    x = t.fix_prec(dtype="long").share(bob, alice, crypto_provider=james)
+    x = t.fix_prec(dtype="long").share(bob, alice, crypto_provider=james, protocol=protocol)
     y = (x / 3).get().float_prec()
 
     assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
@@ -503,20 +504,22 @@ def test_div(workers):
     assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
 
 
-def test_pow(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_pow(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     m = torch.tensor([[1, 2], [3, 4.0]])
-    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    x = m.fix_prec().share(bob, alice, crypto_provider=james, protocol=protocol)
     y = (x ** 3).get().float_prec()
 
     assert (y == (m ** 3)).all()
 
 
-def test_operate_with_integer_constants(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_operate_with_integer_constants(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x = torch.tensor([2.0])
-    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james, protocol=protocol)
 
     r_sh = x_sh + 10
     assert r_sh.get().float_prec() == x + 10
@@ -531,10 +534,11 @@ def test_operate_with_integer_constants(workers):
     assert r_sh.get().float_prec() == x / 2
 
 
-def test_stack(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_stack(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     t = torch.tensor([1.3, 2])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james, protocol=protocol)
     res = torch.stack([x, x]).get().float_prec()
 
     expected = torch.tensor([[1.3000, 2.0000], [1.3000, 2.0000]])
@@ -615,7 +619,7 @@ def test_mm(workers, protocol):
     )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([[1, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
@@ -969,7 +973,7 @@ def test_max_pool2d(workers, protocol):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
@@ -998,7 +1002,7 @@ def test_avg_pool2d(workers, protocol):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+    kwargs = {"protocol": protocol, "crypto_provider": "fss"}
 
     m = 4
     t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
@@ -1029,7 +1033,7 @@ def test_batch_norm(workers, protocol, training):
 
     args = (alice, bob)
     syft.local_worker.clients = args
-    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     model = nn.BatchNorm2d(4, momentum=0)
     if training:
@@ -1049,25 +1053,27 @@ def test_batch_norm(workers, protocol, training):
     assert relative_error.mean() < 0.1
 
 
-def test_mod(workers):
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+def test_mod(workers, protocol):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    t = torch.tensor([21]).share(bob, alice, crypto_provider=james)
+    t = torch.tensor([21]).share(bob, alice, crypto_provider=james, protocol=protocol)
     assert t.child.mod(8).get() % 8 == torch.tensor([5])
     assert t.child.mod(-8).get() % -8 == torch.tensor([-3])
 
-    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james)
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james, protocol=protocol)
     assert t.child.mod(8).get() % 8 == torch.tensor([3])
     assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
 
     assert (t.child % 8).get() % 8 == torch.tensor([3])
 
 
-def test_torch_sum(workers):
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+def test_torch_sum(workers, protocol):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     t = torch.tensor([[1, 2, 4], [8, 5, 6]])
-    x = t.share(alice, bob, crypto_provider=james)
+    x = t.share(alice, bob, crypto_provider=james, protocol=protocol)
 
     s = torch.sum(x).get()
     s_dim = torch.sum(x, 0).get()
@@ -1080,7 +1086,8 @@ def test_torch_sum(workers):
     assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
 
 
-def test_torch_mean(workers):
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+def test_torch_mean(workers, protocol):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     base = 10
@@ -1088,7 +1095,7 @@ def test_torch_mean(workers):
 
     t = torch.tensor([[1.0, 2.5], [8.0, 5.5]])
     x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
-        alice, bob, crypto_provider=james
+        alice, bob, crypto_provider=james, protocol=protocol
     )
 
     s = torch.mean(x).get().float_prec()
@@ -1180,22 +1187,23 @@ def test_init_with_no_crypto_provider(workers):
     assert x.crypto_provider.id == syft.hook.local_worker.id
 
 
-def test_zero_refresh(workers):
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+def test_zero_refresh(workers, protocol):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     t = torch.tensor([2.2, -1.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james, protocol=protocol)
 
     x_sh = x.child.child
     assert (x_sh.zero().get() == torch.zeros(*t.shape).long()).all()
 
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james, protocol=protocol)
     x_copy = t.fix_prec().share(bob, alice, crypto_provider=james)
     x_r = x.refresh()
 
     assert (x_r.get().float_prec() == x_copy.get().float_prec()).all()
 
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james, protocol=protocol)
     x_r = x.refresh()
 
     assert ((x_r / 2).get().float_prec() == t / 2).all()
@@ -1317,3 +1325,62 @@ def test_garbage_collect_mul(workers):
 
     assert len(alice.object_store._objects) == 3
     assert len(bob.object_store._objects) == 3
+
+
+@pytest.mark.parametrize("protocol", ["fss"])
+@pytest.mark.parametrize("force_preprocessing", [True, False])
+def test_comp_ast_fpt(workers, protocol, force_preprocessing):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    if force_preprocessing:
+        me.crypto_store.provide_primitives("fss_comp", [alice, bob], n_instances=50)
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    # for x as AST and  y as FPT
+    # we currently support this set of operation only for fss protocol
+    t1 = torch.tensor([-2.1, 1.8])
+    t2 = torch.tensor([-3.1, 0.3])
+    x = t1.fix_prec().share(*args, **kwargs)
+    y = t2.fix_prec()
+
+    assert ((x >= y).get().float_prec() == (t1 >= t2)).all()
+    assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
+    assert ((x > y).get().float_prec() == (t1 > t2)).all()
+    assert ((x < y).get().float_prec() == (t1 < t2)).all()
+
+    t1 = torch.tensor([[-2.1, 1.8], [-1.1, -0.7]])
+    t2 = torch.tensor([[-3.1, 0.3], [-1.1, 0.3]])
+    x = t1.fix_prec().share(*args, **kwargs)
+    y = t2.fix_prec()
+
+    assert ((x >= y).get().float_prec() == (t1 >= t2)).all()
+    assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
+    assert ((x > y).get().float_prec() == (t1 > t2)).all()
+    assert ((x < y).get().float_prec() == (t1 < t2)).all()
+
+
+@pytest.mark.parametrize("protocol", ["fss"])
+def test_eq_ast_fpt(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
+
+    # for x as AST and  y as FPT
+    # we currently support this set of operation only for fss protocol
+    x = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([-3.1]).fix_prec()
+
+    assert (x == y).get().float_prec()

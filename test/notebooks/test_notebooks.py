@@ -56,6 +56,8 @@ exclusion_list_notebooks = [
     "Federated Recurrent Neural Network.ipynb",
     # Outdated websocket client code
     "Federated learning with websockets and federated averaging.ipynb",
+    # Same as Part 11 - for sure takes longer than 300s because of encrypted training
+    "SMPC_Protocols_Explanation.ipynb",
 ]
 
 # Add excluded translated notebooks to the exclusion list

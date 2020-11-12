@@ -12,7 +12,7 @@ repos:
     -   id: requirements-txt-fixer
     -   id: flake8
 -   repo: https://github.com/psf/black
-    rev: 19.10b0
+    rev: 20.8b1
     hooks:
     -   id: black
 -   repo: https://github.com/pre-commit/pygrep-hooks

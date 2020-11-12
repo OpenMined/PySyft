@@ -2,6 +2,7 @@ import torch
 import warnings
 
 import syft
+from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 from syft.frameworks.torch.nn import nn
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
@@ -91,6 +92,14 @@ class FixedPrecisionTensor(AbstractTensor):
     def data(self):
         return self
 
+    @property
+    def ndim(self):
+        return self.dim()
+
+    @property
+    def T(self):
+        return self.permute(tuple(range(self.ndim - 1, -1, -1)))
+
     @data.setter
     def data(self, new_data):
         self.child = new_data.child
@@ -120,12 +129,11 @@ class FixedPrecisionTensor(AbstractTensor):
         rational = self.child
         upscaled = (rational * self.base ** self.precision_fractional).long()
         if check_range:
-            assert (
-                upscaled.abs() < (self.field / 2)
-            ).all(), (
-                f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
-            )
-
+            if not ((upscaled.abs() < (self.field / 2)).all()):
+                raise ValueError(
+                    f"{rational} cannot be correctly embedded: "
+                    f"choose bigger field or a lower precision"
+                )
         field_element = upscaled
         field_element.owner = rational.owner
         self.child = field_element.type(self.torch_dtype)
@@ -158,6 +166,14 @@ class FixedPrecisionTensor(AbstractTensor):
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
+
+    @property
+    def ring_size(self):
+        if hasattr(self, "child") and isinstance(
+            self.child, (FixedPrecisionTensor, ReplicatedSharingTensor)
+        ):
+            return self.child.ring_size
+        raise ValueError('only ReplicatedSharingTensors have property "ring_size"')
 
     @overloaded.method
     def mod(self, _self, divisor):
@@ -192,6 +208,9 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
             _self, other = other, _self.wrap()
+
+        elif isinstance(other, ReplicatedSharingTensor) and isinstance(_self, torch.Tensor):
+            _self, other = other, _self
 
         response = getattr(_self, "add")(other)
 
@@ -231,6 +250,9 @@ class FixedPrecisionTensor(AbstractTensor):
             # we swap operators so that we do the same operation as above
             _self, other = -other, -_self.wrap()
 
+        elif isinstance(other, ReplicatedSharingTensor) and isinstance(_self, torch.Tensor):
+            _self, other = other * -1, -_self
+
         response = getattr(_self, "sub")(other)
 
         return response
@@ -267,19 +289,21 @@ class FixedPrecisionTensor(AbstractTensor):
         which is inherent to these operations in the fixed precision setting
         """
         changed_sign = False
+        if isinstance(other, (float, torch.FloatTensor)):
+            other = torch.tensor(other).fix_prec(**self.get_class_attributes())
+            other = other.child
+
         if isinstance(other, FixedPrecisionTensor):
-            assert (
-                self.precision_fractional == other.precision_fractional
-            ), "In mul and div, all args should have the same precision_fractional"
-            assert self.base == other.base, "In mul and div, all args should have the same base"
+            if self.precision_fractional != other.precision_fractional:
+                raise ValueError(
+                    "In mul and div, all args should have the same precision_fractional"
+                )
+            if self.base != other.base:
+                raise ValueError("In mul and div, all args should have the same base")
 
         if isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             new_self = self.child
             new_other = other
-        elif isinstance(other, float):
-            raise NotImplementedError(
-                "Can't multiply or divide a FixedPrecisionTensor with a float value"
-            )
 
         elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             other.child, torch.Tensor
@@ -425,9 +449,8 @@ class FixedPrecisionTensor(AbstractTensor):
         other = args[0]
 
         if isinstance(other, FixedPrecisionTensor):
-            assert (
-                self.precision_fractional == other.precision_fractional
-            ), "In matmul, all args should have the same precision_fractional"
+            if self.precision_fractional != other.precision_fractional:
+                raise ValueError("In matmul, all args should have the same precision_fractional")
 
         if isinstance(self.child, AdditiveSharingTensor) and isinstance(other.child, torch.Tensor):
             # If we try to matmul a FPT>AST with a FPT>torch.tensor,
@@ -525,6 +548,12 @@ class FixedPrecisionTensor(AbstractTensor):
         else:
             raise ValueError(f"Invalid method {method} given for reciprocal function")
 
+    def reconstruct(self):
+        if not isinstance(self.child, ReplicatedSharingTensor):
+            raise ValueError("reconstruct can only be called on RST")
+        self.child = self.child.reconstruct()
+        return self
+
     # Approximations:
     def inverse(self, iterations=8):
         """
@@ -533,8 +562,10 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         # TODO: should we add non-approximate version if self.child is a pure tensor?
 
-        assert len(self.shape) >= 2, "Can't compute inverse on non-matrix"
-        assert self.shape[-1] == self.shape[-2], "Must be batches of square matrices"
+        if len(self.shape) < 2:
+            raise ValueError("Can't compute inverse on non-matrix")
+        if self.shape[-1] != self.shape[-2]:
+            raise ValueError("Must be batches of square matrices")
 
         inverse = (0.1 * torch.eye(self.shape[-1])).fix_prec(**self.get_class_attributes()).child
 
@@ -927,15 +958,22 @@ class FixedPrecisionTensor(AbstractTensor):
         if dtype is None:
             dtype = self.dtype
         else:
-            assert (
-                dtype == self.dtype
-            ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
-                must be the same as the one of the original tensor"
+            if dtype != self.dtype:
+                raise TypeError(
+                    "When sharing a FixedPrecisionTensor, "
+                    "the dtype of the resulting AdditiveSharingTensor"
+                    "must be the same as the one of the original tensor"
+                )
 
         tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
 
         tensor.child = self.child.share(
-            *owners, protocol=protocol, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
+            *owners,
+            protocol=protocol,
+            dtype=dtype,
+            field=field,
+            crypto_provider=crypto_provider,
+            no_wrap=True,
         )
         return tensor
 
@@ -948,10 +986,11 @@ class FixedPrecisionTensor(AbstractTensor):
         if dtype is None:
             kwargs["dtype"] = self.dtype
         else:
-            assert (
-                dtype == self.dtype
-            ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
-                must be the same as the one of the original tensor"
+            if dtype != self.dtype:
+                raise TypeError(
+                    "When sharing a FixedPrecisionTensor, the dtype of the resulting "
+                    "AdditiveSharingTensor must be the same as the one of the original tensor"
+                )
         kwargs.pop("no_wrap", None)
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self

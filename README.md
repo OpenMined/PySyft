@@ -17,6 +17,8 @@ and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_enc
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
+_**Important note about PySyft 0.2.x:** OpenMined is no longer maintaining the 0.2.x release (this branch). Instead, we've rewritten our codebase at the minor version 0.3.x. [You can find it on the main branch here](https://github.com/OpenMined/PySyft)._
+
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
@@ -84,11 +86,11 @@ All the examples can be played with by running the command
 make notebook
 ```
 
-This assumes you want to use a local virtual environment. It installs it
-independently to the conda environment in case you installed one, or any
+This assumes that you want to use a local virtual environment. It will install it
+independently to the conda environment if you already installed one, or any
 other virtual environment you might have set up.
 
-Once the jupyter notebook launches on your browser select the pysyft
+Once the jupyter notebook launches on your browser, select the pysyft
 kernel.
 
 ## Use the Docker image

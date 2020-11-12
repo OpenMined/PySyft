@@ -66,7 +66,8 @@ class Conv2d(nn.Module):
 
     def forward(self, input):
 
-        assert input.shape[1] == self.in_channels
+        if input.shape[1] != self.in_channels:
+            raise ValueError("Please check the input shape and in channels")
 
         return conv2d(
             input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups

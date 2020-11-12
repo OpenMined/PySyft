@@ -557,9 +557,48 @@ def make_additivesharingtensor(**kwargs):
                     ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], ast.child
+                        kwargs["workers"]["serde_worker"], list(ast.child.values())
                     ),  # (dict of AbstractTensor) simplified chain
                     ast.get_garbage_collect_data(),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# ReplicatedSharingTensor
+def make_replicatedsharingtensor(**kwargs):
+    workers = kwargs["workers"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    tensor = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, james, protocol="falcon")
+    rst = tensor.child.child
+
+    def compare(detailed, original):
+        assert (
+            type(detailed)
+            == syft.frameworks.torch.tensors.interpreters.replicated_shared.ReplicatedSharingTensor
+        )
+        assert detailed.id == original.id
+        assert detailed.ring_size == original.ring_size
+        assert detailed.child.keys() == original.child.keys()
+        return True
+
+    code_rst = CODE[
+        syft.frameworks.torch.tensors.interpreters.replicated_shared.ReplicatedSharingTensor
+    ]
+    return [
+        {
+            "value": rst,
+            "simplified": (
+                code_rst,
+                (
+                    rst.id,  # (int or str) id
+                    rst.ring_size,
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], list(rst.child.values())
+                    ),  # (dict of AbstractTensor) simplified chain
+                    rst.get_garbage_collect_data(),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1164,7 +1203,7 @@ def make_pointerplan(**kwargs):
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
-                    (CODE[set], ()),  # (set or None) tags
+                    None,  # (set or None) tags
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1823,6 +1862,7 @@ def make_objectrequestmessage(**kwargs):
         assert detailed.object_id == original.object_id
         assert detailed.user == original.user
         assert detailed.reason == original.reason
+        assert detailed.get_copy == original.get_copy
         return True
 
     return [
@@ -1834,6 +1874,7 @@ def make_objectrequestmessage(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.object_id),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.user),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.reason),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.get_copy),
                 ),
             ),
             "cmp_detailed": compare,

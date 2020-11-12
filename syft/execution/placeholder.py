@@ -423,7 +423,7 @@ class PlaceHolder(AbstractTensor):
         """
 
         tensor_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_placeholder.id)
-        tags = set(protobuf_placeholder.tags)
+        tags = set(protobuf_placeholder.tags) if protobuf_placeholder.tags else None
 
         description = None
         if bool(protobuf_placeholder.description):
