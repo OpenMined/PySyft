@@ -1,8 +1,8 @@
 # stdlib
-from typing import Dict
+from collections import OrderedDict
+from typing import Iterable
 from typing import KeysView
-from typing import Set
-from typing import Union
+from typing import Optional
 from typing import ValuesView
 
 # third party
@@ -30,15 +30,15 @@ class MemoryStore(ObjectStore):
 
     def __init__(self) -> None:
         super().__init__()
-        self._objects: Dict[UID, AbstractStorableObject] = {}
+        self._objects: OrderedDict[UID, AbstractStorableObject] = OrderedDict()
         self._search_engine = None
         self.post_init()
 
-    def get_object(self, id: UID) -> Union[AbstractStorableObject, None]:
-        return self._objects.get(id, None)
+    def get_object(self, key: UID) -> Optional[AbstractStorableObject]:
+        return self._objects.get(key, None)
 
-    def get_objects_of_type(self, obj_type: type) -> Set[AbstractStorableObject]:
-        return {obj for obj in self.values() if isinstance(obj.data, obj_type)}
+    def get_objects_of_type(self, obj_type: type) -> Iterable[AbstractStorableObject]:
+        return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
@@ -69,7 +69,7 @@ class MemoryStore(ObjectStore):
         try:
             return self._objects[key]
         except Exception as e:
-            logger.trace(f"MemoryStore get item error {key} {e}")
+            logger.critical(f"{type(self)} __getitem__ error {key} {e}")
             raise e
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -77,8 +77,15 @@ class MemoryStore(ObjectStore):
         self._objects[key] = value
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __delitem__(self, key: UID) -> None:
-        del self._objects[key]
+    def delete(self, key: UID) -> None:
+        try:
+            obj = self.get_object(key=key)
+            if obj is not None:
+                self._objects.__delitem__(key)
+            else:
+                logger.critical(f"{type(self)} __delitem__ error {key}.")
+        except Exception as e:
+            logger.critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:

@@ -28,6 +28,7 @@ jinja2
 loguru
 matplotlib
 nbconvert
+packaging
 pandas
 protobuf
 pyjwt

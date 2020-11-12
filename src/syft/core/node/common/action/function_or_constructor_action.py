@@ -85,7 +85,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     f"Got {arg} of type {type(arg)}"
                 )
 
-            r_arg = node.store.get_object(id=arg.id_at_location)
+            r_arg = node.store.get_object(key=arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -99,7 +99,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     f"Got {arg} of type {type(arg)}"
                 )
 
-            r_arg = node.store.get_object(id=arg.id_at_location)
+            r_arg = node.store.get_object(key=arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )

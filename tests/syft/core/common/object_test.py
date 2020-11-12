@@ -77,8 +77,8 @@ def test_to_string() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
-    assert str(obj) == "<ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
-    assert obj.__repr__() == "<ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>"
+    assert str(obj) == "<ObjectWithID: fb1bb0675bb74c49becee700ab0a1514>"
+    assert obj.__repr__() == "<ObjectWithID: fb1bb0675bb74c49becee700ab0a1514>"
 
 
 # --------------------- SERDE ---------------------

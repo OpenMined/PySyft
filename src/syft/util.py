@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 import syft
 
 # syft relative
+from .core.common.group import VerifyAll
 from .decorators.syft_decorator_impl import syft_decorator
 
 
@@ -132,40 +133,32 @@ def obj2pointer_type(obj: object) -> type:
         logger.debug(
             f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
         )
-        fqn = get_fully_qualified_name(obj=type(obj))
-
+        if obj is None:
+            fqn = "syft.lib.python._SyNone"
+        else:
+            fqn = get_fully_qualified_name(obj=type(obj))
     try:
         ref = syft.lib_ast(fqn, return_callable=True)
-    except Exception as e:
-        logger.error(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
+    except Exception:
         # try one more time by removing the class parent module name
         try:
-            # fix fqn types having the wrong path
-            # converts: syft.lib.python.list.List
-            # into    : syft.lib.python.List
-            # converts: duet.lib_ast.torch.optim.adadelta.Adadelta
-            # into    : duet.lib_ast.torch.optim.Adadelta
-            parts = fqn.split(".")
-            klass = parts[-1]
-            fixed: List[str] = []
-            for p in parts:
-                if p.lower() != klass.lower():
-                    fixed.append(p)
-            fixed.append(klass)
-            fqn = ".".join(fixed)
-            logger.debug(f"Trying to fix path to {type(obj)} {fqn} in lib_ast. {e}")
-            ref = syft.lib_ast(fqn, return_callable=True)
-            logger.debug(f"Hacky fix worked {type(obj)} {fqn} in lib_ast. {e}")
+            ref = syft.lib_ast(fqn, return_callable=True, obj_type=type(obj))
         except Exception as e:
             logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
         # TODO maybe return AnyPointer?
+
     return ref.pointer_type
 
 
 @syft_decorator(typechecking=True)
-def key_emoji(key: Union[bytes, SigningKey, VerifyKey]) -> str:
-    hex_chars = bytes(key).hex()[-8:]
-    return char_emoji(hex_chars=hex_chars)
+def key_emoji(key: Union[bytes, SigningKey, VerifyKey, VerifyAll]) -> str:
+    try:
+        if isinstance(key, (bytes, SigningKey, VerifyKey)):
+            hex_chars = bytes(key).hex()[-8:]
+            return char_emoji(hex_chars=hex_chars)
+    except Exception:
+        pass
+    return "ALL"
 
 
 @syft_decorator(typechecking=True)

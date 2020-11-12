@@ -170,7 +170,7 @@ class WebRTCConnection(BidirectionalConnection):
             self.channel: Optional[RTCDataChannel] = None
             self._client_address: Optional[Address] = None
 
-            asyncio.ensure_future(self.heartbeat())
+            # asyncio.ensure_future(self.heartbeat())
 
         except Exception as e:
             log = f"Got an exception in WebRTCConnection __init__. {e}"
@@ -461,7 +461,8 @@ class WebRTCConnection(BidirectionalConnection):
     ) -> None:
         """" Sends high priority messages without waiting for their reply. """
         try:
-            asyncio.run(self.producer_pool.put(msg))
+            # asyncio.run(self.producer_pool.put_nowait(msg))
+            self.producer_pool.put_nowait(msg)
             time.sleep(message_cooldown)
         except Exception as e:
             log = f"Got an exception in WebRTCConnection send_immediate_msg_without_reply. {e}"
@@ -544,34 +545,34 @@ class WebRTCConnection(BidirectionalConnection):
                     logger.critical(log)
                     raise Exception(log)
 
-    async def heartbeat(self) -> None:
-        producer_watermark = 0
-        consumer_watermark = 0
-        while True:
-            await asyncio.sleep(5)
-            try:
-                psize = self.producer_pool.qsize()
-                csize = self.consumer_pool.qsize()
-                async_task_count = len(asyncio.all_tasks())
-                producer_watermark = max(producer_watermark, psize)
-                consumer_watermark = max(consumer_watermark, csize)
-                log = (
-                    f"{self.node.name} PQ: {psize} / {producer_watermark} - "
-                    + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
-                )
-                print(log)
-                logger.critical(log)
+    # async def heartbeat(self) -> None:
+    #     producer_watermark = 0
+    #     consumer_watermark = 0
+    #     while True:
+    #         await asyncio.sleep(5)
+    #         try:
+    #             psize = self.producer_pool.qsize()
+    #             csize = self.consumer_pool.qsize()
+    #             async_task_count = len(asyncio.all_tasks())
+    #             producer_watermark = max(producer_watermark, psize)
+    #             consumer_watermark = max(consumer_watermark, csize)
+    #             log = (
+    #                 f"{self.node.name} PQ: {psize} / {producer_watermark} - "
+    #                 + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
+    #             )
+    #             print(log)
+    #             logger.critical(log)
 
-                if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
-                    log = f"☠️ HEART BEAT DEAD! {self.node.name}"
-                    print(log)
-                    logger.critical(log)
-                # else:
-                #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
-                #     print(log)
-                #     logger.critical(log)
-            except Exception as e:
-                log = f"HEART BEAT exception in {self.node.name}. {e}"
-                print(log)
-                logger.critical(log)
-                raise Exception(log)
+    #             if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
+    #                 log = f"☠️ HEART BEAT DEAD! {self.node.name}"
+    #                 print(log)
+    #                 logger.critical(log)
+    #             # else:
+    #             #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
+    #             #     print(log)
+    #             #     logger.critical(log)
+    #         except Exception as e:
+    #             log = f"HEART BEAT exception in {self.node.name}. {e}"
+    #             print(log)
+    #             logger.critical(log)
+    #             raise Exception(log)
