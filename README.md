@@ -2,7 +2,7 @@
   <br>
   <a href="http://duet.openmined.org/"><img src="docs/img/logo_big.png" alt="PySyft" width="200"></a>
   <br>
-  A library for computing on data you do not own and cannot see
+  A library for computing on data<br /> you do not own and cannot see
   <br>
 </h1>
 <div align="center">
