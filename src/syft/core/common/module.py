@@ -148,6 +148,13 @@ class Module:
             return modules
         return OrderedDict()
 
+    @staticmethod
+    def from_pytorch(torch_ref, modules):
+        from copy import deepcopy
+        module = Module(torch_ref=torch_ref)
+        module._modules = deepcopy(modules)
+        return module
+
     # local list of remote ListPointers of TensorPointers
     def parameters(self, recurse: bool = True) -> Optional[List[Any]]:
         params_list: Optional[List[Any]] = None
