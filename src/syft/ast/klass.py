@@ -150,10 +150,18 @@ class Class(Callable):
         attrs["__name__"] = name
         attrs["__module__"] = ".".join(parts)
 
+        def str_repr(__self) -> str:
+            try:
+                return __self.__repr__()
+            except Exception as e:
+                print(f"Failed to get __repr__ of Pointer. {e}", type(__self))
+            return "UnknownPointer"
+
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(klass_pointer, "_props", _props)
         setattr(klass_pointer, "__getattribute__", getattribute)
+        setattr(klass_pointer, "__str__", str_repr)
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
