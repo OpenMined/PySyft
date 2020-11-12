@@ -49,10 +49,6 @@ N_CORES = max(4, multiprocessing.cpu_count())
 dpf = sycret.EqFactory(n_threads=N_CORES)
 dif = sycret.LeFactory(n_threads=N_CORES)
 
-
-# Cheap way?
-os.environ["RAYON_NUM_THREADS"] = str(N_CORES)
-
 # MULTI_LIMIT = 50_000
 MULTI_LIMIT = 1e12
 
