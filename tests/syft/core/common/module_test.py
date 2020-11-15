@@ -3,6 +3,9 @@ from typing import Any
 from typing import List
 from typing import Union
 
+# third party
+import torch as th
+
 # syft absolute
 import syft as sy
 
@@ -82,32 +85,32 @@ def test_module() -> None:
 
     # sy.Module version with equivalent external interface
     class SyNet(sy.Module):
-        def __init__(self) -> None:
-            super(SyNet, self).__init__()
-            self.conv1 = nn.Conv2d(1, 32, 3, 1)
-            self.conv2 = nn.Conv2d(32, 64, 3, 1)
-            self.dropout1 = nn.Dropout2d(0.25)
-            self.dropout2 = nn.Dropout2d(0.5)
-            self.fc1 = nn.Linear(9216, 128)
-            self.fc2 = nn.Linear(128, 10)
+        def __init__(self, torch_ref: Any) -> None:
+            super(SyNet, self).__init__(torch_ref=torch_ref)
+            self.conv1 = torch_ref.nn.Conv2d(1, 32, 3, 1)
+            self.conv2 = torch_ref.nn.Conv2d(32, 64, 3, 1)
+            self.dropout1 = torch_ref.nn.Dropout2d(0.25)
+            self.dropout2 = torch_ref.nn.Dropout2d(0.5)
+            self.fc1 = torch_ref.nn.Linear(9216, 128)
+            self.fc2 = torch_ref.nn.Linear(128, 10)
 
         def forward(self, x: Any) -> Any:
             x = self.conv1(x)
-            x = F.relu(x)
+            x = self.torch_ref.nn.functional.relu(x)
             x = self.conv2(x)
-            x = F.relu(x)
-            x = F.max_pool2d(x, 2)
+            x = self.torch_ref.nn.functional.relu(x)
+            x = self.torch_ref.nn.functional.max_pool2d(x, 2)
             x = self.dropout1(x)
-            x = torch.flatten(x, 1)
+            x = self.torch_ref.flatten(x, 1)
             x = self.fc1(x)
-            x = F.relu(x)
+            x = self.torch_ref.nn.functional.relu(x)
             x = self.dropout2(x)
             x = self.fc2(x)
-            output = F.log_softmax(x, dim=1)
+            output = self.torch_ref.nn.functional.log_softmax(x, dim=1)
             return output
 
     vanilla_model = Net()
-    sy_model = SyNet()  # without the k it kant take over the world
+    sy_model = SyNet(torch_ref=th)
     models: List[Union[Net, SyNet]] = [sy_model, vanilla_model]
     for model in models:
         assert hasattr(model, "__call__")

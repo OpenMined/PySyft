@@ -15,10 +15,10 @@ NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type
 SyPrimitiveRet = NewType("SyPrimitiveRet", Union[PyPrimitive, NotImplementedType])  # type: ignore
 
 
-def downcast(value: Any) -> Any:
+def downcast(value: Any, recurse: bool = True) -> Any:
     if isprimitive(value=value):
         # Wrap in a SyPrimitive
-        return PrimitiveFactory.generate_primitive(value=value, recurse=True)
+        return PrimitiveFactory.generate_primitive(value=value, recurse=recurse)
     else:
         return value
 

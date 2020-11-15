@@ -126,7 +126,8 @@ class UID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        return f"<UID:{self.value}>"
+        no_dash = str(self.value).replace("-", "")
+        return f"<{type(self).__name__}: {no_dash}>"
 
     @syft_decorator(typechecking=True)
     def char_emoji(self, hex_chars: str) -> str:

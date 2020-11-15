@@ -27,12 +27,12 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         try:
-            del node.store[self.id_at_location]
-        except KeyError:
-            logger.critical(f"> Unable to delete id_at_location={self.id_at_location}")
-            # This might happen when we finish running our code/notebook
-            # The objects might have already been deleted
-            pass
+            node.store.delete(key=self.id_at_location)
+        except Exception as e:
+            logger.critical(
+                "> GarbageCollectObjectAction deletion exception "
+                + f"{self.id_at_location} {e}"
+            )
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GarbageCollectObjectAction_PB:

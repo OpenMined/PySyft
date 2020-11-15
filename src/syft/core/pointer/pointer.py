@@ -23,7 +23,7 @@ user should:
 
     .. code-block::
 
-        pointer_object.request(request_name = "Request name", reason = "Request reason")
+        pointer_object.request(name = "Request name", reason = "Request reason")
 
     2.1 - The data owner has to approve the request (check the domain node docs).
     2.2 - The data user checks if the request has been approved (check the domain node docs).
@@ -61,7 +61,7 @@ Example:
 
     # creating a request to access the data
     data_ptr_domain_1.request(
-        request_name="My Request", reason="I'd lke to see this pointer"
+        name="My Request", reason="I'd lke to see this pointer"
     )
 
     # getting the remote id of the object
@@ -89,6 +89,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from loguru import logger
+from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
@@ -105,6 +106,9 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.obj_search_permission_service import (
+    ObjectSearchPermissionUpdateMessage,
+)
 from ..store.storeable_object import StorableObject
 
 
@@ -145,7 +149,7 @@ class Pointer(AbstractPointer):
         self.description = description
         self.gc_enabled = True
 
-    def _get(self, delete_obj: bool = True) -> StorableObject:
+    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -172,8 +176,9 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
+        verbose: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -184,18 +189,20 @@ class Pointer(AbstractPointer):
         return self.get(
             request_block=request_block,
             timeout_secs=timeout_secs,
-            request_name=request_name,
+            name=name,
             reason=reason,
             delete_obj=False,
+            verbose=verbose,
         )
 
     def get(
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
         delete_obj: bool = True,
+        verbose: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -207,19 +214,20 @@ class Pointer(AbstractPointer):
         from ..node.domain.service import RequestStatus
 
         if not request_block:
-            return self._get(delete_obj=delete_obj)
+            return self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
-                request_name=request_name,
+                name=name,
                 reason=reason,
                 block=True,
                 timeout_secs=timeout_secs,
+                verbose=verbose,
             )
             if (
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj)
+                return self._get(delete_obj=delete_obj, verbose=verbose)
 
         return None
 
@@ -301,10 +309,11 @@ class Pointer(AbstractPointer):
 
     def request(
         self,
-        request_name: str = "",
+        name: str = "",
         reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
+        verbose: bool = False,
     ) -> Any:
         """Method that requests access to the data on which the pointer points to.
 
@@ -313,7 +322,7 @@ class Pointer(AbstractPointer):
         .. code-block::
 
             # data holder domain
-            domain_1 = Domain(request_name="Data holder")
+            domain_1 = Domain(name="Data holder")
 
             # data
             tensor = th.tensor([1, 2, 3])
@@ -325,10 +334,10 @@ class Pointer(AbstractPointer):
             data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
 
             # requesting access to the pointer
-            data_ptr_domain_1.request(request_name="My Request", reason="Research project.")
+            data_ptr_domain_1.request(name="My Request", reason="Research project.")
 
-        :param request_name: The title of the request that the data owner is going to see.
-        :type request_name: str
+        :param name: The title of the request that the data owner is going to see.
+        :type name: str
         :param reason: The description of the request. This is the reason why you want to have
         access to the data.
         :type reason: str
@@ -349,7 +358,7 @@ class Pointer(AbstractPointer):
             timeout_secs = -1  # forever
 
         msg = RequestMessage(
-            request_name=request_name,
+            name=name,
             request_description=reason,
             address=self.client.address,
             owner_address=self.client.address,
@@ -361,7 +370,7 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=msg)
 
         # wait long enough for it to arrive and trigger a handler
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         if not block:
             return None
@@ -373,27 +382,23 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestAnswerMessage
             from ..node.domain.service import RequestStatus
 
-            output_string = "> Waiting for Blocking Request\n"
-            if len(request_name) > 0:
-                output_string += f"{request_name}"
+            output_string = "> Waiting for Blocking Request: "
+            if len(name) > 0:
+                output_string += f"  {name}"
             if len(reason) > 0:
                 output_string += f": {reason}"
-            if len(request_name) > 0 or len(request_name) > 0:
+            if len(name) > 0 or len(name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
-                output_string += "\n"
-            output_string += f"{msg.id}\n"
             logger.debug(output_string)
-            print(f"\n{output_string}", end="")
+            if verbose:
+                print(f"\n{output_string}", end="")
             status = None
             start = time.time()
 
             last_check: float = 0.0
             while True:
                 now = time.time()
-                log = f"\n> INSIDE Request BLOCK {now - start} seconds {now - start > timeout_secs}"
-                logger.debug(log)
-                print(log)
                 try:
                     # won't run on the first pass because status is None which allows
                     # for remote request handlers to auto respond before timeout
@@ -402,7 +407,8 @@ class Pointer(AbstractPointer):
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
                         logger.debug(log)
-                        print(log)
+                        if verbose:
+                            print(log)
                         return status
 
                     # only check once every second
@@ -414,30 +420,44 @@ class Pointer(AbstractPointer):
                             address=self.client.address,
                             reply_to=self.client.address,
                         )
-                        logger.debug(
-                            f"> JUST BEFORE asyncio block???? {status_msg.id} {msg.id}"
-                        )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg
                         )
                         status = response.status
                         if response.status == RequestStatus.Pending:
-                            time.sleep(1)
-                            print(".", end="")
+                            time.sleep(0.1)
+                            if verbose:
+                                print(".", end="")
                             continue
                         else:
                             # accepted or rejected lets exit
                             status_text = "REJECTED"
                             if status == RequestStatus.Accepted:
                                 status_text = "ACCEPTED"
-                            log = f"\n> Blocking Request {status_text}"
+                            log = f" {status_text}"
                             logger.debug(log)
-                            print(log)
+                            if verbose:
+                                print(log)
                             return status
                 except Exception as e:
                     logger.error(f"Exception while running blocking request. {e}")
                     # escape the while loop
                     return status
+
+    def make_searchable(self, target_verify_key: Optional[VerifyKey] = None) -> None:
+        """Make the object pointed at searchable for other people. If target_verify_key is not specified, the
+        object will be searchable by anyone.
+
+        :param target_verify_key: The verify_key of the client to which we want to give search permission.
+        :type target_verify_key: Optional[VerifyKey]
+        """
+        msg = ObjectSearchPermissionUpdateMessage(
+            add_instead_of_remove=True,
+            target_verify_key=target_verify_key,
+            target_object_id=self.id_at_location,
+            address=self.client.address,
+        )
+        self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three possible

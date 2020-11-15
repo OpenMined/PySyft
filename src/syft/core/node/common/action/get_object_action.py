@@ -169,7 +169,11 @@ class GetObjectAction(ImmediateActionWithReply):
 
                 raise Exception(log)
 
-            if verify_key not in storeable_object.read_permissions:
+            # if you are not the root user check if your verify_key has read_permission
+            if (
+                verify_key != node.root_verify_key
+                and verify_key not in storeable_object.read_permissions
+            ):
                 log = (
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
                     + "Please submit a request."
@@ -186,10 +190,12 @@ class GetObjectAction(ImmediateActionWithReply):
                     logger.debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
-                    del node.store[self.id_at_location]
+                    node.store.delete(key=self.id_at_location)
                 except Exception as e:
-                    log = f"Failed to delete Object with ID {self.id_at_location} in store. {e}"
-                    raise Exception(log)
+                    log = (
+                        f"> GetObjectAction delete exception {self.id_at_location} {e}"
+                    )
+                    logger.critical(log)
             else:
                 logger.debug(f"Copying Object with ID {self.id_at_location} in store.")
 

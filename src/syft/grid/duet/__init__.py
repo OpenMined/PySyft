@@ -1,11 +1,13 @@
 # stdlib
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
 import time
 from typing import Any
 from typing import Generator
+from typing import Optional
 
 # third party
 import nest_asyncio
@@ -25,6 +27,18 @@ except RuntimeError as e:
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
+
+LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
+
+
+try:
+    # third party
+    from IPython.core.display import Image
+    from IPython.core.display import display
+
+    jupyter = True
+except ImportError:
+    jupyter = False
 
 
 # for local debugging
@@ -134,21 +148,48 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     sys.stdout.write("\r" + out)
                 iterator += 1
 
-    counterThread().start()
+    if hasattr(sys.stdout, "parent_header"):
+        counterThread().start()
+
+
+def duet(
+    target_id: Optional[str] = None,
+    logging: bool = True,
+    network_url: str = "",
+    loopback: bool = False,
+    db_path: Optional[str] = None,
+) -> WebRTCDuet:
+    if target_id is not None:
+        return join_duet(
+            target_id=target_id, loopback=loopback, network_url=network_url
+        )
+    else:
+        return launch_duet(
+            logging=logging, network_url=network_url, loopback=loopback, db_path=db_path
+        )
 
 
 def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
+    db_path: Optional[str] = None,
 ) -> WebRTCDuet:
+    if os.path.isfile(LOGO_URL) and jupyter:
+        display(
+            Image(
+                LOGO_URL,
+                width=400,
+                unconfined=True,
+            )
+        )
     print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
-        + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in alpha. Do not use this to protect real-world data.\n"
+        + " Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ >             Use at your own risk.\n"
         + "\033[0m"
     )
 
@@ -156,7 +197,7 @@ def launch_duet(
 
     if not network_url:
         network_url = get_available_network()
-    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
+    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
@@ -180,11 +221,11 @@ def launch_duet(
 
     print("\nimport syft as sy")
     print(
-        "duet = sy.join_duet('"
+        'duet = sy.duet("'
         + bcolors.BOLD
         + signaling_client.duet_id
         + bcolors.ENDC
-        + "')"
+        + '")'
     )
 
     # use a local file to automatically exchange duet ids
@@ -194,19 +235,25 @@ def launch_duet(
         with open(get_loopback_path(), "w") as f:
             f.write(json.dumps(loopback_config))
 
-    my_domain = Domain(name="Launcher")
+    my_domain = Domain(name="Launcher", db_path=db_path)
 
     print(
         "\n♫♫♫ > "
         + bcolors.HEADER
         + "STEP 2:"
         + bcolors.ENDC
-        + " The code above will print out a 'Client Id'. Have"
+        + " Running the code above will print out a 'Client ID'."
     )
-    print("♫♫♫ >         your duet partner send it to you and enter it below!")
+    print("♫♫♫ >         Have your duet partner send it to you and enter it below!")
     print()
     if loopback is False:
-        target_id = input("♫♫♫ > Duet Partner's Client ID:")  # nosec
+        while True:
+            target_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
+            if len(target_id) == 32:
+                break
+            else:
+                print("    > Error: Invalid Client ID. Please try again.")
+
     else:
         target_id = ""
         print(
@@ -249,16 +296,25 @@ def join_duet(
     network_url: str = "",
     loopback: bool = False,
 ) -> WebRTCDuet:
+    if os.path.isfile(LOGO_URL) and jupyter:
+        display(
+            Image(
+                LOGO_URL,
+                width=400,
+                unconfined=True,
+            )
+        )
     if target_id == "" and loopback is False:
         cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
         raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
-    print("🎤  🎸  ♪♪♪ joining duet ♫♫♫  🎻  🎹\n")
+    print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
-        + " Duet is an experimental feature currently \n♫♫♫ > "
-        + "in alpha. Do not use this to protect real-world data.\n"
+        + " Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ >             Use at your own risk.\n"
+        + "\n♫♫♫ > \n"
         + "\033[0m"
     )
 
@@ -266,7 +322,7 @@ def join_duet(
 
     if not network_url:
         network_url = get_available_network()
-    print(f"♫♫♫ > Punching through firewall to OpenGrid Network Node at: {network_url}")
+    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
     print("♫♫♫ > " + str(network_url))
     print("♫♫♫ >")
     sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")

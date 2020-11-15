@@ -65,13 +65,80 @@ class RequestQueueClient:
     def __repr__(self) -> str:
         return repr(self.requests)
 
-    def add_handler(self, request_handler: Dict[str, Any]) -> None:
-        self.update_handler(request_handler, keep=True)
+    def add_handler(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+        element_quota: Optional[int] = None,
+    ) -> None:
+        handler_opts = self._validate_options(
+            action=action,
+            print_local=print_local,
+            log_local=log_local,
+            name=name,
+            timeout_secs=timeout_secs,
+            element_quota=element_quota,
+        )
 
-    def remove_handler(self, request_handler: Dict[str, Any]) -> None:
-        self.update_handler(request_handler, keep=False)
+        self._update_handler(handler_opts, keep=True)
 
-    def update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
+    def remove_handler(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+        element_quota: Optional[int] = None,
+    ) -> None:
+        handler_opts = self._validate_options(
+            action=action,
+            print_local=print_local,
+            log_local=log_local,
+            name=name,
+            timeout_secs=timeout_secs,
+            element_quota=element_quota,
+        )
+
+        self._update_handler(handler_opts, keep=False)
+
+    def clear_handlers(self) -> None:
+        for handler in self.handlers:
+            new_dict = {}
+            del handler["created_time"]
+            for k, v in handler.items():
+                new_dict[str(k)] = v
+            self.remove_handler(**new_dict)
+
+    def _validate_options(
+        self,
+        action: str,
+        print_local: bool = False,
+        log_local: bool = False,
+        name: Optional[str] = None,
+        timeout_secs: int = -1,
+        element_quota: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        handler_opts: Dict[str, Any] = {}
+        if action not in ["accept", "deny"]:
+            raise Exception("Action must be 'accept' or 'deny'")
+        handler_opts["action"] = action
+        handler_opts["print_local"] = bool(print_local)
+        handler_opts["log_local"] = bool(log_local)
+
+        if name is not None:
+            clean_name = str(name.strip().lower())
+            if clean_name:
+                handler_opts["name"] = clean_name
+        handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
+        if element_quota is not None:
+            handler_opts["element_quota"] = max(0, int(element_quota))
+        return handler_opts
+
+    def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
         from syft.core.node.domain.service.request_handler_service import (
             UpdateRequestHandlerMessage,
@@ -99,7 +166,7 @@ class RequestQueueClient:
     def pandas(self) -> pd.DataFrame:
         request_lines = [
             {
-                "Request Name": request.request_name,
+                "Name": request.name,
                 "Reason": request.request_description,
                 "Request ID": request.id,
                 "Requested Object's ID": request.object_id,
@@ -182,4 +249,13 @@ class DomainClient(Client):
         raise Exception("This client points to a device, you don't need a VM Location.")
 
     def __repr__(self) -> str:
-        return f"<DomainClient:{self.id}>"
+        no_dash = str(self.id).replace("-", "")
+        return f"<{type(self).__name__}: {no_dash}>"
+
+    def update_vars(self, state: dict) -> pd.DataFrame:
+        for ptr in self.store.store:
+            tags = getattr(ptr, "tags", None)
+            if tags is not None:
+                for tag in tags:
+                    state[tag] = ptr
+        return self.store.pandas

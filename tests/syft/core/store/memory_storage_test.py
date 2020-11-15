@@ -162,7 +162,7 @@ def test_str() -> None:
 
     store[id1] = obj1
     store_regex = re.compile(
-        r"^{<UID:[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}>:"
-        r" <Storable:tensor\(\[1\., 2\., 3\., 4\.\]\)>}$"
+        r"^OrderedDict\(\[\(<UID: [0-9a-z]{8}[0-9a-z]{4}[0-9a-z]{4}[0-9a-z]{4}[0-9a-z]"
+        + r"{12}>, <Storable: tensor\(\[1\., 2\., 3\., 4\.\]\)>\)\]\)$"
     )
     assert store_regex.match(str(store))

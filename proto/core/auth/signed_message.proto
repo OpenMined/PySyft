@@ -2,6 +2,7 @@ syntax = "proto3";
 package syft.core.auth;
 
 import "proto/core/common/common_object.proto";
+import "google/protobuf/empty.proto";
 
 message SignedMessage {
   syft.core.common.UID msg_id = 1;
@@ -10,3 +11,6 @@ message SignedMessage {
   bytes verify_key = 4;
   bytes message = 5;
 }
+
+message VerifyKey { bytes verify_key = 1; }
+message VerifyAll { google.protobuf.Empty all = 1; }

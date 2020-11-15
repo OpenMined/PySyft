@@ -3,6 +3,9 @@ from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
+# third party
+import torch
+
 # syft relative
 from ...ast.globals import Globals
 from ...ast.klass import Class
@@ -10,9 +13,12 @@ from ...ast.module import Module
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
+from .dict import DictWrapper
 from .float import Float
 from .int import Int
 from .list import List
+from .namedtuple import ValuesIndices
+from .namedtuple import ValuesIndicesWrapper
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
@@ -24,6 +30,7 @@ for syft_type in [
     Bool,
     Complex,
     Dict,
+    DictWrapper,
     Float,
     Int,
     SyNone,
@@ -32,6 +39,8 @@ for syft_type in [
     PyPrimitive,
     String,
     Tuple,
+    ValuesIndices,
+    ValuesIndicesWrapper,
 ]:
     syft_type.__module__ = __name__
 
@@ -104,6 +113,11 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
+        (
+            "syft.lib.python.ValuesIndices",
+            "syft.lib.python.ValuesIndices",
+            ValuesIndices,
+        ),
     ]
 
     methods = [
@@ -412,6 +426,82 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any", Any),
+        # ValueIndicies
+        (
+            "syft.lib.python.ValuesIndices.values",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.indices",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.eigenvalues",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.eigenvectors",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.solution",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.QR",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.sign",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.logabsdet",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.Q",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.R",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.LU",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.cloned_coefficient",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.U",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.S",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
+        (
+            "syft.lib.python.ValuesIndices.V",
+            "torch.Tensor",
+            torch.Tensor,
+        ),
     ]
 
     add_modules(ast, modules)

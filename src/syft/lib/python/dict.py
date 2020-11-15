@@ -118,9 +118,10 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __format__(self, format_spec: str) -> SyPrimitiveRet:
+    def __format__(self, format_spec: str) -> str:
+        # python complains if the return value is not str
         res = super().__format__(format_spec)
-        return PrimitiveFactory.generate_primitive(value=res)
+        return str(res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> SyPrimitiveRet:
@@ -235,9 +236,19 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dict_PB:
         id_ = serialize(obj=self.id)
-        keys = [serialize(obj=downcast(value=element)) for element in self.data.keys()]
+        # serialize to bytes so that we can avoid using StorableObject
+        # otherwise we get recursion where the permissions of StorableObject themselves
+        # utilise Dict
+        keys = [
+            serialize(obj=downcast(value=element), to_bytes=True)
+            for element in self.data.keys()
+        ]
+        # serialize to bytes so that we can avoid using StorableObject
+        # otherwise we get recursion where the permissions of StorableObject themselves
+        # utilise Dict
         values = [
-            serialize(obj=downcast(value=element)) for element in self.data.values()
+            serialize(obj=downcast(value=element), to_bytes=True)
+            for element in self.data.values()
         ]
         return Dict_PB(id=id_, keys=keys, values=values)
 
@@ -245,8 +256,20 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Dict_PB) -> "Dict":
         id_: UID = deserialize(blob=proto.id)
-        values = [deserialize(blob=upcast(value=element)) for element in proto.values]
-        keys = [deserialize(blob=upcast(value=element)) for element in proto.keys]
+        # deserialize from bytes so that we can avoid using StorableObject
+        # otherwise we get recursion where the permissions of StorableObject themselves
+        # utilise Dict
+        values = [
+            deserialize(blob=upcast(value=element), from_bytes=True)
+            for element in proto.values
+        ]
+        # deserialize from bytes so that we can avoid using StorableObject
+        # otherwise we get recursion where the permissions of StorableObject themselves
+        # utilise Dict
+        keys = [
+            deserialize(blob=upcast(value=element), from_bytes=True)
+            for element in proto.keys
+        ]
         new_dict = Dict(dict(zip(keys, values)))
         new_dict._id = id_
         return new_dict

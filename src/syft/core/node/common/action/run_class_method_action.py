@@ -8,6 +8,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -78,7 +79,25 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
-        resolved_self = node.store[self._self.id_at_location]
+        mutating_internal = False
+        if (
+            self.path.startswith("torch.Tensor")
+            and self.path.endswith("_")
+            and not self.path.endswith("__call__")
+        ):
+            mutating_internal = True
+        elif not self.path.startswith("torch.Tensor") and self.path.endswith(
+            "__call__"
+        ):
+            mutating_internal = True
+
+        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        if resolved_self is None:
+            logger.critical(
+                f"execute_action on {self.path} failed due to missing object"
+                + f" at: {self._self.id_at_location}"
+            )
+            return
 
         result_read_permissions = resolved_self.read_permissions
 
@@ -98,7 +117,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        if type(method).__name__ == "getset_descriptor":
+        if type(method).__name__ in ["getset_descriptor", "_tuplegetter"]:
             # we have a detached class property so we need the __get__ descriptor
             upcast_attr = getattr(resolved_self.data, "upcast", None)
             data = resolved_self.data
@@ -149,6 +168,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         #     # unsupported type
         #     raise Exception(f"Result has no ID. {result}")
 
+        if mutating_internal:
+            resolved_self.read_permissions = result_read_permissions
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
