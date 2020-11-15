@@ -1,3 +1,3 @@
-from syft.core.node.device.device import Device
+from syft.core.node.vm.vm import VirtualMachine
 
-node = Device(name="om-device")
+node = VirtualMachine(name="om-vm")
