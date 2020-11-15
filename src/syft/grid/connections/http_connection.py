@@ -85,22 +85,18 @@ class HTTPConnection(ClientConnection):
         :rtype: requests.Response
         """
 
-        if self.session_token:
-            header = {"token": self.session_token}
-        else:
-            header = {}
+        header = {}
 
-        # If session token active
         if self.session_token:
-            header = {"token": self.session_token}
-        else:
-            header = {}
+            header["token"] = self.session_token
+
+        header["Content-Type"] = "application/octet-stream"  # type: ignore
 
         # Perform HTTP request using base_url as a root address
         r = requests.post(
             url=self.base_url + HTTPConnection.SYFT_ROUTE,
             data=msg.binary(),
-            headers={"Content-Type": "application/octet-stream"},
+            headers=header,
         )
 
         # Return request's response object

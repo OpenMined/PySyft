@@ -12,7 +12,6 @@ from nacl.signing import SigningKey
 from ..core.common.message import EventualSyftMessageWithoutReply
 from ..core.common.message import ImmediateSyftMessageWithReply
 from ..core.common.message import ImmediateSyftMessageWithoutReply
-from ..core.common.message import SignedEventualSyftMessageWithoutReply
 from ..core.common.message import SignedImmediateSyftMessageWithReply
 from ..core.common.message import SignedImmediateSyftMessageWithoutReply
 from ..core.common.message import SyftMessage
@@ -41,14 +40,10 @@ def connect(
             conn_type: ClientConnection,
             client_type: Client,
         ) -> None:
-            # Load an Signing Key instance
-            signing_key = SigningKey.generate()
-            verify_key = signing_key.verify_key
-
             # Use Server metadata
             # to build client route
             conn = conn_type(url=url)  # type: ignore
-            if not issubclass(client_type, VirtualMachineClient):
+            if not issubclass(client_type, VirtualMachineClient):  # type: ignore
                 metadata, user_key = conn.login(credentials=credentials)
             else:
                 metadata, user_key = conn._get_metadata()
@@ -88,7 +83,6 @@ def connect(
             ],
             route_index: int = 0,
         ) -> SyftMessage:
-            msg.address = None
             return super(GridClient, self).send_immediate_msg_with_reply(
                 msg=msg, route_index=route_index
             )
@@ -101,7 +95,6 @@ def connect(
             ],
             route_index: int = 0,
         ) -> None:
-            msg.address = None
             return super(GridClient, self).send_immediate_msg_without_reply(
                 msg=msg, route_index=route_index
             )
@@ -110,7 +103,6 @@ def connect(
         def send_eventual_msg_without_reply(
             self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
         ) -> None:
-            msg.address = None
             return super(GridClient, self).send_eventual_msg_without_reply(
                 msg=msg, route_index=route_index
             )
