@@ -40,7 +40,6 @@ class HTTPConnection(ClientConnection):
         :return: returns an instance of SignedImmediateSyftMessageWithReply.
         :rtype: SignedImmediateSyftMessageWithoutReply
         """
-
         # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
         blob = self._send_msg(msg=msg).content
@@ -109,14 +108,6 @@ class HTTPConnection(ClientConnection):
         return r
 
     def login(self, credentials: Dict) -> Tuple:
-        #response = requests.post(
-        #    url=self.base_url + HTTPConnection.LOGIN_ROUTE, json=credentials
-        #)
-        #content = json.loads(response.text)
-        #if response.status_code != requests.codes.ok:
-        #    raise Exception(content["error"])
-
-        #self.session_token = content["token"]
         # Login request
         response = requests.post(
             url=self.base_url + HTTPConnection.LOGIN_ROUTE, json=credentials
@@ -128,25 +119,30 @@ class HTTPConnection(ClientConnection):
         # If fail
         if response.status_code != requests.codes.ok:
             raise Exception(content["error"])
-        
+
         metadata = content["metadata"].encode("ISO-8859-1")
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(metadata)
-        
+
         # If success
         # Save session token
         self.session_token = content["token"]
+
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
     @syft_decorator(typechecking=True)
-    def _get_metadata(self) -> Metadata_PB:
+    def _get_metadata(self) -> Tuple:
         """Request Node's metadata
 
         :return: returns node metadata
         :rtype: str of bytes
         """
-        data: bytes = requests.get(self.base_url + "/metadata").content
+        response = requests.get(self.base_url + "/metadata")
+        content = json.loads(response.text)
+
+        metadata = content["metadata"].encode("ISO-8859-1")
         metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(data)
-        return metadata_pb
+        metadata_pb.ParseFromString(metadata)
+
+        return (metadata_pb, content["key"])
