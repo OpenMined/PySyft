@@ -13,10 +13,12 @@ import pandas as pd
 # syft relative
 from ....lib.python import String
 from ...common.uid import UID
+from ...io.address import Address
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
+from .service import CreateWorkerMessage
 from .service import RequestMessage
 
 
@@ -259,3 +261,10 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def new_vm(self, settings: dict) -> Address:
+        message = CreateWorkerMessage(
+            address=self.address, settings=settings, reply_to=self.address
+        )
+        response = self.send_immediate_msg_with_reply(msg=message)
+        return response.vm_address
