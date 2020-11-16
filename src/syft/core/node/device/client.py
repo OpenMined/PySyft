@@ -14,6 +14,7 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
+from .service import CreateVMMessage
 
 
 @final
@@ -46,27 +47,25 @@ class DeviceClient(Client):
 
         self.post_init()
 
-    # def create_vm(self, name:str):
-    #
-    #     # Step 1: create a message which will request for a VM to be created.
-    #     # we can set route=None because we know the message is just going directly
-    #     # to the device.
-    #     msg = CreateVirtualMachineMessage(vm_name=name, address=self.node_address)
-    #
-    #     # Step 2: Send the message to the device this client points to.
-    #     # Receive a reply_msg and save it in a variable.
-    #     reply_msg = self.send_msg(msg=msg)
-    #
-    #     # Step 3: Unpack the vm client from the reply message
-    #     vm_client = reply_msg.client
-    #
-    #     # Step 4: Return the client object directly. We assume that the
-    #     # client object knows how to send message to the VM no matter
-    #     # where it exists. Aka, we don't need to save the client in any
-    #     # particular kind of context to know how to use it. We should be
-    #     # able to "just use it" anywhere and it should "just work"... finding
-    #     # the appropriate VM.
-    #     return vm_client
+    def create_vm(self, settings: dict):
+        # Step 1: create a message which will request for a VM to be created.
+        # we can set route=None because we know the message is just going directly
+        # to the device.
+        msg = CreateVMMessage(
+            address=self.address, settings=settings, reply_to=self.address
+        )
+
+        # Step 2: Send the message to the device this client points to.
+        # Receive a reply_msg and save it in a variable.
+        reply_msg = self.send_immediate_msg_with_reply(msg=msg)
+
+        # Step 4: Return the client object directly. We assume that the
+        # client object knows how to send message to the VM no matter
+        # where it exists. Aka, we don't need to save the client in any
+        # particular kind of context to know how to use it. We should be
+        # able to "just use it" anywhere and it should "just work"... finding
+        # the appropriate VM.
+        return reply_msg
 
     @property
     def id(self) -> UID:
