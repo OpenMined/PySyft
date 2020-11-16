@@ -15,6 +15,7 @@ from ..core.common.message import ImmediateSyftMessageWithoutReply
 from ..core.common.message import SignedImmediateSyftMessageWithReply
 from ..core.common.message import SignedImmediateSyftMessageWithoutReply
 from ..core.common.message import SyftMessage
+from ..core.io.address import Address
 from ..core.io.connection import ClientConnection
 from ..core.io.location.specific import SpecificLocation
 from ..core.io.route import SoloRoute
@@ -27,10 +28,10 @@ from ..decorators.syft_decorator_impl import syft_decorator
 
 
 def connect(
-    credentials: Dict,
     url: str,
     conn_type: ClientConnection,
     client_type: Client,
+    credentials: Dict = {},
 ) -> Any:
     class GridClient(client_type):  # type: ignore
         def __init__(
@@ -43,7 +44,11 @@ def connect(
             # Use Server metadata
             # to build client route
             conn = conn_type(url=url)  # type: ignore
-            if not issubclass(client_type, VirtualMachineClient):  # type: ignore
+
+            perform_login = issubclass(client_type, DomainClient) or issubclass(
+                client_type, NetworkClient
+            )
+            if perform_login:  # type: ignore
                 metadata, user_key = conn.login(credentials=credentials)
             else:
                 metadata, user_key = conn._get_metadata()
@@ -62,7 +67,7 @@ def connect(
                 client_type=client_type, location=spec_location
             )
 
-            self.proxy_mode = False
+            self.proxy_address: Optional[Address] = None
 
             # Create a new client using the selected client type
             super().__init__(
@@ -83,9 +88,17 @@ def connect(
             ],
             route_index: int = 0,
         ) -> SyftMessage:
+
+            if self.proxy_address:
+                msg.address = self.proxy_address
+
             return super(GridClient, self).send_immediate_msg_with_reply(
                 msg=msg, route_index=route_index
             )
+
+        @syft_decorator(typechecking=True)
+        def proxy(self, vm_address: Address) -> None:
+            self.proxy_address = vm_address
 
         @syft_decorator(typechecking=True)
         def send_immediate_msg_without_reply(
@@ -95,6 +108,9 @@ def connect(
             ],
             route_index: int = 0,
         ) -> None:
+            if self.proxy_address:
+                msg.address = self.proxy_address
+
             return super(GridClient, self).send_immediate_msg_without_reply(
                 msg=msg, route_index=route_index
             )
@@ -103,6 +119,9 @@ def connect(
         def send_eventual_msg_without_reply(
             self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
         ) -> None:
+            if self.proxy_address:
+                msg.address = self.proxy_address
+
             return super(GridClient, self).send_eventual_msg_without_reply(
                 msg=msg, route_index=route_index
             )
