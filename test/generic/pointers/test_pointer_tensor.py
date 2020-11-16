@@ -398,6 +398,18 @@ def test_remote_T(workers):
     assert (bob_xT.get() == x.T).all()
 
 
+def test_remote_svd(workers):
+    """Test pointer.svd() functionality"""
+    bob = workers["bob"]
+    x = th.rand(5, 3)
+    local_u, local_s, local_v = x.svd()
+    bob_x = x.send(bob)
+    bob_u, bob_s, bob_v = bob_x.svd()
+    assert (local_u == bob_u.get()).all()
+    assert (local_s == bob_s.get()).all()
+    assert (local_v == bob_v.get()).all()
+
+
 def test_remote_function_with_multi_ouput(workers):
     """
     Functions like .split return several tensors, registration and response
