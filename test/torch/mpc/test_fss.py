@@ -17,11 +17,6 @@ def test_fss_class(op):
     keys_a, keys_b = class_.keygen(n_values=1)
 
     # NOTE: The mask is added by the Rust keygen
-    # alpha, s_00, s_01, *CW = primitive
-    # mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)  # IID in int32
-    # k0, k1 = [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
-
-    # NOTE: we don't need to access the shares of alpha outside of these tests
     alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
         np.uint64
     )
@@ -61,7 +56,6 @@ def test_fss_class(op):
     )
 
     x = np.array([[0, 2], [-2, 0]])
-    # x_masked = x + k0[0].reshape(x.shape) + k1[0].reshape(x.shape)
     x_masked = (x + alpha_a.reshape(x.shape) + alpha_b.reshape(x.shape)).astype(np.uint64)
     y0 = class_.eval(0, x_masked, keys_a)
     y1 = class_.eval(1, x_masked, keys_b)

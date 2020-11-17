@@ -14,7 +14,7 @@ psutil==5.7.0
 requests~=2.22.0
 RestrictedPython~=5.0
 requests-toolbelt==0.9.1
-sycret==0.0.1-alpha.3
+sycret~=0.1.0
 scipy~=1.4.1
 syft_proto~=0.5.3
 tblib~=1.6.0
