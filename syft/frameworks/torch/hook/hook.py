@@ -633,6 +633,14 @@ class TorchHook(FrameworkHook):
             ]  # all the element iterators from nn module should be listed here,
             return [getattr(nn_self, iter) for iter in iterators]
 
+        def named_tensor_iterator(nn_self):
+            """adding relavant iterators for the tensor elements"""
+            iterators = [
+                "named_parameters",
+                "named_buffers",
+            ]  # all the element iterators from nn module should be listed here,
+            return [getattr(nn_self, iter) for iter in iterators]
+
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
             for p in model.parameters():
@@ -714,8 +722,15 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for element_iter in tensor_iterator(nn_self):
-                for p in element_iter():
+            for element_iter in named_tensor_iterator(nn_self):
+                for name_p, p in element_iter():
+                    if "running_var" in name_p:
+                        if nn_self.training is False:
+                            sqrt_inv_p = 1 / torch.sqrt(p)
+                            if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
+                                p.child = sqrt_inv_p.child
+                            else:
+                                p.set_(sqrt_inv_p)
                     p.encrypt(inplace=True, **kwargs)
 
             return nn_self
@@ -728,9 +743,16 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for element_iter in tensor_iterator(nn_self):
-                for p in element_iter():
+            for element_iter in named_tensor_iterator(nn_self):
+                for name_p, p in element_iter():
                     p.decrypt(inplace=True)
+                    if "running_var" in name_p:
+                        if nn_self.training is False:
+                            sq_inv_p = 1 / torch.sqrt(p)
+                            if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
+                                p.child = sq_inv_p.child
+                            else:
+                                p.set_(sq_inv_p)
 
             return nn_self
 
@@ -807,6 +829,27 @@ class TorchHook(FrameworkHook):
                 )
 
         self.torch.nn.Module.location = location
+
+        def train(nn_self, mode=True):
+            """
+            This is a modification of nn.Module.train for BatchNorm, which stores the sqrt inverse of
+            the running_var in place of the current running_var when training is False, when
+            parameters are converted to fixed precision (and possibly encrypted) to avoid
+            recomputing this complex ops for every batch.
+            """
+            previous_mode = nn_self.training
+            nn_self.training = mode
+            for module in nn_self.children():
+                module.train(mode)
+            if mode is False and previous_mode is True and nn_self.running_var.is_wrapper:
+                raise ValueError(
+                    "Please don't call .eval() on an encrypted model containing a BatchNorm, or fix this."
+                )
+                # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
+                #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")
+                #     print('RUNING VAR CONVERTED')
+
+        self.torch.nn.modules.batchnorm._BatchNorm.train = train
 
         # Make sure PySyft uses the PyTorch version
         self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm

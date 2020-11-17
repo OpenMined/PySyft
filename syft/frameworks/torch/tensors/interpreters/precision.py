@@ -528,6 +528,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 result = 2 * result - result * result * new_self
             return result * self.signum()
         elif method == "newton":
+            # Note: this computes the SQRT of the reciprocal !!
             # it is assumed here that input values are taken in [-20, 20]
             x = None
             C = 20
