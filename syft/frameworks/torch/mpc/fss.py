@@ -15,7 +15,6 @@ import shaloop
 import multiprocessing
 import asyncio
 import sycret
-import os
 
 import torch as th
 import syft as sy
