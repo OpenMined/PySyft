@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package syft.lib.sympc;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/node/common/client.proto";
+import "proto/lib/python/dict.proto";
+
+
+message MPCSession {
+  syft.core.common.UID id = 1;
+  uint32 rank = 2;
+  syft.lib.python.Dict config = 3;
+  repeated syft.core.node.common.Client parties = 4;
+  syft.core.node.common.Client ttp = 5;
+}
