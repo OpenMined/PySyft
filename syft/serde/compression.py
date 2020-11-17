@@ -19,7 +19,8 @@ scheme_to_bytes = {
     LZ4: LZ4.to_bytes(1, byteorder="big"),
     ZLIB: ZLIB.to_bytes(1, byteorder="big"),
 }
-default_compress_scheme = LZ4
+default_compress_scheme = NO_COMPRESSION
+compress_scheme = NO_COMPRESSION
 
 ## SECTION: chosen Compression Algorithm
 
@@ -97,7 +98,8 @@ def _compress(decompressed_input_bin: bin) -> bin:
     """
     compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
     try:
-        z = scheme_to_bytes[compress_scheme] + compress_stream
+        # z = scheme_to_bytes[compress_scheme] + compress_stream
+        z = compress_stream
         return z
     except KeyError:
         raise CompressionNotFoundException(
@@ -117,11 +119,11 @@ def _decompress(binary: bin) -> bin:
 
     """
 
-    # check the 1-byte header to check the compression scheme used
-    compress_scheme = binary[0]
-
-    # remove the 1-byte header from the input stream
-    binary = binary[1:]
+    # # check the 1-byte header to check the compression scheme used
+    # compress_scheme = binary[0]
+    #
+    # # remove the 1-byte header from the input stream
+    # binary = binary[1:]
     # 1)  Decompress or return the original stream
     if compress_scheme == LZ4:
         return lz4.frame.decompress(binary)
