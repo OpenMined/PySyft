@@ -11,7 +11,6 @@ Note that the protocols are quite different in aspect from those papers
 """
 import math
 import numpy as np
-import shaloop
 import multiprocessing
 import asyncio
 import sycret
