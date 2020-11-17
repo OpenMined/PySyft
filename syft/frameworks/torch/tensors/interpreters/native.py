@@ -891,7 +891,11 @@ class TorchTensor(AbstractTensor):
             self.data.is_wrapper = False
         else:
             del self.child
-            self.set_(tensor)
+            try:
+                self.set_(tensor)
+            except RuntimeError:  # Some Module.parameters are LongTensors so set_(Float) will fail
+                tensor = tensor.type(self.dtype)
+                self.set_(tensor)
             self.is_wrapper = False
         return self
 

@@ -62,13 +62,13 @@ def batch_norm(
             )
         mean = input.mean(dim=0)
         var = input.var(dim=0) + eps
+        sqrt_inv_var = var.reciprocal(method="newton")
     else:
         mean = running_mean
         var = running_var
+        sqrt_inv_var = var  # already done in module.encrypt() !!
 
-    x = var.reciprocal(method="newton")
-
-    normalized = x * (input - mean)
+    normalized = sqrt_inv_var * (input - mean)
     result = normalized * weight + bias
 
     result = result.t()
