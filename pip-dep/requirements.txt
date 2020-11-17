@@ -7,6 +7,7 @@ git+https://github.com/facebookresearch/CrypTen.git@cdecc8de1514d7f36a5268a50c71
 importlib-resources~=1.5.0
 lz4~=3.0.2
 msgpack~=1.0.0
+msgpack-numpy~=0.4.7
 numpy~=1.18.1
 phe~=1.4.0
 Pillow>=7.1.0

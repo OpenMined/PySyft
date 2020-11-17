@@ -416,6 +416,7 @@ def make_torch_tensor(**kwargs):
                     tensor.id,  # (int) id
                     save_to_buffer(tensor),  # (bytes) serialized tensor
                     None,  # (AbstractTensor) chain
+                    False,  # (bool) requires_grad
                     None,  # (AbstractTensor) grad_chain
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
