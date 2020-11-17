@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 import syft as sy
@@ -150,12 +151,13 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     # We want to get relative positions of values in the input tensor that are used
     # by one filter convolution.
     # It basically is the position of the values used for the top left convolution.
-    pattern_ind = []
-    for ch in range(nb_channels_in):
-        for r in range(nb_rows_kernel):
-            for c in range(nb_cols_kernel):
-                pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
-                pattern_ind.append(pixel + ch * nb_rows_in * nb_cols_in)
+    pixels = (
+            np.zeros((nb_channels_in, nb_rows_kernel, nb_cols_kernel))
+            + np.array(range(nb_channels_in)).reshape(-1, 1, 1) * nb_rows_in * nb_cols_in
+            + np.array(range(nb_rows_kernel)).reshape(1, -1, 1) * nb_cols_in * dilation[0]
+            + np.array(range(nb_cols_kernel)).reshape(1, 1, -1) * dilation[1]
+    )
+    pattern_ind = pixels.astype("long").reshape(-1)
 
     # The image tensor is reshaped for the matrix multiplication:
     # on each row of the new tensor will be the input values used for each filter convolution
@@ -169,8 +171,7 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
         for cur_col_out in range(nb_cols_out):
             # For each new output value, we just need to shift the receptive field
             offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
-            tmp = [ind + offset for ind in pattern_ind]
-            im_reshaped.append(im_flat[:, tmp])
+            im_reshaped.append(im_flat[:, pattern_ind + offset])
     im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
     # The convolution kernels are also reshaped for the matrix multiplication
