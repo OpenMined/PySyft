@@ -4,6 +4,7 @@ from syft.core.common import UID
 from syft.core.store.storeable_object import StorableObject
 import torch as th
 
+
 def test_create_storable_obj() -> None:
     id = UID()
     data = UID()
@@ -14,7 +15,7 @@ def test_create_storable_obj() -> None:
 
 def test_serde_storable_obj() -> None:
     id = UID()
-    data = UID()
+    data = th.Tensor([1, 2, 3, 4])
     description = "This is a dummy test"
     tags = ["dummy", "test"]
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
@@ -31,12 +32,11 @@ def test_serde_storable_obj_2() -> None:
     tags = ["dummy", "test"]
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
     blob = obj.serialize()
-    ds_obj = sy.serialize(blob=blob)
+    ds_obj = sy.deserialize(blob=blob)
     assert obj.id == ds_obj.id
     assert (obj.data == ds_obj.data).all()
     assert obj.description == ds_obj.description
-    assert obj.tags == ds_boj.tags
-    
+    assert obj.tags == ds_obj.tags
 
 
 # def test_serde_storable_obj_with_wrapped_class() -> None:
