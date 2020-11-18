@@ -101,14 +101,14 @@ class StorableObject(AbstractStorableObject):
 
         proto.data.Pack(data)
 
-        if hasattr(self.data, "description"):
+        if hasattr(self, "description"):
             # Step 4: save the description into proto
-            proto.description = self.data.description  # type: ignore
+            proto.description = self.description  # type: ignore
 
         # QUESTION: Which one do we want, self.data.tags or self.tags or both???
-        if hasattr(self.data, "tags"):
+        if hasattr(self, "tags"):
             # Step 5: save tags into proto if they exist
-            if self.data.tags is not None and self.tags is not None:  # type: ignore
+            if self.tags is not None:  # type: ignore
                 for tag in self.tags:
                     proto.tags.append(tag)
 
@@ -206,8 +206,8 @@ class StorableObject(AbstractStorableObject):
         return _deserialize(blob=proto)
 
     @staticmethod
-    def get_data_protobuf_schema() -> Optional[Type]:
-        return None
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return StorableObject_PB
 
     @staticmethod
     def construct_new_object(
