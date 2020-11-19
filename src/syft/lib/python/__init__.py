@@ -16,6 +16,7 @@ from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .set import Set
 from .string import String
 from .tuple import Tuple
 
@@ -58,6 +59,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
+        ("syft.lib.python.Set", "syft.lib.python.Set", Set),
         (
             "syft.lib.python.ValuesIndices",
             "syft.lib.python.ValuesIndices",
@@ -371,6 +373,53 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__add__", "syft.lib.python.PyContainer"),
+        ("syft.lib.python.Any.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__next__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__radd__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__truediv__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__rtruediv__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__floordiv__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__rfloordiv__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__mul__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
+        ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__eq__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__ge__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__gt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__iand__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__ior__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__isub__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__ixor__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__le__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__len__", "syft.lib.python.Int"),
+        ("syft.lib.python.Set.__lt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__ne__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__or__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__sub__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__xor__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.add", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.clear", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.difference", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.difference_update", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.discard", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.intersection", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.intersection_update", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.isdisjoint", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.issuperset", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.pop", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.remove", "syft.lib.python._SyNone"),
+        (
+            "syft.lib.python.Set.symmetric_difference_update",
+            "syft.lib.python._SyNone",
+            SyNone,
+        ),
+        ("syft.lib.python.Set.symmetric_difference", "syft.lib.python.Set", Set),
+        ("syft.lib.python.Set.union", "syft.lib.python.Set", Set),
+        ("syft.lib.python.Set.update", "syft.lib.python._SyNone", _SyNone),
         # ValueIndicies
         (
             "syft.lib.python.ValuesIndices.values",
