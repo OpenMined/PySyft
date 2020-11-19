@@ -241,4 +241,3 @@ class DIF:
         x = x.reshape(-1)
         flat_result = dif.eval(b, x, k_b)
         return flat_result.astype(np.int64).reshape(original_shape)
-

@@ -1,14 +1,11 @@
 from collections import defaultdict
 from typing import List
 
-import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.frameworks.torch.mpc.beaver import build_triple
 from syft.workers.abstract import AbstractWorker
-
-import time
 
 
 class PrimitiveStorage:
@@ -100,18 +97,13 @@ class PrimitiveStorage:
                 )
         elif op in {"fss_eq", "fss_comp"}:
             # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
-            # For each primitive,s the first line is the AES keys
+            # For each primitive, the first line is the AES keys
             available_instances = len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = primitive_stack[0][0 : n_instances + 1]
                 if remove:
-                    # Keep the AES keys and drop the first n_instance primitives.
-                    remaining_indices = (
-                        np.r_[0, n_instances + 1 : available_instances + 1]
-                        if available_instances > n_instances
-                        else []
-                    )
-                    primitive_stack[0] = primitive_stack[0][remaining_indices]
+                    # We throw the whole key array away, not just the keys we used
+                    del primitive_stack[0]
                 return keys
             else:
                 if self._owner.verbose:
@@ -126,7 +118,11 @@ class PrimitiveStorage:
                 )
 
     def provide_primitives(
-        self, op: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
+        self,
+        op: str,
+        workers: List[AbstractWorker],
+        n_instances: int = 10,
+        **kwargs,
     ):
         """Build n_instances of crypto primitives of the different crypto_types given and
         send them to some workers.
@@ -144,14 +140,12 @@ class PrimitiveStorage:
 
         builder = self._builders[op]
 
-        t = time.time()
         primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
 
         for i, worker in enumerate(workers):
-            t = time.time()
             worker_message = self._owner.create_worker_command_message(
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
