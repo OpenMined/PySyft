@@ -467,7 +467,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(operand, int):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
-        if isinstance(operand, (torch.LongTensor, torch.IntTensor)):
+        if isinstance(operand, torch.Tensor):
             operand = operand.share(
                 *self.child.keys(), **self.get_class_attributes(), **no_wrap
             ).child

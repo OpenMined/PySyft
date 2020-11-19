@@ -495,11 +495,11 @@ def convert(x):
 # TODO
 keys = []
 for _ in range(4):
-    key = th.tensor([4192687974420127714,  651949261783629689], device='cuda', dtype=th.long)
+    key = th.tensor([4192687974420127714, 651949261783629689], device="cuda", dtype=th.long)
     keys.append(key)
-#key = th.tensor(
+# key = th.tensor(
 #    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
-#)
+# )
 
 
 def split_last_bit(buffer):
@@ -563,10 +563,7 @@ def H(seed, idx=0):
     assert seed.shape[0] == λs
 
     if n_values not in H_cache:
-        H_cache[n_values] = [
-            th.empty(λs, n_values, dtype=th.long, device="cuda")
-            for _ in range(4)
-        ]
+        H_cache[n_values] = [th.empty(λs, n_values, dtype=th.long, device="cuda") for _ in range(4)]
 
     buffers = H_cache[n_values]
     for i in range(4):
