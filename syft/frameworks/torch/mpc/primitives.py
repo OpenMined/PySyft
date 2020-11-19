@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import List
 
-import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
@@ -100,18 +99,13 @@ class PrimitiveStorage:
                 )
         elif op in {"fss_eq", "fss_comp"}:
             # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
-            # For each primitive,s the first line is the AES keys
+            # For each primitive, the first line is the AES keys
             available_instances = len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = primitive_stack[0][0 : n_instances + 1]
                 if remove:
-                    # Keep the AES keys and drop the first n_instance primitives.
-                    remaining_indices = (
-                        np.r_[0, n_instances + 1 : available_instances + 1]
-                        if available_instances > n_instances
-                        else []
-                    )
-                    primitive_stack[0] = primitive_stack[0][remaining_indices]
+                    # We throw the whole key array away, not just the keys we used
+                    del primitive_stack[0]
                 return keys
             else:
                 if self._owner.verbose:

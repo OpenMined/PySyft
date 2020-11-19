@@ -2,7 +2,7 @@ import pytest
 import torch as th
 import numpy as np
 
-from syft.frameworks.torch.mpc.fss import DPF, DIF, n
+from syft.frameworks.torch.mpc.fss import DPF, DIF, N
 
 # NOTE: the FSS class is also tested in the Sycret package
 
@@ -17,10 +17,10 @@ def test_fss_class(op):
     keys_a, keys_b = class_.keygen(n_values=1)
 
     # NOTE: The mask is added by the Rust keygen
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
 
@@ -33,10 +33,10 @@ def test_fss_class(op):
 
     # 1D tensor
     keys_a, keys_b = class_.keygen(n_values=3)
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
     x = np.array([0, 2, -2])
@@ -48,10 +48,10 @@ def test_fss_class(op):
 
     # 2D tensor
     keys_a, keys_b = class_.keygen(n_values=4)
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
 
@@ -64,10 +64,10 @@ def test_fss_class(op):
 
     # 3D tensor
     keys_a, keys_b = class_.keygen(n_values=8)
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
     x = np.array([[[0, 2], [-2, 0]], [[0, 2], [-2, 0]]])
@@ -87,10 +87,10 @@ def test_torch_to_numpy(op):
     # 1D tensor
     keys_a, keys_b = class_.keygen(n_values=3)
 
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
 
@@ -119,10 +119,10 @@ def test_using_crypto_store(workers, op):
     keys_a = alice.crypto_store.get_keys(primitive, 3, remove=True)
     keys_b = bob.crypto_store.get_keys(primitive, 3, remove=True)
 
-    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_a = np.frombuffer(np.ascontiguousarray(keys_a[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
-    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:4]), dtype=np.uint32).astype(
+    alpha_b = np.frombuffer(np.ascontiguousarray(keys_b[1:, 0:N]), dtype=np.uint32).astype(
         np.uint64
     )
 
