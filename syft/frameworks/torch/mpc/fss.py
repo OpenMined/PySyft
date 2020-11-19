@@ -563,7 +563,7 @@ def H(seed, idx=0):
     assert seed.shape[0] == λs
 
     if n_values not in H_cache:
-        ones_dict2[n_values] = [
+        H_cache[n_values] = [
             th.empty(λs, n_values, dtype=th.long, device="cuda")
             for _ in range(4)
         ]
