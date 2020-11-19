@@ -152,10 +152,10 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     # by one filter convolution.
     # It basically is the position of the values used for the top left convolution.
     pixels = (
-            np.zeros((nb_channels_in, nb_rows_kernel, nb_cols_kernel))
-            + np.array(range(nb_channels_in)).reshape(-1, 1, 1) * nb_rows_in * nb_cols_in
-            + np.array(range(nb_rows_kernel)).reshape(1, -1, 1) * nb_cols_in * dilation[0]
-            + np.array(range(nb_cols_kernel)).reshape(1, 1, -1) * dilation[1]
+        np.zeros((nb_channels_in, nb_rows_kernel, nb_cols_kernel))
+        + np.array(range(nb_channels_in)).reshape(-1, 1, 1) * nb_rows_in * nb_cols_in
+        + np.array(range(nb_rows_kernel)).reshape(1, -1, 1) * nb_cols_in * dilation[0]
+        + np.array(range(nb_cols_kernel)).reshape(1, 1, -1) * dilation[1]
     )
     pattern_ind = pixels.astype("long").reshape(-1)
 
