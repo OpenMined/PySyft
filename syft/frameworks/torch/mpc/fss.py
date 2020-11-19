@@ -493,9 +493,13 @@ def convert(x):
 
 
 # TODO
-key = th.tensor(
-    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
-)
+keys = []
+for _ in range(4):
+    key = th.tensor([4192687974420127714,  651949261783629689], device='cuda', dtype=th.long)
+    keys.append(key)
+#key = th.tensor(
+#    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
+#)
 
 
 def split_last_bit(buffer):
@@ -509,22 +513,37 @@ def G(seed):
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
 
-    seed = seed  # .cuda()
-    urandom_gen = csprng.create_const_generator(key)
-    mask = th.empty(2 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
-    repl_seed = seed.repeat(2, 1)
-    # print('mask, repl_seed', mask.shape, repl_seed.shape)
-    buffer = mask + repl_seed
-    valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
+    buffers = []
+    for i in range(2):
+        key = keys[i]
+        buffer = th.empty(λs, n_values, dtype=th.long, device="cuda")
+        csprng.encrypt(seed, buffer, key, "aes128", "ecb")
+        buffers.append(buffer)
 
-    # [λ, 1, λ, 1]
-    # [λ - 64, 64, 1, λ - 64, 64, 1]
-    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
-    valuebits[0, 1] = buffer[1]
+    valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
+    valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
+    valuebits[0, 1] = buffers[0][1]
     valuebits[0, 2] = last_bit
-    valuebits[1, 0], last_bit = split_last_bit(buffer[2])
-    valuebits[1, 1] = buffer[3]
+    valuebits[1, 0], last_bit = split_last_bit(buffers[1][0])
+    valuebits[1, 1] = buffers[1][1]
     valuebits[1, 2] = last_bit
+
+    # seed = seed  # .cuda()
+    # urandom_gen = csprng.create_const_generator(key)
+    # mask = th.empty(2 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
+    # repl_seed = seed.repeat(2, 1)
+    # # print('mask, repl_seed', mask.shape, repl_seed.shape)
+    # buffer = mask + repl_seed
+    # valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
+    #
+    # # [λ, 1, λ, 1]
+    # # [λ - 64, 64, 1, λ - 64, 64, 1]
+    # valuebits[0, 0], last_bit = split_last_bit(buffer[0])
+    # valuebits[0, 1] = buffer[1]
+    # valuebits[0, 2] = last_bit
+    # valuebits[1, 0], last_bit = split_last_bit(buffer[2])
+    # valuebits[1, 1] = buffer[3]
+    # valuebits[1, 2] = last_bit
 
     return valuebits
 
@@ -543,27 +562,48 @@ def H(seed, idx=0):
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
 
-    seed = seed  # .cuda()
-    urandom_gen = csprng.create_const_generator(key)
-    mask = th.empty(4 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
-    repl_seed = seed.repeat(4, 1)
-    # print('mask, repl_seed', mask.shape, repl_seed.shape)
-    buffer = mask + repl_seed
+    buffers = []
+    for i in range(4):
+        key = keys[i]
+        buffer = th.empty(λs, n_values, dtype=th.long, device="cuda")
+        csprng.encrypt(seed, buffer, key, "aes128", "ecb")
+        buffers.append(buffer)
+
     valuebits = th.empty(2, 6, n_values, dtype=th.long, device="cuda")
-
-    # [λ, 1, λ, 1, λ, 1, λ, 1]
-    # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
-
-    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
-    valuebits[0, 1] = buffer[1]
+    valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
+    valuebits[0, 1] = buffers[0][1]
     valuebits[0, 2] = last_bit
-    valuebits[0, 3], last_bit = split_last_bit(buffer[2])
-    valuebits[0, 4] = buffer[3]
+    valuebits[0, 3], last_bit = split_last_bit(buffers[1][0])
+    valuebits[0, 4] = buffers[1][1]
     valuebits[0, 5] = last_bit
-    valuebits[1, 0], last_bit = split_last_bit(buffer[4])
-    valuebits[1, 1] = buffer[5]
+    valuebits[1, 0], last_bit = split_last_bit(buffers[2][0])
+    valuebits[1, 1] = buffers[2][1]
     valuebits[1, 2] = last_bit
-    valuebits[1, 3], last_bit = split_last_bit(buffer[6])
-    valuebits[1, 4] = buffer[7]
+    valuebits[1, 3], last_bit = split_last_bit(buffers[3][0])
+    valuebits[1, 4] = buffers[3][1]
     valuebits[1, 5] = last_bit
+
+    # seed = seed  # .cuda()
+    # urandom_gen = csprng.create_const_generator(key)
+    # mask = th.empty(4 * λs, n_values, dtype=th.long, device="cuda").random_(generator=urandom_gen)
+    # repl_seed = seed.repeat(4, 1)
+    # # print('mask, repl_seed', mask.shape, repl_seed.shape)
+    # buffer = mask + repl_seed
+    # valuebits = th.empty(2, 6, n_values, dtype=th.long, device="cuda")
+    #
+    # # [λ, 1, λ, 1, λ, 1, λ, 1]
+    # # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
+    #
+    # valuebits[0, 0], last_bit = split_last_bit(buffer[0])
+    # valuebits[0, 1] = buffer[1]
+    # valuebits[0, 2] = last_bit
+    # valuebits[0, 3], last_bit = split_last_bit(buffer[2])
+    # valuebits[0, 4] = buffer[3]
+    # valuebits[0, 5] = last_bit
+    # valuebits[1, 0], last_bit = split_last_bit(buffer[4])
+    # valuebits[1, 1] = buffer[5]
+    # valuebits[1, 2] = last_bit
+    # valuebits[1, 3], last_bit = split_last_bit(buffer[6])
+    # valuebits[1, 4] = buffer[7]
+    # valuebits[1, 5] = last_bit
     return valuebits
