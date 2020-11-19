@@ -548,7 +548,7 @@ def G(seed):
     return valuebits
 
 
-empty_dict = {}
+H_cache = {}
 
 
 def H(seed, idx=0):
@@ -562,12 +562,16 @@ def H(seed, idx=0):
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
 
-    buffers = []
+    if n_values not in H_cache:
+        ones_dict2[n_values] = [
+            th.empty(λs, n_values, dtype=th.long, device="cuda")
+            for _ in range(4)
+        ]
+
+    buffers = H_cache[n_values]
     for i in range(4):
         key = keys[i]
-        buffer = th.empty(λs, n_values, dtype=th.long, device="cuda")
-        csprng.encrypt(seed, buffer, key, "aes128", "ecb")
-        buffers.append(buffer)
+        csprng.encrypt(seed, buffers[i], key, "aes128", "ecb")
 
     valuebits = th.empty(2, 6, n_values, dtype=th.long, device="cuda")
     valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
