@@ -19,6 +19,7 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
+from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
@@ -33,7 +34,7 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         add_instead_of_remove: bool,
-        target_verify_key: VerifyKey,
+        target_verify_key: Optional[VerifyKey],
         target_object_id: UID,
         address: Address,
         msg_id: Optional[UID] = None,
@@ -63,7 +64,9 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchPermissionUpdateMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            target_verify_key=bytes(self.target_verify_key),
+            target_verify_key=bytes(self.target_verify_key)
+            if self.target_verify_key
+            else None,
             target_object_id=self.target_object_id.serialize(),
             add_instead_of_remove=self.add_instead_of_remove,
         )
@@ -88,7 +91,9 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchPermissionUpdateMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            target_verify_key=VerifyKey(proto.target_verify_key),
+            target_verify_key=VerifyKey(proto.target_verify_key)
+            if proto.target_verify_key
+            else None,
             target_object_id=_deserialize(blob=proto.target_object_id),
             add_instead_of_remove=proto.add_instead_of_remove,
         )
@@ -122,10 +127,15 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         msg: ObjectSearchPermissionUpdateMessage,
         verify_key: VerifyKey,
     ) -> None:
+        target_verify_key = msg.target_verify_key or VerifyAll
         if msg.add_instead_of_remove:
-            node.store[msg.target_object_id].search_permissions[verify_key] = msg.id
+            node.store[msg.target_object_id].search_permissions[
+                target_verify_key
+            ] = msg.id
         else:
-            node.store[msg.target_object_id].search_permissions.pop(verify_key, None)
+            node.store[msg.target_object_id].search_permissions.pop(
+                target_verify_key, None
+            )
 
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:
