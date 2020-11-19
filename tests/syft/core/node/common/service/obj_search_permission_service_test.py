@@ -52,7 +52,9 @@ def test_object_search_permissons_update_execute_add() -> None:
     )
 
     assert (
-        bob_phone.store[ptr.id_at_location].search_permissions[bob_phone.verify_key]
+        bob_phone.store[ptr.id_at_location].search_permissions[
+            bob_phone_client.verify_key
+        ]
         == msg.id
     )
 
@@ -77,6 +79,6 @@ def test_object_search_permissons_update_execute_remove() -> None:
     )
 
     assert (
-        bob_phone.verify_key
+        bob_phone_client.verify_key
         not in bob_phone.store[ptr.id_at_location].search_permissions
     )

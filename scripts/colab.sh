@@ -7,7 +7,7 @@
 << 'MULTILINE-COMMENT'
 %%capture
 # Step 1: Clone PySyft Library
-branch_name = "syft_0.3.0" # pick a branch name
+branch_name = "master" # pick a branch name
 ! git clone --single-branch --branch $branch_name https://github.com/OpenMined/PySyft.git
 
 # Step 2: Setup Colab Environment
