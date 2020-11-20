@@ -109,17 +109,20 @@ def create_app(
 
     db.create_all()
 
-    if not database_exists(db.engine.url) or app.config["TESTING"]:
+    if not database_exists(db.engine.url):
         seed_db()
 
-    role = db.session.query(Role.id).filter_by(name="Owner").first()
-    user = User.query.filter_by(role=role.id).first()
-    if user:
-        global node
-        signing_key = SigningKey(user.private_key.encode("utf-8"), encoder=HexEncoder)
-        node.signing_key = signing_key
-        node.verify_key = node.signing_key.verify_key
-        node.root_verify_key = node.verify_key
+    if not app.config["TESTING"]:
+        role = db.session.query(Role.id).filter_by(name="Owner").first()
+        user = User.query.filter_by(role=role.id).first()
+        if user:
+            global node
+            signing_key = SigningKey(
+                user.private_key.encode("utf-8"), encoder=HexEncoder
+            )
+            node.signing_key = signing_key
+            node.verify_key = node.signing_key.verify_key
+            node.root_verify_key = node.verify_key
     db.session.commit()
 
     # Threads

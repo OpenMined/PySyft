@@ -13,13 +13,14 @@ Flask = "^1.1.1"
 Flask-Sockets = "^0.2.1"
 numpy = "^1.18.5"
 sqlitedict = "^1.6.0"
-syft = { git = "https://github.com/OpenMined/PySyft.git", branch = "syft_0.3.0"}
+syft = "0.3.0"
 sqlalchemy_utils = "^0.36.8"
 flask_sqlalchemy = "^2.4.4"
 flask_migrate = "^2.5.3"
 sqlalchemy_mixins = "^1.2.1"
 PyJWT = "^1.7.1"
 bcrypt = "^3.2.0"
+Flask-Executor = "^0.9.4"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
