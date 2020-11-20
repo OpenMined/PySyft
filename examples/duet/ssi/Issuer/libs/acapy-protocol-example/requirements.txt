@@ -1,0 +1,3 @@
+aries-cloudagent[indy]@git+https://github.com/hyperledger/aries-cloudagent-python
+flake8
+python-dateutil

@@ -1,0 +1,2 @@
+aries-cloudagent[indy]
+python-dateutil
