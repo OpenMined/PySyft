@@ -7,8 +7,8 @@ services:
       - indy_demo
   datascientist-agent:
     build:
-      context: ../../
-      dockerfile: dockerfiles/agents/Dockerfile.ngrok
+      context:
+      dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-datascientist-agent
       - ADMIN_URL=http://agent:${DATASCIENTIST_ADMIN_PORT}
@@ -28,12 +28,12 @@ services:
       - ${DATASCIENTIST_ADMIN_PORT}:${DATASCIENTIST_ADMIN_PORT}
     networks:
       - indy_demo
-    volumes:
-      - agent:/home/indy/.indy_client/wallet
+#    volumes:
+#      - agent:/home/indy/.indy_client/wallet
   datascientist-notebook:
     build:
-      context: ../../
-      dockerfile: dockerfiles/controllers/Dockerfile.attachmentcontroller
+      context: .
+      dockerfile: Dockerfile.basiccontroller
       args:
         - jupyter_port=${JUPYTER_PORT}
     depends_on:
@@ -52,8 +52,8 @@ services:
       - indy_demo
   dataowner-agent:
     build:
-      context: ../../
-      dockerfile: dockerfiles/agents/Dockerfile.ngrok
+      context: .
+      dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-dataowner-agent
       - ADMIN_URL=http://agent:${DATAOWNER_ADMIN_PORT}
@@ -73,12 +73,12 @@ services:
       - ${DATAOWNER_ADMIN_PORT}:${DATAOWNER_ADMIN_PORT}
     networks:
       - indy_demo
-    volumes:
-      - agent:/home/indy/.indy_client/wallet
+#    volumes:
+#      - agent:/home/indy/.indy_client/wallet
   dataowner-notebook:
     build:
-      context: ../../
-      dockerfile: dockerfiles/controllers/Dockerfile.attachmentcontroller
+      context: .
+      dockerfile: Dockerfile.agent
       args:
         - jupyter_port=${JUPYTER_PORT}
     depends_on:

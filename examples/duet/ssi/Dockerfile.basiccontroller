@@ -8,12 +8,12 @@ ENV env_jupyter_port=jupyter_port
 # Setup workspace environment
 RUN apt-get update && apt-get install -y gcc
 RUN conda install jupyter notebook=5.7.8
-ADD libs/aries-basic-controller .
+
 
 #
 #
-RUN pip install --no-cache-dir -e .
-#RUN pip install -r requirements.txt
+ADD requirements.txt .
+RUN pip install -r requirements.txt
 
 #RUN pip install aiohttp
 #RUN export PYTHONPATH="$PYTHONPATH:/aries_basic_controller"
