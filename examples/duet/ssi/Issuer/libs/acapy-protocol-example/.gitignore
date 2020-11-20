@@ -1,0 +1,10 @@
+__pycache__
+env
+**.egg-info
+.idea/
+
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Declare files that will always have LF line endings on checkout.
+*.sh text eol=lf
