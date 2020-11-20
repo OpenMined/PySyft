@@ -2,7 +2,7 @@ version: "3"
 services:
   ngrok-datascientist-agent:
     image: wernight/ngrok
-    command: ngrok http agent:${DATASCIENTIST_HTTP_PORT} --log stdout
+    command: ngrok http datascientist-agent:${DATASCIENTIST_HTTP_PORT} --log stdout
     networks:
       - indy_demo
   datascientist-agent:
@@ -11,12 +11,12 @@ services:
       dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-datascientist-agent
-      - ADMIN_URL=http://agent:${DATASCIENTIST_ADMIN_PORT}
-      - DATASCIENTIST_NAME=${DATASCIENTIST_NAME}
+      - ADMIN_URL=http://datascientist-agent:${DATASCIENTIST_ADMIN_PORT}
+      - DAGENT./,_NAME=${DATASCIENTIST_NAME}
       - ADMIN_PORT=${DATASCIENTIST_ADMIN_PORT}
       - HTTP_PORT=${DATASCIENTIST_HTTP_PORT}
       - WEBHOOK_URL=${DATASCIENTIST_WEBHOOK_URL}
-      - DATASCIENTIST_ENDPOINT=${DATASCIENTIST_DATASCIENTIST_ENDPOINT}
+      - AGENT_ENDPOINT=${DATASCIENTIST_ENDPOINT}
       - WALLET_SEED=${DATASCIENTIST_WALLET_SEED}
       - WALLET_NAME=${DATASCIENTIST_WALLET_NAME}
       - WALLET_TYPE=${WALLET_TYPE}
@@ -56,12 +56,12 @@ services:
       dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-dataowner-agent
-      - ADMIN_URL=http://agent:${DATAOWNER_ADMIN_PORT}
-      - DATAOWNER_NAME=${DATAOWNER_NAME}
+      - ADMIN_URL=http://dataowner-agent:${DATAOWNER_ADMIN_PORT}
+      - AGENT_NAME=${DATAOWNER_NAME}
       - ADMIN_PORT=${DATAOWNER_ADMIN_PORT}
       - HTTP_PORT=${DATAOWNER_HTTP_PORT}
       - WEBHOOK_URL=${DATAOWNER_WEBHOOK_URL}
-      - DATAOWNER_ENDPOINT=${DATAOWNER_DATAOWNER_ENDPOINT}
+      - AGENT_ENDPOINT=${DATAOWNER_ENDPOINT}
       - WALLET_SEED=${DATAOWNER_WALLET_SEED}
       - WALLET_NAME=${DATAOWNER_WALLET_NAME}
       - WALLET_TYPE=${WALLET_TYPE}
@@ -78,7 +78,7 @@ services:
   dataowner-notebook:
     build:
       context: .
-      dockerfile: Dockerfile.agent
+      dockerfile: Dockerfile.basiccontroller
       args:
         - jupyter_port=${JUPYTER_PORT}
     depends_on:
