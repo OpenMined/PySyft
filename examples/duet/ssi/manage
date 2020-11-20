@@ -62,7 +62,7 @@ EOF
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-DEFAULT_CONTAINERS="agent controller-notebook ngrok-agent "
+DEFAULT_CONTAINERS="datascientist-agent datascientist-notebook ngrok-datascientist-agent dataowner-agent dataowner-notebook ngrok-dataowner-agent"
 
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
@@ -132,13 +132,13 @@ configureEnvironment() {
 
   # agent
   export DATAOWNER_NAME="DATAOWNER"
-  export DATAOWNER_ADMIN_PORT=8021
+  export DATAOWNER_ADMIN_PORT=8051
   export DATAOWNER_API_KEY="agent_api_123456789"
-  export DATAOWNER_HTTP_PORT=8020
-  export DATAOWNER_WEBHOOK_PORT=8022
+  export DATAOWNER_HTTP_PORT=8050
+  export DATAOWNER_WEBHOOK_PORT=8052
   export DATAOWNER_WEBHOOK_URL=${DATAOWNER_WEBHOOK_URL:-http://$DOCKERHOST:$DATAOWNER_WEBHOOK_PORT}
   export DATAOWNER_DATAOWNER_ENDPOINT=${DATAOWNER_DATAOWNER_ENDPOINT:-http://$DOCKERHOST:$DATAOWNER_HTTP_PORT}
-  export DATAOWNER_JUPYTER_PORT="8888"
+  export DATAOWNER_JUPYTER_PORT="8889"
   export DATAOWNER_WALLET_NAME="agent Wallet"
   export DATAOWNER_WALLET_KEY="owner_key_000000000000000000000"
   export DATAOWNER_WALLET_SEED="owner_seed_000000000000000000000"
