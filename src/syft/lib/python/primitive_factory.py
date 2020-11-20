@@ -1,5 +1,6 @@
 # stdlib
 from abc import ABC
+from collections import OrderedDict
 from collections import UserDict
 from collections import UserList
 from collections import UserString
@@ -30,6 +31,7 @@ primitives = [
     UserDict,
     UserList,
     UserString,
+    OrderedDict,
 ]
 
 PrimitiveType = Union[
@@ -47,6 +49,7 @@ PrimitiveType = Union[
     UserDict,
     UserList,
     UserString,
+    OrderedDict,
 ]
 
 
@@ -71,9 +74,6 @@ class PrimitiveFactory(ABC):
         # syft relative
 
         if isinstance(value, PyPrimitive):
-            return value
-
-        if value is ...:
             return value
 
         if isinstance(value, bool):
@@ -112,12 +112,18 @@ class PrimitiveFactory(ABC):
                             new_list.append(val)
                 return python.List(value=new_list, id=id)
 
-        if type(value) in [dict, UserDict]:
+        if type(value) in [dict, UserDict, OrderedDict]:
+            constructor = (
+                python.collections.OrderedDict
+                if type(value) is OrderedDict
+                else python.Dict
+            )
+
             if not recurse:
-                new_dict = python.Dict(value)
+                new_dict = constructor(value)
             else:
                 # allow recursive primitive downcasting
-                new_dict = python.Dict()
+                new_dict = constructor()
                 if value is not None:
                     items = getattr(value, "items", None)
                     if items is not None:
