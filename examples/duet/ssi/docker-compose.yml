@@ -7,7 +7,7 @@ services:
       - indy_demo
   datascientist-agent:
     build:
-      context:
+      context: .
       dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-datascientist-agent
@@ -37,7 +37,7 @@ services:
       args:
         - jupyter_port=${JUPYTER_PORT}
     depends_on:
-      - agent
+      - datascientist-agent
     networks:
       - indy_demo
     volumes:
@@ -47,7 +47,7 @@ services:
       - ${DATASCIENTIST_WEBHOOK_PORT}:${DATASCIENTIST_WEBHOOK_PORT}
   ngrok-dataowner-agent:
     image: wernight/ngrok
-    command: ngrok http agent:${DATAOWNER_HTTP_PORT} --log stdout
+    command: ngrok http dataowner-agent:${DATAOWNER_HTTP_PORT} --log stdout
     networks:
       - indy_demo
   dataowner-agent:
@@ -82,15 +82,15 @@ services:
       args:
         - jupyter_port=${JUPYTER_PORT}
     depends_on:
-      - agent
+      - dataowner-agent
     networks:
       - indy_demo
     volumes:
       - ./notebooks/dataowner:/workspace
     ports:
-      - "8888:8888"
+      - "8889:8888"
       - ${DATAOWNER_WEBHOOK_PORT}:${DATAOWNER_WEBHOOK_PORT}
-volumes:
-  agent:
+#volumes:
+#  agent:
 networks:
   indy_demo:
