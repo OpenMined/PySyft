@@ -3,7 +3,6 @@ name: Tests
 on:
   pull_request:
     branches:
-      - master
       - dev
     paths:
       - '**.py'
