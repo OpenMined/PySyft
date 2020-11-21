@@ -803,6 +803,16 @@ class FixedPrecisionTensor(AbstractTensor):
         result = _self.argmin(**kwargs)
         return result.long() * self.base ** self.precision_fractional
 
+    @overloaded.method
+    def mean(self, _self, **kwargs):
+        if isinstance(_self, AdditiveSharingTensor):
+            return _self.mean(**kwargs)
+
+        sum_value = _self.sum(**kwargs)
+        result = sum_value // sum_value.numel()
+
+        return result
+
     def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu

@@ -841,10 +841,21 @@ class TorchHook(FrameworkHook):
             nn_self.training = mode
             for module in nn_self.children():
                 module.train(mode)
-            if mode is False and previous_mode is True and nn_self.running_var.is_wrapper:
-                raise ValueError(
-                    "Please don't call .eval() on an encrypted model containing a BatchNorm, or fix this."
-                )
+            if (
+                mode is False
+                and previous_mode is True
+                and nn_self.running_var is not None
+                and nn_self.running_var.is_wrapper
+            ):
+                next_node = nn_self.running_var
+                if isinstance(next_node.child, AutogradTensor):
+                    next_node = next_node.child
+                if isinstance(next_node.child, FixedPrecisionTensor):
+                    next_node = next_node.child
+                if isinstance(next_node.child, AdditiveSharingTensor):
+                    raise ValueError(
+                        "Please don't call .eval() on an encrypted model containing a BatchNorm, or fix this."
+                    )
                 # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
                 #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")
                 #     print('RUNING VAR CONVERTED')
