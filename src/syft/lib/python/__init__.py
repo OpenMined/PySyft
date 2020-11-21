@@ -16,6 +16,7 @@ from .dict import Dict
 from .dict import DictWrapper
 from .float import Float
 from .int import Int
+from .iterator import Iterator
 from .list import List
 from .namedtuple import ValuesIndices
 from .namedtuple import ValuesIndicesWrapper
@@ -113,6 +114,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
+        ("syft.lib.python.Iterator", "syft.lib.python.Iterator", Iterator),
         (
             "syft.lib.python.ValuesIndices",
             "syft.lib.python.ValuesIndices",
@@ -124,9 +126,9 @@ def create_python_ast() -> Globals:
         # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int", List),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any", Any),
-        ("syft.lib.python.List.__iter__", "syft.lib.python.Any", Any),
         ("syft.lib.python.List.__add__", "syft.lib.python.List", List),
         ("syft.lib.python.List.append", "syft.lib.python._SyNone", _SyNone),
+        ("syft.lib.python.List.__iter__", "syft.lib.python.Iterator", Iterator),
         ("syft.lib.python.List.__gt__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.List.__lt__", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.List.__le__", "syft.lib.python.Bool", Bool),
@@ -155,7 +157,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.insert", "syft.lib.python._SyNone", _SyNone),
         ("syft.lib.python.List.clear", "syft.lib.python._SyNone", _SyNone),
         ("syft.lib.python.List.extend", "syft.lib.python._SyNone", _SyNone),
-        ("syft.lib.python.List.__reversed__", "syft.lib.python.Any", Any),
+        ("syft.lib.python.List.__reversed__", "syft.lib.python.Iterator", Iterator),
         ("syft.lib.python.List.__delitem__", "syft.lib.python._SyNone", _SyNone),
         # Bool methods - quite there
         ("syft.lib.python.Bool.__abs__", "syft.lib.python.Int", Int),
@@ -426,6 +428,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any", Any),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any", Any),
+        ("syft.lib.python.Iterator.__next__", "syft.lib.python.Any", Any),
+        ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any", Any),
         # ValueIndicies
         (
             "syft.lib.python.ValuesIndices.values",

@@ -149,7 +149,7 @@ class Dict(UserDict, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self) -> SyPrimitiveRet:
-        res = DictIterator(super().__iter__())
+        res = Iterator(super().__iter__(), max_len=len(self))
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -223,7 +223,7 @@ class Dict(UserDict, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def values(self) -> SyPrimitiveRet:
-        res = ValuesIterator(iter(super().values()))
+        res = list(iter(super().values()))
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -106,7 +107,6 @@ class Class(Callable):
         _props: List[str] = []
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
-
             # if the Method.is_property == True
             # we need to add this attribute name into the _props list
             is_property = getattr(attr, "is_property", False)
@@ -120,6 +120,45 @@ class Class(Callable):
             # so we have to check for path_and_name
             if attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
+
+            if attr.return_type_name == "syft.lib.python.Iterator":
+
+                def wrap(iter_func: CallableT) -> CallableT:
+                    def __iter__(self) -> Iterable:
+                        # syft absolute
+                        from syft.lib.python.iterator import Iterator
+
+                        if not hasattr(self, "__len__"):
+                            return iter_func(self)
+
+                        data_len_ptr = self.__len__()
+
+                        try:
+                            # not all nodes have support for request
+                            # messages.
+
+                            # we can't cache it due to in-place operations
+                            data_len = data_len_ptr.get(
+                                request_block=True,
+                                timeout_secs=25,
+                                name="__iter__ request on EXAMPLE.",
+                                delete_obj=False,
+                            )
+                        except Exception as _:
+                            # something failed on creating a remote iterator.
+                            # return the vanilla one and hope for the best.
+                            return iter_func(self)
+
+                        if data_len is None:
+                            raise ValueError(
+                                "Request to access data length not granted."
+                            )
+
+                        return Iterator(_ref=iter_func(self), max_len=data_len)
+
+                    return __iter__
+
+                attrs[attr_name] = wrap(attrs[attr_name])
 
         def getattribute(__self: Any, name: str) -> Any:
             # we need to override the __getattribute__ of our Pointer class
