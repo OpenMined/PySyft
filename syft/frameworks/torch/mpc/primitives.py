@@ -175,8 +175,6 @@ class PrimitiveStorage:
             elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
                     setattr(self, op, [primitives])
-                    current_primitives = getattr(self, op)
-
                 else:
                     # This branch never happens with on-the-fly primitives
                     current_primitives.append(primitives)

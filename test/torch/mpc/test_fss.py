@@ -139,9 +139,7 @@ def test_using_crypto_store(workers, op):
     assert (th_result == th_op(x, 0)).all()
 
 
-# @pytest.mark.parametrize("op", ["eq", "le"])
-@pytest.mark.parametrize("op", ["le"])
-# @pytest.mark.parametrize("op", ["eq"])
+@pytest.mark.parametrize("op", ["eq", "le"])
 def test_using_preprocessed_material(workers, op):
 
     primitive = {"eq": "fss_eq", "le": "fss_comp"}[op]
