@@ -13,7 +13,7 @@ Flask = "^1.1.1"
 Flask-Sockets = "^0.2.1"
 numpy = "^1.18.5"
 sqlitedict = "^1.6.0"
-syft = { git = "https://github.com/OpenMined/PySyft.git", branch = "syft_0.3.0"}
+syft = "0.3.0"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"

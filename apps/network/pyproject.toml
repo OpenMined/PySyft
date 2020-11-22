@@ -13,7 +13,7 @@ Flask = "^1.1.1"
 Flask-Sockets = "^0.2.1"
 numpy = "^1.18.5"
 sqlitedict = "^1.6.0"
-syft = { git = "https://github.com/OpenMined/PySyft.git", branch = "syft_0.3.0"}
+syft = "0.3.0"
 flask-lambda = "^0.0.4"
 Flask-Migrate = "^2.5.3"
 SQLAlchemy-Utils = "^0.36.8"
