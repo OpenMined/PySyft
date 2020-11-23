@@ -117,7 +117,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        if type(method).__name__ == "getset_descriptor":
+        if type(method).__name__ in ["getset_descriptor", "_tuplegetter"]:
             # we have a detached class property so we need the __get__ descriptor
             upcast_attr = getattr(resolved_self.data, "upcast", None)
             data = resolved_self.data
