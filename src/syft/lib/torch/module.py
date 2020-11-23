@@ -94,13 +94,11 @@ class Module:
         self.duet = None
         if "syft" in full_name_with_qualname(klass=type(torch_ref)):
             log = "> Creating remote model"
-            print(log)
             logger.debug(log)
             self.is_local = False
         else:
             # otherwise we have a local model
             log = "> Creating local model"
-            print(log)
             logger.debug(log)
             self.is_local = True
 
@@ -110,7 +108,7 @@ class Module:
 
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
         # this is how we catch the modules being set during subclass init
-        # bug where torch.nn.modules isnt the full name on some imports
+        # bug where torch.nn.modules isn't the full name on some imports
         # TODO: fix this properly
         if "torch.nn" in full_name_with_qualname(klass=type(value)):
             modules = self.__dict__.get("_modules")
