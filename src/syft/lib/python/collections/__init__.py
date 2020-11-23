@@ -1,2 +1,2 @@
 # syft relative
-from .ordered_dict import OrderedDict
+from .ordered_dict import OrderedDict  # noqa: F401
