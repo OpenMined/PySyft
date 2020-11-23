@@ -206,7 +206,7 @@ $ git checkout <branch-name>
 $ git rebase upstream/<branch-name>
 ```
 
-### Lean More Git
+### Learn More Git
 If you want to learn more about git or github then checkout [this guide](https://guides.github.com/activities/hello-world).
 
 ## Setting up the VirtualEnv
