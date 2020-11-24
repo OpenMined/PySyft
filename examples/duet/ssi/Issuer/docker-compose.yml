@@ -36,8 +36,8 @@ services:
       - indy_demo
   issuer-agent:
     build:
-      context: .
-      dockerfile: Dockerfile.ngrok
+      context: ../
+      dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-issuer
       - ADMIN_URL=http://issuer-agent:${ISSUER_ADMIN_PORT}
@@ -59,7 +59,7 @@ services:
       - indy_demo
   issuer-notebook:
     build:
-      context: .
+      context: ../
       dockerfile: Dockerfile.basiccontroller
       args:
         - jupyter_port=${ISSUER_JUPYTER_PORT}
@@ -70,23 +70,7 @@ services:
     volumes:
       - ./notebooks/issuer:/workspace
     ports:
-      - "8888:8888"
+      - "8890:8888"
       - ${ISSUER_WEBHOOK_PORT}:${ISSUER_WEBHOOK_PORT}
-  # verifier-notebook:
-  #   build:
-  #     context: ../../
-  #     dockerfile: dockerfiles/controllers/Dockerfile.basiccontroller
-  #     args:
-  #       - jupyter_port=${VERIFIER_JUPYTER_PORT}
-  #   depends_on:
-  #     - verifier-agent
-  #   networks:
-  #     - indy_demo
-  #   volumes:
-  #     - ${PWD}/notebooks/verifier:/workspace
-  #   ports:
-  #     - "8889:8888"
-  #     - ${VERIFIER_WEBHOOK_PORT}:${VERIFIER_WEBHOOK_PORT}
-
 networks:
   indy_demo:

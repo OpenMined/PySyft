@@ -1,1 +1,0 @@
-aries-basic-controller>=0.1.1
