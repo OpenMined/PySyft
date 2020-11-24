@@ -59,6 +59,6 @@ def test_union_pointer_creation() -> None:
     assert "__radd__" in dir(sy.lib.python.List)
 
     # the __radd__ is denied from the List pointer function set
-    # thus, neither the union pointer should have it due to possible anamalous
+    # thus, neither the union pointer should have it due to possible anomalous
     # behaviors. If you want to use it on Bool, you will need to cast it.
     assert "__radd__" not in union_pointer_function_set
