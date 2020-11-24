@@ -94,11 +94,13 @@ class Module:
         self.duet = None
         if "syft" in full_name_with_qualname(klass=type(torch_ref)):
             log = "> Creating remote model"
+            print(log)
             logger.debug(log)
             self.is_local = False
         else:
             # otherwise we have a local model
             log = "> Creating local model"
+            print(log)
             logger.debug(log)
             self.is_local = True
 
