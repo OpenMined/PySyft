@@ -92,6 +92,8 @@ class PrimitiveStorage:
                         f"n_instances={n_instances}"
                     )
 
+                sy.preprocessed_material[op].append((tuple(shapes[0]), tuple(shapes[1])))
+
                 raise EmptyCryptoPrimitiveStoreError(
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
@@ -113,6 +115,9 @@ class PrimitiveStorage:
                         f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
                         f"n_instances={n_instances}"
                     )
+
+                sy.preprocessed_material[op].append(n_instances)
+
                 raise EmptyCryptoPrimitiveStoreError(
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )

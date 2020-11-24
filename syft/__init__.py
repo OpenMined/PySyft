@@ -148,3 +148,8 @@ if "ID_PROVIDER" not in globals():
     from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
+
+
+from collections import defaultdict
+
+preprocessed_material = defaultdict(list)
