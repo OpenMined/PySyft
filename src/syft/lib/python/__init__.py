@@ -1,8 +1,8 @@
 # syft relative
+from . import collections
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
-from . import collections
 from ...ast.globals import Globals
 from .bool import Bool
 from .complex import Complex
