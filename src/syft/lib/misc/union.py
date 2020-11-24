@@ -52,12 +52,12 @@ class UnionGenerator(type, metaclass=IndexableTrait):
             return name
 
         target_type = UnionGenerator(name, tuple(), {})
-        union_cache.add(name)
 
         # adding the type and it's union types to a lazy dict that will be solved
         # when the ast is created.
         lazy_pairing[target_type] = union_types
         qualname = target_type.__qualname__
+        union_cache.add(qualname)
         return qualname
 
 

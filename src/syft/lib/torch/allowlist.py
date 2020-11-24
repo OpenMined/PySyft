@@ -194,7 +194,7 @@ allowlist["torch.Tensor.char"] = "torch.Tensor"
 allowlist["torch.Tensor.cholesky_inverse"] = "torch.Tensor"
 allowlist["torch.Tensor.cholesky_solve"] = "torch.Tensor"
 allowlist["torch.Tensor.cholesky"] = "torch.Tensor"
-allowlist["torch.Tensor.chunk"] = "syft.lib.python.List"
+allowlist["torch.Tensor.chunk"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.clamp_"] = "torch.Tensor"
 allowlist["torch.Tensor.clamp_max_"] = "torch.Tensor"
 allowlist["torch.Tensor.clamp_max"] = "torch.Tensor"
@@ -307,6 +307,9 @@ allowlist["torch.Tensor.is_shared"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_signed"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_sparse"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.isclose"] = "torch.Tensor"
+allowlist["torch.Tensor.item"] = UnionGenerator[
+    "syft.lib.python.Int", "syft.lib.python.Float", "syft.lib.python.Bool"
+]
 allowlist["torch.Tensor.kthvalue"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.Tensor.le_"] = "torch.Tensor"
 allowlist["torch.Tensor.le"] = "torch.Tensor"
@@ -335,7 +338,7 @@ allowlist["torch.Tensor.lstsq"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.Tensor.lt_"] = "torch.Tensor"
 allowlist["torch.Tensor.lt"] = "torch.Tensor"
 allowlist["torch.Tensor.lu_solve"] = "torch.Tensor"
-allowlist["torch.Tensor.lu"] = "syft.lib.python.List"  # actually a tuple
+allowlist["torch.Tensor.lu"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.masked_fill_"] = "torch.Tensor"
 allowlist["torch.Tensor.masked_fill"] = "torch.Tensor"
 allowlist["torch.Tensor.masked_scatter_"] = "torch.Tensor"
@@ -343,7 +346,25 @@ allowlist["torch.Tensor.masked_scatter"] = "torch.Tensor"
 allowlist["torch.Tensor.masked_select"] = "torch.Tensor"
 allowlist["torch.Tensor.matmul"] = "torch.Tensor"
 allowlist["torch.Tensor.matrix_power"] = "torch.Tensor"
+allowlist["torch.Tensor.max"] = UnionGenerator[
+    "syft.lib.python.Bool",
+    "syft.lib.python.Float",
+    "syft.lib.python.Int",
+    "syft.lib.python.ValuesIndices",
+]
 allowlist["torch.Tensor.mean"] = "torch.Tensor"
+allowlist["torch.Tensor.median"] = UnionGenerator[
+    "syft.lib.python.Bool",
+    "syft.lib.python.Float",
+    "syft.lib.python.Int",
+    "syft.lib.python.ValuesIndices",
+]
+allowlist["torch.Tensor.min"] = UnionGenerator[
+    "syft.lib.python.Bool",
+    "syft.lib.python.Float",
+    "syft.lib.python.Int",
+    "syft.lib.python.ValuesIndices",
+]
 allowlist["torch.Tensor.mm"] = "torch.Tensor"
 allowlist["torch.Tensor.mode"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.Tensor.mul_"] = "torch.Tensor"
@@ -434,14 +455,17 @@ allowlist["torch.Tensor.slogdet"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.Tensor.softmax"] = "torch.Tensor"
 allowlist["torch.Tensor.solve"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.Tensor.sort"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.Tensor.split_with_sizes"] = "syft.lib.python.List"  # tuple
-allowlist["torch.Tensor.split"] = "syft.lib.python.List"
+allowlist["torch.Tensor.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
+allowlist["torch.Tensor.split"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
 allowlist["torch.Tensor.sqrt"] = "torch.Tensor"
 allowlist["torch.Tensor.squeeze_"] = "torch.Tensor"
 allowlist["torch.Tensor.squeeze"] = "torch.Tensor"
 allowlist["torch.Tensor.std"] = "torch.Tensor"
 allowlist["torch.Tensor.stft"] = "torch.Tensor"
+allowlist["torch.Tensor.stride"] = UnionGenerator[  # Tuple not List
+    "syft.lib.python.List", "syft.lib.python.Int"
+]
 allowlist["torch.Tensor.sub_"] = "torch.Tensor"
 allowlist["torch.Tensor.sub"] = "torch.Tensor"
 allowlist["torch.Tensor.sum_to_size"] = "torch.Tensor"
@@ -472,7 +496,7 @@ allowlist["torch.Tensor.trunc_"] = "torch.Tensor"
 allowlist["torch.Tensor.trunc"] = "torch.Tensor"
 allowlist["torch.Tensor.type_as"] = "torch.Tensor"
 allowlist["torch.Tensor.type"] = "syft.lib.python.String"
-allowlist["torch.Tensor.unbind"] = "syft.lib.python.List"
+allowlist["torch.Tensor.unbind"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.unfold"] = "torch.Tensor"
 allowlist["torch.Tensor.uniform_"] = "torch.Tensor"
 allowlist["torch.Tensor.unique_consecutive"] = "torch.Tensor"
@@ -968,7 +992,7 @@ allowlist["torch.Tensor.movedim"] = {
     "min_version": "1.7.0",
 }
 allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
-    "return_type": "syft.lib.python.List",
+    "return_type": "syft.lib.python.List",  # Tuple not List
     "min_version": "1.7.0",
 }
 
@@ -977,13 +1001,7 @@ allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
 # --------------------------------------------------------------------------------------
 allowlist["torch.Tensor.device"] = "torch.device"
 allowlist["torch.Tensor.detach_"] = "torch.Tensor"
-# required for MNIST but marked as skip in the allowlist_test.json
-allowlist["torch.Tensor.item"] = UnionGenerator[
-    "syft.lib.python.Int", "syft.lib.python.Float", "syft.lib.python.Bool"
-]
 allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
-allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
-
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
@@ -993,13 +1011,6 @@ allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
 # allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
 # allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
 # allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
-# allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0 # probably wont work
-# Union[torch.Tensor, syft.lib.python.ValuesIndices]
-# allowlist["torch.Tensor.median"] = "syft.lib.python.ValuesIndices"
-# Union[torch.Tensor, syft.lib.python.ValuesIndices]
-# allowlist["torch.Tensor.max"] = "syft.lib.python.ValuesIndices"
-# Union[torch.Tensor, syft.lib.python.ValuesIndices]
-# allowlist["torch.Tensor.min"] = "syft.lib.python.ValuesIndices"
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
@@ -1016,6 +1027,7 @@ allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
 # allowlist["torch.Tensor.align_to"] = "torch.Tensor" # named tensors
 # allowlist["torch.Tensor.name"] = "Optional[str]" # requires named tensors and Optional
 # allowlist["torch.Tensor.names"] = "Tuple[str]" # requires named tensors and Tuple
+# allowlist["torch.Tensor.__torch_function__"] = "unknown" # 1.7.0 # probably wont work
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which require classes or callables or external libs
@@ -1080,7 +1092,7 @@ allowlist["torch.ceil"] = "torch.Tensor"
 allowlist["torch.cholesky_inverse"] = "torch.Tensor"
 allowlist["torch.cholesky_solve"] = "torch.Tensor"
 allowlist["torch.cholesky"] = "torch.Tensor"
-allowlist["torch.chunk"] = "syft.lib.python.List"
+allowlist["torch.chunk"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.clamp_"] = "torch.Tensor"
 allowlist["torch.clamp_max_"] = "torch.Tensor"
 allowlist["torch.clamp_max"] = "torch.Tensor"
@@ -1178,7 +1190,7 @@ allowlist["torch.logsumexp"] = "torch.Tensor"
 allowlist["torch.lstsq"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.lt"] = "torch.Tensor"
 allowlist["torch.lu_solve"] = "torch.Tensor"
-allowlist["torch.lu"] = "syft.lib.python.List"  # actually a tuple
+allowlist["torch.lu"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.masked_fill"] = "torch.Tensor"
 allowlist["torch.masked_scatter"] = "torch.Tensor"
 allowlist["torch.masked_select"] = "torch.Tensor"
@@ -1239,8 +1251,8 @@ allowlist["torch.slogdet"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.softmax"] = "torch.Tensor"
 allowlist["torch.solve"] = "syft.lib.python.ValuesIndices"
 allowlist["torch.sort"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.split_with_sizes"] = "syft.lib.python.List"  # tuple
-allowlist["torch.split"] = "syft.lib.python.List"
+allowlist["torch.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
+allowlist["torch.split"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.sqrt_"] = "torch.Tensor"
 allowlist["torch.sqrt"] = "torch.Tensor"
 allowlist["torch.square_"] = "torch.Tensor"
@@ -1271,7 +1283,7 @@ allowlist["torch.unique_consecutive"] = "torch.Tensor"
 allowlist["torch.unique"] = "torch.Tensor"
 allowlist["torch.unsqueeze"] = "torch.Tensor"
 allowlist["torch.var"] = "torch.Tensor"
-allowlist["torch.unsafe_chunk"] = "syft.lib.python.List"
+allowlist["torch.unsafe_chunk"] = "syft.lib.python.List"  # Tuple not List
 
 # SECTION - Tensor functions since 1.6.0
 
@@ -1571,7 +1583,7 @@ allowlist["torch.subtract"] = {
     "min_version": "1.7.0",
 }
 allowlist["torch.unsafe_chunk"] = {
-    "return_type": "syft.lib.python.List",
+    "return_type": "syft.lib.python.List",  # Tuple not List
     "min_version": "1.7.0",
 }
 allowlist["torch.unsafe_split"] = {
@@ -1587,7 +1599,7 @@ allowlist["torch.movedim"] = {
     "min_version": "1.7.0",
 }
 allowlist["torch.unsafe_split_with_sizes"] = {
-    "return_type": "syft.lib.python.List",
+    "return_type": "syft.lib.python.List",  # Tuple not List
     "min_version": "1.7.0",
 }
 
