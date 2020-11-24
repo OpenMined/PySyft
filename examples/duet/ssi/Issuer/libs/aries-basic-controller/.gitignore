@@ -1,0 +1,7 @@
+.idea/
+.code
+dist
+*.egg-info
+build
+.env
+.ipynb_checkpoints/
