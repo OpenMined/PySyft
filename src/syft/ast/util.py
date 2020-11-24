@@ -15,7 +15,7 @@ also be used as template for Python modules.
 Note: This skeleton file can be safely removed if not needed!
 """
 # stdlib
-from typing import List
+from typing import List as TypeList
 
 # third party
 import torch
@@ -26,8 +26,5 @@ builtin_func_type = type(torch.ones)
 class_type = type(func_type)
 
 
-def unsplit(list_of_things: List[str], separator: str = ".") -> str:
-    out = ""
-    for thing in list_of_things:
-        out += thing + separator
-    return out[:-1]
+def unsplit(list_of_things: TypeList[str], separator: str = ".") -> str:
+    return separator.join(list_of_things)
