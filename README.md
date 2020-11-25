@@ -192,3 +192,4 @@ for learning the codebase, and help you find your first project to contribute.
 ## Note
 This project has been set up using PyScaffold. For details and usage information
 on PyScaffold see https://pyscaffold.org/.
+
