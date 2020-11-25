@@ -345,9 +345,9 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
         if not isinstance(secret, random_type):
-            if 'cuda' in secret.type():
+            if "cuda" in secret.type():
                 logging.warning("CUDA tensors were automatically shifted to CPU before encryption.")
-                # implicit shifting to CPU happens in the next line through the explicit change of type 
+                # implicit shifting to CPU happens in the next line through the explicit change of type
 
             secret = secret.type(random_type)
 

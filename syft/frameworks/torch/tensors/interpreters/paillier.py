@@ -50,9 +50,9 @@ class PaillierTensor(AbstractTensor):
             *public_key a public key created using
                 syft.frameworks.torch.he.paillier.keygen()
         """
-        if 'cuda' in self.child.type():
+        if "cuda" in self.child.type():
             logging.warning("CUDA tensors were automatically shifted to CPU before encryption.")
-             # implicit shifting to CPU happens in the next line through '.tolist()' 
+            # implicit shifting to CPU happens in the next line through '.tolist()'
 
         inputs = self.child.flatten().tolist()
         new_child = sy.pool().map(public_key.encrypt, inputs)
