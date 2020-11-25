@@ -1,7 +1,6 @@
 # stdlib
 from random import randint
 from typing import List
-from typing import Union
 
 # third party
 from forbiddenfruit import curse
@@ -15,7 +14,6 @@ from nacl.signing import VerifyKey
 import syft
 
 # syft relative
-from .core.common.group import VerifyAll
 from .decorators.syft_decorator_impl import syft_decorator
 
 
@@ -150,8 +148,7 @@ def obj2pointer_type(obj: object) -> type:
     return ref.pointer_type
 
 
-@syft_decorator(typechecking=True)
-def key_emoji(key: Union[bytes, SigningKey, VerifyKey, VerifyAll]) -> str:
+def key_emoji(key: object) -> str:
     try:
         if isinstance(key, (bytes, SigningKey, VerifyKey)):
             hex_chars = bytes(key).hex()[-8:]

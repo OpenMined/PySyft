@@ -1,30 +1,22 @@
 # stdlib
 import pydoc
-from typing import Dict as DictType
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 
 # third party
-from google.protobuf.empty_pb2 import Empty as Empty_PB
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from loguru import logger
-from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
 
 # syft relative
 from ...decorators import syft_decorator
-from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
-from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKeyWrapper_PB
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
-from ..common.group import VerifyAll
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
@@ -46,6 +38,7 @@ class StorableObject(AbstractStorableObject):
         description (Optional[str]): An optional string that describes what you are storing. Useful
         when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
+        TODO: add docs about read_permission and search_permission
 
     Attributes:
         id (UID): the id at which to store the data.
@@ -56,34 +49,48 @@ class StorableObject(AbstractStorableObject):
 
     """
 
-    __slots__ = ["id", "data", "description", "tags"]
+    __slots__ = ["id", "data", "_description", "_tags"]
 
     @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
         data: object,
-        description: Optional[str] = "",
-        tags: Optional[List[str]] = [],
-        read_permissions: Optional[DictType[VerifyKey, Optional[UID]]] = {},
-        search_permissions: Optional[
-            DictType[Union[VerifyKey, VerifyAll], Optional[UID]]
-        ] = {},
+        description: str = "",
+        tags: Optional[List[str]] = None,
+        read_permissions: Optional[dict] = None,
+        search_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
-        self.description = description
-        self.tags = tags
+        self._description: str = description
+        self._tags: List[str] = tags if tags else []
 
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later
         # who are allowed to call .get() and download this object.
-        self.read_permissions = read_permissions
+        self.read_permissions = read_permissions if read_permissions else {}
 
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later
         # who are allowed to know that the tensor exists (via search or other means)
-        self.search_permissions = search_permissions
+        self.search_permissions: dict = search_permissions if search_permissions else {}
+
+    @property
+    def tags(self) -> Optional[List[str]]:
+        return self._tags
+
+    @tags.setter
+    def tags(self, value: Optional[List[str]]) -> None:
+        self._tags = value if value else []
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @description.setter
+    def description(self, description: Optional[str]) -> None:
+        self._description = description if description else ""
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
@@ -113,17 +120,14 @@ class StorableObject(AbstractStorableObject):
                     proto.tags.append(tag)
 
         # Step 6: save read permissions
-        if self.read_permissions is not None and len(self.read_permissions.keys()) > 0:
+        if len(self.read_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
             proto.read_permissions = permission_data.serialize(to_bytes=True)
 
         # Step 7: save search permissions
-        if (
-            self.search_permissions is not None
-            and len(self.search_permissions.keys()) > 0
-        ):
+        if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
@@ -157,12 +161,10 @@ class StorableObject(AbstractStorableObject):
             data = None
 
         # Step 5: get the description from proto
-        description = proto.description
+        description = proto.description if proto.description else ""
 
         # Step 6: get the tags from proto of they exist
-        tags = None
-        if proto.tags:
-            tags = list(proto.tags)
+        tags = list(proto.tags) if proto.tags else []
 
         result = obj_type.construct_new_object(
             id=id, data=data, tags=tags, description=description
@@ -257,20 +259,17 @@ class StorableObject(AbstractStorableObject):
             output += self.data.__repr__()
         else:
             output += "(Key Only)"
-        if self.description is not None and len(self.description) > 0:
+        if len(self._description) > 0:
             output += f" desc: {self.description}"
-        if self.tags is not None and len(self.tags) > 0:
+        if len(self._tags) > 0:
             output += f" tags: {self.tags}"
-        if self.read_permissions is not None and len(self.read_permissions.keys()) > 0:
+        if len(self.read_permissions.keys()) > 0:
             output += (
                 " can_read: "
                 + f"{[key_emoji(key=key) for key in self.read_permissions.keys()]}"
             )
 
-        if (
-            self.search_permissions is not None
-            and len(self.search_permissions.keys()) > 0
-        ):
+        if len(self.search_permissions.keys()) > 0:
             output += (
                 " can_search: "
                 + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
@@ -282,89 +281,3 @@ class StorableObject(AbstractStorableObject):
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
-
-
-class VerifyKeyWrapper(StorableObject):
-    def __init__(self, value: VerifyKey):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> VerifyKeyWrapper_PB:
-        return VerifyKeyWrapper_PB(verify_key=bytes(self.value))
-
-    @staticmethod
-    def _data_proto2object(proto: VerifyKeyWrapper_PB) -> VerifyKey:
-        return VerifyKey(proto.verify_key)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return VerifyKeyWrapper_PB
-
-    @staticmethod
-    def get_wrapped_type() -> Type:
-        return VerifyKey
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        data.id = id
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(
-    obj=VerifyKey, name="serializable_wrapper_type", attr=VerifyKeyWrapper
-)
-
-
-class VerifyAllWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> VerifyAllWrapper_PB:
-        return VerifyAllWrapper_PB(all=Empty_PB())
-
-    @staticmethod
-    def _data_proto2object(proto: VerifyAllWrapper_PB) -> VerifyAll:  # type: ignore
-        return VerifyAll()
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return VerifyAllWrapper_PB
-
-    @staticmethod
-    def get_wrapped_type() -> Type:
-        return VerifyAll
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        data.id = id
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(
-    obj=VerifyAll, name="serializable_wrapper_type", attr=VerifyAllWrapper
-)
