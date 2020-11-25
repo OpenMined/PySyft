@@ -1,22 +1,20 @@
 name: Tests
 
 on:
-  merge:
+  push:
     branches:
       - master
       - dev
     paths:
-      - '**.py'
-      - 'setup.cfg'
-      - '.github/workflows/tests.yml'
-
-    workflow_dispatch
-
+      - "**.py"
+      - "setup.cfg"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch: ""
 
 jobs:
   python-all-tests:
     strategy:
-      max-parallel: 27
+      max-parallel: 24
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]

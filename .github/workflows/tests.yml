@@ -5,14 +5,14 @@ on:
     branches:
       - dev
     paths:
-      - '**.py'
-      - 'setup.cfg'
-      - '.github/workflows/tests.yml'
+      - "**.py"
+      - "setup.cfg"
+      - ".github/workflows/tests.yml"
 
 jobs:
   python-tests:
     strategy:
-      max-parallel: 27
+      max-parallel: 24
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
@@ -132,7 +132,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
-          version: '3.x'
+          version: "3.x"
 
       - uses: pre-commit/action@v2.0.0
 
