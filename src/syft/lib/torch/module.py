@@ -110,7 +110,7 @@ class Module:
 
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
         # this is how we catch the modules being set during subclass init
-        # bug where torch.nn.modules isnt the full name on some imports
+        # bug where torch.nn.modules isn't the full name on some imports
         # TODO: fix this properly
         if "torch.nn" in full_name_with_qualname(klass=type(value)):
             modules = self.__dict__.get("_modules")
