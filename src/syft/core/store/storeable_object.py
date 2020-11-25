@@ -2,7 +2,6 @@
 import pydoc
 from typing import List
 from typing import Optional
-from typing import Type
 
 # third party
 from google.protobuf.message import Message
@@ -115,7 +114,7 @@ class StorableObject(AbstractStorableObject):
         # QUESTION: Which one do we want, self.data.tags or self.tags or both???
         if hasattr(self, "tags"):
             # Step 5: save tags into proto if they exist
-            if self.tags is not None
+            if self.tags is not None:
                 for tag in self.tags:
                     proto.tags.append(tag)
 
@@ -151,6 +150,7 @@ class StorableObject(AbstractStorableObject):
         schematic_type = obj_type.get_data_protobuf_schema()
 
         # Step 4: Deserialize data from protobuf
+        data = None
         if callable(schematic_type):
             data = schematic_type()
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
