@@ -119,7 +119,7 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
-            warnings.warn("Use dtype instead of field")
+            # warnings.warn("Use dtype instead of field")
             # Since n mod 0 is not defined
             if isinstance(field, int) and field > 0:
                 if field <= 2 ** 32:

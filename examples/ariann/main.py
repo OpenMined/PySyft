@@ -21,8 +21,10 @@ from examples.ariann.preprocess import build_prepocessing
 
 
 def run_inference(args):
-    print("Running inference speed test on", args.model, args.dataset)
-    print("Batchsize=", args.batch_size)
+    print("Running inference speed test")
+    print("model:\t\t", args.model)
+    print("dataset:\t", args.dataset)
+    print("batch_size:\t", args.batch_size)
 
     hook = sy.TorchHook(torch)
 
@@ -58,6 +60,8 @@ def run_inference(args):
     )
     test_time, accuracy = test(args, model, private_test_loader)
 
+    print("Online time (s):\t", round(test_time / args.batch_size, 4))
+
     if args.preprocess:
         missing_items = [len(v) for k, v in sy.preprocessed_material.items()]
         if sum(missing_items) > 0:
@@ -87,6 +91,8 @@ if __name__ == "__main__":
         action="store_true",
     )
 
+    parser.add_argument("--verbose", help="preprocess data or not", action="store_true")
+
     cmd_args = parser.parse_args()
 
     class Arguments:
@@ -94,6 +100,7 @@ if __name__ == "__main__":
         dataset = cmd_args.dataset.lower()
         preprocess = cmd_args.preprocess
         websockets = cmd_args.websockets
+        verbose = cmd_args.verbose
 
         epochs = 1
 
@@ -134,7 +141,7 @@ if __name__ == "__main__":
             )
             for worker in ["alice", "bob", "crypto_provider"]
         ]
-        time.sleep(5)
+        time.sleep(7)
         try:
             print("LAUNCHED", *[p.pid for p in worker_processes])
             run_inference(args)

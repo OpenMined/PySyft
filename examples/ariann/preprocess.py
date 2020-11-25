@@ -45,15 +45,18 @@ def build_prepocessing(model, dataset, workers, args):
     try:
         config = config_zoo[f"{model}-{dataset}"]
     except KeyError:
-        print(f"WARNING: No preprocessing found for {model}-{dataset}")
+        if args.verbose:
+            print(f"WARNING: No preprocessing found for {model}-{dataset}")
         return 0
 
-    print("Preprocess")
+    if args.verbose:
+        print("Preprocess")
 
     for op in ["fss_eq", "fss_comp"]:
         n_instances_list = config[op]
         for n_instances in n_instances_list:
-            print(f"{op} n_instances", n_instances)
+            if args.verbose:
+                print(f"{op} n_instances", n_instances)
             sy.local_worker.crypto_store.provide_primitives(
                 op=op, workers=workers, n_instances=n_instances
             )
@@ -69,7 +72,8 @@ def build_prepocessing(model, dataset, workers, args):
             raise ValueError(f"Unsupported dtype {args.dtype}")
 
         shapes = config[op]
-        print(f"{op} shapes", shapes)
+        if args.verbose:
+            print(f"{op} shapes", shapes)
         sy.local_worker.crypto_store.provide_primitives(
             op=op,
             workers=workers,
@@ -81,5 +85,10 @@ def build_prepocessing(model, dataset, workers, args):
         )
 
     preprocess_time = time.time() - start_time
-    print("...", preprocess_time, "s", "[time per item=", preprocess_time / args.batch_size, "]")
+    if args.verbose:
+        print(
+            "...", preprocess_time, "s", "[time per item=", preprocess_time / args.batch_size, "]"
+        )
+    else:
+        print("Preprocessing time (s):\t", round(preprocess_time / args.batch_size, 4))
     return preprocess_time

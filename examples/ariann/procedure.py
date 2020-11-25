@@ -10,17 +10,20 @@ import torch
 def profile(func):
     """A gentle profiler"""
 
-    def wrapper(*args, **kwargs):
-        pr = cProfile.Profile()
-        pr.enable()
-        retval = func(*args, **kwargs)
-        pr.disable()
-        s = io.StringIO()
-        sortby = pstats.SortKey.TIME  # 'cumulative'
-        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats(0.04)
-        print(s.getvalue())
-        return retval
+    def wrapper(args_, *args, **kwargs):
+        if args_.verbose:
+            pr = cProfile.Profile()
+            pr.enable()
+            retval = func(args_, *args, **kwargs)
+            pr.disable()
+            s = io.StringIO()
+            sortby = pstats.SortKey.TIME  # 'cumulative'
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats(0.04)
+            print(s.getvalue())
+            return retval
+        else:
+            return func(args_, *args, **kwargs)
 
     return wrapper
 
@@ -57,18 +60,19 @@ def train(args, model, private_train_loader, optimizer, epoch):
         if batch_idx % args.log_interval == 0:
             if loss.is_wrapper:
                 loss = loss.get().float_precision()
-            print(
-                "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.3f}s ({:.3f}s/item) [{:.3f}]".format(
-                    epoch,
-                    batch_idx * args.batch_size,
-                    n_items,
-                    100.0 * batch_idx / len(private_train_loader),
-                    loss.item(),
-                    tot_time,
-                    tot_time / args.batch_size,
-                    args.batch_size,
+            if args.verbose:
+                print(
+                    "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.3f}s ({:.3f}s/item) [{:.3f}]".format(
+                        epoch,
+                        batch_idx * args.batch_size,
+                        n_items,
+                        100.0 * batch_idx / len(private_train_loader),
+                        loss.item(),
+                        tot_time,
+                        tot_time / args.batch_size,
+                        args.batch_size,
+                    )
                 )
-            )
 
     return torch.tensor(times).mean().item()
 
@@ -92,11 +96,12 @@ def test(args, model, private_test_loader):
             if batch_idx % args.log_interval == 0 and correct.is_wrapper:
                 c = correct.copy().get().float_precision()
                 ni = i * args.test_batch_size
-                print(
-                    "Accuracy: {}/{} ({:.0f}%) \tTime / item: {:.4f}s".format(
-                        int(c.item()), ni, 100.0 * c.item() / ni, times / ni,
+                if args.verbose:
+                    print(
+                        "Accuracy: {}/{} ({:.0f}%) \tTime / item: {:.4f}s".format(
+                            int(c.item()), ni, 100.0 * c.item() / ni, times / ni,
+                        )
                     )
-                )
 
     if correct.is_wrapper:
         correct = correct.get().float_precision()
@@ -107,15 +112,17 @@ def test(args, model, private_test_loader):
         )
     except TypeError:
         n_items = len(private_test_loader.dataset)
-    print(
-        "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
-            correct.item(),
-            n_items,
-            100.0 * correct.item() / n_items,
-            times / n_items,
-            real_times / n_items,
-            args.test_batch_size,
-        )
-    )
 
-    return torch.tensor(times).mean().item(), round(100.0 * correct.item() / n_items, 1)
+    if args.verbose:
+        print(
+            "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
+                correct.item(),
+                n_items,
+                100.0 * correct.item() / n_items,
+                times / n_items,
+                real_times / n_items,
+                args.test_batch_size,
+            )
+        )
+
+    return times, round(100.0 * correct.item() / n_items, 1)
