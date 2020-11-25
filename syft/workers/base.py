@@ -41,7 +41,7 @@ import pyarrow
 
 # Any message above this size in bytes is a fat FSS key
 # Small FSS keys will be handled like a generic message
-SHOOT_ARRAY_THRESHOLD = 50_000_000
+SHOOT_ARRAY_THRESHOLD = 100_000_000
 
 
 # this if statement avoids circular imports between base.py and pointer.py
@@ -365,7 +365,7 @@ class BaseWorker(AbstractWorker):
         """
 
         strat = None
-        if len(bin_message) > 50_000_000:
+        if len(bin_message) > SHOOT_ARRAY_THRESHOLD:
             strat = self.arrow_deserialize
 
         # Step 0: deserialize message
