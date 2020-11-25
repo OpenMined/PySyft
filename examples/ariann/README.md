@@ -18,8 +18,10 @@ Install the  dependencies
 pip install -r pip-dep/requirements.txt
 ```
 
-Force ``syft-proto`` version to be 0.5.3: `pip install syft_proto==0.5.3`
-
+Install in editable mode:
+```
+pip install -e .
+```
 
 ### Experiments setup
 
@@ -31,9 +33,11 @@ You need to install 2 datasets in your `HOME`:
 - Tiny Imagenet, from https://github.com/tjmoon0104/pytorch-tiny-imagenet
 - Hymenoptera using the instructions:
     ```
-    wget https://download.pytorch.org/tutorial/hymenoptera_data.zip\n"
-                "unzip hymenoptera_data.zip
+    wget https://download.pytorch.org/tutorial/hymenoptera_data.zip
+    unzip hymenoptera_data.zip
     ```
+    
+The working directory is: `cd examples/ariann`
     
     
 ### Troubleshooting
@@ -49,23 +53,29 @@ source /home/ubuntu/.cache/pypoetry/virtualenvs/openmined.gridnode-L_C_JhA9-py3.
 
 # Usage
 
+Example:
+
 ```
-python main.py --model resnet18 --dataset hymenoptera --preprocess
+python main.py --model resnet18 --dataset hymenoptera --batch_size 1 --preprocess
 ```
 
 ```
-usage: main.py [-h] [--model MODEL] [--dataset DATASET] [--preprocess]
-               [--websockets]
+usage: main.py [-h] [--model MODEL] [--dataset DATASET]
+               [--batch_size BATCH_SIZE] [--preprocess] [--websockets]
+               [--verbose]
 
 optional arguments:
-  -h, --help         show this help message and exit
-  --model MODEL      model to use for inference (network1, network2, lenet,
-                     alexnet, vgg16, resnet18)
-  --dataset DATASET  dataset to use (mnist, cifar10, hymenoptera, tiny-
-                     imagenet)
-  --preprocess       preprocess data or not
-  --websockets       use PyGrid nodes instead of a virtual network. (nodes are
-                     launched automatically)
+  -h, --help            show this help message and exit
+  --model MODEL         model to use for inference (network1, network2, lenet,
+                        alexnet, vgg16, resnet18)
+  --dataset DATASET     dataset to use (mnist, cifar10, hymenoptera, tiny-
+                        imagenet)
+  --batch_size BATCH_SIZE
+                        size of the batch to use
+  --preprocess          preprocess data or not
+  --websockets          use PyGrid nodes instead of a virtual network. (nodes
+                        are launched automatically)
+  --verbose             preprocess data or not  
 ```
 
 # Datasets

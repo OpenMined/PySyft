@@ -46,7 +46,7 @@ def run_inference(args):
     kwargs = dict(crypto_provider=crypto_provider, protocol=args.protocol)
 
     if args.preprocess:
-        build_prepocessing(args.model, args.dataset, workers, args)
+        build_prepocessing(args.model, args.dataset, args.batch_size, workers, args)
 
     private_train_loader, private_test_loader = get_data_loaders(
         workers, args, kwargs, private=True
@@ -60,7 +60,10 @@ def run_inference(args):
     )
     test_time, accuracy = test(args, model, private_test_loader)
 
-    print("Online time (s):\t", round(test_time / args.batch_size, 4))
+    print(
+        f"{ 'Online' if args.preprocess else 'Total' } time (s):\t",
+        round(test_time / args.batch_size, 4),
+    )
 
     if args.preprocess:
         missing_items = [len(v) for k, v in sy.preprocessed_material.items()]
@@ -81,6 +84,10 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--dataset", type=str, help="dataset to use (mnist, cifar10, hymenoptera, tiny-imagenet)",
+    )
+
+    parser.add_argument(
+        "--batch_size", type=int, help="size of the batch to use", default=128,
     )
 
     parser.add_argument("--preprocess", help="preprocess data or not", action="store_true")
@@ -104,11 +111,11 @@ if __name__ == "__main__":
 
         epochs = 1
 
-        VAL = 128
+        VAL = cmd_args.batch_size
         n_train_items = VAL
         n_test_items = VAL
 
-        batch_size = VAL
+        batch_size = cmd_args.batch_size
         test_batch_size = VAL
 
         dtype = "long"
