@@ -56,7 +56,10 @@ def batch_norm(
     input = input.t()
 
     if training:
-        assert exponential_average_factor == 0  # == momentum
+        if exponential_average_factor != 0:
+            raise NotImplementedError(
+                "exponential_average_factor is not supported for the moment and should be set to 0"
+            )
         mean = input.mean(dim=0)
         var = input.var(dim=0) + eps
     else:
@@ -85,8 +88,10 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     Because all the computation are local, we add the @allow_command and run it directly
     on each share of the additive sharing tensor, when running mpc computations
     """
-    assert len(input.shape) == 4
-    assert len(weight.shape) == 4
+    if len(input.shape) != 4:
+        raise ValueError(f"Size of input.shape is {len(input.shape)}, it should be 4")
+    if len(weight.shape) != 4:
+        raise ValueError(f"Size of weight.shape is {len(weight.shape)}, it should be 4")
 
     # Change to tuple if not one
     stride = torch.nn.modules.utils._pair(stride)
@@ -98,12 +103,31 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = weight.shape
 
     if bias is not None:
-        assert len(bias) == nb_channels_out
+        if len(bias) != nb_channels_out:
+            raise ValueError(
+                f"Size of bias should be same as nb_channels_out. Size "
+                f"of bias: {len(bias)}, nb_channels_out: {nb_channels_out}"
+            )
 
     # Check if inputs are coherent
-    assert nb_channels_in == nb_channels_kernel * groups
-    assert nb_channels_in % groups == 0
-    assert nb_channels_out % groups == 0
+    if nb_channels_in != nb_channels_kernel * groups:
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, "
+            f"nb_channels_kernel: {nb_channels_kernel}, groups: {groups}"
+        )
+
+    if nb_channels_in % groups != 0:
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, groups: {groups}"
+        )
+
+    if nb_channels_out % groups != 0:
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_out: {nb_channels_out}, groups: {groups}"
+        )
 
     # Compute output shape
     nb_rows_out = int(
@@ -220,8 +244,10 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     input_fp, weight_fp = input, weight
 
     if isinstance(input.child, FrameworkTensor) or isinstance(weight.child, FrameworkTensor):
-        assert isinstance(input.child, FrameworkTensor)
-        assert isinstance(weight.child, FrameworkTensor)
+        if not isinstance(input.child, FrameworkTensor):
+            raise TypeError("input.child needs to be FrameworkTensor")
+        if not isinstance(weight.child, FrameworkTensor):
+            raise TypeError("weight.child needs to be FrameworkTensor")
         im_reshaped, weight_reshaped, *params = _pre_conv(
             input, weight, bias, stride, padding, dilation, groups
         )
@@ -242,9 +268,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     if bias is not None:
         bias = bias.child
-        assert isinstance(
-            bias, sy.AdditiveSharingTensor
-        ), "Have you provided bias as a kwarg? If so, please remove `bias=`."
+        if not isinstance(bias, sy.AdditiveSharingTensor):
+            raise TypeError("Have you provided bias as a kwarg? If so, please remove `bias=`.")
 
     locations = input.locations
 
@@ -337,8 +362,16 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
 
     # Check if inputs are coherent
     # assert nb_channels_in == nb_channels_kernel * groups
-    assert nb_channels_in % groups == 0
-    assert nb_channels_out % groups == 0
+    if nb_channels_in % groups != 0:
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_in: {nb_channels_in}, groups: {groups}"
+        )
+    if nb_channels_out % groups != 0:
+        raise ValueError(
+            f"Given inputs are not supported. Given inputs: "
+            f"nb_channels_out: {nb_channels_out}, groups: {groups}"
+        )
 
     # Compute output shape
     nb_rows_out = int(
@@ -461,10 +494,17 @@ def _pool2d(
     input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=1, ceil_mode=None, mode="avg"
 ):
     if isinstance(kernel_size, tuple):
-        assert kernel_size[0] == kernel_size[1]
+        if kernel_size[0] != kernel_size[1]:
+            raise ValueError(
+                f"kernel_size[0] should be equal to kernel_size[1], "
+                f"Check the given kernel_size {kernel_size}"
+            )
         kernel_size = kernel_size[0]
     if isinstance(stride, tuple):
-        assert stride[0] == stride[1]
+        if stride[0] != stride[1]:
+            raise ValueError(
+                f"stride[0] should be equal to stride[1], " f"Check the given stride {stride}"
+            )
         stride = stride[0]
 
     input_fp = input
@@ -527,11 +567,22 @@ def _pool2d(
 
 def adaptive_avg_pool2d(tensor, output_size):
     if isinstance(output_size, tuple):
-        assert output_size[0] == output_size[1]
+        if output_size[0] != output_size[1]:
+            raise ValueError("Check given output_size")
         output_size = output_size[0]
-    assert tensor.shape[2] == tensor.shape[3]
+
+    if tensor.shape[2] != tensor.shape[3]:
+        raise ValueError(
+            f"Shape of given tensor is invalid, "
+            f"tensor.shape[2] should be equal to tensor.shape[3], "
+            f"Given tensor.shape: {tensor.shape}"
+        )
+
     input_size = tensor.shape[2]
-    assert input_size >= output_size
+
+    if input_size < output_size:
+        raise ValueError("tensor.shape[2] should be greater or equal to output_size")
+
     stride = input_size // output_size
     kernel_size = input_size - (output_size - 1) * stride
     padding = 0

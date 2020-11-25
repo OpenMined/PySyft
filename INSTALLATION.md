@@ -103,6 +103,10 @@ You can test your installation by running:
 
 ## Windows
 
+Currently, the PyTorch 1.4.0 package is not available in Windows, preventing an installation of PySyft from being
+completed successfully. A workaround is to grab an Ubuntu Submachine from the Windows store, and then following the instructions 
+for the Linux installation.
+
 ### 1. Install Python
 
 PySyft requires python version Python >= 3.6 < 3.8

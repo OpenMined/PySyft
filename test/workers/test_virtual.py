@@ -233,6 +233,11 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
         return x + 2
 
     foo_wrapper = ObjectWrapper(obj=foo, id=99)
+    # adding this to increase test coverage of generic/pointers/object_wrapper.py
+    assert isinstance(foo_wrapper.__str__(), str)
+    assert isinstance(foo_wrapper.__repr__(), str)
+    assert foo_wrapper.__repr__() == foo_wrapper.__str__()
+
     foo_ptr = hook.local_worker.send(foo_wrapper, bob)
 
     res = foo_ptr(torch.tensor(4))

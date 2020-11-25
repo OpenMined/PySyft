@@ -83,9 +83,10 @@ class BaseMessageHandler(AbstractMessageHandler):
                     _self = self.worker
                 else:
                     res: list = self.worker.search(_self)
-                    assert (
-                        len(res) == 1
-                    ), f"Searching for {_self} on {self.worker.id}. /!\\ {len(res)} found"
+                    if len(res) != 1:
+                        raise ValueError(
+                            f"Searching for {_self} on {self.worker.id}. /!\\ {len(res)} found"
+                        )
                     _self = res[0]
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the

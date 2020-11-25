@@ -294,6 +294,22 @@ def test_torch_sub_():
 def test_torch_mul(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
+    z = x * 2.1
+    assert (z.float_precision() == torch.tensor([2.100, 4.200, 6.3000])).all()
+
+    x = torch.tensor([5, 7, 2.0]).fix_precision()
+    z = x * 1.5121
+    assert (z.float_precision() == torch.tensor([7.5600, 10.5840, 3.0240])).all()
+
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
+    z = x * torch.tensor(2.1)
+    assert (z.float_precision() == torch.tensor([2.100, 4.200, 6.3000])).all()
+
+    x = torch.tensor([2, 5, 7.0]).fix_precision(precision_fractional=4)
+    z = x * 5.5
+    assert (z.float_precision() == torch.tensor([11.0, 27.5, 38.5])).all()
+
     # mul with non standard fix precision
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
@@ -353,6 +369,22 @@ def test_torch_mul(workers):
 
 def test_torch_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
+    z = x / 2.1
+    assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
+
+    x = torch.tensor([5, 7, 2.0]).fix_precision()
+    z = x / 1.5121
+    assert (z.float_precision() == torch.tensor([3.3060, 4.6290, 1.3220])).all()
+
+    x = torch.tensor([1, 2, 3.0]).fix_precision()
+    z = x / torch.tensor(2.1)
+    assert (z.float_precision() == torch.tensor([0.4760, 0.9520, 1.4280])).all()
+
+    x = torch.tensor([2, 5, 7.0]).fix_precision(precision_fractional=4)
+    z = x / 5.5
+    assert (z.float_precision() == torch.tensor([0.3636, 0.9090, 1.2727])).all()
 
     # With scalar
     x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec()
@@ -691,6 +723,21 @@ def test_dtype():
         and x.child.field == 2 ** 64
         and isinstance(x.child.child, torch.LongTensor)
     )
+
+
+def test_ndim():
+    x = torch.rand(2, 3, 4).fix_prec()
+    assert x.ndim == 3
+
+
+def test_T():
+    x = torch.rand(2, 3, 4)
+    x_fix_T = x.fix_prec().T
+    x_T_fix = x.T.fix_prec()
+    assert x.shape == torch.Size([2, 3, 4])
+    assert x_fix_T.shape == torch.Size([4, 3, 2])
+    assert x_T_fix.shape == torch.Size([4, 3, 2])
+    assert (x_fix_T.float_prec() == x_T_fix.float_prec()).all()
 
 
 def test_reconstruct(workers):

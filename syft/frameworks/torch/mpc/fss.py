@@ -26,7 +26,8 @@ from syft.generic.utils import remote
 λ = 127  # security parameter
 n = 32  # bit precision
 λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
-assert λs == 2
+if λs != 2:
+    raise ValueError("Check the value of security parameter")
 
 no_wrap = {"no_wrap": True}
 
@@ -481,7 +482,8 @@ def bit_decomposition(x):
 
 
 def randbit(shape):
-    assert len(shape) == 3
+    if len(shape) != 3:
+        raise ValueError("size of shape is not 3")
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
     randvalues = np.random.randint(0, 2 ** 64, size=shape_with_bytes, dtype=np.uint64)
@@ -501,16 +503,22 @@ def split_last_bit(buffer):
 def G(seed):
     """Pseudo Random Generator λ -> 2(λ + 1)"""
 
-    assert len(seed.shape) == 2
+    if len(seed.shape) != 2:
+        raise ValueError("size of seed shape needs to be 2")
+
     n_values = seed.shape[1]
-    assert seed.shape[0] == λs
+
+    if seed.shape[0] != λs:
+        raise ValueError("check the security parameter and seed shape")
+
     x = seed
     x = x.T
     dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
     x2 = x.view(dtype=dt1)
     x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    assert x.shape == (n_values, 2 * 8)
+    if x.shape != (n_values, 2 * 8):
+        raise ValueError(f"shape of x needs to be ({n_values}, 16)")
 
     out = np.empty((n_values, 4 * 8), dtype=np.uint8)
 
@@ -543,16 +551,21 @@ def H(seed, idx=0):
     h0 is erased by h1
     """
 
-    assert len(seed.shape) == 2
+    if len(seed.shape) != 2:
+        raise ValueError("size of seed shape needs to be 2")
     n_values = seed.shape[1]
-    assert seed.shape[0] == λs
+
+    if seed.shape[0] != λs:
+        raise ValueError("check the security parameter and seed shape")
+
     x = seed
     x = x.T
     dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
     x2 = x.view(dtype=dt1)
     x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    assert x.shape == (n_values, 2 * 8)
+    if x.shape != (n_values, 2 * 8):
+        raise ValueError(f"shape of x needs to be ({n_values}, 16)")
 
     if (n_values, idx) not in empty_dict:
         # 64 bytes are needed to store a sha512

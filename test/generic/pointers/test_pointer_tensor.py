@@ -379,6 +379,37 @@ def test_get_remote_shape(workers):
     assert y.shape == torch.Size([5])
 
 
+def test_get_remote_ndim(workers):
+    """Test pointer.ndim functionality"""
+    bob = workers["bob"]
+    x = th.rand(2, 3, 4).send(bob)
+    assert x.ndim == 3
+
+
+def test_remote_T(workers):
+    """Test pointer.T functionality"""
+    bob = workers["bob"]
+    x = th.rand(2, 3, 4)
+    bob_x = x.send(bob)
+    bob_xT = bob_x.T
+    assert bob_x.shape == torch.Size([2, 3, 4])
+    assert bob_xT.shape == torch.Size([4, 3, 2])
+    assert (bob_x.get() == x).all()
+    assert (bob_xT.get() == x.T).all()
+
+
+def test_remote_svd(workers):
+    """Test pointer.svd() functionality"""
+    bob = workers["bob"]
+    x = th.rand(5, 3)
+    local_u, local_s, local_v = x.svd()
+    bob_x = x.send(bob)
+    bob_u, bob_s, bob_v = bob_x.svd()
+    assert (local_u == bob_u.get()).all()
+    assert (local_s == bob_s.get()).all()
+    assert (local_v == bob_v.get()).all()
+
+
 def test_remote_function_with_multi_ouput(workers):
     """
     Functions like .split return several tensors, registration and response

@@ -74,7 +74,8 @@ def _initialize_generators(cur_seed, prev_seed):
 @allow_command
 def _get_random_tensor(name_generator, shape, worker_id, ring_size=RING_SIZE):
     worker = syft.local_worker.get_worker(worker_id)
-    assert worker.crypto_store.przs.generators, ERR_MSG
+    if not worker.crypto_store.przs.generators:
+        raise ValueError(ERR_MSG)
 
     generators = worker.crypto_store.przs.generators
 
@@ -110,7 +111,8 @@ def _generate_alpha_3of3(worker_id, ring_size=RING_SIZE):
                 the previous worker (i-1) seed
     """
     worker = syft.local_worker.get_worker(worker_id)
-    assert worker.crypto_store.przs.generators, ERR_MSG
+    if not worker.crypto_store.przs.generators:
+        raise ValueError(ERR_MSG)
 
     generators = worker.crypto_store.przs.generators
 
@@ -131,7 +133,8 @@ def _generate_alpha_2of3(worker_id, ring_size=RING_SIZE):
                 the previous worker (i-1) seed and it generates alpha_i-1
     """
     worker = syft.local_worker.get_worker(worker_id)
-    assert worker.crypto_store.przs.generators, ERR_MSG
+    if not worker.crypto_store.przs.generators:
+        raise ValueError(ERR_MSG)
 
     generators = worker.crypto_store.przs.generators
 

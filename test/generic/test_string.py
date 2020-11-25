@@ -68,3 +68,10 @@ def test_string_methods():
     bob = sy.VirtualWorker(id="bob", hook=sy.hook)
     out = x.send(bob)
     assert isinstance(out, sy.generic.pointers.string_pointer.StringPointer)
+
+    # adding these to increase test coverage of generic/string.py
+    test = String("test")
+    x = String().simplify(worker=bob, string=test)
+    assert String.add_string(test, String().detail(bob, x)) == "testtest"
+    assert isinstance(test.get_class_attributes()["owner"], sy.VirtualWorker)
+    assert test.on("on") == "on"

@@ -1,5 +1,4 @@
 import json
-from typing import Dict
 
 import binascii
 import websocket
@@ -160,33 +159,3 @@ class ModelCentricFLClient:
         Client = ModelCentricFLClient(address, id, secure)
 
         return Client
-
-    @staticmethod
-    def get_msgpack_code() -> Dict[str, int]:
-        """This is the implementation of the `get_msgpack_code()`
-        method required by PySyft's SyftSerializable class.
-        It provides a code for msgpack if the type is not present in proto.json.
-        The returned object should be similar to:
-        {
-            "code": int value,
-            "forced_code": int value
-        }
-        Both keys are optional, the common and right way would be to add only the "code" key.
-        Returns:
-            dict: A dict with the "code" and/or "forced_code" keys.
-        """
-
-        # If a msgpack code is not already generated, then generate one
-        # the code is hash of class name
-        if not hasattr(ModelCentricFLClient, "proto_id"):
-            ModelCentricFLClient.proto_id = sy.serde.msgpack.serde.msgpack_code_generator(
-                ModelCentricFLClient.__qualname__
-            )
-
-        code_dict = {}
-        code_dict["code"] = ModelCentricFLClient.proto_id
-        code_dict["forced_code"] = sy.serde.msgpack.serde.msgpack_code_generator(
-            ModelCentricFLClient.__qualname__ + "forced"
-        )
-
-        return code_dict
