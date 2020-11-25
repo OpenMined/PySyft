@@ -110,12 +110,12 @@ class StorableObject(AbstractStorableObject):
 
         if hasattr(self, "description"):
             # Step 4: save the description into proto
-            proto.description = self.description  # type: ignore
+            proto.description = self.description
 
         # QUESTION: Which one do we want, self.data.tags or self.tags or both???
         if hasattr(self, "tags"):
             # Step 5: save tags into proto if they exist
-            if self.tags is not None:  # type: ignore
+            if self.tags is not None
                 for tag in self.tags:
                     proto.tags.append(tag)
 
@@ -151,14 +151,12 @@ class StorableObject(AbstractStorableObject):
         schematic_type = obj_type.get_data_protobuf_schema()
 
         # Step 4: Deserialize data from protobuf
-        if schematic_type is not None and callable(schematic_type):
+        if callable(schematic_type):
             data = schematic_type()
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
             data = obj_type._data_proto2object(proto=data)
-        else:
-            data = None
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""
