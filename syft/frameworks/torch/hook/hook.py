@@ -4,6 +4,7 @@ import logging
 from math import inf
 import torch
 import weakref
+import warnings
 
 import syft
 from syft import dependency_check
@@ -726,6 +727,7 @@ class TorchHook(FrameworkHook):
                 for name_p, p in element_iter():
                     if "running_var" in name_p:
                         if nn_self.training is False:
+                            warnings.warn("WARNING: Don't use for training! \nThe model contains a BatchNorm with running_var that has been converted before encryption: x -> 1 / torch.sqrt(x) ")
                             sqrt_inv_p = 1 / torch.sqrt(p)
                             if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
                                 p.child = sqrt_inv_p.child

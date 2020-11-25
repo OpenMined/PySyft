@@ -34,9 +34,12 @@ def get_data_loaders(workers, args, kwargs, private=True):
         """
         Transform to fixed precision and secret share a tensor
         """
-        return tensor.fix_precision(
-            precision_fractional=args.precision_fractional, dtype=args.dtype
-        ).share(*workers, **kwargs)
+        return tensor.encrypt(
+            workers=workers,
+            precision_fractional=args.precision_fractional,
+            dtype=args.dtype,
+            **kwargs,
+        )
 
     dataset = args.dataset
 

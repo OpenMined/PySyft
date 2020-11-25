@@ -56,9 +56,14 @@ def run_inference(args):
     model = get_model(args.model, args.dataset, out_features=get_number_classes(args.dataset))
     model.eval()
 
-    model.fix_precision(precision_fractional=args.precision_fractional, dtype=args.dtype).share(
-        *workers, **kwargs
+    model.encrypt(
+        protocol=args.protocol,
+        workers=workers,
+        crypto_provider=crypto_provider,
+        precision_fractional=args.precision_fractional,
+        dtype=args.dtype,
     )
+
     test_time, accuracy = test(args, model, private_test_loader)
 
     print(
