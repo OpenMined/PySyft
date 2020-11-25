@@ -1,5 +1,25 @@
 # Installation
-Change your PyGrid directory in the ``scripts/launch_***.sh``
+
+### PyGrid
+Download PyGrid from GitHub using the dev branch.
+
+First install poetry and run `poetry install` in apps/node
+
+### PySyft 
+
+Download PySyft from GitHub using the ryffel/ariaNN branch.
+
+Install the  dependencies
+```
+pip install -r pip-dep/requirements.txt
+```
+
+Force ``syft-proto`` version to be 0.5.3: `pip install syft_proto==0.5.3`
+
+
+### Experiments setup 
+
+Write your PyGrid directory in the ``scripts/launch_***.sh``
 
 Define a `HOME` in data.py
 

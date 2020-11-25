@@ -17,8 +17,7 @@ def profile(func):
             retval = func(args_, *args, **kwargs)
             pr.disable()
             s = io.StringIO()
-            sortby = pstats.SortKey.TIME  # 'cumulative'
-            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
             ps.print_stats(0.04)
             print(s.getvalue())
             return retval
