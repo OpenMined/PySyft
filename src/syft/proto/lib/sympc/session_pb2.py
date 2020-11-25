@@ -14,9 +14,6 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
 from syft.proto.core.node.common import (
     client_pb2 as proto_dot_core_dot_node_dot_common_dot_client__pb2,
 )
@@ -28,9 +25,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1dproto/lib/sympc/session.proto\x12\x0esyft.lib.sympc\x1a%proto/core/common/common_object.proto\x1a#proto/core/node/common/client.proto\x1a\x1bproto/lib/python/dict.proto"\xc0\x01\n\nMPCSession\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04rank\x18\x02 \x01(\r\x12%\n\x06\x63onfig\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12.\n\x07parties\x18\x04 \x03(\x0b\x32\x1d.syft.core.node.common.Client\x12*\n\x03ttp\x18\x05 \x01(\x0b\x32\x1d.syft.core.node.common.Clientb\x06proto3',
+    serialized_pb=b'\n\x1dproto/lib/sympc/session.proto\x12\x0esyft.lib.sympc\x1a#proto/core/node/common/client.proto\x1a\x1bproto/lib/python/dict.proto"\xab\x01\n\nMPCSession\x12\x0c\n\x04uuid\x18\x01 \x01(\x0c\x12\x0c\n\x04rank\x18\x02 \x01(\r\x12%\n\x06\x63onfig\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12.\n\x07parties\x18\x04 \x03(\x0b\x32\x1d.syft.core.node.common.Client\x12*\n\x03ttp\x18\x05 \x01(\x0b\x32\x1d.syft.core.node.common.Clientb\x06proto3',
     dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_node_dot_common_dot_client__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
@@ -46,15 +42,15 @@ _MPCSESSION = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="id",
-            full_name="syft.lib.sympc.MPCSession.id",
+            name="uuid",
+            full_name="syft.lib.sympc.MPCSession.uuid",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -149,13 +145,10 @@ _MPCSESSION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=155,
-    serialized_end=347,
+    serialized_start=116,
+    serialized_end=287,
 )
 
-_MPCSESSION.fields_by_name[
-    "id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _MPCSESSION.fields_by_name[
     "config"
 ].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
