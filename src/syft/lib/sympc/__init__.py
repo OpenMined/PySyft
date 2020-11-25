@@ -10,11 +10,12 @@ from typing import Union
 import sympc
 
 # syft relative
+from . import fixed_precision  # noqa: 401
+from . import session  # noqa: 401
 from ...ast.globals import Globals
 from ...ast.klass import Class
 from ...ast.module import Module
 from ..python.primitive_container import Any
-from .session import SySession
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -80,19 +81,43 @@ def create_sympc_ast() -> Globals:
         ("sympc", sympc),
         ("sympc.session", sympc.session),
         ("sympc.tensor", sympc.tensor),
-        ("sympc.protocol", sympc.protocol.spdz),
+        ("sympc.tensor.utils", sympc.tensor.utils),
+        ("sympc.protocol", sympc.protocol),
         ("sympc.protocol.spdz", sympc.protocol.spdz),
     ]
 
     classes = [
-        ("sympc.session.Session", "sympc.session.Session", SySession),
+        ("sympc.session.Session", "sympc.session.Session", sympc.session.Session),
+        (
+            "sympc.tensor.FixedPrecisionTensor",
+            "sympc.tensor.FixedPrecisionTensor",
+            sympc.tensor.FixedPrecisionTensor,
+        ),
     ]
 
-    functions = [("sympc.protocol.spdz.mul_parties", "torch.Tensor")]
+    functions_methods = [
+        ("sympc.protocol.spdz.mul_parties", "sympc.tensor.FixedPrecisionTensor"),
+        (
+            "sympc.session.Session.przs_generate_random_elem",
+            "sympc.tensor.FixedPrecisionTensor",
+        ),
+        (
+            "sympc.tensor.FixedPrecisionTensor.__add__",
+            "sympc.tensor.FixedPrecisionTensor",
+        ),
+        (
+            "sympc.tensor.FixedPrecisionTensor.__sub__",
+            "sympc.tensor.FixedPrecisionTensor",
+        ),
+        (
+            "sympc.tensor.FixedPrecisionTensor.__mul__",
+            "sympc.tensor.FixedPrecisionTensor",
+        ),
+    ]
 
     add_modules(ast, modules)
     add_classes(ast, classes)
-    add_functions(ast, functions)
+    add_functions(ast, functions_methods)
 
     for klass in ast.classes:
         klass.create_pointer_class()
