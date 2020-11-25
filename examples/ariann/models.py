@@ -45,6 +45,29 @@ class Network2(nn.Module):
         return x
 
 
+class LeNet(nn.Module):
+    def __init__(self, dataset, out_features=10):
+        super(LeNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 20, kernel_size=5, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(20, 50, kernel_size=5, stride=1, padding=0)
+        self.fc1 = nn.Linear(800, 500)
+        self.fc2 = nn.Linear(500, out_features)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.max_pool2d(x, kernel_size=2, stride=2)
+        x = F.relu(x)  # switched!!
+        x = self.conv2(x)
+        x = F.max_pool2d(x, kernel_size=2, stride=2)
+        x = F.relu(x)  # switched!!
+        x = x.view(-1, 800)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        x = F.relu(x)
+        return x
+
+
 class AlexNet_CIFAR10(nn.Module):
     def __init__(self, out_features=10):
         super(AlexNet_CIFAR10, self).__init__()
@@ -85,6 +108,7 @@ class AlexNet_FALCON(nn.Module):
     This is the AlexNet version used in FALCON, which is not the standard
     of PyTorch
     """
+
     def __init__(self, out_features=10):
         super(AlexNet_FALCON, self).__init__()
         self.conv_base = nn.Sequential(
@@ -208,6 +232,7 @@ model_zoo = {
     "resnet18": resnet18,
     "vgg16": vgg16,
     "alexnet": alexnet,
+    "lenet": LeNet,
 }
 
 
