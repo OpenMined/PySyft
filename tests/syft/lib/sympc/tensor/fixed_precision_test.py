@@ -1,7 +1,5 @@
 # third party
-import pytest
 from sympc.tensor import FixedPrecisionTensor
-import torch
 
 # syft absolute
 import syft as sy

@@ -1,22 +1,16 @@
 # stdlib
 import dataclasses
-from typing import Any
 from typing import List as TypedList
 from typing import Optional
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from sympc.config import Config
 from sympc.tensor import FixedPrecisionTensor
-import torch
 
 # syft relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-from ...decorators import syft_decorator
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.sympc.fixed_precision_tensor_pb2 import (
@@ -25,7 +19,6 @@ from ...proto.lib.sympc.fixed_precision_tensor_pb2 import (
 from ...util import aggressive_set_attr
 from ..python import Dict
 from ..python.primitive_factory import PrimitiveFactory
-from ..torch.uppercase_tensor import torch_tensor_type
 
 
 class SyFixedPrecisionTensorWrapper(StorableObject):
