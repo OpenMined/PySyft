@@ -52,7 +52,6 @@ from pkg_resources import get_distribution  # noqa: F401
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
-from syft.core.common.module import Module  # noqa: F401
 
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -77,6 +76,7 @@ from syft.grid.duet import launch_duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
+from syft.lib.torch.module import Module  # noqa: F401
 
 # syft relative
 # Package Imports
