@@ -3,9 +3,13 @@
 ### PyGrid
 Download PyGrid from GitHub using the dev branch.
 
-First install poetry and run `poetry install` in apps/node
+First install poetry 
+``` 
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+```
+take a fresh tab and run `poetry install` in apps/node
 
-### PySyft 
+### PySyft
 
 Download PySyft from GitHub using the ryffel/ariaNN branch.
 
@@ -17,7 +21,7 @@ pip install -r pip-dep/requirements.txt
 Force ``syft-proto`` version to be 0.5.3: `pip install syft_proto==0.5.3`
 
 
-### Experiments setup 
+### Experiments setup
 
 Write your PyGrid directory in the ``scripts/launch_***.sh``
 
@@ -31,6 +35,18 @@ You need to install 2 datasets in your `HOME`:
                 "unzip hymenoptera_data.zip
     ```
     
+    
+### Troubleshooting
+
+If the workers launched automatically complain about syft compression codes,
+delete the syft library from the poetry virtual env, active it and install syft 
+in editable mode from your GitHub clone
+
+Example of activating the poetry virtual env:
+```
+source /home/ubuntu/.cache/pypoetry/virtualenvs/openmined.gridnode-L_C_JhA9-py3.6/bin/activate
+```
+
 # Usage
 
 ```
