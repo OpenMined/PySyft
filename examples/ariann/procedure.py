@@ -18,7 +18,7 @@ def profile(func):
             pr.disable()
             s = io.StringIO()
             ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
-            ps.print_stats(0.04)
+            ps.print_stats(0.1)
             print(s.getvalue())
             return retval
         else:

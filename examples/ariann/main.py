@@ -53,7 +53,8 @@ def run_inference(args):
     )
     # public_train_loader, public_test_loader = get_data_loaders(workers, args, kwargs, private=False)
 
-    model = get_model(args.model, out_features=get_number_classes(args.dataset))
+    model = get_model(args.model, args.dataset, out_features=get_number_classes(args.dataset))
+    model.eval()
 
     model.fix_precision(precision_fractional=args.precision_fractional, dtype=args.dtype).share(
         *workers, **kwargs
