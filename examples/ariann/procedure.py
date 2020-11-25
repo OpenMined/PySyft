@@ -18,7 +18,7 @@ def profile(func):
         s = io.StringIO()
         sortby = pstats.SortKey.TIME  # 'cumulative'
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats(0.1)
+        ps.print_stats(0.04)
         print(s.getvalue())
         return retval
 
@@ -94,10 +94,7 @@ def test(args, model, private_test_loader):
                 ni = i * args.test_batch_size
                 print(
                     "Accuracy: {}/{} ({:.0f}%) \tTime / item: {:.4f}s".format(
-                        int(c.item()),
-                        ni,
-                        100.0 * c.item() / ni,
-                        times / ni,
+                        int(c.item()), ni, 100.0 * c.item() / ni, times / ni,
                     )
                 )
 

@@ -1,4 +1,6 @@
 # Installation
+Change your PyGrid directory in the ``scripts/launch_***.sh``
+
 Define a `HOME` in data.py
 
 You need to install 2 datasets in your `HOME`:
@@ -12,7 +14,22 @@ You need to install 2 datasets in your `HOME`:
 # Usage
 
 ```
-python examples/ariann/main.py --model resnet18 --dataset hymenoptera --preprocess
+python main.py --model resnet18 --dataset hymenoptera --preprocess
+```
+
+```
+usage: main.py [-h] [--model MODEL] [--dataset DATASET] [--preprocess]
+               [--websockets]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --model MODEL      model to use for inference (network1, network2, lenet,
+                     alexnet, vgg16, resnet18)
+  --dataset DATASET  dataset to use (mnist, cifar10, hymenoptera, tiny-
+                     imagenet)
+  --preprocess       preprocess data or not
+  --websockets       use PyGrid nodes instead of a virtual network. (nodes are
+                     launched automatically)
 ```
 
 # Datasets
@@ -24,7 +41,7 @@ python examples/ariann/main.py --model resnet18 --dataset hymenoptera --preproce
 Suitability: Network1, Network2, LeNet
 
 ## CIFAR10
-s
+
 3 x 32 x32 pixel images
 
 Suitability: AlexNet and VGG16
