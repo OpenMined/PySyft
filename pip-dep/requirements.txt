@@ -10,6 +10,7 @@ msgpack-numpy~=0.4.7
 numpy~=1.18.1
 phe~=1.4.0
 Pillow>=7.1.0
+pyarrow
 psutil==5.7.0
 requests~=2.22.0
 RestrictedPython~=5.0
