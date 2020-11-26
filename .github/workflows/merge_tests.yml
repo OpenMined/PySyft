@@ -16,8 +16,12 @@ on:
     paths:
       - "**.py"
       - "setup.cfg"
-      - ".github/workflows/tests.yml"
-  workflow_dispatch: ""
+      - ".github/workflows/**.yml"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Merge Tests Manually"
+        required: false
 
 jobs:
   python-tests-all:
