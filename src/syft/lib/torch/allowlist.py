@@ -2,6 +2,9 @@
 from typing import Dict
 from typing import Union
 
+# syft relative
+from ..misc.union import UnionGenerator
+
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 # --------------------------------------------------------------------------------------
@@ -976,7 +979,9 @@ allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
 allowlist["torch.Tensor.device"] = "torch.device"
 allowlist["torch.Tensor.detach_"] = "torch.Tensor"
 # required for MNIST but marked as skip in the allowlist_test.json
-allowlist["torch.Tensor.item"] = "syft.lib.python.Float"  # Union[bool, int, float]
+allowlist["torch.Tensor.item"] = UnionGenerator[
+    "syft.lib.python.Int", "syft.lib.python.Float", "syft.lib.python.Bool"
+]
 allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 allowlist["torch.Tensor.stride"] = "syft.lib.python.List"  # tuple Union
 

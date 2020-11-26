@@ -150,7 +150,7 @@ class Class(Callable):
         attrs["__name__"] = name
         attrs["__module__"] = ".".join(parts)
 
-        def str_repr(__self) -> str:
+        def str_repr(__self: Any) -> str:
             try:
                 return __self.__repr__()
             except Exception as e:

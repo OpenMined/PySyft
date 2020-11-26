@@ -28,7 +28,7 @@ ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
 
-LOGO_URL = Path("../../../docs/img") / "logo.png"
+LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
 
 
 try:
@@ -148,7 +148,8 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     sys.stdout.write("\r" + out)
                 iterator += 1
 
-    counterThread().start()
+    if hasattr(sys.stdout, "parent_header"):
+        counterThread().start()
 
 
 def duet(
