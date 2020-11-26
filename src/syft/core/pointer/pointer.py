@@ -129,6 +129,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
+    _searchable: bool = False
 
     def __init__(
         self,
@@ -444,7 +445,16 @@ class Pointer(AbstractPointer):
                     # escape the while loop
                     return status
 
-    def toggle_searchability(
+    @property
+    def searchable(self) -> bool:
+        return self._searchable
+
+    @searchable.setter
+    def searchable(self, value: bool) -> None:
+        if value != self._searchable:
+            self.update_searchability(not self._searchable)
+
+    def update_searchability(
         self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
     ) -> None:
         """Make the object pointed at searchable or not for other people. If
@@ -457,6 +467,7 @@ class Pointer(AbstractPointer):
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
+        self._searchable = searchable
         msg = ObjectSearchPermissionUpdateMessage(
             add_instead_of_remove=searchable,
             target_verify_key=target_verify_key,
