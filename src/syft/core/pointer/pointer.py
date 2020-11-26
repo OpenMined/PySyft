@@ -444,13 +444,17 @@ class Pointer(AbstractPointer):
                     # escape the while loop
                     return status
 
-    def toggle_searchability(self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None) -> None:
-        """Make the object pointed at searchable or not for other people. If target_verify_key is not specified, the
-        searchability for the VerifyAll group will be toggled.
+    def toggle_searchability(
+        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+    ) -> None:
+        """Make the object pointed at searchable or not for other people. If
+        target_verify_key is not specified, the searchability for the VerifyAll group
+        will be toggled.
 
         :param searchable: If the target object should be made searchable or not.
         :type target_verify_key: bool
-        :param target_verify_key: The verify_key of the client to which we want to give search permission.
+        :param target_verify_key: The verify_key of the client to which we want to give
+               search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
         msg = ObjectSearchPermissionUpdateMessage(
@@ -462,10 +466,10 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
-        """Method that checks the status of an already made request. There are three possible
-        outcomes when requesting access:
-            1. RequestStatus.Accepted - your request has been approved, you can not .get() your
-            data.
+        """Method that checks the status of an already made request. There are three
+        possible outcomes when requesting access:
+            1. RequestStatus.Accepted - your request has been approved, you can not
+                                        .get() your data.
             2. RequestStatus.Pending - your request has not been reviewed yet.
             3. RequestStatus.Rejected - your request has been rejected.
 
