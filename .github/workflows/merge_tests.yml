@@ -1,0 +1,105 @@
+# Merge Tests
+# Once PR tests have passed and we attempt to merge, we run these tests which are more
+# comprehensive but very slow. The primary difference is the `pytest -m slow` tests.
+# Because the linting and notebook checks have already passed in the PR tests we don't
+# need them here. In addition, we skip MacOS on merge to dev as this happens frequently
+# and the differences between Ubuntu and MacOS are minimal compared with the higher
+# time unit cost of MacOS tests. Finally if we are merging with master we run the MacOS
+# tests as well.
+name: Merge Tests
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - "**.py"
+      - "setup.cfg"
+      - ".github/workflows/**.yml"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Merge Tests Manually"
+        required: false
+
+jobs:
+  python-tests-all:
+    strategy:
+      max-parallel: 36
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        isMaster:
+          - ${{ contains(github.ref, 'master') }}
+        exclude:
+          - isMaster: false
+            os: macos-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Cache packages
+        uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.eggs
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Install PyTorch Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+          fi
+          pip install torch==${TORCH_VERSION}
+          pip install torchvision==${TORCHVISION_VERSION}
+
+      - name: Install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Run all tests
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pytest -m 'all' --cov-fail-under 80 -n auto
