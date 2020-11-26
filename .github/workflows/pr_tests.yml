@@ -1,13 +1,19 @@
-name: Tests
+# PR Tests
+# To speed up development we don't run all the tests when opening and updating a PR.
+# Instead we first run the lint check which fails fast and then only run the
+# `pytest -m fast` tests against Ubuntu and Windows and the notebook examples.
+# Once these checks pass and we decide to do a merge, the actions in `merge_tests.yml`
+# get executed.
+name: PR Tests
 
 on:
   pull_request:
     branches:
       - dev
     paths:
-      - '**.py'
-      - 'setup.cfg'
-      - '.github/workflows/tests.yml'
+      - "**.py"
+      - "setup.cfg"
+      - ".github/workflows/tests.yml"
 
 jobs:
   python-linting:
@@ -43,7 +49,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
-          version: '3.x'
+          version: "3.x"
 
       - uses: pre-commit/action@v2.0.0
 
@@ -54,11 +60,10 @@ jobs:
           ./scripts/build_proto.sh
           pre-commit run --all-files
 
-
   python-tests-fast:
     needs: [python-linting]
     strategy:
-      max-parallel: 27
+      max-parallel: 24
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
@@ -101,7 +106,7 @@ jobs:
           pip install bandit
           bandit -r src -ll
 
-      - name: Install pytorch Linux
+      - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
@@ -122,7 +127,7 @@ jobs:
           pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
 
-      - name: Install pytorch Windows
+      - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}

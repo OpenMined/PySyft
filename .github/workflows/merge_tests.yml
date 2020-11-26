@@ -1,4 +1,12 @@
-name: Tests
+# Merge Tests
+# Once PR tests have passed and we attempt to merge, we run these tests which are more
+# comprehensive but very slow. The primary difference is the `pytest -m slow` tests.
+# Because the linting and notebook checks have already passed in the PR tests we don't
+# need them here. In addition, we skip MacOS on merge to dev as this happens frequently
+# and the differences between Ubuntu and MacOS are minimal compared with the higher
+# time unit cost of MacOS tests. Finally if we are merging with master we run the MacOS
+# tests as well.
+name: Merge Tests
 
 on:
   push:
@@ -16,9 +24,14 @@ jobs:
     strategy:
       max-parallel: 24
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: [3.8, 3.7, 3.6]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        isMaster:
+          - ${{ contains(github.ref, 'master') }}
+        exclude:
+          - isMaster: false
+            os: macos-latest
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -44,7 +57,7 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Install pytorch Linux
+      - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
@@ -65,7 +78,7 @@ jobs:
           pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
 
-      - name: Install pytorch Windows
+      - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
         env:
           TORCH_VERSION: ${{ matrix.torch-version }}
