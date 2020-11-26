@@ -1,8 +1,10 @@
+# third party
+import torch as th
+
 # syft absolute
 import syft as sy
 from syft.core.common import UID
 from syft.core.store.storeable_object import StorableObject
-import torch as th
 
 
 def test_create_storable_obj() -> None:
