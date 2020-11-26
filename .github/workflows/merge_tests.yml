@@ -20,9 +20,9 @@ on:
   workflow_dispatch: ""
 
 jobs:
-  python-all-tests:
+  python-tests-all:
     strategy:
-      max-parallel: 24
+      max-parallel: 36
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
