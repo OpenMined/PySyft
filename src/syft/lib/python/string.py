@@ -115,9 +115,9 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __reversed__(self) -> PyPrimitive:
-        res = super().__reversed__()
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __reversed__(self) -> Any:
+        # returns <class 'reversed'>
+        return super().__reversed__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __sizeof__(self) -> PyPrimitive:

@@ -241,8 +241,10 @@ $ which python
 
 Okay, any time we are inside the virtualenv every python and pip command we run will use this isolated version that we defined and will not effect the rest of the system or other projects.
 
-### Install Python Packages
+### Install Python Dependencies
 Once you are inside the virtualenv you can do this with pip or pipenv.
+
+**NOTE** this is required for several `dev` packages like pytest-xdist etc.
 ```
 $ pip install -r requirements.txt
 ```

@@ -77,8 +77,8 @@ class VerifyAllWrapper(StorableObject):
         return VerifyAllWrapper_PB(all=Empty_PB())
 
     @staticmethod
-    def _data_proto2object(proto: VerifyAllWrapper_PB) -> VerifyAll:  # type: ignore
-        return VerifyAll()
+    def _data_proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
+        return VerifyAll
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
