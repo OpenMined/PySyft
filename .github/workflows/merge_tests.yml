@@ -5,7 +5,7 @@
 # need them here. In addition, we skip MacOS on merge to dev as this happens frequently
 # and the differences between Ubuntu and MacOS are minimal compared with the higher
 # time unit cost of MacOS tests. Finally if we are merging with master we run the MacOS
-# tests as well.
+# tests as  well.
 name: Merge Tests
 
 on:
