@@ -102,4 +102,4 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pytest -m 'slow and fast' --cov-fail-under 80 -n auto
+          pytest -m 'all' --cov-fail-under 80 -n auto
