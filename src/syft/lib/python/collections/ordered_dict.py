@@ -74,10 +74,10 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    # @syft_decorator(typechecking=True, prohibit_args=False)
-    # def __reversed__(self) -> SyPrimitiveRet:
-    #     res = super().__reversed__()
-    #     return PrimitiveFactory.generate_primitive(value=res)
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __reversed__(self) -> Any:
+        # returns <class 'odict_iterator'>
+        return super().__reversed__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: Any, value: Any) -> SyPrimitiveRet:
