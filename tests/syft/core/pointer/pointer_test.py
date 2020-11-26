@@ -23,3 +23,18 @@ def test_make_searchable(with_verify_key: bool) -> None:
         ptr.make_searchable()
 
     assert len(client.store) == 1
+
+
+def test_searchable() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    root_client = bob.get_root_client()
+    client = bob.get_client()
+
+    ten = th.tensor([1, 2])
+    _ = ten.send(root_client)
+
+    assert len(client.store) == 0
+
+    _ = ten.send(root_client, searchable=True)
+
+    assert len(client.store) == 1
