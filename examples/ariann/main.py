@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 stdout=subprocess.PIPE,
                 shell=True,
                 preexec_fn=os.setsid,
-                executable="/bin/zsh",
+                executable="/bin/bash",
             )
             for worker in ["alice", "bob", "crypto_provider"]
         ]
