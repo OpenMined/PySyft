@@ -21,7 +21,7 @@ from examples.ariann.models import get_model, load_state_dict
 from examples.ariann.preprocess import build_prepocessing
 
 
-def run_inference(args):
+def run(args):
     if args.train:
         print(f"Training over {args.epochs} epochs")
     elif args.test:
@@ -63,16 +63,18 @@ def run_inference(args):
         build_prepocessing(args.model, args.dataset, args.batch_size, workers, args)
 
     private_train_loader, private_test_loader = get_data_loaders(args, kwargs, private=True)
-    # public_train_loader, public_test_loader = get_data_loaders(args, kwargs, private=False)
+    public_train_loader, public_test_loader = get_data_loaders(args, kwargs, private=False)
 
     model = get_model(args.model, args.dataset, out_features=get_number_classes(args.dataset))
 
-    if args.test:
+    if args.test and not args.train:
         load_state_dict(model, args.model, args.dataset)
 
     model.eval()
 
     model.encrypt(**kwargs)
+    if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
+        model.get()
 
     if args.train:
         for epoch in range(args.epochs):
@@ -89,6 +91,15 @@ def run_inference(args):
                 f"{ 'Online' if args.preprocess else 'Total' } time (s):\t",
                 round(test_time / args.batch_size, 4),
             )
+        else:
+            # Compare with clear text accuracy
+            print("Clear text accuracy is:")
+            args.log_interval = 1_000_000  # Disable logging
+            model = get_model(
+                args.model, args.dataset, out_features=get_number_classes(args.dataset)
+            )
+            load_state_dict(model, args.model, args.dataset)
+            test(args, model, public_test_loader)
 
     if args.preprocess:
         missing_items = [len(v) for k, v in sy.preprocessed_material.items()]
@@ -128,6 +139,12 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--preprocess", help="[only for speed test] preprocess data or not", action="store_true"
+    )
+
+    parser.add_argument(
+        "--fp_only",
+        help="Don't secret share values, just convert them to fix precision",
+        action="store_true",
     )
 
     parser.add_argument(
@@ -172,6 +189,8 @@ if __name__ == "__main__":
 
     cmd_args = parser.parse_args()
 
+    # Sanity checks
+
     if cmd_args.test or cmd_args.train:
         assert (
             not cmd_args.preprocess
@@ -179,6 +198,9 @@ if __name__ == "__main__":
 
     if cmd_args.train:
         assert not cmd_args.test, "Can't set --test if you already have --train"
+
+    if cmd_args.fp_only:
+        assert not cmd_args.preprocess, "Can't have --preprocess in a fixed precision setting"
 
     if cmd_args.pyarrow_info:
         sy.pyarrow_info = True
@@ -204,6 +226,7 @@ if __name__ == "__main__":
         epochs = cmd_args.epochs
         lr = 0.1
 
+        fp_only = cmd_args.fp_only
         requires_grad = cmd_args.train
         dtype = "long"
         protocol = "fss"
@@ -236,11 +259,11 @@ if __name__ == "__main__":
         time.sleep(7)
         try:
             print("LAUNCHED", *[p.pid for p in worker_processes])
-            run_inference(args)
+            run(args)
             kill_processes(worker_processes)
         except Exception as e:
             kill_processes(worker_processes)
             raise e
 
     else:
-        run_inference(args)
+        run(args)

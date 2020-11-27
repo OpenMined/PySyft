@@ -37,7 +37,10 @@ def get_data_loaders(args, kwargs, private=True):
         OR
         - Secret share
         """
-        return tensor.encrypt(**kwargs)
+        encrypted_tensor = tensor.encrypt(**kwargs)
+        if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
+            return encrypted_tensor.get()
+        return encrypted_tensor
 
     dataset = args.dataset
 
