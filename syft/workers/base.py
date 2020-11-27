@@ -330,7 +330,7 @@ class BaseWorker(AbstractWorker):
         if self.verbose:
             print(f"worker {self} sending {message} to {location}")
 
-        strat = None
+        strategy = None
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message, worker=self, strategy=strategy)
@@ -365,7 +365,6 @@ class BaseWorker(AbstractWorker):
         if self.verbose:
             print(f"worker {self} sending {message} to {location}")
 
-    
         strat = self.arrow_serialize
 
         # Step 1: serialize the message to a binary
@@ -378,7 +377,6 @@ class BaseWorker(AbstractWorker):
         response = sy.serde.deserialize(bin_response, worker=self)
 
         return response
-
 
     def recv_msg(self, bin_message: bin) -> bin:
         """Implements the logic to receive messages.

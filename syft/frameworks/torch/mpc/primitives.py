@@ -156,7 +156,6 @@ class PrimitiveStorage:
             )
             self._owner.send_msg_arrow(worker_message, worker)
 
-
     def add_primitives(self, types_primitives: dict):
         """
         Include primitives in the store
