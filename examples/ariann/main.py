@@ -5,6 +5,7 @@ import subprocess
 import time
 
 import torch
+import torch.optim as optim
 
 torch.set_num_threads(1)
 
@@ -21,7 +22,12 @@ from examples.ariann.preprocess import build_prepocessing
 
 
 def run_inference(args):
-    print("Running inference speed test")
+    if args.train:
+        print(f"Training over {args.epochs} epochs")
+    elif args.test:
+        print("Running a full evaluation")
+    else:
+        print("Running inference speed test")
     print("model:\t\t", args.model)
     print("dataset:\t", args.dataset)
     print("batch_size:\t", args.batch_size)
@@ -43,33 +49,42 @@ def run_inference(args):
     workers = [alice, bob]
     sy.local_worker.clients = workers
 
-    kwargs = dict(crypto_provider=crypto_provider, protocol=args.protocol)
+    encryption_kwargs = dict(
+        workers=workers, crypto_provider=crypto_provider, protocol=args.protocol
+    )
+    kwargs = dict(
+        requires_grad=args.requires_grad,
+        precision_fractional=args.precision_fractional,
+        dtype=args.dtype,
+        **encryption_kwargs,
+    )
 
     if args.preprocess:
         build_prepocessing(args.model, args.dataset, args.batch_size, workers, args)
 
-    private_train_loader, private_test_loader = get_data_loaders(
-        workers, args, kwargs, private=True
-    )
-    # public_train_loader, public_test_loader = get_data_loaders(workers, args, kwargs, private=False)
+    private_train_loader, private_test_loader = get_data_loaders(args, kwargs, private=True)
+    # public_train_loader, public_test_loader = get_data_loaders(args, kwargs, private=False)
 
     model = get_model(args.model, args.dataset, out_features=get_number_classes(args.dataset))
     model.eval()
 
-    model.encrypt(
-        protocol=args.protocol,
-        workers=workers,
-        crypto_provider=crypto_provider,
-        precision_fractional=args.precision_fractional,
-        dtype=args.dtype,
-    )
+    model.encrypt(**kwargs)
 
-    test_time, accuracy = test(args, model, private_test_loader)
-
-    print(
-        f"{ 'Online' if args.preprocess else 'Total' } time (s):\t",
-        round(test_time / args.batch_size, 4),
-    )
+    if args.train:
+        for epoch in range(args.epochs):
+            optimizer = optim.SGD(model.parameters(), lr=args.lr)
+            optimizer = optimizer.fix_precision(
+                precision_fractional=args.precision_fractional, dtype=args.dtype
+            )
+            train_time = train(args, model, private_train_loader, optimizer, epoch)
+            test_time, accuracy = test(args, model, private_test_loader)
+    else:
+        test_time, accuracy = test(args, model, private_test_loader)
+        if not args.test:
+            print(
+                f"{ 'Online' if args.preprocess else 'Total' } time (s):\t",
+                round(test_time / args.batch_size, 4),
+            )
 
     if args.preprocess:
         missing_items = [len(v) for k, v in sy.preprocessed_material.items()]
@@ -100,8 +115,35 @@ if __name__ == "__main__":
         help="size of the batch to use",
         default=128,
     )
+    parser.add_argument(
+        "--test_batch_size",
+        type=int,
+        help="size of the batch to use",
+        default=None,
+    )
 
-    parser.add_argument("--preprocess", help="preprocess data or not", action="store_true")
+    parser.add_argument(
+        "--preprocess", help="[only for speed test] preprocess data or not", action="store_true"
+    )
+
+    parser.add_argument(
+        "--test",
+        help="run testing on the complete test dataset",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--train",
+        help="run training for n epochs",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        help="[needs --train] number of epochs to train on",
+        default=15,
+    )
 
     parser.add_argument(
         "--websockets",
@@ -109,15 +151,30 @@ if __name__ == "__main__":
         action="store_true",
     )
 
-    parser.add_argument("--verbose", help="preprocess data or not", action="store_true")
+    parser.add_argument("--verbose", help="show extra information and metrics", action="store_true")
+
+    parser.add_argument(
+        "--log_interval",
+        type=int,
+        help="[needs --test or --train] log intermediate metrics every n batches",
+        default=10,
+    )
 
     parser.add_argument(
         "--pyarrow_info",
-        help="Print information about PyArrow usage and failure",
+        help="print information about PyArrow usage and failure",
         action="store_true",
     )
 
     cmd_args = parser.parse_args()
+
+    if cmd_args.test or cmd_args.train:
+        assert (
+            not cmd_args.preprocess
+        ), "Can't preprocess for a full epoch evaluation or training, remove --preprocess"
+
+    if cmd_args.train:
+        assert not cmd_args.test, "Can't set --test if you already have --train"
 
     if cmd_args.pyarrow_info:
         sy.pyarrow_info = True
@@ -129,20 +186,24 @@ if __name__ == "__main__":
         websockets = cmd_args.websockets
         verbose = cmd_args.verbose
 
-        epochs = 1
-
-        VAL = cmd_args.batch_size
-        n_train_items = VAL
-        n_test_items = VAL
+        train = cmd_args.train
+        n_train_items = -1 if cmd_args.train else cmd_args.batch_size
+        test = cmd_args.test or cmd_args.train
+        n_test_items = -1 if cmd_args.test or cmd_args.train else cmd_args.batch_size
 
         batch_size = cmd_args.batch_size
-        test_batch_size = VAL
+        # Defaults to the train batch_size
+        test_batch_size = cmd_args.test_batch_size or cmd_args.batch_size
 
+        log_interval = cmd_args.log_interval
+
+        epochs = cmd_args.epochs
+        lr = 0.1
+
+        requires_grad = cmd_args.train
         dtype = "long"
         protocol = "fss"
         precision_fractional = 4
-        lr = 0.1
-        log_interval = 40
 
     args = Arguments()
 

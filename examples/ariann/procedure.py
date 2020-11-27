@@ -59,7 +59,7 @@ def train(args, model, private_train_loader, optimizer, epoch):
         if batch_idx % args.log_interval == 0:
             if loss.is_wrapper:
                 loss = loss.get().float_precision()
-            if args.verbose:
+            if args.train:
                 print(
                     "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime: {:.3f}s ({:.3f}s/item) [{:.3f}]".format(
                         epoch,
@@ -73,6 +73,7 @@ def train(args, model, private_train_loader, optimizer, epoch):
                     )
                 )
 
+    print()
     return torch.tensor(times).mean().item()
 
 
@@ -95,7 +96,7 @@ def test(args, model, private_test_loader):
             if batch_idx % args.log_interval == 0 and correct.is_wrapper:
                 c = correct.copy().get().float_precision()
                 ni = i * args.test_batch_size
-                if args.verbose:
+                if args.test:
                     print(
                         "Accuracy: {}/{} ({:.0f}%) \tTime / item: {:.4f}s".format(
                             int(c.item()),
@@ -115,9 +116,9 @@ def test(args, model, private_test_loader):
     except TypeError:
         n_items = len(private_test_loader.dataset)
 
-    if args.verbose:
+    if args.test:
         print(
-            "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
+            "TEST Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
                 correct.item(),
                 n_items,
                 100.0 * correct.item() / n_items,

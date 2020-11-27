@@ -29,17 +29,15 @@ def one_hot_of(index_tensor):
     return onehot_tensor
 
 
-def get_data_loaders(workers, args, kwargs, private=True):
-    def secret_share(tensor):
+def get_data_loaders(args, kwargs, private=True):
+    def encode(tensor):
         """
-        Transform to fixed precision and secret share a tensor
+        Depending on the setting, acts on a tensor
+        - Transform to fixed precision
+        OR
+        - Secret share
         """
-        return tensor.encrypt(
-            workers=workers,
-            precision_fractional=args.precision_fractional,
-            dtype=args.dtype,
-            **kwargs,
-        )
+        return tensor.encrypt(**kwargs)
 
     dataset = args.dataset
 
@@ -79,7 +77,7 @@ def get_data_loaders(workers, args, kwargs, private=True):
             )
 
     elif dataset == "hymenoptera":
-        train_transfomation = transforms.Compose(
+        train_transformation = transforms.Compose(
             [
                 transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
@@ -98,7 +96,7 @@ def get_data_loaders(workers, args, kwargs, private=True):
         try:
             data_dir = HOME + "/hymenoptera_data"
             train_dataset = datasets.ImageFolder(
-                os.path.join(data_dir, "train"), train_transfomation
+                os.path.join(data_dir, "train"), train_transformation
             )
             test_dataset = datasets.ImageFolder(os.path.join(data_dir, "val"), test_transformation)
         except FileNotFoundError:
@@ -122,7 +120,7 @@ def get_data_loaders(workers, args, kwargs, private=True):
         if args.n_train_items >= 0 and i >= args.n_train_items / args.batch_size:
             break
         if private:
-            new_train_loader.append((secret_share(data), secret_share(one_hot_of(target))))
+            new_train_loader.append((encode(data), encode(one_hot_of(target))))
         else:
             new_train_loader.append((data, one_hot_of(target)))
 
@@ -137,7 +135,7 @@ def get_data_loaders(workers, args, kwargs, private=True):
         if args.n_test_items >= 0 and i >= args.n_test_items / args.test_batch_size:
             break
         if private:
-            new_test_loader.append((secret_share(data), secret_share(target.float())))
+            new_test_loader.append((encode(data), encode(target.float())))
         else:
             new_test_loader.append((data, target))
 
