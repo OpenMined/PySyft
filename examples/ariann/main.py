@@ -17,7 +17,7 @@ sy.serde.compression.default_compress_scheme = NO_COMPRESSION
 
 from examples.ariann.procedure import train, test
 from examples.ariann.data import get_data_loaders, get_number_classes
-from examples.ariann.models import get_model
+from examples.ariann.models import get_model, load_state_dict
 from examples.ariann.preprocess import build_prepocessing
 
 
@@ -66,6 +66,10 @@ def run_inference(args):
     # public_train_loader, public_test_loader = get_data_loaders(args, kwargs, private=False)
 
     model = get_model(args.model, args.dataset, out_features=get_number_classes(args.dataset))
+
+    if args.test:
+        load_state_dict(model, args.model, args.dataset)
+
     model.eval()
 
     model.encrypt(**kwargs)

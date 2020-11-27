@@ -345,10 +345,10 @@ class BaseWorker(AbstractWorker):
                 out = key
                 if key in {"fss_comp", "fss_eq"}:
                     tot_size = message.message[0][0][key].nbytes
-                    out += str(tot_size)
+                    out += f" {tot_size}"
                     if tot_size > SHOOT_ARRAY_THRESHOLD + 1_000:
                         strategy = self.arrow_serialize
-                        out += "-> pyarrow"
+                        out += " -> pyarrow"
 
                 elif key in {"mul", "matmul"}:
                     tensors = message.message[0][0][key]
@@ -357,11 +357,11 @@ class BaseWorker(AbstractWorker):
                         tot_size += triple[0].element_size() * triple[0].nelement()
                         tot_size += triple[1].element_size() * triple[1].nelement()
                         tot_size += triple[2].element_size() * triple[2].nelement()
-                    out += str(tot_size)
+                    out += f" {tot_size}"
 
                     if tot_size > SHOOT_ARRAY_THRESHOLD + 1_000:
                         strategy = self.arrow_serialize
-                        out += "-> pyarrow"
+                        out += " -> pyarrow"
 
                 if hasattr(sy, "pyarrow_info"):
                     print(out)

@@ -1,3 +1,6 @@
+import os
+import re
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -238,3 +241,18 @@ model_zoo = {
 
 def get_model(model_name, dataset, out_features):
     return model_zoo[model_name](dataset, out_features)
+
+
+def load_state_dict(model, model_name, dataset):
+    MODEL_PATH = "pretrained_models/"
+
+    base_name = f"{model_name}_{dataset}"
+    file_name = None
+    for file in os.scandir(MODEL_PATH):
+        if re.match(fr"^{base_name}", file.name):
+            file_name = file.name
+
+    if file_name is None:
+        raise FileNotFoundError(f"No pretrained model for {model_name} {dataset} was found!")
+    model.load_state_dict(torch.load(MODEL_PATH + file_name, map_location=torch.device("cpu")))
+    print(f"Pre-trained model loaded from {file_name}")
