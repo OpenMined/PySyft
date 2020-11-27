@@ -1,6 +1,6 @@
 # syft absolute
 import syft as sy
-from syft.lib.sympc.session import SySession
+from syft.lib.sympc.session import Session
 
 
 def test_session_send() -> None:
@@ -10,7 +10,7 @@ def test_session_send() -> None:
     alice_client = alice.get_client()
     bob_client = bob.get_client()
 
-    session = SySession(parties=[alice_client, bob_client])
+    session = Session(parties=[alice_client, bob_client])
 
     session.setup_mpc()
 
