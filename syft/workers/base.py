@@ -330,41 +330,7 @@ class BaseWorker(AbstractWorker):
         if self.verbose:
             print(f"worker {self} sending {message} to {location}")
 
-        strategy = None
-        if (
-            isinstance(message, WorkerCommandMessage)
-            and message.command_name == "feed_crypto_primitive_store"
-        ):
-            # Find the *only* non empty primitive
-            key = None
-            for primitive_name, primitive_list in message.message[0][0].items():
-                if len(primitive_list) > 0:
-                    key = primitive_name
-                    break
-            if key is not None:
-                out = key
-                if key in {"fss_comp", "fss_eq"}:
-                    tot_size = message.message[0][0][key].nbytes
-                    out += f" {tot_size}"
-                    if tot_size > SHOOT_ARRAY_THRESHOLD + 1_000:
-                        strategy = self.arrow_serialize
-                        out += " -> pyarrow"
-
-                elif key in {"mul", "matmul"}:
-                    tensors = message.message[0][0][key]
-                    tot_size = 0
-                    for config, triple in tensors:
-                        tot_size += triple[0].element_size() * triple[0].nelement()
-                        tot_size += triple[1].element_size() * triple[1].nelement()
-                        tot_size += triple[2].element_size() * triple[2].nelement()
-                    out += f" {tot_size}"
-
-                    if tot_size > SHOOT_ARRAY_THRESHOLD + 1_000:
-                        strategy = self.arrow_serialize
-                        out += " -> pyarrow"
-
-                if hasattr(sy, "pyarrow_info"):
-                    print(out)
+        strat = None
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message, worker=self, strategy=strategy)
@@ -376,6 +342,43 @@ class BaseWorker(AbstractWorker):
         response = sy.serde.deserialize(bin_response, worker=self)
 
         return response
+
+    def send_msg_arrow(self, message: Message, location: "BaseWorker") -> object:
+        """Implements the logic to send messages.
+
+        The message is serialized and sent to the specified location. The
+        response from the location (remote worker) is deserialized and
+        returned back.
+
+        Every message uses this method.
+
+        Args:
+            msg_type: A integer representing the message type.
+            message: A Message object
+            location: A BaseWorker instance that lets you provide the
+                destination to send the message.
+
+        Returns:
+            The deserialized form of message from the worker at specified
+            location.
+        """
+        if self.verbose:
+            print(f"worker {self} sending {message} to {location}")
+
+    
+        strat = self.arrow_serialize
+
+        # Step 1: serialize the message to a binary
+        bin_message = sy.serde.serialize(message, worker=self, strategy=strat)
+
+        # Step 2: send the message and wait for a response
+        bin_response = self._send_msg_arrow(bin_message, location)
+
+        # Step 3: deserialize the response
+        response = sy.serde.deserialize(bin_response, worker=self)
+
+        return response
+
 
     def recv_msg(self, bin_message: bin) -> bin:
         """Implements the logic to receive messages.
@@ -392,18 +395,55 @@ class BaseWorker(AbstractWorker):
             A binary message response.
         """
 
-        try:
-            strategy = None
-            if len(bin_message) > SHOOT_ARRAY_THRESHOLD:
-                strategy = self.arrow_deserialize
+        strat = None
 
-            # Step 0: deserialize message
-            msg = sy.serde.deserialize(bin_message, worker=self, strategy=strategy)
-        except pyarrow.lib.ArrowInvalid:
-            if hasattr(sy, "pyarrow_info"):
-                print("WARNING: Pyarrow deserialization error")
-            strategy = None
-            msg = sy.serde.deserialize(bin_message, worker=self, strategy=strategy)
+        # Step 0: deserialize message
+        msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
+
+        # Step 1: save message and/or log it out
+        if self.log_msgs:
+            self.msg_history.append(msg)
+
+        if self.verbose:
+            print(
+                f"worker {self} received {type(msg).__name__} {msg.contents}"
+                if hasattr(msg, "contents")
+                else f"worker {self} received {type(msg).__name__}"
+            )
+
+        # Step 2: route message to appropriate function
+
+        response = None
+        for handler in self.message_handlers:
+            if handler.supports(msg):
+                response = handler.handle(msg)
+                break
+        # TODO(karlhigley): Raise an exception if no handler is found
+
+        # Step 3: Serialize the message to simple python objects
+        bin_response = sy.serde.serialize(response, worker=self)
+
+        return bin_response
+
+    def recv_msg_arrow(self, bin_message: bin) -> bin:
+        """Implements the logic to receive messages.
+
+        The binary message is deserialized and routed to the appropriate
+        function. And, the response serialized the returned back.
+
+        Every message uses this method.
+
+        Args:
+            bin_message: A binary serialized message.
+
+        Returns:
+            A binary message response.
+        """
+
+        strat = self.arrow_deserialize
+
+        # Step 0: deserialize message
+        msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
 
         # Step 1: save message and/or log it out
         if self.log_msgs:

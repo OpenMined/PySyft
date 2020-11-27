@@ -154,7 +154,8 @@ class PrimitiveStorage:
             worker_message = self._owner.create_worker_command_message(
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
-            self._owner.send_msg(worker_message, worker)
+            self._owner.send_msg_arrow(worker_message, worker)
+
 
     def add_primitives(self, types_primitives: dict):
         """

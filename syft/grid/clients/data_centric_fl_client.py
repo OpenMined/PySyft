@@ -146,6 +146,18 @@ class DataCentricFLClient(WebsocketClientWorker):
         self.ws.send(json.dumps(message))
         return json.loads(self.ws.recv())
 
+    def _forward_to_websocket_server_worker_arrow(self, message: bin) -> bin:
+        """Send a bin message to a remote node and receive the response.
+
+        Args:
+            message (bytes) : message payload.
+        Returns:
+            node_response (bytes) : response payload.
+        """
+        self.ws_arrow.send_binary(message)
+        response = self.ws_arrow.recv()
+        return response
+
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """Send a bin message to a remote node and receive the response.
 
