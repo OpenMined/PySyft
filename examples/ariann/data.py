@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
-HOME = "/Users/tryffel/code"
+HOME = "~/Documents/AriaNN/data"
 
 
 def get_number_classes(dataset):

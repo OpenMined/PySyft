@@ -63,7 +63,25 @@ class WebsocketClientWorker(BaseWorker):
         # Secure flag adds a secure layer applying cryptography and authentication
         self.secure = secure
         self.ws = None
+        self.ws_arrow = None
         self.connect()
+        self.connect_arrow()
+
+    @property
+    def url_arrow(self):
+        return f"wss://{self.host}:{self.port}/arrow" if self.secure else f"ws://{self.host}:{self.port}/arrow"
+
+    def connect_arrow(self):
+        args_ = {"max_size": None, "timeout": self.timeout, "url": self.url_arrow}
+
+        if self.secure:
+            args_["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+
+        self.ws_arrow = websocket.create_connection(**args_)
+        self._log_msgs_remote(self.log_msgs)
+
+    def close_arrow(self):
+        self.ws_arrow.shutdown()
 
     @property
     def url(self):
@@ -92,6 +110,9 @@ class WebsocketClientWorker(BaseWorker):
     def _send_msg(self, message: bin, location=None) -> bin:
         return self._recv_msg(message)
 
+    def _send_msg_arrow(self, message: bin, location=None) -> bin:
+        return self._recv_msg_arrow(message)
+
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """
         Note: Is subclassed by the node client when you use the GridNode
@@ -113,6 +134,24 @@ class WebsocketClientWorker(BaseWorker):
             time.sleep(0.1)
             response = self._forward_to_websocket_server_worker(message)
             if not self.ws.connected:
+                raise RuntimeError(
+                    "Websocket connection closed and creation of new connection failed."
+                )
+        return response
+
+    def _recv_msg_arrow(self, message: bin) -> bin:
+        """Forwards a message to the WebsocketServerWorker"""
+        response = self._forward_to_websocket_server_worker_arrow(message)
+        if not self.ws_arrow.connected:
+            logger.warning("Websocket connection closed (worker: %s)", self.id)
+            self.ws_arrow.shutdown()
+            time.sleep(0.1)
+            # Avoid timing out on the server-side
+            self.ws_arrow = websocket.create_connection(self.url_arrow, max_size=None, timeout=self.timeout)
+            logger.warning("Created new websocket connection")
+            time.sleep(0.1)
+            response = self._forward_to_websocket_server_worker_arrow(message)
+            if not self.ws_arrow.connected:
                 raise RuntimeError(
                     "Websocket connection closed and creation of new connection failed."
                 )

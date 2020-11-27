@@ -154,7 +154,11 @@ class PrimitiveStorage:
             worker_message = self._owner.create_worker_command_message(
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
-            self._owner.send_msg(worker_message, worker)
+            if op in {"mul", "matmul"}:
+                self._owner.send_msg(worker_message, worker)
+            elif op in {"fss_eq", "fss_comp"}:
+                self._owner.send_msg_arrow(worker_message, worker)
+
 
     def add_primitives(self, types_primitives: dict):
         """
