@@ -10,8 +10,8 @@ from typing import Union
 import sympc
 
 # syft relative
-from . import fixed_precision  # noqa: 401
 from . import session  # noqa: 401
+from . import share  # noqa: 401
 from ...ast.globals import Globals
 from ...ast.klass import Class
 from ...ast.module import Module
@@ -81,37 +81,41 @@ def create_sympc_ast() -> Globals:
         ("sympc", sympc),
         ("sympc.session", sympc.session),
         ("sympc.tensor", sympc.tensor),
-        ("sympc.tensor.utils", sympc.tensor.utils),
         ("sympc.protocol", sympc.protocol),
         ("sympc.protocol.spdz", sympc.protocol.spdz),
+        ("sympc.protocol.spdz.spdz", sympc.protocol.spdz),
     ]
 
     classes = [
         ("sympc.session.Session", "sympc.session.Session", sympc.session.Session),
         (
-            "sympc.tensor.FixedPrecisionTensor",
-            "sympc.tensor.FixedPrecisionTensor",
-            sympc.tensor.FixedPrecisionTensor,
+            "sympc.tensor.ShareTensor",
+            "sympc.tensor.ShareTensor",
+            sympc.tensor.ShareTensor,
         ),
     ]
 
     functions_methods = [
-        ("sympc.protocol.spdz.mul_parties", "sympc.tensor.FixedPrecisionTensor"),
+        ("sympc.protocol.spdz.spdz.mul_parties", "sympc.tensor.ShareTensor"),
         (
-            "sympc.session.Session.przs_generate_random_elem",
-            "sympc.tensor.FixedPrecisionTensor",
+            "sympc.session.Session.przs_generate_random_share",
+            "sympc.tensor.ShareTensor",
         ),
         (
-            "sympc.tensor.FixedPrecisionTensor.__add__",
-            "sympc.tensor.FixedPrecisionTensor",
+            "sympc.session.get_generator",
+            "torch.Generator",
         ),
         (
-            "sympc.tensor.FixedPrecisionTensor.__sub__",
-            "sympc.tensor.FixedPrecisionTensor",
+            "sympc.tensor.ShareTensor.__add__",
+            "sympc.tensor.ShareTensor",
         ),
         (
-            "sympc.tensor.FixedPrecisionTensor.__mul__",
-            "sympc.tensor.FixedPrecisionTensor",
+            "sympc.tensor.ShareTensor.__sub__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.__mul__",
+            "sympc.tensor.ShareTensor",
         ),
     ]
 

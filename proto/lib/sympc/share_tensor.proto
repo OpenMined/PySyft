@@ -4,10 +4,10 @@ package syft.lib.sympc;
 
 import "proto/core/common/common_object.proto";
 import "proto/lib/torch/tensor.proto";
-import "proto/lib/python/dict.proto";
+import "proto/lib/sympc/session.proto";
 
 
-message FixedPrecisionTensor {
+message ShareTensor {
   syft.lib.torch.TensorProto tensor = 1;
-  syft.lib.python.Dict config = 2;
+  syft.lib.sympc.MPCSession session = 2;
 }
