@@ -94,7 +94,6 @@ def run(args):
         else:
             # Compare with clear text accuracy
             print("Clear text accuracy is:")
-            args.log_interval = 1_000_000  # Disable logging
             model = get_model(
                 args.model, args.dataset, out_features=get_number_classes(args.dataset)
             )

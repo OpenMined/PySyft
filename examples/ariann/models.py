@@ -212,10 +212,10 @@ def vgg16(dataset, out_features):
     model.classifier = nn.Sequential(
         first_linear,
         nn.ReLU(True),
-        # nn.Dropout(),
+        Empty(),  # nn.Dropout(),
         nn.Linear(4096, 4096),
         nn.ReLU(True),
-        # nn.Dropout(),
+        Empty(),  # nn.Dropout(),
         nn.Linear(4096, out_features),
     )
 

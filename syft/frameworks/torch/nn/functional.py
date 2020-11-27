@@ -249,6 +249,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
             raise TypeError("input.child needs to be FrameworkTensor")
         if not isinstance(weight.child, FrameworkTensor):
             raise TypeError("weight.child needs to be FrameworkTensor")
+
+        input, weight, bias = input.child, weight.child, bias.child
         im_reshaped, weight_reshaped, *params = _pre_conv(
             input, weight, bias, stride, padding, dilation, groups
         )
@@ -263,7 +265,11 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         else:
             result = im_reshaped.matmul(weight_reshaped)
         result = _post_conv(bias, result, *params)
-        return result.wrap()
+        result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
+            result, wrap=False
+        )
+        result_fp = result_fp.truncate(precision_fractional=result_fp.precision_fractional)
+        return result_fp
 
     input, weight = input.child, weight.child
 
@@ -509,19 +515,32 @@ def _pool2d(
         stride = stride[0]
 
     input_fp = input
-    input = input.child
 
-    locations = input.locations
+    if isinstance(input_fp.child, FrameworkTensor):
+        im_reshaped, *params = _pre_pool(input.child, kernel_size, stride, padding, dilation)
 
-    im_reshaped_shares = {}
-    params = {}
-    for location in locations:
-        input_share = input.child[location.id]
-        im_reshaped_shares[location.id], *params[location.id] = remote(
-            _pre_pool, location=location
-        )(input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=6)
+    else:
+        input = input.child
 
-    im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
+        locations = input.locations
+
+        im_reshaped_shares = {}
+        params = {}
+        for location in locations:
+            input_share = input.child[location.id]
+            im_reshaped_shares[location.id], *params[location.id] = remote(
+                _pre_pool, location=location
+            )(
+                input_share,
+                kernel_size,
+                stride,
+                padding,
+                dilation,
+                return_value=False,
+                return_arity=6,
+            )
+
+        im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
     if mode == "max":
         # We have optimisations when the kernel is small, namely a square of size 2 or 3
@@ -554,16 +573,23 @@ def _pool2d(
     else:
         raise ValueError(f"In pool2d, mode should be avg or max, not {mode}.")
 
-    res_shares = {}
-    for location in locations:
-        res_share = res.child[location.id]
-        res_share = remote(_post_pool, location=location)(res_share, *params[location.id])
-        res_shares[location.id] = res_share
+    if isinstance(input_fp.child, FrameworkTensor):
+        result = _post_pool(res, *params)
+        result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
+            result, wrap=False
+        )
+        return result_fp
+    else:
+        res_shares = {}
+        for location in locations:
+            res_share = res.child[location.id]
+            res_share = remote(_post_pool, location=location)(res_share, *params[location.id])
+            res_shares[location.id] = res_share
 
-    result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
-        sy.AdditiveSharingTensor(res_shares, **res.get_class_attributes()), wrap=False
-    )
-    return result_fp
+        result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
+            sy.AdditiveSharingTensor(res_shares, **res.get_class_attributes()), wrap=False
+        )
+        return result_fp
 
 
 def adaptive_avg_pool2d(tensor, output_size):
