@@ -11,12 +11,12 @@ After every epoch, models are saved to: `net_generator_epoch_%d.pth` and `net_di
 
 ## Downloading the dataset
 You can download the LSUN dataset by cloning [this repo](https://github.com/fyu/lsun), and running
-```
+```bash
 python download.py -c bedroom
 ```
 
 ## Usage
-```
+```bash
 usage: main.py [-h] --dataset DATASET --data_folder DATAFOLDER [--workers WORKERS]
                [--batch_size BATCHSIZE] [--image_size IMAGESIZE] [--nz NZ]
                [--ngf NGF] [--ndf NDF] [--n_iter NITER] [--lr LR]
