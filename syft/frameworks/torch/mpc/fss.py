@@ -224,7 +224,7 @@ class DPF:
         original_shape = x.shape
         x = x.reshape(-1)
         flat_result = dpf.eval(b, x, k_b)
-        return flat_result.astype(np.int64).reshape(original_shape)
+        return flat_result.astype(np.int32).astype(np.int64).reshape(original_shape)
 
 
 class DIF:
@@ -240,4 +240,4 @@ class DIF:
         original_shape = x.shape
         x = x.reshape(-1)
         flat_result = dif.eval(b, x, k_b)
-        return flat_result.astype(np.int64).reshape(original_shape)
+        return flat_result.astype(np.int32).astype(np.int64).reshape(original_shape)

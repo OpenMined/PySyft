@@ -1,4 +1,5 @@
 import torch as th
+import torch
 from typing import Tuple
 
 import syft as sy
@@ -30,6 +31,8 @@ def build_triple(
     left_shape, right_shape = shape
     cmd = getattr(th, op)
     low_bound, high_bound = -(field // 2), (field - 1) // 2
+    if isinstance(torch_dtype, str):
+        torch_dtype = eval(torch_dtype)
     a = th.randint(low_bound, high_bound, (n_instances, *left_shape), dtype=torch_dtype)
     b = th.randint(low_bound, high_bound, (n_instances, *right_shape), dtype=torch_dtype)
 

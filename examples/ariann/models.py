@@ -1,3 +1,6 @@
+import os
+import re
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -209,10 +212,10 @@ def vgg16(dataset, out_features):
     model.classifier = nn.Sequential(
         first_linear,
         nn.ReLU(True),
-        # nn.Dropout(),
+        Empty(),  # nn.Dropout(),
         nn.Linear(4096, 4096),
         nn.ReLU(True),
-        # nn.Dropout(),
+        Empty(),  # nn.Dropout(),
         nn.Linear(4096, out_features),
     )
 
@@ -238,3 +241,47 @@ model_zoo = {
 
 def get_model(model_name, dataset, out_features):
     return model_zoo[model_name](dataset, out_features)
+
+
+online_models = {
+    "lenet_mnist": {
+        "id": "1WWh_POWmgcBEDxk87t50DEZmTik9NRkg",
+        "file_name": "lenet_mnist_baseline_99.27.pt",
+    },
+    "alexnet_cifar10": {
+        "id": "1JuEbWex9130qMDuc-Q7X1y-ChFFREtfK",
+        "file_name": "alexnet_cifar10_baseline_67.69.pt",
+    },
+}
+
+too_big_models = {"vgg16_cifar10": "17k1nKItmp-4E1r5GFqfs8oH1Uhmp5e_0"}
+
+
+def load_state_dict(model, model_name, dataset):
+    MODEL_PATH = "pretrained_models/"
+
+    base_name = f"{model_name}_{dataset}"
+    file_name = None
+    for file in os.scandir(MODEL_PATH):
+        if re.match(fr"^{base_name}", file.name):
+            file_name = file.name
+
+    if file_name is None:
+        if base_name in online_models:
+            id = online_models[base_name]["id"]
+            file_name = online_models[base_name]["file_name"]
+            print(f"Downloading model {file_name}... ")
+            os.system(
+                f"wget --no-check-certificate "
+                f"'https://docs.google.com/uc?export=download&id={id}' -O {MODEL_PATH+file_name}"
+            )
+        else:
+            if base_name in too_big_models:
+                id = too_big_models[base_name]
+                print(
+                    f"Model {base_name} has to be downloaded manually :( \n\n"
+                    f"https://docs.google.com/uc?export=download&id={id}\n"
+                )
+            raise FileNotFoundError(f"No pretrained model for {model_name} {dataset} was found!")
+    model.load_state_dict(torch.load(MODEL_PATH + file_name, map_location=torch.device("cpu")))
+    print(f"Pre-trained model loaded from {file_name}")

@@ -61,8 +61,10 @@ python main.py --model resnet18 --dataset hymenoptera --batch_size 1 --preproces
 
 ```
 usage: main.py [-h] [--model MODEL] [--dataset DATASET]
-               [--batch_size BATCH_SIZE] [--preprocess] [--websockets]
-               [--verbose]
+               [--batch_size BATCH_SIZE] [--test_batch_size TEST_BATCH_SIZE]
+               [--preprocess] [--fp_only] [--test] [--train] [--epochs EPOCHS]
+               [--websockets] [--verbose] [--log_interval LOG_INTERVAL]
+               [--pyarrow_info]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -72,10 +74,21 @@ optional arguments:
                         imagenet)
   --batch_size BATCH_SIZE
                         size of the batch to use
-  --preprocess          preprocess data or not
+  --test_batch_size TEST_BATCH_SIZE
+                        size of the batch to use
+  --preprocess          [only for speed test] preprocess data or not
+  --fp_only             Don't secret share values, just convert them to fix
+                        precision
+  --test                run testing on the complete test dataset
+  --train               run training for n epochs
+  --epochs EPOCHS       [needs --train] number of epochs to train on
   --websockets          use PyGrid nodes instead of a virtual network. (nodes
                         are launched automatically)
-  --verbose             preprocess data or not  
+  --verbose             show extra information and metrics
+  --log_interval LOG_INTERVAL
+                        [needs --test or --train] log intermediate metrics
+                        every n batches
+  --pyarrow_info        print information about PyArrow usage and failure
 ```
 
 # Datasets
