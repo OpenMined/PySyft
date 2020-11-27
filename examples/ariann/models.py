@@ -232,10 +232,10 @@ def resnet18(dataset, out_features):
 model_zoo = {
     "network1": Network1,
     "network2": Network2,
-    "resnet18": resnet18,
-    "vgg16": vgg16,
-    "alexnet": alexnet,
     "lenet": LeNet,
+    "alexnet": alexnet,
+    "vgg16": vgg16,
+    "resnet18": resnet18,
 }
 
 

@@ -63,8 +63,8 @@ python main.py --model resnet18 --dataset hymenoptera --batch_size 1 --preproces
 usage: main.py [-h] [--model MODEL] [--dataset DATASET]
                [--batch_size BATCH_SIZE] [--test_batch_size TEST_BATCH_SIZE]
                [--preprocess] [--fp_only] [--test] [--train] [--epochs EPOCHS]
-               [--websockets] [--verbose] [--log_interval LOG_INTERVAL]
-               [--pyarrow_info]
+               [--lr LR] [--websockets] [--verbose]
+               [--log_interval LOG_INTERVAL] [--pyarrow_info]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -82,6 +82,7 @@ optional arguments:
   --test                run testing on the complete test dataset
   --train               run training for n epochs
   --epochs EPOCHS       [needs --train] number of epochs to train on
+  --lr LR               [needs --train] learning rate of the SGD
   --websockets          use PyGrid nodes instead of a virtual network. (nodes
                         are launched automatically)
   --verbose             show extra information and metrics

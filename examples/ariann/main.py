@@ -166,6 +166,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--lr",
+        type=int,
+        help="[needs --train] learning rate of the SGD",
+        default=0.1,
+    )
+
+    parser.add_argument(
         "--websockets",
         help="use PyGrid nodes instead of a virtual network. (nodes are launched automatically)",
         action="store_true",
