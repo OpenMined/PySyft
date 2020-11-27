@@ -33,10 +33,15 @@ def get_data_loaders(args, kwargs, private=True):
     def encode(tensor):
         """
         Depending on the setting, acts on a tensor
+        - Do nothing
+        OR
         - Transform to fixed precision
         OR
         - Secret share
         """
+        if args.public:
+            return tensor
+
         encrypted_tensor = tensor.encrypt(**kwargs)
         if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
             return encrypted_tensor.get()

@@ -72,16 +72,18 @@ def run(args):
 
     model.eval()
 
-    model.encrypt(**kwargs)
-    if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
-        model.get()
+    if not args.public:
+        model.encrypt(**kwargs)
+        if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
+            model.get()
 
     if args.train:
         for epoch in range(args.epochs):
             optimizer = optim.SGD(model.parameters(), lr=args.lr)
-            optimizer = optimizer.fix_precision(
-                precision_fractional=args.precision_fractional, dtype=args.dtype
-            )
+            if not args.public:
+                optimizer = optimizer.fix_precision(
+                    precision_fractional=args.precision_fractional, dtype=args.dtype
+                )
             train_time = train(args, model, private_train_loader, optimizer, epoch)
             test_time, accuracy = test(args, model, private_test_loader)
     else:
@@ -147,6 +149,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--public",
+        help="[needs --train] Train without fix precision or secret sharing",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--test",
         help="run testing on the complete test dataset",
         action="store_true",
@@ -167,9 +175,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--lr",
-        type=int,
+        type=float,
         help="[needs --train] learning rate of the SGD",
-        default=0.1,
+        default=0.01,
     )
 
     parser.add_argument(
@@ -207,6 +215,10 @@ if __name__ == "__main__":
 
     if cmd_args.fp_only:
         assert not cmd_args.preprocess, "Can't have --preprocess in a fixed precision setting"
+        assert not cmd_args.public, "Can't have simultaneously --fp_only and --public"
+
+    if not cmd_args.train:
+        assert not cmd_args.public, "--public is used only for training"
 
     if cmd_args.pyarrow_info:
         sy.pyarrow_info = True
@@ -232,6 +244,7 @@ if __name__ == "__main__":
         epochs = cmd_args.epochs
         lr = 0.1
 
+        public = cmd_args.public
         fp_only = cmd_args.fp_only
         requires_grad = cmd_args.train
         dtype = "long"

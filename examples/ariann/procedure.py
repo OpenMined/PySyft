@@ -126,7 +126,7 @@ def test(args, model, private_test_loader):
 
     if args.test:
         print(
-            "TEST Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
+            "TEST Accuracy: {}/{} ({:.2f}%) \tTime /item: {:.4f}s \tTime w. argmax /item: {:.4f}s [{:.3f}]\n".format(
                 correct.item(),
                 n_items,
                 100.0 * correct.item() / n_items,
