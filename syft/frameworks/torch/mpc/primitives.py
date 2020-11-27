@@ -66,7 +66,7 @@ class PrimitiveStorage:
         if op in {"mul", "matmul"}:
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
-            torch_dtype = kwargs.get("torch_dtype")
+            torch_dtype = str(kwargs.get("torch_dtype"))
             field = kwargs.get("field")
             config = (shapes, dtype, torch_dtype, field)
             primitive_stack = primitive_stack[config]
@@ -240,6 +240,8 @@ class PrimitiveStorage:
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
                 shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
+                shape = (tuple(shape[0]), tuple(shape[1]))
+                torch_dtype = str(torch_dtype)
                 config = (shape, dtype, torch_dtype, field)
                 for primitives, shares in zip(primitives_worker, shares_worker):
                     primitives.append((config, shares))

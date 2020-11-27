@@ -62,7 +62,7 @@ python main.py --model resnet18 --dataset hymenoptera --batch_size 1 --preproces
 ```
 usage: main.py [-h] [--model MODEL] [--dataset DATASET]
                [--batch_size BATCH_SIZE] [--preprocess] [--websockets]
-               [--verbose]
+               [--verbose] [--pyarrow_info]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -75,7 +75,8 @@ optional arguments:
   --preprocess          preprocess data or not
   --websockets          use PyGrid nodes instead of a virtual network. (nodes
                         are launched automatically)
-  --verbose             preprocess data or not  
+  --verbose             preprocess data or not
+  --pyarrow_info        Print information about PyArrow usage and failure
 ```
 
 # Datasets

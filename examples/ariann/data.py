@@ -112,7 +112,9 @@ def get_data_loaders(workers, args, kwargs, private=True):
         raise ValueError(f"Not supported dataset {dataset}")
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, drop_last=True,
+        train_dataset,
+        batch_size=args.batch_size,
+        drop_last=True,
     )
 
     new_train_loader = []
@@ -125,7 +127,9 @@ def get_data_loaders(workers, args, kwargs, private=True):
             new_train_loader.append((data, one_hot_of(target)))
 
     test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=args.test_batch_size, drop_last=True,
+        test_dataset,
+        batch_size=args.test_batch_size,
+        drop_last=True,
     )
 
     new_test_loader = []

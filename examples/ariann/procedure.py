@@ -98,7 +98,10 @@ def test(args, model, private_test_loader):
                 if args.verbose:
                     print(
                         "Accuracy: {}/{} ({:.0f}%) \tTime / item: {:.4f}s".format(
-                            int(c.item()), ni, 100.0 * c.item() / ni, times / ni,
+                            int(c.item()),
+                            ni,
+                            100.0 * c.item() / ni,
+                            times / ni,
                         )
                     )
 

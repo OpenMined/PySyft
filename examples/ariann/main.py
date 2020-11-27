@@ -89,11 +89,16 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--dataset", type=str, help="dataset to use (mnist, cifar10, hymenoptera, tiny-imagenet)",
+        "--dataset",
+        type=str,
+        help="dataset to use (mnist, cifar10, hymenoptera, tiny-imagenet)",
     )
 
     parser.add_argument(
-        "--batch_size", type=int, help="size of the batch to use", default=128,
+        "--batch_size",
+        type=int,
+        help="size of the batch to use",
+        default=128,
     )
 
     parser.add_argument("--preprocess", help="preprocess data or not", action="store_true")
@@ -106,7 +111,16 @@ if __name__ == "__main__":
 
     parser.add_argument("--verbose", help="preprocess data or not", action="store_true")
 
+    parser.add_argument(
+        "--pyarrow_info",
+        help="Print information about PyArrow usage and failure",
+        action="store_true",
+    )
+
     cmd_args = parser.parse_args()
+
+    if cmd_args.pyarrow_info:
+        sy.pyarrow_info = True
 
     class Arguments:
         model = cmd_args.model.lower()
