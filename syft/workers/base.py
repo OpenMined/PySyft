@@ -402,8 +402,6 @@ class BaseWorker(AbstractWorker):
         """
 
         strat = None
-        # if len(bin_message) > SHOOT_ARRAY_THRESHOLD:
-        #     strat = self.arrow_deserialize
 
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
