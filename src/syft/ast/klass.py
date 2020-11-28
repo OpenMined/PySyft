@@ -42,9 +42,7 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-        def get_run_class_method(
-            attr_path_and_name: str,
-        ) -> object:  # TODO: tighten to return Callable
+        def get_run_class_method(attr_path_and_name: str) -> CallableT:
             """It might seem hugely un-necessary to have these methods nested in this way.
             However, it has to do with ensuring that the scope of attr_path_and_name is local
             and not global. If we do not put a get_run_class_method around run_class_method then
@@ -102,7 +100,7 @@ class Class(Callable):
 
             return run_class_method
 
-        attrs = {}
+        attrs: Dict[str, Union[str, CallableT]] = {}
         _props: List[str] = []
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
@@ -120,6 +118,31 @@ class Class(Callable):
             # so we have to check for path_and_name
             if attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
+
+            if attr_name == "__len__":
+                target_function = attrs[attr_name]
+
+                if not callable(target_function):
+                    return
+
+                def wrap(len_func: CallableT) -> CallableT:
+                    def __len__(self: Any) -> int:
+                        data_len_ptr = len_func(self)
+                        try:
+                            data_len = data_len_ptr.get(
+                                request_block=True,
+                                timeout_secs=25,
+                                name="__len__ request on EXAMPLE",
+                                delete_obj=False,
+                            )
+                            return data_len
+                        except Exception:
+                            return data_len_ptr
+
+                    return __len__
+
+                attrs[attr_name] = wrap(target_function)
+                attrs["len"] = target_function
 
         def getattribute(__self: Any, name: str) -> Any:
             # we need to override the __getattribute__ of our Pointer class
