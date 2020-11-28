@@ -3,16 +3,16 @@ WebRTC connection representation
 
  This class aims to represent a generic and
 asynchronous peer-to-peer WebRTC connection
-based in Syft BidirectionalConnection Inferface.
+based in Syft BidirectionalConnection Interface.
 
  This connection interface provides a full-duplex
-channel, allowing this class to work as a client
+The channel, allowing this class to work as a client
 and as a server at the same time.
 
  This class is useful to send/compute data
 using a p2p channel without the need
 of deploying servers on cloud providers
-or settting firewalls rules  in order
+or setting firewalls rules  in order
 turn this process "visible" to the world.
 
 How does it work?
@@ -51,13 +51,13 @@ Signaling Steps:
 
     4 - The Signaling Server will check the existence of offer messages addressed
     to the PySyft Peer (Answer) made by the desired node address (PySyft.Address).
-    If that's the case,so the offer message will be sent to the peer as a response.
+    If that's the case, so the offer message will be sent to the peer as a response.
 
     5 - [PUSH] The PySyft Peer (Answer) will process the offer message
     in order to know the network address of the other peer.
-    If no problems were found, the answer peer will generate its own local
+    If no problems were found, the answering peer will generate its own local
     description (IP, Mac address,  etc) and send it to the signaling server,
-    addressing (PySyft.Address) it to the offer node as an AnswerMessage.
+    addressing (PySyft.Address) it to the offering node as an AnswerMessage.
 
     6 - The Signaling Server (PyGrid Network) will
     receive the answer msg and store it in the target's answer request's
@@ -179,8 +179,9 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
-        """Initialize a Real Time Communication Data Channel,
-        set datachannel callbacks/tasks, and send offer payload
+        """
+        Initialize a Real-Time Communication Data Channel,
+        set data channel callbacks/tasks, and send offer payload
         message.
 
         :return: returns a signaling offer payload containing local description.
@@ -225,8 +226,9 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def _set_answer(self, payload: str) -> str:
-        """Receives a signaling offer payload, initialize/set
-        datachannel callbacks/tasks, updates remote local description
+        """
+        Receives a signaling offer payload, initialize/set
+        Data channel callbacks/tasks, updates remote local description
         using offer's payload message and returns a
         signaling answer payload.
 
@@ -387,7 +389,8 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        """Executes/Replies requests instantly.
+        """
+        Executes/Replies requests instantly.
 
         :return: returns an instance of SignedImmediateSyftMessageWithReply
         :rtype: SignedImmediateSyftMessageWithoutReply
@@ -412,7 +415,9 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """ Executes requests instantly. """
+        """
+        Executes requests instantly.
+        """
         try:
             r = random.randint(0, 100000)
             logger.debug(
@@ -431,7 +436,9 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        """ Executes requests eventually. """
+        """
+        Executes requests eventually.
+        """
         try:
             self.node.recv_eventual_msg_without_reply(msg=msg)
         except Exception as e:
@@ -443,7 +450,8 @@ class WebRTCConnection(BidirectionalConnection):
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithReply:
-        """Sends high priority messages and wait for their responses.
+        """
+        Sends high priority messages and wait for their responses.
 
         :return: returns an instance of SignedImmediateSyftMessageWithReply.
         :rtype: SignedImmediateSyftMessageWithReply
@@ -459,7 +467,9 @@ class WebRTCConnection(BidirectionalConnection):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """" Sends high priority messages without waiting for their reply. """
+        """
+        Sends high priority messages without waiting for their reply.
+        """
         try:
             # asyncio.run(self.producer_pool.put_nowait(msg))
             self.producer_pool.put_nowait(msg)
@@ -473,7 +483,9 @@ class WebRTCConnection(BidirectionalConnection):
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        """" Sends low priority messages without waiting for their reply. """
+        """
+        Sends low priority messages without waiting for their reply.
+        """
         try:
             asyncio.run(self.producer_pool.put(msg))
             time.sleep(message_cooldown)
@@ -486,7 +498,8 @@ class WebRTCConnection(BidirectionalConnection):
     async def send_sync_message(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        """Send sync messages generically.
+        """
+        Send sync messages generically.
 
         :return: returns an instance of SignedImmediateSyftMessageWithoutReply.
         :rtype: SignedImmediateSyftMessageWithoutReply

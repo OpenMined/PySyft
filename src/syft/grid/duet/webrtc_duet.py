@@ -8,8 +8,8 @@ connection with high-quality Real-time Communication using private addresses.
 The most common example showing how it can be used is the notebook demo example:
 
 Two different jupyter / collab notebooks in different machines using private addresses
-behind routers, proxies and firewalls can connect to each other using a full-duplex
-channel in order to perform machine learning and data science tasks, working as a client
+behind routers, proxies and firewalls can connect using a full-duplex channel
+to perform machine learning and data science tasks, working as a client
 and server at the same time.
 
 PS 1: You need a signaling server running somewhere.

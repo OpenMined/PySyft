@@ -20,7 +20,8 @@ class HTTPConnection(ClientConnection):
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        """Sends high priority messages and wait for their responses.
+        """
+        Sends high priority messages and wait for their responses.
 
         This method implements a HTTP version of the
         ClientConnection.send_immediate_msg_with_reply
@@ -41,7 +42,8 @@ class HTTPConnection(ClientConnection):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """Sends high priority messages without waiting for their reply.
+        """
+        Sends high priority messages without waiting for their reply.
 
         This method implements a HTTP version of the
         ClientConnection.send_immediate_msg_without_reply
@@ -55,7 +57,8 @@ class HTTPConnection(ClientConnection):
     def send_eventual_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """Sends low priority messages without waiting for their reply.
+        """
+        Sends low priority messages without waiting for their reply.
 
         This method implements a HTTP version of the
         ClientConnection.send_eventual_msg_without_reply
@@ -66,7 +69,8 @@ class HTTPConnection(ClientConnection):
 
     @syft_decorator(typechecking=True)
     def _send_msg(self, msg: SyftMessage) -> requests.Response:
-        """Serializes Syft messages in json format and send it using HTTP protocol.
+        """
+        Serializes Syft messages in json format and send it using HTTP protocol.
 
         NOTE: Auxiliary method to avoid code duplication and modularity.
 
@@ -88,7 +92,8 @@ class HTTPConnection(ClientConnection):
 
     @syft_decorator(typechecking=True)
     def _get_metadata(self) -> Metadata_PB:
-        """Request Node's metadata
+        """
+        Request Node's metadata
 
         :return: returns node metadata
         :rtype: str of bytes
