@@ -110,7 +110,6 @@ class PrimitiveStorage:
                 available_instances = (
                     len(primitive_stack[0][0]) - 1 if len(primitive_stack) > 0 else -1
                 )
-                print("cuda available_instances", available_instances)
             else:
                 available_instances = (
                     len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1

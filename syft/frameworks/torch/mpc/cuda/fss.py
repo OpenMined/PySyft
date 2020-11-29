@@ -570,19 +570,19 @@ def H(seed, idx=0):
         key = keys[i]
         csprng.encrypt(seed, buffers[i], key, "aes128", "ecb")
 
-    valuebits = th.empty(2, 6, n_values, dtype=th.long, device="cuda")
+    valuebits = th.empty(2, 5, n_values, dtype=th.long, device="cuda")
     valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
-    valuebits[0, 1] = buffers[0][1]
-    valuebits[0, 2] = last_bit
-    valuebits[0, 3], last_bit = split_last_bit(buffers[1][0])
-    valuebits[0, 4] = buffers[1][1]
-    valuebits[0, 5] = last_bit
+    #valuebits[0, 1] = buffers[0][1]
+    valuebits[0, 1] = last_bit
+    valuebits[0, 2], last_bit = split_last_bit(buffers[1][0])
+    valuebits[0, 3] = buffers[1][1]
+    valuebits[0, 4] = last_bit
     valuebits[1, 0], last_bit = split_last_bit(buffers[2][0])
-    valuebits[1, 1] = buffers[2][1]
-    valuebits[1, 2] = last_bit
-    valuebits[1, 3], last_bit = split_last_bit(buffers[3][0])
-    valuebits[1, 4] = buffers[3][1]
-    valuebits[1, 5] = last_bit
+    #valuebits[1, 1] = buffers[2][1]
+    valuebits[1, 1] = last_bit
+    valuebits[1, 2], last_bit = split_last_bit(buffers[3][0])
+    valuebits[1, 3] = buffers[3][1]
+    valuebits[1, 4] = last_bit
 
     # seed = seed  # .cuda()
     # urandom_gen = csprng.create_const_generator(key)
