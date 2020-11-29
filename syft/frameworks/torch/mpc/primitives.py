@@ -107,9 +107,12 @@ class PrimitiveStorage:
             # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
             # For each primitive, the first line is the AES keys
             if th.cuda.is_available():
+                print('opening store...')
                 available_instances = (
                     len(primitive_stack[0][0]) - 1 if len(primitive_stack) > 0 else -1
                 )
+                print('available_instances', available_instances)
+                print(primitive_stack)
             else:
                 available_instances = (
                     len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
@@ -208,6 +211,7 @@ class PrimitiveStorage:
                 else:
                     # This branch never happens with on-the-fly primitives
                     current_primitives.append(primitives)
+                print('Added to the store', primitives)
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
 
