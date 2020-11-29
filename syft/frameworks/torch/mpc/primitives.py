@@ -156,9 +156,6 @@ class PrimitiveStorage:
             kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs
         )
 
-        print('provider primitive')
-        print(primitives)
-
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
 
@@ -182,6 +179,8 @@ class PrimitiveStorage:
             current_primitives = getattr(self, op)
             if op in {"mul", "matmul", "conv2d"}:
                 for params, primitive_triple in primitives:
+                    if th.cuda.is_available():
+                        primitive_triple = [p.cuda() for p in primitive_triple]
                     if params not in current_primitives or len(current_primitives[params]) == 0:
                         current_primitives[params] = [primitive_triple]
                     else:
