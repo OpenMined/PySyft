@@ -108,9 +108,7 @@ class PrimitiveStorage:
             # For each primitive, the first line is the AES keys
             if th.cuda.is_available():
                 # print('opening store...')
-                available_instances = (
-                    len(primitive_stack[0][0]) if len(primitive_stack) > 0 else -1
-                )
+                available_instances = len(primitive_stack[0][0]) if len(primitive_stack) > 0 else -1
                 # print('available_instances', available_instances)
                 # print(primitive_stack)
             else:

@@ -288,8 +288,8 @@ class DIF:
             h0 = H(s[i, 0], 0)
             h1 = H(s[i, 1], 1)
             # Re-use useless randomness
-            σL_0, _, sL_0, _, σR_0, _, sR_0, _ = split(h0, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
-            σL_1, _, sL_1, _, σR_1, _, sR_1, _ = split(h1, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
+            σL_0, sL_0, σR_0, sR_0 = split(h0, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
+            σL_1, sL_1, σR_1, sR_1 = split(h1, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
             σ_rand = (σL_0 ^ σL_1) * α[i] + (σR_0 ^ σR_1) * (1 - α[i])
             cw_i = SwitchTableDIF(s_rand, σ_rand, α[i])
@@ -434,13 +434,13 @@ split_helpers = {
     (COMP, 1, 1, 2, 1): lambda x: (x[:1], x[1], x[2:4], x[4]),
     (COMP, 1, 1, 2, 1, 1, 1, 2, 1): lambda x: (
         x[0, :1],
-        x[0, 1],
+        # x[0, 1],
         x[0, 2:4],
-        x[0, 4],
+        # x[0, 4],
         x[1, :1],
-        x[1, 1],
+        # x[1, 1],
         x[1, 2:4],
-        x[1, 4],
+        # x[1, 4],
     ),
 }
 
@@ -449,11 +449,15 @@ def split(list_, idx):
     return split_helpers[idx](list_)
 
 
+ones_dict = {}
 ones_dict2 = {}
 
 
 def SwitchTableDPF(s, α_i):
-    one = th.ones((1, s.shape[1]), device="cuda").type(th.long)
+    if s.shape not in ones_dict:
+        ones_dict[s.shape] = th.ones((1, s.shape[1]), device="cuda", dtype=th.long)
+
+    one = ones_dict[s.shape]
     s_one = concat(s, one)
 
     if s_one.shape not in ones_dict2:
