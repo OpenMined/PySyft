@@ -10,7 +10,6 @@ Useful papers are:
 Note that the protocols are quite different in aspect from those papers
 """
 import math
-import multiprocessing
 import asyncio
 
 import torch as th
@@ -21,10 +20,10 @@ from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
+if th.cuda.is_available():
+    import torchcsprng as csprng
 
-import torchcsprng as csprng
-
-generator = csprng.create_random_device_generator("/dev/urandom")
+    generator = csprng.create_random_device_generator("/dev/urandom")
 
 λ = 127  # security parameter
 n = 32  # bit precision
@@ -275,7 +274,7 @@ class DIF:
 
         s, σ, t, τ, CW, CW_leaf = (
             Array(n + 1, 2, λs, n_values),
-            Array(n + 1, 2, λs, n_values),
+            Array(n + 1, 2, 1, n_values),  # the sigma are on n bits -> one 64bit block is enough
             Array(n + 1, 2, n_values),
             Array(n + 1, 2, n_values),
             Array(n, 2, 2 * (λs + 1), n_values),
@@ -289,8 +288,8 @@ class DIF:
             h0 = H(s[i, 0], 0)
             h1 = H(s[i, 1], 1)
             # Re-use useless randomness
-            σL_0, _, sL_0, _, σR_0, _, sR_0, _ = split(h0, (COMP, λs, 1, λs, 1, λs, 1, λs, 1))
-            σL_1, _, sL_1, _, σR_1, _, sR_1, _ = split(h1, (COMP, λs, 1, λs, 1, λs, 1, λs, 1))
+            σL_0, _, sL_0, _, σR_0, _, sR_0, _ = split(h0, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
+            σL_1, _, sL_1, _, σR_1, _, sR_1, _ = split(h1, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
             σ_rand = (σL_0 ^ σL_1) * α[i] + (σR_0 ^ σR_1) * (1 - α[i])
             cw_i = SwitchTableDIF(s_rand, σ_rand, α[i])
@@ -302,10 +301,10 @@ class DIF:
                 dual_state = [h0, h1][b] ^ (t[i, b] * CWi)
                 # the state obtained by following the special path
                 state = multi_dim_filter(dual_state, α[i])
-                _, _, s[i + 1, b], t[i + 1, b] = split(state, (COMP, λs, 1, λs, 1))
+                _, _, s[i + 1, b], t[i + 1, b] = split(state, (COMP, 1, 1, λs, 1))
                 # the state obtained by leaving the special path
                 anti_state = multi_dim_filter(dual_state, 1 - α[i])
-                σ[i + 1, b], τ[i + 1, b], _, _ = split(anti_state, (COMP, λs, 1, λs, 1))
+                σ[i + 1, b], τ[i + 1, b], _, _ = split(anti_state, (COMP, 1, 1, λs, 1))
 
                 if b:
                     # note that we subtract (1 - α[i]), so that leaving the special path can't lead
@@ -330,7 +329,7 @@ class DIF:
         x = bit_decomposition(x)
         s, σ, t, τ = (
             Array(n + 1, λs, n_values),
-            Array(n + 1, λs, n_values),
+            Array(n + 1, 1, n_values),  # the sigma are on n bits -> one 64bit block is enough
             Array(n + 1, 1, n_values),
             Array(n + 1, 1, n_values),
         )
@@ -344,7 +343,7 @@ class DIF:
             CWi = uncompress(_CW[i], op=COMP)
             dual_state = H(s[i]) ^ (t[i] * CWi)
             state = multi_dim_filter(dual_state, x[i])
-            σ[i + 1], τ[i + 1], s[i + 1], t[i + 1] = split(state, (COMP, λs, 1, λs, 1))
+            σ[i + 1], τ[i + 1], s[i + 1], t[i + 1] = split(state, (COMP, 1, 1, λs, 1))
             out += (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
 
         # Last node, the other σ is also a leaf
@@ -363,7 +362,7 @@ def compress(CWi, alpha_i, op=EQ):
         sL, tL, sR, tR = split(CWi, (op, λs, 1, λs, 1))
         return (tL.type(th.bool), tR.type(th.bool), (1 - alpha_i) * sR + alpha_i * sL)
     else:
-        σL, τL, sL, tL, σR, τR, sR, tR = split(CWi, (op, λs, 1, λs, 1, λs, 1, λs, 1))
+        σL, τL, sL, tL, σR, τR, sR, tR = split(CWi, (op, 1, 1, λs, 1, 1, 1, λs, 1))
         return (
             τL.type(th.bool),
             tL.type(th.bool),
@@ -394,7 +393,7 @@ def uncompress(_CWi, op=EQ):
             _CWi[2].reshape(1, -1).type(th.long),
             _CWi[5],
             _CWi[3].reshape(1, -1).type(th.long),
-        ).reshape(2, 6, -1)
+        ).reshape(2, 5, -1)
     return CWi
 
 
@@ -402,7 +401,8 @@ def Array(*shape):
     return th.empty(shape, dtype=th.long, device="cuda")
 
 
-bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
+if th.cuda.is_available():
+    bit_pow_n = th.flip(2 ** th.arange(n, device="cuda"), (0,))
 
 
 def bit_decomposition(x):
@@ -431,16 +431,16 @@ def concat(*args, **kwargs):
 split_helpers = {
     (EQ, 2, 1): lambda x: (x[:2], x[2]),
     (EQ, 2, 1, 2, 1): lambda x: (x[0, :2], x[0, 2], x[1, :2], x[1, 2]),
-    (COMP, 2, 1, 2, 1): lambda x: (x[:2], x[2], x[3:5], x[5]),
-    (COMP, 2, 1, 2, 1, 2, 1, 2, 1): lambda x: (
-        x[0, :2],
-        x[0, 2],
-        x[0, 3:5],
-        x[0, 5],
-        x[1, :2],
-        x[1, 2],
-        x[1, 3:5],
-        x[1, 5],
+    (COMP, 1, 1, 2, 1): lambda x: (x[:1], x[1], x[2:4], x[4]),
+    (COMP, 1, 1, 2, 1, 1, 1, 2, 1): lambda x: (
+        x[0, :1],
+        x[0, 1],
+        x[0, 2:4],
+        x[0, 4],
+        x[1, :1],
+        x[1, 1],
+        x[1, 2:4],
+        x[1, 4],
     ),
 }
 
@@ -491,14 +491,15 @@ def convert(x):
 # PRG
 
 
-# TODO
-keys = []
-for _ in range(4):
-    key = th.tensor([4192687974420127714, 651949261783629689], device="cuda", dtype=th.long)
-    keys.append(key)
-# key = th.tensor(
-#    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
-# )
+if th.cuda.is_available():
+    # TODO
+    keys = []
+    for _ in range(4):
+        key = th.tensor([4192687974420127714, 651949261783629689], device="cuda", dtype=th.long)
+        keys.append(key)
+    # key = th.tensor(
+    #    [224, 28, 13, 108, 97, 35, 195, 240, 14, 221, 233, 215, 0, 67, 174, 129], dtype=th.uint8
+    # )
 
 
 def split_last_bit(buffer):
