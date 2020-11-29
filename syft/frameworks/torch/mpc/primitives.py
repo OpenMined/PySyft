@@ -233,9 +233,14 @@ class PrimitiveStorage:
                 raise AttributeError(
                     f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
                 )
-
-            keys_a, keys_b = fss_class.keygen(n_values=n_instances)
-            return [keys_a, keys_b]
+            if th.cuda.is_available():
+                alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.fss.keygen(n_values=n_instances, op=op)
+                # simulate sharing TODO clean this
+                mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
+                return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
+            else:
+                keys_a, keys_b = fss_class.keygen(n_values=n_instances)
+                return [keys_a, keys_b]
 
         return build_separate_fss_keys
 
