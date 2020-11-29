@@ -200,7 +200,8 @@ class PrimitiveStorage:
                         current_primitives[params].append(primitive_triple)
             elif op in {"fss_eq", "fss_comp"}:
                 if th.cuda.is_available():
-                    primitives = [p.cuda() for p in primitives]
+                    print(primitives)
+                    primitives = [p.cuda() if not isinstance(p, tuple) else tuple(pi.cuda() for pi in p) for p in primitives]
                 if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
                     setattr(self, op, [primitives])
                 else:
@@ -234,7 +235,9 @@ class PrimitiveStorage:
                     f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
                 )
             if th.cuda.is_available():
-                alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.cuda.fss.keygen(n_values=n_instances, op=op)
+                alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.cuda.fss.keygen(
+                    n_values=n_instances, op=op
+                )
                 # simulate sharing TODO clean this
                 mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
                 return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
