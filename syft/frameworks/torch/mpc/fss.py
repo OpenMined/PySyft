@@ -79,6 +79,8 @@ def fss_op(x1, x2, op="eq"):
         shares of the comparison
     """
 
+    assert not th.cuda.is_available()
+
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
