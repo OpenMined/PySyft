@@ -154,7 +154,7 @@ class DataCentricFLClient(WebsocketClientWorker):
         Returns:
             node_response (bytes) : response payload.
         """
-        self.ws_arrow.send_binary(message)
+        self.ws_arrow.send_binary(message.to_pybytes())
         response = self.ws_arrow.recv()
         return response
 

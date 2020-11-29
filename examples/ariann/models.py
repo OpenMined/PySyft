@@ -162,10 +162,10 @@ def alexnet(dataset, out_features):
         model.avgpool = Empty()
 
         model.classifier = nn.Sequential(
-            # nn.Dropout(),
+            Empty(),  # nn.Dropout(),
             nn.Linear(256, 1024),
             nn.ReLU(True),
-            # nn.Dropout(),
+            Empty(),  # nn.Dropout(),
             nn.Linear(1024, 1024),
             nn.ReLU(True),
             nn.Linear(1024, out_features),

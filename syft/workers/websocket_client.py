@@ -70,9 +70,9 @@ class WebsocketClientWorker(BaseWorker):
     @property
     def url_arrow(self):
         return (
-            f"wss://{self.host}:{self.port}/arrow"
+            f"wss://{self.host}:{self.port}/arrow/"
             if self.secure
-            else f"ws://{self.host}:{self.port}/arrow"
+            else f"ws://{self.host}:{self.port}/arrow/"
         )
 
     def connect_arrow(self):
