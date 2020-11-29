@@ -561,7 +561,7 @@ class TorchHook(FrameworkHook):
 
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             # TODO: this is rude
-            if hook_self.torch.cuda.is_available():
+            if hasattr(syft, "cuda_force"):
                 kwargs["device"] = "cuda"
 
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
