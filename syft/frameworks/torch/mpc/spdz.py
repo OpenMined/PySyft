@@ -41,7 +41,6 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int, kwar
         field=field,
         kwargs_=kwargs_,
     )
-    print(x.device, a.device, y.device, b.device)
     return x - a, y - b
 
 
@@ -199,7 +198,8 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
-            args = (th.LongTensor([i]).cuda(), delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
+            index = th.LongTensor([i]).cuda() if th.cuda.is_available() else th.LongTensor([i])
+            args = (index, delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
@@ -210,7 +210,15 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
                     (
                         f"{NAMESPACE}.{spdz_compute.__name__}",
                         None,
-                        (th.LongTensor([i]).cuda(), delta, epsilon, kwargs_, op),
+                        (
+                            th.LongTensor([i]).cuda()
+                            if th.cuda.is_available()
+                            else th.LongTensor([i]),
+                            delta,
+                            epsilon,
+                            kwargs_,
+                            op,
+                        ),
                         {},
                     )
                     for i in [0, 1]
