@@ -288,8 +288,8 @@ class DIF:
             h0 = H(s[i, 0], 0)
             h1 = H(s[i, 1], 1)
             # Re-use useless randomness
-            σL_0, sL_0, σR_0, sR_0 = split(h0, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
-            σL_1, sL_1, σR_1, sR_1 = split(h1, (COMP, 1, 1, λs, 1, 1, 1, λs, 1))
+            σL_0, sL_0, σR_0, sR_0 = split(h0, (COMP, 1, λs, 1, λs))  # modified!
+            σL_1, sL_1, σR_1, sR_1 = split(h1, (COMP, 1, λs, 1, λs))
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
             σ_rand = (σL_0 ^ σL_1) * α[i] + (σR_0 ^ σR_1) * (1 - α[i])
             cw_i = SwitchTableDIF(s_rand, σ_rand, α[i])
@@ -432,7 +432,7 @@ split_helpers = {
     (EQ, 2, 1): lambda x: (x[:2], x[2]),
     (EQ, 2, 1, 2, 1): lambda x: (x[0, :2], x[0, 2], x[1, :2], x[1, 2]),
     (COMP, 1, 1, 2, 1): lambda x: (x[:1], x[1], x[2:4], x[4]),
-    (COMP, 1, 1, 2, 1, 1, 1, 2, 1): lambda x: (
+    (COMP, 1, 2, 1, 2): lambda x: (
         x[0, :1],
         # x[0, 1],
         x[0, 2:4],
@@ -441,6 +441,16 @@ split_helpers = {
         # x[1, 1],
         x[1, 2:4],
         # x[1, 4],
+    ),
+    (COMP, 1, 1, 2, 1, 1, 1, 2, 1): lambda x: (
+        x[0, :1],
+        x[0, 1],
+        x[0, 2:4],
+        x[0, 4],
+        x[1, :1],
+        x[1, 1],
+        x[1, 2:4],
+        x[1, 4],
     ),
 }
 
