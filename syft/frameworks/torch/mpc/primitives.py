@@ -200,8 +200,10 @@ class PrimitiveStorage:
                         current_primitives[params].append(primitive_triple)
             elif op in {"fss_eq", "fss_comp"}:
                 if th.cuda.is_available():
-                    print(primitives)
-                    primitives = [p.cuda() if not isinstance(p, tuple) else tuple(pi.cuda() for pi in p) for p in primitives]
+                    primitives = [
+                        p.cuda() if not isinstance(p, tuple) else tuple(pi.cuda() for pi in p)
+                        for p in primitives
+                    ]
                 if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
                     setattr(self, op, [primitives])
                 else:
