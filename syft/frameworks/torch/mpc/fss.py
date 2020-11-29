@@ -110,7 +110,7 @@ def fss_op(x1, x2, op="eq"):
     except EmptyCryptoPrimitiveStoreError as e:
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
-        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, kwargs_={}, **e.kwargs_)
         return fss_op(x1, x2, op)
 
     mask_value = sum(shares) % 2 ** n

@@ -496,7 +496,7 @@ def _detail_field(typeCode, val):
     after deserialisation.
     """
     if typeCode == msgpack.proto_type_info(str).code and val == str_field:
-        return int(val)
+        return field
     else:
         return val
 

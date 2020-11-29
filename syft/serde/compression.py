@@ -96,15 +96,8 @@ def _compress(decompressed_input_bin: bin) -> bin:
         bin: a compressed binary
 
     """
-    compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
-    try:
-        # z = scheme_to_bytes[compress_scheme] + compress_stream
-        z = compress_stream
-        return z
-    except KeyError:
-        raise CompressionNotFoundException(
-            f"Compression scheme not found for compression code: {str(compress_scheme)}"
-        )
+    # NO COMPRESSION
+    return decompressed_input_bin
 
 
 def _decompress(binary: bin) -> bin:
@@ -119,19 +112,5 @@ def _decompress(binary: bin) -> bin:
 
     """
 
-    # # check the 1-byte header to check the compression scheme used
-    # compress_scheme = binary[0]
-    #
-    # # remove the 1-byte header from the input stream
-    # binary = binary[1:]
-    # 1)  Decompress or return the original stream
-    if compress_scheme == LZ4:
-        return lz4.frame.decompress(binary)
-    elif compress_scheme == ZLIB:
-        return zlib.decompress(binary)
-    elif compress_scheme == NO_COMPRESSION:
-        return binary
-    else:
-        raise CompressionNotFoundException(
-            f"Compression scheme not found for compression code: {str(compress_scheme)}"
-        )
+    # NO COMPRESSION
+    return binary

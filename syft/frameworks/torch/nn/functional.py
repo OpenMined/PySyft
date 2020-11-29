@@ -226,7 +226,7 @@ def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
     return res
 
 
-def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+def deprecated_conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
     The idea is to unroll the input and weight matrices to compute a
@@ -242,6 +242,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     Returns:
         the result of the convolution as a fixed precision tensor.
     """
+    print("WARNING: this is deprecated!!")
+
     input_fp, weight_fp = input, weight
 
     if isinstance(input.child, FrameworkTensor) or isinstance(weight.child, FrameworkTensor):

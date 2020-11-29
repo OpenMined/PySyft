@@ -31,6 +31,7 @@ class PrimitiveStorage:
         self.fss_comp: list = []
         self.mul: dict = defaultdict(list)
         self.matmul: dict = defaultdict(list)
+        self.conv2d: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -38,6 +39,7 @@ class PrimitiveStorage:
             "fss_comp": self.build_fss_keys(op="comp"),
             "mul": self.build_triples(op="mul"),
             "matmul": self.build_triples(op="matmul"),
+            "conv2d": self.build_triples(op="conv2d"),
         }
 
         self.force_preprocessing = False
@@ -63,7 +65,8 @@ class PrimitiveStorage:
             kwargs (dict): further arguments to be used depending of the primitive
         """
         primitive_stack = getattr(self, op)
-        if op in {"mul", "matmul"}:
+        if op in {"mul", "matmul", "conv2d"}:
+            assert n_instances == 1
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
             torch_dtype = str(kwargs.get("torch_dtype"))
@@ -71,17 +74,10 @@ class PrimitiveStorage:
             config = (shapes, dtype, torch_dtype, field)
             primitive_stack = primitive_stack[config]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-            if available_instances >= n_instances:
-                keys = []
-                for i, prim in enumerate(primitive_stack):
-                    if n_instances == 1:
-                        keys.append(prim[0])
-                        if remove:
-                            primitive_stack[i] = prim[1:]
-                    else:
-                        keys.append(prim[:n_instances])
-                        if remove:
-                            primitive_stack[i] = prim[n_instances:]
+            if available_instances > 0:
+                keys = primitive_stack[0]
+                if remove:
+                    del primitive_stack[0]
                 return keys
             else:
                 if self._owner.verbose:
@@ -125,6 +121,7 @@ class PrimitiveStorage:
     def provide_primitives(
         self,
         op: str,
+        kwargs_: dict,
         workers: List[AbstractWorker],
         n_instances: int = 10,
         **kwargs,
@@ -145,7 +142,9 @@ class PrimitiveStorage:
 
         builder = self._builders[op]
 
-        primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
+        primitives = builder(
+            kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs
+        )
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -168,15 +167,12 @@ class PrimitiveStorage:
                 raise ValueError(f"Unknown crypto primitives {op}")
 
             current_primitives = getattr(self, op)
-            if op in {"mul", "matmul"}:
+            if op in {"mul", "matmul", "conv2d"}:
                 for params, primitive_triple in primitives:
                     if params not in current_primitives or len(current_primitives[params]) == 0:
-                        current_primitives[params] = primitive_triple
+                        current_primitives[params] = [primitive_triple]
                     else:
-                        for i, primitive in enumerate(primitive_triple):
-                            current_primitives[params][i] = th.cat(
-                                (current_primitives[params][i], primitive)
-                            )
+                        current_primitives[params].append(primitive_triple)
             elif op in {"fss_eq", "fss_comp"}:
                 if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
                     setattr(self, op, [primitives])
@@ -199,7 +195,7 @@ class PrimitiveStorage:
 
         n = sy.frameworks.torch.mpc.fss.n
 
-        def build_separate_fss_keys(n_party: int, n_instances: int = 100):
+        def build_separate_fss_keys(kwargs_: dict, n_party: int, n_instances: int = 100):
             if n_party != 2:
                 raise AttributeError(
                     f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
@@ -215,7 +211,8 @@ class PrimitiveStorage:
         The builder to generate beaver triple for multiplication or matrix multiplication
         """
 
-        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
+        def build_separate_triples(kwargs_: dict, n_party: int, n_instances: int, **kwargs) -> list:
+            assert n_instances == 1, "For Beaver, only n_instances == 1 is allowed."
             if n_party != 2:
                 raise NotImplementedError(
                     "Only 2 workers supported for the moment. "
@@ -239,7 +236,7 @@ class PrimitiveStorage:
 
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
-                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
+                shares_worker = build_triple(op, kwargs_, shape, n_party, torch_dtype, field)
                 shape = (tuple(shape[0]), tuple(shape[1]))
                 torch_dtype = str(torch_dtype)
                 config = (shape, dtype, torch_dtype, field)

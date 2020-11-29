@@ -809,6 +809,8 @@ class TorchHook(FrameworkHook):
         self.torch.nn.Module.float_precision = module_float_precision_
         self.torch.nn.Module.float_prec = module_float_precision_
 
+        self.torch.nn.Module.cuda = lambda x: x.to("cuda")
+
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)

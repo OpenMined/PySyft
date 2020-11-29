@@ -1,7 +1,7 @@
 import torch as th
 import torch.nn as nn
 
-from syft.frameworks.torch.nn.functional import conv2d
+from syft.frameworks.torch.nn.functional import deprecated_conv2d as conv2d
 
 
 class Conv2d(nn.Module):
@@ -34,6 +34,8 @@ class Conv2d(nn.Module):
         documentation in torch.nn.Conv2d"""
 
         super().__init__()
+
+        print("WARNING: this is deprecated!!")
 
         # temp_init to get weights and bias
         temp_init = th.nn.Conv2d(
