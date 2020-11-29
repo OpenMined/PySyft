@@ -137,6 +137,10 @@ def fss_op(x1, x2, op="eq"):
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
     response = sy.AdditiveSharingTensor(shares, **class_attributes)
+
+    if th.cuda.is_available():
+        response = response.cuda()
+
     return response
 
 
