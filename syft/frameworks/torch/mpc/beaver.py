@@ -73,8 +73,6 @@ def build_triple(
     elif op in {"matmul", "conv2d"}:
         if th.cuda.is_available():
             cmd = getattr(CUDALongTensor, op)
-            print(a.device)
-            print(b.device)
             a_ = CUDALongTensor(a)
             b_ = CUDALongTensor(b)
             c_ = cmd(a_, b_, **kwargs_)
