@@ -156,6 +156,9 @@ class PrimitiveStorage:
             kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs
         )
 
+        print('provider primitive')
+        print(primitives)
+
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
 
