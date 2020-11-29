@@ -199,7 +199,7 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
-            args = (th.LongTensor([i]), delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
+            args = (th.LongTensor([i]).cuda(), delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
@@ -210,7 +210,7 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
                     (
                         f"{NAMESPACE}.{spdz_compute.__name__}",
                         None,
-                        (th.LongTensor([i]), delta, epsilon, kwargs_, op),
+                        (th.LongTensor([i]).cuda(), delta, epsilon, kwargs_, op),
                         {},
                     )
                     for i in [0, 1]
