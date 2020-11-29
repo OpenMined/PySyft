@@ -215,9 +215,9 @@ class PrimitiveStorage:
         """
         if op == "eq":
             if th.cuda.is_available():
-                fss_class = sy.frameworks.torch.mpc.fss.cuda.DPF
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
             else:
-                fss_class = sy.frameworks.torch.mpc.fss.DPF
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
         elif op == "comp":
             if th.cuda.is_available():
                 fss_class = sy.frameworks.torch.mpc.fss.cuda.DIF
