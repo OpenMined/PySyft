@@ -41,7 +41,7 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int, kwar
         field=field,
         kwargs_=kwargs_,
     )
-    print(x.device, a.device)
+    print(x.device, a.device, y.device, b.device)
     return x - a, y - b
 
 
