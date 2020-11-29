@@ -75,7 +75,6 @@ def build_triple(
             cmd = getattr(CUDALongTensor, op)
             print(a.device)
             print(b.device)
-            print(c.device)
             a_ = CUDALongTensor(a)
             b_ = CUDALongTensor(b)
             c_ = cmd(a_, b_, **kwargs_)
