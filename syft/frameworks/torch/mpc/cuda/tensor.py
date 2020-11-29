@@ -61,8 +61,9 @@ class CUDALongTensor(object):
             device (torch.device): The desired device of CUDALongTensor. Must be a cuda device.
         """
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        # assert device.startswith("cuda"), "Cannot specify a non-cuda device for CUDALongTensor"
+        device = device if device is not None else "cpu"
+
+        assert device.startswith("cuda"), "Cannot specify a non-cuda device for CUDALongTensor"
 
         self._tensor = None
         if data is None:

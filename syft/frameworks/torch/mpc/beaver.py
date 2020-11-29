@@ -71,11 +71,15 @@ def build_triple(
         else:
             c = cmd(a, b)
     elif op in {"matmul", "conv2d"}:
-        cmd = getattr(CUDALongTensor, op)
-        a_ = CUDALongTensor(a)
-        b_ = CUDALongTensor(b)
-        c = cmd(a_, b_, **kwargs_)
-        c = c._tensor
+        if th.cuda.is_available():
+            cmd = getattr(CUDALongTensor, op)
+            a_ = CUDALongTensor(a)
+            b_ = CUDALongTensor(b)
+            c_ = cmd(a_, b_, **kwargs_)
+            c = c_._tensor
+        else:
+            cmd = getattr(th, op)
+            c = cmd(a, b, **kwargs_)
     else:
         raise ValueError
 

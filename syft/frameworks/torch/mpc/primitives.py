@@ -71,7 +71,12 @@ class PrimitiveStorage:
             dtype = kwargs.get("dtype")
             torch_dtype = str(kwargs.get("torch_dtype"))
             field = kwargs.get("field")
-            config = (shapes, dtype, torch_dtype, field)
+            kwargs_ = kwargs.get("kwargs_")
+            hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
+            if op == "conv2d":
+                config = (shapes, dtype, torch_dtype, field, hashable_kwargs_)
+            else:
+                config = (shapes, dtype, torch_dtype, field)
             primitive_stack = primitive_stack[config]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances > 0:
@@ -88,7 +93,12 @@ class PrimitiveStorage:
                         f"n_instances={n_instances}"
                     )
 
-                sy.preprocessed_material[op].append((tuple(shapes[0]), tuple(shapes[1])))
+                if op == "conv2d":
+                    sy.preprocessed_material[op].append(
+                        (tuple(shapes[0]), tuple(shapes[1]), hashable_kwargs_)
+                    )
+                else:
+                    sy.preprocessed_material[op].append((tuple(shapes[0]), tuple(shapes[1])))
 
                 raise EmptyCryptoPrimitiveStoreError(
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
@@ -234,12 +244,20 @@ class PrimitiveStorage:
             torch_dtype = kwargs.get("torch_dtype", th.int64)
             field = kwargs.get("field", 2 ** 64)
 
+            if op == "conv2d":
+                hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
+
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
                 shares_worker = build_triple(op, kwargs_, shape, n_party, torch_dtype, field)
                 shape = (tuple(shape[0]), tuple(shape[1]))
                 torch_dtype = str(torch_dtype)
-                config = (shape, dtype, torch_dtype, field)
+
+                if op == "conv2d":
+                    config = (shape, dtype, torch_dtype, field, hashable_kwargs_)
+                else:
+                    config = (shape, dtype, torch_dtype, field)
+
                 for primitives, shares in zip(primitives_worker, shares_worker):
                     primitives.append((config, shares))
 

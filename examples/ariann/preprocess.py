@@ -117,10 +117,10 @@ def build_prepocessing(model, dataset, batch_size, workers, args):
             if args.verbose:
                 print(f"{op} n_instances", n_instances)
             sy.local_worker.crypto_store.provide_primitives(
-                op=op, workers=workers, n_instances=n_instances
+                op=op, kwargs_={}, workers=workers, n_instances=n_instances
             )
 
-    for op in ["mul", "matmul"]:
+    for op in {"mul", "matmul", "conv2d"}:
         if args.dtype == "int":
             torch_dtype = th.int32
             field = 2 ** 32
@@ -133,15 +133,32 @@ def build_prepocessing(model, dataset, batch_size, workers, args):
         shapes = config[op]
         if args.verbose:
             print(f"{op} shapes", shapes)
-        sy.local_worker.crypto_store.provide_primitives(
-            op=op,
-            workers=workers,
-            n_instances=1,
-            shapes=shapes,
-            dtype=args.dtype,
-            torch_dtype=torch_dtype,
-            field=field,
-        )
+
+        if op == "conv2d":
+            for left_shape, right_shape, hashable_kwargs_ in shapes:
+                keys, values = hashable_kwargs_
+                kwargs_ = dict(zip(keys, values))
+                sy.local_worker.crypto_store.provide_primitives(
+                    op=op,
+                    kwargs_=kwargs_,
+                    workers=workers,
+                    n_instances=1,
+                    shapes=(left_shape, right_shape),
+                    dtype=args.dtype,
+                    torch_dtype=torch_dtype,
+                    field=field,
+                )
+        else:
+            sy.local_worker.crypto_store.provide_primitives(
+                op=op,
+                kwargs_={},
+                workers=workers,
+                n_instances=1,
+                shapes=shapes,
+                dtype=args.dtype,
+                torch_dtype=torch_dtype,
+                field=field,
+            )
 
     preprocess_time = time.time() - start_time
     if args.verbose:

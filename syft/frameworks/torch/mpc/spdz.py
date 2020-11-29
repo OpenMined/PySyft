@@ -17,7 +17,7 @@ no_wrap = {"no_wrap": True}
 
 # share level
 @allow_command
-def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int, kwargs_):
     """
     Build the shares of delta and epsilon in the SPDZ protocol
     Args:
@@ -39,8 +39,39 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
         dtype=dtype,
         torch_dtype=torch_dtype,
         field=field,
+        kwargs_=kwargs_,
     )
     return x - a, y - b
+
+
+def slice(x, j, slice_size):
+    x_slice = x[j * slice_size : (j + 1) * slice_size]
+    x_slice.owner = x.owner
+    return x_slice
+
+
+def triple_mat_mul(core_id, op, delta, epsilon, a, b, kwargs_):
+    if th.cuda.is_available():
+        cmd = getattr(CUDALongTensor, op)
+        delta = CUDALongTensor(delta)
+        epsilon = CUDALongTensor(epsilon)
+        a = CUDALongTensor(a)
+        b = CUDALongTensor(b)
+        delta_b = cmd(delta, b, **kwargs_)
+        a_epsilon = cmd(a, epsilon, **kwargs_)
+        delta_epsilon = cmd(delta, epsilon, **kwargs_)
+        delta_b, a_epsilon, delta_epsilon = (
+            delta_b._tensor,
+            a_epsilon._tensor,
+            delta_epsilon._tensor,
+        )
+    else:
+        cmd = getattr(th, op)
+        delta_b = cmd(delta, b, **kwargs_)
+        a_epsilon = cmd(a, epsilon, **kwargs_)
+        delta_epsilon = cmd(delta, epsilon, **kwargs_)
+
+    return core_id, delta_b, a_epsilon, delta_epsilon
 
 
 # share level
@@ -71,23 +102,32 @@ def spdz_compute(
         dtype=dtype,
         torch_dtype=torch_dtype,
         field=field,
+        kwargs_=kwargs_,
     )
 
     if op in {"matmul", "conv2d"}:
-        cmd = getattr(CUDALongTensor, op)
-        delta = CUDALongTensor(delta)
-        epsilon = CUDALongTensor(epsilon)
-        a = CUDALongTensor(a)
-        b = CUDALongTensor(b)
-        delta_b = cmd(delta, b, **kwargs_)
-        a_epsilon = cmd(a, epsilon, **kwargs_)
-        delta_epsilon = cmd(delta, epsilon, **kwargs_)
+        batch_size = delta.shape[0]
 
-        delta_b, a_epsilon, delta_epsilon = (
-            delta_b._tensor,
-            a_epsilon._tensor,
-            delta_epsilon._tensor,
-        )
+        multiprocessing_args = []
+        slice_size = math.ceil(batch_size / N_CORES)
+        for core_id in range(N_CORES):
+            process_args = (
+                core_id,
+                op,
+                slice(delta, core_id, slice_size),
+                epsilon,
+                slice(a, core_id, slice_size),
+                b,
+                kwargs_,
+            )
+            multiprocessing_args.append(process_args)
+        p = multiprocessing.Pool()
+        partitions = p.starmap(triple_mat_mul, multiprocessing_args)
+        p.close()
+        partitions = sorted(partitions, key=lambda k: k[0])
+        delta_b = th.cat([partition[1] for partition in partitions])
+        a_epsilon = th.cat([partition[2] for partition in partitions])
+        delta_epsilon = th.cat([partition[3] for partition in partitions])
     else:
         cmd = getattr(th, op)
 
@@ -126,7 +166,15 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     try:
         shares_delta, shares_epsilon = [], []
         for location in locations:
-            args = (x.child[location.id], y.child[location.id], op, dtype, torch_dtype, field)
+            args = (
+                x.child[location.id],
+                y.child[location.id],
+                op,
+                dtype,
+                torch_dtype,
+                field,
+                kwargs_,
+            )
             share_delta, share_epsilon = remote(spdz_mask, location=location)(
                 *args, return_value=True, return_arity=2
             )
@@ -135,9 +183,7 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     except EmptyCryptoPrimitiveStoreError as e:
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
-        sy.local_worker.crypto_store.provide_primitives(
-            workers=locations, kwargs_=kwargs_, **e.kwargs_
-        )
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
         return spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field)
 
     delta = sum(shares_delta)

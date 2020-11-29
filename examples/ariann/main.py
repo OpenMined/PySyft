@@ -106,7 +106,8 @@ def run(args):
         missing_items = [len(v) for k, v in sy.preprocessed_material.items()]
         if sum(missing_items) > 0:
             print("MISSING preprocessed material")
-            print(sy.preprocessed_material)
+            for key, value in sy.preprocessed_material.items():
+                print(f"'{key}':", value, ",")
 
 
 if __name__ == "__main__":
