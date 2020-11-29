@@ -28,8 +28,8 @@ class Network1(nn.Module):
 class Network2(nn.Module):
     def __init__(self, dataset, out_features):
         super(Network2, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=5, padding=0, stride=1)
-        self.conv2 = nn.Conv2d(16, 16, kernel_size=5, padding=0, stride=1)
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(16, 16, kernel_size=5, stride=1, padding=0)
         self.fc1 = nn.Linear(256, 100)
         self.fc2 = nn.Linear(100, out_features)
 
@@ -252,9 +252,20 @@ online_models = {
         "id": "1JuEbWex9130qMDuc-Q7X1y-ChFFREtfK",
         "file_name": "alexnet_cifar10_baseline_67.69.pt",
     },
+    "alexnet_tiny-imagenet": {
+        "id": "1Nygb3K8dbSBYMls3U6rngYIAYrRsLwR0",
+        "file_name": "alexnet_tiny-imagenet_baseline_37.8.pt",
+    },
+    "resnet18_hymenoptera": {
+        "id": "1bNHE91Fn32AGPNyk_hmGZuQdpnVmyOtR",
+        "file_name": "resnet18_hymenoptera_95.pt",
+    },
 }
 
-too_big_models = {"vgg16_cifar10": "17k1nKItmp-4E1r5GFqfs8oH1Uhmp5e_0"}
+too_big_models = {
+    "vgg16_cifar10": "17k1nKItmp-4E1r5GFqfs8oH1Uhmp5e_0",
+    "vgg16_tiny-imagenet": "1uBiLpPi34Z3NywW3zwilMZpmb964oU8q",
+}
 
 
 def load_state_dict(model, model_name, dataset):

@@ -1,7 +1,7 @@
 # Installation
 
 ### PyGrid
-Download PyGrid from GitHub using the dev branch.
+Download PyGrid from GitHub using the `ryffel/ariaNN` branch..
 
 First install poetry 
 ``` 
@@ -11,7 +11,7 @@ take a fresh tab and run `poetry install` in apps/node
 
 ### PySyft
 
-Download PySyft from GitHub using the ryffel/ariaNN branch.
+Download PySyft from GitHub using the `ryffel/ariaNN` branch.
 
 Install the  dependencies
 ```
