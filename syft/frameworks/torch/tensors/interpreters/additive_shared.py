@@ -7,6 +7,7 @@ from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.frameworks.torch.mpc.cuda import fss as cuda_fss
 from syft.generic.utils import allow_command
 from syft.generic.utils import memorize
 from syft.generic.utils import remote
@@ -966,7 +967,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __ge__(self, other):
-        return fss.le(other, self)
+        if torch.cuda.is_available():
+            return cuda_fss.le(other, self)
+        else:
+            return fss.le(other, self)
 
     def lt(self, other):
         return (other - self - 1).positive()
@@ -988,7 +992,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __le__(self, other):
-        return fss.le(self, other)
+        if torch.cuda.is_available():
+            return cuda_fss.le(self, other)
+        else:
+            return fss.le(self, other)
 
     @crypto_protocol("snn")
     def eq(self, other):
@@ -999,7 +1006,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def eq(self, other):
-        return fss.eq(self, other)
+        if torch.cuda.is_available():
+            return cuda_fss.eq(self, other)
+        else:
+            return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)

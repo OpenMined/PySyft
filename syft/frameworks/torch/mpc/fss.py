@@ -79,6 +79,8 @@ def fss_op(x1, x2, op="eq"):
         shares of the comparison
     """
 
+    assert not th.cuda.is_available()
+
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
@@ -119,7 +121,15 @@ def fss_op(x1, x2, op="eq"):
         location.de_register_obj(share)
         del share
 
-    workers_args = [(th.IntTensor([i]), mask_value, op, dtype) for i in range(2)]
+    workers_args = [
+        (
+            th.IntTensor([i]).cuda() if th.cuda.is_available() else th.IntTensor([i]),
+            mask_value,
+            op,
+            dtype,
+        )
+        for i in range(2)
+    ]
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
@@ -137,6 +147,10 @@ def fss_op(x1, x2, op="eq"):
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
     response = sy.AdditiveSharingTensor(shares, **class_attributes)
+
+    if th.cuda.is_available():
+        response = response.cuda()
+
     return response
 
 

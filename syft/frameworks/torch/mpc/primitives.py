@@ -106,9 +106,22 @@ class PrimitiveStorage:
         elif op in {"fss_eq", "fss_comp"}:
             # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
             # For each primitive, the first line is the AES keys
-            available_instances = len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
+            if th.cuda.is_available():
+                # print('opening store...')
+                available_instances = len(primitive_stack[0][0]) if len(primitive_stack) > 0 else -1
+                # print('available_instances', available_instances)
+                # print(primitive_stack)
+            else:
+                available_instances = (
+                    len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
+                )
+
             if available_instances >= n_instances:
-                keys = primitive_stack[0][0 : n_instances + 1]
+                if th.cuda.is_available():
+                    assert available_instances == n_instances
+                    keys = primitive_stack[0]
+                else:
+                    keys = primitive_stack[0][0 : n_instances + 1]
                 if remove:
                     # We throw the whole key array away, not just the keys we used
                     del primitive_stack[0]
@@ -179,16 +192,24 @@ class PrimitiveStorage:
             current_primitives = getattr(self, op)
             if op in {"mul", "matmul", "conv2d"}:
                 for params, primitive_triple in primitives:
+                    if th.cuda.is_available():
+                        primitive_triple = [p.cuda() for p in primitive_triple]
                     if params not in current_primitives or len(current_primitives[params]) == 0:
                         current_primitives[params] = [primitive_triple]
                     else:
                         current_primitives[params].append(primitive_triple)
             elif op in {"fss_eq", "fss_comp"}:
+                if th.cuda.is_available():
+                    primitives = [
+                        p.cuda() if not isinstance(p, tuple) else tuple(pi.cuda() for pi in p)
+                        for p in primitives
+                    ]
                 if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
                     setattr(self, op, [primitives])
                 else:
                     # This branch never happens with on-the-fly primitives
                     current_primitives.append(primitives)
+                # print('Added to the store', primitives)
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
 
@@ -197,9 +218,15 @@ class PrimitiveStorage:
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
         if op == "eq":
-            fss_class = sy.frameworks.torch.mpc.fss.DPF
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DPF
         elif op == "comp":
-            fss_class = sy.frameworks.torch.mpc.fss.DIF
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DIF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DIF
         else:
             raise ValueError(f"type_op {op} not valid")
 
@@ -210,9 +237,16 @@ class PrimitiveStorage:
                 raise AttributeError(
                     f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
                 )
-
-            keys_a, keys_b = fss_class.keygen(n_values=n_instances)
-            return [keys_a, keys_b]
+            if th.cuda.is_available():
+                alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.cuda.fss.keygen(
+                    n_values=n_instances, op=op
+                )
+                # simulate sharing TODO clean this
+                mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
+                return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
+            else:
+                keys_a, keys_b = fss_class.keygen(n_values=n_instances)
+                return [keys_a, keys_b]
 
         return build_separate_fss_keys
 

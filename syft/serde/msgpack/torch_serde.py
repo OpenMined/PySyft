@@ -40,7 +40,7 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
 
     """
     serializers = {
-        TENSOR_SERIALIZATION.TORCH: numpy_tensor_serializer,  # numpy serializer is faster
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
         TENSOR_SERIALIZATION.ALL: simplified_tensor_serializer,
     }
@@ -65,7 +65,7 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
         a Torch tensor
     """
     deserializers = {
-        TENSOR_SERIALIZATION.TORCH: numpy_tensor_deserializer,
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_deserializer,
         TENSOR_SERIALIZATION.ALL: simplified_tensor_deserializer,
     }
