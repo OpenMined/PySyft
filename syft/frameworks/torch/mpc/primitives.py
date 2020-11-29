@@ -214,9 +214,15 @@ class PrimitiveStorage:
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
         if op == "eq":
-            fss_class = sy.frameworks.torch.mpc.fss.DPF
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.fss.cuda.DPF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DPF
         elif op == "comp":
-            fss_class = sy.frameworks.torch.mpc.fss.DIF
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.fss.cuda.DIF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DIF
         else:
             raise ValueError(f"type_op {op} not valid")
 
