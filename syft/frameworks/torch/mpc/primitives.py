@@ -217,10 +217,10 @@ class PrimitiveStorage:
             if th.cuda.is_available():
                 fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
             else:
-                fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
+                fss_class = sy.frameworks.torch.mpc.fss.DPF
         elif op == "comp":
             if th.cuda.is_available():
-                fss_class = sy.frameworks.torch.mpc.fss.cuda.DIF
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DIF
             else:
                 fss_class = sy.frameworks.torch.mpc.fss.DIF
         else:
