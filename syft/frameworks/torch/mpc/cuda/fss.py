@@ -631,7 +631,7 @@ def H(seed, idx=0):
     valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
     valuebits[1, 3] = buffers[3].native___getitem__(1)
     valuebits[1, 4] = last_bit
-    print(time.time() - t)
+    print(time.time() - t, idx)
 
     # seed = seed  # .cuda()
     # urandom_gen = csprng.create_const_generator(key)
