@@ -5,6 +5,7 @@ import pstats
 import time
 
 import torch
+import syft as sy
 
 
 def profile(func):
@@ -90,7 +91,20 @@ def test(args, model, private_test_loader):
         for batch_idx, (data, target) in enumerate(private_test_loader):
             i += 1
             start_time = time.time()
+
+            if args.comm_info:
+                sy.comm_total = 0
+
             output = model(data)
+
+            if args.comm_info:
+                print(
+                    "Total communication per item",
+                    round(sy.comm_total / args.batch_size / 10 ** 6, 3),
+                    "MB",
+                )
+                del sy.comm_total
+
             times += time.time() - start_time
             pred = output.argmax(dim=1)
             real_times += time.time() - start_time

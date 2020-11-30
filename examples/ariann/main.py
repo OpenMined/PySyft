@@ -200,6 +200,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--comm_info",
+        help="Print communication information",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--pyarrow_info",
         help="print information about PyArrow usage and failure",
         action="store_true",
@@ -244,6 +250,7 @@ if __name__ == "__main__":
         test_batch_size = cmd_args.test_batch_size or cmd_args.batch_size
 
         log_interval = cmd_args.log_interval
+        comm_info = cmd_args.comm_info
 
         epochs = cmd_args.epochs
         lr = 0.1

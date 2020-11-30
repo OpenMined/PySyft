@@ -395,6 +395,9 @@ class BaseWorker(AbstractWorker):
 
         strat = None
 
+        if self.id == "alice" and hasattr(sy, "comm_total"):
+            sy.comm_total += len(bin_message)
+
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
 
@@ -439,6 +442,9 @@ class BaseWorker(AbstractWorker):
         """
 
         strat = self.arrow_deserialize
+
+        if self.id == "alice" and hasattr(sy, "comm_total"):
+            sy.comm_total += len(bin_message)
 
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
