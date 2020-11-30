@@ -66,6 +66,7 @@ def full_name(f):
     return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
 
 
+@profile
 def keygen(n_values, op):
     """
     Run FSS keygen in parallel to accelerate the offline part of the protocol
@@ -345,7 +346,6 @@ class DIF:
 
         return (alpha, s[0][0], s[0][1], *_CW, CW_leaf)
 
-    @profile
     @staticmethod
     def eval(b, x, *k_b):
         x = x.long()
