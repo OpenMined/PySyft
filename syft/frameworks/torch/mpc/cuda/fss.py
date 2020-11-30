@@ -562,7 +562,6 @@ def G(seed):
         buffers.append(buffer)
 
 
-    t = time.time()
     valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
     valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
     valuebits[0, 1] = buffers[0][1]
@@ -570,7 +569,6 @@ def G(seed):
     valuebits[1, 0], last_bit = split_last_bit(buffers[1][0])
     valuebits[1, 1] = buffers[1][1]
     valuebits[1, 2] = last_bit
-    print(time.time() - t)
 
     # seed = seed  # .cuda()
     # urandom_gen = csprng.create_const_generator(key)
@@ -620,6 +618,7 @@ def H(seed, idx=0):
 
     valuebits = valuebits_cache[(n_values, idx)]
 
+    t = time.time()
     valuebits[0, 0], last_bit = split_last_bit(buffers[0].native___getitem__(0))
     # valuebits[0, 1] = buffers[0][1]
     valuebits[0, 1] = last_bit
@@ -632,6 +631,7 @@ def H(seed, idx=0):
     valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
     valuebits[1, 3] = buffers[3].native___getitem__(1)
     valuebits[1, 4] = last_bit
+    print(time.time() - t)
 
     # seed = seed  # .cuda()
     # urandom_gen = csprng.create_const_generator(key)
