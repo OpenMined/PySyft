@@ -336,11 +336,11 @@ class DIF:
                     # note that we subtract (1 - α[i]), so that leaving the special path can't lead
                     # to an output == 1 when α[i] == 0 (because it means that your bit is 1 so your
                     # value is > α)
-                    CW_leaf[i] = (-1) ** τ[i + 1, 1] * (
+                    CW_leaf[i] = (1 - 2 * τ[i + 1, 1]) * (
                         1 - convert(σ[i + 1, 0]) + convert(σ[i + 1, 1]) - (1 - α[i])
                     )
 
-        CW_leaf[n] = (-1) ** t[n, 1]  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_leaf[n] = (1 - 2 * t[n, 1])  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
         CW_leaf = CW_leaf.type(th.long)
 
