@@ -939,8 +939,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def relu(self):
-        zero = self - self
-        return self * (self >= zero)
+        return self * (self >= 0)
 
     def positive(self):
         # self >= 0

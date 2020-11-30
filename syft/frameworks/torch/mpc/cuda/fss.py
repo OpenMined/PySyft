@@ -38,7 +38,7 @@ COMP = 1
 
 
 def full_name(f):
-    return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
+    return f"syft.frameworks.torch.mpc.cuda.fss.{f.__name__}"
 
 
 def keygen(n_values, op):

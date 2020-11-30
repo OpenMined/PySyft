@@ -249,8 +249,8 @@ online_models = {
         "file_name": "lenet_mnist_baseline_99.27.pt",
     },
     "alexnet_cifar10": {
-        "id": "1JuEbWex9130qMDuc-Q7X1y-ChFFREtfK",
-        "file_name": "alexnet_cifar10_baseline_67.69.pt",
+        "id": "1-M8SaF19EFSI1Zqmnr9KL5aQG2AEqWND",
+        "file_name": "alexnet_cifar10_baseline_70.23.pt",
     },
     "alexnet_tiny-imagenet": {
         "id": "1Nygb3K8dbSBYMls3U6rngYIAYrRsLwR0",
