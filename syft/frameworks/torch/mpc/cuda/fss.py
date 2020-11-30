@@ -45,6 +45,7 @@ def profile(func):
 
     return wrapper
 
+
 if th.cuda.is_available():
     import torchcsprng as csprng
 
@@ -340,7 +341,7 @@ class DIF:
                         1 - convert(σ[i + 1, 0]) + convert(σ[i + 1, 1]) - (1 - α[i])
                     )
 
-        CW_leaf[n] = (1 - 2 * t[n, 1])  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_leaf[n] = 1 - 2 * t[n, 1]  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
         CW_leaf = CW_leaf.type(th.long)
 
