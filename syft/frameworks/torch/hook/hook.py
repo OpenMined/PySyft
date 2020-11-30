@@ -298,6 +298,16 @@ class TorchHook(FrameworkHook):
 
         self._hook_native_methods(tensor_type)
 
+        # addition for cuda & numpy
+        tensor_type.native_numpy = tensor_type.numpy
+
+        def cuda_numpy(self):
+            if str(self.device).startswith("cuda"):
+                return self.cpu().native_numpy()
+            return self.native_numpy()
+
+        tensor_type.numpy = cuda_numpy
+
     def __hook_properties(self, tensor_type):
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape

@@ -72,6 +72,9 @@ def run(args):
 
     model.eval()
 
+    if torch.cuda.is_available():
+        sy.cuda_force = True
+
     if not args.public:
         model.encrypt(**kwargs)
         if args.fp_only:  # Just keep the (Autograd+) Fixed Precision feature
