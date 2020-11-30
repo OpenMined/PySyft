@@ -273,6 +273,15 @@ def add_torch_return_types() -> None:
     geqrf = s.geqrf()
     supported_types.append(type(geqrf))
 
+    median = s.median(0)
+    supported_types.append(type(median))
+
+    max_t = s.max(0)
+    supported_types.append(type(max_t))
+
+    min_t = s.min(0)
+    supported_types.append(type(min_t))
+
     for types in supported_types:
         aggressive_set_attr(
             obj=types, name="serializable_wrapper_type", attr=ValuesIndicesWrapper
