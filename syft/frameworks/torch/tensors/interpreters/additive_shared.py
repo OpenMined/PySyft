@@ -46,7 +46,7 @@ def check_if_op_with_zero(operation):
             other_is_zero = value == 0
         if not isinstance(other_is_zero, bool):
             other_is_zero = other_is_zero.any()
-        if not isinstance(other_is_zero, (bool, torch.BoolTensor)):
+        if not isinstance(other_is_zero, (bool, torch.BoolTensor, torch.cuda.BoolTensor)):
             raise ValueError("Should be a boolean:", other_is_zero)
 
         result = operation(self_, other, *args, **kwargs)
