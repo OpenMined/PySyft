@@ -310,11 +310,11 @@ class DIF:
                     # note that we subtract (1 - α[i]), so that leaving the special path can't lead
                     # to an output == 1 when α[i] == 0 (because it means that your bit is 1 so your
                     # value is > α)
-                    CW_leaf[i] = (-1) ** τ[i + 1, 1] * (
+                    CW_leaf[i] = (1 - 2 * τ[i + 1, 1]) * (
                         1 - convert(σ[i + 1, 0]) + convert(σ[i + 1, 1]) - (1 - α[i])
                     )
 
-        CW_leaf[n] = (-1) ** t[n, 1]  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_leaf[n] = 1 - 2 * t[n, 1]  # * (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
         CW_leaf = CW_leaf.type(th.long)
 
@@ -518,7 +518,7 @@ if th.cuda.is_available():
 
 def split_last_bit(buffer):
     # Numbers are on 64 bits signed
-    return buffer.abs(), (buffer >= 0)
+    return buffer.native_abs(), buffer.native_ge(0)
 
 
 def G(seed):
@@ -563,6 +563,7 @@ def G(seed):
 
 
 H_cache = {}
+valuebits_cache = {}
 
 
 def H(seed, idx=0):
@@ -584,18 +585,22 @@ def H(seed, idx=0):
         key = keys[i]
         csprng.encrypt(seed, buffers[i], key, "aes128", "ecb")
 
-    valuebits = th.empty(2, 5, n_values, dtype=th.long, device="cuda")
-    valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
+    if (n_values, idx) not in valuebits_cache:
+        valuebits_cache[(n_values, idx)] = th.empty(2, 5, n_values, dtype=th.long, device="cuda")
+
+    valuebits = valuebits_cache[(n_values, idx)]
+
+    valuebits[0, 0], last_bit = split_last_bit(buffers[0].native___getitem__(0))
     # valuebits[0, 1] = buffers[0][1]
     valuebits[0, 1] = last_bit
-    valuebits[0, 2], last_bit = split_last_bit(buffers[1][0])
-    valuebits[0, 3] = buffers[1][1]
+    valuebits[0, 2], last_bit = split_last_bit(buffers[1].native___getitem__(0))
+    valuebits[0, 3] = buffers[1].native___getitem__(1)
     valuebits[0, 4] = last_bit
-    valuebits[1, 0], last_bit = split_last_bit(buffers[2][0])
+    valuebits[1, 0], last_bit = split_last_bit(buffers[2].native___getitem__(0))
     # valuebits[1, 1] = buffers[2][1]
     valuebits[1, 1] = last_bit
-    valuebits[1, 2], last_bit = split_last_bit(buffers[3][0])
-    valuebits[1, 3] = buffers[3][1]
+    valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
+    valuebits[1, 3] = buffers[3].native___getitem__(1)
     valuebits[1, 4] = last_bit
 
     # seed = seed  # .cuda()
