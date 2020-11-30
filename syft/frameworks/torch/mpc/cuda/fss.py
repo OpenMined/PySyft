@@ -20,6 +20,31 @@ from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
+import cProfile
+import io
+import os
+import pstats
+import time
+
+import torch
+
+
+def profile(func):
+    """A gentle profiler"""
+
+    def wrapper(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        retval = func(*args, **kwargs)
+        pr.disable()
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
+        ps.print_stats(0.3)
+        print(s.getvalue())
+        return retval
+
+    return wrapper
+
 if th.cuda.is_available():
     import torchcsprng as csprng
 
@@ -320,6 +345,7 @@ class DIF:
 
         return (alpha, s[0][0], s[0][1], *_CW, CW_leaf)
 
+    @profile
     @staticmethod
     def eval(b, x, *k_b):
         x = x.long()
