@@ -604,38 +604,33 @@ def H(seed, idx=0):
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
     assert seed.shape[0] == λs
-    #
-    # if n_values not in H_cache:
-    #     H_cache[n_values] = [th.empty(λs, n_values, dtype=th.long, device="cuda") for _ in range(4)]
+
+    if n_values not in H_cache:
+        H_cache[n_values] = [th.empty(λs, n_values, dtype=th.long, device="cuda") for _ in range(4)]
+
+    buffers = H_cache[n_values]
+    for i in range(4):
+        key = keys[i]
+        csprng.encrypt(seed, buffers[i], key, "aes128", "ecb")
 
     if (n_values, idx) not in valuebits_cache:
         valuebits_cache[(n_values, idx)] = th.empty(2, 5, n_values, dtype=th.long, device="cuda")
 
     valuebits = valuebits_cache[(n_values, idx)]
 
-    #buffers = H_cache[n_values]
-    for i in range(5):
-        key = keys[i]
-        csprng.encrypt(seed, valuebits[:, i], key, "aes128", "ecb")
-    #
-    # if (n_values, idx) not in valuebits_cache:
-    #     valuebits_cache[(n_values, idx)] = th.empty(2, 5, n_values, dtype=th.long, device="cuda")
-    #
-    # valuebits = valuebits_cache[(n_values, idx)]
-
     t = time.time()
-    # valuebits[0, 0], last_bit = split_last_bit(buffers[0].native___getitem__(0))
-    # # valuebits[0, 1] = buffers[0][1]
-    valuebits[0, 1] = valuebits[0, 1].native_ge(0)
-    # valuebits[0, 2], last_bit = split_last_bit(buffers[1].native___getitem__(0))
-    # valuebits[0, 3] = buffers[1].native___getitem__(1)
-    valuebits[0, 4] = valuebits[0, 4].native_ge(0)
-    # valuebits[1, 0], last_bit = split_last_bit(buffers[2].native___getitem__(0))
-    # # valuebits[1, 1] = buffers[2][1]
-    valuebits[1, 1] = valuebits[1, 1].native_ge(0)
-    # valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
-    # valuebits[1, 3] = buffers[3].native___getitem__(1)
-    valuebits[1, 4] = valuebits[1, 4].native_ge(0)
+    valuebits[0, 0], last_bit = split_last_bit(buffers[0].native___getitem__(0))
+    # valuebits[0, 1] = buffers[0][1]
+    valuebits[0, 1] = last_bit
+    valuebits[0, 2], last_bit = split_last_bit(buffers[1].native___getitem__(0))
+    valuebits[0, 3] = buffers[1].native___getitem__(1)
+    valuebits[0, 4] = last_bit
+    valuebits[1, 0], last_bit = split_last_bit(buffers[2].native___getitem__(0))
+    # valuebits[1, 1] = buffers[2][1]
+    valuebits[1, 1] = last_bit
+    valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
+    valuebits[1, 3] = buffers[3].native___getitem__(1)
+    valuebits[1, 4] = last_bit
     print(time.time() - t, idx)
 
     # seed = seed  # .cuda()
