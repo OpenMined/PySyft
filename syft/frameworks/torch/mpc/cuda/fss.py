@@ -20,32 +20,6 @@ from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
-import cProfile
-import io
-import os
-import pstats
-import time
-
-import torch
-
-
-def profile(func):
-    """A gentle profiler"""
-
-    def wrapper(*args, **kwargs):
-        pr = cProfile.Profile()
-        pr.enable()
-        retval = func(*args, **kwargs)
-        pr.disable()
-        s = io.StringIO()
-        ps = pstats.Stats(pr, stream=s).sort_stats("tottime")
-        ps.print_stats()
-        print(s.getvalue())
-        return retval
-
-    return wrapper
-
-
 if th.cuda.is_available():
     import torchcsprng as csprng
 
@@ -67,7 +41,6 @@ def full_name(f):
     return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
 
 
-@profile
 def keygen(n_values, op):
     """
     Run FSS keygen in parallel to accelerate the offline part of the protocol
@@ -561,7 +534,6 @@ def G(seed):
         csprng.encrypt(seed, buffer, key, "aes128", "ecb")
         buffers.append(buffer)
 
-
     valuebits = th.empty(2, 3, n_values, dtype=th.long, device="cuda")
     valuebits[0, 0], last_bit = split_last_bit(buffers[0][0])
     valuebits[0, 1] = buffers[0][1]
@@ -618,7 +590,6 @@ def H(seed, idx=0):
 
     valuebits = valuebits_cache[(n_values, idx)]
 
-    t = time.time()
     valuebits[0, 0], last_bit = split_last_bit(buffers[0].native___getitem__(0))
     # valuebits[0, 1] = buffers[0][1]
     valuebits[0, 1] = last_bit
@@ -631,7 +602,6 @@ def H(seed, idx=0):
     valuebits[1, 2], last_bit = split_last_bit(buffers[3].native___getitem__(0))
     valuebits[1, 3] = buffers[3].native___getitem__(1)
     valuebits[1, 4] = last_bit
-    print(time.time() - t, idx)
 
     # seed = seed  # .cuda()
     # urandom_gen = csprng.create_const_generator(key)
