@@ -154,7 +154,7 @@ def get_args():
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        default: False
+        default=False,
         help="run only a few iterations; default: False"
     )
     args = parser.parse_args()
