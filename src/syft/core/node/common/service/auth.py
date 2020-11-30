@@ -44,13 +44,19 @@ def service_auth(
                     logger.debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif admin_only:
-                if verify_key not in node.admin_verify_key_registry:
+                if (
+                    verify_key not in node.admin_verify_key_registry
+                    and verify_key != node.root_verify_key
+                ):
                     raise AuthorizationException(
                         "User lacks Administrator credentials."
                     )
 
             elif cpl_ofcr_only:
-                if verify_key not in node.cpl_ofcr_verify_key_registry:
+                if (
+                    verify_key not in node.cpl_ofcr_verify_key_registry
+                    and verify_key != node.root_verify_key
+                ):
                     raise AuthorizationException(
                         "User lacks Compliance Officer credentials."
                     )

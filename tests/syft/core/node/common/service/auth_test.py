@@ -80,13 +80,14 @@ def test_service_auth_guests_succeeds() -> None:
     assert new_verify_key in node.guest_verify_key_registry
 
 
-def test_service_admin_fails() -> None:
+def test_service_auth_admin_fails() -> None:
     node = sy.Device()
     msg = sy.ReprMessage(address=node.address)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
 
+    # Administrator only
     @service_auth(admin_only=True)
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
@@ -97,14 +98,14 @@ def test_service_admin_fails() -> None:
         process(node=node, msg=msg, verify_key=random_verify_key)
 
 
-def test_service_admin_success() -> None:
+def test_service_auth_admin_success() -> None:
     node = sy.Device()
     msg = sy.ReprMessage(address=node.address)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
 
-    # admin
+    # Administrator only
     @service_auth(admin_only=True)
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
@@ -114,13 +115,14 @@ def test_service_admin_success() -> None:
     process(node=node, msg=msg, verify_key=random_verify_key)
 
 
-def test_service_cpl_ofcr_fails() -> None:
+def test_service_auth_cpl_ofcr_fails() -> None:
     node = sy.Device()
     msg = sy.ReprMessage(address=node.address)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
 
+    # Compliance Officer only
     @service_auth(cpl_ofcr_only=True)
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
@@ -131,14 +133,14 @@ def test_service_cpl_ofcr_fails() -> None:
         process(node=node, msg=msg, verify_key=random_verify_key)
 
 
-def test_service_cpl_ofcr_success() -> None:
+def test_service_auth_cpl_ofcr_success() -> None:
     node = sy.Device()
     msg = sy.ReprMessage(address=node.address)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
 
-    # admin
+    # Compliance Officer only
     @service_auth(cpl_ofcr_only=True)
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
@@ -146,3 +148,27 @@ def test_service_cpl_ofcr_success() -> None:
     # NOTE didn't find a method to add a key to cpl_ofcr_verify_key_registry
     node.cpl_ofcr_verify_key_registry.add(random_verify_key)
     process(node=node, msg=msg, verify_key=random_verify_key)
+
+
+def test_service_auth_admin_success_as_root() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    # Administrator only
+    @service_auth(admin_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    process(node=node, msg=msg, verify_key=node.root_verify_key)
+
+
+def test_service_auth_cpl_ofcr_success_as_root() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    # Compliance Officer only
+    @service_auth(cpl_ofcr_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    process(node=node, msg=msg, verify_key=node.root_verify_key)
