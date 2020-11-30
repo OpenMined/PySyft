@@ -143,6 +143,6 @@ def test_service_cpl_ofcr_success() -> None:
     def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
         pass
 
-    # NOTE didn't find a method to add a key to admin_verify_key_registry
+    # NOTE didn't find a method to add a key to cpl_ofcr_verify_key_registry
     node.cpl_ofcr_verify_key_registry.add(random_verify_key)
     process(node=node, msg=msg, verify_key=random_verify_key)
