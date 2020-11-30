@@ -78,3 +78,71 @@ def test_service_auth_guests_succeeds() -> None:
     process(node=node, msg=msg, verify_key=new_verify_key)
 
     assert new_verify_key in node.guest_verify_key_registry
+
+
+def test_service_admin_fails() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    random_signing_key = SigningKey.generate()
+    random_verify_key = random_signing_key.verify_key
+
+    @service_auth(admin_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    with pytest.raises(
+        AuthorizationException, match="User lacks Administrator credentials."
+    ):
+        process(node=node, msg=msg, verify_key=random_verify_key)
+
+
+def test_service_admin_success() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    random_signing_key = SigningKey.generate()
+    random_verify_key = random_signing_key.verify_key
+
+    # admin
+    @service_auth(admin_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    # NOTE didn't find a method to add a key to admin_verify_key_registry
+    node.admin_verify_key_registry.add(random_verify_key)
+    process(node=node, msg=msg, verify_key=random_verify_key)
+
+
+def test_service_cpl_ofcr_fails() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    random_signing_key = SigningKey.generate()
+    random_verify_key = random_signing_key.verify_key
+
+    @service_auth(cpl_ofcr_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    with pytest.raises(
+        AuthorizationException, match="User lacks Compliance Officer credentials."
+    ):
+        process(node=node, msg=msg, verify_key=random_verify_key)
+
+
+def test_service_cpl_ofcr_success() -> None:
+    node = sy.Device()
+    msg = sy.ReprMessage(address=node.address)
+
+    random_signing_key = SigningKey.generate()
+    random_verify_key = random_signing_key.verify_key
+
+    # admin
+    @service_auth(cpl_ofcr_only=True)
+    def process(node: sy.Device, msg: sy.ReprMessage, verify_key: VerifyKey) -> None:
+        pass
+
+    # NOTE didn't find a method to add a key to admin_verify_key_registry
+    node.cpl_ofcr_verify_key_registry.add(random_verify_key)
+    process(node=node, msg=msg, verify_key=random_verify_key)

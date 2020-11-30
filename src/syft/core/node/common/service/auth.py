@@ -17,6 +17,8 @@ class AuthorizationException(Exception):
 
 def service_auth(
     root_only: bool = False,
+    admin_only: bool = False,
+    cpl_ofcr_only: bool = False,
     existing_users_only: bool = False,
     guests_welcome: bool = False,
     register_new_guests: bool = False,
@@ -40,6 +42,18 @@ def service_auth(
                     )
                 else:
                     logger.debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
+
+            elif admin_only:
+                if verify_key not in node.admin_verify_key_registry:
+                    raise AuthorizationException(
+                        "User lacks Administrator credentials."
+                    )
+
+            elif cpl_ofcr_only:
+                if verify_key not in node.cpl_ofcr_verify_key_registry:
+                    raise AuthorizationException(
+                        "User lacks Compliance Officer credentials."
+                    )
 
             elif existing_users_only:
                 if verify_key not in node.guest_verify_key_registry:
