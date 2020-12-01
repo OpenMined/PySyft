@@ -132,7 +132,7 @@ class Class(Callable):
                             data_len = data_len_ptr.get(
                                 request_block=True,
                                 timeout_secs=25,
-                                name="__len__ request on EXAMPLE",
+                                name=f"__len__ request on {self.id_at_location}",
                                 delete_obj=False,
                             )
                             return data_len
