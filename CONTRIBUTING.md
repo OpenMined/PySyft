@@ -26,9 +26,18 @@ Before you get started you will need a few things installed depending on your op
 - git
 - protobuf (protoc)
 
+### OSes
+We intend to provide first class support for dev setup in the current versions of:
+
+- 🐧 Ubuntu
+- 🍎 MacOS
+- 💠 Windows
+
+If there are missing instructions on setup for a specific operating system or tool please open a PR.
 
 ### Linux
 If you are using Ubuntu this is `apt-get` and should already be available on your machine.
+
 ### MacOS
 On MacOS the main package manager is called [Brew](https://brew.sh/).
 
@@ -43,6 +52,8 @@ For windows the recommended package manager is [chocolatey](https://chocolatey.o
 
 ## Git
 You will need git to clone, commit and push code to GitHub.
+
+### Linux
 
 ### MacOS
 ```
