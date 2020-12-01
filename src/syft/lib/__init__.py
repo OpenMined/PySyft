@@ -1,9 +1,9 @@
 # syft relative
 from ..ast.globals import Globals
+from ..lib.psi import create_psi_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..lib.psi import create_psi_ast
 from .misc import create_union_ast
 
 

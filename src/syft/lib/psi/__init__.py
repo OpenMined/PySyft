@@ -43,7 +43,6 @@ def create_psi_ast() -> Globals:
 
     for klass in ast.classes:
         klass.create_pointer_class()
-        print("created pointer class for klass", klass)
         klass.create_send_method()
         klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
