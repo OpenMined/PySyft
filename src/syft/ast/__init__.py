@@ -27,9 +27,9 @@ def add_modules(ast: globals.Globals, modules: TypeList[str]) -> None:
         parent.add_attr(
             attr_name=attr_name,
             attr=module.Module(
-                attr_name,
-                target_module,
-                None,
+                name=attr_name,
+                path_and_name=target_module,
+                ref=None,
                 return_type_name="",
             ),
         )
@@ -41,13 +41,12 @@ def add_classes(
     for path, return_type, ref in paths:
         parent = get_parent(path, ast)
         attr_name = path.rsplit(".", 1)[-1]
-
         parent.add_attr(
             attr_name=attr_name,
             attr=klass.Class(
-                attr_name,
-                path,
-                ref,
+                name=attr_name,
+                path_and_name=path,
+                ref=ref,
                 return_type_name=return_type,
             ),
         )
