@@ -105,13 +105,14 @@ DEFAULT_LOG_FILE = "syft_{time}.log"
 
 
 # run this to enable logging, or run with disable=True to turn it back off
+# file_path can also be sys.stdout
 def logging(
     disable: bool = False, file_path: Union[None, str, os.PathLike] = None
 ) -> None:
 
     logger.debug("Logging loaded")
 
-    if disable:
+    if not disable:
         if file_path is not None:
             LOG_FILE = file_path
         else:
