@@ -23,6 +23,88 @@ from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
 
 
+def _get_request_config(self: Any) -> Dict[str, Any]:
+    return {
+        "request_block": True,
+        "timeout_secs": 25,
+        "name": f"__len__ request on {self.id_at_location}",
+        "delete_obj": False,
+    }
+
+
+def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
+    setattr(self, "get_request_config", lambda: request_config)
+
+
+def getattribute(__self: Any, name: str) -> Any:
+    # we need to override the __getattribute__ of our Pointer class
+    # so that if you ever access a property on a Pointer it will not just
+    # get the wrapped run_class_method but also execute it immediately
+    # object.__getattribute__ is the way we prevent infinite recursion
+    attr = object.__getattribute__(__self, name)
+    props = object.__getattribute__(__self, "_props")
+
+    # if the attr key name is in the _props list from above then we know
+    # we should execute it immediately and return the result
+    if name in props:
+        return attr()
+
+    return attr
+
+
+def wrap_iterator(attrs: Dict[str, Union[str, CallableT]]) -> None:
+    def wrap_iter(iter_func: CallableT) -> CallableT:
+        def __iter__(self: Any) -> Iterable:
+            # syft absolute
+            from syft.lib.python.iterator import Iterator
+
+            if not hasattr(self, "__len__"):
+                raise ValueError(
+                    "Can't build a remote iterator on an object with no __len__."
+                )
+
+            try:
+                data_len = len(self)
+            except Exception:
+                raise ValueError("Request to access data length not granted.")
+
+            return Iterator(_ref=iter_func(self), max_len=data_len)
+
+        return __iter__
+
+    attr_name = "__iter__"
+    iter_target = attrs[attr_name]
+    if not callable(iter_target):
+        raise AttributeError("Can't wrap a non callable iter attribute")
+    else:
+        iter_func: CallableT = iter_target
+    attrs[attr_name] = wrap_iter(iter_func)
+
+
+def wrap_len(attrs: Dict[str, Union[str, CallableT]]) -> None:
+    def wrap_len(len_func: CallableT) -> CallableT:
+        def __len__(self: Any) -> int:
+            data_len_ptr = len_func(self)
+            try:
+                data_len = data_len_ptr.get(**self.get_request_config())
+                return data_len
+            except Exception:
+                raise ValueError("Request to access data length not granted.")
+
+        return __len__
+
+    attr_name = "__len__"
+    len_target = attrs[attr_name]
+
+    if not callable(len_target):
+        raise AttributeError("Can't wrap a non callable __len__ attribute")
+    else:
+        len_func: CallableT = len_target
+
+    attrs["len"] = len_func
+    attrs[attr_name] = wrap_len(len_func)
+
+
 class Class(Callable):
     def __init__(
         self,
@@ -44,21 +126,6 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-        def getattribute(__self: Any, name: str) -> Any:
-            # we need to override the __getattribute__ of our Pointer class
-            # so that if you ever access a property on a Pointer it will not just
-            # get the wrapped run_class_method but also execute it immediately
-            # object.__getattribute__ is the way we prevent infinite recursion
-            attr = object.__getattribute__(__self, name)
-            props = object.__getattribute__(__self, "_props")
-
-            # if the attr key name is in the _props list from above then we know
-            # we should execute it immediately and return the result
-            if name in props:
-                return attr()
-
-            return attr
-
         def get_run_class_method(attr_path_and_name: str) -> CallableT:
             """It might seem hugely un-necessary to have these methods nested in this way.
             However, it has to do with ensuring that the scope of attr_path_and_name is local
@@ -136,63 +203,13 @@ class Class(Callable):
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
             if attr_name == "__len__":
+                wrap_len(attrs)
 
-                def wrap_len(len_func: CallableT) -> CallableT:
-                    def __len__(self: Any) -> int:
-                        data_len_ptr = len_func(self)
-                        try:
-                            data_len = data_len_ptr.get(
-                                request_block=True,
-                                timeout_secs=25,
-                                name=f"__len__ request on {self.id_at_location}",
-                                delete_obj=False,
-                            )
-                            return data_len
-                        except Exception:
-                            raise ValueError(
-                                "Request to access data length not granted."
-                            )
+            if getattr(attr, "return_type_name", None) == "syft.lib.python.Iterator":
+                wrap_iterator(attrs)
 
-                    return __len__
-
-                len_target = attrs[attr_name]
-                if not callable(len_target):
-                    raise AttributeError("Can't wrap a non callable __len__ attribute")
-                else:
-                    len_func: CallableT = len_target
-
-                attrs["len"] = len_func
-                attrs[attr_name] = wrap_len(len_func)
-
-            if getattr(attr, "return_type_name", "") == "syft.lib.python.Iterator":
-
-                def wrap_iter(iter_func: CallableT) -> CallableT:
-                    def __iter__(self: Any) -> Iterable:
-                        # syft absolute
-                        from syft.lib.python.iterator import Iterator
-
-                        if not hasattr(self, "__len__"):
-                            raise ValueError(
-                                "Can't build a remote iterator on an object with no __len__."
-                            )
-
-                        try:
-                            data_len = len(self)
-                        except Exception:
-                            raise ValueError(
-                                "Request to access data length not granted."
-                            )
-
-                        return Iterator(_ref=iter_func(self), max_len=data_len)
-
-                    return __iter__
-
-                iter_target = attrs[attr_name]
-                if not callable(iter_target):
-                    raise AttributeError("Can't wrap a non callable iter attribute")
-                else:
-                    iter_func: CallableT = iter_target
-                attrs[attr_name] = wrap_iter(iter_func)
+        attrs["get_request_config"] = _get_request_config
+        attrs["set_request_config"] = _set_request_config
 
         # here we can ensure that the fully qualified name of the Pointer klass is
         # consistent between versions of python and matches our other klasses in
