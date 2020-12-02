@@ -4,13 +4,14 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
 # third party
-# import tenseal
+import tenseal as ts
 
 # syft relative
-from ...ast.globals import Globals
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
+from ...ast.globals import Globals
+from ..misc.union import UnionGenerator
 
 
 def create_tenseal_ast() -> Globals:
@@ -18,13 +19,40 @@ def create_tenseal_ast() -> Globals:
 
     modules = [
         "tenseal",
-        "tenseal.version",
+        "tenseal._ts_cpp",
     ]
 
-    classes: TypeList[TypeTuple[str, str, TypeAny]] = []
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
+        ("tenseal.context", "tenseal.TenSEALContext", ts.context),
+        (
+            "tenseal._ts_cpp.TenSEALContext",
+            "tenseal._ts_cpp.TenSEALContext",
+            ts._ts_cpp.TenSEALContext,
+        ),
+        ("tenseal.SCHEME_TYPE", "tenseal.SCHEME_TYPE", ts.SCHEME_TYPE),
+        (
+            "tenseal._ts_cpp.CKKSVector",
+            "tenseal._ts_cpp.CKKSVector",
+            ts._ts_cpp.CKKSVector,
+        ),
+    ]
 
     methods = [
-        ("tenseal.version.__version__", "syft.lib.python.String"),
+        ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
+        ("tenseal.SCHEME_TYPE.CKKS", "tenseal.SCHEME_TYPE"),
+        ("tenseal.SCHEME_TYPE.NONE", "tenseal.SCHEME_TYPE"),
+        (
+            "tenseal._ts_cpp.TenSEALContext.generate_galois_keys",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "tenseal._ts_cpp.TenSEALContext.global_scale",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),  # setter returns Int, getter returns Float?
+        ("tenseal._ts_cpp.CKKSVector.__add__", "tenseal._ts_cpp.CKKSVector"),
+        ("tenseal._ts_cpp.CKKSVector.dot", "tenseal._ts_cpp.CKKSVector"),
+        ("tenseal._ts_cpp.CKKSVector.matmul", "tenseal._ts_cpp.CKKSVector"),
+        ("tenseal._ts_cpp.CKKSVector.decrypt", "syft.lib.python.List"),
     ]
 
     add_modules(ast, modules)
