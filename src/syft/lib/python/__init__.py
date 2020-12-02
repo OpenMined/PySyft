@@ -377,7 +377,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
-        ("syft.lib.python.Iterator.__next__", "syft.lib.python.Any"),
+        ("syft.lib.python.Iterator.__next__", "torch.Tensor"),
         ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
         ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
         ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
