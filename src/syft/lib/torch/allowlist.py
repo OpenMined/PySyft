@@ -1697,36 +1697,8 @@ allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
-allowlist[
-    "torch.utils.data.DataLoader.__iter__"
-] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.Iterator"
 allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
-] = "syft.lib.python.Int"
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
-] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
-
-# working for part
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
-] = "torch.Tensor"
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
-] = "torch.Tensor"
-
-# we are returning syft.lib.python.List so that we can __getitem__ on the return of
-# enumerate(train_loader)
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__next__"
-] = "syft.lib.python.List"
-allowlist[
-    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.next"
-] = "syft.lib.python.List"
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
