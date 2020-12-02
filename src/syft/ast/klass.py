@@ -137,7 +137,7 @@ class Class(Callable):
 
             if attr_name == "__len__":
 
-                def wrap(len_func: CallableT) -> CallableT:
+                def wrap_len(len_func: CallableT) -> CallableT:
                     def __len__(self: Any) -> int:
                         data_len_ptr = len_func(self)
                         try:
@@ -155,15 +155,18 @@ class Class(Callable):
 
                     return __len__
 
-                if not callable(attrs[attr_name]):
+                len_target = attrs[attr_name]
+                if not callable(len_target):
                     raise AttributeError("Can't wrap a non callable __len__ attribute")
+                else:
+                    len_func: CallableT = len_target
 
-                attrs["len"] = attrs[attr_name]
-                attrs[attr_name] = wrap(attrs[attr_name])
+                attrs["len"] = len_func
+                attrs[attr_name] = wrap_len(len_func)
 
             if getattr(attr, "return_type_name", "") == "syft.lib.python.Iterator":
 
-                def wrap(iter_func: CallableT) -> CallableT:
+                def wrap_iter(iter_func: CallableT) -> CallableT:
                     def __iter__(self: Any) -> Iterable:
                         # syft absolute
                         from syft.lib.python.iterator import Iterator
@@ -184,9 +187,12 @@ class Class(Callable):
 
                     return __iter__
 
-                if not callable(attrs[attr_name]):
+                iter_target = attrs[attr_name]
+                if not callable(iter_target):
                     raise AttributeError("Can't wrap a non callable iter attribute")
-                attrs[attr_name] = wrap(attrs[attr_name])
+                else:
+                    iter_func: CallableT = iter_target
+                attrs[attr_name] = wrap_iter(iter_func)
 
         # here we can ensure that the fully qualified name of the Pointer klass is
         # consistent between versions of python and matches our other klasses in
