@@ -12,7 +12,7 @@ PyGrid platform is composed by three different components.
 
 - **Network** - A Flask-based application used to manage, monitor, control, and route instructions to various PyGrid Nodes.
 - **Node** - A Flask-based application used to store private data and models for federated learning, as well as to issue instructions to various PyGrid Workers.
-- **Worker** - An emphemeral instance, managed by a PyGrid Node, that is used to compute data.
+- **Worker** - An ephemeral instance, managed by a PyGrid Node, that is used to compute data.
 
 ## Use Cases
 
