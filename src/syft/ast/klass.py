@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -31,6 +32,7 @@ class Class(Callable):
         return_type_name: Optional[str],
     ):
         super().__init__(name, path_and_name, ref, return_type_name=return_type_name)
+
         if self.path_and_name is not None:
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
@@ -42,6 +44,21 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
+        def getattribute(__self: Any, name: str) -> Any:
+            # we need to override the __getattribute__ of our Pointer class
+            # so that if you ever access a property on a Pointer it will not just
+            # get the wrapped run_class_method but also execute it immediately
+            # object.__getattribute__ is the way we prevent infinite recursion
+            attr = object.__getattribute__(__self, name)
+            props = object.__getattribute__(__self, "_props")
+
+            # if the attr key name is in the _props list from above then we know
+            # we should execute it immediately and return the result
+            if name in props:
+                return attr()
+
+            return attr
+
         def get_run_class_method(attr_path_and_name: str) -> CallableT:
             """It might seem hugely un-necessary to have these methods nested in this way.
             However, it has to do with ensuring that the scope of attr_path_and_name is local
@@ -104,7 +121,6 @@ class Class(Callable):
         _props: List[str] = []
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
-
             # if the Method.is_property == True
             # we need to add this attribute name into the _props list
             is_property = getattr(attr, "is_property", False)
@@ -120,10 +136,6 @@ class Class(Callable):
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
             if attr_name == "__len__":
-                target_function = attrs[attr_name]
-
-                if not callable(target_function):
-                    return
 
                 def wrap(len_func: CallableT) -> CallableT:
                     def __len__(self: Any) -> int:
@@ -137,27 +149,44 @@ class Class(Callable):
                             )
                             return data_len
                         except Exception:
-                            return data_len_ptr
+                            raise ValueError(
+                                "Request to access data length not granted."
+                            )
 
                     return __len__
 
-                attrs[attr_name] = wrap(target_function)
-                attrs["len"] = target_function
+                if not callable(attrs[attr_name]):
+                    raise AttributeError("Can't wrap a non callable __len__ attribute")
 
-        def getattribute(__self: Any, name: str) -> Any:
-            # we need to override the __getattribute__ of our Pointer class
-            # so that if you ever access a property on a Pointer it will not just
-            # get the wrapped run_class_method but also execute it immediately
-            # object.__getattribute__ is the way we prevent infinite recursion
-            attr = object.__getattribute__(__self, name)
-            props = object.__getattribute__(__self, "_props")
+                attrs["len"] = attrs[attr_name]
+                attrs[attr_name] = wrap(attrs[attr_name])
 
-            # if the attr key name is in the _props list from above then we know
-            # we should execute it immediately and return the result
-            if name in props:
-                return attr()
+            if getattr(attr, "return_type_name", "") == "syft.lib.python.Iterator":
 
-            return attr
+                def wrap(iter_func: CallableT) -> CallableT:
+                    def __iter__(self: Any) -> Iterable:
+                        # syft absolute
+                        from syft.lib.python.iterator import Iterator
+
+                        if not hasattr(self, "__len__"):
+                            raise ValueError(
+                                "Can't build a remote iterator on an object with no __len__."
+                            )
+
+                        try:
+                            data_len = len(self)
+                        except Exception:
+                            raise ValueError(
+                                "Request to access data length not granted."
+                            )
+
+                        return Iterator(_ref=iter_func(self), max_len=data_len)
+
+                    return __iter__
+
+                if not callable(attrs[attr_name]):
+                    raise AttributeError("Can't wrap a non callable iter attribute")
+                attrs[attr_name] = wrap(attrs[attr_name])
 
         # here we can ensure that the fully qualified name of the Pointer klass is
         # consistent between versions of python and matches our other klasses in

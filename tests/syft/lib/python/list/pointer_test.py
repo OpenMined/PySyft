@@ -79,6 +79,10 @@ def test_pointer_objectives(test_objects, func):
 
     py_method = getattr(py_obj, func)
     sy_method = getattr(sy_obj, func)
+
+    if func == "__len__":
+        func = "len"
+
     remote_sy_method = getattr(remote_sy_obj, func)
 
     possible_inputs = inputs[func]
