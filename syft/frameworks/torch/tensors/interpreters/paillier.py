@@ -50,7 +50,7 @@ class PaillierTensor(AbstractTensor):
             *public_key a public key created using
                 syft.frameworks.torch.he.paillier.keygen()
         """
-        if self.child.device == torch.device('cuda'):
+        if self.child.device == th.device('cuda'):
             logging.warning("CUDA tensors were automatically shifted to CPU before encryption.")
             # implicit shifting to CPU happens in the next line through '.tolist()'
 
