@@ -25,10 +25,10 @@ def type_hints(
     decorated: typing.Callable, prohibit_args: bool = True
 ) -> typing.Callable:
     """
-    Decorator to enforce typechecking using the type hints of a function.
+    Decorator to enforce type checking using the type hints of a function.
 
     If you use this decorator you have to:
-    1. type your arguments and return type using explicit typing.
+    1. type your arguments and return the type using explicit typing.
     2. address those arguments by their keys.
 
     Example:

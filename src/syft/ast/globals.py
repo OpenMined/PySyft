@@ -13,7 +13,7 @@ from .util import unsplit
 class Globals(Module):
 
     _copy: Optional["copyType"]
-    """The collection of frameworks held in a global namespace"""
+    """The collection of frameworks held in the global namespace"""
 
     def __init__(self) -> None:
         super().__init__("globals")
@@ -56,8 +56,8 @@ class Globals(Module):
                 )
             else:
                 raise Exception(
-                    "You must pass in a framework object the first time you add method "
-                    "within a framework."
+                    "You must pass in a framework object, the first time you add method \
+                    within the framework."
                 )
 
         attr = self.attrs[framework_name]
