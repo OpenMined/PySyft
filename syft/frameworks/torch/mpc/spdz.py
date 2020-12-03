@@ -5,6 +5,7 @@ import torch as th
 
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
@@ -161,7 +162,7 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     op = cmd
     locations = x.locations
     # Experimental results don't show real improvements with asynchronous = True
-    asynchronous = False  # isinstance(locations[0], WebsocketClientWorker)
+    asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
     try:
         shares_delta, shares_epsilon = [], []
@@ -218,6 +219,9 @@ def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
                             epsilon,
                             kwargs_,
                             op,
+                            dtype,
+                            torch_dtype,
+                            field,
                         ),
                         {},
                     )
