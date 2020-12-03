@@ -23,3 +23,5 @@ tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
 notebook==5.7.8
+torch==1.4
+torchvision==0.5

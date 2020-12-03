@@ -571,7 +571,12 @@ def _pool2d(
         else:
             res = im_reshaped.max(dim=-1)
     elif mode == "avg":
-        res = im_reshaped.mean(dim=-1)
+        if isinstance(input_fp.child, FrameworkTensor):
+            sum_value = im_reshaped.sum(dim=-1)
+            m = im_reshaped.numel() // sum_value.numel()
+            res = sum_value // m
+        else:
+            res = im_reshaped.mean(dim=-1)
     else:
         raise ValueError(f"In pool2d, mode should be avg or max, not {mode}.")
 

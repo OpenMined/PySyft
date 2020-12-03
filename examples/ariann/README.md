@@ -40,7 +40,7 @@ You need to install 2 datasets in your `HOME`:
 The working directory is: `cd examples/ariann`
     
     
-### Troubleshooting
+### Troubleshooting with websockets
 
 If the workers launched automatically complain about syft compression codes,
 delete the syft library from the poetry virtual env, active it and install syft 
@@ -50,6 +50,10 @@ Example of activating the poetry virtual env:
 ```
 source /home/ubuntu/.cache/pypoetry/virtualenvs/openmined.gridnode-L_C_JhA9-py3.6/bin/activate
 ```
+
+When you first launch the workers, you might have a SQL error. That's not important, just re-run the experiment and it will be gone.
+
+Also, we recommend always testing an experiment locally before using websockets, to make sure everything runs fine.
 
 # Usage
 
