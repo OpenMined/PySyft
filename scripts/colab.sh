@@ -36,8 +36,8 @@ pip install -e .  > /dev/null 2>&1
 pip install -r requirements.txt > /dev/null 2>&1
 
 # step 4 patch linux python 3.6.9 on Google Colab
-# without this fix the code doesnt work in some places, weirdly this code is not broken
-# on my MacOS Python 3.6.9
+# Without this fix the code doesn’t work in some places, weirdly this code is not broken
+# on my macOS Python 3.6.9
 
 # first we show the line with the missing getattr(obj, attr, None)
 # cat /usr/local/lib/python3.6/dist-packages/typeguard/__init__.py | grep "'__origin__')"

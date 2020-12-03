@@ -48,7 +48,7 @@ class AbstractNode(Address):
 
     store: ObjectStore
     requests: List
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     """"""
 
     @property
@@ -93,7 +93,7 @@ class AbstractNode(Address):
 
 
 class AbstractNodeClient(Address):
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     """"""

@@ -26,7 +26,7 @@ class UnionGenerator(type, metaclass=IndexableTrait):
     to the type itself until the AST is finished to be generated. If new types of
     unions have to be generated afterwards:
         1. you might be using the ast in a wrong way.
-        2. if you know what you are doing, you have to regenarate the ast.
+        2. if you know what you are doing, you have to regenerate the ast.
     """
 
     SUFFIX_UNION = "Union"
