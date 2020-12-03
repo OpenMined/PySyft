@@ -1,6 +1,7 @@
 import math
 import torch
 import warnings
+import logging
 
 import syft as sy
 from syft.frameworks.torch.mpc import crypto_protocol
@@ -344,6 +345,10 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
         if not isinstance(secret, random_type):
+            if secret.device == torch.device("cuda"):
+                logging.warning("CUDA tensors were automatically shifted to CPU before encryption.")
+                # implicit shifting to CPU happens in the next line - explicit change of type
+
             secret = secret.type(random_type)
 
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
