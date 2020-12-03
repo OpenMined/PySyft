@@ -48,6 +48,7 @@ def service_auth(
                     verify_key not in node.admin_verify_key_registry
                     and verify_key != node.root_verify_key
                 ):
+                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "User lacks Administrator credentials."
                     )
@@ -57,12 +58,14 @@ def service_auth(
                     verify_key not in node.cpl_ofcr_verify_key_registry
                     and verify_key != node.root_verify_key
                 ):
+                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "User lacks Compliance Officer credentials."
                     )
 
             elif existing_users_only:
                 if verify_key not in node.guest_verify_key_registry:
+                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException("User not known.")
 
             elif guests_welcome:
