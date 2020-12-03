@@ -31,6 +31,12 @@ class Module(ast.attribute.Attribute):
         if attr is not None:
             self.attrs[attr_name] = attr
 
+            # if add_attr is called directly we need to cache the path as well
+            attr_ref = getattr(attr, "ref", None)
+            path = getattr(attr, "path_and_name", None)
+            if attr_ref not in self.lookup_cache and path is not None:
+                self.lookup_cache[attr_ref] = path
+
     def __call__(
         self,
         path: Union[str, List[str]] = [],

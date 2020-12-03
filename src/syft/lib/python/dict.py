@@ -1,5 +1,8 @@
 # stdlib
 from collections import UserDict
+from collections.abc import ItemsView
+from collections.abc import KeysView
+from collections.abc import ValuesView
 from typing import Any
 from typing import Iterable
 from typing import List
@@ -25,29 +28,6 @@ from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
-
-
-class KeysIterator(Iterator):
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __next__(self) -> object:
-        return next(self._obj_ref)
-
-
-class ValuesIterator(Iterator):
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __next__(self) -> object:
-        return next(self._obj_ref)
-
-
-class ItemsIterator(Iterator):
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __next__(self) -> object:
-        return next(self._obj_ref)
-
-
-class DictIterator(Iterator):
-    def __next__(self) -> object:
-        return next(self._obj_ref)
 
 
 class Dict(UserDict, PyPrimitive):
@@ -148,9 +128,8 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> SyPrimitiveRet:
-        res = DictIterator(super().__iter__())
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __iter__(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(super().__iter__(), max_len=max_len)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> SyPrimitiveRet:
@@ -196,14 +175,21 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def items(self) -> Union[SyPrimitiveRet, Any]:
-        res = list((super().items()))
-        return PrimitiveFactory.generate_primitive(value=res)
+    def items(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(ItemsView(self), max_len=max_len)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def keys(self) -> SyPrimitiveRet:
-        res = list(super().keys())
-        return PrimitiveFactory.generate_primitive(value=res)
+    def keys(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(KeysView(self), max_len=max_len)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:
+        # this is what the super type does and there is a test in dict_test.py
+        # test_values which checks for this so we could disable the test or
+        # keep this workaround
+        if len(args) > 0:
+            raise TypeError("values() takes 1 positional argument but 2 were given")
+        return Iterator(ValuesView(self), max_len=max_len)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def pop(self, key: Any, *args: Any) -> SyPrimitiveRet:
@@ -220,11 +206,6 @@ class Dict(UserDict, PyPrimitive):
         res = PrimitiveFactory.generate_primitive(value=default)
         res = super().setdefault(key, res)
         return res
-
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def values(self) -> SyPrimitiveRet:
-        res = ValuesIterator(iter(super().values()))
-        return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def clear(self) -> SyPrimitiveRet:
