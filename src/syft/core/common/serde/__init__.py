@@ -29,7 +29,7 @@ to build these things ourselves.
 
 .. note:: DO NOT attempt to create your own serialization by
     creating strings out of objects yourself. Not only will this almost
-    certainly be slower than using a technology like protobuf,
+    certainly, be slower than using technology like protobuf,
     but you will require everyone to re-implement your serialization
     techniques in every language which needs to support your object
     AND you run the risk of introducing dangerous SECURITY FLAWS.
@@ -48,7 +48,7 @@ on the object for your convenience::
 
     # ObjectWithID is the simplest object in the Syft ecosystem
     # It's the parent class of many other classes. As the name
-    # implies, it's literally just an object with an ID.
+    # implies it's literally just an object with an ID.
     # We'll use it to show serialization, but you can use the
     # same approach with any serializable object in the Syft
     # ecosystem.
@@ -78,7 +78,7 @@ on the object for your convenience::
 
 However, perhaps the best thing about protobuf is that it can easily
 be turned into a wide variety of very portable representations. We have
-convenience functions for 4 popular represenations: protobuf, json, binary,
+convenience functions for 4 popular representations: protobuf, json, binary,
 and hex. Setup::
 
     import syft as sy

@@ -5,15 +5,17 @@ It uses ReLUs and the adam optimizer, instead of sigmoids and adagrad. These cha
 
 ```bash
 pip install -r requirements.txt
-python main.py
+python main.py [--batch-size BATCH_SIZE][--epochs EPOCHS] [--no-cuda NO-CUDA]
+              [--seed SEED] [--log-interval LOG-INTERVAL]
+
 ```
 The main.py script accepts the following arguments:
 
 ```bash
 optional arguments:
-  --batch-size		input batch size for training (default: 128)
-  --epochs		number of epochs to train (default: 10)
-  --no-cuda		enables CUDA training
-  --seed		random seed (default: 1)
-  --log-interval	how many batches to wait before logging training status
+  --batch-size       input batch size for training (default: 128)
+  --epochs           number of epochs to train (default: 10)
+  --no-cuda          enables CUDA training (default: False)
+  --seed             random seed (default: 1)
+  --log-interval     how many batches to wait before logging training status (default: 10)
 ```

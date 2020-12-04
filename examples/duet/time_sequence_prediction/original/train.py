@@ -46,23 +46,33 @@ class Sequence(nn.Module):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--steps", type=int, default=15, help="steps to run")
+    parser.add_argument(
+        "--steps",
+        type=int,
+        default=15,
+        help="steps to run; default:15"
+    )
     opt = parser.parse_args()
+
     # set random seed to 0
     np.random.seed(0)
     torch.manual_seed(0)
+
     # load data and make training set
     data = torch.load("traindata.pt")
     input = torch.from_numpy(data[3:, :-1])
     target = torch.from_numpy(data[3:, 1:])
     test_input = torch.from_numpy(data[:3, :-1])
     test_target = torch.from_numpy(data[:3, 1:])
+
     # build the model
     seq = Sequence()
     seq.double()
     criterion = nn.MSELoss()
+
     # use LBFGS as optimizer since we can load the whole data to train
     optimizer = optim.LBFGS(seq.parameters(), lr=0.8)
+
     # begin to train
     for i in range(opt.steps):
         print("STEP: ", i)
@@ -76,6 +86,7 @@ if __name__ == "__main__":
             return loss
 
         optimizer.step(closure)
+
         # begin to predict, no need to track gradient here
         with torch.no_grad():
             future = 1000
@@ -83,6 +94,7 @@ if __name__ == "__main__":
             loss = criterion(pred[:, :-future], test_target)
             print("test loss:", loss.item())
             y = pred.detach().numpy()
+
         # draw the result
         plt.figure(figsize=(30, 10))
         plt.title(
