@@ -1158,16 +1158,12 @@ class TorchTensor(AbstractTensor):
             private_key = kwargs.get("private_key")
 
             x_encrypted = BFVTensor().on(self)
-            if private_key is not None:
-                # Homomorphic Encryption using private key; if private key available prefer it.
-                x_encrypted.child.encrypt(private_key, context)
-            elif public_key is not None:
-                x_encrypted.child.encrypt(
-                    public_key, context
-                )  # Homomorphic Encryption using public key
-            else:
-                raise RuntimeError("Secret key or Public key should be provided for encryption")
-            return x_encrypted
+            key = public_key if private_key is None else private_key
+
+            if key is None:
+                raise RuntimeError("Require either secret key or public key for encryption")
+
+            return x_encrypted.child.encrypt(key, context)
 
         else:
             raise NotImplementedError(
@@ -1217,11 +1213,14 @@ class TorchTensor(AbstractTensor):
 
         elif isinstance(self.child, BFVTensor):
             private_key = kwargs.get("private_key")
-            return self.child.decrypt(private_key)
+            if not inplace:
+                return self.child.decrypt(private_key)
+            else:
+                self.child.decrypt_(private_key)
 
         else:
             raise NotImplementedError(
-                "Currently the .decrypt() method only supports Paillier Homomorphic "
+                "Currently the .decrypt() method only supports (Paillier or BFV) Homomorphic "
                 "Encryption and Secure Multi-Party Computation"
             )
 

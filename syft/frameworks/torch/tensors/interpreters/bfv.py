@@ -1,4 +1,4 @@
-import syft as sy
+import syft
 import numpy as np
 import torch as th
 
@@ -20,7 +20,7 @@ from syft.frameworks.torch.he.fv.evaluator import Evaluator
 
 
 class BFVTensor(AbstractTensor):
-    def __init__(self, **kwargs):
+    def __init__(self, data=None, **kwargs):
         """Initializes a BFVTensor.
 
         Args:
@@ -29,6 +29,7 @@ class BFVTensor(AbstractTensor):
             id: An optional string or integer id of the BFVTensor.
         """
         super().__init__(**kwargs)
+        self.data = data
         self.context = None
         self.encryptor = None
         self.decryptor = None
@@ -39,14 +40,20 @@ class BFVTensor(AbstractTensor):
         self.context = context
         self.prepareEncryptor(key)
 
-        output = BFVTensor()
-        output.child = self.child
         inputs = self.child.flatten().tolist()
         new_child = [self.encryptor.encrypt(self.encoder.encode(x)) for x in inputs]
+        obj = BFVTensor()
+        obj.context = context
+        obj.child = np.array(new_child).reshape(self.child.shape)
+        return obj
 
-        data = np.array(new_child).reshape(self.child.shape)
-        self.child = data
-        return output
+    def encrypt_(self, key, context):
+        self.context = context
+        self.prepareEncryptor(key)
+
+        inputs = self.child.flatten().tolist()
+        new_child = [self.encryptor.encrypt(self.encoder.encode(x)) for x in inputs]
+        return np.array(new_child).reshape(self.child.shape)
 
     def decrypt(self, private_key):
         self.prepareDecryptor(private_key)
@@ -55,7 +62,82 @@ class BFVTensor(AbstractTensor):
         new_child = [self.encoder.decode(self.decryptor.decrypt(x)) for x in inputs]
         return th.tensor(new_child).view(*self.child.shape)
 
+    def decrypt_(self, private_key):
+        self.prepareDecryptor(private_key)
+
+        inputs = self.child.flatten().tolist()
+        new_child = [self.encoder.decode(self.decryptor.decrypt(x)) for x in inputs]
+        self = th.tensor(new_child).view(*self.child.shape)
+
     def __add__(self, *args, **kwargs):
+        return self.add(args[0])
+
+    def __sub__(self, *args, **kwargs):
+        return self.sub(args[0])
+
+    def __mul__(self, *args, **kwargs):
+        return self.mul(args[0])
+
+    # Method overloading
+    @overloaded.method
+    def add(self, _self, *args, **kwargs):
+        return _self.add(args[0])
+
+    # Method overloading
+    @overloaded.method
+    def sub(self, _self, *args, **kwargs):
+        return _self.sub(args[0])
+
+    # Method overloading
+    @overloaded.method
+    def mul(self, _self, *args, **kwargs):
+        return _self.mul(args[0])
+
+    # Module & Function overloading
+
+    # We overload two torch functions:
+    # - torch.add
+    # - torch.nn.functional.relu
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        """
+        We use the @overloaded.module to specify we're writing here
+        a function which should overload the function with the same
+        name in the <torch> module
+        :param module: object which stores the overloading functions
+
+        Note that we used the @staticmethod decorator as we're in a
+        class
+        """
+
+        def add(self, other):
+            return self.add(other)
+
+        module.add = add
+
+        def sub(self, other):
+            return self.sub(other)
+
+        module.sub = sub
+
+        def mul(self, other):
+            return self.mul(other)
+
+        module.mul = mul
+
+        def mm(self, other):
+            return self.mm(other)
+
+        module.mm = mm
+
+        def matmul(self, other):
+            return self.mm(other)
+
+        module.matmul = matmul
+
+    def add(self, *args, **kwargs):
         self.prepareEvaluator()
 
         if not args[0].shape == self.child.shape:
@@ -78,7 +160,7 @@ class BFVTensor(AbstractTensor):
         obj.child = data
         return obj
 
-    def __sub__(self, *args, **kwargs):
+    def sub(self, *args, **kwargs):
         self.prepareEvaluator()
 
         if not args[0].shape == self.child.shape:
@@ -101,7 +183,7 @@ class BFVTensor(AbstractTensor):
         obj.child = data
         return obj
 
-    def __mul__(self, *args, **kwargs):
+    def mul(self, *args, **kwargs):
         self.prepareEvaluator()
 
         if not args[0].shape == self.child.shape:
@@ -155,90 +237,6 @@ class BFVTensor(AbstractTensor):
         obj.child = np.asarray(output)
         return obj
 
-    # Method overloading
-    @overloaded.method
-    def add(self, _self, *args, **kwargs):
-        """
-        Here is an example of how to use the @overloaded.method decorator. To see
-        what this decorator do, just look at the next method manual_add: it does
-        exactly the same but without the decorator.
-
-        Note the subtlety between self and _self: you should use _self and NOT self.
-        """
-
-        return _self + args[0]
-
-    # Method overloading
-    @overloaded.method
-    def sub(self, _self, *args, **kwargs):
-        """
-        Here is an example of how to use the @overloaded.method decorator. To see
-        what this decorator do, just look at the next method manual_add: it does
-        exactly the same but without the decorator.
-
-        Note the subtlety between self and _self: you should use _self and NOT self.
-        """
-
-        return _self - args[0]
-
-    # Method overloading
-    @overloaded.method
-    def mul(self, _self, *args, **kwargs):
-        """
-        Here is an example of how to use the @overloaded.method decorator. To see
-        what this decorator do, just look at the next method manual_add: it does
-        exactly the same but without the decorator.
-
-        Note the subtlety between self and _self: you should use _self and NOT self.
-        """
-
-        return _self * args[0]
-
-    # Module & Function overloading
-
-    # We overload two torch functions:
-    # - torch.add
-    # - torch.nn.functional.relu
-
-    @staticmethod
-    @overloaded.module
-    def torch(module):
-        """
-        We use the @overloaded.module to specify we're writing here
-        a function which should overload the function with the same
-        name in the <torch> module
-        :param module: object which stores the overloading functions
-
-        Note that we used the @staticmethod decorator as we're in a
-        class
-        """
-
-        def add(self, other):
-            """
-            You can write the function to overload in the most natural
-            way, so this will be called whenever you call torch.add on
-            Logging Tensors, and the x and y you get are also Logging
-            Tensors, so compared to the @overloaded.method, you see
-            that the @overloaded.module does not hook the arguments.
-            """
-            pass
-
-        # Just register it using the module variable
-        module.add = add
-
-        def mul(self, other):
-            """
-            You can write the function to overload in the most natural
-            way, so this will be called whenever you call torch.add on
-            Logging Tensors, and the x and y you get are also Logging
-            Tensors, so compared to the @overloaded.method, you see
-            that the @overloaded.module does not hook the arguments.
-            """
-            pass
-
-        # Just register it using the module variable
-        module.mul = mul
-
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "BFVTensor") -> tuple:
         """
@@ -253,7 +251,7 @@ class BFVTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
         return tensor.id, chain
 
     @staticmethod
@@ -271,7 +269,7 @@ class BFVTensor(AbstractTensor):
         tensor = BFVTensor(owner=worker, id=obj_id)
 
         if chain is not None:
-            chain = sy.serde.msgpack.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

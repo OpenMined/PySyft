@@ -736,11 +736,10 @@ def test_bfv_tensor_add(val1, val2):
     ans = val1.add(val2)
 
     op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
-    assert th.all(th.eq((op1 + val2).decrypt(private_key=keys[0]), ans))
+    assert th.equal((op1 + val2).decrypt(private_key=keys[0]), ans)
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
-    # assert th.all(th.eq((val1 + op2).decrypt(private_key=keys[0]), ans))
-
-    assert th.all(th.eq((op1 + op2).decrypt(private_key=keys[0]), ans))
+    # assert th.equal((val1 + op2).decrypt(private_key=keys[0]), ans)
+    assert th.equal((op1 + op2).decrypt(private_key=keys[0]), ans)
 
 
 @pytest.mark.parametrize(
@@ -761,12 +760,11 @@ def test_bfv_tensor_mul(val1, val2):
     ans = val1.mul(val2)
 
     op1 = val1.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
-    assert th.all(th.eq((op1 * val2).decrypt(private_key=keys[0]), ans))
+    assert th.equal((op1 * val2).decrypt(private_key=keys[0]), ans)
 
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
     # assert th.all(th.eq((val1 * op2).decrypt(private_key=keys[0]), ans))
-
-    assert th.all(th.eq((op1 * op2).decrypt(private_key=keys[0]), ans))
+    assert th.equal((op1 * op2).decrypt(private_key=keys[0]), ans)
 
 
 @pytest.mark.parametrize(
@@ -774,7 +772,7 @@ def test_bfv_tensor_mul(val1, val2):
     [
         (
             th.tensor([[1, 2, 3], [4, 5, 6]]),
-            th.Tensor([[-1, -2], [-3, -4], [-5, -6]]),
+            th.tensor([[-1, -2], [-3, -4], [-5, -6]]),
         ),
     ],
 )
@@ -789,4 +787,6 @@ def test_bfv_tensor_mm(val1, val2):
     # assert th.all(th.eq(op1.mm(val2, relin_key=relin_key).decrypt(private_key=keys[0]), ans))
     op2 = val2.int().encrypt(protocol="bfv", public_key=keys[1], context=ctx)
     # assert th.all(th.eq((val1 * op2).decrypt(private_key=keys[0]), ans))
-    assert th.all(th.eq(op1.mm(op2, relin_key=relin_key).decrypt(private_key=keys[0]), ans))
+    temp = op1.mm(op2, relin_key=relin_key).decrypt(private_key=keys[0])
+    print(temp)
+    assert th.equal(temp, ans)
