@@ -127,7 +127,7 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         msg: ObjectSearchPermissionUpdateMessage,
         verify_key: VerifyKey,
     ) -> None:
-        target_verify_key = msg.target_verify_key or VerifyAll()
+        target_verify_key = msg.target_verify_key or VerifyAll
         if msg.add_instead_of_remove:
             node.store[msg.target_object_id].search_permissions[
                 target_verify_key
