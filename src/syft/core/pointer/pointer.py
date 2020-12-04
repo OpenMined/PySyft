@@ -12,28 +12,32 @@ is that all operations between pointers will return a pointer, the only way to h
 to the result is by calling .get() on the pointer.
 
 There are two proper ways of receiving a pointer on some data:
-    1. When sending that data on a remote machine the user receives a pointer.
-    2. When the user searches for the data in an object store it receives a pointer to that data,
-    if it has the correct permissions for that.
+
+1. When sending that data on a remote machine the user receives a pointer.
+2. When the user searches for the data in an object store it receives a pointer to that data, 
+   if it has the correct permissions for that.
 
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
-    1. Request access by calling .request().
-    Example:
 
-    .. code-block::
+1. Request access by calling .request().
 
-        pointer_object.request(name = "Request name", reason = "Request reason")
+Example:
 
-    2.1 - The data owner has to approve the request (check the domain node docs).
-    2.2 - The data user checks if the request has been approved (check the domain node docs).
-    3. After the request has been approved, the data user can call .get() on the pointer to get the
-    data locally.
-    Example:
+.. code-block::
 
-    .. code-block::
+    pointer_object.request(name = "Request name", reason = "Request reason")
 
-        pointer_object.get()
+2. The data owner has to approve the request (check the domain node docs).
+3. The data user checks if the request has been approved (check the domain node docs).
+4. After the request has been approved, the data user can call .get() on the pointer to get the
+   data locally.
+
+Example:
+
+.. code-block::
+
+    pointer_object.get()
 
 Pointers are being generated for most types of objects in the data science scene, but what you can
 do on them is not the pointers job, see the lib module for more details. One can see the pointer
@@ -340,7 +344,7 @@ class Pointer(AbstractPointer):
         :param name: The title of the request that the data owner is going to see.
         :type name: str
         :param reason: The description of the request. This is the reason why you want to have
-        access to the data.
+            access to the data.
         :type reason: str
 
         .. note::
@@ -479,10 +483,10 @@ class Pointer(AbstractPointer):
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three
         possible outcomes when requesting access:
-            1. RequestStatus.Accepted - your request has been approved, you can not
-                                        .get() your data.
-            2. RequestStatus.Pending - your request has not been reviewed yet.
-            3. RequestStatus.Rejected - your request has been rejected.
+        
+        1. RequestStatus.Accepted - your request has been approved, you can not .get() your data.
+        2. RequestStatus.Pending - your request has not been reviewed yet.
+        3. RequestStatus.Rejected - your request has been rejected.
 
         :param node: The node that queries the request status.
         :type node: AbstractNode
