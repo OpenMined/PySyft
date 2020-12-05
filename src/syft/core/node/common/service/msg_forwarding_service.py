@@ -34,7 +34,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
                 except Exception as e:
                     # TODO: Need to not catch blanket exceptions
                     print(
-                        f"{addr} in store doesnt have method send_immediate_msg_without_reply"
+                        f"{addr} in store does not have method send_immediate_msg_without_reply"
                     )
                     print(e)
                     pass
@@ -88,7 +88,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                 except Exception as e:
                     # TODO: Need to not catch blanket exceptions
                     print(
-                        f"{addr} in store doesnt have method send_immediate_msg_with_reply"
+                        f"{addr} in store does not have method send_immediate_msg_with_reply"
                     )
                     print(e)
                     pass
