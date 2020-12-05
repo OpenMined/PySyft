@@ -348,3 +348,26 @@ class Domain(Node):
             except Exception as excp2:
                 # logger.critical(f"HANDLER loop exception. {lol}")
                 print("HANDLER Exception in the while loop!!", excp2)
+
+    @syft_decorator(typechecking=True)
+    def run_handlers_thread(self) -> None:
+        while True:
+            time.sleep(0.01)
+            try:
+                # logger.debug("running HANDLER")
+                self.clean_up_handlers()
+                self.clean_up_requests()
+                if len(self.request_handlers) > 0:
+                    for request in self.requests:
+                        # check if we have previously already handled this in an earlier iter
+                        if request.id not in self.handled_requests:
+                            for handler in self.request_handlers:
+                                handled = self.check_handler(
+                                    handler=handler, request=request
+                                )
+                                if handled:
+                                    # we handled the request so we can exit the loop
+                                    break
+            except Exception as excp2:
+                # logger.critical(f"HANDLER loop exception. {lol}")
+                print("HANDLER Exception in the while loop!!", excp2)
