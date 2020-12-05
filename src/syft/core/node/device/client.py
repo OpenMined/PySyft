@@ -15,6 +15,7 @@ from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
 from .service import CreateVMMessage
+from .service import VMCreatedMessage
 
 
 @final
@@ -47,7 +48,7 @@ class DeviceClient(Client):
 
         self.post_init()
 
-    def create_vm(self, settings: dict):
+    def create_vm(self, settings: dict) -> VMCreatedMessage:
         # Step 1: create a message which will request for a VM to be created.
         # we can set route=None because we know the message is just going directly
         # to the device.

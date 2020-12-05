@@ -45,10 +45,10 @@ def connect(
             # to build client route
             conn = conn_type(url=url)  # type: ignore
 
-            perform_login = issubclass(client_type, DomainClient) or issubclass(
-                client_type, NetworkClient
+            perform_login = issubclass(client_type, DomainClient) or issubclass(  # type: ignore
+                client_type, NetworkClient  # type: ignore
             )
-            if perform_login:  # type: ignore
+            if perform_login:
                 metadata, user_key = conn.login(credentials=credentials)
             else:
                 metadata, user_key = conn._get_metadata()
