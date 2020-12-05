@@ -19,7 +19,7 @@ from .....proto.core.node.common.service.repr_service_pb2 import (
     CreateWorkerMessage as CreateWorkerMessage_PB,
 )
 from .....proto.core.node.common.service.repr_service_pb2 import (
-    WorkerCreatedMessage as WorkerCreatedMessage_PB,
+    CreateWorkerResponseMessage as CreateWorkerResponseMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
@@ -108,15 +108,22 @@ class CreateWorkerMessage(ImmediateSyftMessageWithReply):
 
 
 @final
-class WorkerCreatedMessage(ImmediateSyftMessageWithoutReply):
+class CreateWorkerResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self, address: Address, vm_address: Address, msg_id: Optional[UID] = None
+        self,
+        address: Address,
+        vm_address: Address,
+        success: bool,
+        msg: Optional[str] = "",
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.vm_address = vm_address
+        self.success = success
+        self.msg = msg
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> WorkerCreatedMessage_PB:
+    def _object2proto(self) -> CreateWorkerResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -124,7 +131,7 @@ class WorkerCreatedMessage(ImmediateSyftMessageWithoutReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: WorkerCreatedMessage_PB
+        :rtype: CreateWorkerResponseMessage_PB
 
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
@@ -132,31 +139,37 @@ class WorkerCreatedMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
 
-        return WorkerCreatedMessage_PB(
+        return CreateWorkerResponseMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             vm_address=self.vm_address.serialize(),
+            success=self.success,
+            msg=self.msg,
         )
 
     @staticmethod
-    def _proto2object(proto: WorkerCreatedMessage_PB) -> "WorkerCreatedMessage":
-        """Creates a WorkerCreatedMessage from a protobuf
+    def _proto2object(
+        proto: CreateWorkerResponseMessage_PB,
+    ) -> "CreateWorkerResponseMessage":
+        """Creates a CreateWorkerResponseMessage from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of WorkerCreatedMessage
-        :rtype: WorkerCreatedMessage
+        :return: returns an instance of CreateWorkerResponseMessage
+        :rtype: CreateWorkerResponseMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return WorkerCreatedMessage(
+        return CreateWorkerResponseMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             vm_address=_deserialize(blob=proto.vm_address),
+            success=_deserialize(blob=proto.success),
+            msg=_deserialize(blob=proto.msg),
         )
 
     @staticmethod
@@ -177,4 +190,4 @@ class WorkerCreatedMessage(ImmediateSyftMessageWithoutReply):
 
         """
 
-        return WorkerCreatedMessage_PB
+        return CreateWorkerResponseMessage_PB

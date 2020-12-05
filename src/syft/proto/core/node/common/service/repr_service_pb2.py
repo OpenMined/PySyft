@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n1proto/core/node/common/service/repr_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\\\n\x0bReprMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x0f\x43reateVMMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08settings\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x10VMCreatedMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12)\n\nvm_address\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08settings\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x90\x01\n\x14WorkerCreatedMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12)\n\nvm_address\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n1proto/core/node/common/service/repr_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\\\n\x0bReprMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x0f\x43reateVMMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08settings\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb1\x01\n\x17\x43reateVMResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12)\n\nvm_address\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x04 \x01(\x08\x12\x0b\n\x03msg\x18\x05 \x01(\t"\x9f\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08settings\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb5\x01\n\x1b\x43reateWorkerResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12)\n\nvm_address\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x04 \x01(\x08\x12\x0b\n\x03msg\x18\x05 \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -191,9 +191,9 @@ _CREATEVMMESSAGE = _descriptor.Descriptor(
 )
 
 
-_VMCREATEDMESSAGE = _descriptor.Descriptor(
-    name="VMCreatedMessage",
-    full_name="syft.core.node.common.service.VMCreatedMessage",
+_CREATEVMRESPONSEMESSAGE = _descriptor.Descriptor(
+    name="CreateVMResponseMessage",
+    full_name="syft.core.node.common.service.CreateVMResponseMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -201,7 +201,7 @@ _VMCREATEDMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.core.node.common.service.VMCreatedMessage.msg_id",
+            full_name="syft.core.node.common.service.CreateVMResponseMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -220,7 +220,7 @@ _VMCREATEDMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.core.node.common.service.VMCreatedMessage.address",
+            full_name="syft.core.node.common.service.CreateVMResponseMessage.address",
             index=1,
             number=2,
             type=11,
@@ -239,14 +239,52 @@ _VMCREATEDMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="vm_address",
-            full_name="syft.core.node.common.service.VMCreatedMessage.vm_address",
+            full_name="syft.core.node.common.service.CreateVMResponseMessage.vm_address",
             index=2,
-            number=4,
+            number=3,
             type=11,
             cpp_type=10,
             label=1,
             has_default_value=False,
             default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.core.node.common.service.CreateVMResponseMessage.success",
+            index=3,
+            number=4,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="msg",
+            full_name="syft.core.node.common.service.CreateVMResponseMessage.msg",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -266,7 +304,7 @@ _VMCREATEDMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=405,
-    serialized_end=545,
+    serialized_end=582,
 )
 
 
@@ -363,14 +401,14 @@ _CREATEWORKERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=548,
-    serialized_end=707,
+    serialized_start=585,
+    serialized_end=744,
 )
 
 
-_WORKERCREATEDMESSAGE = _descriptor.Descriptor(
-    name="WorkerCreatedMessage",
-    full_name="syft.core.node.common.service.WorkerCreatedMessage",
+_CREATEWORKERRESPONSEMESSAGE = _descriptor.Descriptor(
+    name="CreateWorkerResponseMessage",
+    full_name="syft.core.node.common.service.CreateWorkerResponseMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -378,7 +416,7 @@ _WORKERCREATEDMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.core.node.common.service.WorkerCreatedMessage.msg_id",
+            full_name="syft.core.node.common.service.CreateWorkerResponseMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -397,7 +435,7 @@ _WORKERCREATEDMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.core.node.common.service.WorkerCreatedMessage.address",
+            full_name="syft.core.node.common.service.CreateWorkerResponseMessage.address",
             index=1,
             number=2,
             type=11,
@@ -416,14 +454,52 @@ _WORKERCREATEDMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="vm_address",
-            full_name="syft.core.node.common.service.WorkerCreatedMessage.vm_address",
+            full_name="syft.core.node.common.service.CreateWorkerResponseMessage.vm_address",
             index=2,
-            number=4,
+            number=3,
             type=11,
             cpp_type=10,
             label=1,
             has_default_value=False,
             default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.core.node.common.service.CreateWorkerResponseMessage.success",
+            index=3,
+            number=4,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="msg",
+            full_name="syft.core.node.common.service.CreateWorkerResponseMessage.msg",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -442,8 +518,8 @@ _WORKERCREATEDMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=710,
-    serialized_end=854,
+    serialized_start=747,
+    serialized_end=928,
 )
 
 _REPRMESSAGE.fields_by_name[
@@ -461,13 +537,13 @@ _CREATEVMMESSAGE.fields_by_name[
 _CREATEVMMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_VMCREATEDMESSAGE.fields_by_name[
+_CREATEVMRESPONSEMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_VMCREATEDMESSAGE.fields_by_name[
+_CREATEVMRESPONSEMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_VMCREATEDMESSAGE.fields_by_name[
+_CREATEVMRESPONSEMESSAGE.fields_by_name[
     "vm_address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _CREATEWORKERMESSAGE.fields_by_name[
@@ -479,20 +555,22 @@ _CREATEWORKERMESSAGE.fields_by_name[
 _CREATEWORKERMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_WORKERCREATEDMESSAGE.fields_by_name[
+_CREATEWORKERRESPONSEMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_WORKERCREATEDMESSAGE.fields_by_name[
+_CREATEWORKERRESPONSEMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_WORKERCREATEDMESSAGE.fields_by_name[
+_CREATEWORKERRESPONSEMESSAGE.fields_by_name[
     "vm_address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["ReprMessage"] = _REPRMESSAGE
 DESCRIPTOR.message_types_by_name["CreateVMMessage"] = _CREATEVMMESSAGE
-DESCRIPTOR.message_types_by_name["VMCreatedMessage"] = _VMCREATEDMESSAGE
+DESCRIPTOR.message_types_by_name["CreateVMResponseMessage"] = _CREATEVMRESPONSEMESSAGE
 DESCRIPTOR.message_types_by_name["CreateWorkerMessage"] = _CREATEWORKERMESSAGE
-DESCRIPTOR.message_types_by_name["WorkerCreatedMessage"] = _WORKERCREATEDMESSAGE
+DESCRIPTOR.message_types_by_name[
+    "CreateWorkerResponseMessage"
+] = _CREATEWORKERRESPONSEMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 ReprMessage = _reflection.GeneratedProtocolMessageType(
@@ -517,16 +595,16 @@ CreateVMMessage = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(CreateVMMessage)
 
-VMCreatedMessage = _reflection.GeneratedProtocolMessageType(
-    "VMCreatedMessage",
+CreateVMResponseMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateVMResponseMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _VMCREATEDMESSAGE,
+        "DESCRIPTOR": _CREATEVMRESPONSEMESSAGE,
         "__module__": "proto.core.node.common.service.repr_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.VMCreatedMessage)
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.CreateVMResponseMessage)
     },
 )
-_sym_db.RegisterMessage(VMCreatedMessage)
+_sym_db.RegisterMessage(CreateVMResponseMessage)
 
 CreateWorkerMessage = _reflection.GeneratedProtocolMessageType(
     "CreateWorkerMessage",
@@ -539,16 +617,16 @@ CreateWorkerMessage = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(CreateWorkerMessage)
 
-WorkerCreatedMessage = _reflection.GeneratedProtocolMessageType(
-    "WorkerCreatedMessage",
+CreateWorkerResponseMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerResponseMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _WORKERCREATEDMESSAGE,
+        "DESCRIPTOR": _CREATEWORKERRESPONSEMESSAGE,
         "__module__": "proto.core.node.common.service.repr_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.WorkerCreatedMessage)
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.CreateWorkerResponseMessage)
     },
 )
-_sym_db.RegisterMessage(WorkerCreatedMessage)
+_sym_db.RegisterMessage(CreateWorkerResponseMessage)
 
 
 # @@protoc_insertion_point(module_scope)

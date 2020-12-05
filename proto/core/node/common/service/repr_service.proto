@@ -18,10 +18,12 @@ message CreateVMMessage {
   syft.core.io.Address reply_to = 4;
 }
 
-message VMCreatedMessage {
+message CreateVMResponseMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  syft.core.io.Address vm_address = 4;
+  syft.core.io.Address vm_address = 3;
+  bool success = 4;
+  string msg = 5;
 }
 
 message CreateWorkerMessage {
@@ -31,8 +33,10 @@ message CreateWorkerMessage {
   syft.core.io.Address reply_to = 4;
 }
 
-message WorkerCreatedMessage {
+message CreateWorkerResponseMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  syft.core.io.Address vm_address = 4;
+  syft.core.io.Address vm_address = 3;
+  bool  success = 4;
+  string msg = 5;
 }
