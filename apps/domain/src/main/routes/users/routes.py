@@ -12,6 +12,7 @@ from flask import request
 
 from .blueprint import users_blueprint as user_route
 from ..auth import error_handler, token_required_factory
+from ...core.node import node
 from ...core.exceptions import (
     AuthorizationError,
     GroupNotFoundError,
@@ -23,7 +24,7 @@ from ...core.exceptions import (
 )
 
 from ...core.codes import RESPONSE_MSG
-from ...core.task_handler import task_handler
+from ...core.task_handler import task_handler, process_as_syft_message
 from ...core.database import db, Group, Role, User, UserGroup, expand_user_object
 from ...core.users.user_ops import (
     change_user_email,
@@ -38,6 +39,7 @@ from ...core.users.user_ops import (
     signup_user,
 )
 
+from syft.core.node.common.service.repr_service import ReprMessage
 
 def get_token(*args, **kwargs):
     token = request.headers.get("token")
@@ -258,6 +260,31 @@ def search_users_route(current_user):
         mandatory={
             "current_user": MissingRequestKeyError,
             "filters": MissingRequestKeyError,
+        },
+    )
+
+    return Response(
+        dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+@user_route.route("/test", methods=["POST"])
+def test_users_route():
+    # Get request body
+    content = loads(request.data)
+    
+    syft_message = {}
+    syft_message['message_class'] = ReprMessage
+    syft_message['message_content'] = content
+    syft_message['sign_key'] = node.signing_key
+
+    # Execute task
+    status_code, response_body = task_handler(
+        route_function=process_as_syft_message,  # REVIEW @Benardi
+        data=syft_message,
+        mandatory={
+            "message_class": MissingRequestKeyError,
+            "message_content": MissingRequestKeyError,
+            "sign_key": MissingRequestKeyError,
         },
     )
 
