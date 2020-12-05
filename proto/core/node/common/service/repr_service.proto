@@ -9,3 +9,30 @@ message ReprMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
 }
+
+
+message CreateVMMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string settings = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message VMCreatedMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address vm_address = 4;
+}
+
+message CreateWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string settings = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message WorkerCreatedMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address vm_address = 4;
+}
