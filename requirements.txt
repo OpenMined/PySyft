@@ -40,7 +40,7 @@ pytest-cov
 pytest-xdist[psutil]
 requests
 sqlitedict
-tenseal
+tenseal==0.3.0a0
 torch>=1.5
 torchvision
 typeguard
