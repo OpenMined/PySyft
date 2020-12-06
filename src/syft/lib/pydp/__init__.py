@@ -1,15 +1,17 @@
 # stdlib
 from typing import Any as TypeAny
-from typing import List as TypeList
-from typing import Tuple as TypeTuple
+from typing import Dict
+from typing import Union
 
 # third party
-from pydp.algorithms.laplacian import BoundedMean
+from packaging import version
+import pydp
 
 # syft relative
 from ...ast.globals import Globals
 from ...ast.klass import Class
 from ...ast.module import Module
+from .allowlist import allowlist
 
 
 def get_parent(path: str, root: TypeAny) -> Module:
@@ -18,80 +20,45 @@ def get_parent(path: str, root: TypeAny) -> Module:
         parent = parent.attrs[step]
     return parent
 
-
-def add_modules(ast: Globals, modules: TypeList[str]) -> None:
-    for module in modules:
-        parent = get_parent(module, ast)
-        attr_name = module.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Module(
-                attr_name,
-                module,
-                None,
-                return_type_name="",
-            ),
-        )
+PYDP_VERSION = version.parse(pydp.__version__)
 
 
-def add_classes(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-    for path, return_type, ref in paths:
-        parent = get_parent(path, ast)
-        attr_name = path.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Class(
-                attr_name,
-                path,
-                ref,
-                return_type_name=return_type,
-            ),
-        )
+def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
+    if isinstance(support_dict, str):
+        return support_dict
+    else:
+        return support_dict["return_type"]
 
 
-def add_methods(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-    for path, return_type, _ in paths:
-        parent = get_parent(path, ast)
-        path_list = path.split(".")
-        parent.add_path(
-            path=path_list, index=len(path_list) - 1, return_type_name=return_type
-        )
+def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
+    if isinstance(support_dict, str):
+        return True
+    else:
+        return PYDP_VERSION >= version.parse(support_dict["min_version"])
 
 
 def create_pydp_ast() -> Globals:
     ast = Globals()
 
-    modules = [
-        "pydp",
-        "pydp.algorithms",
-        "pydp.algorithms.laplacian",
-    ]
-    classes = [
-        (
-            "pydp.algorithms.laplacian.BoundedMean",
-            "pydp.algorithms.laplacian.BoundedMean",
-            BoundedMean,
-        ),
-    ]
-
-    methods = [
-        (
-            "pydp.algorithms.laplacian.BoundedMean.quick_result",
-            "syft.lib.python.Float",
-            BoundedMean.quick_result,
-        ),
-    ]
-
-    add_modules(ast, modules)
-    add_classes(ast, classes)
-    add_methods(ast, methods)
+    # most methods work in all versions and have a single return type
+    # for the more complicated ones we pass a dict with keys like return_type and
+    # min_version
+    for method, return_type_name_or_dict in allowlist.items():
+        if version_supported(support_dict=return_type_name_or_dict):
+            return_type = get_return_type(support_dict=return_type_name_or_dict)
+            ast.add_path(
+                path=method,
+                framework_reference=pydp,
+                return_type_name=return_type,
+            )
+        else:
+            print(
+                f"Skipping pydp.{method} not supported in {PYDP_VERSION}"
+            )
 
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
-
     return ast
