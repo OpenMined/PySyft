@@ -1,15 +1,17 @@
 # stdlib
-from typing import Dict
 from typing import Union
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
 
 # third party
 import sympc
 
 # syft relative
 from . import session  # noqa: 401
-from . import share  # noqa: 401
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
 from ...ast.globals import Globals
-from .allowlist import allowlist
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -29,10 +31,4 @@ def create_sympc_ast() -> Globals:
             path=method, framework_reference=sympc, return_type_name=return_type
         )
 
-    for klass in ast.classes:
-        klass.create_pointer_class()
-        klass.create_send_method()
-        klass.create_serialization_methods()
-        klass.create_storable_object_attr_convenience_methods()
     return ast
-

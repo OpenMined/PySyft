@@ -65,3 +65,4 @@ def test_share_cc_operation(private: bool, operation: str) -> None:
         assert torch.allclose(
             res, res_expected, rtol=1e-04
         ), f"Fail for {x_secret} and {y_secret}"
+
