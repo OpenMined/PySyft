@@ -199,7 +199,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has an All() class in it.
                 contains_all_in_permissions = any(
-                    isinstance(key, VerifyAll) for key in obj.search_permissions.keys()
+                    key is VerifyAll for key in obj.search_permissions.keys()
                 )
 
                 if (
