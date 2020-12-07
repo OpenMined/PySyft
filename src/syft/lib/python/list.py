@@ -2,7 +2,6 @@
 from collections import UserList
 from typing import Any
 from typing import Callable
-from typing import Iterable
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
@@ -28,8 +27,7 @@ from .util import downcast
 
 
 class ListIterator(Iterator):
-    def __init__(self, _ref: Iterable):
-        super().__init__(_ref=_ref)
+    pass
 
 
 class List(UserList, PyPrimitive):
@@ -145,8 +143,8 @@ class List(UserList, PyPrimitive):
         return res
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> ListIterator:
-        return ListIterator(self)
+    def __iter__(self, max_len: Optional[int] = None) -> ListIterator:
+        return ListIterator(self, max_len=max_len)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":

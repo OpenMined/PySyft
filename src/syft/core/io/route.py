@@ -84,7 +84,7 @@ node, propagating the model to all node which asked for it.
 """
 
 # stdlib
-from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -120,8 +120,10 @@ class RouteSchema(ObjectWithID):
 
 
 class Route(ObjectWithID):
-    def __init__(self, schema: RouteSchema, stops: List[Location] = list()):
+    def __init__(self, schema: RouteSchema, stops: Optional[list] = None):
         super().__init__()
+        if stops is None:
+            stops = list()
         self.schema = schema
         self.stops = stops
 

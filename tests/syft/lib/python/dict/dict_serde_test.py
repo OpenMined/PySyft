@@ -30,6 +30,18 @@ def test_dict_creation() -> None:
     assert dict1.keys() == dict2.keys()
     assert dict1.keys() == dict3.keys()
 
+    # ValuesView uses object.__eq__
+    # https://stackoverflow.com/questions/34312674/why-are-the-values-of-an-ordereddict-not-equal
+    assert dict1.values() != dict2.values()
+    assert dict1.values() != dict3.values()
+
+    assert dict1.items() == dict2.items()
+    assert dict1.items() == dict3.items()
+
+    it = list(iter(dict2.values()))
+    assert len(it) == 2
+    assert type(it) is list
+
 
 def test_dict_serde() -> None:
     t1 = th.tensor([1, 2])
