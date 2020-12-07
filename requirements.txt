@@ -40,7 +40,7 @@ pytest-cov
 pytest-xdist[psutil]
 requests
 sqlitedict
-sympc @ git+https://github.com/OpenMined/SyMPC@cfe267cdd1fba1b7b3f147b10a0a0f42bc029ce4
+sympc @ git+https://github.com/OpenMined/SyMPC@b45c202fd118bb901fbb033f2fb7d77209039e35
 torch>=1.5
 torchvision
 typeguard
