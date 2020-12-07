@@ -5,6 +5,9 @@ import json
 from syft.core.node.common.service.repr_service import ReprMessage
 from ..auth import error_handler, token_required
 
+from ...core.node import node
+
+
 @association_request_route.route("/request", methods=["POST"])
 @token_required
 def send_association_request():
@@ -13,9 +16,13 @@ def send_association_request():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Send Association Request Message
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Send Association Request Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -44,9 +51,13 @@ def recv_association_request():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Retrieve Association Request Messages
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Retrieve Association Request Messages
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -75,9 +86,13 @@ def reply_association_request():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: ReplyAssociationRequestMessage
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: ReplyAssociationRequestMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -106,9 +121,13 @@ def get_all_association_requests():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Get All Association Request Message
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Get All Association Request Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -127,6 +146,7 @@ def get_all_association_requests():
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
+
 
 @association_request_route.route("/<association_request_id>", methods=["GET"])
 @token_required
@@ -136,9 +156,13 @@ def get_specific_association_requests(association_request_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Get Specific Association Request Message
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Get Specific Association Request Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -158,6 +182,7 @@ def get_specific_association_requests(association_request_id):
         dumps(response_body), status=status_code, mimetype="application/json"
     )
 
+
 @association_request_route.route("/<association_request_id>", methods=["DELETE"])
 @token_required
 def delete_association_requests(association_request_id):
@@ -166,9 +191,13 @@ def delete_association_requests(association_request_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Delete Association Request Messages
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Delete Association Request Messages
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(

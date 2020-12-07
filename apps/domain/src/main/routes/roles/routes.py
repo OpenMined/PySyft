@@ -26,8 +26,6 @@ from ...core.roles.role_ops import (
 from ...core.database import db, Role, User, model_to_json
 
 
-
-
 @roles_route.route("", methods=["POST"])
 @token_required
 def create_role_route(current_user):

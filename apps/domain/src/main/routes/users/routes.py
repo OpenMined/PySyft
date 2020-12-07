@@ -42,7 +42,6 @@ from ...core.users.user_ops import (
 from syft.core.node.common.service.repr_service import ReprMessage
 
 
-
 @user_route.route("", methods=["POST"])
 def create_user():
     def route_logic():

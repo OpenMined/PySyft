@@ -1,6 +1,6 @@
 from functools import wraps
 from json import dumps
-from flask import Response,request
+from flask import Response, request
 from json.decoder import JSONDecodeError
 from flask import current_app as app
 import jwt

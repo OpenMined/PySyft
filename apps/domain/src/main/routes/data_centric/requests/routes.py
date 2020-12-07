@@ -4,6 +4,8 @@ import json
 
 from syft.core.node.common.service.repr_service import ReprMessage
 from ...auth import error_handler, token_required
+from ....core.node import node
+
 
 @dcfl_route.route("/requests", methods=["POST"])
 @token_required
@@ -13,9 +15,13 @@ def create_request():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Create a new data request Message
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Create a new data request Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -35,6 +41,7 @@ def create_request():
         dumps(response_body), status=status_code, mimetype="application/json"
     )
 
+
 @dcfl_route.route("/requests/<request_id>", methods=["GET"])
 @token_required
 def get_specific_request(request_id):
@@ -43,9 +50,13 @@ def get_specific_request(request_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Get Specific Request Messages
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: Get Specific Request Messages
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -74,9 +85,11 @@ def get_all_requests():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Get All Requests Message
+        syft_message["message_class"] = ReprMessage  # TODO: Get All Requests Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -105,9 +118,11 @@ def update_request(request_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Update a data request
+        syft_message["message_class"] = ReprMessage  # TODO: Update a data request
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -136,9 +151,11 @@ def delete_request(request_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Delete a Request Message
+        syft_message["message_class"] = ReprMessage  # TODO: Delete a Request Message
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(

@@ -4,6 +4,7 @@ import json
 
 from syft.core.node.common.service.repr_service import ReprMessage
 from ...auth import error_handler, token_required
+from ....core.node import node
 
 ## Nodes CRUD
 @dcfl_route.route("/nodes", methods=["POST"])
@@ -14,9 +15,11 @@ def create_node():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: CreateWorkerMessage
+        syft_message["message_class"] = ReprMessage  # TODO: CreateWorkerMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -36,6 +39,7 @@ def create_node():
         dumps(response_body), status=status_code, mimetype="application/json"
     )
 
+
 @dcfl_route.route("/nodes/<node_id>", methods=["GET"])
 @token_required
 def get_node(node_id):
@@ -44,9 +48,11 @@ def get_node(node_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] =  ReprMessage # TODO: GetWorkerMessage
+        syft_message["message_class"] = ReprMessage  # TODO: GetWorkerMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -75,9 +81,11 @@ def get_all_nodes():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: GetAllWorkersMessage
+        syft_message["message_class"] = ReprMessage  # TODO: GetAllWorkersMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -106,9 +114,11 @@ def update_node(node_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: UpdateWorkerMessage
+        syft_message["message_class"] = ReprMessage  # TODO: UpdateWorkerMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -127,7 +137,6 @@ def update_node(node_id):
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 @dcfl_route.route("/nodes/<node_id>", methods=["DELETE"])
@@ -138,9 +147,11 @@ def delete_node(node_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: DeleteWorkerMessage
+        syft_message["message_class"] = ReprMessage  # TODO: DeleteWorkerMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -159,7 +170,6 @@ def delete_node(node_id):
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 ## Auto-scaling CRUD
@@ -173,9 +183,11 @@ def create_autoscaling():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: CreateAutoScalingMessage
+        syft_message["message_class"] = ReprMessage  # TODO: CreateAutoScalingMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -194,7 +206,6 @@ def create_autoscaling():
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 @dcfl_route.route("/nodes/autoscaling", methods=["GET"])
@@ -205,9 +216,13 @@ def get_all_autoscaling_conditions():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: GetAutoScalingConditionsMessage
+        syft_message[
+            "message_class"
+        ] = ReprMessage  # TODO: GetAutoScalingConditionsMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -226,7 +241,6 @@ def get_all_autoscaling_conditions():
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["GET"])
@@ -237,9 +251,11 @@ def get_specific_autoscaling_condition(autoscaling_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: GetAutoScalingCondition
+        syft_message["message_class"] = ReprMessage  # TODO: GetAutoScalingCondition
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -258,7 +274,6 @@ def get_specific_autoscaling_condition(autoscaling_id):
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["PUT"])
@@ -269,9 +284,11 @@ def update_autoscaling_condition(autoscaling_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] =  ReprMessage # TODO: UpdateAutoScalingCondition
+        syft_message["message_class"] = ReprMessage  # TODO: UpdateAutoScalingCondition
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -290,7 +307,6 @@ def update_autoscaling_condition(autoscaling_id):
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["DELETE"])
@@ -301,9 +317,11 @@ def delete_autoscaling_condition(autoscaling_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: DeleteAutoScalingCondition
+        syft_message["message_class"] = ReprMessage  # TODO: DeleteAutoScalingCondition
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -322,7 +340,6 @@ def delete_autoscaling_condition(autoscaling_id):
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
-
 
 
 ## Workers CRUD
@@ -336,9 +353,11 @@ def create_worker():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] =  ReprMessage # TODO: CreateVirtualMachineMessage
+        syft_message["message_class"] = ReprMessage  # TODO: CreateVirtualMachineMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -367,9 +386,11 @@ def get_all_workers():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: GetVirtualMachinesMessage
+        syft_message["message_class"] = ReprMessage  # TODO: GetVirtualMachinesMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -388,6 +409,7 @@ def get_all_workers():
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
     )
+
 
 @dcfl_route.route("/workers/<worker_id>", methods=["GET"])
 @token_required
@@ -397,9 +419,11 @@ def get_specific_worker(worker_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] =  ReprMessage # TODO: GetVirtualMachineMessage
+        syft_message["message_class"] = ReprMessage  # TODO: GetVirtualMachineMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -419,6 +443,7 @@ def get_specific_worker(worker_id):
         dumps(response_body), status=status_code, mimetype="application/json"
     )
 
+
 @dcfl_route.route("/workers/<worker_id>", methods=["DELETE"])
 @token_required
 def delete_worker(worker_id):
@@ -427,9 +452,11 @@ def delete_worker(worker_id):
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: DeleteVirtualMachineMessage
+        syft_message["message_class"] = ReprMessage  # TODO: DeleteVirtualMachineMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(

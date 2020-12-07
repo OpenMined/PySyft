@@ -4,6 +4,7 @@ import json
 from syft.core.node.common.service.repr_service import ReprMessage
 
 from ..auth import error_handler, token_required
+from ...core.node import node
 
 
 @setup_route.route("/", methods=["POST"])
@@ -14,9 +15,11 @@ def initial_setup():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: InitialSetupSettingsMessage
+        syft_message["message_class"] = ReprMessage  # TODO: InitialSetupSettingsMessage
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
@@ -36,6 +39,7 @@ def initial_setup():
         dumps(response_body), status=status_code, mimetype="application/json"
     )
 
+
 @setup_route.route("/", methods=["GET"])
 @token_required
 def get_setup():
@@ -44,9 +48,11 @@ def get_setup():
         content = loads(request.data)
 
         syft_message = {}
-        syft_message["message_class"] = ReprMessage # TODO: Get Initial Setup Messages
+        syft_message["message_class"] = ReprMessage  # TODO: Get Initial Setup Messages
         syft_message["message_content"] = content
-        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+        syft_message[
+            "sign_key"
+        ] = node.signing_key  # TODO: Method to map token into sign-key
 
         # Execute task
         status_code, response_body = task_handler(
