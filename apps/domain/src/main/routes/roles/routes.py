@@ -14,6 +14,7 @@ from ...core.exceptions import (
     MissingRequestKeyError,
 )
 from .blueprint import roles_blueprint as roles_route
+from ...core.task_handler import task_handler
 from ..auth import error_handler, token_required_factory
 from ...core.roles.role_ops import (
     create_role,
@@ -23,17 +24,6 @@ from ...core.roles.role_ops import (
     delete_role,
 )
 from ...core.database import db, Role, User, model_to_json
-
-expected_fields = (
-    "name",
-    "can_triage_requests",
-    "can_edit_settings",
-    "can_create_users",
-    "can_create_groups",
-    "can_edit_roles",
-    "can_manage_infrastructure",
-    "can_upload_data",
-)
 
 
 def get_token(*args, **kwargs):
@@ -54,26 +44,22 @@ token_required = token_required_factory(get_token, format_result)
 @roles_route.route("", methods=["POST"])
 @token_required
 def create_role_route(current_user):
-    def route_logic(current_user):
-        private_key = request.headers.get("private-key")
-        data = loads(request.data)
+    def route_logic():
+        content = loads(request.data)
+        content = {"role_fields": content}
+        content["current_user"] = current_user
 
-        if private_key is None:
-            raise MissingRequestKeyError
-
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        for field in expected_fields:
-            if data.get(field) is None:
-                raise MissingRequestKeyError
-
-        new_role = create_role(current_user, private_key, data)
-        new_role = model_to_json(new_role)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "role": new_role}
+        response_body = task_handler(
+            route_function=create_role,
+            data=content,
+            mandatory={
+                "current_user": MissingRequestKeyError,
+                "role_fields": MissingRequestKeyError,
+            },
+        )
         return response_body
 
-    status_code, response_body = error_handler(route_logic, current_user)
+    status_code, response_body = error_handler(route_logic)
 
     return Response(
         dumps(response_body), status=status_code, mimetype="application/json"
@@ -84,16 +70,17 @@ def create_role_route(current_user):
 @token_required
 def get_role_route(current_user, role_id):
     def route_logic(current_user, role_id):
-        private_key = request.headers.get("private-key")
+        content = {"current_user": current_user, "role_id": role_id}
 
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
+        response_body = task_handler(
+            route_function=get_role,
+            data=content,
+            mandatory={
+                "current_user": MissingRequestKeyError,
+                "role_id": MissingRequestKeyError,
+            },
+        )
 
-        role = get_role(current_user, private_key, role_id)
-        role = model_to_json(role)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "role": role}
         return response_body
 
     role_id = int(role_id)
@@ -108,16 +95,15 @@ def get_role_route(current_user, role_id):
 @token_required
 def get_all_roles_route(current_user):
     def route_logic(current_user):
-        private_key = request.headers.get("private-key")
+        content = {"current_user": current_user}
+        response_body = task_handler(
+            route_function=get_all_roles,
+            data=content,
+            mandatory={
+                "current_user": MissingRequestKeyError,
+            },
+        )
 
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        roles = get_all_roles(current_user, private_key)
-        roles = [model_to_json(r) for r in roles]
-        response_body = {RESPONSE_MSG.SUCCESS: True, "roles": roles}
         return response_body
 
     status_code, response_body = error_handler(route_logic, current_user)
@@ -131,17 +117,22 @@ def get_all_roles_route(current_user):
 @token_required
 def put_role_route(current_user, role_id):
     def route_logic(current_user, role_id):
-        private_key = request.headers.get("private-key")
         new_fields = loads(request.data)
+        content = {
+            "current_user": current_user,
+            "role_id": role_id,
+            "new_fields": new_fields,
+        }
+        response_body = task_handler(
+            route_function=put_role,
+            data=content,
+            mandatory={
+                "current_user": MissingRequestKeyError,
+                "role_id": MissingRequestKeyError,
+                "new_fields": MissingRequestKeyError,
+            },
+        )
 
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        role = put_role(current_user, role_id, new_fields)
-        role = model_to_json(role)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "role": role}
         return response_body
 
     status_code, response_body = error_handler(route_logic, current_user, role_id)
@@ -155,16 +146,19 @@ def put_role_route(current_user, role_id):
 @token_required
 def delete_role_route(current_user, role_id):
     def route_logic(current_user, role_id):
-        private_key = request.headers.get("private-key")
+        content = {
+            "current_user": current_user,
+            "role_id": role_id,
+        }
+        response_body = task_handler(
+            route_function=delete_role,
+            data=content,
+            mandatory={
+                "current_user": MissingRequestKeyError,
+                "role_id": MissingRequestKeyError,
+            },
+        )
 
-        if private_key is None:
-            raise MissingRequestKeyError
-        if private_key != current_user.private_key:
-            raise InvalidCredentialsError
-
-        deleted_user = delete_role(current_user, role_id)
-        deleted_user = model_to_json(deleted_user)
-        response_body = {RESPONSE_MSG.SUCCESS: True, "user": deleted_user}
         return response_body
 
     status_code, response_body = error_handler(route_logic, current_user, role_id)

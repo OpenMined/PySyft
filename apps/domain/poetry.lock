@@ -91,7 +91,7 @@ cffi = ">=1.1"
 six = ">=1.4.1"
 
 [package.extras]
-tests = ["pytest (>=3.2.1,<3.3.0 || >3.3.0)"]
+tests = ["pytest (>=3.2.1,!=3.3.0)"]
 typecheck = ["mypy"]
 
 [[package]]
@@ -196,11 +196,11 @@ cffi = ">=1.8,<1.11.3 || >1.11.3"
 six = ">=1.4.1"
 
 [package.extras]
-docs = ["sphinx (>=1.6.5,<1.8.0 || >1.8.0,<3.1.0 || >3.1.0,<3.1.1 || >3.1.1)", "sphinx-rtd-theme"]
+docs = ["sphinx (>=1.6.5,!=1.8.0,!=3.1.0,!=3.1.1)", "sphinx-rtd-theme"]
 docstest = ["doc8", "pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
 pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
 ssh = ["bcrypt (>=3.1.5)"]
-test = ["pytest (>=3.6.0,<3.9.0 || >3.9.0,<3.9.1 || >3.9.1,<3.9.2 || >3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,<3.79.2 || >3.79.2)"]
+test = ["pytest (>=3.6.0,!=3.9.0,!=3.9.1,!=3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
 
 [[package]]
 name = "dataclasses"
@@ -372,7 +372,7 @@ dnspython = ["dnspython (>=1.16.0,<2.0)", "idna"]
 docs = ["repoze.sphinx.autointerface", "sphinxcontrib-programoutput"]
 monitor = ["psutil (>=5.7.0)"]
 recommended = ["dnspython (>=1.16.0,<2.0)", "idna", "cffi (>=1.12.2)", "selectors2", "backports.socketpair", "psutil (>=5.7.0)"]
-test = ["dnspython (>=1.16.0,<2.0)", "idna", "requests", "objgraph", "cffi (>=1.12.2)", "selectors2", "futures", "mock", "backports.socketpair", "contextvars (2.4)", "coverage (<5.0)", "coveralls (>=1.7.0)", "psutil (>=5.7.0)"]
+test = ["dnspython (>=1.16.0,<2.0)", "idna", "requests", "objgraph", "cffi (>=1.12.2)", "selectors2", "futures", "mock", "backports.socketpair", "contextvars (==2.4)", "coverage (<5.0)", "coveralls (>=1.7.0)", "psutil (>=5.7.0)"]
 
 [[package]]
 name = "gevent-websocket"
@@ -702,7 +702,7 @@ six = "*"
 
 [package.extras]
 docs = ["sphinx (>=1.6.5)", "sphinx-rtd-theme"]
-tests = ["pytest (>=3.2.1,<3.3.0 || >3.3.0)", "hypothesis (>=3.27.0)"]
+tests = ["pytest (>=3.2.1,!=3.3.0)", "hypothesis (>=3.27.0)"]
 
 [[package]]
 name = "pyparsing"
@@ -731,7 +731,7 @@ py = ">=1.5.0"
 wcwidth = "*"
 
 [package.extras]
-checkqa-mypy = ["mypy (v0.761)"]
+checkqa-mypy = ["mypy (==v0.761)"]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
 [[package]]
@@ -793,7 +793,7 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
+socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 
 [[package]]
 name = "six"
@@ -857,8 +857,8 @@ intervals = ["intervals (>=0.7.1)"]
 password = ["passlib (>=1.6,<2.0)"]
 pendulum = ["pendulum (>=2.0.5)"]
 phone = ["phonenumbers (>=5.9.2)"]
-test = ["pytest (>=2.7.1)", "Pygments (>=1.2)", "Jinja2 (>=2.3)", "docutils (>=0.10)", "flexmock (>=0.9.7)", "mock (2.0.0)", "psycopg2 (>=2.5.1)", "psycopg2cffi (>=2.8.1)", "pg8000 (>=1.12.4)", "pytz (>=2014.2)", "python-dateutil (>=2.6)", "pymysql", "flake8 (>=2.4.0)", "isort (>=4.2.2)", "pyodbc"]
-test_all = ["anyjson (>=0.3.3)", "arrow (>=0.3.4)", "Babel (>=1.3)", "colour (>=0.0.4)", "cryptography (>=0.6)", "intervals (>=0.7.1)", "passlib (>=1.6,<2.0)", "pendulum (>=2.0.5)", "phonenumbers (>=5.9.2)", "pytest (>=2.7.1)", "Pygments (>=1.2)", "Jinja2 (>=2.3)", "docutils (>=0.10)", "flexmock (>=0.9.7)", "mock (2.0.0)", "psycopg2 (>=2.5.1)", "psycopg2cffi (>=2.8.1)", "pg8000 (>=1.12.4)", "pytz (>=2014.2)", "python-dateutil (>=2.6)", "pymysql", "flake8 (>=2.4.0)", "isort (>=4.2.2)", "pyodbc", "python-dateutil", "furl (>=0.4.1)"]
+test = ["pytest (>=2.7.1)", "Pygments (>=1.2)", "Jinja2 (>=2.3)", "docutils (>=0.10)", "flexmock (>=0.9.7)", "mock (==2.0.0)", "psycopg2 (>=2.5.1)", "psycopg2cffi (>=2.8.1)", "pg8000 (>=1.12.4)", "pytz (>=2014.2)", "python-dateutil (>=2.6)", "pymysql", "flake8 (>=2.4.0)", "isort (>=4.2.2)", "pyodbc"]
+test_all = ["anyjson (>=0.3.3)", "arrow (>=0.3.4)", "Babel (>=1.3)", "colour (>=0.0.4)", "cryptography (>=0.6)", "intervals (>=0.7.1)", "passlib (>=1.6,<2.0)", "pendulum (>=2.0.5)", "phonenumbers (>=5.9.2)", "pytest (>=2.7.1)", "Pygments (>=1.2)", "Jinja2 (>=2.3)", "docutils (>=0.10)", "flexmock (>=0.9.7)", "mock (==2.0.0)", "psycopg2 (>=2.5.1)", "psycopg2cffi (>=2.8.1)", "pg8000 (>=1.12.4)", "pytz (>=2014.2)", "python-dateutil (>=2.6)", "pymysql", "flake8 (>=2.4.0)", "isort (>=4.2.2)", "pyodbc", "python-dateutil", "furl (>=0.4.1)"]
 timezone = ["python-dateutil"]
 url = ["furl (>=0.4.1)"]
 
@@ -872,11 +872,12 @@ python-versions = "*"
 
 [[package]]
 name = "syft"
-version = "0.3.0"
+version = "0.3.0.post0.dev39+g5a2a6f27"
 description = "Add a short description here!"
 category = "main"
 optional = false
 python-versions = ">=3.6"
+develop = false
 
 [package.dependencies]
 aiortc = "*"
@@ -900,6 +901,12 @@ websockets = "*"
 
 [package.extras]
 testing = ["dataclasses", "flask", "pandas", "protobuf", "pynacl", "pytest", "pytest-cov", "sqlitedict", "typing-extensions", "websockets"]
+
+[package.source]
+type = "git"
+url = "https://github.com/OpenMined/PySyft"
+reference = "pygrid_integration"
+resolved_reference = "5a2a6f27ad289b4f9ef3c852673fb080d8cf063e"
 
 [[package]]
 name = "toml"
@@ -986,7 +993,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
 secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "virtualenv"
@@ -1073,7 +1080,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "99083c755f923f8cde31d253eb9a2ad3fc594dd4474b36b38ef064f8bac7b95a"
+content-hash = "79b39312a56c6803106bd246bdeb4158bc6229382c31e6dda37712ea6bd2a385"
 
 [metadata.files]
 aioice = [
@@ -1878,10 +1885,7 @@ sqlalchemy-utils = [
 sqlitedict = [
     {file = "sqlitedict-1.7.0.tar.gz", hash = "sha256:2affcc301aacd4da7511692601ecbde392294205af418498f7d6d3ec0dbcad56"},
 ]
-syft = [
-    {file = "syft-0.3.0-py2.py3-none-any.whl", hash = "sha256:435e96bda16b6463902c53cb592c8dbc5e9084d87a1bcc30e73e2e719e25d34d"},
-    {file = "syft-0.3.0.tar.gz", hash = "sha256:b6921762d2bf646d8bfcbcf13c69eed191183045915018f32b78fa2c8b400966"},
-]
+syft = []
 toml = [
     {file = "toml-0.10.1-py2.py3-none-any.whl", hash = "sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88"},
     {file = "toml-0.10.1.tar.gz", hash = "sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f"},

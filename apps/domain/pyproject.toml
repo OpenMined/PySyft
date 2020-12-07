@@ -20,7 +20,7 @@ sqlalchemy_mixins = "^1.2.1"
 PyJWT = "^1.7.1"
 bcrypt = "^3.2.0"
 loguru = "^0.5.3"
-syft = "0.3.0"
+syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_integration"}
 Flask-Executor = "^0.9.4"
 
 [tool.poetry.dev-dependencies]

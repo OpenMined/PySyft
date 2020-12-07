@@ -72,12 +72,8 @@ def test_post_user_bad_data_with_key(client, database, cleanup):
     database.session.add(new_user)
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
-    result = client.post(
-        "/users", data="{bad", headers=headers, content_type="application/json"
-    )
+    result = client.post("/users", data="{bad", content_type="application/json")
+
     assert result.status_code == 400
 
 
@@ -129,7 +125,6 @@ def test_post_user_with_role(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
 
     payload = {
@@ -162,7 +157,6 @@ def test_post_user_with_missing_role(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
 
     payload = {
@@ -196,9 +190,7 @@ def test_login_user_valid_credentials(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     payload = {"email": "tech@gibberish.com", "password": "&UP!SN!;J4Mx;+A]"}
     result = client.post(
         "/users/login",
@@ -251,9 +243,7 @@ def test_login_user_invalid_password(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     payload = {"email": "tech@gibberish.com", "password": "@123456notmypassword"}
     result = client.post(
         "/users/login",
@@ -283,7 +273,6 @@ def test_get_users_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users", headers=headers, content_type="application/json")
@@ -308,7 +297,6 @@ def test_get_users_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users", headers=headers, content_type="application/json")
@@ -329,9 +317,7 @@ def test_get_users_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     result = client.get("/users", headers=headers, content_type="application/json")
 
     assert result.status_code == 400
@@ -352,7 +338,6 @@ def test_get_users_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "peppperplsiwouldhavesome")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users", headers=headers, content_type="application/json")
@@ -378,7 +363,6 @@ def test_get_one_user_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users/2", headers=headers, content_type="application/json")
@@ -400,9 +384,7 @@ def test_get_one_user_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     result = client.get("/users/1", headers=headers, content_type="application/json")
 
     assert result.status_code == 400
@@ -423,7 +405,6 @@ def test_get_one_user_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "peppperplsiwouldhavesome")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users/2", headers=headers, content_type="application/json")
@@ -446,7 +427,6 @@ def test_get_one_user_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users/1", headers=headers, content_type="application/json")
@@ -469,7 +449,6 @@ def test_get_one_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.get("/users/3", headers=headers, content_type="application/json")
@@ -497,7 +476,6 @@ def test_put_other_user_email_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "brandnew@brandnewemail.com"}
@@ -528,9 +506,7 @@ def test_put_other_user_email_missing_token(client, database, cleanup):
 
     assert database.session.query(User).get(2).email == "anemail@anemail.com"
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     payload = {"email": "brandnew@brandnewemail.com"}
     result = client.put(
         "/users/2/email",
@@ -559,7 +535,6 @@ def test_put_user_email_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "brandnew@brandnewemail.com"}
@@ -588,7 +563,6 @@ def test_put_other_user_email_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "brandnew@brandnewemail.com"}
@@ -649,7 +623,6 @@ def test_put_user_email_missing_role(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "brandnew@brandnewemail.com"}
@@ -676,7 +649,6 @@ def test_put_other_user_email_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "brandnew@brandnewemail.com"}
@@ -710,7 +682,6 @@ def test_put_other_user_role_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 1}
@@ -739,9 +710,7 @@ def test_put_other_user_role_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     payload = {"role": 1}
     result = client.put(
         "/users/2/role",
@@ -768,7 +737,6 @@ def test_put_user_role_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 1}
@@ -797,7 +765,6 @@ def test_put_other_user_role_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 2}
@@ -838,7 +805,6 @@ def test_put_own_user_role_sucess(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 3}
@@ -879,7 +845,6 @@ def test_put_first_user_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 3}
@@ -918,7 +883,6 @@ def test_put_other_user_role_owner_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 1}
@@ -959,7 +923,6 @@ def test_put_other_user_role_owner_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "4de2d41486ceaffdf0c1778e50cea00000d6549ffe808fa860ecd4e91d9ee1b1",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 1}
@@ -988,7 +951,6 @@ def test_put_user_role_missing_role(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 2}
@@ -1015,7 +977,6 @@ def test_put_other_user_role_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 2}
@@ -1059,7 +1020,6 @@ def test_put_other_user_password_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     new_password = "BrandNewPassword123"
@@ -1091,9 +1051,7 @@ def test_put_user_password_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     new_password = "BrandNewPassword123"
     payload = {"password": new_password}
     result = client.put(
@@ -1121,7 +1079,6 @@ def test_put_user_password_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     new_password = "BrandNewPassword123"
@@ -1151,7 +1108,6 @@ def test_put_other_user_password_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     new_password = "BrandNewPassword123"
@@ -1203,7 +1159,6 @@ def test_put_own_user_password_success(client, database, cleanup):
 
     token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     new_password = "BrandNewPassword123"
@@ -1235,7 +1190,6 @@ def test_put_other_user_email_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
 
@@ -1287,7 +1241,6 @@ def test_put_other_user_groups_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"groups": [2, 3]}
@@ -1331,9 +1284,7 @@ def test_put_user_groups_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     payload = {"groups": [2, 3]}
     result = client.put(
         "/users/2/groups",
@@ -1368,7 +1319,6 @@ def test_put_user_groups_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"groups": [2, 3]}
@@ -1405,7 +1355,6 @@ def test_put_other_user_groups_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"groups": [2, 3]}
@@ -1464,7 +1413,6 @@ def test_put_own_user_groups_success(client, database, cleanup):
 
     token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"groups": [1]}
@@ -1508,7 +1456,6 @@ def test_put_other_user_groups_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
 
@@ -1564,7 +1511,6 @@ def test_put_user_groups_missing_group(client, database, cleanup):
 
     token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"groups": [5]}
@@ -1605,7 +1551,6 @@ def test_delete_other_user_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.delete("/users/2", headers=headers, content_type="application/json")
@@ -1626,9 +1571,7 @@ def test_delete_user_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
-    }
+    headers = {}
     result = client.delete("/users/2", headers=headers, content_type="application/json")
 
     assert result.status_code == 400
@@ -1649,7 +1592,6 @@ def test_delete_user_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     result = client.delete("/users/2", headers=headers, content_type="application/json")
@@ -1672,7 +1614,6 @@ def test_delete_other_user_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     result = client.delete("/users/1", headers=headers, content_type="application/json")
@@ -1713,7 +1654,6 @@ def test_delete_own_user_success(client, database, cleanup):
 
     token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     result = client.delete("/users/3", headers=headers, content_type="application/json")
@@ -1741,7 +1681,6 @@ def test_delete_other_user_missing_user(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
 
@@ -1781,7 +1720,6 @@ def test_search_users_success(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "anemail@anemail.com"}
@@ -1846,7 +1784,6 @@ def test_search_users_nomatch(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "4de2d41486ceaffdf0c1778e50cea00000d6549ffe808fa860ecd4e91d9ee1b1",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 3, "group": 3}
@@ -1910,7 +1847,6 @@ def test_search_users_onematch(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "4de2d41486ceaffdf0c1778e50cea00000d6549ffe808fa860ecd4e91d9ee1b1",
         "token": token.decode("UTF-8"),
     }
     payload = {"role": 3, "group": 1, "email": "tech@gibberish.com"}
@@ -1940,7 +1876,6 @@ def test_search_users_missing_token(client, database, cleanup):
     database.session.commit()
 
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced"
     }
     payload = {"email": "anemail@anemail.com"}
     result = client.post(
@@ -1970,7 +1905,6 @@ def test_search_users_invalid_token(client, database, cleanup):
 
     token = jwt.encode({"id": 1}, "secretitis")
     headers = {
-        "private_key": "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "anemail@anemail.com"}
@@ -1999,7 +1933,6 @@ def test_search_users_unauthorized(client, database, cleanup):
 
     token = jwt.encode({"id": 2}, app.config["SECRET_KEY"])
     headers = {
-        "private_key": "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
         "token": token.decode("UTF-8"),
     }
     payload = {"email": "anemail@anemail.com"}

@@ -3,6 +3,7 @@ from json.decoder import JSONDecodeError
 import logging
 
 from flask import Response, request
+from nacl.signing import SigningKey
 
 from ..codes import RESPONSE_MSG
 from ..exceptions import (
@@ -13,10 +14,27 @@ from ..exceptions import (
     MissingRequestKeyError,
 )
 from ..database import Role, User, db
+from ..database.utils import model_to_json
+
+expected_fields = (
+    "name",
+    "can_triage_requests",
+    "can_edit_settings",
+    "can_create_users",
+    "can_create_groups",
+    "can_edit_roles",
+    "can_manage_infrastructure",
+    "can_upload_data",
+)
 
 
-def create_role(current_user, private_key, role_fields):
+def create_role(current_user, role_fields, private_key=None):
     user_role = db.session.query(Role).get(current_user.role)
+    private_key = SigningKey.generate()
+
+    for field in expected_fields:
+        if role_fields.get(field) is None:
+            raise MissingRequestKeyError
 
     if user_role is None:
         raise RoleNotFoundError
@@ -27,10 +45,10 @@ def create_role(current_user, private_key, role_fields):
     db.session.add(new_role)
     db.session.commit()
 
-    return new_role
+    return model_to_json(new_role)
 
 
-def get_role(current_user, private_key, role_id):
+def get_role(current_user, role_id):
     user_role = db.session.query(Role).get(current_user.role)
 
     if user_role is None:
@@ -42,10 +60,10 @@ def get_role(current_user, private_key, role_id):
     if role is None:
         raise RoleNotFoundError
 
-    return role
+    return model_to_json(role)
 
 
-def get_all_roles(current_user, private_key):
+def get_all_roles(current_user):
     user_role = db.session.query(Role).get(current_user.role)
 
     if user_role is None:
@@ -54,6 +72,7 @@ def get_all_roles(current_user, private_key):
         raise AuthorizationError
 
     roles = db.session.query(Role).all()
+    roles = [model_to_json(r) for r in roles]
     return roles
 
 
@@ -73,7 +92,7 @@ def put_role(current_user, role_id, new_fields):
         setattr(role, key, value)
 
     db.session.commit()
-    return role
+    return model_to_json(role)
 
 
 def delete_role(current_user, role_id):
@@ -90,4 +109,4 @@ def delete_role(current_user, role_id):
     db.session.delete(role)
     db.session.commit()
 
-    return role
+    return model_to_json(role)
