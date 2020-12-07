@@ -38,6 +38,8 @@ _Note:_ For posterity sake, we previously used to refer to this process as "stat
 
 #### Data-centric FL
 
+To view the current roadmap for data-centric FL, [please click here](https://docs.google.com/document/d/1_aFR69cTw3BnSLk0jYOd-vXMhNrZkbuEezST-mM2q1k/edit?usp=sharing).
+
 Data-centric FL is the same problem as model-centric FL, but from the opposite perspective. The most likely scenario for data-centric FL is where a person or organization has data they want to protect in PyGrid (instead of hosting the model, they host data). This would allow a data scientist who is not the data owner, to make requests for training or inference against that data. The following workflow will take place:
 
 1. A data scientist searches for data they would like to train on (they can search either an individual Node, or a Network of Nodes)
