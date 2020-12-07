@@ -15,7 +15,7 @@ from ...core.exceptions import (
 )
 from .blueprint import roles_blueprint as roles_route
 from ...core.task_handler import task_handler
-from ..auth import error_handler, token_required_factory
+from ..auth import error_handler, token_required
 from ...core.roles.role_ops import (
     create_role,
     get_role,
@@ -26,19 +26,6 @@ from ...core.roles.role_ops import (
 from ...core.database import db, Role, User, model_to_json
 
 
-def get_token(*args, **kwargs):
-    token = request.headers.get("token")
-    if token is None:
-        raise MissingRequestKeyError
-
-    return token
-
-
-def format_result(response_body, status_code, mimetype):
-    return Response(dumps(response_body), status=status_code, mimetype=mimetype)
-
-
-token_required = token_required_factory(get_token, format_result)
 
 
 @roles_route.route("", methods=["POST"])

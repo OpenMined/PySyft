@@ -11,7 +11,7 @@ from flask import request
 
 
 from .blueprint import users_blueprint as user_route
-from ..auth import error_handler, token_required_factory
+from ..auth import error_handler, token_required
 from ...core.node import node
 from ...core.exceptions import (
     AuthorizationError,
@@ -41,20 +41,6 @@ from ...core.users.user_ops import (
 
 from syft.core.node.common.service.repr_service import ReprMessage
 
-
-def get_token(*args, **kwargs):
-    token = request.headers.get("token")
-    if token is None:
-        raise MissingRequestKeyError
-
-    return token
-
-
-def format_result(response_body, status_code, mimetype):
-    return Response(dumps(response_body), status=status_code, mimetype=mimetype)
-
-
-token_required = token_required_factory(get_token, format_result)
 
 
 @user_route.route("", methods=["POST"])

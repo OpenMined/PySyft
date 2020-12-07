@@ -1,6 +1,6 @@
 from functools import wraps
 from json import dumps
-
+from flask import Response,request
 from json.decoder import JSONDecodeError
 from flask import current_app as app
 import jwt
@@ -49,6 +49,21 @@ def token_required_factory(get_token, format_result):
         return wrapper
 
     return decorator
+
+
+def get_token(*args, **kwargs):
+    token = request.headers.get("token")
+    if token is None:
+        raise MissingRequestKeyError
+
+    return token
+
+
+def format_result(response_body, status_code, mimetype):
+    return Response(dumps(response_body), status=status_code, mimetype=mimetype)
+
+
+token_required = token_required_factory(get_token, format_result)
 
 
 def error_handler(f, *args, **kwargs):

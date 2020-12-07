@@ -2,66 +2,158 @@ from ..blueprint import dcfl_blueprint as dcfl_route
 from flask import request, Response
 import json
 
+from syft.core.node.common.service.repr_service import ReprMessage
+from ...auth import error_handler, token_required
 
 @dcfl_route.route("/datasets", methods=["POST"])
+@token_required
 def create_dataset():
-    mock_response = {"msg": "Dataset created succesfully!"}
+    def route_logic():
+        # Get request body
+        content = loads(request.data)
+
+        syft_message = {}
+        syft_message["message_class"] =  ReprMessage # TODO: CreateDataSetMessage
+        syft_message["message_content"] = content
+        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+
+        # Execute task
+        status_code, response_body = task_handler(
+            route_function=process_as_syft_message,
+            data=syft_message,
+            mandatory={
+                "message_class": MissingRequestKeyError,
+                "message_content": MissingRequestKeyError,
+                "sign_key": MissingRequestKeyError,
+            },
+        )
+        return response_body
+
+    status_code, response_body = error_handler(process_as_syft_message)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["GET"])
+@token_required
 def get_dataset(dataset_id):
-    mock_response = {
-        "dataset": {
-            "id": dataset_id,
-            "tags": ["dataset-a"],
-            "description": "Dataset sample",
-        }
-    }
+    def route_logic():
+        # Get request body
+        content = loads(request.data)
+
+        syft_message = {}
+        syft_message["message_class"] =  ReprMessage # TODO: GetDataSetMessage
+        syft_message["message_content"] = content
+        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+
+        # Execute task
+        status_code, response_body = task_handler(
+            route_function=process_as_syft_message,
+            data=syft_message,
+            mandatory={
+                "message_class": MissingRequestKeyError,
+                "message_content": MissingRequestKeyError,
+                "sign_key": MissingRequestKeyError,
+            },
+        )
+        return response_body
+
+    status_code, response_body = error_handler(process_as_syft_message)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
 
-
 @dcfl_route.route("/datasets", methods=["GET"])
+@token_required
 def get_all_datasets():
-    mock_response = {
-        "datasets": [
-            {
-                "id": "35654sad6ada",
-                "tags": ["dataset-a"],
-                "description": "Dataset sample",
+    def route_logic():
+        # Get request body
+        content = loads(request.data)
+
+        syft_message = {}
+        syft_message["message_class"] =  ReprMessage # TODO: GetDataSetsMessage
+        syft_message["message_content"] = content
+        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+
+        # Execute task
+        status_code, response_body = task_handler(
+            route_function=process_as_syft_message,
+            data=syft_message,
+            mandatory={
+                "message_class": MissingRequestKeyError,
+                "message_content": MissingRequestKeyError,
+                "sign_key": MissingRequestKeyError,
             },
-            {
-                "id": "adfarf3f1af5",
-                "tags": ["dataset-b"],
-                "description": "Dataset sample",
-            },
-            {
-                "id": "fas4e6e1fas",
-                "tags": ["dataset-c"],
-                "description": "Dataset sample",
-            },
-        ]
-    }
+        )
+        return response_body
+
+    status_code, response_body = error_handler(process_as_syft_message)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["PUT"])
+@token_required
 def update_dataset(dataset_id):
-    mock_response = {"msg": "Dataset changed succesfully!"}
+    def route_logic():
+        # Get request body
+        content = loads(request.data)
+
+        syft_message = {}
+        syft_message["message_class"] =  ReprMessage # TODO: UpdateDataSetMessage
+        syft_message["message_content"] = content
+        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+
+        # Execute task
+        status_code, response_body = task_handler(
+            route_function=process_as_syft_message,
+            data=syft_message,
+            mandatory={
+                "message_class": MissingRequestKeyError,
+                "message_content": MissingRequestKeyError,
+                "sign_key": MissingRequestKeyError,
+            },
+        )
+        return response_body
+
+    status_code, response_body = error_handler(process_as_syft_message)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["DELETE"])
+@token_required
 def delete_dataset(dataset_id):
-    mock_response = {"msg": "Dataset deleted succesfully!"}
+    def route_logic():
+        # Get request body
+        content = loads(request.data)
+
+        syft_message = {}
+        syft_message["message_class"] =  ReprMessage # TODO: DeleteDataSetMessage
+        syft_message["message_content"] = content
+        syft_message["sign_key"] =  # TODO: Method to map token into sign-key
+
+        # Execute task
+        status_code, response_body = task_handler(
+            route_function=process_as_syft_message,
+            data=syft_message,
+            mandatory={
+                "message_class": MissingRequestKeyError,
+                "message_content": MissingRequestKeyError,
+                "sign_key": MissingRequestKeyError,
+            },
+        )
+        return response_body
+
+    status_code, response_body = error_handler(process_as_syft_message)
+
     return Response(
-        status=200, response=json.dumps(mock_response), mimetype="application/json"
+        dumps(response_body), status=status_code, mimetype="application/json"
     )
