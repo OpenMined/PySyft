@@ -1,6 +1,3 @@
-# third party
-import pytest
-
 # syft absolute
 import syft as sy
 from syft.lib.sympc.session import Session
@@ -15,9 +12,5 @@ def test_session_send() -> None:
 
     session = Session(parties=[alice_client, bob_client])
 
-    session.setup_mpc()
+    Session.setup_mpc(session)
     assert len(session.session_ptrs) == 2
-
-    with pytest.raises(NotImplementedError):
-        session.setup_mpc()
-        assert len(session.session_ptrs) == 2
