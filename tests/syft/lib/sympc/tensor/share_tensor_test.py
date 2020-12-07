@@ -5,7 +5,7 @@ from sympc.tensor import ShareTensor
 import syft as sy
 
 
-def test_share_send() -> None:
+def test_share_tensor_send() -> None:
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 

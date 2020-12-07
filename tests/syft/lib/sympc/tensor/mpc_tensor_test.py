@@ -4,7 +4,7 @@ import operator
 # third party
 import pytest
 from sympc.session import Session
-from sympc.tensor import ShareTensorCC
+from sympc.tensor import MPCTensor
 import torch
 
 # syft absolute
@@ -19,7 +19,7 @@ TEST_VALUES = [
 ]
 
 
-def test_share_cc_exception() -> None:
+def test_mpc_tensor_exception() -> None:
     alice = sy.VirtualMachine(name="alice")
     bob = sy.VirtualMachine(name="bob")
 
@@ -29,12 +29,12 @@ def test_share_cc_exception() -> None:
     session = Session(parties=[alice_client, bob_client])
 
     with pytest.raises(ValueError):
-        ShareTensorCC(secret=42, session=session)
+        MPCTensor(secret=42, session=session)
 
 
 @pytest.mark.parametrize("private", [False, True])
 @pytest.mark.parametrize("operation", ["add", "sub", "mul"])
-def test_share_cc_operation(private: bool, operation: str) -> None:
+def test_mpc_tensor_operation(private: bool, operation: str) -> None:
     alice = sy.VirtualMachine(name="alice")
     bob = sy.VirtualMachine(name="bob")
 
@@ -45,10 +45,10 @@ def test_share_cc_operation(private: bool, operation: str) -> None:
     Session.setup_mpc(session)
 
     for x_secret, y_secret in TEST_VALUES:
-        x = ShareTensorCC(secret=x_secret, session=session)
+        x = MPCTensor(secret=x_secret, session=session)
 
         if private:
-            y = ShareTensorCC(secret=y_secret, session=session)
+            y = MPCTensor(secret=y_secret, session=session)
         else:
             y = y_secret
 
