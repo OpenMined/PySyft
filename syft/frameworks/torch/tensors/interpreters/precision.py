@@ -158,7 +158,7 @@ class FixedPrecisionTensor(AbstractTensor):
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
         if isinstance(self.child, AdditiveSharingTensor) or not check_sign:  # Handle FPT>(wrap)>AST
-            self.child = self.child // truncation  # .type(self.torch_dtype)
+            self.child = self.child // truncation
             return self
         else:
             gate = self.child.native_lt(0).type(self.torch_dtype)

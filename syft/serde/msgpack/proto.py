@@ -72,7 +72,7 @@ def proto_type_info(cls):
     """
     type_name = fullname(cls)
 
-    class Bla:
+    class EmptyCode:
         code = None
 
     try:
@@ -86,4 +86,4 @@ def proto_type_info(cls):
                 f" implementing 'get_msgpack_code'."
             )
     except AttributeError:
-        return Bla()
+        return EmptyCode()

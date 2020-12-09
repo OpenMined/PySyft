@@ -10,7 +10,7 @@ msgpack-numpy~=0.4.7
 numpy~=1.18.1
 phe~=1.4.0
 Pillow>=7.1.0
-pyarrow
+pyarrow~=2.0.0
 psutil==5.7.0
 requests~=2.22.0
 RestrictedPython~=5.0
@@ -19,9 +19,9 @@ sycret~=0.1.0
 scipy~=1.4.1
 syft_proto~=0.5.3
 tblib~=1.6.0
+torch=1.4
+torchvision~=0.5
 tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
 notebook==5.7.8
-torch==1.4
-torchvision==0.5

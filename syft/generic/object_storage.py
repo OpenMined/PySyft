@@ -24,7 +24,7 @@ class ObjectStore:
         self._tag_to_object_ids = defaultdict(set)
 
         # Garbage collect all remote data on a worker every garbage_delay seconds
-        self.garbage_delay = 10
+        self.garbage_delay = 0
         # Store at most trash_capacity elements before garbage collecting
         self.trash_capacity = 10_000
         # Trash is a dict referencing for each worker key a tuple with the timestamp

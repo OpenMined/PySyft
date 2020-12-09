@@ -42,10 +42,6 @@ import pyarrow
 context = pyarrow.default_serialization_context()
 pyarrow.register_torch_serialization_handlers(context)
 
-# Any message above this size in bytes is a fat FSS key
-# Small FSS keys will be handled like a generic message
-SHOOT_ARRAY_THRESHOLD = 20_000_000
-
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:

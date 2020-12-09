@@ -878,7 +878,6 @@ class TorchHook(FrameworkHook):
                     )
                 # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
                 #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")
-                #     print('RUNING VAR CONVERTED')
 
         self.torch.nn.modules.batchnorm._BatchNorm.train = train
 

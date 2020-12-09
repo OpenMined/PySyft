@@ -182,8 +182,3 @@ def test_serde_simplify(cls, workers, hook, start_remote_worker):
                 assert (simplified_obj == expected_simplified_obj).all()
             else:
                 assert simplified_obj == expected_simplified_obj
-            # print(simplified_obj)
-            # print('***', type(simplified_obj))
-            # identical = (simplified_obj == expected_simplified_obj)
-            # print('***', type(identical))
-            # assert identical
