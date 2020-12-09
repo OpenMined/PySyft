@@ -8,8 +8,6 @@ from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 
-from syft.exceptions import CompressionNotFoundException
-
 # COMPRESSION SCHEME INT CODES
 NO_COMPRESSION = 40
 LZ4 = 41

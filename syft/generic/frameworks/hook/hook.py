@@ -10,8 +10,6 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.pointers import PointerHook
 from syft.generic.frameworks.hook.string import StringHook
 from syft.generic.frameworks.hook.tensors import TensorHook
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
 
 

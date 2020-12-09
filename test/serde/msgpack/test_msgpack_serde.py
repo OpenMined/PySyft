@@ -15,7 +15,6 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.serde import compression
 from syft.serde import msgpack
-from syft.serde import serde
 from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker

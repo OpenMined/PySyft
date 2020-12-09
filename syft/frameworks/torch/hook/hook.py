@@ -742,7 +742,9 @@ class TorchHook(FrameworkHook):
                     if "running_var" in name_p:
                         if nn_self.training is False:
                             warnings.warn(
-                                "WARNING: Don't use for training! \nThe model contains a BatchNorm with running_var that has been converted before encryption: x -> 1 / torch.sqrt(x) "
+                                "WARNING: Don't use for training! \nThe model contains a BatchNorm"
+                                " with running_var that has been converted before encryption: "
+                                "x -> 1 / torch.sqrt(x) "
                             )
                             sqrt_inv_p = 1 / torch.sqrt(p)
                             if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
@@ -852,10 +854,10 @@ class TorchHook(FrameworkHook):
 
         def train(nn_self, mode=True):
             """
-            This is a modification of nn.Module.train for BatchNorm, which stores the sqrt inverse of
-            the running_var in place of the current running_var when training is False, when
-            parameters are converted to fixed precision (and possibly encrypted) to avoid
-            recomputing this complex ops for every batch.
+            This is a modification of nn.Module.train for BatchNorm, which stores the sqrt
+            inverse of the running_var in place of the current running_var when training is
+            False, when parameters are converted to fixed precision (and possibly encrypted)
+            to avoid recomputing this complex ops for every batch.
             """
             previous_mode = nn_self.training
             nn_self.training = mode
@@ -874,7 +876,8 @@ class TorchHook(FrameworkHook):
                     next_node = next_node.child
                 if isinstance(next_node.child, AdditiveSharingTensor):
                     raise ValueError(
-                        "Please don't call .eval() on an encrypted model containing a BatchNorm, or fix this."
+                        "Please don't call .eval() on an encrypted model containing "
+                        "a BatchNorm, or fix this."
                     )
                 # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
                 #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")

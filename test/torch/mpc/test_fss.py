@@ -158,7 +158,7 @@ def test_using_preprocessed_material(workers, op):
         crypto_provider=crypto_provider,  # a third party providing some cryptography primitives
         protocol="fss",  # the name of the crypto protocol, fss stands for "Function Secret Sharing"
         precision_fractional=4,  # encoding fixed precision: floats are truncated to the 4th decimal
-    )
+    )  # noqa
     t = th.randint(low=0, high=5, size=(8,))
     x = t.encrypt(**encryption_kwargs)
 

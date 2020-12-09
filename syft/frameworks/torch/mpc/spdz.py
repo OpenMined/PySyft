@@ -16,6 +16,7 @@ from .cuda.tensor import CUDALongTensor
 NAMESPACE = "syft.frameworks.torch.mpc.spdz"
 no_wrap = {"no_wrap": True}
 
+
 # share level
 @allow_command
 def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int, kwargs_):

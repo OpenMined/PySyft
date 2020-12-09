@@ -13,6 +13,7 @@ from syft import frameworks  # Triggers registration of any available frameworks
 # tensor types inside hook_args.py.
 import syft.frameworks.torch.hook.hook_args
 
+from collections import defaultdict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -148,8 +149,5 @@ if "ID_PROVIDER" not in globals():
     from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
-
-
-from collections import defaultdict
 
 preprocessed_material = defaultdict(list)
