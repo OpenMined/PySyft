@@ -150,7 +150,7 @@ def test_using_preprocessed_material(workers, op):
         workers=(data_owner, model_owner), n_instances=8, op=primitive
     )
 
-    encryption_kwargs = dict(
+    encryption_kwargs = dict(  # noqa
         workers=(
             data_owner,
             model_owner,
