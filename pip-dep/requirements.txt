@@ -3,6 +3,7 @@ aiortc==0.9.28
 dill~=0.3.1
 flask_socketio~=4.2.1
 Flask~=1.1.1
+git+https://github.com/facebookresearch/CrypTen.git@cdecc8de1514d7f36a5268a50c714caba5e57318#egg=crypten
 importlib-resources~=1.5.0
 lz4~=3.0.2
 msgpack~=1.0.0
