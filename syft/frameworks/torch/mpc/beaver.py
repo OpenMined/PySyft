@@ -11,6 +11,13 @@ if torch.cuda.is_available():
 
     generator = csprng.create_random_device_generator("/dev/urandom")
 
+dtypes = {
+    "torch.float32": torch.float32,
+    "torch.int64": torch.int64,
+    "torch.int32": torch.int32,
+    "torch.bool": torch.bool,
+}
+
 
 def build_triple(
     op: str,
@@ -37,8 +44,9 @@ def build_triple(
     left_shape, right_shape = shape
     cmd = getattr(th, op)
     low_bound, high_bound = -(field // 2), (field - 1) // 2
+
     if isinstance(torch_dtype, str):
-        torch_dtype = eval(torch_dtype)
+        torch_dtype = dtypes[torch_dtype]
 
     if torch.cuda.is_available():
         a = th.empty(*left_shape, dtype=torch_dtype, device="cuda").random_(
