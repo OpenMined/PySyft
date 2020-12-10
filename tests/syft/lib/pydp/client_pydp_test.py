@@ -20,4 +20,4 @@ def test_torch_function() -> None:
     res_ptr = x_ptr.quick_result(list_ptr)
     res = res_ptr.get()
 
-    assert (32 < res < 45)
+    assert 32 < res < 45
