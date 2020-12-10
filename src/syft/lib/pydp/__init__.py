@@ -20,6 +20,7 @@ def get_parent(path: str, root: TypeAny) -> Module:
         parent = parent.attrs[step]
     return parent
 
+
 PYDP_VERSION = version.parse(pydp.__version__)
 
 
@@ -47,14 +48,10 @@ def create_pydp_ast() -> Globals:
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             ast.add_path(
-                path=method,
-                framework_reference=pydp,
-                return_type_name=return_type,
+                path=method, framework_reference=pydp, return_type_name=return_type,
             )
         else:
-            print(
-                f"Skipping pydp.{method} not supported in {PYDP_VERSION}"
-            )
+            print(f"Skipping pydp.{method} not supported in {PYDP_VERSION}")
 
     for klass in ast.classes:
         klass.create_pointer_class()
