@@ -17,7 +17,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class ContextWrapper(StorableObject):
+class CKKSVector(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -37,7 +37,7 @@ class ContextWrapper(StorableObject):
         return proto
 
     @staticmethod
-    def _data_proto2object(proto: VendorBytes_PB) -> ts.Context:
+    def _data_proto2object(proto: VendorBytes_PB) -> ts.CKKSVector:
         vendor_lib = proto.vendor_lib
         lib_version = version.parse(proto.vendor_lib_version)
 
@@ -51,7 +51,7 @@ class ContextWrapper(StorableObject):
                 print(log)
                 logger.info(log)
 
-        return ts.context_from(proto.content)
+        return ts.ckks_vector_from(proto.content)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -59,7 +59,7 @@ class ContextWrapper(StorableObject):
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return ts.Context
+        return ts.CKKSVector
 
     @staticmethod
     def construct_new_object(
@@ -75,5 +75,5 @@ class ContextWrapper(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.Context, name="serializable_wrapper_type", attr=ContextWrapper
+    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVector
 )

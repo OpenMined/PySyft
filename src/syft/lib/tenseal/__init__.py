@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
@@ -13,46 +12,34 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..misc.union import UnionGenerator
-
-cpp_context = sys.modules["_tenseal_cpp"].TenSEALContext  # type: ignore
+from .ckks_vector import CKKSVector  # noqa: 401
+from .context import ContextWrapper  # noqa: 401
 
 
 def create_tenseal_ast() -> Globals:
     ast = Globals()
 
-    modules = ["tenseal", "tenseal._ts_cpp", "_tenseal_cpp"]
+    modules = ["tenseal"]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
-        ("tenseal.context", "tenseal.TenSEALContext", ts.context),
-        (
-            "_tenseal_cpp.TenSEALContext",
-            "_tenseal_cpp.TenSEALContext",
-            cpp_context,
-        ),
+        ("tenseal.Context", "tenseal.Context", ts.Context),
         ("tenseal.SCHEME_TYPE", "tenseal.SCHEME_TYPE", ts.SCHEME_TYPE),
-        (
-            "tenseal._ts_cpp.CKKSVector",
-            "tenseal._ts_cpp.CKKSVector",
-            ts._ts_cpp.CKKSVector,
-        ),
+        ("tenseal.CKKSVector", "tenseal.CKKSVector", ts.CKKSVector),
     ]
 
     methods = [
         ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
         ("tenseal.SCHEME_TYPE.CKKS", "tenseal.SCHEME_TYPE"),
         ("tenseal.SCHEME_TYPE.NONE", "tenseal.SCHEME_TYPE"),
+        ("tenseal.Context.generate_galois_keys", "syft.lib.python._SyNone"),
         (
-            "_tenseal_cpp.TenSEALContext.generate_galois_keys",
-            "syft.lib.python._SyNone",
-        ),
-        (
-            "_tenseal_cpp.TenSEALContext.global_scale",
+            "tenseal.Context.global_scale",
             UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
         ),  # setter returns Int, getter returns Float?
-        ("tenseal._ts_cpp.CKKSVector.__add__", "tenseal._ts_cpp.CKKSVector"),
-        ("tenseal._ts_cpp.CKKSVector.dot", "tenseal._ts_cpp.CKKSVector"),
-        ("tenseal._ts_cpp.CKKSVector.matmul", "tenseal._ts_cpp.CKKSVector"),
-        ("tenseal._ts_cpp.CKKSVector.decrypt", "syft.lib.python.List"),
+        ("tenseal.CKKSVector.__add__", "tenseal.CKKSVector"),
+        ("tenseal.CKKSVector.dot", "tenseal.CKKSVector"),
+        ("tenseal.CKKSVector.matmul", "tenseal.CKKSVector"),
+        ("tenseal.CKKSVector.decrypt", "syft.lib.python.List"),
     ]
 
     add_modules(ast, modules)
