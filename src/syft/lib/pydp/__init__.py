@@ -9,7 +9,6 @@ import pydp
 
 # syft relative
 from ...ast.globals import Globals
-from ...ast.klass import Class
 from ...ast.module import Module
 from .allowlist import allowlist
 

@@ -1,9 +1,5 @@
-# stdlib
-from typing import List as TypeList
-from typing import Type as TypeType
-
 # third party
-from pydp.algorithms.laplacian import BoundedMean
+# from pydp.algorithms.laplacian import BoundedMean
 
 # syft absolute
 import syft as sy
