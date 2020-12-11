@@ -1,18 +1,17 @@
 # stdlib
-import sys
 from typing import List
 from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
-from packaging import version
 import tenseal as ts
 
 # syft relative
+from ...core.common.serde.deserialize import _deserialize
+from ...core.common.serde.serialize import _serialize
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
-from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
+from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
@@ -27,35 +26,27 @@ class CKKSVector(StorableObject):
         )
         self.value = value
 
-    def _data_object2proto(self) -> VendorBytes_PB:
-        proto = VendorBytes_PB()
+    def _data_object2proto(self) -> TenSEALVector_PB:
+        proto = TenSEALVector_PB()
+        proto.id.CopyFrom(_serialize(obj=self.id))
         proto.obj_type = get_fully_qualified_name(obj=self.value)
-        proto.vendor_lib = "tenseal"
-        proto.vendor_lib_version = ts.__version__
-        proto.content = self.value.serialize()  # type: ignore
+        proto.context = self.value.context().serialize()  # type: ignore
+        proto.vector = self.value.serialize()  # type: ignore
 
         return proto
 
     @staticmethod
-    def _data_proto2object(proto: VendorBytes_PB) -> ts.CKKSVector:
-        vendor_lib = proto.vendor_lib
-        lib_version = version.parse(proto.vendor_lib_version)
+    def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSVector:
+        vec_id: UID = _deserialize(blob=proto.id)
+        context = ts.context_from(proto.context)
+        vec = ts.ckks_vector_from(context, proto.vector)
+        vec.id = vec_id
 
-        if vendor_lib not in sys.modules:
-            raise Exception(
-                f"{vendor_lib} version: {proto.vendor_lib_version} is required"
-            )
-        else:
-            if lib_version > version.parse(ts.__version__):
-                log = f"Warning {lib_version} > local imported version {ts.__version__}"
-                print(log)
-                logger.info(log)
-
-        return ts.ckks_vector_from(proto.content)
+        return vec
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return VendorBytes_PB
+        return TenSEALVector_PB
 
     @staticmethod
     def get_wrapped_type() -> type:
