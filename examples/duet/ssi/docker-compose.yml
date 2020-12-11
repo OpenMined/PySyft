@@ -12,7 +12,7 @@ services:
     environment:
       - NGROK_NAME=ngrok-datascientist-agent
       - ADMIN_URL=http://datascientist-agent:${DATASCIENTIST_ADMIN_PORT}
-      - DAGENT./,_NAME=${DATASCIENTIST_NAME}
+      - AGENT_NAME=${DATASCIENTIST_NAME}
       - ADMIN_PORT=${DATASCIENTIST_ADMIN_PORT}
       - HTTP_PORT=${DATASCIENTIST_HTTP_PORT}
       - WEBHOOK_URL=${DATASCIENTIST_WEBHOOK_URL}
