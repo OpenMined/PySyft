@@ -38,6 +38,7 @@ pytest
 pytest-asyncio
 pytest-cov
 pytest-xdist[psutil]
+python-dp
 requests
 sqlitedict
 torch>=1.5
@@ -45,4 +46,3 @@ torchvision
 typeguard
 typing-extensions # backport to older python 3
 websockets
-python-dp
