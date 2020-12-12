@@ -1,7 +1,7 @@
 """
 Define benchmark tests
 """
-from tests.benchmarks.pytest_benchmarks.benchmarks_functions_test import string_serde
+from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 from typing import Any
 
 
