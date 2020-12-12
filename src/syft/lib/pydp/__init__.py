@@ -47,7 +47,9 @@ def create_pydp_ast() -> Globals:
         if version_supported(support_dict=return_type_name_or_dict):
             return_type = get_return_type(support_dict=return_type_name_or_dict)
             ast.add_path(
-                path=method, framework_reference=pydp, return_type_name=return_type,
+                path=method,
+                framework_reference=pydp,
+                return_type_name=return_type,
             )
         else:
             print(f"Skipping pydp.{method} not supported in {PYDP_VERSION}")
