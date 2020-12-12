@@ -38,7 +38,7 @@ jobs:
         pip install -e .
     - name: Run benchmarks
       run: |
-        pytest tests/benchmarks/pytest_benchmarks/bench_test.py --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+        pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
     - name: Store benchmark result
       uses: rhysd/github-action-benchmark@v1
       with:
