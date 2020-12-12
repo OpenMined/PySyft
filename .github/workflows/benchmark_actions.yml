@@ -29,7 +29,7 @@ jobs:
       id: cache-reqs
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
     - name: Install PySyft dependencies
       run: |
         sudo apt-get update
