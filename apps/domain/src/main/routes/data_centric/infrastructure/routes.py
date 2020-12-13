@@ -8,7 +8,7 @@ from ....core.node import node
 
 ## Nodes CRUD
 @dcfl_route.route("/nodes", methods=["POST"])
-#@token_required
+# @token_required
 def create_node():
     def route_logic():
         # Get request body
@@ -33,7 +33,7 @@ def create_node():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
     status_code, response_body = 200, {"msg": "Node created succesfully!"}
 
@@ -43,7 +43,7 @@ def create_node():
 
 
 @dcfl_route.route("/nodes/<node_id>", methods=["GET"])
-#@token_required
+# @token_required
 def get_node(node_id):
     def route_logic():
         # Get request body
@@ -68,9 +68,9 @@ def get_node(node_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{
+    status_code, response_body = 200, {
         "node": {"id": "464615", "tags": ["node-a"], "description": "node sample"}
     }
 
@@ -80,7 +80,7 @@ def get_node(node_id):
 
 
 @dcfl_route.route("/nodes", methods=["GET"])
-#@token_required
+# @token_required
 def get_all_nodes():
     def route_logic():
         # Get request body
@@ -105,8 +105,8 @@ def get_all_nodes():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200,{
+    # status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {
         "nodes": [
             {"id": "35654sad6ada", "address": "175.89.0.170"},
             {"id": "adfarf3f1af5", "address": "175.55.22.150"},
@@ -114,14 +114,13 @@ def get_all_nodes():
         ]
     }
 
-
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/nodes/<node_id>", methods=["PUT"])
-#@token_required
+# @token_required
 def update_node(node_id):
     def route_logic():
         # Get request body
@@ -146,7 +145,7 @@ def update_node(node_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
     status_code, response_body = 200, {"msg": "Node changed succesfully!"}
 
     return Response(
@@ -155,7 +154,7 @@ def update_node(node_id):
 
 
 @dcfl_route.route("/nodes/<node_id>", methods=["DELETE"])
-#@token_required
+# @token_required
 def delete_node(node_id):
     def route_logic():
         # Get request body
@@ -180,9 +179,9 @@ def delete_node(node_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{"msg": "Node deleted succesfully!"}
+    status_code, response_body = 200, {"msg": "Node deleted succesfully!"}
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -193,7 +192,7 @@ def delete_node(node_id):
 
 
 @dcfl_route.route("/nodes/autoscaling", methods=["POST"])
-#@token_required
+# @token_required
 def create_autoscaling():
     def route_logic():
         # Get request body
@@ -218,8 +217,10 @@ def create_autoscaling():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {"msg": "Autoscaling condition created succesfully!"}
+    # status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {
+        "msg": "Autoscaling condition created succesfully!"
+    }
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -227,7 +228,7 @@ def create_autoscaling():
 
 
 @dcfl_route.route("/nodes/autoscaling", methods=["GET"])
-#@token_required
+# @token_required
 def get_all_autoscaling_conditions():
     def route_logic():
         # Get request body
@@ -254,14 +255,13 @@ def get_all_autoscaling_conditions():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{
+    status_code, response_body = 200, {
         "condition_a": {"mem_usage": "80%", "cpu_usage": "90%", "disk_usage": "75%"},
         "condition_b": {"mem_usage": "50%", "cpu_usage": "70%", "disk_usage": "95%"},
         "condition_c": {"mem_usage": "92%", "cpu_usage": "77%", "disk_usage": "50%"},
     }
-
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -269,7 +269,7 @@ def get_all_autoscaling_conditions():
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["GET"])
-#@token_required
+# @token_required
 def get_specific_autoscaling_condition(autoscaling_id):
     def route_logic():
         # Get request body
@@ -294,14 +294,13 @@ def get_specific_autoscaling_condition(autoscaling_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{
+    status_code, response_body = 200, {
         "mem_usage": "80%",
         "cpu_usage": "90%",
         "disk_usage": "75%",
     }
-
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -309,7 +308,7 @@ def get_specific_autoscaling_condition(autoscaling_id):
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["PUT"])
-#@token_required
+# @token_required
 def update_autoscaling_condition(autoscaling_id):
     def route_logic():
         # Get request body
@@ -334,9 +333,11 @@ def update_autoscaling_condition(autoscaling_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{"msg": "Autoscaling condition updated succesfully!"}
+    status_code, response_body = 200, {
+        "msg": "Autoscaling condition updated succesfully!"
+    }
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -344,7 +345,7 @@ def update_autoscaling_condition(autoscaling_id):
 
 
 @dcfl_route.route("/nodes/autoscaling/<autoscaling_id>", methods=["DELETE"])
-#@token_required
+# @token_required
 def delete_autoscaling_condition(autoscaling_id):
     def route_logic():
         # Get request body
@@ -369,9 +370,11 @@ def delete_autoscaling_condition(autoscaling_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{"msg": "Autoscaling condition deleted succesfully!"}
+    status_code, response_body = 200, {
+        "msg": "Autoscaling condition deleted succesfully!"
+    }
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -382,7 +385,7 @@ def delete_autoscaling_condition(autoscaling_id):
 
 
 @dcfl_route.route("/workers", methods=["POST"])
-#@token_required
+# @token_required
 def create_worker():
     def route_logic():
         # Get request body
@@ -407,10 +410,9 @@ def create_worker():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{"msg": "Worker created succesfully!"}
-
+    status_code, response_body = 200, {"msg": "Worker created succesfully!"}
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -418,7 +420,7 @@ def create_worker():
 
 
 @dcfl_route.route("/workers", methods=["GET"])
-#@token_required
+# @token_required
 def get_all_workers():
     def route_logic():
         # Get request body
@@ -443,9 +445,9 @@ def get_all_workers():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
-    status_code, response_body = 200,{
+    status_code, response_body = 200, {
         "workers": [
             {"id": "546513231a", "address": "159.156.128.165", "datasets": 25320},
             {"id": "asfa16f5aa", "address": "138.142.125.125", "datasets": 2530},
@@ -454,14 +456,13 @@ def get_all_workers():
         ]
     }
 
-
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/workers/<worker_id>", methods=["GET"])
-#@token_required
+# @token_required
 def get_specific_worker(worker_id):
     def route_logic():
         # Get request body
@@ -486,11 +487,10 @@ def get_specific_worker(worker_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200,{
+    # status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {
         "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
     }
-
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -498,7 +498,7 @@ def get_specific_worker(worker_id):
 
 
 @dcfl_route.route("/workers/<worker_id>", methods=["DELETE"])
-#@token_required
+# @token_required
 def delete_worker(worker_id):
     def route_logic():
         # Get request body
@@ -523,7 +523,7 @@ def delete_worker(worker_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
     status_code, response_body = 200, {"msg": "Worker was deleted succesfully!"}
 

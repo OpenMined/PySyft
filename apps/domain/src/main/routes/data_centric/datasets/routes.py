@@ -9,7 +9,7 @@ from ....core.node import node
 
 
 @dcfl_route.route("/datasets", methods=["POST"])
-#@token_required
+# @token_required
 def create_dataset():
     def route_logic():
         # Get request body
@@ -34,8 +34,8 @@ def create_dataset():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200,  {"msg": "Dataset created succesfully!"}
+    # status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {"msg": "Dataset created succesfully!"}
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -43,7 +43,7 @@ def create_dataset():
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["GET"])
-#@token_required
+# @token_required
 def get_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -68,7 +68,7 @@ def get_dataset(dataset_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
     status_code, response_body = 200, {
         "dataset": {
@@ -84,7 +84,7 @@ def get_dataset(dataset_id):
 
 
 @dcfl_route.route("/datasets", methods=["GET"])
-#@token_required
+# @token_required
 def get_all_datasets():
     def route_logic():
         # Get request body
@@ -109,7 +109,7 @@ def get_all_datasets():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
     status_code, response_body = 200, {
         "datasets": [
@@ -137,7 +137,7 @@ def get_all_datasets():
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["PUT"])
-#@token_required
+# @token_required
 def update_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -162,7 +162,7 @@ def update_dataset(dataset_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
 
     status_code, response_body = 200, {"msg": "Dataset changed succesfully!"}
 
@@ -172,7 +172,7 @@ def update_dataset(dataset_id):
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["DELETE"])
-#@token_required
+# @token_required
 def delete_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -197,9 +197,9 @@ def delete_dataset(dataset_id):
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
     status_code, response_body = 200, {"msg": "Dataset deleted succesfully!"}
-    
+
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
     )

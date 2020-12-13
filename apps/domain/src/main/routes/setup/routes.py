@@ -8,7 +8,7 @@ from ...core.node import node
 
 
 @setup_route.route("/", methods=["POST"])
-#@token_required
+# @token_required
 def initial_setup():
     def route_logic():
         # Get request body
@@ -33,7 +33,7 @@ def initial_setup():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
     status_code, response_body = 200, {"msg": "Running initial setup!"}
 
     return Response(
@@ -42,7 +42,7 @@ def initial_setup():
 
 
 @setup_route.route("/", methods=["GET"])
-#@token_required
+# @token_required
 def get_setup():
     def route_logic():
         # Get request body
@@ -67,7 +67,7 @@ def get_setup():
         )
         return response_body
 
-    #status_code, response_body = error_handler(process_as_syft_message)
+    # status_code, response_body = error_handler(process_as_syft_message)
     status_code, response_body = 200, {"setup": {}}
 
     return Response(

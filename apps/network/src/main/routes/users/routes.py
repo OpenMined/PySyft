@@ -75,9 +75,9 @@ def user_login():
         "msg": "Successfully logged in!",
         "key": node.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
         "metadata": node.get_metadata_for_client()
-            .serialize()
-            .SerializeToString()
-            .decode("ISO-8859-1"),
+        .serialize()
+        .SerializeToString()
+        .decode("ISO-8859-1"),
     }
     return Response(
         status=200, response=json.dumps(mock_response), mimetype="application/json"
