@@ -9,7 +9,7 @@ from ....core.node import node
 
 
 @dcfl_route.route("/tensors", methods=["POST"])
-@token_required
+#@token_required
 def create_tensor():
     def route_logic():
         # Get request body
@@ -34,15 +34,16 @@ def create_tensor():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {"msg": "tensor created succesfully!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/tensors/<tensor_id>", methods=["GET"])
-@token_required
+#@token_required
 def get_tensor(tensor_id):
     def route_logic():
         # Get request body
@@ -67,15 +68,23 @@ def get_tensor(tensor_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {
+        "tensor": {
+            "id": "5484626",
+            "tags": ["tensor-a"],
+            "description": "tensor sample",
+        }
+    }
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/tensors", methods=["GET"])
-@token_required
+#@token_required
 def get_all_tensors():
     def route_logic():
         # Get request body
@@ -100,15 +109,34 @@ def get_all_tensors():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {
+        "tensors": [
+            {
+                "id": "35654sad6ada",
+                "tags": ["tensor-a"],
+                "description": "tensor sample",
+            },
+            {
+                "id": "adfarf3f1af5",
+                "tags": ["tensor-b"],
+                "description": "tensor sample",
+            },
+            {
+                "id": "fas4e6e1fas",
+                "tags": ["tensor-c"],
+                "description": "tensor sample",
+            },
+        ]
+    }
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/tensors/<tensor_id>", methods=["PUT"])
-@token_required
+#@token_required
 def update_tensor(tensor_id):
     def route_logic():
         # Get request body
@@ -133,15 +161,16 @@ def update_tensor(tensor_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
 
+    status_code, response_body = 200, {"msg": "tensor changed succesfully!"}
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/tensors/<tensor_id>", methods=["DELETE"])
-@token_required
+#@token_required
 def delete_tensor(tensor_id):
     def route_logic():
         # Get request body
@@ -166,8 +195,10 @@ def delete_tensor(tensor_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+    
+    status_code, response_body = 200, {"msg": "tensor deleted succesfully!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )

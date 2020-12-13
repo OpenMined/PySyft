@@ -9,7 +9,7 @@ from ....core.node import node
 
 
 @dcfl_route.route("/datasets", methods=["POST"])
-@token_required
+#@token_required
 def create_dataset():
     def route_logic():
         # Get request body
@@ -34,15 +34,16 @@ def create_dataset():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200,  {"msg": "Dataset created succesfully!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["GET"])
-@token_required
+#@token_required
 def get_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -67,15 +68,23 @@ def get_dataset(dataset_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {
+        "dataset": {
+            "id": "5484626",
+            "tags": ["dataset-a"],
+            "description": "Dataset sample",
+        }
+    }
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets", methods=["GET"])
-@token_required
+#@token_required
 def get_all_datasets():
     def route_logic():
         # Get request body
@@ -100,15 +109,35 @@ def get_all_datasets():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {
+        "datasets": [
+            {
+                "id": "35654sad6ada",
+                "tags": ["dataset-a"],
+                "description": "Dataset sample",
+            },
+            {
+                "id": "adfarf3f1af5",
+                "tags": ["dataset-b"],
+                "description": "Dataset sample",
+            },
+            {
+                "id": "fas4e6e1fas",
+                "tags": ["dataset-c"],
+                "description": "Dataset sample",
+            },
+        ]
+    }
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["PUT"])
-@token_required
+#@token_required
 def update_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -133,15 +162,17 @@ def update_dataset(dataset_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {"msg": "Dataset changed succesfully!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["DELETE"])
-@token_required
+#@token_required
 def delete_dataset(dataset_id):
     def route_logic():
         # Get request body
@@ -166,8 +197,9 @@ def delete_dataset(dataset_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
-
+    #status_code, response_body = error_handler(process_as_syft_message)
+    status_code, response_body = 200, {"msg": "Dataset deleted succesfully!"}
+    
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )

@@ -9,7 +9,7 @@ from ...core.node import node
 
 
 @association_request_route.route("/request", methods=["POST"])
-@token_required
+#@token_required
 def send_association_request():
     def route_logic():
         # Get request body
@@ -36,15 +36,17 @@ def send_association_request():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
-
+    #status_code, response_body = error_handler(process_as_syft_message)
+    
+    status_code, response_body = 200, {"msg": "Association request sent!"}
+    
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @association_request_route.route("/receive", methods=["POST"])
-@token_required
+#@token_required
 def recv_association_request():
     def route_logic():
         # Get request body
@@ -71,15 +73,17 @@ def recv_association_request():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {"msg": "Association request received!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @association_request_route.route("/respond", methods=["POST"])
-@token_required
+#@token_required
 def reply_association_request():
     def route_logic():
         # Get request body
@@ -106,15 +110,17 @@ def reply_association_request():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {"msg": "Association request was replied!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @association_request_route.route("/", methods=["GET"])
-@token_required
+#@token_required
 def get_all_association_requests():
     def route_logic():
         # Get request body
@@ -141,15 +147,20 @@ def get_all_association_requests():
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {
+        "association-requests": ["Network A", "Network B", "Network C"]
+    }
+
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @association_request_route.route("/<association_request_id>", methods=["GET"])
-@token_required
+#@token_required
 def get_specific_association_requests(association_request_id):
     def route_logic():
         # Get request body
@@ -176,15 +187,22 @@ def get_specific_association_requests(association_request_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {
+        "association-request": {
+            "ID": "51613546",
+            "address": "156.89.33.200",
+        }
+    }
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @association_request_route.route("/<association_request_id>", methods=["DELETE"])
-@token_required
+#@token_required
 def delete_association_requests(association_request_id):
     def route_logic():
         # Get request body
@@ -211,8 +229,10 @@ def delete_association_requests(association_request_id):
         )
         return response_body
 
-    status_code, response_body = error_handler(process_as_syft_message)
+    #status_code, response_body = error_handler(process_as_syft_message)
+
+    status_code, response_body = 200, {"msg": "Association request deleted!"}
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
