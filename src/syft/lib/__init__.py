@@ -3,6 +3,7 @@ from ..ast.globals import Globals
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
+from ..lib.pydp import create_pydp_ast
 from .misc import create_union_ast
 
 
@@ -11,12 +12,15 @@ def create_lib_ast() -> Globals:
     python_ast = create_python_ast()
     torch_ast = create_torch_ast()
     torchvision_ast = create_torchvision_ast()
+    pydp_ast = create_pydp_ast()
     # numpy_ast = create_numpy_ast()
 
     lib_ast = Globals()
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+    lib_ast.add_attr(attr_name="pydp", attr=pydp_ast.attrs["pydp"])
+
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     misc_ast = getattr(getattr(create_union_ast(lib_ast), "syft"), "lib")
