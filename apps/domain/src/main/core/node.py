@@ -2,11 +2,10 @@ from syft.grid.grid_client import connect
 from syft.core.node.domain.domain import Domain
 from syft.core.node.device.client import DeviceClient
 from syft.grid.connections.http_connection import HTTPConnection
-from syft.grid.services.worker_management_service import CreateWorkerService
 
 node = Domain(name="om-domain")
-node.immediate_services_with_reply.append(CreateWorkerService)
-node._register_services()  # re-register all services including SignalingService
+# node.immediate_services_with_reply.append(CreateWorkerService)
+# node._register_services()  # re-register all services including SignalingService
 
 try:
     node.private_device = connect(
