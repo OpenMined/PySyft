@@ -85,7 +85,7 @@ def create_app(
     app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
     app.register_blueprint(users_blueprint, url_prefix=r"/users")
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
-    app.register_blueprint(groups_blueprint, url_prefix=r"/groups/")
+    app.register_blueprint(groups_blueprint, url_prefix=r"/groups")
     app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
     app.register_blueprint(root_blueprint, url_prefix=r"/")
     app.register_blueprint(
