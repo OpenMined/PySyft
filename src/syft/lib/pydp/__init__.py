@@ -93,6 +93,5 @@ def create_pydp_ast() -> Globals:
         klass.create_send_method()
         klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
-    print('test?')
 
     return ast

@@ -4,6 +4,7 @@ from ..lib.pydp import create_pydp_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
+from ..lib.pydp import create_pydp_ast
 from .misc import create_union_ast
 
 
@@ -12,6 +13,7 @@ def create_lib_ast() -> Globals:
     python_ast = create_python_ast()
     torch_ast = create_torch_ast()
     torchvision_ast = create_torchvision_ast()
+    pydp_ast = create_pydp_ast()
     # numpy_ast = create_numpy_ast()
     pydp_ast = create_pydp_ast()
 

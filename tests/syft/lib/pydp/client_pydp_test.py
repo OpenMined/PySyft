@@ -1,11 +1,7 @@
-# third party
-# from pydp.algorithms.laplacian import BoundedMean
-
-# syft absolute
 import syft as sy
 
 
-def test_torch_function() -> None:
+def test_pydp() -> None:
     bob = sy.VirtualMachine(name="Bob")
     client = bob.get_root_client()
     x_ptr = client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)
