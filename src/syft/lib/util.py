@@ -95,7 +95,7 @@ def replace_classes_in_module(
     """Recursively replace occurrence of `from_class` to `to_class` inside module.
 
     For example, when syft replaces torch.nn.parameter.Parameter constructor,
-    there's also need to replace same constructor in other modules that has already
+    there's also need to replace the same constructor in other modules that has already
     imported it.
 
     Args:

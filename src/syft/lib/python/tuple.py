@@ -112,8 +112,8 @@ class Tuple(tuple, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().index(__value, __stop))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> SyPrimitiveRet:
-        return TupleIterator(self)
+    def __iter__(self, max_len: Optional[int] = None) -> TupleIterator:
+        return TupleIterator(self, max_len=max_len)
 
     @staticmethod
     @syft_decorator(typechecking=True)

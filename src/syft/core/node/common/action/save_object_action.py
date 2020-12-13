@@ -57,7 +57,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 if hasattr(self.obj, "description")
                 else ""
             ),
-            search_permissions={VerifyAll(): None}
+            search_permissions={VerifyAll: None}
             if self.anyone_can_search_for_this
             else {},
             read_permissions={

@@ -130,7 +130,7 @@ def test_decorator_metadata() -> None:
 
     def fn(x: int, y: int) -> int:
         """
-        Usually, bad written decorators can break documentation, typing, names or qualnames, we
+        Usually, badly written decorators can break documentation, typing, names or qualnames, we
         would like to not do that. This is some dummy documentation to test that.
         """
         return 0
