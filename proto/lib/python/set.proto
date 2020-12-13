@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.python;
+import "proto/core/common/common_object.proto";
+import "proto/core/store/store_object.proto";
+
+message Set {
+  repeated syft.core.store.StorableObject data = 1;
+  syft.core.common.UID id = 2;
+}

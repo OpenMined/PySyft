@@ -1,6 +1,6 @@
 """A Pointer is the main handler when interacting with remote data.
 A Pointer object represents an API for interacting with data (of any type)
-at a specific location. Pointer should never be instantiated, only subclassed.
+at a specific location. The pointer should never be instantiated, only subclassed.
 
 The relation between pointers and data is many to one,
 there can be multiple pointers pointing to the same piece of data, meanwhile,
@@ -115,7 +115,7 @@ from ..store.storeable_object import StorableObject
 # TODO: Fix the Client, Address, Location confusion
 class Pointer(AbstractPointer):
     """
-    Pointer is the handler when interacting with remote data.
+    The pointer is the handler when interacting with remote data.
 
     Automatically generated subclasses of Pointer need to be able to look up
     the path and name of the object type they point to as a part of serde. For more
@@ -129,6 +129,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
+    _searchable: bool = False
 
     def __init__(
         self,
@@ -444,15 +445,31 @@ class Pointer(AbstractPointer):
                     # escape the while loop
                     return status
 
-    def make_searchable(self, target_verify_key: Optional[VerifyKey] = None) -> None:
-        """Make the object pointed at searchable for other people. If target_verify_key is not specified, the
-        object will be searchable by anyone.
+    @property
+    def searchable(self) -> bool:
+        return self._searchable
 
-        :param target_verify_key: The verify_key of the client to which we want to give search permission.
+    @searchable.setter
+    def searchable(self, value: bool) -> None:
+        if value != self._searchable:
+            self.update_searchability(not self._searchable)
+
+    def update_searchability(
+        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+    ) -> None:
+        """Make the object pointed at searchable or not for other people. If
+        target_verify_key is not specified, the searchability for the VerifyAll group
+        will be toggled.
+
+        :param searchable: If the target object should be made searchable or not.
+        :type target_verify_key: bool
+        :param target_verify_key: The verify_key of the client to which we want to give
+               search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
+        self._searchable = searchable
         msg = ObjectSearchPermissionUpdateMessage(
-            add_instead_of_remove=True,
+            add_instead_of_remove=searchable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
             address=self.client.address,
@@ -460,10 +477,10 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=msg)
 
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
-        """Method that checks the status of an already made request. There are three possible
-        outcomes when requesting access:
-            1. RequestStatus.Accepted - your request has been approved, you can not .get() your
-            data.
+        """Method that checks the status of an already made request. There are three
+        possible outcomes when requesting access:
+            1. RequestStatus.Accepted - your request has been approved, you can not
+                                        .get() your data.
             2. RequestStatus.Pending - your request has not been reviewed yet.
             3. RequestStatus.Rejected - your request has been rejected.
 

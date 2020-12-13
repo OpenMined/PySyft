@@ -52,7 +52,6 @@ from pkg_resources import get_distribution  # noqa: F401
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
-from syft.core.common.module import Module  # noqa: F401
 
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -77,6 +76,7 @@ from syft.grid.duet import launch_duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
+from syft.lib.torch.module import Module  # noqa: F401
 
 # syft relative
 # Package Imports
@@ -105,13 +105,14 @@ DEFAULT_LOG_FILE = "syft_{time}.log"
 
 
 # run this to enable logging, or run with disable=True to turn it back off
+# file_path can also be sys.stdout
 def logging(
     disable: bool = False, file_path: Union[None, str, os.PathLike] = None
 ) -> None:
 
     logger.debug("Logging loaded")
 
-    if disable:
+    if not disable:
         if file_path is not None:
             LOG_FILE = file_path
         else:

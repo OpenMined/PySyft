@@ -127,32 +127,39 @@ def main():
         type=float,
         default=0.7,
         metavar="M",
-        help="Learning rate step gamma (default: 0.7)",
+        help="learning rate step gamma (default: 0.7)",
     )
     parser.add_argument(
-        "--no-cuda", action="store_true", default=False, help="disables CUDA training"
+        "--no-cuda",
+        action="store_true",
+        default=False,
+        help="disables CUDA training (default: False)"
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
-        help="quickly check a single pass",
+        help="quickly check a single pass (default: False)",
     )
     parser.add_argument(
-        "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)"
+        "--seed",
+        type=int,
+        default=1,
+        metavar="S",
+        help="random seed (default: 1)"
     )
     parser.add_argument(
         "--log-interval",
         type=int,
         default=10,
         metavar="N",
-        help="how many batches to wait before logging training status",
+        help="how many batches to wait before logging training status (default: 10)",
     )
     parser.add_argument(
         "--save-model",
         action="store_true",
         default=False,
-        help="For Saving the current Model",
+        help="For Saving the current Model (default: False)",
     )
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()

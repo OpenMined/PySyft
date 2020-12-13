@@ -554,6 +554,7 @@ def test_all_allowlisted_tensor_methods(
         assert isinstance(result, Pointer)
 
         # Step 11: Get the result
+        result_pointer_type = type(result)
         local_result = result.get()
 
         debug_data["local_result"] = local_result
@@ -673,6 +674,9 @@ def test_all_allowlisted_tensor_methods(
                 local_type = full_name_with_qualname(
                     klass=type(PrimitiveFactory.generate_primitive(value=local_result))
                 )
+                full_result_pointer_type = full_name_with_qualname(
+                    klass=result_pointer_type
+                )
                 python_types = "syft.lib.python"
                 if local_type.startswith(python_types) and return_type.startswith(
                     python_types
@@ -680,7 +684,13 @@ def test_all_allowlisted_tensor_methods(
                     # python types seem to resolve as both int.Int and .Int causing issues
                     # in the match
                     assert local_type.split(".")[-1] == return_type.split(".")[-1]
-
+                elif full_result_pointer_type.endswith("UnionPointer"):
+                    union_part = local_type.rsplit(".", 1)[-1]
+                    # check the returned value is part of the original expected Union
+                    # Bool in syft.proxy.syft.lib.misc.union.BoolFloatIntUnionPointer
+                    assert union_part in full_result_pointer_type
+                    # check the result pointer type matches the expected test Union
+                    assert full_result_pointer_type == return_type
                 else:
                     assert local_type == return_type
 

@@ -76,7 +76,7 @@ def test_uid_comparison() -> None:
 
 
 def test_uid_hash() -> None:
-    """Tests that a UID hashes correctly. If this tests fails then it
+    """Tests that a UID hashes correctly. If this test fails then it
     means that the uuid.UUID library changed or we tried to swap it out
     for something else. Are you sure you want to do this?"""
 
