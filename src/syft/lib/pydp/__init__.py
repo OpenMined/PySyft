@@ -94,21 +94,6 @@ def create_pydp_ast() -> Globals:
             BoundedMean.add_entry,
         ),
         (
-            "pydp.algorithms.laplacian.BoundedMean.epsilon",
-            "syft.lib.python.Float",
-            BoundedMean.epsilon,
-        ),
-        (
-            "pydp.algorithms.laplacian.BoundedMean.l0_sensitivity",
-            "syft.lib.python.Int",
-            BoundedMean.l0_sensitivity,
-        ),
-        (
-            "pydp.algorithms.laplacian.BoundedMean.linf_sensitivity",
-            "syft.lib.python.Int",
-            BoundedMean.linf_sensitivity,
-        ),
-        (
             "pydp.algorithms.laplacian.BoundedMean.privacy_budget_left",
             "syft.lib.python.Float",
             BoundedMean.privacy_budget_left,

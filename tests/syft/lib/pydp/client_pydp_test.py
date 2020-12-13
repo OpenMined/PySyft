@@ -20,9 +20,6 @@ def test_pydp_functions() -> None:
     client = bob.get_root_client()
     x_ptr = client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)
 
-    # test if property epsilon
-    assert x_ptr.epsilon.get() == 1
-
     input_data = [1, 88, 100, 5, 40, 30, 29, 56, 88, 23, 5, 1] * 100
     list_ptr = client.python.List(input_data)
     x_ptr.add_entries(list_ptr)
