@@ -82,6 +82,51 @@ def create_pydp_ast() -> Globals:
             "syft.lib.python.Float",
             BoundedMean.quick_result,
         ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.add_entries",
+            "syft.lib.python._SyNone",
+            BoundedMean.add_entries,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.add_entry",
+            "syft.lib.python._SyNone",
+            BoundedMean.add_entry,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.epsilon",
+            "syft.lib.python.Float",
+            BoundedMean.epsilon,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.l0_sensitivity",
+            "syft.lib.python.Int",
+            BoundedMean.l0_sensitivity,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.linf_sensitivity",
+            "syft.lib.python.Int",
+            BoundedMean.linf_sensitivity,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.privacy_budget_left",
+            "syft.lib.python.Float",
+            BoundedMean.privacy_budget_left,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.reset",
+            "syft.lib.python._SyNone",
+            BoundedMean.reset,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+            BoundedMean.result,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.noise_confidence_interval",
+            "syft.lib.python.Float",
+            BoundedMean.noise_confidence_interval,
+        ),
     ]
 
     add_modules(ast, modules)
