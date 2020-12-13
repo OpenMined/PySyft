@@ -27,6 +27,6 @@ def test_pydp_functions() -> None:
     list_ptr = client.python.List(input_data)
     x_ptr.add_entries(list_ptr)
     res_ptr = x_ptr.result(0.7)
-    assert isinstance(res_ptr.get(), Float)
+    assert isinstance(res_ptr.get(), float)
 
     assert x_ptr.privacy_budget_left().get() == 0.3

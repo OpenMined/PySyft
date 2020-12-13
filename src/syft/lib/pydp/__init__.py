@@ -10,7 +10,7 @@ from pydp.algorithms.laplacian import BoundedMean
 from ...ast.globals import Globals
 from ...ast.klass import Class
 from ...ast.module import Module
-
+from ..misc.union import UnionGenerator
 
 def get_parent(path: str, root: TypeAny) -> Module:
     parent = root
