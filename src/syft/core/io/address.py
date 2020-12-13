@@ -279,7 +279,7 @@ class Address(Serializable):
 
     @property
     def vm(self) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself, this property will return the ID of that vm
         if it is known by the client."""
 
@@ -287,7 +287,7 @@ class Address(Serializable):
 
     @vm.setter
     def vm(self, new_vm: Location) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients

@@ -12,5 +12,4 @@ def test_pydp() -> None:
     res_ptr = x_ptr.quick_result(list_ptr)
     res = res_ptr.get()
 
-    # TODO: fix this to be correct
-    assert 24 < res < 45
+    assert 22 < res < 35

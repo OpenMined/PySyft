@@ -1,1 +1,1 @@
-# Superresolution using an efficient sub-pixel convolutional neural network
+# Super-Resolution Using An Efficient Sub-Pixel Convolutional Neural Network

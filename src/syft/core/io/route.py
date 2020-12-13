@@ -71,8 +71,8 @@ the network for a good route to a remote worker which allows for
 things like network speed to be interrogated in the creation of
 a route.
 
-While in theory this data-structure could allow for very sophisticated
-network analysis, in the beginning it will mostly exist to choose
+While in theory, this data-structure could allow for very sophisticated
+network analysis, in the beginning, it will mostly exist to choose
 between Pub-sub, Request-Response, and Streaming options. In the
 long run it will allow us to design routes which explicitly
 avoid the most costly network bottlenecks. For example, if Grid is
@@ -107,8 +107,8 @@ from .virtual import VirtualClientConnection
 
 class RouteSchema(ObjectWithID):
     """An object which contains the IDs of the origin node and
-    set of destination node. Multiple routes can subscribe
-    to the same RouteSchema and routing logic is thus split into
+    set of the destination node. Multiple routes can subscribe
+    to the same RouteSchema and routing, logic is thus split into
     two groups of functionality:
 
     1) Discovering new routes
