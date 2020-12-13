@@ -6,7 +6,7 @@ Table of Contents:
     - INITIALIZATION: tests for various ways ObjectWithID can/can't be initialized
     - CLASS METHODS: tests for the use of ObjectWithID's class methods
     - SERDE: test for serialization and deserialization of ObjectWithID.
-    - CHILDREN: test that subclasses of ObjectWithID fulfill standards
+    - CHILDREN: test that subclasses of ObjectWithID fulfil standards
 
 """
 
@@ -47,7 +47,7 @@ def test_immutability_of_id() -> None:
     with pytest.raises(AttributeError):
 
         # TODO: filter on this error to only include errors
-        #  with string "Can't set attribute"
+        #  with the string "Can't set attribute"
 
         obj.id = ""
 

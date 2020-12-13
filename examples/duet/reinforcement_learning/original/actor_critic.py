@@ -13,7 +13,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # Cart Pole
-
 parser = argparse.ArgumentParser(description="PyTorch actor-critic example")
 parser.add_argument(
     "--gamma",
@@ -23,9 +22,17 @@ parser.add_argument(
     help="discount factor (default: 0.99)",
 )
 parser.add_argument(
-    "--seed", type=int, default=543, metavar="N", help="random seed (default: 543)"
+    "--seed",
+    type=int,
+    default=543,
+    metavar="N",
+    help="random seed (default: 543)"
 )
-parser.add_argument("--render", action="store_true", help="render the environment")
+parser.add_argument(
+    "--render",
+    action="store_true",
+    help="render the environment"
+)
 parser.add_argument(
     "--log-interval",
     type=int,
@@ -106,7 +113,7 @@ def select_action(state):
 
 def finish_episode():
     """
-    Training code. Calculates actor and critic loss and performs backprop.
+    Training code. Calculates actor and critic loss and performs backpropagation.
     """
     R = 0
     saved_actions = model.saved_actions

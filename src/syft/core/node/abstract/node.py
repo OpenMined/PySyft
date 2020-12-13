@@ -27,6 +27,8 @@ class AbstractNode(Address):
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
     guest_verify_key_registry: Set[VerifyKey]
+    admin_verify_key_registry: Set[VerifyKey]
+    cpl_ofcr_verify_key_registry: Set[VerifyKey]
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -48,7 +50,7 @@ class AbstractNode(Address):
 
     store: ObjectStore
     requests: List
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     """"""
 
     @property
@@ -93,7 +95,7 @@ class AbstractNode(Address):
 
 
 class AbstractNodeClient(Address):
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     """"""
