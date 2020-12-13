@@ -12,6 +12,7 @@ from ...ast.klass import Class
 from ...ast.module import Module
 from ..misc.union import UnionGenerator
 
+
 def get_parent(path: str, root: TypeAny) -> Module:
     parent = root
     for step in path.split(".")[:-1]:
