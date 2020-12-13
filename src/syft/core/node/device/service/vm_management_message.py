@@ -166,8 +166,8 @@ class CreateVMResponseMessage(ImmediateSyftMessageWithoutReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             vm_address=_deserialize(blob=proto.vm_address),
-            success=_deserialize(blob=proto.success),
-            msg=_deserialize(blob=proto.msg),
+            success=proto.success,
+            msg=proto.msg,
         )
 
     @staticmethod
