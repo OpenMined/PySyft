@@ -34,7 +34,6 @@ def nn(module):
 
     module.functional = functional
 
-    module.Conv2d = Conv2d
     module.AvgPool2d = AvgPool2d
     module.GRU = GRU
     module.GRUCell = GRUCell
