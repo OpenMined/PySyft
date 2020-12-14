@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 import syft as sy

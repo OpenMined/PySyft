@@ -1,5 +1,4 @@
 import copy
-import pytest
 
 import torch
 import torch.nn as nn
