@@ -610,22 +610,8 @@ def test_float(compress):
     assert y_serialized_deserialized == y
 
 
-@pytest.mark.parametrize(
-    "compress, compress_scheme",
-    [
-        (False, compression.NO_COMPRESSION),
-    ],
-)
-def test_hooked_tensor(compress, compress_scheme):
-    if compress:
-        if compress_scheme == compression.LZ4:
-            compression._apply_compress_scheme = compression.apply_lz4_compression
-        elif compress_scheme == compression.ZLIB:
-            compression._apply_compress_scheme = compression.apply_zlib_compression
-        else:
-            compression._apply_compress_scheme = compression.apply_no_compression
-    else:
-        compression._apply_compress_scheme = compression.apply_no_compression
+def test_hooked_tensor():
+    compression._apply_compress_scheme = compression.apply_no_compression
 
     t = Tensor(numpy.ones((100, 100)))
     t_serialized = syft.serde.serialize(t)
