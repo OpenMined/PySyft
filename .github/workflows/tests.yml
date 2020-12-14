@@ -67,10 +67,7 @@ jobs:
             bandit -r syft -ll
     - name: Run tests
       run: |
-        coverage run -m pytest test/ --randomly-dont-reset-seed \
-          --deselect=test/efficiency \
-          --deselect=test/notebooks \
-          --deselect=syft/frameworks/torch/mpc/cuda
+        coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
     - name: Check test coverage
       run: |
         coverage report --ignore-errors --fail-under 95 -m
