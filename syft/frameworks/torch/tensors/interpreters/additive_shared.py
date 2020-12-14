@@ -916,15 +916,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.pad = pad
 
-                def conv2d(a, b, *args, **kw):
-                    return a.conv2d(
-                        b,
-                        bias=args[0],
-                        stride=args[1] if isinstance(args[1], int) else args[1][0],
-                        padding=args[2],
-                        dilation=args[3],
-                        groups=args[4],
-                    )
+                def conv2d(a, b, *args, **kwargs):
+                    if len(args) > 1:  # if the conv params have been provided in args
+                        return a.conv2d(
+                            b,
+                            bias=args[0],
+                            stride=args[1] if isinstance(args[1], int) else args[1][0],
+                            padding=args[2],
+                            dilation=args[3],
+                            groups=args[4],
+                        )
+                    else:
+                        return a.conv2d(b, bias=args[0], **kwargs)
 
                 module.conv2d = conv2d
 

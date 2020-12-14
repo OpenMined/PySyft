@@ -40,6 +40,7 @@ class WebsocketClientWorker(BaseWorker):
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
         timeout: int = None,
+        arrow_enabled: bool = False,
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.
@@ -63,9 +64,13 @@ class WebsocketClientWorker(BaseWorker):
         # Secure flag adds a secure layer applying cryptography and authentication
         self.secure = secure
         self.ws = None
-        self.ws_arrow = None
         self.connect()
-        self.connect_arrow()
+
+        self.arrow_enabled = arrow_enabled
+
+        if self.arrow_enabled:
+            self.ws_arrow = None
+            self.connect_arrow()
 
     @property
     def url_arrow(self):
@@ -102,6 +107,8 @@ class WebsocketClientWorker(BaseWorker):
 
     def close(self):
         self.ws.shutdown()
+        if self.arrow_enabled:
+            self.close_arrow()
 
     def search(self, query):
         # Prepare a message requesting the websocket server to search among its objects

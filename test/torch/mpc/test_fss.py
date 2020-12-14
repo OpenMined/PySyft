@@ -115,7 +115,7 @@ def test_using_crypto_store(workers, op):
     gather_op = {"eq": "__add__", "le": "__add__"}[op]
     primitive = {"eq": "fss_eq", "le": "fss_comp"}[op]
 
-    me.crypto_store.provide_primitives(primitive, [alice, bob], n_instances=6)
+    me.crypto_store.provide_primitives(primitive, kwargs_={}, workers=[alice, bob], n_instances=6)
     keys_a = alice.crypto_store.get_keys(primitive, 3, remove=True)
     keys_b = bob.crypto_store.get_keys(primitive, 3, remove=True)
 
@@ -147,7 +147,7 @@ def test_using_preprocessed_material(workers, op):
     crypto_provider.crypto_store.force_preprocessing = True
 
     crypto_provider.crypto_store.provide_primitives(
-        workers=(data_owner, model_owner), n_instances=8, op=primitive
+        kwargs_={}, workers=(data_owner, model_owner), n_instances=8, op=primitive
     )
 
     encryption_kwargs = dict(  # noqa
@@ -162,12 +162,15 @@ def test_using_preprocessed_material(workers, op):
     t = th.randint(low=0, high=5, size=(8,))
     x = t.encrypt(**encryption_kwargs)
 
+    t2 = th.tensor([2])
+    x2 = t2.encrypt(**encryption_kwargs)
+
     if op == "eq":
-        encrypted_result = x == 3
-        clear_result = t == 3
+        encrypted_result = x == x2
+        clear_result = t == t2
     elif op == "le":
-        encrypted_result = x > 2
-        clear_result = t > 2
+        encrypted_result = x > x2
+        clear_result = t > t2
 
     assert (encrypted_result.decrypt() == clear_result).all()
     crypto_provider.crypto_store.force_preprocessing = False

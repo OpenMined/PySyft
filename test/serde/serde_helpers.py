@@ -447,6 +447,7 @@ def make_torch_tensor(**kwargs):
                         ),
                     ),
                     None,  # (AbstractTensor) chain
+                    False,  # (bool) requires_grad
                     None,  # (AbstractTensor) grad_chain
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
@@ -839,7 +840,7 @@ def make_plan(**kwargs):
         def forward(self, x):
             x = torch.nn.functional.relu(self.fc1(x))
             x = self.fc2(x)
-            return torch.nn.functional.log_softmax(x, dim=0)
+            return x
 
     with kwargs["workers"]["serde_worker"].registration_enabled():
         model_plan = Net()

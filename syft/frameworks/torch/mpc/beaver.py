@@ -67,15 +67,11 @@ def build_triple(
             if len(a.shape) == len(b.shape):
                 c = cmd(a, b)
             elif len(a.shape) > len(b.shape):
-                shape = b.shape
-                b = b.reshape_as(a)
-                c = cmd(a, b)
-                b = b.reshape(*shape)
+                b_ = b.reshape_as(a)
+                c = cmd(a, b_)
             else:  # len(a.shape) < len(b.shape):
-                shape = a.shape
-                a = a.reshape_as(b)
-                c = cmd(a, b)
-                a = a.reshape(*shape)
+                a_ = a.reshape_as(b)
+                c = cmd(a_, b)
         else:
             c = cmd(a, b)
     elif op in {"matmul", "conv2d"}:

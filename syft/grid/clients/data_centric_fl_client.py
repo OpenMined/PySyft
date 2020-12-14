@@ -66,6 +66,7 @@ class DataCentricFLClient(WebsocketClientWorker):
             verbose,
             None,  # initial data
             timeout,
+            True,  # force having arrow enabled
         )
 
         # Update Node reference using node's Id given by the remote node
