@@ -26,4 +26,4 @@ def test_pydp_functions() -> None:
     res_ptr = x_ptr.result(0.7)
     assert isinstance(res_ptr.get(), float)
 
-    assert x_ptr.privacy_budget_left().get() == 0.3
+    assert round(x_ptr.privacy_budget_left().get(), 2) == 0.3
