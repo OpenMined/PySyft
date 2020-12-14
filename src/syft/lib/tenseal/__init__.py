@@ -31,11 +31,26 @@ def create_tenseal_ast() -> Globals:
         ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
         ("tenseal.SCHEME_TYPE.CKKS", "tenseal.SCHEME_TYPE"),
         ("tenseal.SCHEME_TYPE.NONE", "tenseal.SCHEME_TYPE"),
+        ## Context
         ("tenseal.Context.generate_galois_keys", "syft.lib.python._SyNone"),
+        ("tenseal.Context.generate_relin_keys", "syft.lib.python._SyNone"),
+        ("tenseal.Context.has_galois_keys", "syft.lib.python.Bool"),
+        ("tenseal.Context.has_relin_keys", "syft.lib.python.Bool"),
+        ("tenseal.Context.has_public_key", "syft.lib.python.Bool"),
+        ("tenseal.Context.has_secret_key", "syft.lib.python.Bool"),
+        ("tenseal.Context.is_public", "syft.lib.python.Bool"),
+        ("tenseal.Context.is_private", "syft.lib.python.Bool"),
+        ("tenseal.Context.make_context_public", "syft.lib.python._SyNone"),
+        ("tenseal.Context.copy", "tenseal.Context"),
+        # Attr and property doesn't currently work
         (
             "tenseal.Context.global_scale",
             UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
         ),  # setter returns Int, getter returns Float?
+        ("tenseal.Context.auto_mod_switch", "syft.lib.python.Bool"),
+        ("tenseal.Context.auto_relin", "syft.lib.python.Bool"),
+        ("tenseal.Context.auto_rescale", "syft.lib.python.Bool"),
+        ## CKKSVector
         ("tenseal.CKKSVector.__add__", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.dot", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.matmul", "tenseal.CKKSVector"),
