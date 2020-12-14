@@ -971,8 +971,6 @@ class BaseWorker(AbstractWorker):
         """
         results = self.object_store.find_by_tag(tag)
         if results:
-            if not all(result.location.id == location.id for result in results):
-                raise ValueError("All Tags are not of same location.")
             return results
         else:
             return self.request_search(tag, location=location)
