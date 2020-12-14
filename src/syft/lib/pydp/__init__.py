@@ -4,7 +4,17 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
 # third party
-from pydp.algorithms.laplacian import BoundedMean
+from pydp.algorithms.laplacian import (
+    BoundedMean,
+    BoundedSum,
+    BoundedStandardDeviation,
+    BoundedVariance,
+    Count,
+    Max,
+    Median,
+    Min,
+    Percentile,
+)
 
 # syft relative
 from ...ast.globals import Globals
