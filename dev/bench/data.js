@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1607925314158,
+  "lastUpdate": 1607949677612,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -247,6 +247,33 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00001030014380042218",
             "extra": "mean: 611.4116382057192 usec\nrounds: 691"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "committer": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "id": "aaaa950a8a5ada00f221b670a0c64df458b88917",
+          "message": "[WIP] PyGrid integration",
+          "timestamp": "2020-12-14T06:19:23Z",
+          "url": "https://github.com/OpenMined/PySyft/pull/4642/commits/aaaa950a8a5ada00f221b670a0c64df458b88917"
+        },
+        "date": 1607949677009,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1642.0572535828026,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007262983857902981",
+            "extra": "mean: 608.9921638347879 usec\nrounds: 824"
           }
         ]
       }
