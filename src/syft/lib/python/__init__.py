@@ -40,6 +40,8 @@ for syft_type in [
 ]:
     syft_type.__module__ = __name__
 
+version = "0.3.0"
+
 
 def create_python_ast() -> Globals:
     ast = Globals()

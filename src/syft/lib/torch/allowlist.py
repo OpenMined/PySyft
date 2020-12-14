@@ -77,7 +77,7 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
-
+allowlist["torch.__version__"] = "syft.lib.python.String"
 # SECTION - The capital Tensor constructors
 allowlist["torch.Tensor"] = "torch.Tensor"
 allowlist["torch.BFloat16Tensor"] = "torch.Tensor"

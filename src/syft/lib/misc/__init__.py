@@ -13,6 +13,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
+from .scope import scopes_cache
 from .union import lazy_pairing
 
 
@@ -110,6 +111,43 @@ def create_union_ast(lib_ast: globals.Globals) -> globals.Globals:
                     "syft.lib.python.Any",
                 )
             )
+
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)
+
+    for ast_klass in ast.classes:
+        ast_klass.create_pointer_class()
+        ast_klass.create_send_method()
+        ast_klass.create_serialization_methods()
+        ast_klass.create_storable_object_attr_convenience_methods()
+
+    return ast
+
+
+def create_scope_ast() -> globals.Globals:
+    ast = globals.Globals()
+
+    modules = ["syft", "syft.lib", "syft.lib.misc", "syft.lib.misc.scope"]
+
+    classes = []
+    methods = []
+
+    for klass, scope_type in scopes_cache.items():
+        classes.append(
+            (
+                f"syft.lib.misc.scope.{klass}",
+                f"syft.lib.misc.scope.{klass}",
+                scope_type,
+            )
+        )
+
+        methods.append(
+            (
+                f"syft.lib.misc.scope.{klass}.__version__",
+                "syft.lib.python.String",
+            )
+        )
 
     add_modules(ast, modules)
     add_classes(ast, classes)

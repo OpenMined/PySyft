@@ -22,6 +22,16 @@ class Module(ast.attribute.Attribute):
 
     lookup_cache: Dict[Any, Any] = {}
 
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        path_and_name: Optional[str] = None,
+        ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
+        return_type_name: Optional[str] = None,
+        is_property: bool = False,
+    ):
+        super().__init__(name, path_and_name, ref, return_type_name, is_property)
+
     def add_attr(
         self,
         attr_name: str,
@@ -97,7 +107,9 @@ class Module(ast.attribute.Attribute):
                     attr_name=path[index],
                     attr=klass,
                 )
-            elif isinstance(attr_ref, func_type):
+            elif isinstance(attr_ref, func_type) or isinstance(
+                attr_ref, builtin_func_type
+            ):
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.function.Function(
@@ -107,21 +119,29 @@ class Module(ast.attribute.Attribute):
                         return_type_name=return_type_name,
                     ),
                 )
-            elif isinstance(attr_ref, builtin_func_type):
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=ast.function.Function(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
-                        return_type_name=return_type_name,
-                    ),
-                )
+            elif index == len(path) - 1:
+                if "globals" not in self.attrs:
+                    # syft absolute
+                    from syft.lib.misc.scope import Scope
+
+                    scope, scope_name = Scope.from_qualname(".".join(path[:-1]))
+                    path.insert(len(path) - 1, "globals")
+                    self.add_attr(
+                        attr_name="globals",
+                        attr=ast.klass.Class(
+                            "globals",
+                            unsplit(path[: index + 1]),
+                            scope,
+                            return_type_name=scope_name,
+                        ),
+                    )
 
         attr = self.attrs[path[index]]
         attr_ref = getattr(self.ref, path[index], None)
+
         if attr_ref is not None and attr_ref not in self.lookup_cache:
             self.lookup_cache[attr_ref] = path
+
         if hasattr(attr, "add_path"):
             attr.add_path(  # type: ignore
                 path=path, index=index + 1, return_type_name=return_type_name
