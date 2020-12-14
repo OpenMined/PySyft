@@ -160,14 +160,6 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         if verbose:
             print("\t\t- Linnerud Dataset")
         linnerud = load_sklearn(load_linnerud, *["#linnerrud_dataset"])
-        if tf_datasets_available:
-            if verbose:
-                print("\tLoading datasets from TensorFlow datasets...")
-                print("\t\t- fashion_mnist Dataset")
-            fashion_mnist = load_tf(datasets.fashion_mnist.load_data, *["#fashion_mnist"])
-            if verbose:
-                print("\t\t- cifar10 Dataset")
-            cifar10 = load_tf(datasets.cifar10.load_data, *["#cifar10"])
 
         workers = [bob, theo, jason, alice, andy, jon]
 
@@ -187,11 +179,22 @@ def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
         distribute_dataset(wine[1], workers)
         distribute_dataset(linnerud[0], workers)
         distribute_dataset(linnerud[1], workers)
+
         if tf_datasets_available:
-            distribute_dataset(fashion_mnist[0], workers)
-            distribute_dataset(fashion_mnist[1], workers)
-            distribute_dataset(cifar10[0], workers)
-            distribute_dataset(cifar10[1], workers)
+            try:
+                if verbose:
+                    print("\tLoading datasets from TensorFlow datasets...")
+                    print("\t\t- fashion_mnist Dataset")
+                fashion_mnist = load_tf(datasets.fashion_mnist.load_data, *["#fashion_mnist"])
+                if verbose:
+                    print("\t\t- cifar10 Dataset")
+                cifar10 = load_tf(datasets.cifar10.load_data, *["#cifar10"])
+                distribute_dataset(fashion_mnist[0], workers)
+                distribute_dataset(fashion_mnist[1], workers)
+                distribute_dataset(cifar10[0], workers)
+                distribute_dataset(cifar10[1], workers)
+            except Exception:
+                pass
 
     if verbose:
         print("\tCollecting workers into a VirtualGrid...")
