@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1607964765313,
+  "lastUpdate": 1607980236744,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -328,6 +328,33 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00023631838004706674",
             "extra": "mean: 943.3042136943488 usec\nrounds: 482"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "committer": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "id": "6fad06d7fc8f3bda78c2b3912472ff65eaa8437f",
+          "message": "PyDP Support",
+          "timestamp": "2020-12-14T20:55:44Z",
+          "url": "https://github.com/OpenMined/PySyft/pull/4908/commits/6fad06d7fc8f3bda78c2b3912472ff65eaa8437f"
+        },
+        "date": 1607980236209,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1788.9972707553936,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00007496110587314315",
+            "extra": "mean: 558.972345205287 usec\nrounds: 730"
           }
         ]
       }
