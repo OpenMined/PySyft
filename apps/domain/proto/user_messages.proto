@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/syft_assets/common_object.proto";
+import "proto/syft_assets/io/address.proto";
+
+
+// CREATE USER
+message CreateUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateUserResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// GET USER
+message GetUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetUserResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// GET ALL USERS
+message GetAllUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetAllUserResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// SEARCH USER
+message SearchUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SearchUserResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// UPDATE USER
+message UpdateUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateUserResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
