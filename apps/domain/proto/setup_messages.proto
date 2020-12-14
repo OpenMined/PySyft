@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/syft_assets/common_object.proto";
+import "proto/syft_assets/io/address.proto";
+
+message CreateInitialSetupMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
+message CreateInitialSetupResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetSetupMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+}
+
+message GetSetupResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+  syft.core.io.Address reply_to = 4;
+}
