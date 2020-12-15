@@ -79,6 +79,10 @@ def test_pointer_objectives(test_objects, func):
         func = "dict_get"
 
     sy_method = getattr(sy_obj, func)
+
+    if func == "__len__":
+        func = "len"
+
     remote_sy_method = getattr(remote_sy_obj, func)
 
     for possible_input in possible_inputs:

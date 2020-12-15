@@ -11,7 +11,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from loguru import logger
 
 # Fixes python3.6
-# however API changed between versions so typing_extensions smooths this over:
+# however, API changed between versions so typing_extensions smooths this over:
 # https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
 from typing_extensions import GenericMeta as GenericM  # type: ignore
 
