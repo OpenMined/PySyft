@@ -209,7 +209,6 @@ class PrimitiveStorage:
                 else:
                     # This branch never happens with on-the-fly primitives
                     current_primitives.append(primitives)
-                # print('Added to the store', primitives)
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
 

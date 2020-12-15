@@ -878,6 +878,7 @@ class TorchHook(FrameworkHook):
                         "Please don't call .eval() on an encrypted model containing "
                         "a BatchNorm, or fix this."
                     )
+                # TODO: Decomment and test extensively, could be error prone
                 # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
                 #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")
 

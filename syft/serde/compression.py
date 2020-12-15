@@ -18,7 +18,6 @@ scheme_to_bytes = {
     ZLIB: ZLIB.to_bytes(1, byteorder="big"),
 }
 default_compress_scheme = NO_COMPRESSION
-compress_scheme = NO_COMPRESSION
 
 ## SECTION: chosen Compression Algorithm
 
