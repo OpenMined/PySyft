@@ -21,20 +21,18 @@ executor = Executor()
 
 
 def process_as_syft_message(message_class, message_content, sign_key):
-    message = message_class(address=node.address)
+    message = message_class(**message_content)
     signed_message = message.sign(signing_key=sign_key)
-    print("My Message: ", message)
-    print("My Signed Message: ", signed_message)
 
-    response_dict = {}
+    response = {}
     if isinstance(signed_message, SignedImmediateSyftMessageWithReply):
-        response_dict = node.recv_immediate_msg_with_reply(msg=obj_msg)
+        response = node.recv_immediate_msg_with_reply(msg=signed_message)
     elif isinstance(signed_message, SignedImmediateSyftMessageWithoutReply):
         node.recv_immediate_msg_without_reply(msg=signed_message)
     else:
         node.recv_eventual_msg_without_reply(msg=signed_message)
 
-    return response_dict
+    return response.message
 
 
 def task_handler(route_function, data, mandatory, optional=[]):
