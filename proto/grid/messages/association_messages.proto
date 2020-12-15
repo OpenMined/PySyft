@@ -37,6 +37,21 @@ message ReceiveAssociationRequestResponse {
 }
 
 
+message RespondAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message RespondAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
 message GetAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
@@ -45,6 +60,21 @@ message GetAssociationRequestMessage {
 }
 
 message GetAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+message GetAllAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetAllAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
   bool success = 2;
   string content = 3;
