@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+// CREATE Request
+message CreateRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// GET Request
+message GetRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// GET ALL Requests
+message GetAllRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetAllRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// SEARCH Request
+message SearchRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SearchRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
+
+// UPDATE Request
+message UpdateRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool success = 3;
+}
