@@ -4,17 +4,15 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
 # third party
-from pydp.algorithms.laplacian import (
-    BoundedMean,
-    BoundedSum,
-    BoundedStandardDeviation,
-    BoundedVariance,
-    Count,
-    Max,
-    Median,
-    Min,
-    Percentile,
-)
+from pydp.algorithms.laplacian import BoundedMean
+from pydp.algorithms.laplacian import BoundedStandardDeviation
+from pydp.algorithms.laplacian import BoundedSum
+from pydp.algorithms.laplacian import BoundedVariance
+from pydp.algorithms.laplacian import Count
+from pydp.algorithms.laplacian import Max
+from pydp.algorithms.laplacian import Median
+from pydp.algorithms.laplacian import Min
+from pydp.algorithms.laplacian import Percentile
 
 # syft relative
 from ...ast.globals import Globals
