@@ -27,12 +27,13 @@ def process_as_syft_message(message_class, message_content, sign_key):
     response = {}
     if isinstance(signed_message, SignedImmediateSyftMessageWithReply):
         response = node.recv_immediate_msg_with_reply(msg=signed_message)
+        response = response.message
     elif isinstance(signed_message, SignedImmediateSyftMessageWithoutReply):
         node.recv_immediate_msg_without_reply(msg=signed_message)
     else:
         node.recv_eventual_msg_without_reply(msg=signed_message)
 
-    return response.message
+    return response
 
 
 def task_handler(route_function, data, mandatory, optional=[]):
