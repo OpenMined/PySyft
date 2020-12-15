@@ -20,10 +20,14 @@ from syft.grid.messages.association_messages import (
     SendAssociationRequestResponse,
     GetAssociationRequestMessage,
     GetAssociationRequestResponse,
+    GetAllAssociationRequestMessage,
+    GetAllAssociationRequestResponse,
     ReceiveAssociationRequestMessage,
     ReceiveAssociationRequestResponse,
     DeleteAssociationRequestMessage,
     DeleteAssociationRequestResponse,
+    RespondAssociationRequestMessage,
+    RespondAssociationRequestResponse,
 )
 
 
@@ -50,6 +54,17 @@ def recv_association_request_msg(
 
 
 @syft_decorator(typechecking=True)
+def respond_association_request_msg(
+    msg: RespondAssociationRequestMessage,
+) -> RespondAssociationRequestResponse:
+    return RespondAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"msg": "Association request was replied!"},
+    )
+
+
+@syft_decorator(typechecking=True)
 def get_association_request_msg(
     msg: GetAssociationRequestMessage,
 ) -> GetAssociationRequestResponse:
@@ -57,6 +72,17 @@ def get_association_request_msg(
         address=msg.reply_to,
         success=True,
         content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
+    )
+
+
+@syft_decorator(typechecking=True)
+def get_all_association_request_msg(
+    msg: GetAllAssociationRequestMessage,
+) -> GetAllAssociationRequestResponse:
+    return GetAllAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"association-requests": ["Network A", "Network B", "Network C"]},
     )
 
 
@@ -77,7 +103,9 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         SendAssociationRequestMessage: send_association_request_msg,
         ReceiveAssociationRequestMessage: recv_association_request_msg,
         GetAssociationRequestMessage: get_association_request_msg,
+        GetAllAssociationRequestMessage: get_all_association_request_msg,
         DeleteAssociationRequestMessage: del_association_request_msg,
+        RespondAssociationRequestMessage: respond_association_request_msg,
     }
 
     @staticmethod
@@ -105,5 +133,7 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
             SendAssociationRequestMessage,
             ReceiveAssociationRequestMessage,
             GetAssociationRequestMessage,
+            GetAllAssociationRequestMessage,
             DeleteAssociationRequestMessage,
+            RespondAssociationRequestMessage,
         ]

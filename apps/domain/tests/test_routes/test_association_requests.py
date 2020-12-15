@@ -25,7 +25,7 @@ def test_reply_association_request(client):
     assert result.get_json() == {"msg": "Association request was replied!"}
 
 
-def get_all_association_requests(client):
+def test_get_all_association_requests(client):
     result = client.get("/association-requests/")
     assert result.status_code == 200
     assert result.get_json() == {
@@ -33,7 +33,7 @@ def get_all_association_requests(client):
     }
 
 
-def get_specific_association_requests(client):
+def test_get_specific_association_requests(client):
     result = client.get("/association-requests/51613546")
     assert result.status_code == 200
     assert result.get_json() == {
@@ -44,7 +44,7 @@ def get_specific_association_requests(client):
     }
 
 
-def delete_association_requests(client):
-    result = client.get("/association-requests/51661659")
+def test_delete_association_requests(client):
+    result = client.delete("/association-requests/51661659")
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request deleted!"}
