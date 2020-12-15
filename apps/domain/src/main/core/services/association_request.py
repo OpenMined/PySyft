@@ -18,24 +18,92 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.grid.messages.association_messages import (
     SendAssociationRequestMessage,
     SendAssociationRequestResponse,
+    GetAssociationRequestMessage,
+    GetAssociationRequestResponse,
+    ReceiveAssociationRequestMessage,
+    ReceiveAssociationRequestResponse,
+    DeleteAssociationRequestMessage,
+    DeleteAssociationRequestResponse,
 )
 
 
+@syft_decorator(typechecking=True)
+def send_association_request_msg(
+    msg: SendAssociationRequestMessage,
+) -> SendAssociationRequestResponse:
+    return SendAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"msg": "Association request sent!"},
+    )
+
+
+@syft_decorator(typechecking=True)
+def recv_association_request_msg(
+    msg: ReceiveAssociationRequestMessage,
+) -> ReceiveAssociationRequestResponse:
+    return ReceiveAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"msg": "Association request received!"},
+    )
+
+
+@syft_decorator(typechecking=True)
+def get_association_request_msg(
+    msg: GetAssociationRequestMessage,
+) -> GetAssociationRequestResponse:
+    return GetAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
+    )
+
+
+@syft_decorator(typechecking=True)
+def del_association_request_msg(
+    msg: DeleteAssociationRequestMessage,
+) -> DeleteAssociationRequestResponse:
+    return DeleteAssociationRequestResponse(
+        address=msg.reply_to,
+        success=True,
+        content={"msg": "Association request deleted!"},
+    )
+
+
 class AssociationRequestService(ImmediateNodeServiceWithReply):
+
+    msg_handler_map = {
+        SendAssociationRequestMessage: send_association_request_msg,
+        ReceiveAssociationRequestMessage: recv_association_request_msg,
+        GetAssociationRequestMessage: get_association_request_msg,
+        DeleteAssociationRequestMessage: del_association_request_msg,
+    }
+
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[SendAssociationRequestMessage],
+        msg: Union[
+            SendAssociationRequestMessage,
+            ReceiveAssociationRequestMessage,
+            GetAssociationRequestMessage,
+            DeleteAssociationRequestMessage,
+        ],
         verify_key: VerifyKey,
-    ) -> SendAssociationRequestResponse:
-        print("I'm here! :3")
-        return SendAssociationRequestResponse(
-            address=msg.reply_to,
-            success=True,
-            content={"msg": "Association Request sent!"},
-        )
+    ) -> Union[
+        SendAssociationRequestResponse,
+        ReceiveAssociationRequestResponse,
+        GetAssociationRequestResponse,
+        DeleteAssociationRequestResponse,
+    ]:
+        return AssociationRequestService.msg_handler_map[type(msg)](msg=msg)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
-        return [SendAssociationRequestMessage]
+        return [
+            SendAssociationRequestMessage,
+            ReceiveAssociationRequestMessage,
+            GetAssociationRequestMessage,
+            DeleteAssociationRequestMessage,
+        ]
