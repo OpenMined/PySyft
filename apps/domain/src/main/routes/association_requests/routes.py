@@ -14,6 +14,10 @@ from syft.grid.messages.association_messages import (
 
 from ..auth import error_handler, token_required
 
+# third party
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+
 from ...core.node import node
 from ...core.task_handler import task_handler, process_as_syft_message
 from ...core.exceptions import (
@@ -27,7 +31,9 @@ from ...core.exceptions import (
 )
 
 
-def route_logic(message_class):
+def route_logic(message_class, current_user):
+    user_key = SigningKey(current_user.private_key.encode("utf-8"), encoder=HexEncoder)
+
     # Get request body
     content = request.get_json()
     content = {
@@ -39,9 +45,7 @@ def route_logic(message_class):
     syft_message = {}
     syft_message["message_class"] = message_class
     syft_message["message_content"] = content
-    syft_message[
-        "sign_key"
-    ] = node.signing_key  # TODO: Method to map token into sign-key
+    syft_message["sign_key"] = user_key
 
     # Execute task
     response_msg = task_handler(
@@ -57,81 +61,94 @@ def route_logic(message_class):
 
 
 @association_request_route.route("/request", methods=["POST"])
-# @token_required
-def send_association_request():
+@token_required
+def send_association_request(current_user):
     status_code, response_msg = error_handler(
-        route_logic, SendAssociationRequestMessage
+        route_logic, SendAssociationRequestMessage, current_user
     )
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
 
 
 @association_request_route.route("/receive", methods=["POST"])
-# @token_required
-def recv_association_request():
+@token_required
+def recv_association_request(current_user):
     status_code, response_msg = error_handler(
-        route_logic, ReceiveAssociationRequestMessage
+        route_logic, ReceiveAssociationRequestMessage, current_user
     )
 
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
 
 
 @association_request_route.route("/respond", methods=["POST"])
-# @token_required
-def reply_association_request():
+@token_required
+def reply_association_request(current_user):
     status_code, response_msg = error_handler(
-        route_logic, RespondAssociationRequestMessage
+        route_logic, RespondAssociationRequestMessage, current_user
     )
 
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
 
 
 @association_request_route.route("/", methods=["GET"])
-# @token_required
-def get_all_association_requests():
+@token_required
+def get_all_association_requests(current_user):
     status_code, response_msg = error_handler(
-        route_logic, GetAllAssociationRequestMessage
+        route_logic, GetAllAssociationRequestMessage, current_user
     )
 
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
 
 
 @association_request_route.route("/<association_request_id>", methods=["GET"])
-# @token_required
-def get_specific_association_requests(association_request_id):
-    status_code, response_msg = error_handler(route_logic, GetAssociationRequestMessage)
+@token_required
+def get_specific_association_requests(current_user, association_request_id):
+    status_code, response_msg = error_handler(
+        route_logic, GetAssociationRequestMessage, current_user
+    )
+
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
 
 
 @association_request_route.route("/<association_request_id>", methods=["DELETE"])
-# @token_required
-def delete_association_requests(association_request_id):
+@token_required
+def delete_association_requests(current_user, association_request_id):
     status_code, response_msg = error_handler(
-        route_logic, DeleteAssociationRequestMessage
+        route_logic, DeleteAssociationRequestMessage, current_user
     )
 
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+
     return Response(
-        json.dumps(response_msg.content),
+        json.dumps(response),
         status=status_code,
         mimetype="application/json",
     )
