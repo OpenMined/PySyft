@@ -15,7 +15,6 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.serde import compression
 from syft.serde import msgpack
-from syft.serde import serde
 from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
@@ -138,8 +137,8 @@ def test_torch_tensor_simplify(workers):
 
     At the time of writing, tensors simplify to a tuple where the
     first value in the tuple is the tensor's ID and the second
-    value is a serialized version of the Tensor (serialized
-    by PyTorch's torch.save method)
+    value is the numpy version of the Tensor which is given to
+    msgpack directly
     """
 
     me = workers["me"]
@@ -164,9 +163,6 @@ def test_torch_tensor_simplify(workers):
 
     # make sure ID is correctly encoded
     assert output[1][0] == input.id
-
-    # make sure tensor data type is correct
-    assert type(output[1][1]) == bytes
 
 
 def test_torch_tensor_simplify_generic(workers):
@@ -526,10 +522,6 @@ def test_list(compress):
     _list = (tensor_one, tensor_two)
 
     list_serialized = syft.serde.serialize(_list)
-    if compress:
-        assert list_serialized[0] == compression.LZ4
-    else:
-        assert list_serialized[0] == compression.NO_COMPRESSION
 
     list_serialized_deserialized = syft.serde.deserialize(list_serialized)
     # `assert list_serialized_deserialized == _list` does not work, therefore it's split
@@ -565,10 +557,6 @@ def test_set(compress):
     _set = (tensor_one, tensor_two)
 
     set_serialized = syft.serde.serialize(_set)
-    if compress:
-        assert set_serialized[0] == compression.LZ4
-    else:
-        assert set_serialized[0] == compression.NO_COMPRESSION
 
     set_serialized_deserialized = syft.serde.deserialize(set_serialized)
     # `assert set_serialized_deserialized == _set` does not work, therefore it's split
@@ -622,35 +610,11 @@ def test_float(compress):
     assert y_serialized_deserialized == y
 
 
-@pytest.mark.parametrize(
-    "compress, compress_scheme",
-    [
-        (True, compression.LZ4),
-        (False, compression.LZ4),
-        (True, compression.ZLIB),
-        (False, compression.ZLIB),
-        (True, compression.NO_COMPRESSION),
-        (False, compression.NO_COMPRESSION),
-    ],
-)
-def test_hooked_tensor(compress, compress_scheme):
-    if compress:
-        if compress_scheme == compression.LZ4:
-            compression._apply_compress_scheme = compression.apply_lz4_compression
-        elif compress_scheme == compression.ZLIB:
-            compression._apply_compress_scheme = compression.apply_zlib_compression
-        else:
-            compression._apply_compress_scheme = compression.apply_no_compression
-    else:
-        compression._apply_compress_scheme = compression.apply_no_compression
+def test_hooked_tensor():
+    compression._apply_compress_scheme = compression.apply_no_compression
 
     t = Tensor(numpy.ones((100, 100)))
     t_serialized = syft.serde.serialize(t)
-    assert (
-        t_serialized[0] == compress_scheme
-        if compress
-        else t_serialized[0] == compression.NO_COMPRESSION
-    )
     t_serialized_deserialized = syft.serde.deserialize(t_serialized)
     assert (t == t_serialized_deserialized).all()
 
@@ -675,31 +639,6 @@ def test_pointer_tensor_detail(id):
     x_ptr = 2 * x_ptr
     x_back = x_ptr.get()
     assert (x_back == 2 * x).all()
-
-
-@pytest.mark.parametrize(
-    "tensor",
-    [
-        (torch.tensor(numpy.ones((10, 10)), requires_grad=False)),
-        (torch.tensor([[0.25, 1.5], [0.15, 0.25], [1.25, 0.5]], requires_grad=True)),
-        (torch.randint(low=0, high=10, size=[3, 7], requires_grad=False)),
-    ],
-)
-def test_numpy_tensor_serde(tensor):
-    compression._apply_compress_scheme = compression.apply_lz4_compression
-
-    serde._serialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_serializer
-    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_deserializer
-
-    tensor_serialized = syft.serde.serialize(tensor)
-    assert tensor_serialized[0] != compression.NO_COMPRESSION
-    tensor_deserialized = syft.serde.deserialize(tensor_serialized)
-
-    # Back to Pytorch serializer
-    serde._serialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_serializer
-    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_deserializer
-
-    assert torch.eq(tensor_deserialized, tensor).all()
 
 
 @pytest.mark.parametrize("compress", [True, False])
@@ -854,14 +793,18 @@ def test_external_lib_msgpack():
     result1 = syft.serde.deserialize(ser1)
     assert example1.value == result1.value
 
-    saved_attr = SerializableDummyClass.get_msgpack_code
-    delattr(SerializableDummyClass, "get_msgpack_code")
-    syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
+    # This is not applicable anymore since proto_type_info in proto.py
+    # now has the @memorize option so it won't raise the
+    # UndefinedProtocolTypeError
 
-    with pytest.raises(Exception) as e:
-        example2 = SerializableDummyClass("test")
-        _ = syft.serde.serialize(example2)
-
-    assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError)
-    setattr(SerializableDummyClass, "get_msgpack_code", saved_attr)
-    syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
+    # saved_attr = SerializableDummyClass.get_msgpack_code
+    # delattr(SerializableDummyClass, "get_msgpack_code")
+    # syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
+    #
+    # with pytest.raises(Exception) as e:
+    #     example2 = SerializableDummyClass("test")
+    #     _ = syft.serde.serialize(example2)
+    #
+    # assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError)
+    # setattr(SerializableDummyClass, "get_msgpack_code", saved_attr)
+    # syft.serde.msgpack.serde.msgpack_global_state.stale_state = True

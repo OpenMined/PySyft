@@ -11,15 +11,14 @@ def test_primitives_usage(workers):
         workers["bob"],
         workers["james"],
     )
-    me.crypto_store.provide_primitives("fss_eq", [alice, bob], n_instances=6)
+    me.crypto_store.provide_primitives("fss_eq", kwargs_={}, workers=[alice, bob], n_instances=6)
     _ = alice.crypto_store.get_keys("fss_eq", 2, remove=False)
 
-    assert len(alice.crypto_store.fss_eq[0]) == 6
+    assert len(alice.crypto_store.fss_eq[0]) == 6 + 1  # one extra line is used
 
     keys = alice.crypto_store.get_keys("fss_eq", 4, remove=True)
 
-    assert len(keys[0]) == 4
-    assert len(alice.crypto_store.fss_eq[0]) == 2
+    assert keys.shape[0] == 4 + 1
 
     with pytest.raises(EmptyCryptoPrimitiveStoreError):
         _ = alice.crypto_store.get_keys("fss_eq", 4, remove=True)

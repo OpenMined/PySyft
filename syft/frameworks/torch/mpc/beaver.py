@@ -1,14 +1,29 @@
 import torch as th
+import torch
 from typing import Tuple
 
 import syft as sy
 
+from .cuda.tensor import CUDALongTensor
+
+if torch.cuda.is_available():
+    import torchcsprng as csprng
+
+    generator = csprng.create_random_device_generator("/dev/urandom")
+
+dtypes = {
+    "torch.float32": torch.float32,
+    "torch.int64": torch.int64,
+    "torch.int32": torch.int32,
+    "torch.bool": torch.bool,
+}
+
 
 def build_triple(
     op: str,
+    kwargs_: dict,
     shape: Tuple[th.Size, th.Size],
     n_workers: int,
-    n_instances: int,
     torch_dtype: th.dtype,
     field: int,
 ):
@@ -19,38 +34,58 @@ def build_triple(
         op (str): 'mul' or 'matmul': the op ° which ensures a ° b = c
         shape (Tuple[th.Size, th.Size]): the shapes of a and b
         n_workers (int): number of workers
-        n_instances (int): the number of tuples (works only for mul: there is a
-            shape issue for matmul which could be addressed)
         torch_dtype (th.dtype): the type of the shares
         field (int): the field for the randomness
 
     Returns:
         a triple of shares (a_sh, b_sh, c_sh) per worker where a_sh is a share of a
     """
+
     left_shape, right_shape = shape
     cmd = getattr(th, op)
     low_bound, high_bound = -(field // 2), (field - 1) // 2
-    a = th.randint(low_bound, high_bound, (n_instances, *left_shape), dtype=torch_dtype)
-    b = th.randint(low_bound, high_bound, (n_instances, *right_shape), dtype=torch_dtype)
 
-    if op == "mul" and b.numel() == a.numel():
-        # examples:
-        #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
-        #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
-        if len(a.shape) == len(b.shape):
-            c = cmd(a, b)
-        elif len(a.shape) > len(b.shape):
-            shape = b.shape
-            b = b.reshape_as(a)
-            c = cmd(a, b)
-            b = b.reshape(*shape)
-        else:  # len(a.shape) < len(b.shape):
-            shape = a.shape
-            a = a.reshape_as(b)
-            c = cmd(a, b)
-            a = a.reshape(*shape)
+    if isinstance(torch_dtype, str):
+        torch_dtype = dtypes[torch_dtype]
+
+    if torch.cuda.is_available():
+        a = th.empty(*left_shape, dtype=torch_dtype, device="cuda").random_(
+            low_bound, high_bound, generator=generator
+        )
+        b = th.empty(*right_shape, dtype=torch_dtype, device="cuda").random_(
+            low_bound, high_bound, generator=generator
+        )
     else:
-        c = cmd(a, b)
+        a = th.randint(low_bound, high_bound, left_shape, dtype=torch_dtype)
+        b = th.randint(low_bound, high_bound, right_shape, dtype=torch_dtype)
+
+    if op == "mul":
+        if b.numel() == a.numel():
+            # examples:
+            #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
+            #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
+            if len(a.shape) == len(b.shape):
+                c = cmd(a, b)
+            elif len(a.shape) > len(b.shape):
+                b_ = b.reshape_as(a)
+                c = cmd(a, b_)
+            else:  # len(a.shape) < len(b.shape):
+                a_ = a.reshape_as(b)
+                c = cmd(a_, b)
+        else:
+            c = cmd(a, b)
+    elif op in {"matmul", "conv2d"}:
+        if th.cuda.is_available():
+            cmd = getattr(CUDALongTensor, op)
+            a_ = CUDALongTensor(a)
+            b_ = CUDALongTensor(b)
+            c_ = cmd(a_, b_, **kwargs_)
+            c = c_._tensor
+        else:
+            cmd = getattr(th, op)
+            c = cmd(a, b, **kwargs_)
+    else:
+        raise ValueError
 
     helper = sy.AdditiveSharingTensor(field=field)
 

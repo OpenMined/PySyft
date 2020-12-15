@@ -137,3 +137,20 @@ def test_is_framework_supported(hook):
     assert worker.is_framework_supported("torch") is True
     assert sy.VirtualWorker.is_framework_supported("torch") is True
     assert worker.is_framework_supported("mock_framework") is False
+
+
+def test_find_or_request(workers):
+    me, bob = workers["me"], workers["bob"]
+
+    me.is_client_worker = False
+    t = th.tensor([1.0]).tag("number")
+
+    assert len(me.find_or_request("number", bob)) == 1
+
+    me.is_client_worker = True
+
+    t = th.tensor([1.0]).tag("number2")
+
+    p = t.send(bob)
+
+    assert len(me.find_or_request("number2", bob)) == 1

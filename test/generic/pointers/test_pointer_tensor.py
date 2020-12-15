@@ -550,8 +550,10 @@ def test_registration_of_action_on_pointer_of_pointer(workers):
     """
     Ensure actions along a chain of pointers are registered as expected.
     """
-    bob = workers["bob"]
-    alice = workers["alice"]
+    alice, bob = workers["bob"], workers["alice"]
+
+    alice.clear_objects()
+    bob.clear_objects()
 
     tensor = torch.tensor([1, 2, 3, 4.0])
     ptr = tensor.send(bob)
@@ -633,6 +635,8 @@ def test_remote_grad_fn(workers):
 
 def test_iadd(workers):
     alice = workers["alice"]
+    alice.clear_objects()
+
     a = torch.ones(1, 5)
     b = torch.ones(1, 5)
     a_pt = a.send(alice)
@@ -655,6 +659,7 @@ def test_inplace_ops_on_remote_long_tensor(workers):
 
 def test_iterable_pointer(workers):
     alice = workers["alice"]
+    alice.clear_objects()
 
     t = torch.Tensor([[1, 2], [4, 5], [7, 8]])
 
