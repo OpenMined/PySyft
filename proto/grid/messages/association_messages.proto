@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+
+message SendAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SendAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+message ReceiveAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message ReceiveAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
+
+message GetAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
+
+
+message DeleteAssociationRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteAssociationRequestResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+}
