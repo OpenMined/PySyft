@@ -21,6 +21,12 @@ from syft.proto.grid.messages.association_messages_pb2 import (
     DeleteAssociationRequestResponse as DeleteAssociationRequestResponse_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
+    GetAllAssociationRequestMessage as GetAllAssociationRequestMessage_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
+    GetAllAssociationRequestResponse as GetAllAssociationRequestResponse_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestMessage as GetAssociationRequestMessage_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
@@ -31,6 +37,12 @@ from syft.proto.grid.messages.association_messages_pb2 import (
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
     ReceiveAssociationRequestResponse as ReceiveAssociationRequestResponse_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
+    RespondAssociationRequestMessage as RespondAssociationRequestMessage_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
+    RespondAssociationRequestResponse as RespondAssociationRequestResponse_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
     SendAssociationRequestMessage as SendAssociationRequestMessage_PB,
@@ -327,6 +339,149 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
 
 
 @final
+class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
+    def __init__(
+        self,
+        address: Address,
+        content: Dict,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.content = content
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> RespondAssociationRequestMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: RespondAssociationRequestMessage_PB
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return RespondAssociationRequestMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            content=json.dumps(self.content),
+            reply_to=self.reply_to.serialize(),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: RespondAssociationRequestMessage_PB,
+    ) -> "RespondAssociationRequestMessage":
+        """Creates a RespondAssociationRequestMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: RespondAssociationRequestMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return RespondAssociationRequestMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            content=json.loads(proto.content),
+            reply_to=_deserialize(blob=proto.reply_to),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return RespondAssociationRequestMessage_PB
+
+
+@final
+class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        success: bool,
+        content: Dict,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.success = success
+        self.content = content
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> RespondAssociationRequestResponse_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: SignalingOfferMessage_PB
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return RespondAssociationRequestResponse_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            success=self.success,
+            content=json.dumps(self.content),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: RespondAssociationRequestResponse_PB,
+    ) -> "RespondAssociationRequestResponse":
+        """Creates a SignalingOfferMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: SignalingOfferMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return RespondAssociationRequestResponse(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            success=proto.success,
+            content=json.loads(proto.content),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return RespondAssociationRequestResponse_PB
+
+
+@final
 class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -467,6 +622,149 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAssociationRequestResponse_PB
+
+
+@final
+class GetAllAssociationRequestMessage(ImmediateSyftMessageWithReply):
+    def __init__(
+        self,
+        address: Address,
+        content: Dict,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.content = content
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> GetAllAssociationRequestMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: GetAllAssociationRequestMessage_PB
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return GetAllAssociationRequestMessage_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            content=json.dumps(self.content),
+            reply_to=self.reply_to.serialize(),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: GetAllAssociationRequestMessage_PB,
+    ) -> "GetAllAssociationRequestMessage":
+        """Creates a GetAllAssociationRequestMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: GetAllAssociationRequestMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return GetAllAssociationRequestMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            content=json.loads(proto.content),
+            reply_to=_deserialize(blob=proto.reply_to),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return GetAllAssociationRequestMessage_PB
+
+
+@final
+class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        success: bool,
+        content: Dict,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.success = success
+        self.content = content
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> GetAllAssociationRequestResponse_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: SignalingOfferMessage_PB
+        .. note::
+            This method is purely an internal method. Please use object.serialize() or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return GetAllAssociationRequestResponse_PB(
+            msg_id=self.id.serialize(),
+            address=self.address.serialize(),
+            success=self.success,
+            content=json.dumps(self.content),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: GetAllAssociationRequestResponse_PB,
+    ) -> "GetAllAssociationRequestResponse":
+        """Creates a SignalingOfferMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: SignalingOfferMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return GetAllAssociationRequestResponse(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            success=proto.success,
+            content=json.loads(proto.content),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return GetAllAssociationRequestResponse_PB
 
 
 @final
