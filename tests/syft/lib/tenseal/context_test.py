@@ -1,4 +1,7 @@
+# third party
 import tenseal as ts
+
+# syft absolute
 import syft as sy
 
 
@@ -12,6 +15,6 @@ def test_context_send() -> None:
 
     ctx = ts.context(ts.SCHEME_TYPE.CKKS, 8192, 0, [40, 20, 40])
     ctx.global_scale = 2 ** 40
-    ctx_ptr = ctx.tag("context").send(alice_client)
+    _ = ctx.tag("context").send(alice_client)
 
     assert len(alice.store) == 1
