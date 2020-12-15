@@ -48,6 +48,7 @@ exclusion_list_notebooks = [
     "Part 10 - Federated Learning with Secure Aggregation.ipynb",
     # Part 11 bis needs a lot of RAM and runs for > 300s for sure
     "Part 11 bis - Encrypted inference on ResNet-18.ipynb",
+    "Part 12 bis - Encrypted Training on MNIST.ipynb",
     # Part 13b and c need fixing of the tensorflow serving with PySyft
     "Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb",
     "Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb",
