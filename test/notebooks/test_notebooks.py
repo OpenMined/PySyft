@@ -143,7 +143,7 @@ def test_notebooks_basic_translations_diff(
         notebook,
         "/dev/null",
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+        timeout=600,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
