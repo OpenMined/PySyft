@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608007242363,
+  "lastUpdate": 1608007825616,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -436,6 +436,33 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000022022802500726645",
             "extra": "mean: 618.6925539776682 usec\nrounds: 704"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "committer": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "id": "a0be051a20ca192e03d48ab63d631cfdf10e3326",
+          "message": "[WIP] TenSEAL integration",
+          "timestamp": "2020-12-15T00:53:11Z",
+          "url": "https://github.com/OpenMined/PySyft/pull/4853/commits/a0be051a20ca192e03d48ab63d631cfdf10e3326"
+        },
+        "date": 1608007824811,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1638.7711010610801,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006502561264160486",
+            "extra": "mean: 610.2133478876426 usec\nrounds: 710"
           }
         ]
       }
