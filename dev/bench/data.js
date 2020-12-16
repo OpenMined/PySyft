@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608018412552,
+  "lastUpdate": 1608157733887,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -490,6 +490,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000013287521438572047",
             "extra": "mean: 613.2351605112001 usec\nrounds: 704"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "52173002+rajatrc1705@users.noreply.github.com",
+            "name": "rajatrc1705",
+            "username": "rajatrc1705"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e91e3b2bf796532988bfafb722196c28ad4a0024",
+          "message": "Fixed Sample Code (#4923)",
+          "timestamp": "2020-12-17T08:26:16+10:00",
+          "tree_id": "96fcb56acc3dd0b62eaf337cc44695f0f64a0297",
+          "url": "https://github.com/OpenMined/PySyft/commit/e91e3b2bf796532988bfafb722196c28ad4a0024"
+        },
+        "date": 1608157730671,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1073.686667324367,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00022734468384433265",
+            "extra": "mean: 931.3704178631607 usec\nrounds: 627"
           }
         ]
       }
