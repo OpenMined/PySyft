@@ -232,21 +232,35 @@ class Class(Callable):
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
-        def send(self: Any, client: Any, searchable: bool = False) -> Pointer:
-            # we need to generate an ID now because we removed the generic ID creation
-            id_ = getattr(self, "id", None)
-            if id_ is None:
-                id_ = UID()
-                self.id = id_
+        def send(
+            self: Any,
+            client: Any,
+            searchable: bool = False,
+            description: str = "",
+            tags: List[str] = [],
+        ) -> Pointer:
+            # this doesnt work for c types and other types like protobuf without
+            # the ability to setattr, however it is not being used currently, but
+            # would potentially make duplicate variables and other types of re-sending
+            # checks easier to track.
+            # id_ = getattr(self, "id", None)
+            # if id_ is None:
+            #     id_ = UID()
+            #     self.id = id_
 
             id_at_location = UID()
 
             # Step 1: create pointer which will point to result
+            attr_tags = self.tags if hasattr(self, "tags") else list()
+            attr_tags += tags
+            attr_description = description
+            if attr_description == "":
+                attr_description = getattr(self, "description", "")
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
                 id_at_location=id_at_location,
-                tags=self.tags if hasattr(self, "tags") else list(),
-                description=self.description if hasattr(self, "description") else "",
+                tags=attr_tags,
+                description=attr_description,
             )
 
             if searchable:

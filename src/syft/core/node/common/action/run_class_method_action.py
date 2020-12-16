@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Callable
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -23,6 +24,19 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+
+def isclassmethod(method: Callable) -> bool:
+    bound_to = getattr(method, "__self__", None)
+    if not isinstance(bound_to, type):
+        # must be bound to a class
+        return False
+    name = method.__name__
+    for cls in bound_to.__mro__:
+        descriptor = vars(cls).get(name)
+        if descriptor is not None:
+            return isinstance(descriptor, classmethod)
+    return False
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
@@ -133,7 +147,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 upcasted_kwargs,
             ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-            if resolved_self.data is None or resolved_self.data == None:  # noqa: E711
+            if (
+                isclassmethod(method)
+                or resolved_self.data is None
+                or resolved_self.data == None  # noqa: E711
+            ):
                 # if we have a None / SyNone its because the Class cant be constructed
                 result = method(*upcasted_args, **upcasted_kwargs)
             else:
