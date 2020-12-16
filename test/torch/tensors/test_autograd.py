@@ -811,6 +811,9 @@ def test_garbage_collection(workers):
     bob = workers["bob"]
     crypto_provider = workers["james"]
 
+    alice.clear_objects()
+    bob.clear_objects()
+
     a = torch.ones(1, 5)
     b = torch.ones(1, 5)
     a = a.encrypt(workers=[alice, bob], crypto_provider=crypto_provider, requires_grad=True)

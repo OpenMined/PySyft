@@ -15,6 +15,8 @@ from syft.exceptions import InvalidProtocolFileError
 from syft.exceptions import UndefinedProtocolTypeError
 from syft.exceptions import UndefinedProtocolTypePropertyError
 
+from syft.generic.utils import memorize
+
 if proto_info is None:
     raise InvalidProtocolFileError("Failed to load syft protocol data")
 
@@ -50,6 +52,7 @@ class TypeInfo:
             raise UndefinedProtocolTypePropertyError(f"forced_code is not set for {self.name}")
 
 
+@memorize
 def fullname(cls):
     """Returns full name of a given *class* (not instance of class).
     Source:
@@ -62,6 +65,7 @@ def fullname(cls):
         return module + "." + cls.__name__
 
 
+@memorize
 def proto_type_info(cls):
     """Returns `TypeInfo` instance for a given *class* identified by `cls` parameter.
     Throws an exception when such class does not exists in the `proto.json`.

@@ -21,6 +21,21 @@ class VirtualWorker(BaseWorker):
 
         return self.recv_msg(message)
 
+    def _send_msg_arrow(self, message: bin, location: BaseWorker) -> bin:
+        """send message to worker location"""
+
+        return location._recv_msg_arrow(message)
+
+    def _recv_msg_arrow(self, message: bin) -> bin:
+        """receive message"""
+
+        if self.message_pending_time > 0:
+            if self.verbose:
+                print(f"pending time of {self.message_pending_time} seconds to receive message...")
+            sleep(self.message_pending_time)
+
+        return self.recv_msg_arrow(message)
+
     # For backwards compatibility with Udacity course
     @property
     def _objects(self):

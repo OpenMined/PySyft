@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import List
 
-import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
@@ -32,6 +31,7 @@ class PrimitiveStorage:
         self.fss_comp: list = []
         self.mul: dict = defaultdict(list)
         self.matmul: dict = defaultdict(list)
+        self.conv2d: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -39,6 +39,7 @@ class PrimitiveStorage:
             "fss_comp": self.build_fss_keys(op="comp"),
             "mul": self.build_triples(op="mul"),
             "matmul": self.build_triples(op="matmul"),
+            "conv2d": self.build_triples(op="conv2d"),
         }
 
         self.force_preprocessing = False
@@ -51,7 +52,7 @@ class PrimitiveStorage:
 
     def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return keys primitives
+        Return FSS keys primitives
 
         Args:
             op (str): primitive type, should be fss_eq, fss_comp, mul or matmul
@@ -64,26 +65,24 @@ class PrimitiveStorage:
             kwargs (dict): further arguments to be used depending of the primitive
         """
         primitive_stack = getattr(self, op)
-
-        if op in {"mul", "matmul"}:
+        if op in {"mul", "matmul", "conv2d"}:
+            assert n_instances == 1
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
-            torch_dtype = kwargs.get("torch_dtype")
+            torch_dtype = str(kwargs.get("torch_dtype"))
             field = kwargs.get("field")
-            config = (shapes, dtype, torch_dtype, field)
+            kwargs_ = kwargs.get("kwargs_")
+            hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
+            if op == "conv2d":
+                config = (shapes, dtype, torch_dtype, field, hashable_kwargs_)
+            else:
+                config = (shapes, dtype, torch_dtype, field)
             primitive_stack = primitive_stack[config]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-            if available_instances >= n_instances:
-                keys = []
-                for i, prim in enumerate(primitive_stack):
-                    if n_instances == 1:
-                        keys.append(prim[0])
-                        if remove:
-                            primitive_stack[i] = prim[1:]
-                    else:
-                        keys.append(prim[:n_instances])
-                        if remove:
-                            primitive_stack[i] = prim[n_instances:]
+            if available_instances > 0:
+                keys = primitive_stack[0]
+                if remove:
+                    del primitive_stack[0]
                 return keys
             else:
                 if self._owner.verbose:
@@ -93,54 +92,39 @@ class PrimitiveStorage:
                         f"[({str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})], "
                         f"n_instances={n_instances}"
                     )
+
+                if op == "conv2d":
+                    sy.preprocessed_material[op].append(
+                        (tuple(shapes[0]), tuple(shapes[1]), hashable_kwargs_)
+                    )
+                else:
+                    sy.preprocessed_material[op].append((tuple(shapes[0]), tuple(shapes[1])))
+
                 raise EmptyCryptoPrimitiveStoreError(
-                    self,
-                    available_instances=available_instances,
-                    n_instances=n_instances,
-                    op=op,
-                    **kwargs,
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
         elif op in {"fss_eq", "fss_comp"}:
-            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
+            # For each primitive, the first line is the AES keys
+            if th.cuda.is_available():
+                # print('opening store...')
+                available_instances = len(primitive_stack[0][0]) if len(primitive_stack) > 0 else -1
+                # print('available_instances', available_instances)
+                # print(primitive_stack)
+            else:
+                available_instances = (
+                    len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
+                )
+
             if available_instances >= n_instances:
-                keys = []
-                # We iterate on the different elements that constitute a given primitive, for
-                # example of the beaver triples, you would have 3 elements.
-                for i, prim in enumerate(primitive_stack):
-                    # We're selecting on the last dimension of the tensor because it's simpler for
-                    # generating those primitives in crypto protocols
-                    # [:] ~ [slice(None)]
-                    # [:1] ~ [slice(1)]
-                    # [1:] ~ [slice(1, None)]
-                    # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
-                    if isinstance(prim, tuple):
-
-                        ps = []
-                        left_ps = []
-                        for p in prim:
-                            n_dim = len(p.shape)
-                            get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                            remaining_slice = tuple(
-                                [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                            )
-                            ps.append(p[get_slice])
-                            if remove:
-                                left_ps.append(p[remaining_slice])
-
-                        keys.append(tuple(ps))
-                        if remove:
-                            primitive_stack[i] = tuple(left_ps)
-                    else:
-                        n_dim = len(prim.shape)
-                        get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                        remaining_slice = tuple(
-                            [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                        )
-
-                        keys.append(prim[get_slice])
-                        if remove:
-                            primitive_stack[i] = prim[remaining_slice]
-
+                if th.cuda.is_available():
+                    assert available_instances == n_instances
+                    keys = primitive_stack[0]
+                else:
+                    keys = primitive_stack[0][0 : n_instances + 1]
+                if remove:
+                    # We throw the whole key array away, not just the keys we used
+                    del primitive_stack[0]
                 return keys
             else:
                 if self._owner.verbose:
@@ -150,17 +134,17 @@ class PrimitiveStorage:
                         f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
                         f"n_instances={n_instances}"
                     )
+
+                sy.preprocessed_material[op].append(n_instances)
+
                 raise EmptyCryptoPrimitiveStoreError(
-                    self,
-                    available_instances=available_instances,
-                    n_instances=n_instances,
-                    op=op,
-                    **kwargs,
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
 
     def provide_primitives(
         self,
         op: str,
+        kwargs_: dict,
         workers: List[AbstractWorker],
         n_instances: int = 10,
         **kwargs,
@@ -170,7 +154,7 @@ class PrimitiveStorage:
 
         Args:
             op (str): type of primitive (fss_eq, etc)
-            workers (AbstractWorker): recipients for those primitive
+            workers (AbstractWorker): recipients for those primitives
             n_instances (int): how many of them are needed
             **kwargs: any parameters needed for the primitive builder
         """
@@ -181,7 +165,9 @@ class PrimitiveStorage:
 
         builder = self._builders[op]
 
-        primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
+        primitives = builder(
+            kwargs_=kwargs_, n_party=len(workers), n_instances=n_instances, **kwargs
+        )
 
         for worker_primitives, worker in zip(primitives, workers):
             worker_types_primitives[worker][op] = worker_primitives
@@ -190,7 +176,7 @@ class PrimitiveStorage:
             worker_message = self._owner.create_worker_command_message(
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
-            self._owner.send_msg(worker_message, worker)
+            self._owner.send_msg_arrow(worker_message, worker)
 
     def add_primitives(self, types_primitives: dict):
         """
@@ -204,35 +190,25 @@ class PrimitiveStorage:
                 raise ValueError(f"Unknown crypto primitives {op}")
 
             current_primitives = getattr(self, op)
-            if op in {"mul", "matmul"}:
+            if op in {"mul", "matmul", "conv2d"}:
                 for params, primitive_triple in primitives:
+                    if th.cuda.is_available():
+                        primitive_triple = [p.cuda() for p in primitive_triple]
                     if params not in current_primitives or len(current_primitives[params]) == 0:
-                        current_primitives[params] = primitive_triple
+                        current_primitives[params] = [primitive_triple]
                     else:
-                        for i, primitive in enumerate(primitive_triple):
-                            current_primitives[params][i] = th.cat(
-                                (current_primitives[params][i], primitive)
-                            )
+                        current_primitives[params].append(primitive_triple)
             elif op in {"fss_eq", "fss_comp"}:
-                if len(current_primitives) == 0:
-                    setattr(self, op, list(primitives))
+                if th.cuda.is_available():
+                    primitives = [
+                        p.cuda() if not isinstance(p, tuple) else tuple(pi.cuda() for pi in p)
+                        for p in primitives
+                    ]
+                if len(current_primitives) == 0 or len(current_primitives[0]) == 0:
+                    setattr(self, op, [primitives])
                 else:
-                    for i, primitive in enumerate(primitives):
-                        if len(current_primitives[i]) == 0:
-                            current_primitives[i] = primitive
-                        else:
-                            if isinstance(current_primitives[i], tuple):
-                                new_prims = []
-                                for cur_prim, prim in zip(current_primitives[i], primitive):
-                                    new_prims.append(
-                                        np.concatenate((cur_prim, prim), axis=len(prim.shape) - 1)
-                                    )
-                                current_primitives[i] = tuple(new_prims)
-                            else:
-                                current_primitives[i] = np.concatenate(
-                                    (current_primitives[i], primitive),
-                                    axis=len(primitive.shape) - 1,
-                                )
+                    # This branch never happens with on-the-fly primitives
+                    current_primitives.append(primitives)
             else:
                 raise TypeError(f"Can't resolve primitive {op} to a framework")
 
@@ -240,18 +216,36 @@ class PrimitiveStorage:
         """
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
+        if op == "eq":
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DPF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DPF
+        elif op == "comp":
+            if th.cuda.is_available():
+                fss_class = sy.frameworks.torch.mpc.cuda.fss.DIF
+            else:
+                fss_class = sy.frameworks.torch.mpc.fss.DIF
+        else:
+            raise ValueError(f"type_op {op} not valid")
 
         n = sy.frameworks.torch.mpc.fss.n
 
-        def build_separate_fss_keys(n_party: int, n_instances: int = 100):
+        def build_separate_fss_keys(kwargs_: dict, n_party: int, n_instances: int = 100):
             if n_party != 2:
                 raise AttributeError(
                     f"The FSS protocol only works for 2 workers, " f"{n_party} were provided."
                 )
-            alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.fss.keygen(n_values=n_instances, op=op)
-            # simulate sharing TODO clean this
-            mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)
-            return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
+            if th.cuda.is_available():
+                alpha, s_00, s_01, *CW = sy.frameworks.torch.mpc.cuda.fss.keygen(
+                    n_values=n_instances, op=op
+                )
+                # simulate sharing TODO clean this
+                mask = th.randint(0, 2 ** n, alpha.shape, device="cuda")
+                return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
+            else:
+                keys_a, keys_b = fss_class.keygen(n_values=n_instances)
+                return [keys_a, keys_b]
 
         return build_separate_fss_keys
 
@@ -260,7 +254,8 @@ class PrimitiveStorage:
         The builder to generate beaver triple for multiplication or matrix multiplication
         """
 
-        def build_separate_triples(n_party: int, n_instances: int, **kwargs) -> list:
+        def build_separate_triples(kwargs_: dict, n_party: int, n_instances: int, **kwargs) -> list:
+            assert n_instances == 1, "For Beaver, only n_instances == 1 is allowed."
             if n_party != 2:
                 raise NotImplementedError(
                     "Only 2 workers supported for the moment. "
@@ -282,10 +277,20 @@ class PrimitiveStorage:
             torch_dtype = kwargs.get("torch_dtype", th.int64)
             field = kwargs.get("field", 2 ** 64)
 
+            if op == "conv2d":
+                hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
+
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
-                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
-                config = (shape, dtype, torch_dtype, field)
+                shares_worker = build_triple(op, kwargs_, shape, n_party, torch_dtype, field)
+                shape = (tuple(shape[0]), tuple(shape[1]))
+                torch_dtype = str(torch_dtype)
+
+                if op == "conv2d":
+                    config = (shape, dtype, torch_dtype, field, hashable_kwargs_)
+                else:
+                    config = (shape, dtype, torch_dtype, field)
+
                 for primitives, shares in zip(primitives_worker, shares_worker):
                     primitives.append((config, shares))
 
