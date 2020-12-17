@@ -1,10 +1,10 @@
-#https://gist.github.com/mkaranasou/ba83e25c835a8f7629e34dd7ede01931#file-python_yaml_environment_variables-py
+# https://gist.github.com/mkaranasou/ba83e25c835a8f7629e34dd7ede01931#file-python_yaml_environment_variables-py
 import os
 import re
 import yaml
 
 
-def parse_config(path=None, data=None, tag='!ENV'):
+def parse_config(path=None, data=None, tag="!ENV"):
     """
     Load a yaml configuration file and resolve any environment variables
     The environment variables must have !ENV before them and be in this format
@@ -25,7 +25,7 @@ def parse_config(path=None, data=None, tag='!ENV'):
     :rtype: dict[str, T]
     """
     # pattern for global vars: look for ${word}
-    pattern = re.compile('.*?\${(\w+)}.*?')
+    pattern = re.compile(".*?\${(\w+)}.*?")
     loader = yaml.SafeLoader
 
     # the tag will be used to mark where to start searching for the pattern
@@ -45,13 +45,11 @@ def parse_config(path=None, data=None, tag='!ENV'):
         if match:
             full_value = value
             for g in match:
-                full_value = full_value.replace(
-                    f'${{{g}}}', os.environ.get(g, g)
-                )
-                #DEBUG
+                full_value = full_value.replace(f"${{{g}}}", os.environ.get(g, g))
+                # DEBUG
                 print(full_value)
             return full_value
-        #DEBUG
+        # DEBUG
         print(value)
         return value
 
@@ -63,4 +61,4 @@ def parse_config(path=None, data=None, tag='!ENV'):
     elif data:
         return yaml.load(data, Loader=loader)
     else:
-        raise ValueError('Either a path or data should be defined as input')
+        raise ValueError("Either a path or data should be defined as input")

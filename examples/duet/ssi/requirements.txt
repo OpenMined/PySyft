@@ -1,2 +1,3 @@
 aries-basic-controller
+jupyter
 syft
