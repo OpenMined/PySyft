@@ -4,19 +4,19 @@ import os
 from pathlib import Path
 import sys
 from typing import Any
+from typing import Callable
 from typing import Generator
 from typing import Optional
-from typing import Callable
 
 # third party
 import nest_asyncio
 import requests
 
 # syft relative
-from . import loopback_exchangeIds
-from . import manual_exchangeIds
 from ...core.node.domain.domain import Domain
-from .manual_exchangeIds import bcolors
+from .bcolors import bcolors
+from .exchange_ids import file_exchanger
+from .exchange_ids import manual_exchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -138,16 +138,14 @@ def begin_duet_logger(my_domain: Domain) -> None:
 
 
 def duet(
-    target_id: Optional[str] = None,
+    join: bool = False,
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
-    if target_id is not None:
-        return join_duet(
-            target_id=target_id, loopback=loopback, network_url=network_url
-        )
+    if join:
+        return join_duet(loopback=loopback, network_url=network_url)
     else:
         return launch_duet(
             logging=logging, network_url=network_url, loopback=loopback, db_path=db_path
@@ -158,7 +156,7 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
-    exchangeIds_method: Callable = manual_exchangeIds.server_send_then_get,
+    exchange_id_method: Callable = manual_exchanger.server_exchange,
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
@@ -197,8 +195,8 @@ def launch_duet(
 
     my_domain = Domain(name="Launcher", db_path=db_path)
     if loopback:
-        exchangeIds_method = loopback_exchangeIds.server_send_then_get
-    target_id = exchangeIds_method(signaling_client.duet_id)
+        exchange_id_method = file_exchanger.server_exchange
+    target_id = exchange_id_method(signaling_client.duet_id)
 
     print("♫♫♫ > Connecting...")
 
@@ -221,10 +219,9 @@ def launch_duet(
 
 
 def join_duet(
-    target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
-    exchangeIds_method: Callable = manual_exchangeIds.client_get_then_send,
+    exchange_id_method: Callable = manual_exchanger.client_exchange,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
         display(
@@ -261,8 +258,8 @@ def join_duet(
     my_domain = Domain(name="Joiner")
 
     if loopback:
-        exchangeIds_method = loopback_exchangeIds.client_get_then_send
-    target_id = exchangeIds_method(signaling_client.duet_id)
+        exchange_id_method = file_exchanger.client_exchange
+    target_id = exchange_id_method(signaling_client.duet_id)
 
     duet = WebRTCDuet(
         node=my_domain,
