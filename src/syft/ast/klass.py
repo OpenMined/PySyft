@@ -1,4 +1,5 @@
 # stdlib
+from itertools import chain
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
@@ -224,11 +225,6 @@ class Class(Callable):
     def create_send_method(outer_self: Any) -> None:
         def send(self: Any, client: Any, searchable: bool = False) -> Pointer:
             # we need to generate an ID now because we removed the generic ID creation
-            id_ = getattr(self, "id", None)
-            if id_ is None:
-                id_ = UID()
-                self.id = id_
-
             id_at_location = UID()
 
             # Step 1: create pointer which will point to result
@@ -256,21 +252,12 @@ class Class(Callable):
             # Step 4: return pointer
             return ptr
 
-        def send_to(self: Any, client: Any, searchable: bool = False) -> Pointer:
-            # alias method to send method.
-            return send(self=self, client=client, searchable=searchable)
-
-        # using curse because Numpy tries to lock down custom attributes
         aggressive_set_attr(obj=outer_self.ref, name="send", attr=send)
-        aggressive_set_attr(obj=outer_self.ref, name="send_to", attr=send_to)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
             self.tags = list(tags)
             return self
-
-        # using curse because Numpy tries to lock down custom attributes
-        aggressive_set_attr(obj=outer_self.ref, name="tag", attr=tag)
 
         def describe(self: Any, description: str) -> object:
             self.description = description
@@ -278,7 +265,7 @@ class Class(Callable):
             # WHY? Chaining?
             return self
 
-        # using curse because Numpy tries to lock down custom attributes
+        aggressive_set_attr(obj=outer_self.ref, name="tag", attr=tag)
         aggressive_set_attr(obj=outer_self.ref, name="describe", attr=describe)
 
     def create_serialization_methods(outer_self) -> None:
@@ -317,20 +304,12 @@ def pointerize_args_and_kwargs(
     # method invocation
     pointer_args = []
     pointer_kwargs = {}
-    for arg in args:
+    for arg in chain(args, kwargs.items()):
         # check if its already a pointer
         if not isinstance(arg, Pointer):
             arg_ptr = arg.send(client)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
-
-    for k, arg in kwargs.items():
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client)
-            pointer_kwargs[k] = arg_ptr
-        else:
-            pointer_kwargs[k] = arg
 
     return (pointer_args, pointer_kwargs)

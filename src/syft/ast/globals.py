@@ -72,6 +72,3 @@ class Globals(Module):
         if self._copy is not None:
             return self._copy()
         return None
-
-
-copyType = CallableT[[], Globals]

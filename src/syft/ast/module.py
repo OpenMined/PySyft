@@ -54,11 +54,13 @@ class Module(ast.attribute.Attribute):
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
 
-        _path: Union[List[str]] = path if path is not None else []
-
         if obj_type is not None:
             if obj_type in self.lookup_cache:
-                _path = self.lookup_cache[obj_type]
+                path = self.lookup_cache[obj_type]
+
+        _path: List[str] = (
+            path.split(".") if isinstance(path, str) else path if path else []
+        )
 
         resolved = self.attrs[_path[index]](
             path=_path,
