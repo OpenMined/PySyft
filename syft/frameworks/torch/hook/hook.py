@@ -851,6 +851,26 @@ class TorchHook(FrameworkHook):
 
         self.torch.nn.Module.location = location
 
+        # print the location 
+        native___str__ = self.torch.nn.Module.__str__
+
+        def model___str__(nn_self):
+            out = ""
+            # shared_encryption tensor doesn't have a location
+            first_data = next(iter(nn_self.state_dict().values()))
+            # child to get over FixedPrecisionTensor to AdditiveSharingTensor
+            if hasattr(first_data, "child"): 
+                if hasattr(first_data.child, "location"): 
+                    out = f"\n---\nlocation: {first_data.child.location}"
+                elif hasattr(first_data.child, "locations"): 
+                    out = f"\n---\nlocations: {first_data.child.locations}"
+
+            out = native___str__(nn_self) + out
+
+            return out
+            
+        self.torch.nn.Module.__str__ = model___str__
+
         def train(nn_self, mode=True):
             """
             This is a modification of nn.Module.train for BatchNorm, which stores the sqrt
