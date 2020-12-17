@@ -25,7 +25,9 @@ class Globals(Module):
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
 
-        _path: List[str] = path if path else []
+        _path: List[str] = (
+            path.split(".") if isinstance(path, str) else path if path else []
+        )
 
         return self.attrs[_path[index]](
             path=_path,

@@ -23,6 +23,62 @@ from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
 
 
+def get_run_class_method(attr_path_and_name: str) -> CallableT:
+    """It might seem hugely un-necessary to have these methods nested in this way.
+    However, it has to do with ensuring that the scope of attr_path_and_name is local
+    and not global. If we do not put a get_run_class_method around run_class_method then
+    each run_class_method will end up referencing the same attr_path_and_name variable
+    and all methods will actually end up calling the same method. However, if we return
+    the function object itself then it includes the current attr_path_and_name as an internal
+    variable and when we call get_run_class_method multiple times it returns genuinely
+    different methods each time with a different internal attr_path_and_name variable."""
+
+    def run_class_method(
+        __self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast(
+            attr_path_and_name, return_callable=True
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast(
+            return_type_name, return_callable=True
+        )
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=__self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=__self.client.address,
+            )
+            __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        return result
+
+    return run_class_method
+
+
 def _get_request_config(self: Any) -> Dict[str, Any]:
     return {
         "request_block": True,
@@ -126,64 +182,6 @@ class Class(Callable):
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
-        def get_run_class_method(attr_path_and_name: str) -> CallableT:
-            """It might seem hugely un-necessary to have these methods nested in this way.
-            However, it has to do with ensuring that the scope of attr_path_and_name is local
-            and not global. If we do not put a get_run_class_method around run_class_method then
-            each run_class_method will end up referencing the same attr_path_and_name variable
-            and all methods will actually end up calling the same method. However, if we return
-            the function object itself then it includes the current attr_path_and_name as an internal
-            variable and when we call get_run_class_method multiple times it returns genuinely
-            different methods each time with a different internal attr_path_and_name variable."""
-
-            def run_class_method(
-                __self: Any,
-                *args: Tuple[Any, ...],
-                **kwargs: Any,
-            ) -> object:
-                # we want to get the return type which matches the attr_path_and_name
-                # so we ask lib_ast for the return type name that matches out
-                # attr_path_and_name and then use that to get the actual pointer klass
-                # then set the result to that pointer klass
-                return_type_name = __self.client.lib_ast(
-                    attr_path_and_name, return_callable=True
-                ).return_type_name
-                resolved_pointer_type = __self.client.lib_ast(
-                    return_type_name, return_callable=True
-                )
-                result = resolved_pointer_type.pointer_type(client=__self.client)
-
-                # QUESTION can the id_at_location be None?
-                result_id_at_location = getattr(result, "id_at_location", None)
-                if result_id_at_location is not None:
-
-                    # first downcast anything primitive which is not already PyPrimitive
-                    (
-                        downcast_args,
-                        downcast_kwargs,
-                    ) = lib.python.util.downcast_args_and_kwargs(
-                        args=args, kwargs=kwargs
-                    )
-
-                    # then we convert anything which isnt a pointer into a pointer
-                    pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                        args=downcast_args, kwargs=downcast_kwargs, client=__self.client
-                    )
-
-                    cmd = RunClassMethodAction(
-                        path=attr_path_and_name,
-                        _self=__self,
-                        args=pointer_args,
-                        kwargs=pointer_kwargs,
-                        id_at_location=result_id_at_location,
-                        address=__self.client.address,
-                    )
-                    __self.client.send_immediate_msg_without_reply(msg=cmd)
-
-                return result
-
-            return run_class_method
-
         attrs: Dict[str, Union[str, CallableT]] = {}
         _props: List[str] = []
         for attr_name, attr in self.attrs.items():
@@ -193,12 +191,7 @@ class Class(Callable):
             is_property = getattr(attr, "is_property", False)
             if is_property:
                 _props.append(attr_name)
-            # QUESTION: Could path_and_name be None?
-            # It seems as though attrs can contain
-            # Union[Callable, CallableT]
-            # where Callable is ast.callable.Callable
-            # where CallableT is typing.Callable == any function, method, lambda
-            # so we have to check for path_and_name
+
             if attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
@@ -211,19 +204,16 @@ class Class(Callable):
         attrs["get_request_config"] = _get_request_config
         attrs["set_request_config"] = _set_request_config
 
-        # here we can ensure that the fully qualified name of the Pointer klass is
-        # consistent between versions of python and matches our other klasses in
-        # this will result in: syft.proxy.{original_fully_qualified_name}Pointer
         fqn = "Pointer"
-        # this should always be a str
+
         if self.path_and_name is not None:
-            # prepend
             fqn = self.path_and_name + fqn
+
         new_class_name = f"syft.proxy.{fqn}"
         parts = new_class_name.split(".")
         name = parts.pop(-1)
         attrs["__name__"] = name
-        attrs["__module__"] = ".".join(parts)
+        attrs["__module__"] = new_class_name
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
@@ -317,20 +307,6 @@ class Class(Callable):
         )
 
 
-def ispointer(obj: Any) -> bool:
-    if (
-        type(obj).__name__.endswith("Pointer")
-        and type(getattr(obj, "id_at_location", None)) is UID
-    ):
-        return True
-    return False
-
-
-def convert_param_to_remote_pointer(param: Any, client: Any) -> Pointer:
-    pointer = param.send(client)
-    return pointer
-
-
 def pointerize_args_and_kwargs(
     args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
 ) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -343,16 +319,16 @@ def pointerize_args_and_kwargs(
     pointer_kwargs = {}
     for arg in args:
         # check if its already a pointer
-        if not ispointer(arg):
-            arg_ptr = convert_param_to_remote_pointer(param=arg, client=client)
+        if not isinstance(arg, Pointer):
+            arg_ptr = arg.send(client)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
 
     for k, arg in kwargs.items():
         # check if its already a pointer
-        if not ispointer(arg):
-            arg_ptr = convert_param_to_remote_pointer(param=arg, client=client)
+        if not isinstance(arg, Pointer):
+            arg_ptr = arg.send(client)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
