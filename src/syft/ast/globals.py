@@ -7,7 +7,6 @@ from typing import Union
 # syft relative
 from .callable import Callable
 from .module import Module
-from .util import unsplit
 
 
 class Globals(Module):
@@ -20,15 +19,16 @@ class Globals(Module):
 
     def __call__(
         self,
-        path: Union[str, List[str]] = [],
+        path: Optional[List[str]] = None,
         index: int = 0,
         return_callable: bool = False,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
-        if isinstance(path, str):
-            path = path.split(".")
-        return self.attrs[path[index]](
-            path=path,
+
+        _path: List[str] = path if path else []
+
+        return self.attrs[_path[index]](
+            path=_path,
             index=index + 1,
             return_callable=return_callable,
             obj_type=obj_type,
@@ -50,7 +50,7 @@ class Globals(Module):
             if framework_reference is not None:
                 self.attrs[framework_name] = Module(
                     name=framework_name,
-                    path_and_name=unsplit(path),
+                    path_and_name=".".join(path[: index + 1]),
                     ref=framework_reference,
                     return_type_name=return_type_name,
                 )

@@ -1,4 +1,5 @@
 # stdlib
+from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import List
@@ -12,8 +13,6 @@ from .. import lib
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
-from .util import module_type
-from .util import unsplit
 
 
 class Callable(ast.attribute.Attribute):
@@ -65,9 +64,7 @@ class Callable(ast.attribute.Attribute):
         index = kwargs["index"]
 
         if len(path) == index:
-            if return_callable:
-                return self
-            return self.ref
+            return self if return_callable else self.ref
         else:
             return self.attrs[path[index]](
                 path=path, index=index + 1, return_callable=return_callable
@@ -81,16 +78,16 @@ class Callable(ast.attribute.Attribute):
 
                 attr_ref = getattr(self.ref, path[index])
 
-                if isinstance(attr_ref, module_type):
+                if isinstance(attr_ref, ModuleType):
                     raise Exception("Module cannot be attr of callable.")
                 else:
                     is_property = False
                     if type(attr_ref).__name__ in ["getset_descriptor", "_tuplegetter"]:
                         is_property = True
 
-                    self.attrs[path[index]] = ast.method.Method(
+                    self.attrs[path[index]] = ast.callable.Callable(
                         name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
+                        path_and_name=".".join(path[: index + 1]),
                         ref=attr_ref,
                         return_type_name=return_type_name,
                         is_property=is_property,

@@ -1,4 +1,8 @@
 # stdlib
+import inspect
+from types import BuiltinFunctionType
+from types import FunctionType
+from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
@@ -9,11 +13,6 @@ from typing import Union
 # syft relative
 from .. import ast
 from ..ast.callable import Callable
-from .util import builtin_func_type
-from .util import class_type
-from .util import func_type
-from .util import module_type
-from .util import unsplit
 
 
 class Module(ast.attribute.Attribute):
@@ -49,20 +48,20 @@ class Module(ast.attribute.Attribute):
 
     def __call__(
         self,
-        path: Union[str, List[str]] = [],
+        path: Optional[List[str]] = None,
         index: int = 0,
         return_callable: bool = False,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+
+        _path: Union[List[str]] = path if path is not None else []
+
         if obj_type is not None:
             if obj_type in self.lookup_cache:
-                path = self.lookup_cache[obj_type]
+                _path = self.lookup_cache[obj_type]
 
-        if isinstance(path, str):
-            path = path.split(".")
-
-        resolved = self.attrs[path[index]](
-            path=path,
+        resolved = self.attrs[_path[index]](
+            path=_path,
             index=index + 1,
             return_callable=return_callable,
             obj_type=obj_type,
@@ -86,20 +85,20 @@ class Module(ast.attribute.Attribute):
         if path[index] not in self.attrs:
             attr_ref = getattr(self.ref, path[index])
 
-            if isinstance(attr_ref, module_type):
+            if isinstance(attr_ref, ModuleType):
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.module.Module(
                         path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
+                        ".".join(path[: index + 1]),
+                        attr_ref,  # type: ignore
                         return_type_name=return_type_name,
                     ),
                 )
-            elif isinstance(attr_ref, class_type):
+            elif inspect.isclass(attr_ref):
                 klass = ast.klass.Class(
                     name=path[index],
-                    path_and_name=unsplit(path[: index + 1]),
+                    path_and_name=".".join(path[: index + 1]),
                     ref=attr_ref,
                     return_type_name=return_type_name,
                 )
@@ -107,14 +106,12 @@ class Module(ast.attribute.Attribute):
                     attr_name=path[index],
                     attr=klass,
                 )
-            elif isinstance(attr_ref, func_type) or isinstance(
-                attr_ref, builtin_func_type
-            ):
+            elif isinstance(attr_ref, (FunctionType, BuiltinFunctionType)):
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.function.Function(
+                    attr=ast.callable.Callable(
                         path[index],
-                        unsplit(path[: index + 1]),
+                        ".".join(path[: index + 1]),
                         attr_ref,
                         return_type_name=return_type_name,
                     ),
@@ -130,7 +127,7 @@ class Module(ast.attribute.Attribute):
                         attr_name="globals",
                         attr=ast.klass.Class(
                             "globals",
-                            unsplit(path[: index + 1]),
+                            ".".join(path[: index + 1]),
                             scope,
                             return_type_name=scope_name,
                         ),
