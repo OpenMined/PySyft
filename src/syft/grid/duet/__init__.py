@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 import sys
 from typing import Any
-from typing import Callable
 from typing import Generator
 from typing import Optional
+from typing import Type as TypeType
 
 # third party
 import nest_asyncio
@@ -15,8 +15,9 @@ import requests
 # syft relative
 from ...core.node.domain.domain import Domain
 from .bcolors import bcolors
-from .exchange_ids import file_exchanger
-from .exchange_ids import manual_exchanger
+from .exchange_ids import DuetCredentialExchanger
+from .exchange_ids import OpenGridTokenFileExchanger
+from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -138,14 +139,16 @@ def begin_duet_logger(my_domain: Domain) -> None:
 
 
 def duet(
-    join: bool = False,
+    target_id: Optional[str] = None,
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
-    if join:
-        return join_duet(loopback=loopback, network_url=network_url)
+    if target_id is not None:
+        return join_duet(
+            target_id=target_id, loopback=loopback, network_url=network_url
+        )
     else:
         return launch_duet(
             logging=logging, network_url=network_url, loopback=loopback, db_path=db_path
@@ -156,7 +159,9 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
-    exchange_id_method: Callable = manual_exchanger.server_exchange,
+    credential_exchanger: TypeType[
+        DuetCredentialExchanger
+    ] = OpenGridTokenManualInputExchanger,
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
@@ -190,13 +195,11 @@ def launch_duet(
 
     print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
 
-    #     print("♫♫♫ >")
-    #     print("♫♫♫ > Your Duet Id: " + signaling_client.duet_id)
-
     my_domain = Domain(name="Launcher", db_path=db_path)
+
     if loopback:
-        exchange_id_method = file_exchanger.server_exchange
-    target_id = exchange_id_method(signaling_client.duet_id)
+        credential_exchanger = OpenGridTokenFileExchanger
+    target_id = credential_exchanger(credential=signaling_client.duet_id).run()
 
     print("♫♫♫ > Connecting...")
 
@@ -219,9 +222,12 @@ def launch_duet(
 
 
 def join_duet(
+    target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
-    exchange_id_method: Callable = manual_exchanger.client_exchange,
+    credential_exchanger: TypeType[
+        DuetCredentialExchanger
+    ] = OpenGridTokenManualInputExchanger,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
         display(
@@ -238,7 +244,6 @@ def join_duet(
         + "\033[1m"
         + " Duet is an experimental feature currently in beta.\n"
         + "♫♫♫ >             Use at your own risk.\n"
-        + "\n♫♫♫ > \n"
         + "\033[0m"
     )
 
@@ -258,8 +263,14 @@ def join_duet(
     my_domain = Domain(name="Joiner")
 
     if loopback:
-        exchange_id_method = file_exchanger.client_exchange
-    target_id = exchange_id_method(signaling_client.duet_id)
+        credential_exchanger = OpenGridTokenFileExchanger
+        target_id = credential_exchanger(
+            credential=signaling_client.duet_id, join=True
+        ).run()
+    else:
+        target_id = credential_exchanger(
+            credential=signaling_client.duet_id, join=True
+        ).run(server_id=target_id)
 
     duet = WebRTCDuet(
         node=my_domain,
