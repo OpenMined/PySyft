@@ -3,19 +3,29 @@ from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
-# third party
-import sympc
 
 # syft relative
-from . import session  # noqa: 401
-from . import share  # noqa: 401
+
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 
+PACKAGE_SUPPORT = {"lib": "sympc", "torch": {"min_version": "1.6.0"}}
 
-def create_sympc_ast() -> Globals:
+
+def load_lib(lib_ast: Globals) -> None:
+    # print("calling load lib on lib_ast", lib_ast)
+    sympc_ast = create_ast()
+    lib_ast.add_attr(attr_name="sympc", attr=sympc_ast.attrs["sympc"])
+
+
+def create_ast() -> Globals:
+    # third party
+    import sympc
+    from . import session  # noqa: 401
+    from . import share  # noqa: 401
+
     ast = Globals()
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [

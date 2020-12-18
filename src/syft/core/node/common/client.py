@@ -114,7 +114,7 @@ class Client(AbstractNodeClient):
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = lib_ast.copy()
+        self.lib_ast = lib_ast
         if self.lib_ast is not None:
             self.lib_ast.set_client(self)
 

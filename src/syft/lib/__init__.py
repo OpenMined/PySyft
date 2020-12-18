@@ -1,3 +1,11 @@
+# stdlib
+import importlib
+from typing import Any as TypeAny
+from typing import Dict as TypeDict
+
+# third party
+from packaging import version
+
 # syft relative
 from ..ast.globals import Globals
 from ..lib.python import create_python_ast
@@ -5,13 +13,46 @@ from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from .misc import create_union_ast
 
-sympc_available = True
 
-try:
-    # syft relative
-    from ..lib.sympc import create_sympc_ast
-except ImportError:
-    sympc_available = False
+class VendorLibraryImportException(Exception):
+    pass
+
+
+def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -> bool:
+    # see if torch version is supported
+    if "torch" in vendor_requirements:
+        torch_reqs = vendor_requirements["torch"]
+        # third party
+        import torch
+
+        TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
+        min_version = torch_reqs.get("min_version", None)
+        if min_version is not None:
+            if TORCH_VERSION < version.parse(min_version):
+                raise VendorLibraryImportException(
+                    f"Unable to load {vendor_requirements['lib']}."
+                    + f"Torch: {TORCH_VERSION} < {min_version}"
+                )
+    return True
+
+
+def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    try:
+        _ = importlib.import_module(lib)
+        vendor_ast = importlib.import_module("syft.lib.sympc")
+        PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
+        PACKAGE_SUPPORT.update(options)
+        if PACKAGE_SUPPORT is not None and vendor_requirements_available(
+            vendor_requirements=PACKAGE_SUPPORT
+        ):
+            load_lib = getattr(vendor_ast, "load_lib", None)
+            if load_lib is not None:
+                global lib_ast
+                load_lib(lib_ast=lib_ast)
+    except VendorLibraryImportException as e:
+        print(e)
+    except Exception as e:
+        print(f"Unable to load package support for: {lib}. {e}")
 
 
 # now we need to load the relevant frameworks onto the node
@@ -31,10 +72,6 @@ def create_lib_ast() -> Globals:
     misc_ast = getattr(getattr(create_union_ast(lib_ast), "syft"), "lib")
     misc_root = getattr(getattr(lib_ast, "syft"), "lib")
     # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
-
-    if sympc_available:
-        sympc_ast = create_sympc_ast()
-        lib_ast.add_attr(attr_name="sympc", attr=sympc_ast.attrs["sympc"])
 
     misc_root.add_attr(attr_name="misc", attr=misc_ast.attrs["misc"])
 
