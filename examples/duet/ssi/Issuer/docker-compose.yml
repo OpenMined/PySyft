@@ -1,0 +1,76 @@
+version: "3"
+services:
+  # ngrok-verifier:
+  #   image: wernight/ngrok
+  #   command: ngrok http verifier-agent:${VERIFIER_HTTP_PORT} --log stdout
+  #   networks:
+  #     - indy_demo
+  # verifier-agent:
+  #   build:
+  #     context: ../../
+  #     dockerfile: dockerfiles/agents/Dockerfile.ngrok
+  #   environment:
+  #     - NGROK_NAME=ngrok-verifier
+  #     - ADMIN_URL=http://verifier-agent:${VERIFIER_ADMIN_PORT}
+  #     - AGENT_NAME=${VERIFIER_AGENT_NAME}
+  #     - ADMIN_PORT=${VERIFIER_ADMIN_PORT}
+  #     - HTTP_PORT=${VERIFIER_HTTP_PORT}
+  #     - WEBHOOK_URL=${VERIFIER_WEBHOOK_URL}
+  #     - AGENT_ENDPOINT=${VERIFIER_AGENT_ENDPOINT}
+  #     - WALLET_SEED=${VERIFIER_WALLET_SEED}
+  #     - WALLET_NAME=${VERIFIER_WALLET_NAME}
+  #     - WALLET_KEY=${VERIFIER_WALLET_KEY}
+  #     - WALLET_TYPE=${WALLET_TYPE}
+  #     - ACAPY_ADMIN_INSECURE_MODE=${VERIFIER_ADMIN_SECURE}
+  #     - GENESIS_URL=${GENESIS_URL}
+  #   ports:
+  #     - ${VERIFIER_HTTP_PORT}:${VERIFIER_HTTP_PORT}
+  #     - ${VERIFIER_ADMIN_PORT}:${VERIFIER_ADMIN_PORT}
+  #   networks:
+  #     - indy_demo
+
+  ngrok-issuer:
+    image: wernight/ngrok
+    command: ngrok http issuer-agent:${ISSUER_HTTP_PORT} --log stdout
+    networks:
+      - indy_demo
+  issuer-agent:
+    build:
+      context: ../
+      dockerfile: Dockerfile.agent
+    environment:
+      - NGROK_NAME=ngrok-issuer
+      - ADMIN_URL=http://issuer-agent:${ISSUER_ADMIN_PORT}
+      - AGENT_NAME=${ISSUER_AGENT_NAME}
+      - ADMIN_PORT=${ISSUER_ADMIN_PORT}
+      - HTTP_PORT=${ISSUER_HTTP_PORT}
+      - WEBHOOK_URL=${ISSUER_WEBHOOK_URL}
+      - AGENT_ENDPOINT=${ISSUER_AGENT_ENDPOINT}
+      - WALLET_SEED=${ISSUER_WALLET_SEED}
+      - WALLET_NAME=${ISSUER_WALLET_NAME}
+      - WALLET_KEY=${ISSUER_WALLET_KEY}
+      - WALLET_TYPE=${WALLET_TYPE}
+      - ACAPY_ADMIN_INSECURE_MODE=${ISSUER_ADMIN_SECURE}
+      - GENESIS_URL=${GENESIS_URL}
+    ports:
+      - ${ISSUER_HTTP_PORT}:${ISSUER_HTTP_PORT}
+      - ${ISSUER_ADMIN_PORT}:${ISSUER_ADMIN_PORT}
+    networks:
+      - indy_demo
+  issuer-notebook:
+    build:
+      context: ../
+      dockerfile: Dockerfile.basiccontroller
+      args:
+        - jupyter_port=${ISSUER_JUPYTER_PORT}
+    depends_on:
+      - issuer-agent
+    networks:
+      - indy_demo
+    volumes:
+      - ./notebooks/issuer:/workspace
+    ports:
+      - "8890:8888"
+      - ${ISSUER_WEBHOOK_PORT}:${ISSUER_WEBHOOK_PORT}
+networks:
+  indy_demo:
