@@ -33,7 +33,7 @@ usage() {
 
             Examples:
             $0 start
-            $0 start VERIFIER-agent
+            $0 start bob-agent
 
       start - Same as up
 
@@ -62,7 +62,7 @@ EOF
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-DEFAULT_CONTAINERS="ngrok-issuer issuer-agent issuer-notebook"
+DEFAULT_CONTAINERS="datascientist-agent ngrok-datascientist-agent dataowner-agent ngrok-dataowner-agent issuer-agent ngrok-issuer "
 
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
@@ -116,18 +116,32 @@ configureEnvironment() {
   export GENESIS_URL="https://raw.githubusercontent.com/sovrin-foundation/sovrin/master/sovrin/pool_transactions_sandbox_genesis"
   export WALLET_TYPE="indy"
 
-  # VERIFIER-agent
-  # export VERIFIER_AGENT_NAME="VERIFIER"
-  # export VERIFIER_ADMIN_PORT=8051
-  # export VERIFIER_HTTP_PORT=8050
-  # export VERIFIER_WEBHOOK_PORT=8052
-  # export VERIFIER_WEBHOOK_URL=${VERIFIER_WEBHOOK_URL:-http://$DOCKERHOST:$VERIFIER_WEBHOOK_PORT}
-  # export VERIFIER_AGENT_ENDPOINT=${VERIFIER_AGENT_ENDPOINT:-http://$DOCKERHOST:$VERIFIER_HTTP_PORT}
-  # export VERIFIER_WALLET_SEED="VAGENT_seed_00000000000000000000"
-  # export VERIFIER_WALLET_KEY="VERIFIER_key_00000000000000000000000"
-  # export VERIFIER_WALLET_NAME="VERIFIER Wallet"
-  # export VERIFIER_JUPYTER_PORT="8889"
-  # export VERIFIER_ADMIN_SECURE="true"
+
+  # agent
+  export DATASCIENTIST_NAME="DATASCIENTIST"
+  export DATASCIENTIST_ADMIN_PORT=8021
+  export DATASCIENTIST_API_KEY="agent_api_123456789"
+  export DATASCIENTIST_HTTP_PORT=8020
+  export DATASCIENTIST_WEBHOOK_PORT=8022
+  export DATASCIENTIST_WEBHOOK_URL=${DATASCIENTIST_WEBHOOK_URL:-http://$DOCKERHOST:$DATASCIENTIST_WEBHOOK_PORT}
+  export DATASCIENTIST_ENDPOINT=${DATASCIENTIST_ENDPOINT:-http://$DOCKERHOST:$DATASCIENTIST_HTTP_PORT}
+  export DATASCIENTIST_JUPYTER_PORT="8888"
+  export DATASCIENTIST_WALLET_NAME="agent Wallet"
+  export DATASCIENTIST_WALLET_KEY="scientist_key_00000000000000000"
+  export DATASCIENTIST_WALLET_SEED="scientist_seed_00000000000000000"
+
+  # agent
+  export DATAOWNER_NAME="DATAOWNER"
+  export DATAOWNER_ADMIN_PORT=8051
+  export DATAOWNER_API_KEY="agent_api_123456789"
+  export DATAOWNER_HTTP_PORT=8050
+  export DATAOWNER_WEBHOOK_PORT=8052
+  export DATAOWNER_WEBHOOK_URL=${DATAOWNER_WEBHOOK_URL:-http://$DOCKERHOST:$DATAOWNER_WEBHOOK_PORT}
+  export DATAOWNER_ENDPOINT=${DATAOWNER_ENDPOINT:-http://$DOCKERHOST:$DATAOWNER_HTTP_PORT}
+  export DATAOWNER_JUPYTER_PORT="8889"
+  export DATAOWNER_WALLET_NAME="agent Wallet"
+  export DATAOWNER_WALLET_KEY="owner_key_000000000000000000000"
+  export DATAOWNER_WALLET_SEED="owner_seed_000000000000000000000"
 
   # ISSUER-agent
   export ISSUER_AGENT_NAME="ISSUER"
@@ -141,8 +155,6 @@ configureEnvironment() {
   export ISSUER_WALLET_NAME="ISSUER Wallet"
   export ISSUER_JUPYTER_PORT="8890"
   export ISSUER_ADMIN_SECURE="true"
-
-
 }
 
 getInputParams() {
