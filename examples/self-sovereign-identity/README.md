@@ -19,17 +19,14 @@ Ensure that Docker is running. If it is not try sudo dockerd in another terminal
 
 ## To start
 
-In one terminal spin up the Data Scientist and Data Owner
+In one terminal spin up ACA-Py agents for the DataOwner, DataScientist and DuetIssuer
 
-* Run `./manage start` in folder ssi
+* Run `./manage start`
 
-In another terminal spin up the Duet issuer
+* In another terminal initialise a [PySyft environment](https://github.com/OpenMined/PySyft/blob/dev/docs/installing.rst)
 
-* Run `./manage start` in folder ssi/Issuer
+* Install the aries-basic-controller in this environment `pip install aries-basic-controller`
 
-Open up the Juypter instances for these different entities.
-
-* Get links: `./scripts/get_URLS.sh` fro  folder ssi
-
-This will print out the urls for each notebook. Run through the instructions in the notebook.
-
+* Spin up the notebooks
+    * cd notebooks
+    * jupyter notebook
