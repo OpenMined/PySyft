@@ -203,13 +203,12 @@ Most of these tools aim to provide the same functionality which is to create vir
 
 For the example below I will be using `pipenv` purely because it is extremely simple to use, and is itself simply a pip package which means as long as you have any version of python3 on your system you can use this to bootstrap everything else.
 
-| name | packages | virtualenvs |
-| ---- | -------- | ----------- ||
+| name       | packages | virtualenvs |
+| ---------- | -------- | ----------- |
 | pip + venv | ✅        | ✅           |
 | pipenv     | ✅        | ✅           |
 | conda      | ✅        | ✅           |
 | poetry     | ✅        | ✅           |
-
 
 ## Pipenv
 As you will be running pipenv to create virtualenvs you will want to install pipenv into your normal system python site-packages.
