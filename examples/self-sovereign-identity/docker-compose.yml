@@ -7,7 +7,7 @@ services:
       - indy_demo
   datascientist-agent:
     build:
-      context: .
+      context: ""
       dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-datascientist-agent
@@ -30,21 +30,21 @@ services:
       - indy_demo
 #    volumes:
 #      - agent:/home/indy/.indy_client/wallet
-  datascientist-notebook:
-    build:
-      context: .
-      dockerfile: Dockerfile.basiccontroller
-      args:
-        - jupyter_port=${JUPYTER_PORT}
-    depends_on:
-      - datascientist-agent
-    networks:
-      - indy_demo
-    volumes:
-      - ./notebooks/datascientist:/workspace
-    ports:
-      - "8888:8888"
-      - ${DATASCIENTIST_WEBHOOK_PORT}:${DATASCIENTIST_WEBHOOK_PORT}
+#  datascientist-notebook:
+#    build:
+#      context: ""
+#      dockerfile: Dockerfile.basiccontroller
+#      args:
+#        - jupyter_port=${JUPYTER_PORT}
+#    depends_on:
+#      - datascientist-agent
+#    networks:
+#      - indy_demo
+#    volumes:
+#      - ./notebooks/datascientist:/workspace
+#    ports:
+#      - "8888:8888"
+#      - ${DATASCIENTIST_WEBHOOK_PORT}:${DATASCIENTIST_WEBHOOK_PORT}
   ngrok-dataowner-agent:
     image: wernight/ngrok
     command: ngrok http dataowner-agent:${DATAOWNER_HTTP_PORT} --log stdout
@@ -52,7 +52,7 @@ services:
       - indy_demo
   dataowner-agent:
     build:
-      context: .
+      context: ""
       dockerfile: Dockerfile.agent
     environment:
       - NGROK_NAME=ngrok-dataowner-agent
@@ -75,21 +75,49 @@ services:
       - indy_demo
 #    volumes:
 #      - agent:/home/indy/.indy_client/wallet
-  dataowner-notebook:
-    build:
-      context: .
-      dockerfile: Dockerfile.basiccontroller
-      args:
-        - jupyter_port=${JUPYTER_PORT}
-    depends_on:
-      - dataowner-agent
+#  dataowner-notebook:
+#    build:
+#      context: ""
+#      dockerfile: Dockerfile.basiccontroller
+#      args:
+#        - jupyter_port=${JUPYTER_PORT}
+#    depends_on:
+#      - dataowner-agent
+#    networks:
+#      - indy_demo
+#    volumes:
+#      - ./notebooks/dataowner:/workspace
+#    ports:
+#      - "8889:8888"
+#      - ${DATAOWNER_WEBHOOK_PORT}:${DATAOWNER_WEBHOOK_PORT}
+  ngrok-issuer:
+    image: wernight/ngrok
+    command: ngrok http issuer-agent:${ISSUER_HTTP_PORT} --log stdout
     networks:
       - indy_demo
-    volumes:
-      - ./notebooks/dataowner:/workspace
+  issuer-agent:
+    build:
+      context: ""
+      dockerfile: Dockerfile.agent
+    environment:
+      - NGROK_NAME=ngrok-issuer
+      - ADMIN_URL=http://issuer-agent:${ISSUER_ADMIN_PORT}
+      - AGENT_NAME=${ISSUER_AGENT_NAME}
+      - ADMIN_PORT=${ISSUER_ADMIN_PORT}
+      - HTTP_PORT=${ISSUER_HTTP_PORT}
+      - WEBHOOK_URL=${ISSUER_WEBHOOK_URL}
+      - AGENT_ENDPOINT=${ISSUER_AGENT_ENDPOINT}
+      - WALLET_SEED=${ISSUER_WALLET_SEED}
+      - WALLET_NAME=${ISSUER_WALLET_NAME}
+      - WALLET_KEY=${ISSUER_WALLET_KEY}
+      - WALLET_TYPE=${WALLET_TYPE}
+      - ACAPY_ADMIN_INSECURE_MODE=${ISSUER_ADMIN_SECURE}
+      - GENESIS_URL=${GENESIS_URL}
     ports:
-      - "8889:8888"
-      - ${DATAOWNER_WEBHOOK_PORT}:${DATAOWNER_WEBHOOK_PORT}
+      - ${ISSUER_HTTP_PORT}:${ISSUER_HTTP_PORT}
+      - ${ISSUER_ADMIN_PORT}:${ISSUER_ADMIN_PORT}
+    networks:
+      - indy_demo
 #volumes:
 #  agent:
 networks:
