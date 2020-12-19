@@ -1,20 +1,18 @@
-# Superresolution using an efficient sub-pixel convolutional neural network
+# Super-Resolution Using An Efficient Sub-Pixel Convolutional Neural Network
 
-This example illustrates how to use the efficient sub-pixel convolution layer described in  ["Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network" - Shi et al.](https://arxiv.org/abs/1609.05158) for increasing spatial resolution within your network for tasks such as superresolution.
+This example illustrates how to use the efficient sub-pixel convolution layer described in [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network" - Shi et al.](https://arxiv.org/abs/1609.05158) for increasing spatial resolution within your network for tasks such as super-resolution.
 
-```
-usage: main.py [-h] --upscale_factor UPSCALE_FACTOR [--batchSize BATCHSIZE]
-               [--testBatchSize TESTBATCHSIZE] [--nEpochs NEPOCHS] [--lr LR]
+```bash
+usage: main.py [-h] --upscale-factor UPSCALE_FACTOR [--batch-size BATCHSIZE]
+               [--test-batch-size TESTBATCHSIZE] [--epochs NEPOCHS] [--lr LR]
                [--cuda] [--threads THREADS] [--seed SEED]
-
-PyTorch Super Res Example
 
 optional arguments:
   -h, --help            show this help message and exit
-  --upscale_factor      super resolution upscale factor
-  --batchSize           training batch size
-  --testBatchSize       testing batch size
-  --nEpochs             number of epochs to train for
+  --upscale-factor      super resolution upscale factor
+  --batch-size          training batch size
+  --test-batch-size     testing batch size
+  --epochs              number of epochs to train for
   --lr                  Learning Rate. Default=0.01
   --cuda                use cuda
   --threads             number of threads for data loader to use Default=4
@@ -26,7 +24,11 @@ This example trains a super-resolution network on the [BSD300 dataset](https://w
 
 ### Train
 
-`python main.py --upscale_factor 3 --batchSize 4 --testBatchSize 100 --nEpochs 30 --lr 0.001`
+```bash
+python main.py --upscale-factor 3 --batch-size 4 --test-batch-size 100 --epochs 30 --lr 0.001
+```
 
 ### Super Resolve
-`python super_resolve.py --input_image dataset/BSDS300/images/test/16077.jpg --model model_epoch_500.pth --output_filename out.png`
+```bash
+python super_resolve.py --input_image dataset/BSDS300/images/test/16077.jpg --model model_epoch_500.pth --output_filename out.png
+```

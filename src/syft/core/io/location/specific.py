@@ -16,7 +16,7 @@ from .location import Location
 class SpecificLocation(ObjectWithID, Location):
     """This represents the location of a single Node object
     represented by a single UID. It may not have any functionality
-    beyond Location but there is logic which interprets it differently."""
+    beyond Location but there is logic, which interprets it differently."""
 
     def __init__(self, id: Optional[UID] = None, name: Optional[str] = None):
         ObjectWithID.__init__(self, id=id)
