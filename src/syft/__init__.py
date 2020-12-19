@@ -97,7 +97,8 @@ finally:
 sys.path.append(str(Path(__file__)))
 
 # SOLICIT DONATIONS
-DONATE_MSG = f"Love Syft? Please consider donating to OpenMined => {bcolors.OKBLUE}{bcolors.UNDERLINE}https://opencollective.com/OpenMined/donate{bcolors.ENDC}{bcolors.ENDC}"
+DONATE_MSG = f"""Love Syft? Please consider donating to OpenMined =>
+ {bcolors.OKBLUE}{bcolors.UNDERLINE}https://opencollective.com/OpenMined/donate{bcolors.ENDC}{bcolors.ENDC}"""
 solicit_donations(DONATE_MSG)
 
 # LIBRARY CONFIG
