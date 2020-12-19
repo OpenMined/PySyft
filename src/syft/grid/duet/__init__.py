@@ -62,7 +62,7 @@ DONATE_MSG = f"""Love Duet? Please consider donating to OpenMined =>
  {bcolors.OKBLUE}{bcolors.UNDERLINE}https://opencollective.com/OpenMined/donate{bcolors.ENDC}{bcolors.ENDC}"""
 
 
-def solicit_donations(msg):
+def solicit_donations(msg: str) -> None:
     sys.stdout.write(bcolors.BOLD + msg + bcolors.BOLD + "\n")
 
 
