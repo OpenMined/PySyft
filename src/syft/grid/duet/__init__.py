@@ -58,6 +58,14 @@ class bcolors:
     UNDERLINE = "\033[4m"
 
 
+DONATE_MSG = f"""Love Duet? Please consider donating to OpenMined =>
+ {bcolors.OKBLUE}{bcolors.UNDERLINE}https://opencollective.com/OpenMined/donate{bcolors.ENDC}{bcolors.ENDC}"""
+
+
+def solicit_donations(msg):
+    sys.stdout.write(bcolors.BOLD + msg + bcolors.BOLD + "\n")
+
+
 def get_available_network() -> str:
     network_addr = json.loads(requests.get(ADDR_REPOSITORY).content)
     for addr in network_addr:
@@ -194,6 +202,7 @@ def launch_duet(
     )
 
     print("♫♫♫ >")
+    solicit_donations(DONATE_MSG)
 
     if not network_url:
         network_url = get_available_network()
@@ -319,6 +328,7 @@ def join_duet(
     )
 
     print("♫♫♫ >")
+    solicit_donations(DONATE_MSG)
 
     if not network_url:
         network_url = get_available_network()
