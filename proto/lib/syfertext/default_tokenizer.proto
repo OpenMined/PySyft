@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+import 'proto/core/common/common_object.proto';
+
+/*
+message ExceptionsDict {
+    string key = 1;
+    repeated string tokens = 2;
+}
+*/
+
+message DefaultTokenizer {
+    syft.core.common.UID uuid = 1;
+    repeated string prefixes = 2;
+    repeated string suffixes = 3;
+    repeated string infixes = 4;
+//    ExceptionsDict exceptions = 5;
+}
