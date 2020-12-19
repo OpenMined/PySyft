@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608392188836,
+  "lastUpdate": 1608393016364,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -629,6 +629,33 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000007833389781853352",
             "extra": "mean: 609.7321223733982 usec\nrounds: 809"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "committer": {
+            "name": "OpenMined",
+            "username": "OpenMined"
+          },
+          "id": "f05ea6f0829b50f488d9360c820313b087b1bf51",
+          "message": "[WIP] Add Dataset class ",
+          "timestamp": "2020-12-19T14:25:27Z",
+          "url": "https://github.com/OpenMined/PySyft/pull/4933/commits/f05ea6f0829b50f488d9360c820313b087b1bf51"
+        },
+        "date": 1608393015829,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1613.5491787031879,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006800631763892725",
+            "extra": "mean: 619.7517951102684 usec\nrounds: 859"
           }
         ]
       }
