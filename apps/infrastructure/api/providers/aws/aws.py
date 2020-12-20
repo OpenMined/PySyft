@@ -1,71 +1,70 @@
-from ...tf import var, var_module
+from ...tf import generate_cidr_block, var, var_module
 from ..provider import *
 
 
 class AWS(Provider):
     """Amazon Web Services (AWS) Cloud Provider."""
 
-    def __init__(self, credentials, vpc_config) -> None:
+    def __init__(self, config: Config) -> None:
         """
-        credentials (dict) : Contains AWS credentials (required for deployment)
-        vpc_config (dict) : Contains arguments required to deploy the VPC
+        config (Config) : Object storing the required configuration for deployment
         """
-        super().__init__()
+        super().__init__(app=config.app.name)
+        self.config = config
 
         credentials_dir = os.path.join(str(Path.home()), ".aws/api/")
         os.makedirs(credentials_dir, exist_ok=True)
-        self.credentials = os.path.join(credentials_dir, "credentials.json")
+        self.cred_file = os.path.join(credentials_dir, "credentialss.json")
 
-        with open(self.credentials, "w") as cred:
-            json.dump(credentials, cred, indent=2, sort_keys=False)
+        with open(self.cred_file, "w") as f:
+            json.dump(vars(config.credentials.cloud), f, indent=2, sort_keys=False)
 
-        self.region = vpc_config["region"]
-        self.av_zones = vpc_config["av_zones"]
+        self.region = config.vpc.region
+        self.av_zones = config.vpc.av_zones
 
         self.tfscript += terrascript.provider.aws(
-            region=self.region, shared_credentials_file=self.credentials
+            region=self.region, shared_credentials_file=self.cred_file
         )
 
-        # Build the VPC
+        # Build the Infrastructure
         self.vpc = None
         self.subnets = []
         self.build_vpc()
-
-    # TODO: Make sure this works for serverfull as well.
+        self.build_igw()
+        self.build_public_rt()
+        self.build_subnets()
 
     def build_vpc(self):
-        """
-        Appends resources which form the VPC, to the `self.tfscript` configuration object.
-        """
-
-        # ----- Virtual Private Cloud (VPC) ------#
-
+        """Adds a VPC."""
         self.vpc = resource.aws_vpc(
             f"pygrid-vpc",
-            cidr_block="10.0.0.0/26",  # 2**(32-26) = 64 IP Addresses
+            cidr_block="10.0.0.0/16",
             instance_tenancy="default",
             enable_dns_hostnames=True,
             tags={"Name": f"pygrid-vpc"},
         )
         self.tfscript += self.vpc
 
-        # ----- Internet Gateway -----#
-
-        internet_gateway = resource.aws_internet_gateway(
+    def build_igw(self):
+        """Adds an Internet Gateway."""
+        self.internet_gateway = resource.aws_internet_gateway(
             "igw", vpc_id=var(self.vpc.id), tags={"Name": f"pygrid-igw"}
         )
-        self.tfscript += internet_gateway
+        self.tfscript += self.internet_gateway
 
-        # ----- Route Tables -----#
+    def build_public_rt(self):
+        """Adds a public Route table.
 
-        # One public route table for all public subnets across different availability zones
-        public_rt = resource.aws_route_table(
+        One public route table for all public subnets across different
+        availability zones
+        """
+        self.public_rt = resource.aws_route_table(
             "public-RT",
             vpc_id=var(self.vpc.id),
             route=[
                 {
                     "cidr_block": "0.0.0.0/0",
-                    "gateway_id": var(internet_gateway.id),
+                    "gateway_id": var(self.internet_gateway.id),
                     "egress_only_gateway_id": "",
                     "ipv6_cidr_block": "",
                     "instance_id": "",
@@ -74,35 +73,30 @@ class AWS(Provider):
                     "network_interface_id": "",
                     "transit_gateway_id": "",
                     "vpc_peering_connection_id": "",
+                    "vpc_endpoint_id": "",
                 }
             ],
             tags={"Name": f"pygrid-public-RT"},
         )
-        self.tfscript += public_rt
+        self.tfscript += self.public_rt
 
-        # ----- Subnets ----- #
+    def build_subnets(self):
+        """Adds subnets to the VPC. Each availability zone contains.
 
-        num_ip_addresses = 2 ** (32 - 26)
-        num_subnets = 2 * len(
-            self.av_zones
-        )  # Each Availability zone contains one public and one private subnet
-
-        cidr_blocks = generate_cidr_block(num_ip_addresses, num_subnets)
+        - one public subnet : Connects to the internet via public route table
+        - one private subnet : Hosts the deployed resources
+        - one NAT gateway (in the public subnet) : Allows traffic from the internet to the private subnet
+           via the public subnet
+        - one Route table : Routes the traffic from the NAT gateway to the private subnet
+        """
 
         for i, av_zone in enumerate(self.av_zones):
-            """
-            Each availability zone contains
-             - one public subnet : Connects to the internet via public route table
-             - one private subnet : Hosts the deployed resources
-             - one NAT gateway (in the public subnet) : Allows traffic from the internet to the private subnet
-                via the public subnet
-             - one Route table : Routes the traffic from the NAT gateway to the private subnet
-            """
-
             private_subnet = resource.aws_subnet(
                 f"private-subnet-{i}",
                 vpc_id=var(self.vpc.id),
-                cidr_block=next(cidr_blocks),
+                cidr_block=generate_cidr_block(
+                    base_cidr_block=self.vpc.cidr_block, netnum=(2 * i)
+                ),
                 availability_zone=av_zone,
                 tags={"Name": f"private-{i}"},
             )
@@ -111,7 +105,9 @@ class AWS(Provider):
             public_subnet = resource.aws_subnet(
                 f"public-subnet-{i}",
                 vpc_id=var(self.vpc.id),
-                cidr_block=next(cidr_blocks),
+                cidr_block=generate_cidr_block(
+                    base_cidr_block=self.vpc.cidr_block, netnum=(2 * i + 1)
+                ),
                 availability_zone=av_zone,
                 tags={"Name": f"public-{i}"},
             )
@@ -150,6 +146,7 @@ class AWS(Provider):
                         "network_interface_id": "",
                         "transit_gateway_id": "",
                         "vpc_peering_connection_id": "",
+                        "vpc_endpoint_id": "",
                     }
                 ],
                 tags={"Name": f"pygrid-private-RT-{i}"},
@@ -160,7 +157,7 @@ class AWS(Provider):
             self.tfscript += resource.aws_route_table_association(
                 f"rta-public-subnet-{i}",
                 subnet_id=var(public_subnet.id),
-                route_table_id=var(public_rt.id),
+                route_table_id=var(self.public_rt.id),
             )
 
             # Associate private subnet with private route table

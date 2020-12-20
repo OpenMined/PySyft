@@ -7,6 +7,7 @@ from ..utils import Config, styles
 
 def get_vpc_config() -> Config:
     """Assists the user in entering configuration related to VPC.
+
     :return:
     """
 
@@ -50,8 +51,30 @@ def get_vpc_config() -> Config:
     return Config(region=region, av_zones=av_zones)
 
 
+def get_instance_type():
+
+    return prompt(
+        [
+            {
+                "type": "list",
+                "name": "instance",
+                "message": "Please select your desired AWS instance type",
+                "default": "t2.micro",
+                "choices": [
+                    instance["InstanceType"]
+                    for instance in boto3.client("ec2").describe_instance_types()[
+                        "InstanceTypes"
+                    ]
+                ],
+            }
+        ],
+        style=styles.second,
+    )["instance"]
+
+
 def get_vpc_ip_config() -> Config:
     """Assists the user in entering configuration related to IP address of VPC.
+
     :return:
     """
 

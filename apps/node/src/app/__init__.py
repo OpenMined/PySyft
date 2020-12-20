@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pymysql
 
 from flask import Flask, Response
 from flask_cors import CORS

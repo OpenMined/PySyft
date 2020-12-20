@@ -440,17 +440,6 @@ version = "0.9.3"
 Flask = "*"
 
 [[package]]
-category = "dev"
-description = "Python3.6+ module to make Flask compatible with AWS Lambda"
-name = "flask-lambda-python36"
-optional = false
-python-versions = "*"
-version = "0.1.0"
-
-[package.dependencies]
-Flask = ">=0.10"
-
-[[package]]
 category = "main"
 description = "Python3.6+ module to make Flask compatible with AWS Lambda"
 name = "flask-lambda-python36"
@@ -1342,6 +1331,18 @@ cffi = ">=1.0.0"
 
 [[package]]
 category = "main"
+description = "Pure Python MySQL Driver"
+name = "pymysql"
+optional = false
+python-versions = "*"
+version = "0.10.1"
+
+[package.extras]
+ed25519 = ["PyNaCl (>=1.4.0)"]
+rsa = ["cryptography"]
+
+[[package]]
+category = "main"
 description = "Python parsing module"
 name = "pyparsing"
 optional = false
@@ -2028,7 +2029,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "321966ac8fa39c5964d65f3dcc79fb02748b5c3e32da32e033c86f63397bf5ba"
+content-hash = "ee7e721c1d2c26fb749c3efef34116ed4e2a26b24c5c72077e52c367d1acc122"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -2881,6 +2882,10 @@ pylibsrtp = [
     {file = "pylibsrtp-0.6.6-pp36-pypy36_pp73-macosx_10_7_x86_64.whl", hash = "sha256:e128a6e0344a7ec1fbbbf54b2287ae3944bd98740e12c2db0fccebdaedf6d847"},
     {file = "pylibsrtp-0.6.6-pp36-pypy36_pp73-manylinux2010_x86_64.whl", hash = "sha256:5d4d212d6c90bfc9976ffd74b66dee003273b6badb75a9f5cd502c23f9b58ee6"},
     {file = "pylibsrtp-0.6.6.tar.gz", hash = "sha256:7c1a20b751a984a6dfdf2c9e9ce5b0be572bd058c357a820b35568a16499e019"},
+]
+pymysql = [
+    {file = "PyMySQL-0.10.1-py2.py3-none-any.whl", hash = "sha256:44f47128dda8676e021c8d2dbb49a82be9e4ab158b9f03e897152a3a287c69ea"},
+    {file = "PyMySQL-0.10.1.tar.gz", hash = "sha256:263040d2779a3b84930f7ac9da5132be0fefcd6f453a885756656103f8ee1fdd"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},

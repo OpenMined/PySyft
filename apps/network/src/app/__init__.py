@@ -2,6 +2,7 @@
 
 import json
 import os
+import pymysql
 
 from flask import Blueprint, Flask, Response
 from flask_lambda import FlaskLambda
