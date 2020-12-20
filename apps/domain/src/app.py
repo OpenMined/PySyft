@@ -109,10 +109,10 @@ def create_app(
 
     db.create_all()
 
-    if not database_exists(db.engine.url):
-        seed_db()
-
     if not app.config["TESTING"]:
+        if len(db.session.query(Role).all()) == 0:
+            seed_db()
+
         role = db.session.query(Role.id).filter_by(name="Owner").first()
         user = User.query.filter_by(role=role.id).first()
         if user:
