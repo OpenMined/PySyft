@@ -158,7 +158,7 @@ class FixedPrecisionTensor(AbstractTensor):
         # i.e. for a field of 100, 70 (equivalent to -30), should be truncated
         # at 97 (equivalent to -3), not 7
         if isinstance(self.child, AdditiveSharingTensor) or not check_sign:  # Handle FPT>(wrap)>AST
-            self.child = self.child / truncation
+            self.child = self.child // truncation
             return self
         else:
             gate = self.child.native_lt(0).type(self.torch_dtype)
@@ -528,6 +528,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 result = 2 * result - result * result * new_self
             return result * self.signum()
         elif method == "newton":
+            # Note: this computes the SQRT of the reciprocal !!
             # it is assumed here that input values are taken in [-20, 20]
             x = None
             C = 20
@@ -802,6 +803,16 @@ class FixedPrecisionTensor(AbstractTensor):
         result = _self.argmin(**kwargs)
         return result.long() * self.base ** self.precision_fractional
 
+    @overloaded.method
+    def mean(self, _self, **kwargs):
+        if isinstance(_self, AdditiveSharingTensor):
+            return _self.mean(**kwargs)
+
+        sum_value = _self.sum(**kwargs)
+        result = sum_value // sum_value.numel()
+
+        return result
+
     def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu
@@ -812,7 +823,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 numel = self.shape[dim]
             else:
                 numel = self.numel()
-            return mean * numel / (numel - 1)
+            return mean * numel // (numel - 1)
         else:
             return mean
 
@@ -890,6 +901,27 @@ class FixedPrecisionTensor(AbstractTensor):
         # You can also overload functions in submodules!
         # Modules should be registered just like functions
         module.nn = nn  # Handles all the overloading properly
+
+        def conv2d(input, weight, bias, *args, **kwargs):
+            # put bias to None, we will add it just after
+            _, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+                "conv2d", None, (input, weight, None, *args), kwargs
+            )
+
+            response = torch.nn.functional.conv2d(*new_args, **new_kwargs)
+
+            response = hook_args.hook_response(
+                "conv2d", response, wrap_type=type(input), wrap_args=input.get_class_attributes()
+            )
+
+            response = response.truncate(input.precision_fractional)
+
+            if bias is not None:
+                response = response + bias.unsqueeze(-1).unsqueeze(-1)
+
+            return response
+
+        module.nn.functional.conv2d = conv2d
 
     @classmethod
     def handle_func_command(cls, command):

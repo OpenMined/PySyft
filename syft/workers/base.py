@@ -37,6 +37,11 @@ from syft.workers.message_handler import BaseMessageHandler
 from syft.exceptions import ResponseSignatureError
 from syft.exceptions import WorkerNotFoundException
 
+import pyarrow
+
+context = pyarrow.default_serialization_context()
+pyarrow.register_torch_serialization_handlers(context)
+
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -287,6 +292,18 @@ class BaseWorker(AbstractWorker):
         else:
             return []
 
+    @staticmethod
+    def arrow_serialize(
+        obj: WorkerCommandMessage, worker, simplified, force_full_simplification
+    ) -> bin:
+        return pyarrow.serialize(obj.message[0][0], context=context).to_buffer()
+
+    @staticmethod
+    def arrow_deserialize(binary: bin, worker) -> WorkerCommandMessage:
+        return BaseWorker.create_worker_command_message(
+            "feed_crypto_primitive_store", None, pyarrow.deserialize(binary, context=context)
+        )
+
     def send_msg(self, message: Message, location: "BaseWorker") -> object:
         """Implements the logic to send messages.
 
@@ -309,11 +326,48 @@ class BaseWorker(AbstractWorker):
         if self.verbose:
             print(f"worker {self} sending {message} to {location}")
 
+        strategy = None
+
         # Step 1: serialize the message to a binary
-        bin_message = sy.serde.serialize(message, worker=self)
+        bin_message = sy.serde.serialize(message, worker=self, strategy=strategy)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
+
+        # Step 3: deserialize the response
+        response = sy.serde.deserialize(bin_response, worker=self)
+
+        return response
+
+    def send_msg_arrow(self, message: Message, location: "BaseWorker") -> object:
+        """Implements the logic to send messages.
+
+        The message is serialized and sent to the specified location. The
+        response from the location (remote worker) is deserialized and
+        returned back.
+
+        Every message uses this method.
+
+        Args:
+            msg_type: A integer representing the message type.
+            message: A Message object
+            location: A BaseWorker instance that lets you provide the
+                destination to send the message.
+
+        Returns:
+            The deserialized form of message from the worker at specified
+            location.
+        """
+        if self.verbose:
+            print(f"worker {self} sending {message} to {location}")
+
+        strat = self.arrow_serialize
+
+        # Step 1: serialize the message to a binary
+        bin_message = sy.serde.serialize(message, worker=self, strategy=strat)
+
+        # Step 2: send the message and wait for a response
+        bin_response = self._send_msg_arrow(bin_message, location)
 
         # Step 3: deserialize the response
         response = sy.serde.deserialize(bin_response, worker=self)
@@ -334,8 +388,62 @@ class BaseWorker(AbstractWorker):
         Returns:
             A binary message response.
         """
+
+        strat = None
+
+        if self.id == "alice" and hasattr(sy, "comm_total"):
+            sy.comm_total += len(bin_message)
+
         # Step 0: deserialize message
-        msg = sy.serde.deserialize(bin_message, worker=self)
+        msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
+
+        # Step 1: save message and/or log it out
+        if self.log_msgs:
+            self.msg_history.append(msg)
+
+        if self.verbose:
+            print(
+                f"worker {self} received {type(msg).__name__} {msg.contents}"
+                if hasattr(msg, "contents")
+                else f"worker {self} received {type(msg).__name__}"
+            )
+
+        # Step 2: route message to appropriate function
+
+        response = None
+        for handler in self.message_handlers:
+            if handler.supports(msg):
+                response = handler.handle(msg)
+                break
+        # TODO(karlhigley): Raise an exception if no handler is found
+
+        # Step 3: Serialize the message to simple python objects
+        bin_response = sy.serde.serialize(response, worker=self)
+
+        return bin_response
+
+    def recv_msg_arrow(self, bin_message: bin) -> bin:
+        """Implements the logic to receive messages.
+
+        The binary message is deserialized and routed to the appropriate
+        function. And, the response serialized the returned back.
+
+        Every message uses this method.
+
+        Args:
+            bin_message: A binary serialized message.
+
+        Returns:
+            A binary message response.
+        """
+
+        strat = self.arrow_deserialize
+
+        if self.id == "alice" and hasattr(sy, "comm_total"):
+            sy.comm_total += len(bin_message)
+
+        # Step 0: deserialize message
+        msg = sy.serde.deserialize(bin_message, worker=self, strategy=strat)
 
         # Step 1: save message and/or log it out
         if self.log_msgs:
@@ -863,8 +971,6 @@ class BaseWorker(AbstractWorker):
         """
         results = self.object_store.find_by_tag(tag)
         if results:
-            if not all(result.location.id == location.id for result in results):
-                raise ValueError("All Tags are not of same location.")
             return results
         else:
             return self.request_search(tag, location=location)

@@ -5,21 +5,21 @@ import torch as th
 
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
 from syft.frameworks.torch.mpc.fss import N_CORES
 
+from .cuda.tensor import CUDALongTensor
+
+NAMESPACE = "syft.frameworks.torch.mpc.spdz"
 no_wrap = {"no_wrap": True}
-
-
-def full_name(f):
-    return f"syft.frameworks.torch.mpc.spdz.{f.__name__}"
 
 
 # share level
 @allow_command
-def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int, kwargs_):
     """
     Build the shares of delta and epsilon in the SPDZ protocol
     Args:
@@ -41,6 +41,7 @@ def spdz_mask(x, y, op: str, dtype: str, torch_dtype: th.dtype, field: int):
         dtype=dtype,
         torch_dtype=torch_dtype,
         field=field,
+        kwargs_=kwargs_,
     )
     return x - a, y - b
 
@@ -51,17 +52,20 @@ def slice(x, j, slice_size):
     return x_slice
 
 
-def triple_mat_mul(core_id, delta, epsilon, a, b):
-    cmd = th.matmul
-    delta_b = cmd(delta, b)
-    a_epsilon = cmd(a, epsilon)
-    delta_epsilon = cmd(delta, epsilon)
+def triple_mat_mul(core_id, op, delta, epsilon, a, b, kwargs_):
+    cmd = getattr(th, op)
+    delta_b = cmd(delta, b, **kwargs_)
+    a_epsilon = cmd(a, epsilon, **kwargs_)
+    delta_epsilon = cmd(delta, epsilon, **kwargs_)
+
     return core_id, delta_b, a_epsilon, delta_epsilon
 
 
 # share level
 @allow_command
-def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dtype, field: int):
+def spdz_compute(
+    j: int, delta, epsilon, kwargs_, op: str, dtype: str, torch_dtype: th.dtype, field: int
+):
     """
     Compute the mul or matmul part of the SPDZ protocol, once delta and epsilon
     have been made public
@@ -85,30 +89,47 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         dtype=dtype,
         torch_dtype=torch_dtype,
         field=field,
+        kwargs_=kwargs_,
     )
 
-    if op == "matmul":
-
-        batch_size = delta.shape[0]
-
-        multiprocessing_args = []
-        slice_size = math.ceil(batch_size / N_CORES)
-        for core_id in range(N_CORES):
-            process_args = (
-                core_id,
-                slice(delta, core_id, slice_size),
-                epsilon,
-                slice(a, core_id, slice_size),
-                b,
+    if op in {"matmul", "conv2d"}:
+        if th.cuda.is_available():
+            cmd = getattr(CUDALongTensor, op)
+            delta = CUDALongTensor(delta)
+            epsilon = CUDALongTensor(epsilon)
+            a = CUDALongTensor(a)
+            b = CUDALongTensor(b)
+            delta_b = cmd(delta, b, **kwargs_)
+            a_epsilon = cmd(a, epsilon, **kwargs_)
+            delta_epsilon = cmd(delta, epsilon, **kwargs_)
+            delta_b, a_epsilon, delta_epsilon = (
+                delta_b._tensor,
+                a_epsilon._tensor,
+                delta_epsilon._tensor,
             )
-            multiprocessing_args.append(process_args)
-        p = multiprocessing.Pool()
-        partitions = p.starmap(triple_mat_mul, multiprocessing_args)
-        p.close()
-        partitions = sorted(partitions, key=lambda k: k[0])
-        delta_b = th.cat([partition[1] for partition in partitions])
-        a_epsilon = th.cat([partition[2] for partition in partitions])
-        delta_epsilon = th.cat([partition[3] for partition in partitions])
+        else:
+            batch_size = delta.shape[0]
+
+            multiprocessing_args = []
+            slice_size = math.ceil(batch_size / N_CORES)
+            for core_id in range(N_CORES):
+                process_args = (
+                    core_id,
+                    op,
+                    slice(delta, core_id, slice_size),
+                    epsilon,
+                    slice(a, core_id, slice_size),
+                    b,
+                    kwargs_,
+                )
+                multiprocessing_args.append(process_args)
+            p = multiprocessing.Pool()
+            partitions = p.starmap(triple_mat_mul, multiprocessing_args)
+            p.close()
+            partitions = sorted(partitions, key=lambda k: k[0])
+            delta_b = th.cat([partition[1] for partition in partitions])
+            a_epsilon = th.cat([partition[2] for partition in partitions])
+            delta_epsilon = th.cat([partition[3] for partition in partitions])
     else:
         cmd = getattr(th, op)
 
@@ -122,7 +143,7 @@ def spdz_compute(j: int, delta, epsilon, op: str, dtype: str, torch_dtype: th.dt
         return delta_b + a_epsilon + c
 
 
-def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
+def spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field):
     """Abstractly multiplies two tensors (mul or matmul)
     Args:
         cmd: a callable of the equation to be computed (mul or matmul)
@@ -142,12 +163,20 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
     op = cmd
     locations = x.locations
     # Experimental results don't show real improvements with asynchronous = True
-    asynchronous = False  # isinstance(locations[0], WebsocketClientWorker)
+    asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
     try:
         shares_delta, shares_epsilon = [], []
         for location in locations:
-            args = (x.child[location.id], y.child[location.id], op, dtype, torch_dtype, field)
+            args = (
+                x.child[location.id],
+                y.child[location.id],
+                op,
+                dtype,
+                torch_dtype,
+                field,
+                kwargs_,
+            )
             share_delta, share_epsilon = remote(spdz_mask, location=location)(
                 *args, return_value=True, return_arity=2
             )
@@ -157,7 +186,7 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
         sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
-        return spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field)
+        return spdz_mul(cmd, x, y, kwargs_, crypto_provider, dtype, torch_dtype, field)
 
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
@@ -171,7 +200,8 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
-            args = (th.LongTensor([i]), delta, epsilon, op, dtype, torch_dtype, field)
+            index = th.LongTensor([i]).cuda() if th.cuda.is_available() else th.LongTensor([i])
+            args = (index, delta, epsilon, kwargs_, op, dtype, torch_dtype, field)
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
@@ -180,9 +210,20 @@ def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
                 workers=locations,
                 commands=[
                     (
-                        full_name(spdz_compute),
+                        f"{NAMESPACE}.{spdz_compute.__name__}",
                         None,
-                        (th.LongTensor([i]), delta, epsilon, op),
+                        (
+                            th.LongTensor([i]).cuda()
+                            if th.cuda.is_available()
+                            else th.LongTensor([i]),
+                            delta,
+                            epsilon,
+                            kwargs_,
+                            op,
+                            dtype,
+                            torch_dtype,
+                            field,
+                        ),
                         {},
                     )
                     for i in [0, 1]

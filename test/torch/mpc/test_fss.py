@@ -95,7 +95,7 @@ def test_using_crypto_store(workers, op):
     gather_op = {"eq": "__add__", "le": "__add__"}[op]
     primitive = {"eq": "fss_eq", "le": "fss_comp"}[op]
 
-    me.crypto_store.provide_primitives(primitive, [alice, bob], n_instances=6)
+    me.crypto_store.provide_primitives(primitive, kwargs_={}, workers=[alice, bob], n_instances=6)
     keys_a = alice.crypto_store.get_keys(primitive, 3, remove=True)
     keys_b = bob.crypto_store.get_keys(primitive, 3, remove=True)
 
@@ -123,10 +123,10 @@ def test_using_preprocessed_material(workers, op):
     crypto_provider.crypto_store.force_preprocessing = True
 
     crypto_provider.crypto_store.provide_primitives(
-        workers=(data_owner, model_owner), n_instances=8, op=primitive
+        kwargs_={}, workers=(data_owner, model_owner), n_instances=8, op=primitive
     )
 
-    encryption_kwargs = dict(
+    encryption_kwargs = dict(  # noqa
         workers=(
             data_owner,
             model_owner,
@@ -134,11 +134,11 @@ def test_using_preprocessed_material(workers, op):
         crypto_provider=crypto_provider,  # a third party providing some cryptography primitives
         protocol="fss",  # the name of the crypto protocol, fss stands for "Function Secret Sharing"
         precision_fractional=4,  # encoding fixed precision: floats are truncated to the 4th decimal
-    )
+    )  # noqa
     t = th.randint(low=0, high=5, size=(8,))
     x = t.encrypt(**encryption_kwargs)
 
-    t2 = th.Tensor([2])
+    t2 = th.tensor([2])
     x2 = t2.encrypt(**encryption_kwargs)
 
     if op == "eq":

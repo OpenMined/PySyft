@@ -339,12 +339,15 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
     kwargs = {"dtype": dtype, "protocol": protocol, "crypto_provider": crypto_provider}
 
     if force_preprocessing:
-        me.crypto_store.provide_primitives(
-            "mul",
-            args,
-            n_instances=5,
-            shapes=[((4,), (4,)), ((1,), (3,))],
-        )
+        for i in range(5):
+            me.crypto_store.provide_primitives(
+                "mul",
+                kwargs_={},
+                workers=args,
+                n_instances=1,
+                shapes=[((4,), (4,)), ((1,), (3,))],
+                dtype=dtype,
+            )
 
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(*args, **kwargs)
@@ -405,8 +408,9 @@ def test_matmul(workers, protocol, force_preprocessing):
 
     if force_preprocessing:
         me.crypto_store.provide_primitives(
-            "matmul",
-            args,
+            op="matmul",
+            kwargs_={},
+            workers=args,
             n_instances=1,
             shapes=[((2, 2), (2, 2))],
         )
@@ -753,7 +757,9 @@ def test_comp(workers, protocol, force_preprocessing):
     )
 
     if force_preprocessing:
-        me.crypto_store.provide_primitives("fss_comp", [alice, bob], n_instances=50)
+        me.crypto_store.provide_primitives(
+            "fss_comp", kwargs_={}, workers=[alice, bob], n_instances=50
+        )
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -1295,6 +1301,9 @@ def test_dtype(workers):
 
 def test_garbage_collect_reconstruct(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    alice.clear_objects()
+    bob.clear_objects()
+
     a = torch.ones(1, 5)
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
@@ -1305,6 +1314,9 @@ def test_garbage_collect_reconstruct(workers):
 
 def test_garbage_collect_move(workers):
     bob, alice, me = (workers["bob"], workers["alice"], workers["me"])
+    alice.clear_objects()
+    bob.clear_objects()
+
     a = torch.ones(1, 5).send(alice)
     b = a.copy().move(bob)
 
@@ -1314,6 +1326,9 @@ def test_garbage_collect_move(workers):
 
 def test_garbage_collect_mul(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    alice.clear_objects()
+    bob.clear_objects()
+
     a = torch.ones(1, 5)
     b = torch.ones(1, 5)
 
@@ -1338,7 +1353,9 @@ def test_comp_ast_fpt(workers, protocol, force_preprocessing):
     )
 
     if force_preprocessing:
-        me.crypto_store.provide_primitives("fss_comp", [alice, bob], n_instances=50)
+        me.crypto_store.provide_primitives(
+            "fss_comp", kwargs_={}, workers=[alice, bob], n_instances=50
+        )
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}

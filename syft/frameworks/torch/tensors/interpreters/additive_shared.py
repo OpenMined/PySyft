@@ -1,12 +1,14 @@
 import math
 import torch
 import warnings
+import logging
 
 import syft as sy
 from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.frameworks.torch.mpc.cuda import fss as cuda_fss
 from syft.generic.utils import allow_command
 from syft.generic.utils import memorize
 from syft.generic.utils import remote
@@ -45,7 +47,7 @@ def check_if_op_with_zero(operation):
             other_is_zero = value == 0
         if not isinstance(other_is_zero, bool):
             other_is_zero = other_is_zero.any()
-        if not isinstance(other_is_zero, (bool, torch.BoolTensor)):
+        if not isinstance(other_is_zero, (bool, torch.BoolTensor, torch.cuda.BoolTensor)):
             raise ValueError("Should be a boolean:", other_is_zero)
 
         result = operation(self_, other, *args, **kwargs)
@@ -119,7 +121,7 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
-            warnings.warn("Use dtype instead of field")
+            # warnings.warn("Use dtype instead of field")
             # Since n mod 0 is not defined
             if isinstance(field, int) and field > 0:
                 if field <= 2 ** 32:
@@ -342,8 +344,17 @@ class AdditiveSharingTensor(AbstractTensor):
             random_type: the torch type shares should be encoded in (use the smallest possible)
                 given the choice of mod"
         """
-        random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
+        if torch.cuda.is_available():
+            random_type = (
+                torch.cuda.LongTensor if random_type == torch.int64 else torch.cuda.IntTensor
+            )
+        else:
+            random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
         if not isinstance(secret, random_type):
+            if secret.device == torch.device("cuda"):
+                logging.warning("CUDA tensors were automatically shifted to CPU before encryption.")
+                # implicit shifting to CPU happens in the next line - explicit change of type
+
             secret = secret.type(random_type)
 
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
@@ -468,7 +479,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(operand, int):
             operand = torch.tensor([operand], dtype=self.torch_dtype)
 
-        if isinstance(operand, (torch.LongTensor, torch.IntTensor)):
+        if isinstance(operand, torch.Tensor):
             operand = operand.share(
                 *self.child.keys(), **self.get_class_attributes(), **no_wrap
             ).child
@@ -524,7 +535,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def __rsub__(self, other):
         return (self - other) * -1
 
-    def _private_mul(self, other, equation: str):
+    @staticmethod
+    def _private_mul(x, y, equation: str, kwargs_={}):
         """Abstractly Multiplies two tensors
 
         Args:
@@ -534,20 +546,19 @@ class AdditiveSharingTensor(AbstractTensor):
                 summation form
         """
         # check to see that operation is either mul or matmul
-        if equation != "mul" and equation != "matmul":
+        if equation not in {"mul", "matmul", "conv2d"}:
             raise NotImplementedError(
-                f"Operation({equation}) is not possible, only mul or matmul are allowed"
+                f"Operation({equation}) is not possible, only mul, matmul or conv2d are allowed"
             )
-        cmd = getattr(torch, equation)
 
-        if not isinstance(other, AdditiveSharingTensor):
+        if not isinstance(y, AdditiveSharingTensor):
             raise TypeError("other is not an AdditiveSharingTensor")
 
-        if self.crypto_provider is None:
+        if x.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
         shares = spdz.spdz_mul(
-            equation, self, other, self.crypto_provider, self.dtype, self.torch_dtype, self.field
+            equation, x, y, kwargs_, x.crypto_provider, x.dtype, x.torch_dtype, x.field
         )
 
         return shares
@@ -595,7 +606,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 other = other.wrap()
             return self._public_mul(other, "mul")
 
-        return self._private_mul(other, "mul")
+        return AdditiveSharingTensor._private_mul(self, other, "mul")
 
     def __mul__(self, other, **kwargs):
         return self.mul(other, **kwargs)
@@ -646,7 +657,15 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(other, sy.AdditiveSharingTensor):
             return self._public_mul(other, "matmul")
 
-        return self._private_mul(other, "matmul")
+        return AdditiveSharingTensor._private_mul(self, other, "matmul")
+
+    def conv2d(self, other, **kw):
+        """Multiplies two tensors matrices together
+        Args:
+            self: an AdditiveSharingTensor
+            other: another AdditiveSharingTensor or a MultiPointerTensor
+        """
+        return AdditiveSharingTensor._private_mul(self, other, "conv2d", kw)
 
     def mm(self, *args, **kwargs):
         """Multiplies two tensors matrices together"""
@@ -670,7 +689,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Still no solution to perform a real division on a additive shared tensor
         # without a heavy crypto protocol.
         # For now, the solution works in most cases when the tensor is shared between 2 workers
-        return {worker: share / divisor for worker, share in shares.items()}
+        return {worker: share // divisor for worker, share in shares.items()}
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):
@@ -720,7 +739,7 @@ class AdditiveSharingTensor(AbstractTensor):
             sum_value = share.sum(**kwargs)
             if m is None:
                 m = share.numel() // sum_value.numel()
-            result[worker] = sum_value / m
+            result[worker] = sum_value // m
 
         return result
 
@@ -902,6 +921,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.pad = pad
 
+                def conv2d(a, b, *args, **kwargs):
+                    if len(args) > 1:  # if the conv params have been provided in args
+                        return a.conv2d(
+                            b,
+                            bias=args[0],
+                            stride=args[1] if isinstance(args[1], int) else args[1][0],
+                            padding=args[2],
+                            dilation=args[3],
+                            groups=args[4],
+                        )
+                    else:
+                        return a.conv2d(b, bias=args[0], **kwargs)
+
+                module.conv2d = conv2d
+
             module.functional = functional
 
         module.nn = nn
@@ -913,8 +947,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def relu(self):
-        zero = self - self
-        return self * (self >= zero)
+        return self * (self >= 0)
 
     def positive(self):
         # self >= 0
@@ -941,7 +974,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __ge__(self, other):
-        return fss.le(other, self)
+        if torch.cuda.is_available():
+            return cuda_fss.le(other, self)
+        else:
+            return fss.le(other, self)
 
     def lt(self, other):
         return (other - self - 1).positive()
@@ -963,7 +999,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __le__(self, other):
-        return fss.le(self, other)
+        if torch.cuda.is_available():
+            return cuda_fss.le(self, other)
+        else:
+            return fss.le(self, other)
 
     @crypto_protocol("snn")
     def eq(self, other):
@@ -974,7 +1013,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def eq(self, other):
-        return fss.eq(self, other)
+        if torch.cuda.is_available():
+            return cuda_fss.eq(self, other)
+        else:
+            return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)

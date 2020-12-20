@@ -4,6 +4,7 @@ import logging
 from math import inf
 import torch
 import weakref
+import warnings
 
 import syft
 from syft import dependency_check
@@ -297,6 +298,16 @@ class TorchHook(FrameworkHook):
 
         self._hook_native_methods(tensor_type)
 
+        # addition for cuda & numpy
+        tensor_type.native_numpy = tensor_type.numpy
+
+        def cuda_numpy(self):
+            if str(self.device).startswith("cuda"):
+                return self.cpu().native_numpy()
+            return self.native_numpy()
+
+        tensor_type.numpy = cuda_numpy
+
     def __hook_properties(self, tensor_type):
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape
@@ -559,6 +570,9 @@ class TorchHook(FrameworkHook):
             hook_self.torch.native_tensor = hook_self.torch.tensor
 
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
+            if hook_self.torch.cuda.is_available():
+                kwargs["device"] = "cuda"
+
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
             if register:
@@ -630,6 +644,14 @@ class TorchHook(FrameworkHook):
             iterators = [
                 "parameters",
                 "buffers",
+            ]  # all the element iterators from nn module should be listed here,
+            return [getattr(nn_self, iter) for iter in iterators]
+
+        def named_tensor_iterator(nn_self):
+            """adding relavant iterators for the tensor elements"""
+            iterators = [
+                "named_parameters",
+                "named_buffers",
             ]  # all the element iterators from nn module should be listed here,
             return [getattr(nn_self, iter) for iter in iterators]
 
@@ -714,8 +736,20 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for element_iter in tensor_iterator(nn_self):
-                for p in element_iter():
+            for element_iter in named_tensor_iterator(nn_self):
+                for name_p, p in element_iter():
+                    if "running_var" in name_p:
+                        if nn_self.training is False:
+                            warnings.warn(
+                                "WARNING: Don't use for training! \nThe model contains a BatchNorm"
+                                " with running_var that has been converted before encryption: "
+                                "x -> 1 / torch.sqrt(x) "
+                            )
+                            sqrt_inv_p = 1 / torch.sqrt(p)
+                            if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
+                                p.child = sqrt_inv_p.child
+                            else:
+                                p.set_(sqrt_inv_p)
                     p.encrypt(inplace=True, **kwargs)
 
             return nn_self
@@ -728,9 +762,16 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for element_iter in tensor_iterator(nn_self):
-                for p in element_iter():
+            for element_iter in named_tensor_iterator(nn_self):
+                for name_p, p in element_iter():
                     p.decrypt(inplace=True)
+                    if "running_var" in name_p:
+                        if nn_self.training is False:
+                            sq_inv_p = 1 / torch.sqrt(p)
+                            if p.is_wrapper and isinstance(p.child, syft.PointerTensor):
+                                p.child = sq_inv_p.child
+                            else:
+                                p.set_(sq_inv_p)
 
             return nn_self
 
@@ -783,6 +824,8 @@ class TorchHook(FrameworkHook):
         self.torch.nn.Module.float_precision = module_float_precision_
         self.torch.nn.Module.float_prec = module_float_precision_
 
+        self.torch.nn.Module.cuda = lambda x: x.to("cuda")
+
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)
@@ -807,6 +850,59 @@ class TorchHook(FrameworkHook):
                 )
 
         self.torch.nn.Module.location = location
+
+        # print the location
+        native___str__ = self.torch.nn.Module.__str__
+
+        def model___str__(nn_self):
+            out = ""
+            # shared_encryption tensor doesn't have a location
+            first_data = next(iter(nn_self.state_dict().values()))
+            # child to get over FixedPrecisionTensor to AdditiveSharingTensor
+            if hasattr(first_data, "child"):
+                if hasattr(first_data.child, "location"):
+                    out = f"\n---\nlocation: {first_data.child.location}"
+                elif hasattr(first_data.child, "locations"):
+                    out = f"\n---\nlocations: {first_data.child.locations}"
+
+            out = native___str__(nn_self) + out
+
+            return out
+
+        self.torch.nn.Module.__str__ = model___str__
+
+        def train(nn_self, mode=True):
+            """
+            This is a modification of nn.Module.train for BatchNorm, which stores the sqrt
+            inverse of the running_var in place of the current running_var when training is
+            False, when parameters are converted to fixed precision (and possibly encrypted)
+            to avoid recomputing this complex ops for every batch.
+            """
+            previous_mode = nn_self.training
+            nn_self.training = mode
+            for module in nn_self.children():
+                module.train(mode)
+            if (
+                mode is False
+                and previous_mode is True
+                and nn_self.running_var is not None
+                and nn_self.running_var.is_wrapper
+            ):
+                next_node = nn_self.running_var
+                if isinstance(next_node.child, AutogradTensor):
+                    next_node = next_node.child
+                if isinstance(next_node.child, FixedPrecisionTensor):
+                    next_node = next_node.child
+                if isinstance(next_node.child, AdditiveSharingTensor):
+                    raise ValueError(
+                        "Please don't call .eval() on an encrypted model containing "
+                        "a BatchNorm, or fix this."
+                    )
+                # TODO: Decomment and test extensively, could be error prone
+                # if isinstance(nn_self.running_var.child, (FixedPrecisionTensor, AutogradTensor)):
+                #     nn_self.running_var = nn_self.running_var.reciprocal(method="newton")
+
+        self.torch.nn.modules.batchnorm._BatchNorm.train = train
 
         # Make sure PySyft uses the PyTorch version
         self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm

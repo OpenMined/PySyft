@@ -6,6 +6,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+import torch
 
 
 class ObjectStore:
@@ -62,7 +63,8 @@ class ObjectStore:
                 more complex and needs to be explored. Is not supported at the
                 moment.
         """
-        if hasattr(obj, "id"):
+        has_id = hasattr(obj, "_id") if isinstance(obj, torch.Tensor) else hasattr(obj, "id")
+        if has_id:
             self.rm_obj(obj.id)
         if hasattr(obj, "_owner"):
             del obj._owner

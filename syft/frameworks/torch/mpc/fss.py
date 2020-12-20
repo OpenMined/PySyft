@@ -79,6 +79,8 @@ def fss_op(x1, x2, op="eq"):
         shares of the comparison
     """
 
+    assert not th.cuda.is_available()
+
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
@@ -110,7 +112,7 @@ def fss_op(x1, x2, op="eq"):
     except EmptyCryptoPrimitiveStoreError as e:
         if sy.local_worker.crypto_store.force_preprocessing:
             raise
-        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, kwargs_={}, **e.kwargs_)
         return fss_op(x1, x2, op)
 
     mask_value = sum(shares) % 2 ** n
@@ -119,14 +121,22 @@ def fss_op(x1, x2, op="eq"):
         location.de_register_obj(share)
         del share
 
-    workers_args = [(th.IntTensor([i]), mask_value, op, dtype) for i in range(2)]
+    workers_args = [
+        (
+            th.IntTensor([i]).cuda() if th.cuda.is_available() else th.IntTensor([i]),
+            mask_value,
+            op,
+            dtype,
+        )
+        for i in range(2)
+    ]
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
             share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
             shares.append(share)
     else:
-        print("async")
+        # print("async")
         shares = asyncio.run(
             sy.local_worker.async_dispatch(
                 workers=locations,
@@ -137,6 +147,7 @@ def fss_op(x1, x2, op="eq"):
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
     response = sy.AdditiveSharingTensor(shares, **class_attributes)
+
     return response
 
 

@@ -20,8 +20,6 @@ from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
 from syft.serde.torch.serde import torch_tensor_serializer
 from syft.serde.torch.serde import torch_tensor_deserializer
-from syft.serde.torch.serde import numpy_tensor_serializer
-from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
@@ -36,7 +34,6 @@ from syft_proto.types.torch.v1.dtype_pb2 import TorchDType as TorchDTypePB
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
     TENSOR_SERIALIZATION.TORCH: TorchTensorPB.Serializer.SERIALIZER_TORCH,
-    TENSOR_SERIALIZATION.NUMPY: TorchTensorPB.Serializer.SERIALIZER_NUMPY,
     TENSOR_SERIALIZATION.ALL: TorchTensorPB.Serializer.SERIALIZER_ALL,
 }
 SERIALIZERS_PROTOBUF_TO_SYFT = {value: key for key, value in SERIALIZERS_SYFT_TO_PROTOBUF.items()}
@@ -55,7 +52,6 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     """
     serializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
-        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
         TENSOR_SERIALIZATION.ALL: protobuf_tensor_serializer,
     }
     if worker.serializer not in serializers:
@@ -80,7 +76,6 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     """
     deserializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
-        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_deserializer,
         TENSOR_SERIALIZATION.ALL: protobuf_tensor_deserializer,
     }
     if serializer not in deserializers:
