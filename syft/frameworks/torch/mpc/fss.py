@@ -152,8 +152,7 @@ def mask_builder(x1, x2, op):
     x = x1 - x2
 
     keys = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
-    # Ignore the first line (AES keys and not alpha)
-    alpha = np.frombuffer(np.ascontiguousarray(keys[1:, 0:N]), dtype=np.uint32)
+    alpha = np.frombuffer(np.ascontiguousarray(keys[:, 0:N]), dtype=np.uint32)
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r
 
@@ -224,7 +223,7 @@ class DPF:
         original_shape = x.shape
         x = x.reshape(-1)
         flat_result = dpf.eval(b, x, k_b)
-        return flat_result.astype(np.int64).reshape(original_shape)
+        return flat_result.astype(np.int32).astype(np.int64).reshape(original_shape)
 
 
 class DIF:
@@ -240,4 +239,4 @@ class DIF:
         original_shape = x.shape
         x = x.reshape(-1)
         flat_result = dif.eval(b, x, k_b)
-        return flat_result.astype(np.int64).reshape(original_shape)
+        return flat_result.astype(np.int32).astype(np.int64).reshape(original_shape)
