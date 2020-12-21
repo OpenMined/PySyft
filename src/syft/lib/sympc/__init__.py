@@ -70,6 +70,10 @@ def create_ast() -> Globals:
             "sympc.tensor.ShareTensor.__mul__",
             "sympc.tensor.ShareTensor",
         ),
+        (
+            "sympc.tensor.ShareTensor.__matmul__",
+            "sympc.tensor.ShareTensor",
+        ),
     ]
 
     add_modules(ast, modules)
