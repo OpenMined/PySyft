@@ -132,7 +132,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 upcasted_args,
                 upcasted_kwargs,
             ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
-            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+            # in opacus the step method in torch gets monkey patched on .attach
+            # this means we can't use the original AST method reference and need to
+            # get it again from the actual object
+            try:
+                method_name = self.path.split(".")[-1]
+                method = getattr(resolved_self.data, method_name, None)
+                result = method(*upcasted_args, **upcasted_kwargs)
+            except Exception as e:
+                print(f"Unable to resolve method {self.path} on {resolved_self}. {e}")
+                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         # TODO: replace with proper tuple support
         if type(result) is tuple:

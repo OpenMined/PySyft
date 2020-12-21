@@ -1,5 +1,6 @@
 # syft relative
 from ..ast.globals import Globals
+from ..lib.opacus import create_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
@@ -11,12 +12,14 @@ def create_lib_ast() -> Globals:
     python_ast = create_python_ast()
     torch_ast = create_torch_ast()
     torchvision_ast = create_torchvision_ast()
+    opacus_ast = create_ast()
     # numpy_ast = create_numpy_ast()
 
     lib_ast = Globals()
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+    lib_ast.add_attr(attr_name="opacus", attr=opacus_ast.attrs["opacus"])
     # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     return lib_ast
