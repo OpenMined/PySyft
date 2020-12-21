@@ -163,8 +163,7 @@ def mask_builder(x1, x2, op):
     x = x1 - x2
 
     keys = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
-    # Ignore the first line (AES keys and not alpha)
-    alpha = np.frombuffer(np.ascontiguousarray(keys[1:, 0:N]), dtype=np.uint32)
+    alpha = np.frombuffer(np.ascontiguousarray(keys[:, 0:N]), dtype=np.uint32)
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r
 

@@ -104,24 +104,21 @@ class PrimitiveStorage:
                     self, available_instances, n_instances=n_instances, op=op, **kwargs
                 )
         elif op in {"fss_eq", "fss_comp"}:
-            # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
-            # For each primitive, the first line is the AES keys
             if th.cuda.is_available():
                 # print('opening store...')
                 available_instances = len(primitive_stack[0][0]) if len(primitive_stack) > 0 else -1
                 # print('available_instances', available_instances)
                 # print(primitive_stack)
             else:
-                available_instances = (
-                    len(primitive_stack[0]) - 1 if len(primitive_stack) > 0 else -1
-                )
+                # The primitive stack is a list of keys arrays (2d numpy u8 arrays).
+                available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
 
             if available_instances >= n_instances:
                 if th.cuda.is_available():
                     assert available_instances == n_instances
                     keys = primitive_stack[0]
                 else:
-                    keys = primitive_stack[0][0 : n_instances + 1]
+                    keys = primitive_stack[0][0:n_instances]
                 if remove:
                     # We throw the whole key array away, not just the keys we used
                     del primitive_stack[0]
