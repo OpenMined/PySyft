@@ -147,27 +147,24 @@ class StorableObject(AbstractStorableObject):
         obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
 
         # this happens if we have a special ProtobufWrapper type
+        # need a different way to get obj_type
         if proto.obj_type.endswith("ProtobufWrapper"):
             module_parts = proto.obj_type.split(".")
             klass = module_parts.pop().replace("ProtobufWrapper", "")
             proto_type = getattr(sys.modules[".".join(module_parts)], klass)
             obj_type = proto_type.serializable_wrapper_type
 
-            # create a new ProtobufWrapper so we can use that to setattr on
-            data = obj_type(value=proto)  # type: ignore
-        else:
-            # this is the normal path
-            # Step 3: get the protobuf type we deserialize for .data
-            schematic_type = obj_type.get_data_protobuf_schema()
+        # Step 3: get the protobuf type we deserialize for .data
+        schematic_type = obj_type.get_data_protobuf_schema()
 
-            # Step 4: Deserialize data from protobuf
-            data = None
-            if callable(schematic_type):
-                data = schematic_type()
-                descriptor = getattr(schematic_type, "DESCRIPTOR", None)
-                if descriptor is not None and proto.data.Is(descriptor):
-                    proto.data.Unpack(data)
-                data = obj_type._data_proto2object(proto=data)
+        # Step 4: Deserialize data from protobuf
+        data = None
+        if callable(schematic_type):
+            data = schematic_type()
+            descriptor = getattr(schematic_type, "DESCRIPTOR", None)
+            if descriptor is not None and proto.data.Is(descriptor):
+                proto.data.Unpack(data)
+            data = obj_type._data_proto2object(proto=data)
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""

@@ -239,28 +239,27 @@ class Class(Callable):
             description: str = "",
             tags: List[str] = [],
         ) -> Pointer:
-            # this doesnt work for c types and other types like protobuf without
-            # the ability to setattr, however it is not being used currently, but
-            # would potentially make duplicate variables and other types of re-sending
-            # checks easier to track.
-            # id_ = getattr(self, "id", None)
-            # if id_ is None:
-            #     id_ = UID()
-            #     self.id = id_
+            # if self is proto, change self to it's wrapper object
+            which_obj = self
+            if "ProtobufWrapper" in self.serializable_wrapper_type.__name__:
+                # which_obj should be of the same type as what self._data_proto2object returns
+                which_obj = self.serializable_wrapper_type(value=self)
+
+            id_ = getattr(self, "id", None)
+            if id_ is None:
+                id_ = UID()
+                which_obj.id = id_
+            which_obj.tags = tags
+            which_obj.description = description
 
             id_at_location = UID()
 
             # Step 1: create pointer which will point to result
-            attr_tags = self.tags if hasattr(self, "tags") else list()
-            attr_tags += tags
-            attr_description = description
-            if attr_description == "":
-                attr_description = getattr(self, "description", "")
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
                 id_at_location=id_at_location,
-                tags=attr_tags,
-                description=attr_description,
+                tags=tags,
+                description=description,
             )
 
             if searchable:
@@ -269,7 +268,7 @@ class Class(Callable):
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
                 id_at_location=ptr.id_at_location,
-                obj=self,
+                obj=which_obj,
                 address=client.address,
                 anyone_can_search_for_this=searchable,
             )
