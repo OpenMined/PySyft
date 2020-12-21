@@ -20,14 +20,12 @@ class Attribute(ABC):
         path_and_name: Optional[str] = None,
         ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
         return_type_name: Optional[str] = None,
-        is_property: bool = False,
     ):
         self.name = name
         self.path_and_name = path_and_name
         self.ref = ref
         self.attrs: Dict[str, Union[ast.callable.Callable, CallableT]] = {}
         self.return_type_name = return_type_name
-        self.is_property = is_property
 
     def set_client(self, client: Any) -> None:
         self.client = client
@@ -70,3 +68,20 @@ class Attribute(ABC):
 
         self._extract_attr_type(out, "modules")
         return out
+
+    def query(self, path: List[str]):
+        if isinstance(path, str):
+            path = path.split(".")
+
+        if len(path) == 0:
+            return self
+
+        next = path[0]
+
+        if next not in self.attrs:
+            raise ValueError(f"Path {'.'.join(path)} not present in the AST.")
+
+        return self.attrs[next].query(path[1:])
+
+    def execute(self):
+        pass

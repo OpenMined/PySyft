@@ -23,16 +23,11 @@ class Callable(ast.attribute.Attribute):
     def __call__(
         self,
         *args: Tuple[Any, ...],
-        return_callable: bool = False,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
-        if (
-            hasattr(self, "client")
-            and self.client is not None
-            and return_callable is False
-        ):
-            return_tensor_type_pointer_type = self.client.lib_ast(
-                path=self.return_type_name, return_callable=True
+        if hasattr(self, "client") and self.client is not None:
+            return_tensor_type_pointer_type = self.client.lib_ast.query(
+                path=self.return_type_name
             ).pointer_type
 
             ptr = return_tensor_type_pointer_type(client=self.client)
@@ -60,16 +55,6 @@ class Callable(ast.attribute.Attribute):
                 self.client.send_immediate_msg_without_reply(msg=msg)
                 return ptr
 
-        path = kwargs["path"]
-        index = kwargs["index"]
-
-        if len(path) == index:
-            return self if return_callable else self.ref
-        else:
-            return self.attrs[path[index]](
-                path=path, index=index + 1, return_callable=return_callable
-            )
-
     def add_path(
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:
@@ -82,14 +67,9 @@ class Callable(ast.attribute.Attribute):
                 if isinstance(attr_ref, ModuleType):
                     raise Exception("Module cannot be attr of callable.")
                 else:
-                    is_property = False
-                    if type(attr_ref).__name__ in ["getset_descriptor", "_tuplegetter"]:
-                        is_property = True
-
                     self.attrs[path[index]] = ast.callable.Callable(
                         name=path[index],
                         path_and_name=".".join(path[: index + 1]),
                         ref=attr_ref,
                         return_type_name=return_type_name,
-                        is_property=is_property,
                     )

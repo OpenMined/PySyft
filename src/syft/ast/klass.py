@@ -93,22 +93,6 @@ def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
     setattr(self, "get_request_config", lambda: request_config)
 
 
-def getattribute(__self: Any, name: str) -> Any:
-    # we need to override the __getattribute__ of our Pointer class
-    # so that if you ever access a property on a Pointer it will not just
-    # get the wrapped run_class_method but also execute it immediately
-    # object.__getattribute__ is the way we prevent infinite recursion
-    attr = object.__getattribute__(__self, name)
-    props = object.__getattribute__(__self, "_props")
-
-    # if the attr key name is in the _props list from above then we know
-    # we should execute it immediately and return the result
-    if name in props:
-        return attr()
-
-    return attr
-
-
 def wrap_iterator(attrs: Dict[str, Union[str, CallableT]]) -> None:
     def wrap_iter(iter_func: CallableT) -> CallableT:
         def __iter__(self: Any) -> Iterable:
@@ -184,14 +168,8 @@ class Class(Callable):
 
     def create_pointer_class(self) -> None:
         attrs: Dict[str, Union[str, CallableT]] = {}
-        _props: List[str] = []
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
-            # if the Method.is_property == True
-            # we need to add this attribute name into the _props list
-            is_property = getattr(attr, "is_property", False)
-            if is_property:
-                _props.append(attr_name)
 
             if attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
@@ -218,8 +196,8 @@ class Class(Callable):
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
-        setattr(klass_pointer, "_props", _props)
-        setattr(klass_pointer, "__getattribute__", getattribute)
+        # TODO good idea
+        # setattr(klass_pointer, "__getattribute__", getattribute)
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:

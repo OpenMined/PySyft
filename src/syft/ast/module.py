@@ -1,8 +1,5 @@
 # stdlib
 import inspect
-from types import BuiltinFunctionType
-from types import FunctionType
-from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
@@ -27,9 +24,8 @@ class Module(ast.attribute.Attribute):
         path_and_name: Optional[str] = None,
         ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
         return_type_name: Optional[str] = None,
-        is_property: bool = False,
     ):
-        super().__init__(name, path_and_name, ref, return_type_name, is_property)
+        super().__init__(name, path_and_name, ref, return_type_name)
 
     def add_attr(
         self,
@@ -87,7 +83,7 @@ class Module(ast.attribute.Attribute):
         if path[index] not in self.attrs:
             attr_ref = getattr(self.ref, path[index])
 
-            if isinstance(attr_ref, ModuleType):
+            if inspect.ismodule(attr_ref):
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.module.Module(
@@ -108,10 +104,20 @@ class Module(ast.attribute.Attribute):
                     attr_name=path[index],
                     attr=klass,
                 )
-            elif isinstance(attr_ref, (FunctionType, BuiltinFunctionType)):
+            elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.callable.Callable(
+                        path[index],
+                        ".".join(path[: index + 1]),
+                        attr_ref,
+                        return_type_name=return_type_name,
+                    ),
+                )
+            elif inspect.isdatadescriptor(attr_ref):
+                self.add_attr(
+                    attr_name=path[index],
+                    attr=ast.property.Property(
                         path[index],
                         ".".join(path[: index + 1]),
                         attr_ref,

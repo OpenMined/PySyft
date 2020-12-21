@@ -275,9 +275,8 @@ class Pointer(AbstractPointer):
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
 
-        points_to_type = sy.lib_ast(
-            proto.points_to_object_with_path, return_callable=True
-        )
+        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
+
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply

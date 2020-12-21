@@ -73,7 +73,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         return {k: left[k] for k in intersection}
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        method = node.lib_ast(self.path)
+        method = node.lib_ast.query(self.path)
 
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
