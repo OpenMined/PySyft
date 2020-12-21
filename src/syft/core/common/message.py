@@ -55,9 +55,9 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
 
 class SyftMessage(AbstractMessage):
     """
-    SyftMessages are an abstraction that represent information that is sent between a :class:`Client`
+    SyftMessages are an abstraction that represents information that is sent between a :class:`Client`
     and a :class:`Node`. In Syft's decentralized setup, we can easily see why SyftMessages are so important.
-    This class cannot be used as is: to get some useful objects, we need to derive from it. For instance,
+    This class cannot be used as-is: to get some useful objects, we need to derive from it. For instance,
     :class:`Action`s inherit from :class:`SyftMessage`.
     There are many types of SyftMessage which boil down to whether or not they are Sync or Async,
     and whether or not they expect a response.
@@ -106,7 +106,7 @@ class SignedMessage(SyftMessage):
     """
     SignedMessages are :class:`SyftMessage`s that have been signed by someone.
     In addition to what has a :class:`SyftMessage`, they have a signature, a verify key
-    and a :meth:`is_valid` property that are here to check that the message was really
+    and a :meth:`is_valid` property that is here to check that the message was really
     signed and sent by the verify key owner.
 
     Attributes:

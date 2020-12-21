@@ -85,7 +85,7 @@ def create_ast() -> Globals:
         (
             "opacus.privacy_engine.PrivacyEngine.get_privacy_spent",
             "syft.lib.python.List",
-        ),
+        ),  # TODO: This is a Tuple
         ("opacus.privacy_engine.PrivacyEngine.attach", "syft.lib.python._SyNone"),
     ]
 
