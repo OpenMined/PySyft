@@ -73,7 +73,6 @@ from syft.decorators import type_hints  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
-from syft.grid.duet import solicit_donations  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
@@ -95,11 +94,6 @@ finally:
     del get_distribution, DistributionNotFound
 
 sys.path.append(str(Path(__file__)))
-
-# SOLICIT DONATIONS
-DONATE_MSG = f"""Love Syft? Please consider donating to OpenMined =>
- {bcolors.OKBLUE}{bcolors.UNDERLINE}https://opencollective.com/OpenMined/donate{bcolors.ENDC}{bcolors.ENDC}"""
-solicit_donations(DONATE_MSG)
 
 # LIBRARY CONFIG
 
