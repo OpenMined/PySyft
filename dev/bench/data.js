@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608525099278,
+  "lastUpdate": 1608537894819,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -687,6 +687,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0001119452473266253",
             "extra": "mean: 733.9089354836508 usec\nrounds: 682"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "Gokkulnath@users.noreply.github.com",
+            "name": "Gokkulnath TS",
+            "username": "Gokkulnath"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e956be84e277babe26e10c0d683227e853d7dccd",
+          "message": "Display Open collective solicitation message on import #3724 (#4930)\n\n* Add Message to solicit donations\r\n\r\n* fix flake8 errors\r\n\r\n* Add type annotations\r\n\r\n* Small tweaks the to the community support message\r\n\r\nCo-authored-by: Madhava Jay <me@madhavajay.com>",
+          "timestamp": "2020-12-21T18:02:23+10:00",
+          "tree_id": "bd71b805f4b7f7202ff53987b7c2fe19a61d7975",
+          "url": "https://github.com/OpenMined/PySyft/commit/e956be84e277babe26e10c0d683227e853d7dccd"
+        },
+        "date": 1608537894186,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1077.9053602361014,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002732862296417297",
+            "extra": "mean: 927.7252316297627 usec\nrounds: 626"
           }
         ]
       }
