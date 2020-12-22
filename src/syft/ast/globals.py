@@ -21,7 +21,6 @@ class Globals(Module):
         self,
         path: Optional[List[str]] = None,
         index: int = 0,
-        return_callable: bool = False,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
 
@@ -32,7 +31,6 @@ class Globals(Module):
         return self.attrs[_path[index]](
             path=_path,
             index=index + 1,
-            return_callable=return_callable,
             obj_type=obj_type,
         )
 

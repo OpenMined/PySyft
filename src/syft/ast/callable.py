@@ -55,6 +55,14 @@ class Callable(ast.attribute.Attribute):
                 self.client.send_immediate_msg_without_reply(msg=msg)
                 return ptr
 
+        path = kwargs["path"]
+        index = kwargs["index"]
+
+        if len(path) == index:
+            return self.ref
+        else:
+            return self.attrs[path[index]](path=path, index=index + 1)
+
     def add_path(
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:

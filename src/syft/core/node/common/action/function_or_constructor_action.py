@@ -25,6 +25,44 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
+class GetOrSetPropertyAction(ImmediateActionWithoutReply):
+    def __init__(
+        self,
+        path: str,
+        args: Union[Tuple[Any, ...], List[Any]],
+        kwargs: Dict[Any, Any],
+        id_at_location: UID,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address, msg_id)
+        self.path = path
+        self.args = args
+        self.kwargs = kwargs
+        self.id_at_location = id_at_location
+
+    def intersect_keys(
+        self, left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
+    ) -> Dict[VerifyKey, UID]:
+        return RunFunctionOrConstructorAction.intersect_keys(left, right)
+
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        property_ast_node = node.lib_ast.query(self.path)
+
+        result = property_ast_node.get_property()
+
+        result_read_permissions = {}
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=result_read_permissions,
+            )
+
+        node.store[self.id_at_location] = result
+
+
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
@@ -73,7 +111,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         return {k: left[k] for k in intersection}
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        method = node.lib_ast.query(self.path)
+        method = node.lib_ast(self.path)
 
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
