@@ -103,6 +103,8 @@ class Module(ast.attribute.Attribute):
                     attr=klass,
                 )
             elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
+                if path[index] == "T":
+                    print("TEST")
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.callable.Callable(

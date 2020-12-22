@@ -16,6 +16,8 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
+
+
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address
@@ -24,43 +26,6 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
-
-class GetOrSetPropertyAction(ImmediateActionWithoutReply):
-    def __init__(
-        self,
-        path: str,
-        args: Union[Tuple[Any, ...], List[Any]],
-        kwargs: Dict[Any, Any],
-        id_at_location: UID,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address, msg_id)
-        self.path = path
-        self.args = args
-        self.kwargs = kwargs
-        self.id_at_location = id_at_location
-
-    def intersect_keys(
-        self, left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
-        return RunFunctionOrConstructorAction.intersect_keys(left, right)
-
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        property_ast_node = node.lib_ast.query(self.path)
-
-        result = property_ast_node.get_property()
-
-        result_read_permissions = {}
-
-        if not isinstance(result, StorableObject):
-            result = StorableObject(
-                id=self.id_at_location,
-                data=result,
-                read_permissions=result_read_permissions,
-            )
-
-        node.store[self.id_at_location] = result
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):

@@ -82,6 +82,3 @@ class Attribute(ABC):
             raise ValueError(f"Path {'.'.join(path)} not present in the AST.")
 
         return self.attrs[next].query(path[1:])
-
-    def execute(self):
-        pass

@@ -88,7 +88,6 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__imul__", "syft.lib.python.List"),
         ("syft.lib.python.List.__iadd__", "syft.lib.python.List"),
         ("syft.lib.python.List.__contains__", "syft.lib.python.Bool"),
-        ("syft.lib.python.List.__delattr__", "syft.lib.python.None"),
         ("syft.lib.python.List.__delitem__", "syft.lib.python.None"),
         ("syft.lib.python.List.__eq__", "syft.lib.python.Bool"),
         ("syft.lib.python.List.__mul__", "syft.lib.python.List"),

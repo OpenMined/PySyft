@@ -66,8 +66,9 @@ class Callable(ast.attribute.Attribute):
     def add_path(
         self, path: List[str], index: int, return_type_name: Optional[str] = None
     ) -> None:
-
         if index < len(path):
+            if path[index] == "T":
+                print("TEST")
             if path[index] not in self.attrs:
 
                 attr_ref = getattr(self.ref, path[index])

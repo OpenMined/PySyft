@@ -8,6 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import inspect
 
 # third party
 from google.protobuf.message import Message
@@ -19,10 +20,11 @@ from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.function_or_constructor_action import GetOrSetPropertyAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
-
+from .. import ast
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
     """It might seem hugely un-necessary to have these methods nested in this way.
@@ -76,6 +78,48 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         return result
 
     return run_class_method
+
+def get_class_property(attr_path_and_name: str) -> CallableT:
+    def class_property(
+        __self: Any,
+        *args,
+        **kwargs
+    ):
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+            )
+
+            cmd = GetOrSetPropertyAction(
+                path=attr_path_and_name,
+                _self=__self,
+                id_at_location=result_id_at_location,
+                address=__self.client.address,
+            )
+            __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        return result
+
+    return class_property
 
 
 def _get_request_config(self: Any) -> Dict[str, Any]:
@@ -169,8 +213,11 @@ class Class(Callable):
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
 
-            if attr_path_and_name is not None:
+            # attr_path_and_name None
+            if isinstance(attr, ast.callable.Callable):
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
+            elif isinstance(attr, ast.property.Property):
+                attrs[attr_name] = property(get_class_property(attr_path_and_name))
 
             if attr_name == "__len__":
                 wrap_len(attrs)
@@ -194,8 +241,6 @@ class Class(Callable):
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
-        # TODO good idea
-        # setattr(klass_pointer, "__getattribute__", getattribute)
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
@@ -268,6 +313,26 @@ class Class(Callable):
         aggressive_set_attr(
             obj=outer_self.ref, name=to_bytes_attr, attr=Serializable.to_bytes
         )
+
+    def add_path(
+        self, path: List[str], index: int, return_type_name: Optional[str] = None
+    ) -> None:
+        if index >= len(path) or path[index] in self.attrs:
+            return
+        attr_ref = getattr(self.ref, path[index])
+
+        if inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref) or inspect.ismethod(attr_ref) or inspect.ismethoddescriptor(attr_ref):
+            super().add_path(path, index, return_type_name)
+        elif inspect.isdatadescriptor(attr_ref) or inspect.isgetsetdescriptor(attr_ref):
+            self.attrs[path[index]] = ast.property.Property(
+                name=path[index],
+                path_and_name=".".join(path[:index + 1]),
+                ref=attr_ref,
+                return_type_name=return_type_name
+            )
+        else:
+            print(path)
+            raise Exception("Cannot attach ref to the AST.")
 
 
 def pointerize_args_and_kwargs(

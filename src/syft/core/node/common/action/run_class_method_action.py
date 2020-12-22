@@ -79,6 +79,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
+        # TODO: properly mark this in the ast, don't leave the action to decide this
         mutating_internal = False
         if (
             self.path.startswith("torch.Tensor")
