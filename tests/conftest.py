@@ -63,8 +63,10 @@ def pytest_collection_modifyitems(
                     item.add_marker(vendor_tests)
             except VendorLibraryImportException as e:
                 print(e)
+                continue
             except Exception as e:
                 print(f"Unable to check vendor library: {vendor_requirements}. {e}")
+                continue
 
         item.add_marker(all_tests)
         if "slow" in item.keywords:
