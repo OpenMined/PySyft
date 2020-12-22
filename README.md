@@ -19,7 +19,10 @@ and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_enc
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
-_**Important note about PySyft 0.2.x:** For those looking for the PySyft 0.2.x codebase, it's since been branched off. [You can find it here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. If you're getting started with PySyft for the first time, please ignore this message and read on!_
+## FAQ 0.2.x ➡️ 0.3.x
+We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to the change from 0.2.x to 0.3.x+ [here](docs/FAQ_0.2.x.md).
+
+_**Important note about PySyft 0.2.x:** The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. If you're getting started with PySyft for the first time, please ignore this message and read on!_
 
 ## PySyft in Detail
 

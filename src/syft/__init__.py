@@ -76,6 +76,7 @@ from syft.grid.duet import launch_duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
+from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 
 # syft relative

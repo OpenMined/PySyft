@@ -2,6 +2,7 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+from typing import Union
 
 # syft relative
 from . import attribute  # noqa: F401
@@ -20,8 +21,17 @@ def get_parent(path: str, root: TypeAny) -> module.Module:
     return parent
 
 
-def add_modules(ast: globals.Globals, modules: TypeList[str]) -> None:
-    for target_module in modules:
+def add_modules(
+    ast: globals.Globals,
+    modules: Union[TypeList[str], TypeList[TypeTuple[str, TypeAny]]],
+) -> None:
+    for mod in modules:
+        # We also have the reference
+        if isinstance(mod, tuple):
+            target_module, ref = mod
+        else:
+            target_module = mod
+            ref = None
         parent = get_parent(target_module, ast)
         attr_name = target_module.rsplit(".", 1)[-1]
         parent.add_attr(
@@ -29,7 +39,7 @@ def add_modules(ast: globals.Globals, modules: TypeList[str]) -> None:
             attr=module.Module(
                 name=attr_name,
                 path_and_name=target_module,
-                ref=None,
+                ref=ref,
                 return_type_name="",
             ),
         )
