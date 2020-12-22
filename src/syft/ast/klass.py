@@ -303,7 +303,13 @@ class Class(Callable):
                 to_bytes=to_bytes,
             )
 
-        aggressive_set_attr(obj=outer_self.ref, name="serialize", attr=serialize)
+        # TODO: rethink this and perhaps dunder __sy prefix all our attached methods
+        serialize_attr = "serialize"
+        if not hasattr(outer_self.ref, serialize_attr):
+            aggressive_set_attr(obj=outer_self.ref, name=serialize_attr, attr=serialize)
+        else:
+            serialize_attr = "sy_serialize"
+            aggressive_set_attr(obj=outer_self.ref, name=serialize_attr, attr=serialize)
         aggressive_set_attr(
             obj=outer_self.ref, name="to_proto", attr=Serializable.to_proto
         )
