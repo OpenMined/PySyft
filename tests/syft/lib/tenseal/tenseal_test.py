@@ -14,7 +14,6 @@ def test_tenseal_loaded_before() -> None:
 
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
-    print(alice_client.name, alice_client.id)
 
     context = ts.Context(
         ts.SCHEME_TYPE.CKKS,

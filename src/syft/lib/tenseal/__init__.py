@@ -57,7 +57,7 @@ def create_ast() -> Globals:
         (
             "tenseal.Context.global_scale",
             UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
-        ),  # Setter returns Int, getter returns Float?
+        ),
         ("tenseal.Context.auto_mod_switch", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_relin", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_rescale", "syft.lib.python.Bool"),
