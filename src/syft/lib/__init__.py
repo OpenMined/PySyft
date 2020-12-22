@@ -39,7 +39,7 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
         _ = importlib.import_module(lib)
-        vendor_ast = importlib.import_module("syft.lib.sympc")
+        vendor_ast = importlib.import_module(f"syft.lib.{lib}")
         PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
         PACKAGE_SUPPORT.update(options)
         if PACKAGE_SUPPORT is not None and vendor_requirements_available(
@@ -52,6 +52,9 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 
                 for _, client in lib_ast.registered_clients.items():
                     update_ast(ast=client)
+
+                # cache the constructor for future created clients
+                lib_ast.loaded_lib_constructors[lib] = update_ast
     except VendorLibraryImportException as e:
         print(e)
     except Exception as e:

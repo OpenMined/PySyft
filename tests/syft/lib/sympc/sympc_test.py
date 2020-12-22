@@ -13,6 +13,7 @@ def test_load_sympc() -> None:
     bob = sy.VirtualMachine()
     bob_client = bob.get_root_client()
 
+    # third party
     from sympc.session import Session
     from sympc.tensor import MPCTensor
 
@@ -35,6 +36,7 @@ def test_no_loaded_sympc() -> None:
     bob = sy.VirtualMachine()
     bob_client = bob.get_root_client()
 
+    # third party
     from sympc.session import Session
 
     session = Session(parties=[alice_client, bob_client])

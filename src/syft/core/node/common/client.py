@@ -126,12 +126,12 @@ class Client(AbstractNodeClient):
         setattr(self, attr_name, attr)
 
     def install_supported_frameworks(self, lib_ast: Any) -> None:
-        # first time we want to register for future updates
-        lib_ast.register_updates(self)
-
         # we create an initial copy of the startup AST
         # this re-executes all the create_ast functions just for this client
         self.lib_ast = lib_ast.copy()
+
+        # first time we want to register for future updates
+        lib_ast.register_updates(self)
 
         if self.lib_ast is not None:
             for attr_name, attr in self.lib_ast.attrs.items():

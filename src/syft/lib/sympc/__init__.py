@@ -4,9 +4,7 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
 
-
 # syft relative
-
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
@@ -25,6 +23,8 @@ def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
 def create_ast() -> Globals:
     # third party
     import sympc
+
+    # syft relative
     from . import session  # noqa: 401
     from . import share  # noqa: 401
 

@@ -1,22 +1,23 @@
 # stdlib
+from typing import Any
 from typing import Callable as CallableT
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
-from typing import Any
-from typing import Dict
 
 # syft relative
+from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 from .util import unsplit
-from ..core.common.uid import UID
 
 
 class Globals(Module):
 
     _copy: Optional["copyType"]
     registered_clients: Dict[UID, Any] = {}
+    loaded_lib_constructors: Dict[str, CallableT] = {}
     """The collection of frameworks held in the global namespace"""
 
     def __init__(self) -> None:
@@ -76,6 +77,11 @@ class Globals(Module):
         return None
 
     def register_updates(self, client: Any) -> None:
+        # any previously loaded libs need to be applied
+        for _, update_ast in self.loaded_lib_constructors.items():
+            update_ast(ast=client)
+
+        # make sure to get any future updates
         self.registered_clients[client.id] = client
 
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
     Dummy conftest.py for syft.
-
     If you don't know what this is for, just leave it empty.
     Read more about conftest.py under:
     https://pytest.org/latest/plugins.html
@@ -16,8 +15,8 @@ import _pytest
 import pytest
 
 # syft absolute
-from syft.lib import vendor_requirements_available
 from syft.lib import VendorLibraryImportException
+from syft.lib import vendor_requirements_available
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
@@ -61,12 +60,12 @@ def pytest_collection_modifyitems(
                     vendor_requirements=vendor_requirements
                 ):
                     item.add_marker(vendor_tests)
+                    item.add_marker(all_tests)
             except VendorLibraryImportException as e:
                 print(e)
-                continue
             except Exception as e:
                 print(f"Unable to check vendor library: {vendor_requirements}. {e}")
-                continue
+            continue
 
         item.add_marker(all_tests)
         if "slow" in item.keywords:
