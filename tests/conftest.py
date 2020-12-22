@@ -9,12 +9,10 @@
 
 # stdlib
 from typing import Any as TypeAny
-from typing import Dict as TypeDict
 from typing import List as TypeList
 
 # third party
 import _pytest
-from packaging import version
 import pytest
 
 # syft absolute

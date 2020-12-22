@@ -45,10 +45,13 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         if PACKAGE_SUPPORT is not None and vendor_requirements_available(
             vendor_requirements=PACKAGE_SUPPORT
         ):
-            load_lib = getattr(vendor_ast, "load_lib", None)
-            if load_lib is not None:
+            update_ast = getattr(vendor_ast, "update_ast", None)
+            if update_ast is not None:
                 global lib_ast
-                load_lib(lib_ast=lib_ast)
+                update_ast(ast=lib_ast)
+
+                for _, client in lib_ast.registered_clients.items():
+                    update_ast(ast=client)
     except VendorLibraryImportException as e:
         print(e)
     except Exception as e:
@@ -67,14 +70,13 @@ def create_lib_ast() -> Globals:
 
     torchvision_ast = create_torchvision_ast()
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     misc_ast = getattr(getattr(create_union_ast(lib_ast), "syft"), "lib")
     misc_root = getattr(getattr(lib_ast, "syft"), "lib")
-    # lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
 
     misc_root.add_attr(attr_name="misc", attr=misc_ast.attrs["misc"])
-
     return lib_ast
 
 

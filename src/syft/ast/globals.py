@@ -3,16 +3,20 @@ from typing import Callable as CallableT
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Any
+from typing import Dict
 
 # syft relative
 from .callable import Callable
 from .module import Module
 from .util import unsplit
+from ..core.common.uid import UID
 
 
 class Globals(Module):
 
     _copy: Optional["copyType"]
+    registered_clients: Dict[UID, Any] = {}
     """The collection of frameworks held in the global namespace"""
 
     def __init__(self) -> None:
@@ -70,6 +74,9 @@ class Globals(Module):
         if self._copy is not None:
             return self._copy()
         return None
+
+    def register_updates(self, client: Any) -> None:
+        self.registered_clients[client.id] = client
 
 
 copyType = CallableT[[], Globals]

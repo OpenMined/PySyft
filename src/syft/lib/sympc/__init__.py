@@ -2,6 +2,7 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 
 # syft relative
@@ -14,10 +15,11 @@ from ...ast.globals import Globals
 PACKAGE_SUPPORT = {"lib": "sympc", "torch": {"min_version": "1.6.0"}}
 
 
-def load_lib(lib_ast: Globals) -> None:
-    # print("calling load lib on lib_ast", lib_ast)
+# this gets called on global ast as well as clients
+# anything which wants to have its ast updated and has an add_attr method
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
     sympc_ast = create_ast()
-    lib_ast.add_attr(attr_name="sympc", attr=sympc_ast.attrs["sympc"])
+    ast.add_attr(attr_name="sympc", attr=sympc_ast.attrs["sympc"])
 
 
 def create_ast() -> Globals:
