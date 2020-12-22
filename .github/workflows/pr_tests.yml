@@ -149,6 +149,8 @@ jobs:
           pip install -e .
           pip freeze | grep torch
           pytest -m fast --cov-fail-under 80 -n auto
+          pip install -r requirements/supported_libs.txt
+          pytest -m libs --cov-fail-under 0 -n auto
 
   python-nb-examples:
     needs: [python-linting]

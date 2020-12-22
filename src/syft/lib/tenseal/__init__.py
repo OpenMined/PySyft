@@ -2,6 +2,7 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 # third party
 import tenseal as ts
@@ -15,11 +16,21 @@ from ..misc.union import UnionGenerator
 from .ckks_vector import CKKSVector  # noqa: 401
 from .context import ContextWrapper  # noqa: 401
 
+LIB_NAME = "tenseal"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
-def create_tenseal_ast() -> Globals:
+
+# this gets called on global ast as well as clients
+# anything which wants to have its ast updated and has an add_attr method
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    tenseal_ast = create_ast()
+    ast.add_attr(attr_name=LIB_NAME, attr=tenseal_ast.attrs[LIB_NAME])
+
+
+def create_ast() -> Globals:
     ast = Globals()
 
-    modules = ["tenseal"]
+    modules: TypeList[TypeTuple[str, TypeAny]] = [("tenseal", ts)]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("tenseal.Context", "tenseal.Context", ts.Context),
