@@ -322,7 +322,7 @@ def test_vm_and_vm_id_property_methods() -> None:
 
 
 def test_target_id_property_method_with_a_return() -> None:
-    """Unit test for Address.target_emoji method"""
+    """Unit test for Address.target_id method"""
     network = SpecificLocation(id=UID())
     domain = SpecificLocation(id=UID())
     device = SpecificLocation(id=UID())
@@ -340,6 +340,19 @@ def test_target_id_property_method_with_a_return() -> None:
     assert address.target_id == domain
     address.domain = None
     assert address.target_id == network
+
+
+def test_target_emoji_method() -> None:
+    """Unit test for Address.target_emoji method"""
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+    address = Address(
+        network=SpecificLocation(id=an_id),
+        domain=SpecificLocation(id=an_id),
+        device=SpecificLocation(id=an_id),
+        vm=SpecificLocation(id=an_id),
+    )
+    assert address.target_emoji() == '@<UID:🙍🛖>'
 
 
 # --------------------- SERDE ---------------------
