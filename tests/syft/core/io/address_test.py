@@ -235,7 +235,7 @@ def test_network_id_property_method() -> None:
 
 
 def test_domain_and_domain_id_property_methods() -> None:
-    """Unit test for Address.network_id method"""
+    """Unit test for Address.domain and Address.domain_id methods"""
     # Test getter
     domain = SpecificLocation(id=UID())
     address_with_domain = Address(
@@ -261,6 +261,35 @@ def test_domain_and_domain_id_property_methods() -> None:
     )
     assert address_with_domain.domain_id == an_id
     assert address_without_domain.domain_id is None
+
+
+def test_device_and_device_id_property_methods() -> None:
+    """Unit test for Address.device and Address.device_id methods"""
+    # Test getter
+    device = SpecificLocation(id=UID())
+    address_with_device = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=device,
+        vm=SpecificLocation(id=UID()),
+    )
+    # Test device getter
+    assert address_with_device.device == device
+
+    # Test device setter
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    new_device = SpecificLocation(id=an_id)
+    address_with_device.device = new_device
+    assert address_with_device.device == new_device
+
+    # Test domain_id getter
+    address_without_device = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+    assert address_with_device.device_id == an_id
+    assert address_without_device.device_id is None
 
 
 # --------------------- SERDE ---------------------
