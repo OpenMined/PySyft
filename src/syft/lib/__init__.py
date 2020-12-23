@@ -1,5 +1,6 @@
 # stdlib
 import importlib
+import sys
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 
@@ -19,6 +20,19 @@ class VendorLibraryImportException(Exception):
 
 
 def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -> bool:
+    # see if python version is supported
+    if "python" in vendor_requirements:
+        python_reqs = vendor_requirements["python"]
+
+        PYTHON_VERSION = sys.version_info
+        min_version = python_reqs.get("min_version", None)
+        if min_version is not None:
+            if PYTHON_VERSION < min_version:
+                raise VendorLibraryImportException(
+                    f"Unable to load {vendor_requirements['lib']}."
+                    + f"Python: {PYTHON_VERSION} < {min_version}"
+                )
+
     # see if torch version is supported
     if "torch" in vendor_requirements:
         torch_reqs = vendor_requirements["torch"]
@@ -33,6 +47,7 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
                     f"Unable to load {vendor_requirements['lib']}."
                     + f"Torch: {TORCH_VERSION} < {min_version}"
                 )
+
     return True
 
 
