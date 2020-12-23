@@ -176,7 +176,7 @@ jobs:
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
-          pip install -r requirements/supported_libs.txt || || cd .
+          pip install -r requirements/supported_libs.txt || cd .
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
