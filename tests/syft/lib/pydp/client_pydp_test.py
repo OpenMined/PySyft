@@ -3,6 +3,7 @@ import syft as sy
 
 
 def test_pydp() -> None:
+    sy.load_lib("pydp")
     bob = sy.VirtualMachine(name="Bob")
     client = bob.get_root_client()
     x_ptr = client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)
@@ -17,6 +18,7 @@ def test_pydp() -> None:
 
 
 def test_pydp_functions() -> None:
+    sy.load_lib("pydp")
     bob = sy.VirtualMachine(name="Bob")
     client = bob.get_root_client()
     x_ptr = client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)

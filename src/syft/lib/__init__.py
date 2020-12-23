@@ -38,8 +38,6 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
-        from IPython.core import debugger as idb
-        idb.set_trace()
         _ = importlib.import_module(lib)
         vendor_ast = importlib.import_module(f"syft.lib.{lib}")
         PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -53,7 +51,6 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 update_ast(ast=lib_ast)
 
                 for _, client in lib_ast.registered_clients.items():
-                    print("calling registered client", client.name, client.id)
                     update_ast(ast=client)
 
                 # cache the constructor for future created clients

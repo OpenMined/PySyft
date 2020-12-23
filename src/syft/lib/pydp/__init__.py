@@ -14,6 +14,7 @@ from pydp.algorithms.laplacian import Max
 from pydp.algorithms.laplacian import Median
 from pydp.algorithms.laplacian import Min
 from pydp.algorithms.laplacian import Percentile
+import pydp
 
 # syft relative
 from ...ast import add_classes
@@ -35,9 +36,9 @@ def create_ast() -> Globals:
     ast = Globals()
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
-        ("pydp", pydb),
-        ("pydp.algorithms", pydb.algorithms),
-        ("pydp.algorithms.laplacian", pydp.algorithms.laplacian)
+        ("pydp", pydp),
+        ("pydp.algorithms", pydp.algorithms),
+        ("pydp.algorithms.laplacian", pydp.algorithms.laplacian),
     ]
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
