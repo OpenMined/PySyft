@@ -75,7 +75,6 @@ def _gen_address_kwargs_and_expected_values() -> list:
 def test_init_with_specific_id(address_kwargs: dict, expected_values: dict) -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
     addr = Address(**address_kwargs)
-    print(f'===> {addr.icon}')
 
     assert addr.network is expected_values['network']
     assert addr.domain is expected_values['domain']
@@ -132,6 +131,24 @@ def test_to_string() -> None:
 
     assert str(obj) == str_out
     assert obj.__repr__() == str_out
+
+
+@pytest.mark.parametrize(
+    'address_kwargs, expected_icon', list(zip(
+        _gen_address_kwargs(),
+        [
+            '💠 [🍰📱🏰]',
+            '💠 [🍰📱🔗]',
+            '💠 [🍰🏰🔗]',
+            '💠 [📱🏰🔗]',
+            '💠 [🍰📱🏰🔗]',
+        ]
+    ))
+)
+def test_icon(address_kwargs, expected_icon) -> None:
+    """Test that Address.icon property method returns the correct emojis."""
+    addr = Address(**address_kwargs)
+    assert addr.icon == expected_icon
 
 
 # --------------------- SERDE ---------------------
