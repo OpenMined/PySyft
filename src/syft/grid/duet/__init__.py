@@ -3,11 +3,10 @@ import json
 import os
 from pathlib import Path
 import sys
-import tempfile
-import time
 from typing import Any
 from typing import Generator
 from typing import Optional
+from typing import Type as TypeType
 
 # third party
 import nest_asyncio
@@ -15,6 +14,10 @@ import requests
 
 # syft relative
 from ...core.node.domain.domain import Domain
+from .bcolors import bcolors
+from .exchange_ids import DuetCredentialExchanger
+from .exchange_ids import OpenGridTokenFileExchanger
+from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -39,23 +42,6 @@ try:
     jupyter = True
 except ImportError:
     jupyter = False
-
-
-# for local debugging
-def get_loopback_path() -> str:
-    loopback_file = "duet_loopback.json"
-    return str(Path(tempfile.gettempdir()) / loopback_file)
-
-
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
 
 
 def get_available_network() -> str:
@@ -173,6 +159,9 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
+    credential_exchanger: TypeType[
+        DuetCredentialExchanger
+    ] = OpenGridTokenManualInputExchanger,
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
@@ -206,70 +195,11 @@ def launch_duet(
 
     print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
 
-    #     print("♫♫♫ >")
-    #     print("♫♫♫ > Your Duet Id: " + signaling_client.duet_id)
-
-    print("♫♫♫ >")
-    print(
-        "♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 1:"
-        + bcolors.ENDC
-        + " Send the following code to your Duet Partner!"
-    )
-    #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
-
-    print("\nimport syft as sy")
-    print(
-        'duet = sy.duet("'
-        + bcolors.BOLD
-        + signaling_client.duet_id
-        + bcolors.ENDC
-        + '")'
-    )
-
-    # use a local file to automatically exchange duet ids
-    if loopback is True:
-        loopback_config = {}
-        loopback_config["server_id"] = signaling_client.duet_id
-        with open(get_loopback_path(), "w") as f:
-            f.write(json.dumps(loopback_config))
-
     my_domain = Domain(name="Launcher", db_path=db_path)
 
-    print(
-        "\n♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 2:"
-        + bcolors.ENDC
-        + " Running the code above will print out a 'Client ID'."
-    )
-    print("♫♫♫ >         Have your duet partner send it to you and enter it below!")
-    print()
-    if loopback is False:
-        while True:
-            target_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
-            if len(target_id) == 32:
-                break
-            else:
-                print("    > Error: Invalid Client ID. Please try again.")
-
-    else:
-        target_id = ""
-        print(
-            "Running loopback mode. Use sy.join_duet(loopback=True) on the other side."
-        )
-        while target_id == "":
-            try:
-                with open(get_loopback_path(), "r") as f:
-                    loopback_config = json.loads(f.read())
-                    if "client_id" in loopback_config:
-                        target_id = str(loopback_config["client_id"])
-                    else:
-                        time.sleep(0.5)
-            except Exception as e:
-                print(e)
-                break
+    if loopback:
+        credential_exchanger = OpenGridTokenFileExchanger
+    target_id = credential_exchanger(credential=signaling_client.duet_id).run()
 
     print("♫♫♫ > Connecting...")
 
@@ -295,6 +225,9 @@ def join_duet(
     target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
+    credential_exchanger: TypeType[
+        DuetCredentialExchanger
+    ] = OpenGridTokenManualInputExchanger,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
         display(
@@ -304,9 +237,6 @@ def join_duet(
                 unconfined=True,
             )
         )
-    if target_id == "" and loopback is False:
-        cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
-        raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
     print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
     sys.stdout.write(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
@@ -314,7 +244,6 @@ def join_duet(
         + "\033[1m"
         + " Duet is an experimental feature currently in beta.\n"
         + "♫♫♫ >             Use at your own risk.\n"
-        + "\n♫♫♫ > \n"
         + "\033[0m"
     )
 
@@ -332,47 +261,16 @@ def join_duet(
     print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
 
     my_domain = Domain(name="Joiner")
-    print()
-    print(
-        "♫♫♫ > Duet Client ID: "
-        + bcolors.BOLD
-        + signaling_client.duet_id
-        + bcolors.ENDC
-    )
-    print()
-    print(
-        "♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 1:"
-        + bcolors.ENDC
-        + " Send the Duet Client ID to your duet partner!"
-    )
-    print()
-    print("♫♫♫ > ...waiting for partner to connect...")
+
     if loopback:
-        loopback_config = {}
-        target_id = ""
-        while target_id == "":
-            try:
-                with open(get_loopback_path(), "r") as f:
-                    loopback_config = json.loads(f.read())
-                    # only continue once the server has overwritten the file
-                    # with only its new server_id
-                    if (
-                        "server_id" in loopback_config
-                        and "client_id" not in loopback_config
-                    ):
-                        target_id = str(loopback_config["server_id"])
-                    else:
-                        time.sleep(0.5)
-            except Exception as e:
-                print(e)
-                break
-
-        loopback_config["client_id"] = signaling_client.duet_id
-
-        with open(get_loopback_path(), "w") as f:
-            f.write(json.dumps(loopback_config))
+        credential_exchanger = OpenGridTokenFileExchanger
+        target_id = credential_exchanger(
+            credential=signaling_client.duet_id, join=True
+        ).run()
+    else:
+        target_id = credential_exchanger(
+            credential=signaling_client.duet_id, join=True
+        ).run(server_id=target_id)
 
     duet = WebRTCDuet(
         node=my_domain,
