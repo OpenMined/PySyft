@@ -49,7 +49,7 @@ class TorchTensorWrapper(StorableObject):
 
         tensor.requires_grad_(proto.requires_grad)
 
-        if proto.on_cuda==True and th.cuda.is_available():
+        if proto.on_cuda == True and th.cuda.is_available():
             tensor = tensor.cuda()
         else:
             tensor = tensor.cpu()
