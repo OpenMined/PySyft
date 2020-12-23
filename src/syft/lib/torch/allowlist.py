@@ -996,6 +996,38 @@ allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
     "min_version": "1.7.0",
 }
 
+# SECTION - Tensor functions since 1.7.1
+allowlist["torch.Tensor.__complex__"] = {
+    "return_type": "syft.lib.python.Complex",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.amax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.amin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.arccos"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.arccos_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.arccosh"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+allowlist["torch.Tensor.arccosh_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.1",
+}
+
+
+
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are incomplete or untested but enabled
 # --------------------------------------------------------------------------------------
