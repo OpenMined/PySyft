@@ -78,6 +78,9 @@ jobs:
           elif [ $TORCH_VERSION = "1.7.0" ]
           then
               TORCHVISION_VERSION="0.8.1"
+          elif [ $TORCH_VERSION="1.7.1" ]
+          then
+              TORCHVISION_VERSION="0.8.2"
           fi
           pip install torch==${TORCH_VERSION}
           pip install torchvision==${TORCHVISION_VERSION}
@@ -95,6 +98,8 @@ jobs:
               $env:TORCHVISION_VERSION="0.7"
           } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
               $env:TORCHVISION_VERSION="0.8.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.1"){
+               $env:TORCHVISION_VERSION="0.8.2"
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
