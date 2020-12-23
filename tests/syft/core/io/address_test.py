@@ -78,7 +78,6 @@ def _gen_address_kwargs_and_expected_values() -> list:
 def test_init_with_specific_id(address_kwargs: dict, expected_values: dict) -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
     address = Address(**address_kwargs)
-    print(f'=====> {address.pprint}')
 
     assert address.network is expected_values['network']
     assert address.domain is expected_values['domain']
@@ -175,6 +174,23 @@ def test_pprint(address_kwargs, expected_icon) -> None:
     unnamed_address = Address(**address_kwargs)
     assert expected_icon in unnamed_address.pprint
     assert '(Address)' in unnamed_address.pprint
+
+
+def test_address_property_method() -> None:
+    """Unit tests for Address.address property method"""
+    address = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+
+    returned_address = address.address
+    assert isinstance(returned_address, Address)
+    assert returned_address.network == address.network
+    assert returned_address.domain == address.domain
+    assert returned_address.device == address.device
+    assert returned_address.vm == address.vm
 
 
 # --------------------- SERDE ---------------------
