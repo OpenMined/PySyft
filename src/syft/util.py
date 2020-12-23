@@ -123,6 +123,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 
 def obj2pointer_type(obj: object) -> type:
+    fqn = None
     try:
         fqn = get_fully_qualified_name(obj=obj)
     except Exception as e:
@@ -141,14 +142,11 @@ def obj2pointer_type(obj: object) -> type:
         fqn = fqn.replace("ProtobufWrapper", "")
 
     try:
-        ref = syft.lib_ast(fqn, return_callable=True)
-    except Exception:
-        # try one more time by removing the class parent module name
-        try:
-            ref = syft.lib_ast(fqn, return_callable=True, obj_type=type(obj))
-        except Exception as e:
-            logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
-        # TODO maybe return AnyPointer?
+        ref = syft.lib_ast.query(fqn, obj_type=type(obj))
+    except Exception as e:
+        log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
+        logger.critical(log)
+        raise Exception(log)
 
     return ref.pointer_type
 

@@ -264,7 +264,7 @@ class Module:
 
         for name, module in self.modules.items():
             fqn = full_name_with_qualname(klass=type(module))
-            klass = client.lib_ast(fqn, return_callable=True, obj_type=type(module))
+            klass = client.lib_ast.query(fqn, obj_type=type(module))
             module_repr = module.extra_repr()
             args, kwargs = repr_to_kwargs(repr_str=module_repr)
             remote_module_ptr = klass(*args, **kwargs)

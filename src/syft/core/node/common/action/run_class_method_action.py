@@ -49,13 +49,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         id_at_location: UID,
         address: Address,
         msg_id: Optional[UID] = None,
+        is_static: Optional[bool] = False,
     ):
         self.path = path
         self._self = _self
         self.args = args
         self.kwargs = kwargs
         self.id_at_location = id_at_location
-
+        self.is_static = is_static
         # logging needs .path to exist before calling
         # this which is why i've put this super().__init__ down here
         super().__init__(address=address, msg_id=msg_id)
@@ -91,15 +92,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         ):
             mutating_internal = True
 
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
-        if resolved_self is None:
-            logger.critical(
-                f"execute_action on {self.path} failed due to missing object"
-                + f" at: {self._self.id_at_location}"
-            )
-            return
+        if not self.is_static:
+            resolved_self = node.store.get_object(key=self._self.id_at_location)
 
-        result_read_permissions = resolved_self.read_permissions
+            if resolved_self is None:
+                logger.critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {self._self.id_at_location}"
+                )
+                return
+
+            result_read_permissions = resolved_self.read_permissions
+        else:
+            result_read_permissions = {}
 
         resolved_args = list()
         for arg in self.args:
@@ -117,48 +122,15 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
             resolved_kwargs[arg_name] = r_arg.data
 
-        if type(method).__name__ in ["getset_descriptor", "_tuplegetter"]:
-            # we have a detached class property so we need the __get__ descriptor
-            upcast_attr = getattr(resolved_self.data, "upcast", None)
-            data = resolved_self.data
-            if upcast_attr is not None:
-                data = upcast_attr()
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-            result = method.__get__(data)
+        if self.is_static:
+            result = method(*upcasted_args, **upcasted_kwargs)
         else:
-            # we have a callable
-            # upcast our args in case the method only accepts the original types
-            (
-                upcasted_args,
-                upcasted_kwargs,
-            ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
-
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
-            method_name = self.path.split(".")[-1]
-            if method_name in ["step", "zero_grad"]:
-                # TODO: Remove this Opacus workaround
-                try:
-                    method = getattr(resolved_self.data, method_name, None)
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                except Exception as e:
-                    print(
-                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
-                    )
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
-                    )
-            else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
-
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-
-        # to avoid circular imports
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -179,13 +151,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     raise Exception(err)
-
-        # QUESTION: There seems to be return value tensors that have no id
-        # and get auto wrapped? So is this code not correct?
-        # else:
-        #     # TODO: Add tests, this could happen if the isprimitive fails due to an
-        #     # unsupported type
-        #     raise Exception(f"Result has no ID. {result}")
 
         if mutating_internal:
             resolved_self.read_permissions = result_read_permissions

@@ -1,0 +1,34 @@
+# stdlib
+from typing import Any
+from typing import Callable as CallableT
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
+# syft relative
+from .. import ast
+
+
+class Property(ast.attribute.Attribute):
+    def __init__(
+        self,
+        path_and_name: Optional[str] = None,
+        object_ref: Optional[Any] = None,
+        return_type_name: Optional[str] = None,
+        client: Optional[Any] = None,
+    ):
+        super().__init__(
+            path_and_name=path_and_name,
+            object_ref=object_ref,
+            return_type_name=return_type_name,
+            client=client,
+        )
+
+        self.is_static = False
+
+    def __call__(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Optional[Union[Any, CallableT]]:
+        raise ValueError("Property shouldn't be called")

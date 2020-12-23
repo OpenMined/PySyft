@@ -1,4 +1,5 @@
 # stdlib
+from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import List
@@ -12,28 +13,36 @@ from .. import lib
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
-from .util import module_type
-from .util import unsplit
 
 
 class Callable(ast.attribute.Attribute):
-    client: Optional[Any]
-
     """A method, function, or constructor which can be directly executed"""
+
+    def __init__(
+        self,
+        path_and_name: Optional[str] = None,
+        object_ref: Optional[Any] = None,
+        return_type_name: Optional[str] = None,
+        client: Optional[Any] = None,
+        is_static: Optional[bool] = False,
+    ):
+        super().__init__(
+            path_and_name=path_and_name,
+            object_ref=object_ref,
+            return_type_name=return_type_name,
+            client=client,
+        )
+
+        self.is_static = is_static
 
     def __call__(
         self,
         *args: Tuple[Any, ...],
-        return_callable: bool = False,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
-        if (
-            hasattr(self, "client")
-            and self.client is not None
-            and return_callable is False
-        ):
-            return_tensor_type_pointer_type = self.client.lib_ast(
-                path=self.return_type_name, return_callable=True
+        if self.client is not None:
+            return_tensor_type_pointer_type = self.client.lib_ast.query(
+                path=self.return_type_name
             ).pointer_type
 
             ptr = return_tensor_type_pointer_type(client=self.client)
@@ -56,6 +65,7 @@ class Callable(ast.attribute.Attribute):
                     kwargs=pointer_kwargs,
                     id_at_location=ptr.id_at_location,
                     address=self.client.address,
+                    is_static=self.is_static,
                 )
 
                 self.client.send_immediate_msg_without_reply(msg=msg)
@@ -65,33 +75,29 @@ class Callable(ast.attribute.Attribute):
         index = kwargs["index"]
 
         if len(path) == index:
-            if return_callable:
-                return self
-            return self.ref
+            return self.object_ref
         else:
-            return self.attrs[path[index]](
-                path=path, index=index + 1, return_callable=return_callable
-            )
+            return self.attrs[path[index]](path=path, index=index + 1)
 
     def add_path(
-        self, path: List[str], index: int, return_type_name: Optional[str] = None
+        self,
+        path: Union[str, List[str]],
+        index: int,
+        return_type_name: Optional[str] = None,
+        framework_reference: Optional[ModuleType] = None,
+        is_static: bool = False,
     ) -> None:
-        if index < len(path):
-            if path[index] not in self.attrs:
+        if index >= len(path) or path[index] in self.attrs:
+            return
 
-                attr_ref = getattr(self.ref, path[index])
+        attr_ref = getattr(self.object_ref, path[index])
 
-                if isinstance(attr_ref, module_type):
-                    raise Exception("Module cannot be attr of callable.")
-                else:
-                    is_property = False
-                    if type(attr_ref).__name__ in ["getset_descriptor", "_tuplegetter"]:
-                        is_property = True
+        if isinstance(attr_ref, ModuleType):
+            raise Exception("Module cannot be attr of callable.")
 
-                    self.attrs[path[index]] = ast.method.Method(
-                        name=path[index],
-                        path_and_name=unsplit(path[: index + 1]),
-                        ref=attr_ref,
-                        return_type_name=return_type_name,
-                        is_property=is_property,
-                    )
+        self.attrs[path[index]] = ast.callable.Callable(
+            path_and_name=".".join(path[: index + 1]),
+            object_ref=attr_ref,
+            return_type_name=return_type_name,
+            client=self.client,
+        )

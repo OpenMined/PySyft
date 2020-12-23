@@ -17,13 +17,13 @@ LIB_NAME = "opacus"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    opacus_ast = create_ast()
+def update_ast(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
+    opacus_ast = create_ast(client)
     ast.add_attr(attr_name=LIB_NAME, attr=opacus_ast.attrs[LIB_NAME])
 
 
-def create_ast() -> Globals:
-    ast = Globals()
+def create_ast(client: TypeAny = None) -> Globals:
+    ast = Globals(client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("opacus", opacus),

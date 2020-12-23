@@ -1,9 +1,13 @@
+# stdlib
+from typing import Optional
+
 # syft relative
 from . import collections
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...core.node.abstract.node import AbstractNodeClient
 from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
@@ -43,8 +47,8 @@ for syft_type in [
     syft_type.__module__ = __name__
 
 
-def create_python_ast() -> Globals:
-    ast = Globals()
+def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
+    ast = Globals(client)
 
     modules = ["syft", "syft.lib", "syft.lib.python", "syft.lib.python.collections"]
     classes = [
@@ -88,7 +92,6 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.__imul__", "syft.lib.python.List"),
         ("syft.lib.python.List.__iadd__", "syft.lib.python.List"),
         ("syft.lib.python.List.__contains__", "syft.lib.python.Bool"),
-        ("syft.lib.python.List.__delattr__", "syft.lib.python.None"),
         ("syft.lib.python.List.__delitem__", "syft.lib.python.None"),
         ("syft.lib.python.List.__eq__", "syft.lib.python.Bool"),
         ("syft.lib.python.List.__mul__", "syft.lib.python.List"),
@@ -200,6 +203,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__ipow__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__pos__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.conjugate", "syft.lib.python.Float"),
+        ("syft.lib.python.Float.imag", "syft.lib.python.Int"),
+        ("syft.lib.python.Float.real", "syft.lib.python.Float"),
         # String Methods
         ("syft.lib.python.String.__add__", "syft.lib.python.String"),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool"),
@@ -218,7 +223,6 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.String.__ne__", "syft.lib.python.Bool"),
         ("syft.lib.python.String.__reversed__", "syft.lib.python.String"),
         ("syft.lib.python.String.__sizeof__", "syft.lib.python.Int"),
-        ("syft.lib.python.String.__str__", "syft.lib.python.String"),
         ("syft.lib.python.String.capitalize", "syft.lib.python.String"),
         ("syft.lib.python.String.casefold", "syft.lib.python.String"),
         ("syft.lib.python.String.center", "syft.lib.python.String"),
