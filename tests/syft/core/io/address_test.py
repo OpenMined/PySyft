@@ -354,22 +354,6 @@ def test_target_id_property_method_with_a_return() -> None:
     assert address.target_id == network
 
 
-def test_addressables_property_method() -> None:
-    """Unit test for Address.target_emoji method"""
-    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    network = SpecificLocation(id=an_id)
-    domain = SpecificLocation(id=an_id)
-    device = SpecificLocation(id=an_id)
-    vm = SpecificLocation(id=an_id)
-    address = Address(
-        network=network,
-        domain=domain,
-        device=device,
-        vm=vm,
-    )
-    assert address.addressables == [vm, device, domain, network]
-
-
 # --------------------- SERDE ---------------------
 
 
