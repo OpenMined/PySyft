@@ -6,9 +6,7 @@ from syft.core.node.common.action.get_object_action import GetObjectAction
 
 
 def test_get_object_action_serde() -> None:
-    msg = GetObjectAction(
-        id_at_location=UID(), address=Address(), reply_to=Address(), msg_id=UID()
-    )
+    msg = GetObjectAction(id_at_location=UID(), address=Address(), reply_to=Address())
     blob = msg.serialize()
     msg2 = sy.deserialize(blob=blob)
 

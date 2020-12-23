@@ -28,9 +28,8 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         obj: object,
         address: Address,
         anyone_can_search_for_this: bool = False,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.id_at_location = id_at_location
         self.obj = obj
         self.anyone_can_search_for_this = anyone_can_search_for_this

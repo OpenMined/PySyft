@@ -19,10 +19,8 @@ from .common import EventualActionWithoutReply
 
 
 class GarbageCollectObjectAction(EventualActionWithoutReply):
-    def __init__(
-        self, id_at_location: UID, address: Address, msg_id: Optional[UID] = None
-    ):
-        super().__init__(address=address, msg_id=msg_id)
+    def __init__(self, id_at_location: UID, address: Address):
+        super().__init__(address=address)
         self.id_at_location = id_at_location
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:

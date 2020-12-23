@@ -7,20 +7,17 @@ import "proto/core/io/address.proto";
 import "proto/lib/python/dict.proto";
 
 message UpdateRequestHandlerMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.lib.python.Dict handler = 3;
+  syft.core.io.Address address = 1;
+  syft.lib.python.Dict handler = 2;
   bool keep = 4;
 }
 
 message GetAllRequestHandlersMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
 }
 
 message GetAllRequestHandlersResponseMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  repeated syft.lib.python.Dict handlers = 3;
+  syft.core.io.Address address = 1;
+  repeated syft.lib.python.Dict handlers = 2;
 }

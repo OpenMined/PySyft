@@ -8,8 +8,8 @@ import "proto/core/pointer/pointer.proto";
 
 message GetOrSetPropertyAction {
   string path = 1;
-  syft.core.common.UID id_at_location = 2;
-  syft.core.io.Address address = 3;
-  syft.core.common.UID msg_id = 4;
-  syft.core.pointer.Pointer set_arg = 2;
+  syft.core.pointer.Pointer _self = 2;
+  syft.core.common.UID id_at_location = 3;
+  syft.core.io.Address address = 4;
+  syft.core.pointer.Pointer set_arg = 5;
 }

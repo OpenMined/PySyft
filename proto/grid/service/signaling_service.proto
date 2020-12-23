@@ -7,62 +7,53 @@ import "proto/core/node/common/metadata.proto";
 import "proto/core/io/address.proto";
 
 message RegisterNewPeerMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
 }
 
 message PeerSuccessfullyRegistered {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  string peer_id = 3;
+  syft.core.io.Address address = 1;
+  string peer_id = 2;
 }
 
 message SignalingAnswerMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  string payload = 3;
-  syft.core.node.common.Metadata host_metadata = 4;
-  string target_peer = 5;
-  string host_peer = 6;
+  syft.core.io.Address address = 1;
+  string payload = 2;
+  syft.core.node.common.Metadata host_metadata = 3;
+  string target_peer = 4;
+  string host_peer = 5;
 }
 
 message SignalingOfferMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  string payload = 3;
-  syft.core.node.common.Metadata host_metadata = 4;
-  string target_peer = 5;
-  string host_peer = 6;
+  syft.core.io.Address address = 1;
+  string payload = 2;
+  syft.core.node.common.Metadata host_metadata = 3;
+  string target_peer = 4;
+  string host_peer = 5;
 }
 
 message OfferPullRequestMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
-  string target_peer = 4;
-  string host_peer = 5;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
+  string target_peer = 3;
+  string host_peer = 4;
 }
 
 message AnswerPullRequestMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
-  string target_peer = 4;
-  string host_peer = 5;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
+  string target_peer = 3;
+  string host_peer = 4;
 }
 
 message SignalingRequestsNotFound {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.io.Address address = 1;
 }
 
 message InvalidLoopBackRequest {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.io.Address address = 1;
 }
 
 message CloseConnectionMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.io.Address address = 1;
 }

@@ -8,14 +8,12 @@ import "proto/core/io/address.proto";
 
 message GetObjectAction {
   syft.core.common.UID id_at_location = 1;
-  syft.core.common.UID msg_id = 2;
-  syft.core.io.Address address = 3;
-  syft.core.io.Address reply_to = 4;
-  bool delete_obj = 5;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  bool delete_obj = 4;
 }
 
 message GetObjectResponseMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.store.StorableObject obj = 2;
-  syft.core.io.Address address = 3;
+  syft.core.store.StorableObject obj = 1;
+  syft.core.io.Address address = 2;
 }

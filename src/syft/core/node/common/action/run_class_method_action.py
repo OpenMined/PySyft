@@ -43,12 +43,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         path: str,
-        _self: Any,
         args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
-        msg_id: Optional[UID] = None,
+        _self: Any,
     ):
         self.path = path
         self._self = _self
@@ -58,7 +57,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         # logging needs .path to exist before calling
         # this which is why i've put this super().__init__ down here
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
     @staticmethod
     def intersect_keys(
@@ -135,11 +134,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
             result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-
         # to avoid circular imports
 
         if lib.python.primitive_factory.isprimitive(value=result):
@@ -204,7 +198,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs={k: v.serialize() for k, v in self.kwargs.items()},
             id_at_location=self.id_at_location.serialize(),
             address=self.address.serialize(),
-            msg_id=self.id.serialize(),
         )
 
     @staticmethod
@@ -229,7 +222,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

@@ -30,9 +30,8 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         lookup_id: UID,
         child_node_client_address: Address,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.lookup_id = lookup_id
         self.child_node_client_address = child_node_client_address
 
@@ -43,7 +42,6 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
             lookup_id=self.lookup_id.serialize(),  # TODO: not sure if this is needed anymore
             child_node_client_address=self.child_node_client_address.serialize(),
             address=self.address.serialize(),
-            msg_id=self.id.serialize(),
         )
 
     @staticmethod
@@ -54,7 +52,6 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
                 blob=proto.child_node_client_address
             ),
             address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
         )
         logger.debug(f"> {msg.icon} <- 🔢 Proto")
         return msg

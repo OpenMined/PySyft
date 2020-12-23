@@ -12,5 +12,4 @@ message RunFunctionOrConstructorAction {
   map<string, syft.core.pointer.Pointer> kwargs = 3;
   syft.core.common.UID id_at_location = 4;
   syft.core.io.Address address = 5;
-  syft.core.common.UID msg_id = 6;
 }

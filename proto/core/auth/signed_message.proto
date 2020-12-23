@@ -5,11 +5,10 @@ import "proto/core/common/common_object.proto";
 import "google/protobuf/empty.proto";
 
 message SignedMessage {
-  syft.core.common.UID msg_id = 1;
-  string obj_type = 2;
-  bytes signature = 3;
-  bytes verify_key = 4;
-  bytes message = 5;
+  string obj_type = 1;
+  bytes signature = 2;
+  bytes verify_key = 3;
+  bytes message = 4;
 }
 
 message VerifyKey { bytes verify_key = 1; }

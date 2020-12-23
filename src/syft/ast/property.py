@@ -4,9 +4,7 @@ from typing import Optional
 
 # syft relative
 from .. import ast
-from ..core.node.common.action.function_or_constructor_action import (
-    GetOrSetPropertyAction,
-)
+from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 
 
 class Property(ast.attribute.Attribute):
@@ -36,7 +34,6 @@ class Property(ast.attribute.Attribute):
                 )
                 self.client.send_immediate_msg_without_reply(msg=msg)
             return ptr
-
 
         path = kwargs["path"]
         index = kwargs["index"]

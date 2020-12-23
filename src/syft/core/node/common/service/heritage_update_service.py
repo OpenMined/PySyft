@@ -35,9 +35,8 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
         self,
         new_ancestry_address: Address,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.new_ancestry_address = new_ancestry_address
 
     @syft_decorator(typechecking=True)
@@ -45,7 +44,6 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
         return HeritageUpdateMessage_PB(
             new_ancestry_address=self.new_ancestry_address.serialize(),
             address=self.address.serialize(),
-            msg_id=self.id.serialize(),
         )
 
     @staticmethod
@@ -53,7 +51,6 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
         return HeritageUpdateMessage(
             new_ancestry_address=_deserialize(blob=proto.new_ancestry_address),
             address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

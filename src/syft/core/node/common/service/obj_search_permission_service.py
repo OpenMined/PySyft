@@ -37,9 +37,8 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         target_verify_key: Optional[VerifyKey],
         target_object_id: UID,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
         self.add_instead_of_remove = add_instead_of_remove
         self.target_verify_key = target_verify_key
@@ -62,7 +61,6 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return ObjectSearchPermissionUpdateMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             target_verify_key=bytes(self.target_verify_key)
             if self.target_verify_key
@@ -89,7 +87,6 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchPermissionUpdateMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             target_verify_key=VerifyKey(proto.target_verify_key)
             if proto.target_verify_key

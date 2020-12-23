@@ -7,13 +7,11 @@ import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
 message GetAllRequestsMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
 }
 
 message GetAllRequestsResponseMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  repeated syft.core.node.domain.service.RequestMessage requests = 3;
+  syft.core.io.Address address = 1;
+  repeated syft.core.node.domain.service.RequestMessage requests = 2;
 }

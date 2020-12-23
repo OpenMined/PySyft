@@ -52,7 +52,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     ):
         if request_id is None:
             request_id = UID()
-        super().__init__(address=address, msg_id=request_id)
+        super().__init__(address=address)
         self.name = name
         self.request_description = request_description
         self.request_id = request_id

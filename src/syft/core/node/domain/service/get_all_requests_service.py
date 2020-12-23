@@ -25,10 +25,8 @@ from .request_message import RequestMessage
 
 
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
-    def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
-    ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+    def __init__(self, address: Address, reply_to: Address):
+        super().__init__(address=address, reply_to=reply_to)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestsMessage_PB:
@@ -47,7 +45,6 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return GetAllRequestsMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             reply_to=self.reply_to.serialize(),
         )
@@ -68,7 +65,6 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAllRequestsMessage(
-            msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
             reply_to=deserialize(blob=proto.reply_to),
         )
@@ -99,9 +95,8 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         self,
         requests: List[RequestMessage],
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.requests = requests
 
     @syft_decorator(typechecking=True)
@@ -121,7 +116,6 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return GetAllRequestsResponseMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             requests=list(map(lambda x: x.serialize(), self.requests)),
         )
@@ -144,7 +138,6 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAllRequestsResponseMessage(
-            msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
             requests=[deserialize(blob=x) for x in proto.requests],
         )

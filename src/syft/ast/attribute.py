@@ -70,14 +70,15 @@ class Attribute(ABC):
         return out
 
     def query(self, path: List[str]):
+        if path == "":
+            print("CE")
+
         if isinstance(path, str):
             path = path.split(".")
 
         if len(path) == 0:
             return self
-
         next = path[0]
-
         if next not in self.attrs:
             raise ValueError(f"Path {'.'.join(path)} not present in the AST.")
 

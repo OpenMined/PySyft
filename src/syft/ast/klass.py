@@ -1,4 +1,5 @@
 # stdlib
+import inspect
 from itertools import chain
 from typing import Any
 from typing import Callable as CallableT
@@ -8,23 +9,23 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import inspect
 
 # third party
 from google.protobuf.message import Message
 
 # syft relative
+from .. import ast
 from .. import lib
 from ..ast.callable import Callable
 from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
+from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
-from ..core.node.common.action.function_or_constructor_action import GetOrSetPropertyAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
-from .. import ast
+
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
     """It might seem hugely un-necessary to have these methods nested in this way.
@@ -79,12 +80,9 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
     return run_class_method
 
+
 def get_class_property(attr_path_and_name: str) -> CallableT:
-    def class_property(
-        __self: Any,
-        *args,
-        **kwargs
-    ):
+    def class_property(__self: Any, *args, **kwargs):
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -111,9 +109,9 @@ def get_class_property(attr_path_and_name: str) -> CallableT:
 
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
-                _self=__self,
                 id_at_location=result_id_at_location,
                 address=__self.client.address,
+                _self=__self,
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -321,14 +319,19 @@ class Class(Callable):
             return
         attr_ref = getattr(self.ref, path[index])
 
-        if inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref) or inspect.ismethod(attr_ref) or inspect.ismethoddescriptor(attr_ref):
+        if (
+            inspect.isfunction(attr_ref)
+            or inspect.isbuiltin(attr_ref)
+            or inspect.ismethod(attr_ref)
+            or inspect.ismethoddescriptor(attr_ref)
+        ):
             super().add_path(path, index, return_type_name)
         elif inspect.isdatadescriptor(attr_ref) or inspect.isgetsetdescriptor(attr_ref):
             self.attrs[path[index]] = ast.property.Property(
                 name=path[index],
-                path_and_name=".".join(path[:index + 1]),
+                path_and_name=".".join(path[: index + 1]),
                 ref=attr_ref,
-                return_type_name=return_type_name
+                return_type_name=return_type_name,
             )
         else:
             print(path)

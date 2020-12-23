@@ -30,8 +30,8 @@ from .node_service import ImmediateNodeServiceWithoutReply
 
 @final
 class ReprMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(self, address: Address, msg_id: Optional[UID] = None):
-        super().__init__(address=address, msg_id=msg_id)
+    def __init__(self, address: Address):
+        super().__init__(address=address)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> ReprMessage_PB:
@@ -51,7 +51,6 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ReprMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
         )
 
@@ -71,7 +70,6 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ReprMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
 

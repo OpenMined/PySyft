@@ -7,13 +7,11 @@ import "proto/core/io/address.proto";
 import "proto/core/pointer/pointer.proto";
 
 message ObjectSearchMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.io.Address address = 1;
+  syft.core.io.Address reply_to = 2;
 }
 
 message ObjectSearchReplyMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  repeated syft.core.pointer.Pointer results = 3;
+  syft.core.io.Address address = 1;
+  repeated syft.core.pointer.Pointer results = 2;
 }

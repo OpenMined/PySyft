@@ -38,10 +38,9 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         self,
         handler: DictType[str, Any],
         address: Address,
-        msg_id: Optional[UID] = None,
         keep: bool = True,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.handler = handler
         self.keep = keep
 
@@ -63,7 +62,6 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return UpdateRequestHandlerMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             handler=downcast(value=self.handler)._object2proto(),
             keep=self.keep,
@@ -87,7 +85,6 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return UpdateRequestHandlerMessage(
-            msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
             handler=upcast(value=Dict._proto2object(proto=proto.handler)),
             keep=proto.keep,
@@ -115,10 +112,8 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
 
 
 class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
-    def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
-    ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+    def __init__(self, address: Address, reply_to: Address):
+        super().__init__(address=address, reply_to=reply_to)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestHandlersMessage_PB:
@@ -137,7 +132,6 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return GetAllRequestHandlersMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             reply_to=self.reply_to.serialize(),
         )
@@ -160,7 +154,6 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAllRequestHandlersMessage(
-            msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
             reply_to=deserialize(blob=proto.reply_to),
         )
@@ -191,9 +184,8 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         self,
         handlers: List[DictType],
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.handlers = handlers
 
     @syft_decorator(typechecking=True)
@@ -214,7 +206,6 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAllRequestHandlersResponseMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             handlers=list(
                 map(lambda x: downcast(value=x)._object2proto(), self.handlers)
@@ -239,7 +230,6 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAllRequestHandlersResponseMessage(
-            msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
             handlers=[
                 upcast(value=Dict._proto2object(proto=x)) for x in proto.handlers

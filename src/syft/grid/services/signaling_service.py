@@ -60,9 +60,8 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         target_peer: str,
         host_peer: str,
         reply_to: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, reply_to=reply_to)
         self.target_peer = target_peer
         self.host_peer = host_peer
 
@@ -83,7 +82,6 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return OfferPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
@@ -106,7 +104,6 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return OfferPullRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
@@ -143,9 +140,8 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         target_peer: str,
         host_peer: str,
         reply_to: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, reply_to=reply_to)
         self.target_peer = target_peer
         self.host_peer = host_peer
 
@@ -166,7 +162,6 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return AnswerPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
@@ -189,7 +184,6 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return AnswerPullRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
@@ -224,9 +218,8 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         reply_to: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, reply_to=reply_to)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterNewPeerMessage_PB:
@@ -245,7 +238,6 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return RegisterNewPeerMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             reply_to=self.reply_to.serialize(),
         )
@@ -266,7 +258,6 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         """
 
         return RegisterNewPeerMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
         )
@@ -299,9 +290,8 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         peer_id: str,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.peer_id = peer_id
 
     @syft_decorator(typechecking=True)
@@ -321,7 +311,6 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
             object.
         """
         return PeerSuccessfullyRegistered_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             peer_id=self.peer_id,
         )
@@ -344,7 +333,6 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         """
 
         return PeerSuccessfullyRegistered(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             peer_id=proto.peer_id,
         )
@@ -380,9 +368,8 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         host_metadata: Metadata,
         target_peer: str,
         host_peer: str,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.payload = payload
         self.host_metadata = host_metadata
         self.target_peer = target_peer
@@ -405,7 +392,6 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return SignalingOfferMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             payload=self.payload,
             host_metadata=self.host_metadata.serialize(),
@@ -429,7 +415,6 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingOfferMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             payload=proto.payload,
             host_metadata=_deserialize(blob=proto.host_metadata),
@@ -468,9 +453,8 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         host_metadata: Metadata,
         target_peer: str,
         host_peer: str,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.payload = payload
         self.host_metadata = host_metadata
         self.target_peer = target_peer
@@ -494,7 +478,6 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingAnswerMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             payload=self.payload,
             host_metadata=self.host_metadata.serialize(),
@@ -518,7 +501,6 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingAnswerMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             payload=proto.payload,
             host_metadata=_deserialize(blob=proto.host_metadata),
@@ -552,9 +534,8 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingRequestsNotFound_PB:
@@ -573,7 +554,6 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
             object.
         """
         return SignalingRequestsNotFound_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
         )
 
@@ -595,7 +575,6 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingRequestsNotFound(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
 
@@ -625,9 +604,8 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> InvalidLoopBackRequest_PB:
@@ -646,7 +624,6 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
             object.
         """
         return InvalidLoopBackRequest_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
         )
 
@@ -668,7 +645,6 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         """
 
         return InvalidLoopBackRequest(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
 
@@ -698,9 +674,8 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> CloseConnectionMessage_PB:
@@ -719,7 +694,6 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return CloseConnectionMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
         )
 
@@ -741,7 +715,6 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return CloseConnectionMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
 

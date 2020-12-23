@@ -36,9 +36,8 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         accept: bool,
         request_id: UID,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
 
         # if false, deny the request
         self.accept = accept
@@ -61,7 +60,6 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return AcceptOrDenyRequestMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             accept=self.accept,
             request_id=self.request_id.serialize(),
@@ -85,7 +83,6 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return AcceptOrDenyRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             accept=proto.accept,
             request_id=_deserialize(blob=proto.request_id),

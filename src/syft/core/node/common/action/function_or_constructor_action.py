@@ -16,8 +16,6 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
-
-
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address
@@ -25,7 +23,6 @@ from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
@@ -49,9 +46,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
-        msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id)
+        super().__init__(address=address)
         self.path = path
         self.args = args
         self.kwargs = kwargs
@@ -170,7 +166,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             kwargs={k: v.serialize() for k, v in self.kwargs.items()},
             id_at_location=self.id_at_location.serialize(),
             address=self.address.serialize(),
-            msg_id=self.id.serialize(),
         )
 
     @staticmethod
@@ -196,7 +191,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

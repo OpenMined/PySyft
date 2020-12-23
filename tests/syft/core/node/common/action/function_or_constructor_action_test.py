@@ -26,7 +26,6 @@ def test_run_function_or_constructor_action_serde() -> None:
         kwargs={},
         id_at_location=UID(),
         address=alice_client.address,
-        msg_id=UID(),
     )
 
     blob = msg.serialize()

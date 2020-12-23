@@ -34,10 +34,8 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
          obj: the object being sent back to the asker.
     """
 
-    def __init__(
-        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
-    ) -> None:
-        super().__init__(address=address, msg_id=msg_id)
+    def __init__(self, obj: StorableObject, address: Address) -> None:
+        super().__init__(address=address)
         self.obj = obj
 
     @syft_decorator(typechecking=True)
@@ -72,7 +70,6 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
                 raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
 
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.serialize(),
             address=self.address.serialize(),
             obj=ser,
         )
@@ -94,7 +91,6 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
 
         return GetObjectResponseMessage(
             obj=_deserialize(blob=proto.obj),
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
 
@@ -136,14 +132,13 @@ class GetObjectAction(ImmediateActionWithReply):
         id_at_location: UID,
         address: Address,
         reply_to: Address,
-        msg_id: Optional[UID] = None,
         delete_obj: bool = True,
     ):
         self.id_at_location = id_at_location
         self.delete_obj = delete_obj
 
         # the logger needs self.id_at_location to be set already - so we call this later
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, reply_to=reply_to)
 
     def execute_action(
         self, node: AbstractNode, verify_key: VerifyKey
@@ -171,7 +166,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 raise AuthorizationException(log)
 
             obj = storeable_object.data
-            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
+            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to)
 
             if self.delete_obj:
                 try:
@@ -219,7 +214,6 @@ class GetObjectAction(ImmediateActionWithReply):
         """
         return GetObjectAction_PB(
             id_at_location=self.id_at_location.proto(),
-            msg_id=self.id.proto(),
             address=self.address.proto(),
             reply_to=self.reply_to.proto(),
             delete_obj=self.delete_obj,
@@ -242,7 +236,6 @@ class GetObjectAction(ImmediateActionWithReply):
 
         return GetObjectAction(
             id_at_location=_deserialize(blob=proto.id_at_location),
-            msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
             delete_obj=proto.delete_obj,
