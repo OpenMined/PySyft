@@ -147,13 +147,16 @@ def test_to_string() -> None:
     assert obj.__repr__() == str_out
 
 
+# --------------------- PROPERTY METHODS ---------------------
+
+
 @pytest.mark.parametrize(
     'address_kwargs, expected_icon', list(zip(
         _gen_address_kwargs(),
         _gen_icons(),
     ))
 )
-def test_icon(address_kwargs, expected_icon) -> None:
+def test_icon_property_method(address_kwargs, expected_icon) -> None:
     """Unit tests for Address.icon property method"""
     address = Address(**address_kwargs)
     assert address.icon == expected_icon
@@ -165,7 +168,7 @@ def test_icon(address_kwargs, expected_icon) -> None:
         _gen_icons(),
     ))
 )
-def test_pprint(address_kwargs, expected_icon) -> None:
+def test_pprint_property_method(address_kwargs, expected_icon) -> None:
     """Unit tests for Address.pprint property method"""
     named_address = Address(name="Sneaky Nahua", **address_kwargs)
     assert named_address.pprint == expected_icon + ' Sneaky Nahua (Address)'
@@ -209,6 +212,27 @@ def test_network_getter_and_setter() -> None:
     new_network = SpecificLocation(id=an_id)
     address.network = new_network
     assert address.network == new_network
+
+
+def test_network_id_property_method() -> None:
+    """Unit test for Address.network_id method"""
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    # Test getter
+    network = SpecificLocation(id=an_id)
+    address_with_network = Address(
+        network=network,
+        domain=SpecificLocation(id=an_id),
+        device=SpecificLocation(id=an_id),
+        vm=SpecificLocation(id=an_id),
+    )
+    address_without_network = Address(
+        domain=SpecificLocation(id=an_id),
+        device=SpecificLocation(id=an_id),
+        vm=SpecificLocation(id=an_id),
+    )
+
+    assert address_with_network.network_id == an_id
+    assert address_without_network.network_id is None
 
 
 # --------------------- SERDE ---------------------
