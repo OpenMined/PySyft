@@ -8,7 +8,6 @@ from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
-from ..lib.pydp import create_pydp_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
@@ -39,6 +38,8 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
+        from IPython.core import debugger as idb
+        idb.set_trace()
         _ = importlib.import_module(lib)
         vendor_ast = importlib.import_module(f"syft.lib.{lib}")
         PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -65,13 +66,6 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast() -> Globals:
-    python_ast = create_python_ast()
-    torch_ast = create_torch_ast()
-    torchvision_ast = create_torchvision_ast()
-    pydp_ast = create_pydp_ast()
-    # numpy_ast = create_numpy_ast()
-    pydp_ast = create_pydp_ast()
-
     lib_ast = Globals()
 
     python_ast = create_python_ast()
@@ -82,7 +76,6 @@ def create_lib_ast() -> Globals:
 
     torchvision_ast = create_torchvision_ast()
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-    lib_ast.add_attr(attr_name="pydp", attr=pydp_ast.attrs["pydp"])
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions

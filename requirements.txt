@@ -39,7 +39,6 @@ pytest-asyncio
 pytest-benchmark
 pytest-cov
 pytest-xdist[psutil]
-python-dp
 requests
 sqlitedict
 torch>=1.5

@@ -1,3 +1,9 @@
+# stdlib
+from typing import Any as TypeAny
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
+
 # third party
 from pydp.algorithms.laplacian import BoundedMean
 from pydp.algorithms.laplacian import BoundedStandardDeviation
@@ -16,16 +22,24 @@ from ...ast import add_modules
 from ...ast.globals import Globals
 from ..misc.union import UnionGenerator
 
+LIB_NAME = "pydp"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
-def create_pydp_ast() -> Globals:
+
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    dp_ast = create_ast()
+    ast.add_attr(attr_name=LIB_NAME, attr=dp_ast.attrs[LIB_NAME])
+
+
+def create_ast() -> Globals:
     ast = Globals()
 
-    modules = [
-        "pydp",
-        "pydp.algorithms",
-        "pydp.algorithms.laplacian",
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("pydp", pydb),
+        ("pydp.algorithms", pydb.algorithms),
+        ("pydp.algorithms.laplacian", pydp.algorithms.laplacian)
     ]
-    classes = [
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
             "pydp.algorithms.laplacian.BoundedMean",
             "pydp.algorithms.laplacian.BoundedMean",
