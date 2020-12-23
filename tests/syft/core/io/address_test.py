@@ -46,13 +46,24 @@ def test_init_without_arguments() -> None:
 
 def _gen_address_kwargs() -> list:
     """
-    Helper method to generate 3-4 arguments for initializing an Address instance.
-    Arguments are taken from 'vm', 'device', 'domain', 'network'.
+    Helper method to generate pre-ordered arguments for initializing an Address instance.
+    There are at least 3 arguments, all taken from 'vm', 'device', 'domain', 'network'.
     """
     all_combos = list(combinations(ARGUMENTS, 3)) + [ARGUMENTS]
     return [
         {key: SpecificLocation(id=UID()) for key in combo}
         for combo in all_combos
+    ]
+
+
+def _gen_icons() -> list:
+    """Helper method to return an pre-ordered list of icons."""
+    return [
+        '💠 [🍰📱🏰]',
+        '💠 [🍰📱🔗]',
+        '💠 [🍰🏰🔗]',
+        '💠 [📱🏰🔗]',
+        '💠 [🍰📱🏰🔗]',
     ]
 
 
@@ -139,13 +150,7 @@ def test_to_string() -> None:
 @pytest.mark.parametrize(
     'address_kwargs, expected_icon', list(zip(
         _gen_address_kwargs(),
-        [
-            '💠 [🍰📱🏰]',
-            '💠 [🍰📱🔗]',
-            '💠 [🍰🏰🔗]',
-            '💠 [📱🏰🔗]',
-            '💠 [🍰📱🏰🔗]',
-        ]
+        _gen_icons(),
     ))
 )
 def test_icon(address_kwargs, expected_icon) -> None:
@@ -157,13 +162,7 @@ def test_icon(address_kwargs, expected_icon) -> None:
 @pytest.mark.parametrize(
     'address_kwargs, expected_icon', list(zip(
         _gen_address_kwargs(),
-        [
-            '💠 [🍰📱🏰]',
-            '💠 [🍰📱🔗]',
-            '💠 [🍰🏰🔗]',
-            '💠 [📱🏰🔗]',
-            '💠 [🍰📱🏰🔗]',
-        ]
+        _gen_icons(),
     ))
 )
 def test_pprint(address_kwargs, expected_icon) -> None:
@@ -191,6 +190,25 @@ def test_address_property_method() -> None:
     assert returned_address.domain == address.domain
     assert returned_address.device == address.device
     assert returned_address.vm == address.vm
+
+
+def test_network_getter_and_setter() -> None:
+    """Unit tests for Address.network getter and setter"""
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    # Test getter
+    network = SpecificLocation(id=an_id)
+    address = Address(
+        network=network,
+        domain=SpecificLocation(id=an_id),
+        device=SpecificLocation(id=an_id),
+        vm=SpecificLocation(id=an_id),
+    )
+    assert address.network == network
+
+    # Test setter
+    new_network = SpecificLocation(id=an_id)
+    address.network = new_network
+    assert address.network == new_network
 
 
 # --------------------- SERDE ---------------------
