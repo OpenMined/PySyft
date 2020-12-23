@@ -71,11 +71,7 @@ def _gen_address_kwargs_and_expected_values() -> list:
     """
     address_kwargs = _gen_address_kwargs()
     expected_value_dict = [
-        {
-            key: kwargs.get(key, None)
-            for key in ARGUMENTS
-        }
-        for kwargs in address_kwargs
+        {key: kwargs.get(key, None) for key in ARGUMENTS} for kwargs in address_kwargs
     ]
     return list(zip(address_kwargs, expected_value_dict))
 
@@ -167,9 +163,9 @@ def test_target_emoji_method() -> None:
             _gen_address_kwargs(),
             _gen_icons(),
         )
-    )
+    ),
 )
-def test_icon_property_method(address_kwargs, expected_icon) -> None:
+def test_icon_property_method(address_kwargs: dict, expected_icon: str) -> None:
     """Unit tests for Address.icon property method"""
     address = Address(**address_kwargs)
     assert address.icon == expected_icon
@@ -182,9 +178,9 @@ def test_icon_property_method(address_kwargs, expected_icon) -> None:
             _gen_address_kwargs(),
             _gen_icons(),
         )
-    )
+    ),
 )
-def test_pprint_property_method(address_kwargs, expected_icon) -> None:
+def test_pprint_property_method(address_kwargs: dict, expected_icon: str) -> None:
     """Unit tests for Address.pprint property method"""
     named_address = Address(name="Sneaky Nahua", **address_kwargs)
     assert named_address.pprint == expected_icon + " Sneaky Nahua (Address)"
