@@ -32,6 +32,7 @@ class TorchTensorWrapper(StorableObject):
         proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value))
 
         proto.requires_grad = getattr(self.value, "requires_grad", False)
+        proto.on_cuda = getattr(self.value, "device", "cpu") == "cuda"
 
         if proto.requires_grad:
             grad = getattr(self.value, "grad", None)
@@ -47,6 +48,11 @@ class TorchTensorWrapper(StorableObject):
             tensor.grad = protobuf_tensor_deserializer(proto.grad)
 
         tensor.requires_grad_(proto.requires_grad)
+
+        if proto.on_cuda==True and th.cuda.is_available():
+            tensor = tensor.cuda()
+        else:
+            tensor = tensor.cpu()
 
         return tensor
 

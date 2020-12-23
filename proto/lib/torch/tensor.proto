@@ -51,4 +51,5 @@ message TensorProto {
   TensorData tensor = 1;
   bool requires_grad = 2;
   TensorData grad = 3;
+  bool on_cuda = 4;
 }
