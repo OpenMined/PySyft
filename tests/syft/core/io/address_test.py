@@ -368,12 +368,6 @@ def test_addressables_property_method() -> None:
         vm=vm,
     )
     assert address.addressables == [vm, device, domain, network]
-    address.vm = None
-    assert address.addressables == [None, device, domain, network]
-    address.device = None
-    assert address.addressables == [None, None, domain, network]
-    address.domain = None
-    assert address.addressables == [None, None, None, network]
 
 
 # --------------------- SERDE ---------------------
