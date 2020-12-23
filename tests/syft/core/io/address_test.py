@@ -24,7 +24,7 @@ from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 
 
-ARGUMENTS = ('vm', 'device', 'domain', 'network')
+ARGUMENTS = ("vm", "device", "domain", "network")
 
 # --------------------- INITIALIZATION ---------------------
 
@@ -50,20 +50,17 @@ def _gen_address_kwargs() -> list:
     There are at least 3 arguments, all taken from 'vm', 'device', 'domain', 'network'.
     """
     all_combos = list(combinations(ARGUMENTS, 3)) + [ARGUMENTS]
-    return [
-        {key: SpecificLocation(id=UID()) for key in combo}
-        for combo in all_combos
-    ]
+    return [{key: SpecificLocation(id=UID()) for key in combo} for combo in all_combos]
 
 
 def _gen_icons() -> list:
     """Helper method to return an pre-ordered list of icons."""
     return [
-        '💠 [🍰📱🏰]',
-        '💠 [🍰📱🔗]',
-        '💠 [🍰🏰🔗]',
-        '💠 [📱🏰🔗]',
-        '💠 [🍰📱🏰🔗]',
+        "💠 [🍰📱🏰]",
+        "💠 [🍰📱🔗]",
+        "💠 [🍰🏰🔗]",
+        "💠 [📱🏰🔗]",
+        "💠 [🍰📱🏰🔗]",
     ]
 
 
@@ -84,16 +81,16 @@ def _gen_address_kwargs_and_expected_values() -> list:
 
 
 @pytest.mark.parametrize(
-    'address_kwargs, expected_values', _gen_address_kwargs_and_expected_values()
+    "address_kwargs, expected_values", _gen_address_kwargs_and_expected_values()
 )
 def test_init_with_specific_id(address_kwargs: dict, expected_values: dict) -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
     address = Address(**address_kwargs)
 
-    assert address.network is expected_values['network']
-    assert address.domain is expected_values['domain']
-    assert address.device is expected_values['device']
-    assert address.vm is expected_values['vm']
+    assert address.network is expected_values["network"]
+    assert address.domain is expected_values["domain"]
+    assert address.device is expected_values["device"]
+    assert address.vm is expected_values["vm"]
 
 
 # --------------------- CLASS METHODS ---------------------
@@ -157,17 +154,20 @@ def test_target_emoji_method() -> None:
         device=SpecificLocation(id=an_id),
         vm=SpecificLocation(id=an_id),
     )
-    assert address.target_emoji() == '@<UID:🙍🛖>'
+    assert address.target_emoji() == "@<UID:🙍🛖>"
 
 
 # --------------------- PROPERTY METHODS ---------------------
 
 
 @pytest.mark.parametrize(
-    'address_kwargs, expected_icon', list(zip(
-        _gen_address_kwargs(),
-        _gen_icons(),
-    ))
+    "address_kwargs, expected_icon",
+    list(
+        zip(
+            _gen_address_kwargs(),
+            _gen_icons(),
+        )
+    )
 )
 def test_icon_property_method(address_kwargs, expected_icon) -> None:
     """Unit tests for Address.icon property method"""
@@ -176,19 +176,22 @@ def test_icon_property_method(address_kwargs, expected_icon) -> None:
 
 
 @pytest.mark.parametrize(
-    'address_kwargs, expected_icon', list(zip(
-        _gen_address_kwargs(),
-        _gen_icons(),
-    ))
+    "address_kwargs, expected_icon",
+    list(
+        zip(
+            _gen_address_kwargs(),
+            _gen_icons(),
+        )
+    )
 )
 def test_pprint_property_method(address_kwargs, expected_icon) -> None:
     """Unit tests for Address.pprint property method"""
     named_address = Address(name="Sneaky Nahua", **address_kwargs)
-    assert named_address.pprint == expected_icon + ' Sneaky Nahua (Address)'
+    assert named_address.pprint == expected_icon + " Sneaky Nahua (Address)"
 
     unnamed_address = Address(**address_kwargs)
     assert expected_icon in unnamed_address.pprint
-    assert '(Address)' in unnamed_address.pprint
+    assert "(Address)" in unnamed_address.pprint
 
 
 def test_address_property_method() -> None:
