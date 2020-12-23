@@ -6,7 +6,9 @@ import torch as th
 import syft as sy
 
 
-@pytest.mark.vendor(lib="sympc", torch={"min_version": "1.6.0"})
+@pytest.mark.vendor(
+    lib="sympc", python={"min_version": (3, 7)}, torch={"min_version": "1.6.0"}
+)
 def test_load_sympc() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
