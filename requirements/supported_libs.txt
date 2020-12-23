@@ -1,1 +1,2 @@
+sympc @ git+https://github.com/OpenMined/SyMPC@09e80216a55c00215d956a14541391b907d61052
 tenseal==0.3.0a1
