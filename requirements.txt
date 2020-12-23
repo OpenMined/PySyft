@@ -28,7 +28,6 @@ jinja2
 loguru
 matplotlib
 nbconvert
-openmined.psi
 packaging
 pandas
 protobuf

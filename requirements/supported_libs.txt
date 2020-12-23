@@ -1,1 +1,2 @@
+openmined.psi
 tenseal==0.3.0a1

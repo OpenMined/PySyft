@@ -8,7 +8,6 @@ from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
-from ..lib.psi import create_psi_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
@@ -52,7 +51,6 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 update_ast(ast=lib_ast)
 
                 for _, client in lib_ast.registered_clients.items():
-                    print("calling registered client", client.name, client.id)
                     update_ast(ast=client)
 
                 # cache the constructor for future created clients
@@ -65,12 +63,6 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast() -> Globals:
-    python_ast = create_python_ast()
-    torch_ast = create_torch_ast()
-    torchvision_ast = create_torchvision_ast()
-    psi_ast = create_psi_ast()
-    # numpy_ast = create_numpy_ast()
-
     lib_ast = Globals()
 
     python_ast = create_python_ast()
@@ -81,7 +73,6 @@ def create_lib_ast() -> Globals:
 
     torchvision_ast = create_torchvision_ast()
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-    lib_ast.add_attr(attr_name="openmined_psi", attr=psi_ast.attrs["openmined_psi"])
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
