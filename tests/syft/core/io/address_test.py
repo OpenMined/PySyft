@@ -292,6 +292,35 @@ def test_device_and_device_id_property_methods() -> None:
     assert address_without_device.device_id is None
 
 
+def test_vm_and_vm_id_property_methods() -> None:
+    """Unit test for Address.vm and Address.vm_id methods"""
+    # Test getter
+    vm = SpecificLocation(id=UID())
+    address_with_vm = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=vm,
+    )
+    # Test device getter
+    assert address_with_vm.vm == vm
+
+    # Test device setter
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    new_vm = SpecificLocation(id=an_id)
+    address_with_vm.vm = new_vm
+    assert address_with_vm.vm == new_vm
+
+    # Test domain_id getter
+    address_without_vm = Address(
+        network=SpecificLocation(id=UID()),
+        domain=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+    )
+    assert address_with_vm.vm_id == an_id
+    assert address_without_vm.vm_id is None
+
+
 # --------------------- SERDE ---------------------
 
 
