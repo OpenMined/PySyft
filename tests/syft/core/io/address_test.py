@@ -147,6 +147,19 @@ def test_to_string() -> None:
     assert obj.__repr__() == str_out
 
 
+def test_target_emoji_method() -> None:
+    """Unit test for Address.target_emoji method"""
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+
+    address = Address(
+        network=SpecificLocation(id=an_id),
+        domain=SpecificLocation(id=an_id),
+        device=SpecificLocation(id=an_id),
+        vm=SpecificLocation(id=an_id),
+    )
+    assert address.target_emoji() == '@<UID:🙍🛖>'
+
+
 # --------------------- PROPERTY METHODS ---------------------
 
 
@@ -342,17 +355,26 @@ def test_target_id_property_method_with_a_return() -> None:
     assert address.target_id == network
 
 
-def test_target_emoji_method() -> None:
+def test_addressables_property_method() -> None:
     """Unit test for Address.target_emoji method"""
     an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-
+    network = SpecificLocation(id=an_id)
+    domain = SpecificLocation(id=an_id)
+    device = SpecificLocation(id=an_id)
+    vm = SpecificLocation(id=an_id)
     address = Address(
-        network=SpecificLocation(id=an_id),
-        domain=SpecificLocation(id=an_id),
-        device=SpecificLocation(id=an_id),
-        vm=SpecificLocation(id=an_id),
+        network=network,
+        domain=domain,
+        device=device,
+        vm=vm,
     )
-    assert address.target_emoji() == '@<UID:🙍🛖>'
+    assert address.addressables == [vm, device, domain, network]
+    address.vm = None
+    assert address.addressables == [None, device, domain, network]
+    address.device = None
+    assert address.addressables == [None, None, domain, network]
+    address.domain = None
+    assert address.addressables == [None, None, None, network]
 
 
 # --------------------- SERDE ---------------------
