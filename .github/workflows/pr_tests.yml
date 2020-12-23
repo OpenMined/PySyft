@@ -125,8 +125,17 @@ jobs:
           then
               TORCHVISION_VERSION="0.8.1"
           fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng
+          fi
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
@@ -144,13 +153,81 @@ jobs:
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+          }
+
       - name: Run normal tests without coverage
         run: |
           pip install -r requirements.txt
           pip install -e .
           pip freeze | grep torch
           pytest -m fast --cov-fail-under 80 -n auto
+
+      - name: Install supported library packages
+        run: |
           pip install -r requirements/supported_libs.txt
+
+      - name: Install PyTorch Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+          fi
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng
+          fi
+
+      - name: Install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+          }
+
+      - name: Run supported library tests
+        run: |
           pytest -m libs --cov-fail-under 0 -n auto
 
   python-nb-examples:
