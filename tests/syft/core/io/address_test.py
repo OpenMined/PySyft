@@ -218,9 +218,8 @@ def test_network_id_property_method() -> None:
     """Unit test for Address.network_id method"""
     an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     # Test getter
-    network = SpecificLocation(id=an_id)
     address_with_network = Address(
-        network=network,
+        network=SpecificLocation(id=an_id),
         domain=SpecificLocation(id=an_id),
         device=SpecificLocation(id=an_id),
         vm=SpecificLocation(id=an_id),
@@ -233,6 +232,35 @@ def test_network_id_property_method() -> None:
 
     assert address_with_network.network_id == an_id
     assert address_without_network.network_id is None
+
+
+def test_domain_and_domain_id_property_methods() -> None:
+    """Unit test for Address.network_id method"""
+    # Test getter
+    domain = SpecificLocation(id=UID())
+    address_with_domain = Address(
+        network=SpecificLocation(id=UID()),
+        domain=domain,
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+    # Test domain getter
+    assert address_with_domain.domain == domain
+
+    # Test domain setter
+    an_id = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    new_domain = SpecificLocation(id=an_id)
+    address_with_domain.domain = new_domain
+    assert address_with_domain.domain == new_domain
+
+    # Test domain_id getter
+    address_without_domain = Address(
+        network=SpecificLocation(id=UID()),
+        device=SpecificLocation(id=UID()),
+        vm=SpecificLocation(id=UID()),
+    )
+    assert address_with_domain.domain_id == an_id
+    assert address_without_domain.domain_id is None
 
 
 # --------------------- SERDE ---------------------
