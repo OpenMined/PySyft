@@ -12,6 +12,7 @@ Table of Contents:
 
 # stdlib
 import uuid
+from itertools import combinations
 
 # third party
 import pytest
@@ -23,7 +24,7 @@ from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 
 # --------------------- INITIALIZATION ---------------------
-
+ARGUMENTS = ('vm', 'device', 'domain', 'network')
 
 def test_init_without_arguments() -> None:
     """Test that Address have all attributes as None if none are given"""
@@ -40,72 +41,46 @@ def test_init_without_arguments() -> None:
         assert addr.target_id is None
 
 
-def test_init_with_specific_id() -> None:
+def _gen_address_kwargs() -> list:
+    """
+    Helper method to generate 3-4 arguments for initializing an Address instance.
+    Arguments are taken from 'vm', 'device', 'domain', 'network'.
+    """
+    all_combos = list(combinations(ARGUMENTS, 3)) + [ARGUMENTS]
+    return [
+        {key: SpecificLocation(id=UID()) for key in combo}
+        for combo in all_combos
+    ]
+
+
+def _gen_address_kwargs_and_expected_values() -> list:
+    """
+    Helper method to generate kwargs for initializing Address as well as
+    the expected values thereof.
+    """
+    address_kwargs = _gen_address_kwargs()
+    expected_value_dict = [
+        {
+            key: kwargs.get(key, None)
+            for key in ARGUMENTS
+        }
+        for kwargs in address_kwargs
+    ]
+    return list(zip(address_kwargs, expected_value_dict))
+
+
+@pytest.mark.parametrize(
+    'address_kwargs, expected_values', _gen_address_kwargs_and_expected_values()
+)
+def test_init_with_specific_id(address_kwargs: dict, expected_values: dict) -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
+    addr = Address(**address_kwargs)
+    print(f'===> {addr.icon}')
 
-    # init works with arguments
-    addr = Address(
-        network=SpecificLocation(id=UID()),
-        domain=SpecificLocation(id=UID()),
-        device=SpecificLocation(id=UID()),
-        vm=SpecificLocation(id=UID()),
-    )
-
-    assert addr.network is not None
-    assert addr.domain is not None
-    assert addr.device is not None
-    assert addr.vm is not None
-
-    # init works without arguments
-    addr = Address(  # network=SpecificLocation(id=UID()),
-        domain=SpecificLocation(id=UID()),
-        device=SpecificLocation(id=UID()),
-        vm=SpecificLocation(id=UID()),
-    )
-
-    assert addr.network is None
-    assert addr.domain is not None
-    assert addr.device is not None
-    assert addr.vm is not None
-
-    # init works without arguments
-    addr = Address(
-        network=SpecificLocation(id=UID()),
-        # domain=SpecificLocation(id=UID()),
-        device=SpecificLocation(id=UID()),
-        vm=SpecificLocation(id=UID()),
-    )
-
-    assert addr.network is not None
-    assert addr.domain is None
-    assert addr.device is not None
-    assert addr.vm is not None
-
-    # init works without arguments
-    addr = Address(
-        network=SpecificLocation(id=UID()),
-        domain=SpecificLocation(id=UID()),
-        # device=SpecificLocation(id=UID()),
-        vm=SpecificLocation(id=UID()),
-    )
-
-    assert addr.network is not None
-    assert addr.domain is not None
-    assert addr.device is None
-    assert addr.vm is not None
-
-    # init works without arguments
-    addr = Address(
-        network=SpecificLocation(id=UID()),
-        domain=SpecificLocation(id=UID()),
-        device=SpecificLocation(id=UID()),
-        # vm=SpecificLocation(id=UID())
-    )
-
-    assert addr.network is not None
-    assert addr.domain is not None
-    assert addr.device is not None
-    assert addr.vm is None
+    assert addr.network is expected_values['network']
+    assert addr.domain is expected_values['domain']
+    assert addr.device is expected_values['device']
+    assert addr.vm is expected_values['vm']
 
 
 # --------------------- CLASS METHODS ---------------------
