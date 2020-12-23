@@ -23,8 +23,11 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 
-# --------------------- INITIALIZATION ---------------------
+
 ARGUMENTS = ('vm', 'device', 'domain', 'network')
+
+# --------------------- INITIALIZATION ---------------------
+
 
 def test_init_without_arguments() -> None:
     """Test that Address have all attributes as None if none are given"""
@@ -74,12 +77,13 @@ def _gen_address_kwargs_and_expected_values() -> list:
 )
 def test_init_with_specific_id(address_kwargs: dict, expected_values: dict) -> None:
     """Test that Address will use the SpecificLocation you pass into the constructor"""
-    addr = Address(**address_kwargs)
+    address = Address(**address_kwargs)
+    print(f'=====> {address.pprint}')
 
-    assert addr.network is expected_values['network']
-    assert addr.domain is expected_values['domain']
-    assert addr.device is expected_values['device']
-    assert addr.vm is expected_values['vm']
+    assert address.network is expected_values['network']
+    assert address.domain is expected_values['domain']
+    assert address.device is expected_values['device']
+    assert address.vm is expected_values['vm']
 
 
 # --------------------- CLASS METHODS ---------------------
@@ -146,9 +150,31 @@ def test_to_string() -> None:
     ))
 )
 def test_icon(address_kwargs, expected_icon) -> None:
-    """Test that Address.icon property method returns the correct emojis."""
-    addr = Address(**address_kwargs)
-    assert addr.icon == expected_icon
+    """Unit tests for Address.icon property method"""
+    address = Address(**address_kwargs)
+    assert address.icon == expected_icon
+
+
+@pytest.mark.parametrize(
+    'address_kwargs, expected_icon', list(zip(
+        _gen_address_kwargs(),
+        [
+            '💠 [🍰📱🏰]',
+            '💠 [🍰📱🔗]',
+            '💠 [🍰🏰🔗]',
+            '💠 [📱🏰🔗]',
+            '💠 [🍰📱🏰🔗]',
+        ]
+    ))
+)
+def test_pprint(address_kwargs, expected_icon) -> None:
+    """Unit tests for Address.pprint property method"""
+    named_address = Address(name="Sneaky Nahua", **address_kwargs)
+    assert named_address.pprint == expected_icon + ' Sneaky Nahua (Address)'
+
+    unnamed_address = Address(**address_kwargs)
+    assert expected_icon in unnamed_address.pprint
+    assert '(Address)' in unnamed_address.pprint
 
 
 # --------------------- SERDE ---------------------
