@@ -6,7 +6,6 @@ import sys
 from typing import Any
 from typing import Generator
 from typing import Optional
-from typing import Type as TypeType
 
 # third party
 import nest_asyncio
@@ -94,7 +93,6 @@ def begin_duet_logger(my_domain: Domain) -> None:
     @contextmanager
     def set_stdout_parent(parent: Any) -> Generator:
         """a context manager for setting a particular parent for sys.stdout
-
         the parent determines the destination cell of output
         """
         save_parent = sys.stdout.parent_header  # type: ignore
@@ -184,9 +182,7 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
-    credential_exchanger: TypeType[
-        DuetCredentialExchanger
-    ] = OpenGridTokenManualInputExchanger,
+    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
@@ -224,8 +220,8 @@ def launch_duet(
     my_domain = Domain(name="Launcher", db_path=db_path)
 
     if loopback:
-        credential_exchanger = OpenGridTokenFileExchanger
-    target_id = credential_exchanger(credential=signaling_client.duet_id).run()
+        credential_exchanger = OpenGridTokenFileExchanger()
+    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
 
     print("♫♫♫ > Connecting...")
 
@@ -251,9 +247,7 @@ def join_duet(
     target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
-    credential_exchanger: TypeType[
-        DuetCredentialExchanger
-    ] = OpenGridTokenManualInputExchanger,
+    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
         display(
@@ -290,14 +284,14 @@ def join_duet(
     my_domain = Domain(name="Joiner")
 
     if loopback:
-        credential_exchanger = OpenGridTokenFileExchanger
-        target_id = credential_exchanger(
-            credential=signaling_client.duet_id, join=True
-        ).run()
+        credential_exchanger = OpenGridTokenFileExchanger()
     else:
-        target_id = credential_exchanger(
-            credential=signaling_client.duet_id, join=True
-        ).run(server_id=target_id)
+        # we have target_id so we set it using set_responder_id
+        credential_exchanger.set_responder_id(target_id)
+
+    target_id = credential_exchanger.set_role(join=True).run(
+        credential=signaling_client.duet_id
+    )
 
     duet = WebRTCDuet(
         node=my_domain,
