@@ -164,6 +164,7 @@ jobs:
           } Else {
             pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
           }
+          pip install numpy==1.19.3
 
       - name: Install packages
         run: |
@@ -186,6 +187,7 @@ jobs:
           foreach ($i in cat requirements/supported_libs.txt) {
             pip install $i
           }
+          pip install numpy==1.19.3
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
