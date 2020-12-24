@@ -121,9 +121,11 @@ jobs:
           elif [ $TORCH_VERSION = "1.6.0" ]
           then
               TORCHVISION_VERSION="0.7"
+              TORCHCSPRNG_VERSION="0.1.2"
           elif [ $TORCH_VERSION = "1.7.0" ]
           then
               TORCHVISION_VERSION="0.8.1"
+              TORCHCSPRNG_VERSION="0.1.3"
           fi
           pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
 
@@ -134,7 +136,7 @@ jobs:
           then
               echo "No torchcsprng"
           else
-            pip install torchcsprng
+            pip install torchcsprng==${TORCHCSPRNG_VERSION}
           fi
 
       - name: Install PyTorch Windows
@@ -148,8 +150,10 @@ jobs:
               $env:TORCHVISION_VERSION="0.6.1"
           } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
               $env:TORCHVISION_VERSION="0.7"
+              $env:TORCHCSPRNG_VERSION="0.1.2"
           } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
               $env:TORCHVISION_VERSION="0.8.1"
+              $env:TORCHCSPRNG_VERSION="0.1.3"
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -158,14 +162,17 @@ jobs:
           } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
 
           } Else {
-            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
           }
 
-      - name: Run normal tests without coverage
+      - name: Install packages
         run: |
           pip install -r requirements.txt
           pip install -e .
           pip freeze
+
+      - name: Run normal tests without coverage
+        run: |
           pytest -m fast --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
@@ -194,9 +201,11 @@ jobs:
           elif [ $TORCH_VERSION = "1.6.0" ]
           then
               TORCHVISION_VERSION="0.7"
+              TORCHCSPRNG_VERSION="0.1.2"
           elif [ $TORCH_VERSION = "1.7.0" ]
           then
               TORCHVISION_VERSION="0.8.1"
+              TORCHCSPRNG_VERSION="0.1.3"
           fi
           pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
 
@@ -207,7 +216,7 @@ jobs:
           then
               echo "No torchcsprng"
           else
-            pip install torchcsprng
+            pip install torchcsprng==${TORCHCSPRNG_VERSION}
           fi
 
       - name: Install PyTorch Windows
@@ -221,8 +230,10 @@ jobs:
               $env:TORCHVISION_VERSION="0.6.1"
           } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
               $env:TORCHVISION_VERSION="0.7"
+              $env:TORCHCSPRNG_VERSION="0.1.2"
           } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
               $env:TORCHVISION_VERSION="0.8.1"
+              $env:TORCHCSPRNG_VERSION="0.1.3"
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -231,7 +242,7 @@ jobs:
           } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
 
           } Else {
-            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
           }
 
       - name: Run supported library tests
