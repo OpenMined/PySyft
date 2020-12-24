@@ -165,7 +165,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pip freeze | grep torch
+          pip freeze
           pytest -m fast --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
@@ -176,7 +176,9 @@ jobs:
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
-          FOR /F %k in (requirements/supported_libs.txt) DO pip install %k
+          foreach ($i in cat requirements/supported_libs.txt) {
+            pip install $i
+          }
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
@@ -234,6 +236,7 @@ jobs:
 
       - name: Run supported library tests
         run: |
+          pip freeze
           pytest -m libs --cov-fail-under 0 -n auto
 
   python-nb-examples:
