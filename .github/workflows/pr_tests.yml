@@ -62,7 +62,7 @@ jobs:
           pre-commit run --all-files
 
   python-tests-fast:
-    # needs: [python-linting]
+    needs: [python-linting]
     strategy:
       max-parallel: 24
       matrix:
