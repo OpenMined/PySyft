@@ -112,15 +112,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
-        try:
-            result = method(*upcasted_args, **upcasted_kwargs)
-        except TypeError as e:
-            if "No constructor defined" in str(e):
-                # these are classes with no constructor so we will store a dummy None
-                # the remaining static methods should still be available on the Pointer
-                result = None
-            else:
-                raise e
+        result = method(*upcasted_args, **upcasted_kwargs)
 
         # TODO: replace with proper tuple support
         if type(result) is tuple:

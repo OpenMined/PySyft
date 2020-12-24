@@ -2,77 +2,89 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 # third party
 from pydp.algorithms.laplacian import BoundedMean
+from pydp.algorithms.laplacian import BoundedStandardDeviation
+from pydp.algorithms.laplacian import BoundedSum
+from pydp.algorithms.laplacian import BoundedVariance
+from pydp.algorithms.laplacian import Count
+from pydp.algorithms.laplacian import Max
+from pydp.algorithms.laplacian import Median
+from pydp.algorithms.laplacian import Min
+from pydp.algorithms.laplacian import Percentile
+import pydp
 
 # syft relative
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
 from ...ast.globals import Globals
-from ...ast.klass import Class
-from ...ast.module import Module
+from ..misc.union import UnionGenerator
+
+LIB_NAME = "pydp"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
-def get_parent(path: str, root: TypeAny) -> Module:
-    parent = root
-    for step in path.split(".")[:-1]:
-        parent = parent.attrs[step]
-    return parent
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    dp_ast = create_ast()
+    ast.add_attr(attr_name=LIB_NAME, attr=dp_ast.attrs[LIB_NAME])
 
 
-def add_modules(ast: Globals, modules: TypeList[str]) -> None:
-    for module in modules:
-        parent = get_parent(module, ast)
-        attr_name = module.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Module(
-                attr_name,
-                module,
-                None,
-                return_type_name="",
-            ),
-        )
-
-
-def add_classes(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-    for path, return_type, ref in paths:
-        parent = get_parent(path, ast)
-        attr_name = path.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Class(
-                attr_name,
-                path,
-                ref,
-                return_type_name=return_type,
-            ),
-        )
-
-
-def add_methods(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-    for path, return_type, _ in paths:
-        parent = get_parent(path, ast)
-        path_list = path.split(".")
-        parent.add_path(
-            path=path_list, index=len(path_list) - 1, return_type_name=return_type
-        )
-
-
-def create_pydp_ast() -> Globals:
+def create_ast() -> Globals:
     ast = Globals()
 
-    modules = [
-        "pydp",
-        "pydp.algorithms",
-        "pydp.algorithms.laplacian",
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("pydp", pydp),
+        ("pydp.algorithms", pydp.algorithms),
+        ("pydp.algorithms.laplacian", pydp.algorithms.laplacian),
     ]
-    classes = [
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
             "pydp.algorithms.laplacian.BoundedMean",
             "pydp.algorithms.laplacian.BoundedMean",
             BoundedMean,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum",
+            "pydp.algorithms.laplacian.BoundedSum",
+            BoundedSum,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation",
+            "pydp.algorithms.laplacian.BoundedStandardDeviation",
+            BoundedStandardDeviation,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance",
+            "pydp.algorithms.laplacian.BoundedVariance",
+            BoundedVariance,
+        ),
+        (
+            "pydp.algorithms.laplacian.Min",
+            "pydp.algorithms.laplacian.Min",
+            Min,
+        ),
+        (
+            "pydp.algorithms.laplacian.Max",
+            "pydp.algorithms.laplacian.Max",
+            Max,
+        ),
+        (
+            "pydp.algorithms.laplacian.Median",
+            "pydp.algorithms.laplacian.Median",
+            Median,
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile",
+            "pydp.algorithms.laplacian.Percentile",
+            Percentile,
+        ),
+        (
+            "pydp.algorithms.laplacian.Count",
+            "pydp.algorithms.laplacian.Count",
+            Count,
         ),
     ]
 
@@ -80,7 +92,254 @@ def create_pydp_ast() -> Globals:
         (
             "pydp.algorithms.laplacian.BoundedMean.quick_result",
             "syft.lib.python.Float",
-            BoundedMean.quick_result,
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedMean.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedSum.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedStandardDeviation.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.BoundedVariance.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.Min.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.Max.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.Median.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.Percentile.noise_confidence_interval",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.quick_result",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.add_entries",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.add_entry",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.privacy_budget_left",
+            "syft.lib.python.Float",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.reset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.result",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
+        ),
+        (
+            "pydp.algorithms.laplacian.Count.noise_confidence_interval",
+            "syft.lib.python.Float",
         ),
     ]
 
