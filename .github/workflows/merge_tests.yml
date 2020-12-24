@@ -121,6 +121,11 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
+      - name: Install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          pip uninstall pytest-benchmark
+
       - name: Run all tests
         run: |
           pytest -m 'all' --cov-fail-under 80 -n auto
