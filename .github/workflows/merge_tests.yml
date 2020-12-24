@@ -116,8 +116,11 @@ jobs:
             pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
           }
 
-      - name: Run all tests
+      - name: Install packages
         run: |
           pip install -r requirements.txt
           pip install -e .
+
+      - name: Run all tests
+        run: |
           pytest -m 'all' --cov-fail-under 80 -n auto
