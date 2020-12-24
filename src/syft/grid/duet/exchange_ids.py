@@ -101,7 +101,14 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
         print("♫♫♫ > ...waiting for partner to connect...")
 
 
+def get_loopback_path() -> str:
+    loopback_file = "duet_loopback.json"
+    return str(Path(tempfile.gettempdir()) / loopback_file)
+
+
 class OpenGridTokenFileExchanger(DuetCredentialExchanger):
+    file_path = get_loopback_path()
+
     def __init__(
         self,
         *args: TypeTuple[TypeAny, ...],
@@ -111,8 +118,6 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
         super().__init__()
         if file_path is not None:
             self.file_path = file_path
-        else:
-            self.file_path = OpenGridTokenFileExchanger.get_loopback_path()
 
     def run(self, credential: str) -> str:
         self.credential = credential
@@ -120,12 +125,6 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
             return self._client_exchange(credential=self.credential)
         else:
             return self._server_exchange(credential=self.credential)
-
-    # for local debugging
-    @staticmethod
-    def get_loopback_path() -> str:
-        loopback_file = "duet_loopback.json"
-        return str(Path(tempfile.gettempdir()) / loopback_file)
 
     def _server_exchange(self, credential: str) -> str:
         print()
