@@ -258,14 +258,13 @@ def join_duet(
 
     if loopback:
         credential_exchanger = OpenGridTokenFileExchanger()
-        credential_exchanger.set_role(join=True)
     else:
-        credential_exchanger.set_role(join=True).run(credential=target_id)
+        # we have target_id so we set it using set_responder_id
+        credential_exchanger.set_responder_id(target_id)
 
-    if target_id != "":
-        credential_exchanger.set_responder_id(credential=target_id)
-
-    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
+    target_id = credential_exchanger.set_role(join=True).run(
+        credential=signaling_client.duet_id
+    )
 
     duet = WebRTCDuet(
         node=my_domain,
