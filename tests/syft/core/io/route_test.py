@@ -61,3 +61,18 @@ def test_broadcast_route_init() -> None:
 
     assert b_route.schema.destination is destination
     assert b_route.connection is connection
+
+
+# --------------------- CLASS & PROPERTY METHODS ---------------------
+
+
+def test_route_icon_property_method() -> None:
+    """Test Route.icon property method returns the correct icon."""
+    route = Route(schema=RouteSchema(SpecificLocation()))
+    assert route.icon == "🛣️ "
+
+
+def test_route_pprint_property_method() -> None:
+    """Test Route.pprint property method returns the correct icon."""
+    route = Route(schema=RouteSchema(SpecificLocation()))
+    assert route.pprint == "🛣️  (Route)"
