@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608537894819,
+  "lastUpdate": 1608773614340,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -718,6 +718,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0002732862296417297",
             "extra": "mean: 927.7252316297627 usec\nrounds: 626"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kangnahua@gmail.com",
+            "name": "Nahua",
+            "username": "nahuakang"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "866f401b3327f98f7b3b764d14c2a9af3afa80c4",
+          "message": "Test Coverage: Improve test coverage for syft.core.io.address (#4942)\n\n* Create helper methods and re-implement test init without arguments\r\n\r\n* Add unit tests for address icon property method\r\n\r\n* Add unit tests for address pprint method\r\n\r\n* Add unit test for address property method\r\n\r\n* Add unit test for address network getter/setter; minor refactor\r\n\r\n* Add unit test for address network id method\r\n\r\n* Add unit test for domain and domain_id\r\n\r\n* Add unit test for device and device_id\r\n\r\n* Add unit test for vm and vm_id\r\n\r\n* Add unit test for target_id method\r\n\r\n* Add unit test for target_emoji method\r\n\r\n* Move test for target id to class method section; add tests for addressables\r\n\r\n* Comply with flynt\r\n\r\n* Comply with black\r\n\r\n* Address code review comments on unit test\r\n\r\n* Remove addressable method due to lack of usage",
+          "timestamp": "2020-12-24T11:31:08+10:00",
+          "tree_id": "9b380e0e5348eb9ada5c985dca563b49fd25ae6b",
+          "url": "https://github.com/OpenMined/PySyft/commit/866f401b3327f98f7b3b764d14c2a9af3afa80c4"
+        },
+        "date": 1608773613705,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1141.8813504748998,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00008932192981187414",
+            "extra": "mean: 875.7477294677836 usec\nrounds: 621"
           }
         ]
       }
