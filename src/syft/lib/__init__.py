@@ -73,7 +73,6 @@ def create_lib_ast() -> Globals:
 
     torchvision_ast = create_torchvision_ast()
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     misc_ast = getattr(getattr(create_union_ast(lib_ast), "syft"), "lib")
