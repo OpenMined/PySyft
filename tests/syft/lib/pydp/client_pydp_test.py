@@ -1,7 +1,11 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.vendor(lib="pydp")
 def test_pydp() -> None:
     sy.load_lib("pydp")
     bob = sy.VirtualMachine(name="Bob")
@@ -17,6 +21,7 @@ def test_pydp() -> None:
     assert 22 < res < 35
 
 
+@pytest.mark.vendor(lib="pydp")
 def test_pydp_functions() -> None:
     sy.load_lib("pydp")
     bob = sy.VirtualMachine(name="Bob")
