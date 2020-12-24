@@ -3,6 +3,7 @@ from typing import Callable
 from typing import Union
 
 # third party
+import pytest
 from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
 
@@ -17,6 +18,7 @@ from syft.core.io.route import Route
 from syft.core.io.route import RouteSchema
 from syft.core.io.route import SoloRoute
 from syft.core.io.location.specific import SpecificLocation
+from syft.core.io.virtual import VirtualClientConnection
 from syft.core.node.common.node import Node
 from syft.grid.connections.http_connection import HTTPConnection
 from syft.grid.connections.webrtc import WebRTCConnection
@@ -77,7 +79,7 @@ def test_route_init() -> None:
     rschema = RouteSchema(SpecificLocation())
     route = Route(schema=rschema)
 
-    assert route.schema is rschema  # Cannot use equality
+    assert route.schema is rschema  # Cannot use __eq__
     assert isinstance(route.stops, list)
 
 
@@ -157,7 +159,28 @@ def test_solo_route_send_eventual_msg_without_reply() -> None:
 #     h_solo = SoloRoute(destination=destination, connection=connection)
 #     msg = _construct_dummy_message(SignedImmediateSyftMessageWithReply)
 #
+#     ret = h_solo.send_immediate_msg_with_reply(msg)
 #     assert isinstance(
-#         h_solo.send_immediate_msg_with_reply(msg),
+#         ret,
 #         SignedImmediateSyftMessageWithoutReply,
 #     )
+
+
+# --------------------- SERDE ---------------------
+
+
+def test_solo_route_default_serialization_and_deserialization() -> None:
+    """
+    Placeholder unit test for SoloRoute.to_proto.
+    ClientConnection and BidirectionalConnection do not implement to_proto yet.
+    """
+
+    destination = SpecificLocation()
+    connection = HTTPConnection(url="https://opengrid.openmined.org/")
+    h_solo = SoloRoute(destination=destination, connection=connection)
+
+    with pytest.raises(NotImplementedError):
+        blob = h_solo._object2proto()
+        deserialized_solo = SoloRoute._proto2object(proto=blob)
+        assert h_solo == deserialized_solo
+        assert isinstance(deserialized_solo.connection, VirtualClientConnection)
