@@ -51,7 +51,6 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 update_ast(ast=lib_ast)
 
                 for _, client in lib_ast.registered_clients.items():
-                    print("calling registered client", client.name, client.id)
                     update_ast(ast=client)
 
                 # cache the constructor for future created clients
