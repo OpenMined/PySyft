@@ -141,7 +141,7 @@ master_doc = "index"
 project = "syft"
 copyright = "2020, OpenMined Core Contributors"
 
-# The version info for the project you're documenting, acts as replacement for
+# The version info for the project you're documenting, acts as a replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
@@ -160,11 +160,11 @@ release = ""  # Is set by calling `setup.py docs`
 # Else, today_fmt is used as the format for a strftime call.
 # today_fmt = '%B %d, %Y'
 
-# List of patterns, relative to source directory, that match files and
+# List of patterns, relative to the source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build"]
 
-# The reST default role (used for this markup: `text`) to use for all documents.
+# The rest default role (used for this markup: `text`) to use for all documents.
 # default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -174,7 +174,7 @@ exclude_patterns = ["_build"]
 # unit titles (such as .. function::).
 # add_module_names = True
 
-# If true, sectionauthor and moduleauthor directives will be shown in the
+# If true, section_author and module_author directives will be shown in the
 # output. They are ignored by default.
 # show_authors = False
 
@@ -222,7 +222,7 @@ else:
 # of the sidebar.
 # html_logo = ""
 
-# The name of an image file (within the static path) to use as favicon of the
+# The name of an image file (within the static path) to use as the favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 # html_favicon = None

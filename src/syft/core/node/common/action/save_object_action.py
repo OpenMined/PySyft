@@ -57,7 +57,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 if hasattr(self.obj, "description")
                 else ""
             ),
-            search_permissions={VerifyAll(): None}
+            search_permissions={VerifyAll: None}
             if self.anyone_can_search_for_this
             else {},
             read_permissions={
@@ -72,7 +72,13 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
     def _object2proto(self) -> SaveObjectAction_PB:
 
         id_at_location = self.id_at_location.serialize()
-        obj_ob = self.obj.serialize()  # type: ignore
+        # TODO: rethink this and perhaps dunder __sy prefix all our attached methods
+        serialize_method = getattr(self.obj, "sy_serialize", None)
+        if serialize_method is None:
+            serialize_method = getattr(self.obj, "serialize", None)
+        if serialize_method is None:
+            raise Exception(f"{type(self.obj)} has no .serialize() method")
+        obj_ob = serialize_method()
         addr = self.address.serialize()
 
         return SaveObjectAction_PB(

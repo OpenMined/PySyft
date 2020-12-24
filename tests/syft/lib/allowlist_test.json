@@ -2143,7 +2143,7 @@
       "item": {
         "profile": "tensor_method_noinput",
         "tensors": ["tensor1_1element"],
-        "skip": [{ "lte_version": "1.7.0", "reason": "untested" }]
+        "return_type": "syft.proxy.syft.lib.misc.union.BoolFloatIntUnionPointer"
       },
       "__getitem__": {
         "profile": "default",
@@ -6192,8 +6192,8 @@
       },
       "stride": {
         "profile": "default",
-        "inputs": [null],
-        "return_type": "syft.lib.python.List"
+        "inputs": [null, 0],
+        "return_type": "syft.proxy.syft.lib.misc.union.IntListUnionPointer"
       },
       "istft": {
         "profile": "default",
@@ -6217,6 +6217,42 @@
           {
             "lte_version": "1.5.1",
             "reason": "added_feature"
+          }
+        ]
+      },
+      "median": {
+        "profile": "default",
+        "inputs": [null, 0],
+        "return_type": "syft.proxy.syft.lib.misc.union.BoolFloatIntValuesIndicesUnionPointer",
+        "not_available": [
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "min": {
+        "profile": "default",
+        "inputs": [null, 0],
+        "return_type": "syft.proxy.syft.lib.misc.union.BoolFloatIntValuesIndicesUnionPointer",
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          }
+        ]
+      },
+      "max": {
+        "profile": "default",
+        "inputs": [null, 0],
+        "return_type": "syft.proxy.syft.lib.misc.union.BoolFloatIntValuesIndicesUnionPointer",
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0",
+            "reason": "no_cpu"
           }
         ]
       }

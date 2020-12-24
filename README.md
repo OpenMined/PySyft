@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/master/docs/img/logo_big.png" alt="PySyft" width="200"></a>
+  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_big.png" alt="PySyft" width="200"></a>
   <br>
   A library for computing on data<br /> you do not own and cannot see
   <br>
@@ -19,7 +19,10 @@ and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_enc
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
-_**Important note about PySyft 0.2.x:** For those looking for the PySyft 0.2.x codebase, it's since been branched off. [You can find it here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. If you're getting started with PySyft for the first time, please ignore this message and read on!_
+## FAQ 0.2.x ➡️ 0.3.x
+We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to the change from 0.2.x to 0.3.x+ [here](docs/FAQ_0.2.x.md).
+
+_**Important note about PySyft 0.2.x:** The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. If you're getting started with PySyft for the first time, please ignore this message and read on!_
 
 ## PySyft in Detail
 
@@ -28,7 +31,7 @@ A more detailed explanation of PySyft can be found in the
 
 PySyft has also been explained in videos on YouTube:
  - [PriCon Sep 2020 Duet Demo](https://www.youtube.com/watch?v=DppXfA6C8L8&ab_channel=OpenMined)
- - [Introduction to Privacy Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
+ - [Introduction to Privacy-Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
  - [Differential Privacy & Federated Learning explained using PySyft by Jordan Harrod](https://www.youtube.com/watch?v=MOcTGM_UteM)
 
@@ -70,7 +73,7 @@ This will auto-install PyTorch and other dependencies as required, to run the
 examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 
 ## Documentation
-Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
+The latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
 
 ## Duet Examples
 
@@ -83,7 +86,7 @@ $ jupyter notebook
 
 ## WebRTC Signaling Server
 To facilitate peer-to-peer connections through firewalls we utilise WebRTC and a
-signaling server. After connection no traffic is sent to this server.
+signaling server. After connection, no traffic is sent to this server.
 
 If you want to run your own signaling server simply run the command:
 ```
@@ -106,7 +109,7 @@ These tutorials cover how to operate common network types over the Duet API.
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
-Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
+Also, join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
 The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
@@ -130,7 +133,7 @@ This software is in early beta. Use at your own risk.
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_large)
 
 ## Description
-Most software libraries let you compute over information you own and see inside of
+Most software libraries let you compute over the information you own and see inside of
 machines you control. However, this means that you cannot compute on information without
 first obtaining (at least partial) ownership of that information. It also means that you
 cannot compute using machines without first obtaining control over those machines.
@@ -163,7 +166,7 @@ over a variety of runtimes:
 However, the Syft ecosystem only focuses on consistent object
 serialization/deserialization, core abstractions, and algorithm design/execution across
 these languages. These libraries alone will not connect you with data in the real world.
-The Syft ecosystem is supported by the Grid ecosystem, which focuses on deployment,
+The Syft ecosystem is supported by the Grid ecosystem, which focuses on the deployment,
 scalability, and other additional concerns around running real-world systems to compute
 over and process data (such as data compliance web applications).
 
@@ -172,7 +175,7 @@ Grid is the platform which lets you deploy them within a real institution
 (or on the open internet, but we don't yet recommend this). The Grid ecosystem includes:
 
 - GridNetwork - think of this like DNS for private data.
-  It helps you find remote data assets so that you can compute with them.
+  It helps you find remote data assets so that you can compute on them.
 - PyGrid - This is the gateway to an organization's data, responsible for permissions,
   load balancing, and governance.
 - GridNode - This is an individual node within an organization's data center,
@@ -186,7 +189,7 @@ If you would like to become a user of PySyft, please progress to our User Docume
 ## Want to Develop PySyft?
 If you would like to become a developer of PySyft, please see our
 [Contributor Documentation](CONTRIBUTING.md).
-This documentation will help you setup your development environment, give you a roadmap
+This documentation will help you set up your development environment, give you a roadmap
 for learning the codebase, and help you find your first project to contribute.
 
 ## Note

@@ -30,17 +30,24 @@ parser.add_argument(
     help="number of epochs to train (default: 10)",
 )
 parser.add_argument(
-    "--no-cuda", action="store_true", default=False, help="disables CUDA training"
+    "--no-cuda",
+    action="store_true",
+    default=False,
+    help="disables CUDA training (default: False)"
 )
 parser.add_argument(
-    "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)"
+    "--seed",
+    type=int,
+    default=1,
+    metavar="S",
+    help="random seed (default: 1)"
 )
 parser.add_argument(
     "--log-interval",
     type=int,
     default=10,
     metavar="N",
-    help="how many batches to wait before logging training status",
+    help="how many batches to wait before logging training status (default: 10)",
 )
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()

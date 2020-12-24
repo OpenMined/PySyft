@@ -1,10 +1,13 @@
 # stdlib
+from typing import Any
 from typing import Callable as CallableT
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
 # syft relative
+from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 from .util import unsplit
@@ -13,7 +16,9 @@ from .util import unsplit
 class Globals(Module):
 
     _copy: Optional["copyType"]
-    """The collection of frameworks held in a global namespace"""
+    registered_clients: Dict[UID, Any] = {}
+    loaded_lib_constructors: Dict[str, CallableT] = {}
+    """The collection of frameworks held in the global namespace"""
 
     def __init__(self) -> None:
         super().__init__("globals")
@@ -56,8 +61,8 @@ class Globals(Module):
                 )
             else:
                 raise Exception(
-                    "You must pass in a framework object the first time you add method "
-                    "within a framework."
+                    "You must pass in a framework object, the first time you add method \
+                    within the framework."
                 )
 
         attr = self.attrs[framework_name]
@@ -70,6 +75,14 @@ class Globals(Module):
         if self._copy is not None:
             return self._copy()
         return None
+
+    def register_updates(self, client: Any) -> None:
+        # any previously loaded libs need to be applied
+        for _, update_ast in self.loaded_lib_constructors.items():
+            update_ast(ast=client)
+
+        # make sure to get any future updates
+        self.registered_clients[client.id] = client
 
 
 copyType = CallableT[[], Globals]

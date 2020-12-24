@@ -1,11 +1,11 @@
-# Word-level language modeling RNN
+# Word-Level Language Modeling RNN
 
-This example trains a multi-layer RNN (Elman, GRU, or LSTM) on a language modeling task.
+This example trains a multi-layer RNN (Elman, GRU, or LSTM) on a language modelling task.
 By default, the training script uses the Wikitext-2 dataset, provided.
 The trained model can then be used by the generate script to generate new text.
 
 ```bash
-python main.py --cuda --epochs 6           # Train a LSTM on Wikitext-2 with CUDA
+python main.py --cuda --epochs 6           # Train an LSTM on Wikitext-2 with CUDA
 python main.py --cuda --epochs 6 --tied    # Train a tied LSTM on Wikitext-2 with CUDA
 python main.py --cuda --epochs 6 --model Transformer --lr 5
                                            # Train a Transformer model on Wikitext-2 with CUDA

@@ -1,1 +1,1 @@
-# Reinforcement learning training example
+# Reinforcement Learning Training Example
