@@ -13,21 +13,45 @@ from .bcolors import bcolors
 
 class DuetCredentialExchanger:
     def __init__(self, *args: TypeTuple[TypeAny, ...], **kwargs: TypeAny) -> None:
-        pass
+        self.join = False
 
-    def run(self, *args: TypeTuple[TypeAny, ...], **kwargs: TypeAny) -> TypeAny:
+    def set_role(self, join: bool = False) -> "DuetCredentialExchanger":
+        self.join = join
+        return self
+
+    def set_responder_id(self, credential: TypeAny) -> "DuetCredentialExchanger":
+        self.responder_id = credential
+        return self
+
+    def run(self, credential: str) -> str:
         raise NotImplementedError
 
 
-class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
-    def __init__(self, credential: str, join: bool = False, **kwargs: TypeAny) -> None:
-        self.credential = credential
-        self.join = join
+# class AriesCredentialExchanger(DuetCredentialExchanger):
+#     def __init__(self, agent: TypeAny) -> None:
+#         super().__init__()
+#         self.agent = agent
 
-    def run(self, *args: TypeTuple[TypeAny, ...], **kwargs: TypeAny) -> str:
+#     def run(
+#         self,
+#         credential: str,
+#     ) -> str:
+#         self.requester_id = credential
+#         self.agent.joiner(self.join)
+#         self.agent.send(self.requester_id)
+#         while True:
+#             if self.agent.has_response():
+#                 self.responder_id = self.agent.get_responder_id()
+
+#         return self.responder_id
+
+
+class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
+    def run(self, credential: str) -> str:
+        self.credential = credential
         if self.join:
             self._client_exchange(credential=self.credential)
-            return str(kwargs["server_id"])
+            return self.responder_id
         else:
             return self._server_exchange(credential=self.credential)
 
@@ -80,19 +104,18 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
 class OpenGridTokenFileExchanger(DuetCredentialExchanger):
     def __init__(
         self,
-        credential: str,
-        join: bool = False,
+        *args: TypeTuple[TypeAny, ...],
         file_path: TypeOptional[str] = None,
         **kwargs: TypeAny
-    ):
-        self.credential = credential
-        self.join = join
+    ) -> None:
+        super().__init__()
         if file_path is not None:
             self.file_path = file_path
         else:
             self.file_path = OpenGridTokenFileExchanger.get_loopback_path()
 
-    def run(self, *args: TypeTuple[TypeAny, ...], **kwargs: TypeAny) -> str:
+    def run(self, credential: str) -> str:
+        self.credential = credential
         if self.join:
             return self._client_exchange(credential=self.credential)
         else:
