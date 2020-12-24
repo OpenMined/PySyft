@@ -77,6 +77,7 @@ from syft.grid.duet import launch_duet  # noqa: F401
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
+from syft.grid.duet import bcolors  # noqa: F401
 
 # syft relative
 # Package Imports
@@ -93,7 +94,6 @@ finally:
     del get_distribution, DistributionNotFound
 
 sys.path.append(str(Path(__file__)))
-
 
 # LIBRARY CONFIG
 
