@@ -80,8 +80,17 @@ jobs:
           then
               TORCHVISION_VERSION="0.8.1"
           fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng
+          fi
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
@@ -98,6 +107,14 @@ jobs:
               $env:TORCHVISION_VERSION="0.8.1"
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+          }
 
       - name: Run all tests
         run: |
