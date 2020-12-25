@@ -1,3 +1,9 @@
+# stdlib
+from typing import Any as TypeAny
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
+
 # third party
 import openmined_psi
 
@@ -8,13 +14,21 @@ from ...ast import add_modules
 from ...ast.globals import Globals
 from ..python import GenerateProtobufWrapper
 
+LIB_NAME = "openmined_psi"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
-def create_psi_ast() -> Globals:
+
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    psi_ast = create_ast()
+    ast.add_attr(attr_name=LIB_NAME, attr=psi_ast.attrs[LIB_NAME])
+
+
+def create_ast() -> Globals:
     ast = Globals()
 
-    modules = ["openmined_psi"]
+    modules: TypeList[TypeTuple[str, TypeAny]] = [("openmined_psi", openmined_psi)]
 
-    classes = [
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("openmined_psi.client", "openmined_psi.client", openmined_psi.client),
         ("openmined_psi.server", "openmined_psi.server", openmined_psi.server),
         (
