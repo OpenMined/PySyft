@@ -15,6 +15,7 @@ from ...ast.globals import Globals
 from ..misc.union import UnionGenerator
 from .ckks_vector import CKKSVector  # noqa: 401
 from .context import ContextWrapper  # noqa: 401
+from .scheme_type import GenerateEnumTypeWrapper
 
 LIB_NAME = "tenseal"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -37,6 +38,8 @@ def create_ast() -> Globals:
         ("tenseal.SCHEME_TYPE", "tenseal.SCHEME_TYPE", ts.SCHEME_TYPE),
         ("tenseal.CKKSVector", "tenseal.CKKSVector", ts.CKKSVector),
     ]
+
+    GenerateEnumTypeWrapper(enum_type = ts.SCHEME_TYPE, import_path = "tenseal.SCHEME_TYPE")
 
     methods = [
         ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
