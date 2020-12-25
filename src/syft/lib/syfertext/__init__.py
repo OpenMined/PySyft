@@ -5,6 +5,7 @@ from typing import Union
 # third party
 from packaging import version
 import syfertext
+from . import default_tokenizer
 
 # syft relative
 from ...ast.globals import Globals

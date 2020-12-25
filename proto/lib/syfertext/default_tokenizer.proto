@@ -11,7 +11,7 @@ message ExceptionsDict {
 */
 
 message DefaultTokenizer {
-    syft.core.common.UID uuid = 1;
+    bytes uuid = 1;
     repeated string prefixes = 2;
     repeated string suffixes = 3;
     repeated string infixes = 4;

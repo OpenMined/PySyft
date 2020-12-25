@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n+proto/lib/syfertext/default_tokenizer.proto\x12\x12syft.lib.syfertext\x1a%proto/core/common/common_object.proto"l\n\x10\x44\x65\x66\x61ultTokenizer\x12#\n\x04uuid\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08prefixes\x18\x02 \x03(\t\x12\x10\n\x08suffixes\x18\x03 \x03(\t\x12\x0f\n\x07infixes\x18\x04 \x03(\tb\x06proto3',
+    serialized_pb=b'\n+proto/lib/syfertext/default_tokenizer.proto\x12\x12syft.lib.syfertext\x1a%proto/core/common/common_object.proto"U\n\x10\x44\x65\x66\x61ultTokenizer\x12\x0c\n\x04uuid\x18\x01 \x01(\x0c\x12\x10\n\x08prefixes\x18\x02 \x03(\t\x12\x10\n\x08suffixes\x18\x03 \x03(\t\x12\x0f\n\x07infixes\x18\x04 \x03(\tb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -43,11 +43,11 @@ _DEFAULTTOKENIZER = _descriptor.Descriptor(
             full_name="syft.lib.syfertext.DefaultTokenizer.uuid",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -124,12 +124,9 @@ _DEFAULTTOKENIZER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=106,
-    serialized_end=214,
+    serialized_end=191,
 )
 
-_DEFAULTTOKENIZER.fields_by_name[
-    "uuid"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 DESCRIPTOR.message_types_by_name["DefaultTokenizer"] = _DEFAULTTOKENIZER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
