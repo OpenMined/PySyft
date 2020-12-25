@@ -1,15 +1,18 @@
 # stdlib
 from typing import List
 from typing import Optional
+from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syfertext.tokenizers.default_tokenizer import DefaultTokenizer
+from syfertext.tokenizers import DefaultTokenizer
 
 # syft relative
+from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...proto.lib.syfertext.default_tokenizer_pb2 import DefaultTokenizer as DefaultTokenizer_PB
-from ..common.uid import UID
+from ...util import aggressive_set_attr
+
 
 class DefaultTokenizerWrapper(StorableObject):
 
@@ -17,8 +20,8 @@ class DefaultTokenizerWrapper(StorableObject):
 
         super().__init__(
             data = value,
-            id = getattr(value, 'uuid'),
-            tags = getattr(value, 'tags', {}),
+            id = getattr(value, 'id', UID()),
+            tags = getattr(value, 'tags', []),
             description = getattr(value, 'description', '')
         )
 
@@ -28,28 +31,35 @@ class DefaultTokenizerWrapper(StorableObject):
 
         default_tokenizer_pb = DefaultTokenizer_PB()
 
-        default_tokenizer.uuid = self.value.uuid.bytes
-        default_tokenizer.prefixes.extend(self.value.prefixes)
-        default_tokenizer.suffixes.extend(self.value.suffixes)
-        default_tokenizer.infixes.extend(self.value.infixes)        
+        default_tokenizer_pb.uuid = self.id.value.bytes
+        default_tokenizer_pb.prefixes.extend(self.value.prefixes)
+        default_tokenizer_pb.suffixes.extend(self.value.suffixes)
+        default_tokenizer_pb.infixes.extend(self.value.infixes)        
 
 
+        return default_tokenizer_pb
 
     @staticmethod
     def _data_proto2object(proto: DefaultTokenizer_PB) -> DefaultTokenizer:
-        uuid = UUID(bytes=proto.uuid)
+
         prefixes = proto.prefixes
         suffixes = proto.suffixes
         infixes = proto.infixes
 
-        default_tokenizer = DefaultTokenizer(uuid = uuid,
-                                             prefixes = prefixes,
+        default_tokenizer = DefaultTokenizer(prefixes = prefixes,
                                              suffixes = suffixes,
                                              infixes = infixes)
-
         
+        # Create a uuid.UUID object and assign it as an attribute to the tokenizer
+        # The reason I do not set the id directly in the constructor is because I
+        # do not want the API to expose the ID which is not something the end user
+        # should worry about.
+        uuid = UUID(bytes = proto.uuid)
+        default_tokenizer.id = UID(value = uuid)
 
+        return default_tokenizer
 
+    
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
         return DefaultTokenizer_PB
@@ -57,3 +67,23 @@ class DefaultTokenizerWrapper(StorableObject):
     @staticmethod
     def get_wrapped_type() -> type:
         return DefaultTokenizer
+
+    @staticmethod
+    def construct_new_object(
+            id: UID,
+            data: StorableObject,
+            description: Optional[str],
+            tags: Optional[List[str]],
+    ) -> StorableObject:
+        
+        data.id = id
+        data.tags = tags
+        data.description = description
+        
+        return data
+    
+aggressive_set_attr(
+    obj = DefaultTokenizer,
+    name = 'serializable_wrapper_type',
+    attr = DefaultTokenizerWrapper
+)
