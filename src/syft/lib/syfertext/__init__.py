@@ -1,11 +1,6 @@
 # stdlib
-from typing import Dict
-from typing import Union
-
-# third party
-from packaging import version
-import syfertext
-from . import default_tokenizer
+from typing import Union as TypeUnion
+from typing import Any as TypeAny
 
 # syft relative
 from ...ast.globals import Globals
@@ -14,57 +9,40 @@ from ...ast import add_methods
 from ...ast import add_modules
 
 
-# SyferText Version
-SYFERTEXT_VERSION = version.parse(syfertext.__version__)
+# Torch is a dependency for SyferText
+PACKAGE_SUPPORT = {"lib": "syfertext", "torch": {"min_version": "1.6.0"}}
 
-
-def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
-
-    if isinstance(support_dict, str):
-        return support_dict
-    
-    else:
-        return support_dict['return_type']
-
-
-def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
-    
-    if isinstance(support_dict, str):
-        return True
-    
-    else:
-        
-        # if we are on either side of the min or max versions we don't support this operation
-        if ("min_version" in support_dict
-            and SYFERTEXT_VERSION < version.parse(support_dict["min_version"])
-        ):
-            return False
-        
-        if ("max_version" in support_dict
-            and SYFERTEXT_VERSION > version.parse(support_dict["max_version"])
-        ):
-            return False
-        
-        return True
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    syfertext_ast = create_ast()
+    ast.add_attr(attr_name="syfertext", attr=syfertext_ast.attrs["syfertext"])
 
     
-def create_syfertext_ast() -> Globals:
+def create_ast() -> Globals:
 
+    import syfertext
+    from . import default_tokenizer
+    
     ast = Globals()
 
 
     # Define which SyferText modules to add to the AST
     modules = ['syfertext',
-               'syfertext.tokenizers']
+               'syfertext.tokenizers'
+    ]
 
     # Define which SyferText classes to add to the AST    
     classes = [
-        ('syfertext.tokenizers.DefaultTokenizer', 'syfertext.tokenizers.DefaultTokenizer', syfertext.tokenizers.DefaultTokenizer)
+        ('syfertext.tokenizers.DefaultTokenizer',
+         'syfertext.tokenizers.DefaultTokenizer',
+          syfertext.tokenizers.DefaultTokenizer
+        ),
     ]
 
     # Define which methods to add to the AST
     methods = [
-        ('syfertext.tokenizers.DefaultTokenizer.__call__', 'syft.lib.python.List')
+        ('syfertext.tokenizers.DefaultTokenizer.__call__',
+         'syft.lib.python.List'
+        ),
     ]
 
 
