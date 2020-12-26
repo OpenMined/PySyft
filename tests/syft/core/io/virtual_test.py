@@ -138,3 +138,43 @@ def test_virtual_server_connection_recv_eventual_msg_without_reply() -> None:
 
     with pytest.raises(NotImplementedError):
         assert server.recv_eventual_msg_without_reply(msg=msg) is None
+
+
+# def test_virtual_client_connection_send_immediate_msg_without_reply() -> None:
+#     """
+#     Test that VirtualClientConnection.send_immediate_msg_without_reply works.
+#     """
+#     node = _gen_node()
+#     server = VirtualServerConnection(node=node)
+#     client = VirtualClientConnection(server=server)
+#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithoutReply)
+#
+#     assert client.send_immediate_msg_without_reply(msg=msg) is None
+#
+#
+# def test_virtual_client_connection_send_immediate_msg_with_reply() -> None:
+#     """
+#     Test that VirtualClientConnection.send_immediate_msg_with_reply works.
+#     """
+#     node = _gen_node()
+#     server = VirtualServerConnection(node=node)
+#     client = VirtualClientConnection(server=server)
+#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
+#
+#     assert isinstance(
+#         client.send_immediate_msg_with_reply(msg=msg),
+#         SignedImmediateSyftMessageWithoutReply
+#     )
+
+
+def test_virtual_client_connection_send_eventual_msg_without_reply() -> None:
+    """
+    Test that VirtualClientConnection.send_eventual_msg_with_reply raises NotImplementedError.
+    """
+    node = _gen_node()
+    server = VirtualServerConnection(node=node)
+    client = VirtualClientConnection(server=server)
+    msg = _gen_dummy_message(SignedEventualSyftMessageWithoutReply)
+
+    with pytest.raises(NotImplementedError):
+        assert client.send_eventual_msg_without_reply(msg=msg) is None
