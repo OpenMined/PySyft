@@ -140,6 +140,10 @@ def obj2pointer_type(obj: object) -> type:
     if fqn.endswith("ProtobufWrapper"):
         fqn = fqn.replace("ProtobufWrapper", "")
 
+    # if its a EnumTypeWrapper we want the original AST type so we can get the Pointer
+    if fqn.endswith("EnumTypeWrapper"):
+        fqn = fqn.replace("EnumTypeWrapper", "")
+
     try:
         ref = syft.lib_ast(fqn, return_callable=True)
     except Exception:
