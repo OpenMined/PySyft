@@ -11,7 +11,7 @@ import time
 # In[2]:
 
 
-from syft.grid.duet.exchange_ids import DuetCredentialExchanger
+from syft.grid.duet.exchange_ids import DuetTokenExchanger
 from typing import Any as TypeAny
 import json
 
@@ -29,8 +29,8 @@ from aries_basic_controller.aries_controller import AriesAgentController
 
 
 
-class AriesCredentialExchanger(DuetCredentialExchanger):
-    def __init__(self, agent_controller: TypeAny) -> None:
+class AriesDuetTokenExchanger(DuetTokenExchanger):
+    def __init__(self, agent_controller: AriesAgentController) -> None:
         super().__init__()
         self.agent_controller = agent_controller
         self.responder_id = None
@@ -41,26 +41,28 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         
     def run(
         self,
-        credential: str,
+        duet_token: str,
     ) -> str:
         self.responder_id = asyncio.Future()
-        self.credential=credential
+        self.duet_token=duet_token
         if self.join:
-            self._client_exchange(duet_token = credential)
+            self._accept_duet_didcomm_invite()
         else: 
-            self._server_exchange(duet_token = credential)
+            self._create_duet_didcomm_invitation()
         loop = asyncio.get_event_loop()
 
-        print("Sending Duet Token", self.duet_didcomm_connection_id, credential)
+        self.await_active(self.duet_didcomm_connection_id)
+
+        print("Sending Duet Token", self.duet_didcomm_connection_id, duet_token)
         if self.is_verified:
             if self.is_verified.result() == True:
                 print("Connection is Verified")
-                loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, credential))
+                loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, duet_token))
             else:
                 print("Proof request not verified")
         else:
             print("No Proof Requested")
-            loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, credential))
+            loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, duet_token))
 
         
         loop.run_until_complete(self.responder_id)
@@ -70,7 +72,7 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
 
         return token
     
-    def _client_exchange(self, duet_token):
+    def _accept_duet_didcomm_invite(self):
         
         while True:
             invite = input("♫♫♫ > Duet Partner's Aries Invitation: ")  # nosec
@@ -84,17 +86,14 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
                 print("    > Error: Invalid invitation. Please try again.")
             break
 
-        
-        print("Waiting for active connection", connection_id)
-        self.await_active(connection_id)
-
+        self.duet_didcomm_connection_id = connection_id
       
         return
 
             
                 
         
-    def _server_exchange(self, duet_token):
+    def _create_duet_didcomm_invitation(self):
         loop = asyncio.get_event_loop()
         response = loop.run_until_complete(self.agent_controller.connections.create_invitation())
         connection_id = response["connection_id"]
@@ -110,18 +109,18 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         print()
         print(invite_message)
         print()
-        print("Waiting for active connection", connection_id)
-        self.await_active(connection_id)
+        self.duet_didcomm_connection_id = connection_id
         return
 
     # Should be converted to asycio Future 
     def await_active(self, connection_id):
+        print("Waiting for active connection", connection_id)
+
         while True:
             loop = asyncio.get_event_loop()
             response = loop.run_until_complete(self.agent_controller.connections.get_connection(connection_id))
             is_ready = "active" == response["state"]
             if is_ready:
-                self.duet_didcomm_connection_id = connection_id
                 print("Connection Active")
                 if self.proof_request:
                     self.is_verified = asyncio.Future()
@@ -208,14 +207,12 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         print("Connection", response)
         return response["connection_id"]
         
-    def create_invitation(self, is_duet: bool = False):
+    def create_invitation(self):
         # Create Invitation
         loop = asyncio.get_event_loop()
         invite = loop.run_until_complete(self.agent_controller.connections.create_invitation())
         connection_id = invite["connection_id"]
         invite_message = json.dumps(invite['invitation'])
-#         print("Connection ID", dataowner_id)
-#         print("Copy Invitation to Data Owner\n")
         return invite_message
 
     def configure_challenge(self, proof_request):
