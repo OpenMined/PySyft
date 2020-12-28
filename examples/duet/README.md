@@ -38,30 +38,38 @@ $ pip install syft
 To connect two Duet sessions, choose one user as the role of Data Owner and the other as the role of Data Scientist. While not necessary, it is usually a good idea to jump on a Video Call with
 screen sharing enabled so you can collaborate better.
 
-### Step 1 - Create a Duet
-The Data Owner can create a duet in 2 lines of code. After running `sy.duet()` or `sy.launch_duet()`
-instructions will be provided as well as a handy code snippet to send to your Data Science partner.
-```python
-import syft as sy
-duet = sy.duet()
-```
-
-### Step 2 - Join a Duet
-Take the code the Data Owner sends you and run it in your own notebook.
-```python
-import syft as sy
-duet = sy.duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-```
-It will give you back a code to send to your Data Owner partner so they can link the sessions.
-
-### Host a Network
+### Step 1 - Join or Host a Network
 The connections are Peer-to-peer but to work around NAT / Firewalls we use WebRTC and STUN.
 This requires an initial connection to our OpenGrid server, however after connection, traffic is only sent directly between you and your Duet partner. If you have issues with the builtin
 session matcher, or simply want to run your own, you can do so with the `syft-network` command:
 ```
 $ syft-network
 ```
-Then simply update your `sy.duet()` commands with the keyword arg: `network_url=http://localhost:5000`
+Then simply update your `sy.duet()` commands with the keyword arg: `network_url=http://0.0.0.0:5000`
+
+### Step 2 - Create a Duet
+The Data Owner can create a duet in 2 lines of code. After running `sy.duet()`
+instructions will be provided as well as a handy code snippet to send to your Data Science partner.
+```python
+import syft as sy
+duet = sy.duet()
+```
+
+if you using the local network, using the code like below
+```python
+import syft as sy
+duet = sy.duet(network_url="http://0.0.0.0:5000")
+```
+
+### Step 3 - Join a Duet
+Take the code the Data Owner sends you and run it in your own notebook.
+```python
+import syft as sy
+# remember to specify the network_url if you using a local network
+duet = sy.duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+```
+It will give you back a code to send to your Data Owner partner so they can link the sessions.
+
 
 ## Quick Start 📖
 ### torch.Tensor
