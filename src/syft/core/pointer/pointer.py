@@ -178,12 +178,10 @@ class Pointer(AbstractPointer):
             # that is what was originally sent in with .send
             return obj.data
 
-        # XTY >>>
         if type(obj).__name__.endswith("EnumTypeWrapper"):
             # for EnumTypeWrapper's we want to actually vend the real enum obj since
             # that is what was originally sent in with .send
             return obj.data
-        # <<< XTY
 
         return obj
 

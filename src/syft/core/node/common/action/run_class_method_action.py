@@ -155,7 +155,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 # if we have a None / SyNone its because the Class cant be constructed
                 result = method(*upcasted_args, **upcasted_kwargs)
             else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                if not callable(method):
+                    result = getattr(resolved_self.data, self.path.split(".")[-1])
+                else:
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
 
         # TODO: replace with proper tuple support
         if type(result) is tuple:

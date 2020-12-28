@@ -88,6 +88,9 @@ class Callable(ast.attribute.Attribute):
                     if type(attr_ref).__name__ in ["getset_descriptor", "_tuplegetter"]:
                         is_property = True
 
+                    if type(attr_ref).__name__ == "property":
+                        is_property = True
+
                     self.attrs[path[index]] = ast.method.Method(
                         name=path[index],
                         path_and_name=unsplit(path[: index + 1]),
