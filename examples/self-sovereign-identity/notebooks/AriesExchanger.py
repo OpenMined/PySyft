@@ -34,26 +34,41 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         super().__init__()
         self.agent_controller = agent_controller
         self.responder_id = None
-        self.register_agent_listeners()
-
+        self.proof_request = None
+        self.is_verified = None
+        self.duet_didcomm_connection_id = None
+        self._register_agent_listeners()
+        
     def run(
         self,
         credential: str,
     ) -> str:
+        self.responder_id = asyncio.Future()
         self.credential=credential
         if self.join:
             self._client_exchange(duet_token = credential)
         else: 
             self._server_exchange(duet_token = credential)
-           
-        while True:
-            time.sleep(2)
-            print("Current Responder ID", self.responder_id)
-            if self.responder_id:
-                break
-                
+        loop = asyncio.get_event_loop()
 
-        return self.responder_id
+        print("Sending Duet Token", self.duet_didcomm_connection_id, credential)
+        if self.is_verified:
+            if self.is_verified.result() == True:
+                print("Connection is Verified")
+                loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, credential))
+            else:
+                print("Proof request not verified")
+        else:
+            print("No Proof Requested")
+            loop.run_until_complete(self.agent_controller.messaging.send_message(self.duet_didcomm_connection_id, credential))
+
+        
+        loop.run_until_complete(self.responder_id)
+        
+        token = self.responder_id.result()
+        print("TOKEN ", token)
+
+        return token
     
     def _client_exchange(self, duet_token):
         
@@ -73,13 +88,7 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         print("Waiting for active connection", connection_id)
         self.await_active(connection_id)
 
-               
-        time.sleep(1)
-
-        print("Sending Duet Token", connection_id, duet_token)
-
-        
-        loop.run_until_complete(self.agent_controller.messaging.send_message(connection_id, duet_token))
+      
         return
 
             
@@ -103,26 +112,40 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         print()
         print("Waiting for active connection", connection_id)
         self.await_active(connection_id)
-
-        time.sleep(1)
-        print("Sending Duet Token", connection_id, duet_token)
-        loop.run_until_complete(self.agent_controller.messaging.send_message(connection_id, duet_token))
         return
 
+    # Should be converted to asycio Future 
     def await_active(self, connection_id):
         while True:
             loop = asyncio.get_event_loop()
             response = loop.run_until_complete(self.agent_controller.connections.get_connection(connection_id))
             is_ready = "active" == response["state"]
             if is_ready:
+                self.duet_didcomm_connection_id = connection_id
                 print("Connection Active")
+                if self.proof_request:
+                    self.is_verified = asyncio.Future()
+                    self.challenge_connection(connection_id)
+                    loop.run_until_complete(self.is_verified)
                 break
             else: 
                 time.sleep(2)
         return
-
     
-    def register_agent_listeners(self):
+    def challenge_connection(self, connection_id):
+        loop = asyncio.get_event_loop()
+        proof_request_web_request = {
+            "connection_id": connection_id,
+            "proof_request": self.proof_request,
+            "trace": False
+        }
+        response = loop.run_until_complete(self.agent_controller.proofs.send_request(proof_request_web_request))
+        print("Challenge")
+        print(response)
+        pres_ex_id = response["presentation_exchange_id"]
+        print(pres_ex_id)
+    
+    def _register_agent_listeners(self):
         print("REGISTER LISTENERS")
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.agent_controller.listen_webhooks())
@@ -165,14 +188,19 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
         pres_ex_id = payload["presentation_exchange_id"]
         state = payload["state"]
         print(f"Role {role}, Exchange {pres_ex_id} in state {state}")
+        loop = asyncio.get_event_loop()
+
+        if state == "presentation_received":
+            verify = loop.run_until_complete(self.agent_controller.proofs.verify_presentation(pres_ex_id))
+            self.is_verified.set_result(verify['state'] == "verified")
         
     # Receive basic messages
     def messages_handler(self, payload):
         print("Handle Duet ID", payload["content"])    
-        self.responder_id = payload["content"]
+        self.responder_id.set_result(payload["content"])
         
     ## Used for other Aries connections. E.g. with an issuer
-    def accept_connection(self, invite):
+    def accept_connection(self, invitation):
         # Receive Invitation
         loop = asyncio.get_event_loop()
         response = loop.run_until_complete(self.agent_controller.connections.accept_connection(invitation))
@@ -189,5 +217,8 @@ class AriesCredentialExchanger(DuetCredentialExchanger):
 #         print("Connection ID", dataowner_id)
 #         print("Copy Invitation to Data Owner\n")
         return invite_message
+
+    def configure_challenge(self, proof_request):
+        self.proof_request = proof_request
 
     
