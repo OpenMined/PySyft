@@ -14,7 +14,7 @@ import requests
 # syft relative
 from ...core.node.domain.domain import Domain
 from .bcolors import bcolors
-from .exchange_ids import DuetCredentialExchanger
+from .exchange_ids import DuetTokenExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
@@ -157,7 +157,7 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
-    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
+    token_exchanger: DuetTokenExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
@@ -194,8 +194,8 @@ def launch_duet(
     my_domain = Domain(name="Launcher", db_path=db_path)
 
     if loopback:
-        credential_exchanger = OpenGridTokenFileExchanger()
-    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
+        token_exchanger = OpenGridTokenFileExchanger()
+    target_id = token_exchanger.run(duet_token=signaling_client.duet_id)
 
     print("♫♫♫ > Connecting...")
 
@@ -221,7 +221,7 @@ def join_duet(
     target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
-    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
+    token_exchanger: DuetTokenExchanger = OpenGridTokenManualInputExchanger(),
 ) -> WebRTCDuet:
     if os.path.isfile(LOGO_URL) and jupyter:
         display(
@@ -257,15 +257,15 @@ def join_duet(
     my_domain = Domain(name="Joiner")
 
     if loopback:
-        credential_exchanger = OpenGridTokenFileExchanger()
-        credential_exchanger.set_role(join=True)
+        token_exchanger = OpenGridTokenFileExchanger()
+        token_exchanger.set_role(join=True)
     else:
-        credential_exchanger.set_role(join=True).run(credential=target_id)
+        token_exchanger.set_role(join=True)
 
-    if target_id != "":
-        credential_exchanger.set_responder_id(credential=target_id)
+        if target_id != "":
+            token_exchanger.set_responder_id(duet_token=target_id)
 
-    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
+        target_id = token_exchanger.run(duet_token=signaling_client.duet_id)
 
     duet = WebRTCDuet(
         node=my_domain,
