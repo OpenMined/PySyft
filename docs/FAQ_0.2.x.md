@@ -30,5 +30,6 @@ Anything more automated or scaleable past p2p will be handled by a separate para
 ## Why am I getting `ModuleNotFoundError`?
 It is because you are using the latest version of PySyft,
 Install PySyft 0.2.9 `pip install syft==0.2.9`. The recent release of the package is a complete rebuild of PySyft.
+If you are pursuing the Udacity Private AI Course, the course uses version `0.1.2a1`, `pip install syft==0.1.2a1`.
 
 
