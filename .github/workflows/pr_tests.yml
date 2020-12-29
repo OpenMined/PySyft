@@ -105,9 +105,14 @@ jobs:
         run: |
           pip install bandit
           bandit -r src -ll
+      - name: Install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        run: |   
+	  &"/scripts/pytorch_install.ps1 ${{ matrix.torch-version }}"
 
-      - name: Install PyTorch
-       run: |   
+      - name: Install PyTorch Linux and Mac
+        if: startsWith(runner.os, 'Windows') != true
+        run: |   
 	  ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
 
       - name: Run normal tests without coverage
