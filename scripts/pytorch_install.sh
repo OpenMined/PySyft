@@ -18,7 +18,6 @@ fi
 pip install torch==${TORCH_VERSION}
 pip install torchvision==${TORCHVISION_VERSION}
 
-fi;
 
 # check for error return codes
 error=0
