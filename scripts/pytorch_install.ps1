@@ -1,16 +1,12 @@
-$TORCH_VERSION = [string]$para1
-if [ $TORCH_VERSION = "1.5.0" ]
-then
-    TORCHVISION_VERSION="0.6.0"
-elif [ $TORCH_VERSION = "1.5.1" ]
-then
-    TORCHVISION_VERSION="0.6.1"
-elif [ $TORCH_VERSION = "1.6.0" ]
-then
-    TORCHVISION_VERSION="0.7"
-elif [ $TORCH_VERSION = "1.7.0" ]
-then
-    TORCHVISION_VERSION="0.8.1"
-fi
-pip install torch==${TORCH_VERSION}
-pip install torchvision==${TORCHVISION_VERSION}
+$TORCH_VERSION = $para1
+If ($TORCH_VERSION -eq "1.5.0") {
+  $TORCHVISION_VERSION="0.6.0"
+} Elseif ( $TORCH_VERSION -eq "1.5.1" ) {
+  $TORCHVISION_VERSION="0.6.1"
+} Elseif ($TORCH_VERSION -eq "1.6.0") {
+  $TORCHVISION_VERSION="0.7"
+} Elseif ($TORCH_VERSION -eq "1.7.0") {
+  $TORCHVISION_VERSION="0.8.1"
+}
+pip install torch==$TORCH_VERSION+cpu torchvision==$TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
