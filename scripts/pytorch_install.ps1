@@ -1,4 +1,5 @@
-$TORCH_VERSION=[string]$para1
+[string]$param1
+[string]$TORCH_VERSION = $param1
 If ($TORCH_VERSION -eq "1.5.0") {
   $TORCHVISION_VERSION="0.6.0"
 } Elseif ( $TORCH_VERSION -eq "1.5.1" ) {
