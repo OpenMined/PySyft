@@ -29,7 +29,7 @@ jobs:
     strategy:
       max-parallel: 216
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
         chunk: [1, 2, 3, 4, 5, 6]
@@ -84,7 +84,7 @@ jobs:
           export TEST_CHUNKS=6
           export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
-          pytest -m torch --cov-fail-under 0 -n auto -p no:benchmark --no-cov
+          pytest -m torch -p no:benchmark --no-cov
 
       - name: Run torch test chunks Windows
         if: startsWith(runner.os, 'Windows')
@@ -92,4 +92,4 @@ jobs:
           $Env:TEST_CHUNKS=6
           $Env:TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $Env:TEST_CHUNK"
-          pytest -m torch --cov-fail-under 0 -n auto -p no:benchmark --no-cov
+          pytest -m torch -p no:benchmark --no-cov
