@@ -2,7 +2,10 @@
 set -e
 TORCH_VERSION=$1
 
-if [ $TORCH_VERSION = "1.5.0" ]
+if [ $TORCH_VERSION = "1.4.0" ]
+then
+    TORCHVISION_VERSION="0.5.0"
+elif [ $TORCH_VERSION = "1.5.0" ]
 then
     TORCHVISION_VERSION="0.6.0"
 elif [ $TORCH_VERSION = "1.5.1" ]
@@ -18,6 +21,19 @@ fi
 pip install torch==${TORCH_VERSION}
 pip install torchvision==${TORCHVISION_VERSION}
 
+# torchcsprng
+if [ $TORCH_VERSION = "1.4.0" ]
+then
+    echo "No torchcsprng"
+elif [ $TORCH_VERSION = "1.5.0" ]
+then
+    echo "No torchcsprng"
+elif [ $TORCH_VERSION = "1.5.1" ]
+then
+    echo "No torchcsprng"
+else
+    pip install torchcsprng==${TORCHCSPRNG_VERSION}
+fi
 
 # check for error return codes
 error=0
