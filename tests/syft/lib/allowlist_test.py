@@ -375,7 +375,7 @@ if TEST_CHUNKS > 1:
     TEST_DATA = TEST_DATA[start_offset:end_offset]
 
 
-@pytest.mark.slow
+@pytest.mark.torch
 @pytest.mark.parametrize(
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,

@@ -33,6 +33,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "vendor: mark test as vendor library")
     config.addinivalue_line("markers", "libs: runs valid vendor tests")
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
+    config.addinivalue_line("markers", "torch: runs torch tests")
 
 
 def pytest_collection_modifyitems(
@@ -69,6 +70,10 @@ def pytest_collection_modifyitems(
             continue
 
         if "benchmark" in item.keywords:
+            continue
+
+        if "torch" in item.keywords:
+            item.add_marker(all_tests)
             continue
 
         item.add_marker(all_tests)
