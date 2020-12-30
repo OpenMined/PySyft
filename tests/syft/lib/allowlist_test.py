@@ -5,6 +5,7 @@ on what expected inputs and return types are provided by the json file.
 # stdlib
 from itertools import product
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -359,6 +360,19 @@ for op in BASIC_OPS:
         elif str(combination) in skipped_combinations:
             support_data["status"] = "skip"
             write_support_result(support_data)
+
+
+# if the environment variables below are set bigger than 1 we will split the TEST_DATA
+# into parts so that these can be parallelized by different test runners or containers
+TEST_CHUNK = int(os.getenv("TEST_CHUNK", 1))
+TEST_CHUNKS = int(os.getenv("TEST_CHUNKS", 1))
+
+# chunk the tests
+if TEST_CHUNKS > 1:
+    chunk_size = math.ceil(len(TEST_DATA) / TEST_CHUNKS)
+    start_offset = (TEST_CHUNK - 1) * chunk_size
+    end_offset = start_offset + chunk_size
+    TEST_DATA = TEST_DATA[start_offset:end_offset]
 
 
 @pytest.mark.slow
