@@ -56,7 +56,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip
+          pip install --upgrade --user pip
 
       - name: Run lint checks
         run: |
@@ -108,7 +108,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip
+          pip install --upgrade --user pip
 
       - name: Scan for security issues
         run: |
@@ -293,7 +293,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip
+          pip install --upgrade --user pip
 
       - name: Run notebook API examples
         run: |
