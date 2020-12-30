@@ -29,7 +29,7 @@ jobs:
     strategy:
       max-parallel: 216
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
         chunk: [1, 2, 3, 4, 5, 6]
@@ -78,7 +78,18 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e .
 
-      - name: Run slow test chunks
+      - name: Run slow test chunks Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
         run: |
-          echo "Running TEST_CHUNK=${{ matrix.chunk }}"
-          TEST_CHUNKS=6 TEST_CHUNK=${{ matrix.chunk }} pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
+          export TEST_CHUNKS=6
+          export TEST_CHUNK=${{ matrix.chunk }}
+          echo "Running $TEST_CHUNK"
+          pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
+
+      - name: Run slow test chunks Windows
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          $Env:TEST_CHUNKS=6
+          $Env:TEST_CHUNK=${{ matrix.chunk }}
+          echo "Running $Env:TEST_CHUNK"
+          pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
