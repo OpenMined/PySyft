@@ -125,7 +125,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast and slow' --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
