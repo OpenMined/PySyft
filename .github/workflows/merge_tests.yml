@@ -62,10 +62,6 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade pip
-
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |

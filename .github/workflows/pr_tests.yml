@@ -54,10 +54,6 @@ jobs:
 
       - uses: pre-commit/action@v2.0.0
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade pip
-
       - name: Run lint checks
         run: |
           set -e
@@ -105,10 +101,6 @@ jobs:
         with:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade pip
 
       - name: Scan for security issues
         run: |
@@ -193,10 +185,6 @@ jobs:
         with:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade pip
 
       - name: Run notebook API examples
         run: |
