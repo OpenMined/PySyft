@@ -24,5 +24,5 @@ If ($TORCH_VERSION -eq "1.4.0") {
 } Elseif ($TORCH_VERSION -eq "1.5.1" ) {
   echo "No torchcsprng"
 } Else {
-  pip install torchcsprng==$env:TORCHCSPRNG_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  pip install torchcsprng==$TORCHCSPRNG_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 }
