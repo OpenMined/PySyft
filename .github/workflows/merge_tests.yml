@@ -80,5 +80,5 @@ jobs:
 
       - name: Run slow test chunks
         run: |
-          echo "Running TEST_CHUNK=${{ matrix.torch-version }}"
-          TEST_CHUNKS=6 TEST_CHUNK=${{ matrix.torch-version }} pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
+          echo "Running TEST_CHUNK=${{ matrix.chunk }}"
+          TEST_CHUNKS=6 TEST_CHUNK=${{ matrix.chunk }} pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
