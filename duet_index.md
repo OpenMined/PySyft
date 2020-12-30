@@ -1,7 +1,7 @@
 ---
 title: Duet
 layout: template
-filename: duet_index.md
+filename: duet_index
 --- 
 <h1 align="center">
   <br>

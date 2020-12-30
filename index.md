@@ -1,7 +1,7 @@
 ---
 title: PySyft
 layout: template
-filename: index.md
+filename: index
 --- 
 <h1 align="center">
   <br>
