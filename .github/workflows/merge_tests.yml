@@ -78,18 +78,18 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e .
 
-      - name: Run slow test chunks Linux and MacOS
+      - name: Run torch test chunks Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |
           export TEST_CHUNKS=6
           export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
-          pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
+          pytest -m torch --cov-fail-under 0 -n auto -p no:benchmark
 
-      - name: Run slow test chunks Windows
+      - name: Run torch test chunks Windows
         if: startsWith(runner.os, 'Windows')
         run: |
           $Env:TEST_CHUNKS=6
           $Env:TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $Env:TEST_CHUNK"
-          pytest -m slow --cov-fail-under 0 -n auto -p no:benchmark
+          pytest -m torch --cov-fail-under 0 -n auto -p no:benchmark
