@@ -29,7 +29,7 @@ jobs:
     strategy:
       max-parallel: 36
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
         isMaster:
@@ -123,4 +123,4 @@ jobs:
 
       - name: Run all tests
         run: |
-          pytest -m 'all' --cov-fail-under 80 -n auto
+          pytest -m 'all' --cov-fail-under 80 -n auto -p no:benchmark
