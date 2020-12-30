@@ -125,7 +125,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast and slow' --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
@@ -153,7 +153,7 @@ jobs:
       - name: Run supported library tests
         run: |
           pip freeze
-          pytest -m libs --cov-fail-under 0 -n auto
+          pytest -m libs -n auto --no-cov
 
   python-nb-examples:
     needs: [python-linting]
@@ -191,4 +191,4 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api --cov-fail-under 0 -n auto
+          pytest examples/api -n auto --no-cov
