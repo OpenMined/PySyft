@@ -92,7 +92,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade pip
+          pip install --upgrade --user pip
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
