@@ -1648,6 +1648,7 @@ allowlist["torch.zeros_like"] = "torch.Tensor"
 # Misc
 allowlist["torch.manual_seed"] = "torch.Generator"
 allowlist["torch.Generator"] = "torch.Generator"
+allowlist["torch.Generator.manual_seed"] = "torch.Generator"
 allowlist["torch.Generator.get_state"] = "torch.Tensor"
 allowlist["torch.Generator.set_state"] = "torch.Generator"
 allowlist["torch.exp"] = "torch.Tensor"

@@ -13,6 +13,7 @@ on:
     branches:
       - master
       - dev
+      - "0.4"
     paths:
       - "**.py"
       - "setup.cfg"
@@ -61,6 +62,10 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
+
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         env:
@@ -79,8 +84,17 @@ jobs:
           then
               TORCHVISION_VERSION="0.8.1"
           fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng
+          fi
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
@@ -98,8 +112,19 @@ jobs:
           }
           pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Run all tests
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng -f https://download.pytorch.org/whl/torch_stable.html
+          }
+
+      - name: Install packages
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pytest -m 'all' --cov-fail-under 80 -n auto
+
+      - name: Run all tests
+        run: |
+          pytest -m 'all' --cov-fail-under 80 -n auto -p no:benchmark

@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - dev
+      - "0.4"
     paths:
       - "**.py"
       - "setup.cfg"
@@ -52,6 +53,10 @@ jobs:
           version: "3.x"
 
       - uses: pre-commit/action@v2.0.0
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
 
       - name: Run lint checks
         run: |
@@ -101,26 +106,157 @@ jobs:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
+
       - name: Scan for security issues
         run: |
           pip install bandit
           bandit -r src -ll
-      - name: Install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
+
+      - name: Install PyTorch Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          &"/scripts/pytorch_install.ps1 ${{ matrix.torch-version }}"
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+              TORCHCSPRNG_VERSION="0.1.2"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+              TORCHCSPRNG_VERSION="0.1.3"
+          fi
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng==${TORCHCSPRNG_VERSION}
+          fi
 
       - name: Install PyTorch Linux and Mac
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+              $env:TORCHCSPRNG_VERSION="0.1.2"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+              $env:TORCHCSPRNG_VERSION="0.1.3"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Run normal tests without coverage
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+          }
+          pip install numpy==1.19.3
+
+      - name: Install packages
         run: |
           pip install -r requirements.txt
           pip install -e .
-          pip freeze | grep torch
+          pip freeze
+
+      - name: Run normal tests without coverage
+        run: |
           pytest -m fast --cov-fail-under 80 -n auto
+
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          cat requirements/supported_libs.txt | xargs -n 1 pip install || true
+
+      - name: Install supported library packages Windows - Ignore Errors
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          foreach ($i in cat requirements/supported_libs.txt) {
+            pip install $i
+          }
+          pip install numpy==1.19.3
+
+      - name: Install PyTorch Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              TORCHVISION_VERSION="0.6.0"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              TORCHVISION_VERSION="0.6.1"
+          elif [ $TORCH_VERSION = "1.6.0" ]
+          then
+              TORCHVISION_VERSION="0.7"
+              TORCHCSPRNG_VERSION="0.1.2"
+          elif [ $TORCH_VERSION = "1.7.0" ]
+          then
+              TORCHVISION_VERSION="0.8.1"
+              TORCHCSPRNG_VERSION="0.1.3"
+          fi
+          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+
+          if [ $TORCH_VERSION = "1.5.0" ]
+          then
+              echo "No torchcsprng"
+          elif [ $TORCH_VERSION = "1.5.1" ]
+          then
+              echo "No torchcsprng"
+          else
+            pip install torchcsprng==${TORCHCSPRNG_VERSION}
+          fi
+
+      - name: Install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        env:
+          TORCH_VERSION: ${{ matrix.torch-version }}
+        run: |
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+              $env:TORCHVISION_VERSION="0.6.0"
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+              $env:TORCHVISION_VERSION="0.6.1"
+          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
+              $env:TORCHVISION_VERSION="0.7"
+              $env:TORCHCSPRNG_VERSION="0.1.2"
+          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
+              $env:TORCHVISION_VERSION="0.8.1"
+              $env:TORCHCSPRNG_VERSION="0.1.3"
+          }
+          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+          If ($env:TORCH_VERSION -eq "1.5.0") {
+
+          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
+
+          } Else {
+            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+          }
+
+      - name: Run supported library tests
+        run: |
+          pip freeze
+          pytest -m libs --cov-fail-under 0 -n auto
 
   python-nb-examples:
     needs: [python-linting]
@@ -152,6 +288,10 @@ jobs:
         with:
           path: ~/.eggs
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
 
       - name: Run notebook API examples
         run: |
