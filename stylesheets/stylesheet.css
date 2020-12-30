@@ -2,5 +2,9 @@
     color: #fff;
     text-align: center;
     background-color: #159957;
-    background-image: url(https://www.openmined.org/static/media/background-gradient.bd2e1d32.svg);
+    /*background-image: url(https://www.openmined.org/static/media/background-gradient.bd2e1d32.svg);*/
+    background-image: linear-gradient(45deg, #ad3b79, #f8c372),linear-gradient(142deg, #f8c372, #159957),linear-gradient(108deg, #d14, #000000f2);
+    background-size: cover;
+    background-position: 50%;
+    background-repeat: no-repeat;
 }

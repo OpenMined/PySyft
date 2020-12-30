@@ -2,7 +2,7 @@
 title: Duet
 description: Duet is the latest part of the Syft family and is designed to provide you with a seamless experience, creating machine learning models in tools you are already familiar with, like Jupyter notebooks and the PyTorch API; while allowing training over a remote session, on data you cannot see, anywhere in the world.
 layout: template
-filename: duet_index
+filename: duet
 --- 
 
 <h1 align="center">
@@ -14,13 +14,6 @@ filename: duet_index
 <div align="center">
   <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
 </div>
-
-<h2 align="center">
-  <a href="http://duet.openmined.org/"><img src="../../docs/img/mini_notebooks.png" alt="Duet" width="800"></a>
-  <br>
-   🎸 Data Owner ⚡️ Data Scientist 🥁
-  <br>
-</h2>
 
 # Duet 🎸🥁
 Duet is the latest part of the Syft family and is designed to provide you with a seamless experience, creating machine learning models in tools you are already familiar with, like Jupyter notebooks and the PyTorch API; while allowing training over a remote session, on data you cannot see, anywhere in the world 🌏.
