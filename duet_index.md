@@ -1,5 +1,6 @@
 ---
 title: Duet
+description: Duet is the latest part of the Syft family and is designed to provide you with a seamless experience, creating machine learning models in tools you are already familiar with, like Jupyter notebooks and the PyTorch API; while allowing training over a remote session, on data you cannot see, anywhere in the world.
 layout: template
 filename: duet_index
 --- 
