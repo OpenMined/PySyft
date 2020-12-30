@@ -3,6 +3,7 @@ title: Duet
 layout: template
 filename: duet_index
 --- 
+
 <h1 align="center">
   <br>
   <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo.png" alt="PySyft" width="200"></a>
