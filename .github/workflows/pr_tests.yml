@@ -52,6 +52,10 @@ jobs:
 
       - uses: pre-commit/action@v2.0.0
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
+
       - name: Run lint checks
         run: |
           set -e
@@ -93,6 +97,10 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
 
       - name: Scan for security issues
         run: |
@@ -175,6 +183,10 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
 
       - name: Run notebook API examples
         run: |

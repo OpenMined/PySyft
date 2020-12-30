@@ -90,6 +90,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade pip
+
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |
