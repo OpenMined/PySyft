@@ -57,7 +57,7 @@ jobs:
       - name: Run lint checks
         run: |
           set -e
-          pip install -r requirements.txt
+          pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
 
@@ -104,7 +104,7 @@ jobs:
 
       - name: Scan for security issues
         run: |
-          pip install bandit
+          pip install bandit --default-timeout=60
           bandit -r src -ll
 
       - name: Install PyTorch Linux and MacOS
@@ -119,8 +119,8 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           pip freeze
 
       - name: Run normal tests without coverage
@@ -130,15 +130,15 @@ jobs:
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          cat requirements/supported_libs.txt | xargs -n 1 pip install || true
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
 
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
           foreach ($i in cat requirements/supported_libs.txt) {
-            pip install $i
+            pip install $i --default-timeout=60
           }
-          pip install numpy==1.19.3
+          pip install numpy==1.19.3 --default-timeout=60
 
       - name: Re-install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
@@ -188,7 +188,7 @@ jobs:
 
       - name: Run notebook API examples
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api --cov-fail-under 0 -n auto
