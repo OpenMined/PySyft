@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -303,10 +302,6 @@ class Address(Serializable):
         if vm is not None:
             return vm.id
         return None
-
-    @property
-    def addressables(self) -> List[Optional[Location]]:
-        return [self.vm, self.device, self.domain, self.network]
 
     def target_emoji(self) -> str:
         output = ""
