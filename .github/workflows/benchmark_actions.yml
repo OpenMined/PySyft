@@ -1,0 +1,47 @@
+name: Pytest-benchmark
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "**.py"
+      - ".github/workflows/**.yml"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        id: cache-reqs
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+      - name: Install PySyft dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Run benchmarks
+        run: |
+          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          name: Pytest-benchmarks
+          tool: "pytest"
+          output-file-path: tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: "200%"
+          comment-on-alert: true
+          fail-on-alert: true

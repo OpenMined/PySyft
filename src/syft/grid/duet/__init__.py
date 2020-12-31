@@ -31,6 +31,31 @@ ADDR_REPOSITORY = (
 LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
 
 
+class bcolors:
+    FAIL = "\033[91m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    OKBLUE = "\033[94m"
+    HEADER = "\033[95m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+
+def generate_donation_msg(name: str) -> str:
+    donate_url = "https://github.com/sponsors/OpenMined"
+    donate_msg = (
+        f"\n    > ❤️ {bcolors.FAIL}Love{bcolors.ENDC} {bcolors.OKGREEN}{name}{bcolors.ENDC}? "
+        + f"{bcolors.WARNING}Please{bcolors.ENDC} {bcolors.OKBLUE}consider{bcolors.ENDC} "
+        + f"{bcolors.HEADER}supporting{bcolors.ENDC} {bcolors.FAIL}our{bcolors.ENDC} "
+        + f"{bcolors.WARNING}community!{bcolors.ENDC}"
+        + f"\n    > {donate_url}"
+    )
+    return donate_msg
+
+
+DUET_DONATE_MSG = generate_donation_msg(name="Duet")
+
 try:
     # third party
     from IPython.core.display import Image
@@ -45,17 +70,6 @@ except ImportError:
 def get_loopback_path() -> str:
     loopback_file = "duet_loopback.json"
     return str(Path(tempfile.gettempdir()) / loopback_file)
-
-
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
 
 
 def get_available_network() -> str:
@@ -194,6 +208,7 @@ def launch_duet(
     )
 
     print("♫♫♫ >")
+    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()
@@ -319,6 +334,7 @@ def join_duet(
     )
 
     print("♫♫♫ >")
+    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()

@@ -3,16 +3,16 @@ WebRTC connection representation
 
  This class aims to represent a generic and
 asynchronous peer-to-peer WebRTC connection
-based in Syft BidirectionalConnection Inferface.
+based in Syft BidirectionalConnection Interface.
 
  This connection interface provides a full-duplex
-channel, allowing this class to work as a client
+The channel, allowing this class to work as a client
 and as a server at the same time.
 
  This class is useful to send/compute data
 using a p2p channel without the need
 of deploying servers on cloud providers
-or settting firewalls rules  in order
+or setting firewalls rules  in order
 turn this process "visible" to the world.
 
 How does it work?
@@ -51,13 +51,13 @@ Signaling Steps:
 
     4 - The Signaling Server will check the existence of offer messages addressed
     to the PySyft Peer (Answer) made by the desired node address (PySyft.Address).
-    If that's the case,so the offer message will be sent to the peer as a response.
+    If that's the case, so the offer message will be sent to the peer as a response.
 
     5 - [PUSH] The PySyft Peer (Answer) will process the offer message
     in order to know the network address of the other peer.
-    If no problems were found, the answer peer will generate its own local
+    If no problems were found, the answering peer will generate its own local
     description (IP, Mac address,  etc) and send it to the signaling server,
-    addressing (PySyft.Address) it to the offer node as an AnswerMessage.
+    addressing (PySyft.Address) it to the offering node as an AnswerMessage.
 
     6 - The Signaling Server (PyGrid Network) will
     receive the answer msg and store it in the target's answer request's
@@ -113,6 +113,12 @@ except ImportError:  # pragma: no cover
 
 message_cooldown = 0.0
 
+DC_CHUNKING_ENABLED = True
+DC_CHUNK_START_SIGN = b"<<<CHUNK START>>>"
+DC_CHUNK_END_SIGN = b"<<<CHUNK END>>>"
+DC_MAX_CHUNK_SIZE = 16384
+DC_MAX_BUFSIZE = 4 * 2 ** 20
+
 
 class WebRTCConnection(BidirectionalConnection):
     loop: Any
@@ -167,7 +173,7 @@ class WebRTCConnection(BidirectionalConnection):
             # This attribute will be used for external classes
             # in order to verify if the connection channel
             # was established.
-            self.channel: Optional[RTCDataChannel] = None
+            self.channel: RTCDataChannel
             self._client_address: Optional[Address] = None
 
             # asyncio.ensure_future(self.heartbeat())
@@ -179,8 +185,9 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
-        """Initialize a Real Time Communication Data Channel,
-        set datachannel callbacks/tasks, and send offer payload
+        """
+        Initialize a Real-Time Communication Data Channel,
+        set data channel callbacks/tasks, and send offer payload
         message.
 
         :return: returns a signaling offer payload containing local description.
@@ -190,6 +197,8 @@ class WebRTCConnection(BidirectionalConnection):
             # Use the Peer Connection structure to
             # set the channel as a RTCDataChannel.
             self.channel = self.peer_connection.createDataChannel("datachannel")
+            # Keep send buffer busy with chunks
+            self.channel.bufferedAmountLowThreshold = 16 * DC_MAX_CHUNK_SIZE
 
             # This method will be called by as a callback
             # function by the aioRTC lib when the when
@@ -198,14 +207,27 @@ class WebRTCConnection(BidirectionalConnection):
             async def on_open() -> None:  # type : ignore
                 self.__producer_task = asyncio.ensure_future(self.producer())
 
+            chunked_msg = b""
+            chunked_msg_started = False
             # This method is the aioRTC "consumer" task
             # and will be running as long as connection remains.
             # At this point we're just setting the method behavior
             # It'll start running after the connection opens.
+
             @self.channel.on("message")
-            async def on_message(message: Union[bin, str]) -> None:  # type: ignore
-                # Forward all received messages to our own consumer method.
-                await self.consumer(msg=message)
+            async def on_message(message: bytes) -> None:
+                nonlocal chunked_msg, chunked_msg_started
+                if message == DC_CHUNK_START_SIGN:
+                    chunked_msg_started = True
+                    chunked_msg = b""
+                elif message == DC_CHUNK_END_SIGN:
+                    chunked_msg_started = False
+                    await self.consumer(msg=chunked_msg)
+                elif chunked_msg_started:
+                    chunked_msg += message
+                else:
+                    # Forward all received messages to our own consumer method.
+                    await self.consumer(msg=message)
 
             # Set peer_connection to generate an offer message type.
             await self.peer_connection.setLocalDescription(
@@ -225,8 +247,9 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def _set_answer(self, payload: str) -> str:
-        """Receives a signaling offer payload, initialize/set
-        datachannel callbacks/tasks, updates remote local description
+        """
+        Receives a signaling offer payload, initialize/set
+        Data channel callbacks/tasks, updates remote local description
         using offer's payload message and returns a
         signaling answer payload.
 
@@ -242,9 +265,22 @@ class WebRTCConnection(BidirectionalConnection):
 
                 self.__producer_task = asyncio.ensure_future(self.producer())
 
+                chunked_msg = b""
+                chunked_msg_started = False
+
                 @self.channel.on("message")
-                async def on_message(message: Union[bin, str]) -> None:  # type: ignore
-                    await self.consumer(msg=message)
+                async def on_message(message: bytes) -> None:
+                    nonlocal chunked_msg, chunked_msg_started
+                    if message == DC_CHUNK_START_SIGN:
+                        chunked_msg_started = True
+                        chunked_msg = b""
+                    elif message == DC_CHUNK_END_SIGN:
+                        chunked_msg_started = False
+                        await self.consumer(msg=chunked_msg)
+                    elif chunked_msg_started:
+                        chunked_msg += message
+                    else:
+                        await self.consumer(msg=message)
 
             return await self._process_answer(payload=payload)
         except Exception as e:
@@ -310,7 +346,42 @@ class WebRTCConnection(BidirectionalConnection):
                 # If self.producer_pool.get() returned a message
                 # send it as a binary using the RTCDataChannel.
                 # logger.critical(f"> Sending MSG {msg.message} ID: {msg.id}")
-                self.channel.send(msg.to_bytes())  # type: ignore
+                data = msg.to_bytes()
+                data_len = len(data)
+
+                if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:
+                    chunk_num = 0
+                    done = False
+                    sent: asyncio.Future = asyncio.Future(loop=self.loop)
+
+                    def send_data_chunks() -> None:
+                        nonlocal chunk_num, data_len, done, sent
+                        # Send chunks until buffered amount is big or we're done
+                        while (
+                            self.channel.bufferedAmount <= DC_MAX_BUFSIZE and not done
+                        ):
+                            start_offset = chunk_num * DC_MAX_CHUNK_SIZE
+                            end_offset = min(
+                                (chunk_num + 1) * DC_MAX_CHUNK_SIZE, data_len
+                            )
+                            chunk = data[start_offset:end_offset]
+                            self.channel.send(chunk)
+                            chunk_num += 1
+                            if chunk_num * DC_MAX_CHUNK_SIZE >= data_len:
+                                done = True
+                                self.channel.send(DC_CHUNK_END_SIGN)
+                                sent.set_result(True)
+
+                        if not done:
+                            # Set listener for next round of sending when buffer is empty
+                            self.channel.once("bufferedamountlow", send_data_chunks)
+
+                    self.channel.send(DC_CHUNK_START_SIGN)
+                    send_data_chunks()
+                    # Wait until all chunks are dispatched
+                    await sent
+                else:
+                    self.channel.send(data)
         except Exception as e:
             log = f"Got an exception in WebRTCConnection producer. {e}"
             logger.error(log)
@@ -321,7 +392,7 @@ class WebRTCConnection(BidirectionalConnection):
             # Build Close Message to warn the other peer
             bye_msg = CloseConnectionMessage(address=Address())
 
-            self.channel.send(bye_msg.to_bytes())  # type: ignore
+            self.channel.send(bye_msg.to_bytes())
 
             # Finish async tasks related with this connection
             self._finish_coroutines()
@@ -340,7 +411,7 @@ class WebRTCConnection(BidirectionalConnection):
             raise e
 
     @syft_decorator(typechecking=True)
-    async def consumer(self, msg: bin) -> None:  # type: ignore
+    async def consumer(self, msg: bytes) -> None:
         try:
             # Async task to receive/process messages sent by the other side.
             # These messages will be sent by the other peer
@@ -387,7 +458,8 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        """Executes/Replies requests instantly.
+        """
+        Executes/Replies requests instantly.
 
         :return: returns an instance of SignedImmediateSyftMessageWithReply
         :rtype: SignedImmediateSyftMessageWithoutReply
@@ -412,7 +484,9 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """ Executes requests instantly. """
+        """
+        Executes requests instantly.
+        """
         try:
             r = random.randint(0, 100000)
             logger.debug(
@@ -431,7 +505,9 @@ class WebRTCConnection(BidirectionalConnection):
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        """ Executes requests eventually. """
+        """
+        Executes requests eventually.
+        """
         try:
             self.node.recv_eventual_msg_without_reply(msg=msg)
         except Exception as e:
@@ -443,7 +519,8 @@ class WebRTCConnection(BidirectionalConnection):
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithReply:
-        """Sends high priority messages and wait for their responses.
+        """
+        Sends high priority messages and wait for their responses.
 
         :return: returns an instance of SignedImmediateSyftMessageWithReply.
         :rtype: SignedImmediateSyftMessageWithReply
@@ -459,7 +536,9 @@ class WebRTCConnection(BidirectionalConnection):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        """" Sends high priority messages without waiting for their reply. """
+        """
+        Sends high priority messages without waiting for their reply.
+        """
         try:
             # asyncio.run(self.producer_pool.put_nowait(msg))
             self.producer_pool.put_nowait(msg)
@@ -473,7 +552,9 @@ class WebRTCConnection(BidirectionalConnection):
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        """" Sends low priority messages without waiting for their reply. """
+        """
+        Sends low priority messages without waiting for their reply.
+        """
         try:
             asyncio.run(self.producer_pool.put(msg))
             time.sleep(message_cooldown)
@@ -486,7 +567,8 @@ class WebRTCConnection(BidirectionalConnection):
     async def send_sync_message(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        """Send sync messages generically.
+        """
+        Send sync messages generically.
 
         :return: returns an instance of SignedImmediateSyftMessageWithoutReply.
         :rtype: SignedImmediateSyftMessageWithoutReply
