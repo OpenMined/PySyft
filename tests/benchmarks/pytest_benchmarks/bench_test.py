@@ -1,8 +1,11 @@
 """
 Define benchmark tests
 """
-from ..pytest_benchmarks.benchmarks_functions_test import string_serde
+# stdlib
 from typing import Any
+
+# syft relative
+from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 
 
 def test_string_serde(benchmark: Any) -> None:

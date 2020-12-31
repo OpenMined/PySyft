@@ -2,72 +2,34 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 # third party
 import opacus
 
 # syft relative
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
 from ...ast.globals import Globals
-from ...ast.klass import Class
-from ...ast.module import Module
+
+LIB_NAME = "opacus"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
-def get_parent(path: str, root: TypeAny) -> Module:
-    parent = root
-    for step in path.split(".")[:-1]:
-        parent = parent.attrs[step]
-    return parent
-
-
-def add_modules(ast: Globals, modules: TypeList[str]) -> None:
-    for module in modules:
-        parent = get_parent(module, ast)
-        attr_name = module.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Module(
-                attr_name,
-                module,
-                None,
-                return_type_name="",
-            ),
-        )
-
-
-def add_classes(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-    for path, return_type, ref in paths:
-        parent = get_parent(path, ast)
-        attr_name = path.rsplit(".", 1)[-1]
-
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=Class(
-                attr_name,
-                path,
-                ref,
-                return_type_name=return_type,
-            ),
-        )
-
-
-def add_methods(ast: Globals, paths: TypeList[TypeTuple[str, str]]) -> None:
-    for path, return_type in paths:
-        parent = get_parent(path, ast)
-        path_list = path.split(".")
-        parent.add_path(
-            path=path_list, index=len(path_list) - 1, return_type_name=return_type
-        )
+def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
+    opacus_ast = create_ast()
+    ast.add_attr(attr_name=LIB_NAME, attr=opacus_ast.attrs[LIB_NAME])
 
 
 def create_ast() -> Globals:
     ast = Globals()
 
-    modules = [
-        "opacus",
-        "opacus.privacy_engine",
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("opacus", opacus),
+        ("opacus.privacy_engine", opacus.privacy_engine),
     ]
-    classes = [
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
             "opacus.privacy_engine.PrivacyEngine",
             "opacus.privacy_engine.PrivacyEngine",
