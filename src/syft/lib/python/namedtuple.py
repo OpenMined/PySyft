@@ -9,8 +9,8 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-import torch
 from packaging import version
+import torch
 
 # syft relative
 from ...core.common.serde.deserialize import _deserialize
