@@ -132,6 +132,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 upcasted_args,
                 upcasted_kwargs,
             ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+
             result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         # TODO: replace with proper tuple support
