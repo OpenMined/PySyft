@@ -1,2 +1,3 @@
 opacus
+sympc @ git+https://github.com/madhavajay/SyMPC@e7643fe64d5c456862ee79a3a6ede96c78bfefc4
 tenseal==0.3.0a1

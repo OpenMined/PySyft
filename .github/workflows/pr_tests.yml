@@ -57,7 +57,7 @@ jobs:
       - name: Run lint checks
         run: |
           set -e
-          pip install -r requirements.txt
+          pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
 
@@ -104,54 +104,56 @@ jobs:
 
       - name: Scan for security issues
         run: |
-          pip install bandit
+          pip install bandit --default-timeout=60
           bandit -r src -ll
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              TORCHVISION_VERSION="0.6.0"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              TORCHVISION_VERSION="0.6.1"
-          elif [ $TORCH_VERSION = "1.6.0" ]
-          then
-              TORCHVISION_VERSION="0.7"
-          elif [ $TORCH_VERSION = "1.7.0" ]
-          then
-              TORCHVISION_VERSION="0.8.1"
-          fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
+          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-              $env:TORCHVISION_VERSION="0.6.0"
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-              $env:TORCHVISION_VERSION="0.6.1"
-          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
-              $env:TORCHVISION_VERSION="0.7"
-          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
-              $env:TORCHVISION_VERSION="0.8.1"
-          }
-          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
 
-      - name: Run normal tests without coverage
+      - name: Install packages
         run: |
-          pip install -r requirements.txt
-          pip install -e .
-          pip freeze | grep torch
-          pytest -m fast --cov-fail-under 80 -n auto
-          pip install -r requirements/supported_libs.txt
-          pytest -m libs --cov-fail-under 0 -n auto
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          pip freeze
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
+
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+
+      - name: Install supported library packages Windows - Ignore Errors
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          foreach ($i in cat requirements/supported_libs.txt) {
+            pip install $i --default-timeout=60
+          }
+          pip install numpy==1.19.3 --default-timeout=60
+
+      - name: Re-install PyTorch Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
+
+      - name: Re-install PyTorch Windows
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
+
+      - name: Run supported library tests
+        run: |
+          pip freeze
+          pytest -m libs -n auto --no-cov
 
   python-nb-examples:
     needs: [python-linting]
@@ -186,7 +188,7 @@ jobs:
 
       - name: Run notebook API examples
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api --cov-fail-under 0 -n auto
+          pytest examples/api -n auto --no-cov
