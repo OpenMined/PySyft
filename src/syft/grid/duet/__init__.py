@@ -33,6 +33,20 @@ ADDR_REPOSITORY = (
 LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
 
 
+def generate_donation_msg(name: str) -> str:
+    donate_url = "https://github.com/sponsors/OpenMined"
+    donate_msg = (
+        f"\n    > ❤️ {bcolors.FAIL}Love{bcolors.ENDC} {bcolors.OKGREEN}{name}{bcolors.ENDC}? "
+        + f"{bcolors.WARNING}Please{bcolors.ENDC} {bcolors.OKBLUE}consider{bcolors.ENDC} "
+        + f"{bcolors.HEADER}supporting{bcolors.ENDC} {bcolors.FAIL}our{bcolors.ENDC} "
+        + f"{bcolors.WARNING}community!{bcolors.ENDC}"
+        + f"\n    > {donate_url}"
+    )
+    return donate_msg
+
+
+DUET_DONATE_MSG = generate_donation_msg(name="Duet")
+
 try:
     # third party
     from IPython.core.display import Image
@@ -179,6 +193,7 @@ def launch_duet(
     )
 
     print("♫♫♫ >")
+    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()
@@ -242,6 +257,7 @@ def join_duet(
     )
 
     print("♫♫♫ >")
+    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()
