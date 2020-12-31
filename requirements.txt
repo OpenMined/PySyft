@@ -28,7 +28,6 @@ jinja2
 loguru
 matplotlib
 nbconvert
-openmined.psi
 packaging
 pandas
 protobuf
@@ -37,6 +36,7 @@ PyNaCl
 pyscaffold[all]
 pytest
 pytest-asyncio
+pytest-benchmark
 pytest-cov
 pytest-xdist[psutil]
 requests
