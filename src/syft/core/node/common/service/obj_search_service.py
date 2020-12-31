@@ -201,7 +201,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 contains_all_in_permissions = any(
                     key is VerifyAll for key in obj.search_permissions.keys()
                 )
-
                 if (
                     verify_key in obj.search_permissions.keys()
                     or verify_key == node.root_verify_key

@@ -18,6 +18,7 @@ from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .protobuf import GenerateProtobufWrapper  # noqa: 401
 from .set import Set
 from .string import String
 from .tuple import Tuple
