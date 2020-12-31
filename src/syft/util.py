@@ -135,6 +135,11 @@ def obj2pointer_type(obj: object) -> type:
             fqn = "syft.lib.python._SyNone"
         else:
             fqn = get_fully_qualified_name(obj=type(obj))
+
+    # if its a ProtobufWrapper we want the original AST type so we can get the Pointer
+    if fqn.endswith("ProtobufWrapper"):
+        fqn = fqn.replace("ProtobufWrapper", "")
+
     try:
         ref = syft.lib_ast(fqn, return_callable=True)
     except Exception:

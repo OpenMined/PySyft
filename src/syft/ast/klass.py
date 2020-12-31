@@ -232,12 +232,25 @@ class Class(Callable):
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
-        def send(self: Any, client: Any, searchable: bool = False) -> Pointer:
-            # we need to generate an ID now because we removed the generic ID creation
+        def send(
+            self: Any,
+            client: Any,
+            searchable: bool = False,
+            description: str = "",
+            tags: List[str] = [],
+        ) -> Pointer:
+            # if self is proto, change self to it's wrapper object
+            which_obj = self
+            if "ProtobufWrapper" in self.serializable_wrapper_type.__name__:
+                # which_obj should be of the same type as what self._data_proto2object returns
+                which_obj = self.serializable_wrapper_type(value=self)
+
             id_ = getattr(self, "id", None)
             if id_ is None:
                 id_ = UID()
-                self.id = id_
+                which_obj.id = id_
+            which_obj.tags = tags
+            which_obj.description = description
 
             id_at_location = UID()
 
@@ -245,8 +258,8 @@ class Class(Callable):
             ptr = getattr(outer_self, outer_self.pointer_name)(
                 client=client,
                 id_at_location=id_at_location,
-                tags=self.tags if hasattr(self, "tags") else list(),
-                description=self.description if hasattr(self, "description") else "",
+                tags=tags,
+                description=description,
             )
 
             if searchable:
@@ -255,7 +268,7 @@ class Class(Callable):
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
                 id_at_location=ptr.id_at_location,
-                obj=self,
+                obj=which_obj,
                 address=client.address,
                 anyone_can_search_for_this=searchable,
             )
