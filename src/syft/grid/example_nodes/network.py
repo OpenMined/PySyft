@@ -9,6 +9,7 @@ $ python src/syft/grid/example_nodes/network.py
 """
 # stdlib
 import os
+import sys
 
 # third party
 import flask
@@ -85,8 +86,12 @@ def run() -> None:
     PORT = os.getenv("PORT", 5000)
     print(f"Starting Node on PORT: {PORT}")
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    # used :: so that the server works for both IPv4 and IPv6 address
-    app.run(host="::", port=int(PORT))  # nosec
-
+    
+    MODE = os.getenv('IP_MODE')
+    if MODE == 'IPV6':
+    	# used :: so that the server works for both IPv4 and IPv6 address
+    	app.run(host="::", port=int(PORT))  # nosec
+    else:
+    	app.run(host="0.0.0.0", port=int(PORT)) # nosec
 
 run()
