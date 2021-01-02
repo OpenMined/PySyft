@@ -228,11 +228,11 @@ def add_torch_return_types() -> None:
         [[-0.1000, 0.1000, 0.2000], [0.2000, 0.3000, 0.4000], [0.0000, -0.3000, 0.5000]]
     )
 
-    cummax = x.cummax(0)
-    supported_types.append(type(cummax))
+#    cummax = x.cummax(0)
+#    supported_types.append(type(cummax))
 
-    cummin = x.cummin(0)
-    supported_types.append(type(cummin))
+#    cummin = x.cummin(0)
+#    supported_types.append(type(cummin))
 
     eig = x.eig(True)
     supported_types.append(type(eig))
@@ -272,6 +272,15 @@ def add_torch_return_types() -> None:
 
     geqrf = s.geqrf()
     supported_types.append(type(geqrf))
+
+    median = s.median(0)
+    supported_types.append(type(median))
+
+    max_t = s.max(0)
+    supported_types.append(type(max_t))
+
+    min_t = s.min(0)
+    supported_types.append(type(min_t))
 
     for types in supported_types:
         aggressive_set_attr(
