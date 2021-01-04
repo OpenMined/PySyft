@@ -88,13 +88,11 @@ def run() -> None:
     
     MODE = os.getenv("IP_MODE")
     if MODE == "IPV6":
-        print("Listening on : {}".format(MODE))
+        print("Listening on : {MODE}")
         # used :: so that the server works for IPV6
         app.run(host="::", port=int(PORT))
     else:
-        print("Listening on : {}".format(MODE))
+        print("Listening on : {MODE}")
         app.run(host="0.0.0.0", port=int(PORT))  # nosec
-
-
 
 run()
