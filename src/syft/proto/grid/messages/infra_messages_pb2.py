@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9b\x01\n!DeployVirtualMachineWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x84\x01\n"DeployVirtualMachineWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x94\x01\n\x1aGetDeploymentStatusMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x95\x01\n\x1bGetDeploymentStatusResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x18\x43reateAutoscalingMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n\x19\x43reateAutoscalingResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8f\x01\n\x15GetAutoscalingMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x90\x01\n\x16GetAutoscalingResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x18GetAllAutoscalingMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n\x19GetAllAutoscalingResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x18UpdateAutoscalingMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n\x19UpdateAutoscalingResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x18\x44\x65leteAutoscalingMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n\x19\x44\x65leteAutoscalingResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9e\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x43reateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa7\x01\n\x1c\x43heckWorkerDeploymentMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1e\x43reateWorkerDeploymentResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x84\x01\n\x11GetWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetWorkersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15GetAllWorkersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13\x44\x65leteWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x44\x65leteWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13UpdateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14UpdateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -33,9 +33,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 )
 
 
-_DEPLOYVIRTUALMACHINEWORKERMESSAGE = _descriptor.Descriptor(
-    name="DeployVirtualMachineWorkerMessage",
-    full_name="syft.grid.messages.DeployVirtualMachineWorkerMessage",
+_CREATEWORKERMESSAGE = _descriptor.Descriptor(
+    name="CreateWorkerMessage",
+    full_name="syft.grid.messages.CreateWorkerMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -43,7 +43,7 @@ _DEPLOYVIRTUALMACHINEWORKERMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerMessage.msg_id",
+            full_name="syft.grid.messages.CreateWorkerMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -62,7 +62,7 @@ _DEPLOYVIRTUALMACHINEWORKERMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerMessage.address",
+            full_name="syft.grid.messages.CreateWorkerMessage.address",
             index=1,
             number=2,
             type=11,
@@ -80,9 +80,28 @@ _DEPLOYVIRTUALMACHINEWORKERMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.CreateWorkerMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateWorkerMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -108,13 +127,13 @@ _DEPLOYVIRTUALMACHINEWORKERMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=133,
-    serialized_end=288,
+    serialized_end=291,
 )
 
 
-_DEPLOYVIRTUALMACHINEWORKERRESPONSE = _descriptor.Descriptor(
-    name="DeployVirtualMachineWorkerResponse",
-    full_name="syft.grid.messages.DeployVirtualMachineWorkerResponse",
+_CREATEWORKERRESPONSE = _descriptor.Descriptor(
+    name="CreateWorkerResponse",
+    full_name="syft.grid.messages.CreateWorkerResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -122,28 +141,9 @@ _DEPLOYVIRTUALMACHINEWORKERRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerResponse.msg_id",
+            full_name="syft.grid.messages.CreateWorkerResponse.msg_id",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerResponse.address",
-            index=1,
-            number=2,
             type=11,
             cpp_type=10,
             label=1,
@@ -160,9 +160,9 @@ _DEPLOYVIRTUALMACHINEWORKERRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.DeployVirtualMachineWorkerResponse.success",
-            index=2,
-            number=3,
+            full_name="syft.grid.messages.CreateWorkerResponse.success",
+            index=1,
+            number=2,
             type=8,
             cpp_type=7,
             label=1,
@@ -177,38 +177,16 @@ _DEPLOYVIRTUALMACHINEWORKERRESPONSE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=291,
-    serialized_end=423,
-)
-
-
-_GETDEPLOYMENTSTATUSMESSAGE = _descriptor.Descriptor(
-    name="GetDeploymentStatusMessage",
-    full_name="syft.grid.messages.GetDeploymentStatusMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetDeploymentStatusMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
+            name="content",
+            full_name="syft.grid.messages.CreateWorkerResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -220,27 +198,8 @@ _GETDEPLOYMENTSTATUSMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetDeploymentStatusMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetDeploymentStatusMessage.reply_to",
-            index=2,
+            full_name="syft.grid.messages.CreateWorkerResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -265,14 +224,14 @@ _GETDEPLOYMENTSTATUSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=426,
-    serialized_end=574,
+    serialized_start=294,
+    serialized_end=429,
 )
 
 
-_GETDEPLOYMENTSTATUSRESPONSE = _descriptor.Descriptor(
-    name="GetDeploymentStatusResponse",
-    full_name="syft.grid.messages.GetDeploymentStatusResponse",
+_CHECKWORKERDEPLOYMENTMESSAGE = _descriptor.Descriptor(
+    name="CheckWorkerDeploymentMessage",
+    full_name="syft.grid.messages.CheckWorkerDeploymentMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -280,7 +239,7 @@ _GETDEPLOYMENTSTATUSRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetDeploymentStatusResponse.msg_id",
+            full_name="syft.grid.messages.CheckWorkerDeploymentMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -299,7 +258,7 @@ _GETDEPLOYMENTSTATUSRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetDeploymentStatusResponse.address",
+            full_name="syft.grid.messages.CheckWorkerDeploymentMessage.address",
             index=1,
             number=2,
             type=11,
@@ -317,9 +276,28 @@ _GETDEPLOYMENTSTATUSRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetDeploymentStatusResponse.reply_to",
+            name="content",
+            full_name="syft.grid.messages.CheckWorkerDeploymentMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CheckWorkerDeploymentMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -344,14 +322,14 @@ _GETDEPLOYMENTSTATUSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=577,
-    serialized_end=726,
+    serialized_start=432,
+    serialized_end=599,
 )
 
 
-_CREATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
-    name="CreateAutoscalingMessage",
-    full_name="syft.grid.messages.CreateAutoscalingMessage",
+_CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
+    name="CreateWorkerDeploymentResponse",
+    full_name="syft.grid.messages.CreateWorkerDeploymentResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -359,7 +337,7 @@ _CREATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.CreateAutoscalingMessage.msg_id",
+            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -377,15 +355,15 @@ _CREATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateAutoscalingMessage.address",
+            name="success",
+            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -396,9 +374,28 @@ _CREATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateAutoscalingMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -423,14 +420,14 @@ _CREATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=729,
-    serialized_end=875,
+    serialized_start=602,
+    serialized_end=747,
 )
 
 
-_CREATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
-    name="CreateAutoscalingResponse",
-    full_name="syft.grid.messages.CreateAutoscalingResponse",
+_GETWORKERMESSAGE = _descriptor.Descriptor(
+    name="GetWorkerMessage",
+    full_name="syft.grid.messages.GetWorkerMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -438,7 +435,7 @@ _CREATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.CreateAutoscalingResponse.msg_id",
+            full_name="syft.grid.messages.GetWorkerMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -457,7 +454,7 @@ _CREATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.CreateAutoscalingResponse.address",
+            full_name="syft.grid.messages.GetWorkerMessage.address",
             index=1,
             number=2,
             type=11,
@@ -475,9 +472,28 @@ _CREATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateAutoscalingResponse.reply_to",
+            name="content",
+            full_name="syft.grid.messages.GetWorkerMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetWorkerMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -502,14 +518,14 @@ _CREATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=878,
-    serialized_end=1025,
+    serialized_start=750,
+    serialized_end=905,
 )
 
 
-_GETAUTOSCALINGMESSAGE = _descriptor.Descriptor(
-    name="GetAutoscalingMessage",
-    full_name="syft.grid.messages.GetAutoscalingMessage",
+_GETWORKERRESPONSE = _descriptor.Descriptor(
+    name="GetWorkerResponse",
+    full_name="syft.grid.messages.GetWorkerResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -517,7 +533,7 @@ _GETAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAutoscalingMessage.msg_id",
+            full_name="syft.grid.messages.GetWorkerResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -535,15 +551,15 @@ _GETAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetAutoscalingMessage.address",
+            name="success",
+            full_name="syft.grid.messages.GetWorkerResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -554,9 +570,28 @@ _GETAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetAutoscalingMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.GetWorkerResponse.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkerResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -581,14 +616,14 @@ _GETAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1028,
-    serialized_end=1171,
+    serialized_start=908,
+    serialized_end=1040,
 )
 
 
-_GETAUTOSCALINGRESPONSE = _descriptor.Descriptor(
-    name="GetAutoscalingResponse",
-    full_name="syft.grid.messages.GetAutoscalingResponse",
+_GETWORKERSMESSAGE = _descriptor.Descriptor(
+    name="GetWorkersMessage",
+    full_name="syft.grid.messages.GetWorkersMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -596,7 +631,7 @@ _GETAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAutoscalingResponse.msg_id",
+            full_name="syft.grid.messages.GetWorkersMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -615,7 +650,7 @@ _GETAUTOSCALINGRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAutoscalingResponse.address",
+            full_name="syft.grid.messages.GetWorkersMessage.address",
             index=1,
             number=2,
             type=11,
@@ -633,9 +668,28 @@ _GETAUTOSCALINGRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetAutoscalingResponse.reply_to",
+            name="content",
+            full_name="syft.grid.messages.GetWorkersMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetWorkersMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -660,14 +714,14 @@ _GETAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1174,
-    serialized_end=1318,
+    serialized_start=1043,
+    serialized_end=1199,
 )
 
 
-_GETALLAUTOSCALINGMESSAGE = _descriptor.Descriptor(
-    name="GetAllAutoscalingMessage",
-    full_name="syft.grid.messages.GetAllAutoscalingMessage",
+_GETALLWORKERSRESPONSE = _descriptor.Descriptor(
+    name="GetAllWorkersResponse",
+    full_name="syft.grid.messages.GetAllWorkersResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -675,7 +729,7 @@ _GETALLAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllAutoscalingMessage.msg_id",
+            full_name="syft.grid.messages.GetAllWorkersResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -693,15 +747,15 @@ _GETALLAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetAllAutoscalingMessage.address",
+            name="success",
+            full_name="syft.grid.messages.GetAllWorkersResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -712,9 +766,28 @@ _GETALLAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetAllAutoscalingMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.GetAllWorkersResponse.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetAllWorkersResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -739,14 +812,14 @@ _GETALLAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1321,
-    serialized_end=1467,
+    serialized_start=1202,
+    serialized_end=1338,
 )
 
 
-_GETALLAUTOSCALINGRESPONSE = _descriptor.Descriptor(
-    name="GetAllAutoscalingResponse",
-    full_name="syft.grid.messages.GetAllAutoscalingResponse",
+_DELETEWORKERMESSAGE = _descriptor.Descriptor(
+    name="DeleteWorkerMessage",
+    full_name="syft.grid.messages.DeleteWorkerMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -754,7 +827,7 @@ _GETALLAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllAutoscalingResponse.msg_id",
+            full_name="syft.grid.messages.DeleteWorkerMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -773,7 +846,7 @@ _GETALLAUTOSCALINGRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllAutoscalingResponse.address",
+            full_name="syft.grid.messages.DeleteWorkerMessage.address",
             index=1,
             number=2,
             type=11,
@@ -791,9 +864,28 @@ _GETALLAUTOSCALINGRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetAllAutoscalingResponse.reply_to",
+            name="content",
+            full_name="syft.grid.messages.DeleteWorkerMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteWorkerMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -818,14 +910,14 @@ _GETALLAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1470,
-    serialized_end=1617,
+    serialized_start=1341,
+    serialized_end=1499,
 )
 
 
-_UPDATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
-    name="UpdateAutoscalingMessage",
-    full_name="syft.grid.messages.UpdateAutoscalingMessage",
+_DELETEWORKERRESPONSE = _descriptor.Descriptor(
+    name="DeleteWorkerResponse",
+    full_name="syft.grid.messages.DeleteWorkerResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -833,7 +925,7 @@ _UPDATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.UpdateAutoscalingMessage.msg_id",
+            full_name="syft.grid.messages.DeleteWorkerResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -851,15 +943,15 @@ _UPDATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.UpdateAutoscalingMessage.address",
+            name="success",
+            full_name="syft.grid.messages.DeleteWorkerResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -870,9 +962,28 @@ _UPDATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.UpdateAutoscalingMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.DeleteWorkerResponse.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteWorkerResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -897,14 +1008,14 @@ _UPDATEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1620,
-    serialized_end=1766,
+    serialized_start=1502,
+    serialized_end=1637,
 )
 
 
-_UPDATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
-    name="UpdateAutoscalingResponse",
-    full_name="syft.grid.messages.UpdateAutoscalingResponse",
+_UPDATEWORKERMESSAGE = _descriptor.Descriptor(
+    name="UpdateWorkerMessage",
+    full_name="syft.grid.messages.UpdateWorkerMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -912,7 +1023,7 @@ _UPDATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.UpdateAutoscalingResponse.msg_id",
+            full_name="syft.grid.messages.UpdateWorkerMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -931,7 +1042,7 @@ _UPDATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.UpdateAutoscalingResponse.address",
+            full_name="syft.grid.messages.UpdateWorkerMessage.address",
             index=1,
             number=2,
             type=11,
@@ -949,9 +1060,28 @@ _UPDATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.UpdateAutoscalingResponse.reply_to",
+            name="content",
+            full_name="syft.grid.messages.UpdateWorkerMessage.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateWorkerMessage.reply_to",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -976,14 +1106,14 @@ _UPDATEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1769,
-    serialized_end=1916,
+    serialized_start=1640,
+    serialized_end=1798,
 )
 
 
-_DELETEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
-    name="DeleteAutoscalingMessage",
-    full_name="syft.grid.messages.DeleteAutoscalingMessage",
+_UPDATEWORKERRESPONSE = _descriptor.Descriptor(
+    name="UpdateWorkerResponse",
+    full_name="syft.grid.messages.UpdateWorkerResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -991,7 +1121,7 @@ _DELETEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.DeleteAutoscalingMessage.msg_id",
+            full_name="syft.grid.messages.UpdateWorkerResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -1009,15 +1139,15 @@ _DELETEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.DeleteAutoscalingMessage.address",
+            name="success",
+            full_name="syft.grid.messages.UpdateWorkerResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -1028,9 +1158,28 @@ _DELETEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.DeleteAutoscalingMessage.reply_to",
+            name="content",
+            full_name="syft.grid.messages.UpdateWorkerResponse.content",
             index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateWorkerResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -1055,397 +1204,249 @@ _DELETEAUTOSCALINGMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1919,
-    serialized_end=2065,
+    serialized_start=1801,
+    serialized_end=1936,
 )
 
-
-_DELETEAUTOSCALINGRESPONSE = _descriptor.Descriptor(
-    name="DeleteAutoscalingResponse",
-    full_name="syft.grid.messages.DeleteAutoscalingResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.DeleteAutoscalingResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.DeleteAutoscalingResponse.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.DeleteAutoscalingResponse.reply_to",
-            index=2,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2068,
-    serialized_end=2215,
-)
-
-_DEPLOYVIRTUALMACHINEWORKERMESSAGE.fields_by_name[
+_CREATEWORKERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_DEPLOYVIRTUALMACHINEWORKERMESSAGE.fields_by_name[
+_CREATEWORKERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DEPLOYVIRTUALMACHINEWORKERMESSAGE.fields_by_name[
+_CREATEWORKERMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DEPLOYVIRTUALMACHINEWORKERRESPONSE.fields_by_name[
+_CREATEWORKERRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_DEPLOYVIRTUALMACHINEWORKERRESPONSE.fields_by_name[
+_CREATEWORKERRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDEPLOYMENTSTATUSMESSAGE.fields_by_name[
+_CHECKWORKERDEPLOYMENTMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDEPLOYMENTSTATUSMESSAGE.fields_by_name[
+_CHECKWORKERDEPLOYMENTMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDEPLOYMENTSTATUSMESSAGE.fields_by_name[
+_CHECKWORKERDEPLOYMENTMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDEPLOYMENTSTATUSRESPONSE.fields_by_name[
+_CREATEWORKERDEPLOYMENTRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDEPLOYMENTSTATUSRESPONSE.fields_by_name[
+_CREATEWORKERDEPLOYMENTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDEPLOYMENTSTATUSRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_CREATEAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEAUTOSCALINGRESPONSE.fields_by_name[
+_GETWORKERRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_CREATEAUTOSCALINGRESPONSE.fields_by_name[
+_GETWORKERRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEAUTOSCALINGRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETAUTOSCALINGMESSAGE.fields_by_name[
+_GETWORKERSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETAUTOSCALINGRESPONSE.fields_by_name[
+_GETALLWORKERSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETAUTOSCALINGRESPONSE.fields_by_name[
+_GETALLWORKERSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETAUTOSCALINGRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLAUTOSCALINGMESSAGE.fields_by_name[
+_DELETEWORKERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLAUTOSCALINGMESSAGE.fields_by_name[
+_DELETEWORKERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLAUTOSCALINGMESSAGE.fields_by_name[
+_DELETEWORKERMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLAUTOSCALINGRESPONSE.fields_by_name[
+_DELETEWORKERRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLAUTOSCALINGRESPONSE.fields_by_name[
+_DELETEWORKERRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLAUTOSCALINGRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_UPDATEAUTOSCALINGMESSAGE.fields_by_name[
+_UPDATEWORKERMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_UPDATEAUTOSCALINGMESSAGE.fields_by_name[
+_UPDATEWORKERMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_UPDATEAUTOSCALINGMESSAGE.fields_by_name[
+_UPDATEWORKERMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_UPDATEAUTOSCALINGRESPONSE.fields_by_name[
+_UPDATEWORKERRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_UPDATEAUTOSCALINGRESPONSE.fields_by_name[
+_UPDATEWORKERRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_UPDATEAUTOSCALINGRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DELETEAUTOSCALINGMESSAGE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_DELETEAUTOSCALINGMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DELETEAUTOSCALINGMESSAGE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DELETEAUTOSCALINGRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_DELETEAUTOSCALINGRESPONSE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DELETEAUTOSCALINGRESPONSE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+DESCRIPTOR.message_types_by_name["CreateWorkerMessage"] = _CREATEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["CreateWorkerResponse"] = _CREATEWORKERRESPONSE
 DESCRIPTOR.message_types_by_name[
-    "DeployVirtualMachineWorkerMessage"
-] = _DEPLOYVIRTUALMACHINEWORKERMESSAGE
+    "CheckWorkerDeploymentMessage"
+] = _CHECKWORKERDEPLOYMENTMESSAGE
 DESCRIPTOR.message_types_by_name[
-    "DeployVirtualMachineWorkerResponse"
-] = _DEPLOYVIRTUALMACHINEWORKERRESPONSE
-DESCRIPTOR.message_types_by_name[
-    "GetDeploymentStatusMessage"
-] = _GETDEPLOYMENTSTATUSMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "GetDeploymentStatusResponse"
-] = _GETDEPLOYMENTSTATUSRESPONSE
-DESCRIPTOR.message_types_by_name["CreateAutoscalingMessage"] = _CREATEAUTOSCALINGMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "CreateAutoscalingResponse"
-] = _CREATEAUTOSCALINGRESPONSE
-DESCRIPTOR.message_types_by_name["GetAutoscalingMessage"] = _GETAUTOSCALINGMESSAGE
-DESCRIPTOR.message_types_by_name["GetAutoscalingResponse"] = _GETAUTOSCALINGRESPONSE
-DESCRIPTOR.message_types_by_name["GetAllAutoscalingMessage"] = _GETALLAUTOSCALINGMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "GetAllAutoscalingResponse"
-] = _GETALLAUTOSCALINGRESPONSE
-DESCRIPTOR.message_types_by_name["UpdateAutoscalingMessage"] = _UPDATEAUTOSCALINGMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "UpdateAutoscalingResponse"
-] = _UPDATEAUTOSCALINGRESPONSE
-DESCRIPTOR.message_types_by_name["DeleteAutoscalingMessage"] = _DELETEAUTOSCALINGMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "DeleteAutoscalingResponse"
-] = _DELETEAUTOSCALINGRESPONSE
+    "CreateWorkerDeploymentResponse"
+] = _CREATEWORKERDEPLOYMENTRESPONSE
+DESCRIPTOR.message_types_by_name["GetWorkerMessage"] = _GETWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["GetWorkerResponse"] = _GETWORKERRESPONSE
+DESCRIPTOR.message_types_by_name["GetWorkersMessage"] = _GETWORKERSMESSAGE
+DESCRIPTOR.message_types_by_name["GetAllWorkersResponse"] = _GETALLWORKERSRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteWorkerMessage"] = _DELETEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteWorkerResponse"] = _DELETEWORKERRESPONSE
+DESCRIPTOR.message_types_by_name["UpdateWorkerMessage"] = _UPDATEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["UpdateWorkerResponse"] = _UPDATEWORKERRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DeployVirtualMachineWorkerMessage = _reflection.GeneratedProtocolMessageType(
-    "DeployVirtualMachineWorkerMessage",
+CreateWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _DEPLOYVIRTUALMACHINEWORKERMESSAGE,
+        "DESCRIPTOR": _CREATEWORKERMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeployVirtualMachineWorkerMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerMessage)
     },
 )
-_sym_db.RegisterMessage(DeployVirtualMachineWorkerMessage)
+_sym_db.RegisterMessage(CreateWorkerMessage)
 
-DeployVirtualMachineWorkerResponse = _reflection.GeneratedProtocolMessageType(
-    "DeployVirtualMachineWorkerResponse",
+CreateWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _DEPLOYVIRTUALMACHINEWORKERRESPONSE,
+        "DESCRIPTOR": _CREATEWORKERRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeployVirtualMachineWorkerResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerResponse)
     },
 )
-_sym_db.RegisterMessage(DeployVirtualMachineWorkerResponse)
+_sym_db.RegisterMessage(CreateWorkerResponse)
 
-GetDeploymentStatusMessage = _reflection.GeneratedProtocolMessageType(
-    "GetDeploymentStatusMessage",
+CheckWorkerDeploymentMessage = _reflection.GeneratedProtocolMessageType(
+    "CheckWorkerDeploymentMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETDEPLOYMENTSTATUSMESSAGE,
+        "DESCRIPTOR": _CHECKWORKERDEPLOYMENTMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDeploymentStatusMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CheckWorkerDeploymentMessage)
     },
 )
-_sym_db.RegisterMessage(GetDeploymentStatusMessage)
+_sym_db.RegisterMessage(CheckWorkerDeploymentMessage)
 
-GetDeploymentStatusResponse = _reflection.GeneratedProtocolMessageType(
-    "GetDeploymentStatusResponse",
+CreateWorkerDeploymentResponse = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerDeploymentResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETDEPLOYMENTSTATUSRESPONSE,
+        "DESCRIPTOR": _CREATEWORKERDEPLOYMENTRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDeploymentStatusResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerDeploymentResponse)
     },
 )
-_sym_db.RegisterMessage(GetDeploymentStatusResponse)
+_sym_db.RegisterMessage(CreateWorkerDeploymentResponse)
 
-CreateAutoscalingMessage = _reflection.GeneratedProtocolMessageType(
-    "CreateAutoscalingMessage",
+GetWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _CREATEAUTOSCALINGMESSAGE,
+        "DESCRIPTOR": _GETWORKERMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateAutoscalingMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerMessage)
     },
 )
-_sym_db.RegisterMessage(CreateAutoscalingMessage)
+_sym_db.RegisterMessage(GetWorkerMessage)
 
-CreateAutoscalingResponse = _reflection.GeneratedProtocolMessageType(
-    "CreateAutoscalingResponse",
+GetWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _CREATEAUTOSCALINGRESPONSE,
+        "DESCRIPTOR": _GETWORKERRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateAutoscalingResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerResponse)
     },
 )
-_sym_db.RegisterMessage(CreateAutoscalingResponse)
+_sym_db.RegisterMessage(GetWorkerResponse)
 
-GetAutoscalingMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAutoscalingMessage",
+GetWorkersMessage = _reflection.GeneratedProtocolMessageType(
+    "GetWorkersMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETAUTOSCALINGMESSAGE,
+        "DESCRIPTOR": _GETWORKERSMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAutoscalingMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkersMessage)
     },
 )
-_sym_db.RegisterMessage(GetAutoscalingMessage)
+_sym_db.RegisterMessage(GetWorkersMessage)
 
-GetAutoscalingResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAutoscalingResponse",
+GetAllWorkersResponse = _reflection.GeneratedProtocolMessageType(
+    "GetAllWorkersResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETAUTOSCALINGRESPONSE,
+        "DESCRIPTOR": _GETALLWORKERSRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAutoscalingResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllWorkersResponse)
     },
 )
-_sym_db.RegisterMessage(GetAutoscalingResponse)
+_sym_db.RegisterMessage(GetAllWorkersResponse)
 
-GetAllAutoscalingMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllAutoscalingMessage",
+DeleteWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteWorkerMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLAUTOSCALINGMESSAGE,
+        "DESCRIPTOR": _DELETEWORKERMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllAutoscalingMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteWorkerMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllAutoscalingMessage)
+_sym_db.RegisterMessage(DeleteWorkerMessage)
 
-GetAllAutoscalingResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllAutoscalingResponse",
+DeleteWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteWorkerResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLAUTOSCALINGRESPONSE,
+        "DESCRIPTOR": _DELETEWORKERRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllAutoscalingResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteWorkerResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllAutoscalingResponse)
+_sym_db.RegisterMessage(DeleteWorkerResponse)
 
-UpdateAutoscalingMessage = _reflection.GeneratedProtocolMessageType(
-    "UpdateAutoscalingMessage",
+UpdateWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "UpdateWorkerMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _UPDATEAUTOSCALINGMESSAGE,
+        "DESCRIPTOR": _UPDATEWORKERMESSAGE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateAutoscalingMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateWorkerMessage)
     },
 )
-_sym_db.RegisterMessage(UpdateAutoscalingMessage)
+_sym_db.RegisterMessage(UpdateWorkerMessage)
 
-UpdateAutoscalingResponse = _reflection.GeneratedProtocolMessageType(
-    "UpdateAutoscalingResponse",
+UpdateWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "UpdateWorkerResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _UPDATEAUTOSCALINGRESPONSE,
+        "DESCRIPTOR": _UPDATEWORKERRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateAutoscalingResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateWorkerResponse)
     },
 )
-_sym_db.RegisterMessage(UpdateAutoscalingResponse)
-
-DeleteAutoscalingMessage = _reflection.GeneratedProtocolMessageType(
-    "DeleteAutoscalingMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _DELETEAUTOSCALINGMESSAGE,
-        "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteAutoscalingMessage)
-    },
-)
-_sym_db.RegisterMessage(DeleteAutoscalingMessage)
-
-DeleteAutoscalingResponse = _reflection.GeneratedProtocolMessageType(
-    "DeleteAutoscalingResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _DELETEAUTOSCALINGRESPONSE,
-        "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteAutoscalingResponse)
-    },
-)
-_sym_db.RegisterMessage(DeleteAutoscalingResponse)
+_sym_db.RegisterMessage(UpdateWorkerResponse)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/group_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8c\x01\n\x12\x43reateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13\x43reateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x89\x01\n\x0fGetGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"r\n\x10GetGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8c\x01\n\x12GetAllGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13GetAllGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8c\x01\n\x12SearchGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13SearchGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8c\x01\n\x12UpdateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13UpdateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/group_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9d\x01\n\x12\x43reateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x43reateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x83\x01\n\x10GetGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12GetAllGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13GetAllGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12\x44\x65leteGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x44\x65leteGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13UpdateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -80,9 +80,28 @@ _CREATEGROUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateGroupMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.CreateGroupMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -108,7 +127,7 @@ _CREATEGROUPMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=133,
-    serialized_end=273,
+    serialized_end=290,
 )
 
 
@@ -140,15 +159,15 @@ _CREATEGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateGroupResponse.address",
+            name="success",
+            full_name="syft.grid.messages.CreateGroupResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -159,15 +178,34 @@ _CREATEGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.CreateGroupResponse.success",
+            name="content",
+            full_name="syft.grid.messages.CreateGroupResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateGroupResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -186,8 +224,8 @@ _CREATEGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=275,
-    serialized_end=392,
+    serialized_start=293,
+    serialized_end=427,
 )
 
 
@@ -238,9 +276,28 @@ _GETGROUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetGroupMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetGroupMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -265,8 +322,8 @@ _GETGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=395,
-    serialized_end=532,
+    serialized_start=430,
+    serialized_end=584,
 )
 
 
@@ -298,15 +355,15 @@ _GETGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetGroupResponse.address",
+            name="success",
+            full_name="syft.grid.messages.GetGroupResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -317,15 +374,34 @@ _GETGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.GetGroupResponse.success",
+            name="content",
+            full_name="syft.grid.messages.GetGroupResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetGroupResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -344,8 +420,8 @@ _GETGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=534,
-    serialized_end=648,
+    serialized_start=587,
+    serialized_end=718,
 )
 
 
@@ -396,9 +472,28 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetAllGroupMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetAllGroupMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -423,8 +518,8 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=651,
-    serialized_end=791,
+    serialized_start=721,
+    serialized_end=878,
 )
 
 
@@ -456,29 +551,10 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetAllGroupResponse.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="success",
             full_name="syft.grid.messages.GetAllGroupResponse.success",
-            index=2,
-            number=3,
+            index=1,
+            number=2,
             type=8,
             cpp_type=7,
             label=1,
@@ -493,38 +569,16 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=793,
-    serialized_end=910,
-)
-
-
-_SEARCHGROUPMESSAGE = _descriptor.Descriptor(
-    name="SearchGroupMessage",
-    full_name="syft.grid.messages.SearchGroupMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.SearchGroupMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
+            name="content",
+            full_name="syft.grid.messages.GetAllGroupResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -536,27 +590,8 @@ _SEARCHGROUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.SearchGroupMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.SearchGroupMessage.reply_to",
-            index=2,
+            full_name="syft.grid.messages.GetAllGroupResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -581,14 +616,14 @@ _SEARCHGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=913,
-    serialized_end=1053,
+    serialized_start=881,
+    serialized_end=1015,
 )
 
 
-_SEARCHGROUPRESPONSE = _descriptor.Descriptor(
-    name="SearchGroupResponse",
-    full_name="syft.grid.messages.SearchGroupResponse",
+_DELETEGROUPMESSAGE = _descriptor.Descriptor(
+    name="DeleteGroupMessage",
+    full_name="syft.grid.messages.DeleteGroupMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -596,7 +631,7 @@ _SEARCHGROUPRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.SearchGroupResponse.msg_id",
+            full_name="syft.grid.messages.DeleteGroupMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -615,7 +650,7 @@ _SEARCHGROUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.SearchGroupResponse.address",
+            full_name="syft.grid.messages.DeleteGroupMessage.address",
             index=1,
             number=2,
             type=11,
@@ -633,15 +668,34 @@ _SEARCHGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.SearchGroupResponse.success",
+            name="content",
+            full_name="syft.grid.messages.DeleteGroupMessage.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteGroupMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -660,8 +714,106 @@ _SEARCHGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1055,
-    serialized_end=1172,
+    serialized_start=1018,
+    serialized_end=1175,
+)
+
+
+_DELETEGROUPRESPONSE = _descriptor.Descriptor(
+    name="DeleteGroupResponse",
+    full_name="syft.grid.messages.DeleteGroupResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteGroupResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.grid.messages.DeleteGroupResponse.success",
+            index=1,
+            number=2,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteGroupResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteGroupResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1178,
+    serialized_end=1312,
 )
 
 
@@ -712,9 +864,28 @@ _UPDATEGROUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateGroupMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.UpdateGroupMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -739,8 +910,8 @@ _UPDATEGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1175,
-    serialized_end=1315,
+    serialized_start=1315,
+    serialized_end=1472,
 )
 
 
@@ -772,15 +943,15 @@ _UPDATEGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.UpdateGroupResponse.address",
+            name="success",
+            full_name="syft.grid.messages.UpdateGroupResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -791,15 +962,34 @@ _UPDATEGROUPRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.UpdateGroupResponse.success",
+            name="content",
+            full_name="syft.grid.messages.UpdateGroupResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateGroupResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -818,8 +1008,8 @@ _UPDATEGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1317,
-    serialized_end=1434,
+    serialized_start=1475,
+    serialized_end=1609,
 )
 
 _CREATEGROUPMESSAGE.fields_by_name[
@@ -867,19 +1057,19 @@ _GETALLGROUPRESPONSE.fields_by_name[
 _GETALLGROUPRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHGROUPMESSAGE.fields_by_name[
+_DELETEGROUPMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHGROUPMESSAGE.fields_by_name[
+_DELETEGROUPMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHGROUPMESSAGE.fields_by_name[
+_DELETEGROUPMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHGROUPRESPONSE.fields_by_name[
+_DELETEGROUPRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHGROUPRESPONSE.fields_by_name[
+_DELETEGROUPRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _UPDATEGROUPMESSAGE.fields_by_name[
@@ -903,8 +1093,8 @@ DESCRIPTOR.message_types_by_name["GetGroupMessage"] = _GETGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["GetGroupResponse"] = _GETGROUPRESPONSE
 DESCRIPTOR.message_types_by_name["GetAllGroupMessage"] = _GETALLGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["GetAllGroupResponse"] = _GETALLGROUPRESPONSE
-DESCRIPTOR.message_types_by_name["SearchGroupMessage"] = _SEARCHGROUPMESSAGE
-DESCRIPTOR.message_types_by_name["SearchGroupResponse"] = _SEARCHGROUPRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteGroupMessage"] = _DELETEGROUPMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteGroupResponse"] = _DELETEGROUPRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateGroupMessage"] = _UPDATEGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["UpdateGroupResponse"] = _UPDATEGROUPRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -975,27 +1165,27 @@ GetAllGroupResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetAllGroupResponse)
 
-SearchGroupMessage = _reflection.GeneratedProtocolMessageType(
-    "SearchGroupMessage",
+DeleteGroupMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteGroupMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _SEARCHGROUPMESSAGE,
+        "DESCRIPTOR": _DELETEGROUPMESSAGE,
         "__module__": "proto.grid.messages.group_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchGroupMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteGroupMessage)
     },
 )
-_sym_db.RegisterMessage(SearchGroupMessage)
+_sym_db.RegisterMessage(DeleteGroupMessage)
 
-SearchGroupResponse = _reflection.GeneratedProtocolMessageType(
-    "SearchGroupResponse",
+DeleteGroupResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteGroupResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _SEARCHGROUPRESPONSE,
+        "DESCRIPTOR": _DELETEGROUPRESPONSE,
         "__module__": "proto.grid.messages.group_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchGroupResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteGroupResponse)
     },
 )
-_sym_db.RegisterMessage(SearchGroupResponse)
+_sym_db.RegisterMessage(DeleteGroupResponse)
 
 UpdateGroupMessage = _reflection.GeneratedProtocolMessageType(
     "UpdateGroupMessage",

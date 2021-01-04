@@ -5,100 +5,95 @@ package syft.grid.messages;
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
-// Create Virtual Machine Worker
-message DeployVirtualMachineWorkerMessage {
+
+// CREATE WORKER
+message CreateWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+message CheckWorkerDeploymentMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateWorkerDeploymentResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+// GET Group
+message GetWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 
-message DeployVirtualMachineWorkerResponse {
+message GetWorkerResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-
-// Get Deployment Status
-message GetDeploymentStatusMessage {
+// GET ALL Workers
+message GetWorkersMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message GetDeploymentStatusResponse {
+message GetAllWorkersResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Delete Group
+message DeleteWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
+message DeleteWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
 
-// Create Auto-scaling condition
-message CreateAutoscalingMessage {
+// UPDATE Group
+message UpdateWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message CreateAutoscalingResponse {
+message UpdateWorkerResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-
-// Get auto-scaling condition
-message GetAutoscalingMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-message GetAutoscalingResponse {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-
-// Get all auto-scaling conditions
-message GetAllAutoscalingMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-message GetAllAutoscalingResponse {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-
-// Update auto-scaling condition
-message UpdateAutoscalingMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-message UpdateAutoscalingResponse {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-
-// Delete Auto-scaling condition
-message DeleteAutoscalingMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
-}
-
-message DeleteAutoscalingResponse {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 4;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
