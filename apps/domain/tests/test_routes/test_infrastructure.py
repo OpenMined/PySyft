@@ -157,7 +157,7 @@ def test_create_worker(client, database, cleanup):
         data={"name": "test_worker"},
         headers=headers,
     )
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Worker created succesfully!"}
 
 
@@ -178,7 +178,7 @@ def test_get_all_workers(client, database, cleanup):
         "/dcfl/workers",
         headers=headers,
     )
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {
         "workers": [
             {"id": "546513231a", "address": "159.156.128.165", "datasets": 25320},
@@ -206,7 +206,7 @@ def test_get_specific_worker(client, database, cleanup):
         "/dcfl/workers/9846165",
         headers=headers,
     )
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {
         "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
     }
@@ -229,5 +229,5 @@ def test_delete_worker(client, database, cleanup):
         "/dcfl/workers/9846165",
         headers=headers,
     )
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Worker was deleted succesfully!"}
