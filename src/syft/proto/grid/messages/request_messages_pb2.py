@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8e\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14GetAllRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15GetAllRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14SearchRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15SearchRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9f\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14GetAllRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15GetAllRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14\x44\x65leteRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x44\x65leteRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -80,9 +80,28 @@ _CREATEREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateRequestMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.CreateRequestMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -108,7 +127,7 @@ _CREATEREQUESTMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=135,
-    serialized_end=277,
+    serialized_end=294,
 )
 
 
@@ -140,15 +159,15 @@ _CREATEREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateRequestResponse.address",
+            name="success",
+            full_name="syft.grid.messages.CreateRequestResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -159,15 +178,34 @@ _CREATEREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.CreateRequestResponse.success",
+            name="content",
+            full_name="syft.grid.messages.CreateRequestResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateRequestResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -186,8 +224,8 @@ _CREATEREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=279,
-    serialized_end=398,
+    serialized_start=297,
+    serialized_end=433,
 )
 
 
@@ -238,9 +276,28 @@ _GETREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetRequestMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetRequestMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -265,8 +322,8 @@ _GETREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=401,
-    serialized_end=540,
+    serialized_start=436,
+    serialized_end=592,
 )
 
 
@@ -298,15 +355,15 @@ _GETREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetRequestResponse.address",
+            name="success",
+            full_name="syft.grid.messages.GetRequestResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -317,15 +374,34 @@ _GETREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.GetRequestResponse.success",
+            name="content",
+            full_name="syft.grid.messages.GetRequestResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetRequestResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -344,8 +420,8 @@ _GETREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=542,
-    serialized_end=658,
+    serialized_start=595,
+    serialized_end=728,
 )
 
 
@@ -396,9 +472,28 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetAllRequestMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetAllRequestMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -423,8 +518,8 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=661,
-    serialized_end=803,
+    serialized_start=731,
+    serialized_end=890,
 )
 
 
@@ -456,29 +551,10 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetAllRequestResponse.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="success",
             full_name="syft.grid.messages.GetAllRequestResponse.success",
-            index=2,
-            number=3,
+            index=1,
+            number=2,
             type=8,
             cpp_type=7,
             label=1,
@@ -493,38 +569,16 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=805,
-    serialized_end=924,
-)
-
-
-_SEARCHREQUESTMESSAGE = _descriptor.Descriptor(
-    name="SearchRequestMessage",
-    full_name="syft.grid.messages.SearchRequestMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.SearchRequestMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
+            name="content",
+            full_name="syft.grid.messages.GetAllRequestResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -536,27 +590,8 @@ _SEARCHREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.SearchRequestMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.SearchRequestMessage.reply_to",
-            index=2,
+            full_name="syft.grid.messages.GetAllRequestResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -581,14 +616,14 @@ _SEARCHREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=927,
-    serialized_end=1069,
+    serialized_start=893,
+    serialized_end=1029,
 )
 
 
-_SEARCHREQUESTRESPONSE = _descriptor.Descriptor(
-    name="SearchRequestResponse",
-    full_name="syft.grid.messages.SearchRequestResponse",
+_DELETEREQUESTMESSAGE = _descriptor.Descriptor(
+    name="DeleteRequestMessage",
+    full_name="syft.grid.messages.DeleteRequestMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -596,7 +631,7 @@ _SEARCHREQUESTRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.SearchRequestResponse.msg_id",
+            full_name="syft.grid.messages.DeleteRequestMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -615,7 +650,7 @@ _SEARCHREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.SearchRequestResponse.address",
+            full_name="syft.grid.messages.DeleteRequestMessage.address",
             index=1,
             number=2,
             type=11,
@@ -633,15 +668,34 @@ _SEARCHREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.SearchRequestResponse.success",
+            name="content",
+            full_name="syft.grid.messages.DeleteRequestMessage.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteRequestMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -660,8 +714,106 @@ _SEARCHREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1071,
-    serialized_end=1190,
+    serialized_start=1032,
+    serialized_end=1191,
+)
+
+
+_DELETEREQUESTRESPONSE = _descriptor.Descriptor(
+    name="DeleteRequestResponse",
+    full_name="syft.grid.messages.DeleteRequestResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteRequestResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.grid.messages.DeleteRequestResponse.success",
+            index=1,
+            number=2,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteRequestResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteRequestResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1194,
+    serialized_end=1330,
 )
 
 
@@ -712,9 +864,28 @@ _UPDATEREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateRequestMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.UpdateRequestMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -739,8 +910,8 @@ _UPDATEREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1193,
-    serialized_end=1335,
+    serialized_start=1333,
+    serialized_end=1492,
 )
 
 
@@ -772,15 +943,15 @@ _UPDATEREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.UpdateRequestResponse.address",
+            name="success",
+            full_name="syft.grid.messages.UpdateRequestResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -791,15 +962,34 @@ _UPDATEREQUESTRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.UpdateRequestResponse.success",
+            name="content",
+            full_name="syft.grid.messages.UpdateRequestResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateRequestResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -818,8 +1008,8 @@ _UPDATEREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1337,
-    serialized_end=1456,
+    serialized_start=1495,
+    serialized_end=1631,
 )
 
 _CREATEREQUESTMESSAGE.fields_by_name[
@@ -867,19 +1057,19 @@ _GETALLREQUESTRESPONSE.fields_by_name[
 _GETALLREQUESTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHREQUESTMESSAGE.fields_by_name[
+_DELETEREQUESTMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHREQUESTMESSAGE.fields_by_name[
+_DELETEREQUESTMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHREQUESTMESSAGE.fields_by_name[
+_DELETEREQUESTMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHREQUESTRESPONSE.fields_by_name[
+_DELETEREQUESTRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHREQUESTRESPONSE.fields_by_name[
+_DELETEREQUESTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _UPDATEREQUESTMESSAGE.fields_by_name[
@@ -903,8 +1093,8 @@ DESCRIPTOR.message_types_by_name["GetRequestMessage"] = _GETREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["GetRequestResponse"] = _GETREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name["GetAllRequestMessage"] = _GETALLREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["GetAllRequestResponse"] = _GETALLREQUESTRESPONSE
-DESCRIPTOR.message_types_by_name["SearchRequestMessage"] = _SEARCHREQUESTMESSAGE
-DESCRIPTOR.message_types_by_name["SearchRequestResponse"] = _SEARCHREQUESTRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteRequestMessage"] = _DELETEREQUESTMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteRequestResponse"] = _DELETEREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateRequestMessage"] = _UPDATEREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["UpdateRequestResponse"] = _UPDATEREQUESTRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -975,27 +1165,27 @@ GetAllRequestResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetAllRequestResponse)
 
-SearchRequestMessage = _reflection.GeneratedProtocolMessageType(
-    "SearchRequestMessage",
+DeleteRequestMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteRequestMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _SEARCHREQUESTMESSAGE,
+        "DESCRIPTOR": _DELETEREQUESTMESSAGE,
         "__module__": "proto.grid.messages.request_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchRequestMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteRequestMessage)
     },
 )
-_sym_db.RegisterMessage(SearchRequestMessage)
+_sym_db.RegisterMessage(DeleteRequestMessage)
 
-SearchRequestResponse = _reflection.GeneratedProtocolMessageType(
-    "SearchRequestResponse",
+DeleteRequestResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteRequestResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _SEARCHREQUESTRESPONSE,
+        "DESCRIPTOR": _DELETEREQUESTRESPONSE,
         "__module__": "proto.grid.messages.request_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchRequestResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteRequestResponse)
     },
 )
-_sym_db.RegisterMessage(SearchRequestResponse)
+_sym_db.RegisterMessage(DeleteRequestResponse)
 
 UpdateRequestMessage = _reflection.GeneratedProtocolMessageType(
     "UpdateRequestMessage",
