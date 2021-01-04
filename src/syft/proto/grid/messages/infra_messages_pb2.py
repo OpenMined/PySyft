@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9e\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x43reateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa7\x01\n\x1c\x43heckWorkerDeploymentMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1e\x43reateWorkerDeploymentResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x84\x01\n\x11GetWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetWorkersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15GetAllWorkersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13\x44\x65leteWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x44\x65leteWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13UpdateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14UpdateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9e\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x43reateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa7\x01\n\x1c\x43heckWorkerDeploymentMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x90\x01\n\x1d\x43heckWorkerDeploymentResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x84\x01\n\x11GetWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetWorkersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12GetWorkersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13\x44\x65leteWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14\x44\x65leteWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13UpdateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x14UpdateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -327,9 +327,9 @@ _CHECKWORKERDEPLOYMENTMESSAGE = _descriptor.Descriptor(
 )
 
 
-_CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
-    name="CreateWorkerDeploymentResponse",
-    full_name="syft.grid.messages.CreateWorkerDeploymentResponse",
+_CHECKWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
+    name="CheckWorkerDeploymentResponse",
+    full_name="syft.grid.messages.CheckWorkerDeploymentResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -337,7 +337,7 @@ _CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.msg_id",
+            full_name="syft.grid.messages.CheckWorkerDeploymentResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -356,7 +356,7 @@ _CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.success",
+            full_name="syft.grid.messages.CheckWorkerDeploymentResponse.success",
             index=1,
             number=2,
             type=8,
@@ -375,7 +375,7 @@ _CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.content",
+            full_name="syft.grid.messages.CheckWorkerDeploymentResponse.content",
             index=2,
             number=3,
             type=9,
@@ -394,7 +394,7 @@ _CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.CreateWorkerDeploymentResponse.address",
+            full_name="syft.grid.messages.CheckWorkerDeploymentResponse.address",
             index=3,
             number=4,
             type=11,
@@ -421,7 +421,7 @@ _CREATEWORKERDEPLOYMENTRESPONSE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=602,
-    serialized_end=747,
+    serialized_end=746,
 )
 
 
@@ -518,8 +518,8 @@ _GETWORKERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=750,
-    serialized_end=905,
+    serialized_start=749,
+    serialized_end=904,
 )
 
 
@@ -616,8 +616,8 @@ _GETWORKERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=908,
-    serialized_end=1040,
+    serialized_start=907,
+    serialized_end=1039,
 )
 
 
@@ -714,14 +714,14 @@ _GETWORKERSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1043,
-    serialized_end=1199,
+    serialized_start=1042,
+    serialized_end=1198,
 )
 
 
-_GETALLWORKERSRESPONSE = _descriptor.Descriptor(
-    name="GetAllWorkersResponse",
-    full_name="syft.grid.messages.GetAllWorkersResponse",
+_GETWORKERSRESPONSE = _descriptor.Descriptor(
+    name="GetWorkersResponse",
+    full_name="syft.grid.messages.GetWorkersResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -729,7 +729,7 @@ _GETALLWORKERSRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllWorkersResponse.msg_id",
+            full_name="syft.grid.messages.GetWorkersResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -748,7 +748,7 @@ _GETALLWORKERSRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllWorkersResponse.success",
+            full_name="syft.grid.messages.GetWorkersResponse.success",
             index=1,
             number=2,
             type=8,
@@ -767,7 +767,7 @@ _GETALLWORKERSRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllWorkersResponse.content",
+            full_name="syft.grid.messages.GetWorkersResponse.content",
             index=2,
             number=3,
             type=9,
@@ -786,7 +786,7 @@ _GETALLWORKERSRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllWorkersResponse.address",
+            full_name="syft.grid.messages.GetWorkersResponse.address",
             index=3,
             number=4,
             type=11,
@@ -812,8 +812,8 @@ _GETALLWORKERSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1202,
-    serialized_end=1338,
+    serialized_start=1201,
+    serialized_end=1334,
 )
 
 
@@ -910,8 +910,8 @@ _DELETEWORKERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1341,
-    serialized_end=1499,
+    serialized_start=1337,
+    serialized_end=1495,
 )
 
 
@@ -1008,8 +1008,8 @@ _DELETEWORKERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1502,
-    serialized_end=1637,
+    serialized_start=1498,
+    serialized_end=1633,
 )
 
 
@@ -1106,8 +1106,8 @@ _UPDATEWORKERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1640,
-    serialized_end=1798,
+    serialized_start=1636,
+    serialized_end=1794,
 )
 
 
@@ -1204,8 +1204,8 @@ _UPDATEWORKERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1801,
-    serialized_end=1936,
+    serialized_start=1797,
+    serialized_end=1932,
 )
 
 _CREATEWORKERMESSAGE.fields_by_name[
@@ -1232,10 +1232,10 @@ _CHECKWORKERDEPLOYMENTMESSAGE.fields_by_name[
 _CHECKWORKERDEPLOYMENTMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEWORKERDEPLOYMENTRESPONSE.fields_by_name[
+_CHECKWORKERDEPLOYMENTRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_CREATEWORKERDEPLOYMENTRESPONSE.fields_by_name[
+_CHECKWORKERDEPLOYMENTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETWORKERMESSAGE.fields_by_name[
@@ -1262,10 +1262,10 @@ _GETWORKERSMESSAGE.fields_by_name[
 _GETWORKERSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLWORKERSRESPONSE.fields_by_name[
+_GETWORKERSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLWORKERSRESPONSE.fields_by_name[
+_GETWORKERSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEWORKERMESSAGE.fields_by_name[
@@ -1304,12 +1304,12 @@ DESCRIPTOR.message_types_by_name[
     "CheckWorkerDeploymentMessage"
 ] = _CHECKWORKERDEPLOYMENTMESSAGE
 DESCRIPTOR.message_types_by_name[
-    "CreateWorkerDeploymentResponse"
-] = _CREATEWORKERDEPLOYMENTRESPONSE
+    "CheckWorkerDeploymentResponse"
+] = _CHECKWORKERDEPLOYMENTRESPONSE
 DESCRIPTOR.message_types_by_name["GetWorkerMessage"] = _GETWORKERMESSAGE
 DESCRIPTOR.message_types_by_name["GetWorkerResponse"] = _GETWORKERRESPONSE
 DESCRIPTOR.message_types_by_name["GetWorkersMessage"] = _GETWORKERSMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllWorkersResponse"] = _GETALLWORKERSRESPONSE
+DESCRIPTOR.message_types_by_name["GetWorkersResponse"] = _GETWORKERSRESPONSE
 DESCRIPTOR.message_types_by_name["DeleteWorkerMessage"] = _DELETEWORKERMESSAGE
 DESCRIPTOR.message_types_by_name["DeleteWorkerResponse"] = _DELETEWORKERRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateWorkerMessage"] = _UPDATEWORKERMESSAGE
@@ -1349,16 +1349,16 @@ CheckWorkerDeploymentMessage = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(CheckWorkerDeploymentMessage)
 
-CreateWorkerDeploymentResponse = _reflection.GeneratedProtocolMessageType(
-    "CreateWorkerDeploymentResponse",
+CheckWorkerDeploymentResponse = _reflection.GeneratedProtocolMessageType(
+    "CheckWorkerDeploymentResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _CREATEWORKERDEPLOYMENTRESPONSE,
+        "DESCRIPTOR": _CHECKWORKERDEPLOYMENTRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerDeploymentResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CheckWorkerDeploymentResponse)
     },
 )
-_sym_db.RegisterMessage(CreateWorkerDeploymentResponse)
+_sym_db.RegisterMessage(CheckWorkerDeploymentResponse)
 
 GetWorkerMessage = _reflection.GeneratedProtocolMessageType(
     "GetWorkerMessage",
@@ -1393,16 +1393,16 @@ GetWorkersMessage = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetWorkersMessage)
 
-GetAllWorkersResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllWorkersResponse",
+GetWorkersResponse = _reflection.GeneratedProtocolMessageType(
+    "GetWorkersResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLWORKERSRESPONSE,
+        "DESCRIPTOR": _GETWORKERSRESPONSE,
         "__module__": "proto.grid.messages.infra_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllWorkersResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkersResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllWorkersResponse)
+_sym_db.RegisterMessage(GetWorkersResponse)
 
 DeleteWorkerMessage = _reflection.GeneratedProtocolMessageType(
     "DeleteWorkerMessage",
