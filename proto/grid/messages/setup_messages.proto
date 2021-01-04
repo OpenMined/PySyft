@@ -5,28 +5,31 @@ package syft.grid.messages;
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
-message CreateInitialSetupMessage {
+message CreateInitialSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-}
-
-message CreateInitialSetupResponse {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-
-message GetSetupMessage {
+message CreateInitialSetUpResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-message GetSetupResponse {
+
+message GetSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  bool success = 3;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
+}
+
+message GetSetUpResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
