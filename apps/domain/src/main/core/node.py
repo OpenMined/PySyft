@@ -7,7 +7,7 @@ from syft.grid.connections.http_connection import HTTPConnection
 from syft.core.io.location import SpecificLocation
 from syft.core.io.location import Location
 from .services.association_request import AssociationRequestService
-
+from .services.infra_service import DomainInfrastructureService
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -37,6 +37,7 @@ class GridDomain(Domain):
         )
 
         self.immediate_services_with_reply.append(AssociationRequestService)
+        self.immediate_services_with_reply.append(DomainInfrastructureService)
         self._register_services()
 
 
