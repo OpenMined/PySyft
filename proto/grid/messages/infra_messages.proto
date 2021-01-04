@@ -21,7 +21,7 @@ message CreateWorkerResponse {
   syft.core.io.Address address = 4;
 }
 
-
+// CHECK Worker Deployment Progress
 message CheckWorkerDeploymentMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
@@ -29,7 +29,7 @@ message CheckWorkerDeploymentMessage {
   syft.core.io.Address reply_to = 4;
 }
 
-message CreateWorkerDeploymentResponse {
+message CheckWorkerDeploymentResponse {
   syft.core.common.UID msg_id = 1;
   bool success = 2;
   string content = 3;
@@ -37,7 +37,7 @@ message CreateWorkerDeploymentResponse {
 }
 
 
-// GET Group
+// GET Worker
 message GetWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
@@ -61,14 +61,14 @@ message GetWorkersMessage {
   syft.core.io.Address reply_to = 4;
 }
 
-message GetAllWorkersResponse {
+message GetWorkersResponse {
   syft.core.common.UID msg_id = 1;
   bool success = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
 
-// Delete Group
+// Delete Worker
 message DeleteWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
@@ -83,7 +83,7 @@ message DeleteWorkerResponse {
   syft.core.io.Address address = 4;
 }
 
-// UPDATE Group
+// UPDATE Worker
 message UpdateWorkerMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
