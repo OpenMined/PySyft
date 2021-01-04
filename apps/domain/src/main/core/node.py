@@ -8,6 +8,8 @@ from syft.core.io.location import SpecificLocation
 from syft.core.io.location import Location
 from .services.association_request import AssociationRequestService
 from .services.infra_service import DomainInfrastructureService
+from .services.setup_service import SetUpService
+
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -36,8 +38,11 @@ class GridDomain(Domain):
             db_path=db_path,
         )
 
+        # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
         self.immediate_services_with_reply.append(DomainInfrastructureService)
+        self.immediate_services_with_reply.append(SetUpService)
+
         self._register_services()
 
 
