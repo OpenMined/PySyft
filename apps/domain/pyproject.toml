@@ -20,8 +20,8 @@ sqlalchemy_mixins = "^1.2.1"
 PyJWT = "^1.7.1"
 bcrypt = "^3.2.0"
 loguru = "^0.5.3"
-syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_messages"}
 Flask-Executor = "^0.9.4"
+syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_messages"}
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
