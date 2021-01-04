@@ -27,7 +27,4 @@ class_type = type(func_type)
 
 
 def unsplit(list_of_things: List[str], separator: str = ".") -> str:
-    out = ""
-    for thing in list_of_things:
-        out += thing + separator
-    return out[:-1]
+    return separator.join(list_of_things)
