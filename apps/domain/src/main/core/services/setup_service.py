@@ -26,23 +26,51 @@ from syft.grid.messages.setup_messages import (
 @syft_decorator(typechecking=True)
 def create_initial_setup(
     msg: CreateInitialSetUpMessage,
+    node: AbstractNode,
 ) -> CreateInitialSetUpResponse:
-    return CreateInitialSetUpResponse(
-        address=msg.reply_to,
-        success=True,
-        content={"msg": "Running initial setup!"},
-    )
+
+    try:
+        # TODO:
+        # Set everything needed here using the node instance.
+        # Examples:
+        #   - Organization Cloud Credentials
+        #   - Pre-set root key (if needed)
+        node.setup_configs = {}  # msg.content
+
+        # Final status / message
+        final_msg = "Running initial setup!"
+        final_status = True
+
+        return CreateInitialSetUpResponse(
+            address=msg.reply_to,
+            success=final_status,
+            content={"msg": final_msg},
+        )
+    except Exception as e:
+        return CreateInitialSetUpResponse(
+            address=msg.reply_to,
+            success=False,
+            content={"error": str(e)},
+        )
 
 
 @syft_decorator(typechecking=True)
 def get_setup(
     msg: GetSetUpMessage,
+    node: AbstractNode,
 ) -> GetSetUpResponse:
-    return GetSetUpResponse(
-        address=msg.reply_to,
-        success=True,
-        content={"setup": {}},
-    )
+    try:
+        return GetSetUpResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"setup": node.setup_configs},
+        )
+    except Exception as e:
+        return GetSetUpResponse(
+            address=msg.reply_to,
+            success=False,
+            content={"error": str(e)},
+        )
 
 
 class SetUpService(ImmediateNodeServiceWithReply):
@@ -62,7 +90,7 @@ class SetUpService(ImmediateNodeServiceWithReply):
         ],
         verify_key: VerifyKey,
     ) -> Union[CreateInitialSetUpResponse, GetSetUpResponse,]:
-        return SetUpService.msg_handler_map[type(msg)](msg=msg)
+        return SetUpService.msg_handler_map[type(msg)](msg=msg, node=node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
