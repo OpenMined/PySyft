@@ -2,13 +2,23 @@ from ..blueprint import dcfl_blueprint as dcfl_route
 from flask import request, Response
 import json
 
-from syft.core.node.common.service.repr_service import ReprMessage
-from ...auth import error_handler, token_required
-from ....core.node import node
+from syft.grid.messages.infra_messages import (
+    CreateWorkerMessage,
+    CheckWorkerDeploymentMessage,
+    UpdateWorkerMessage,
+    GetWorkerMessage,
+    GetWorkersMessage,
+    DeleteWorkerMessage,
+)
 
+from ...auth import error_handler, token_required
+from ....core.task_handler import route_logic
+
+
+"""
 ## Nodes CRUD
 @dcfl_route.route("/nodes", methods=["POST"])
-# @token_required
+@token_required
 def create_node():
     def route_logic():
         # Get request body
@@ -379,154 +389,107 @@ def delete_autoscaling_condition(autoscaling_id):
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
     )
-
+"""
 
 ## Workers CRUD
-
-
 @dcfl_route.route("/workers", methods=["POST"])
-# @token_required
-def create_worker():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def create_node(current_user):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: CreateVirtualMachineMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {"msg": "Worker created succesfully!"}
-
-    return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+    status_code, response_msg = error_handler(
+        route_logic, CreateWorkerMessage, current_user, content
     )
 
-
-@dcfl_route.route("/workers", methods=["GET"])
-# @token_required
-def get_all_workers():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
-
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: GetVirtualMachinesMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {
-        "workers": [
-            {"id": "546513231a", "address": "159.156.128.165", "datasets": 25320},
-            {"id": "asfa16f5aa", "address": "138.142.125.125", "datasets": 2530},
-            {"id": "af61ea3a3f", "address": "19.16.98.146", "datasets": 2320},
-            {"id": "af4a51adas", "address": "15.59.18.165", "datasets": 5320},
-        ]
-    }
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/workers/<worker_id>", methods=["GET"])
-# @token_required
-def get_specific_worker(worker_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def get_node(current_user, worker_id):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: GetVirtualMachineMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    content["worker_id"] = worker_id
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {
-        "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
-    }
+    status_code, response_msg = error_handler(
+        route_logic, GetWorkerMessage, current_user, content
+    )
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
+    )
+
+
+@dcfl_route.route("/workers", methods=["GET"])
+@token_required
+def get_all_nodes(current_user):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    status_code, response_msg = error_handler(
+        route_logic, GetWorkersMessage, current_user, content
+    )
+
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+    return Response(
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
+    )
+
+
+@dcfl_route.route("/workers/<worker_id>", methods=["PUT"])
+@token_required
+def update_node(current_user, worker_id):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["worker_id"] = worker_id
+
+    status_code, response_msg = error_handler(
+        route_logic, UpdateWorkerMessage, current_user, content
+    )
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+    return Response(
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/workers/<worker_id>", methods=["DELETE"])
-# @token_required
-def delete_worker(worker_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def delete_node(current_user, worker_id):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["worker_id"] = worker_id
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: DeleteVirtualMachineMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    status_code, response_msg = error_handler(
+        route_logic, DeleteWorkerMessage, current_user, content
+    )
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {"msg": "Worker was deleted succesfully!"}
-
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
