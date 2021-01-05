@@ -68,7 +68,7 @@ Example:
     requested_object = data_ptr_domain_1.id_at_location
 
     # getting the request id
-    message_request_id = domain_1_client.request_queue.get_request_id_from_object_id(
+    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
         object_id=requested_object
     )
 
@@ -171,7 +171,14 @@ class Pointer(AbstractPointer):
 
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
-        return response.obj
+        obj = response.obj
+
+        if type(obj).__name__.endswith("ProtobufWrapper"):
+            # for ProtobufWrapper's we want to actually vend the real Proto since
+            # that is what was originally sent in with .send
+            return obj.data
+
+        return obj
 
     def get_copy(
         self,
