@@ -70,7 +70,7 @@ $ pip install syft
 ```
 
 This will auto-install PyTorch and other dependencies as required, to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
+examples and tutorials. For more information on building from source see the contribution guide [here](CONTRIBUTING.md).
 
 ## Documentation
 The latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
