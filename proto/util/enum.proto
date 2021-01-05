@@ -1,0 +1,6 @@
+syntax = "proto3";
+package syft.util;
+
+message EnumMember {
+    string member_name = 1;
+}
