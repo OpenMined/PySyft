@@ -11,8 +11,8 @@ Table of Contents:
 
 
 # stdlib
-import uuid
 from itertools import combinations
+import uuid
 
 # third party
 import pytest
@@ -22,7 +22,6 @@ import syft as sy
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
-
 
 ARGUMENTS = ("vm", "device", "domain", "network")
 

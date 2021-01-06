@@ -70,6 +70,7 @@ from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 
 # Convenience Functions
 from syft.decorators import type_hints  # noqa: F401
+from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
@@ -78,7 +79,6 @@ from syft.grid.duet import launch_duet  # noqa: F401
 from syft.lib import lib_ast  # noqa: F401
 from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
-from syft.grid.duet import bcolors  # noqa: F401
 
 # syft relative
 # Package Imports
