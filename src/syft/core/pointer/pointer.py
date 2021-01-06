@@ -178,6 +178,11 @@ class Pointer(AbstractPointer):
             # that is what was originally sent in with .send
             return obj.data
 
+        if type(obj).__name__.endswith("EnumLikeWrapper"):
+            # for EnumLikeWrapper objects, we want to actually vend the real enum-like object, since
+            # that is what was originally sent in with .send
+            return obj.data
+
         return obj
 
     def get_copy(

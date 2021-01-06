@@ -1,5 +1,8 @@
 # stdlib
+from typing import Any as TypeAny
 from typing import Dict
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
@@ -9,7 +12,9 @@ import torch
 # syft relative
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
+from ...ast import add_classes
 from ...ast.globals import Globals
+from ...lib.python.enum import GenerateEnumLikeWrapper
 from .allowlist import allowlist
 
 TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
@@ -64,6 +69,12 @@ def create_torch_ast() -> Globals:
             pass
             # TODO: Replace with logging
             # print(f"Skipping {method} not supported in {TORCH_VERSION}")
+
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
+        ("torch.dtype", "tenseal.dtype", torch.dtype)
+    ]
+    GenerateEnumLikeWrapper(enum_like_type=torch.dtype, import_path="torch.dtype")
+    add_classes(ast, classes)
 
     for klass in ast.classes:
         klass.create_pointer_class()

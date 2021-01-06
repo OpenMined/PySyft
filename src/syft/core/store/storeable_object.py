@@ -154,6 +154,12 @@ class StorableObject(AbstractStorableObject):
             proto_type = getattr(sys.modules[".".join(module_parts)], klass)
             obj_type = proto_type.serializable_wrapper_type
 
+        if proto.obj_type.endswith("EnumLikeWrapper"):
+            module_parts = proto.obj_type.split(".")
+            klass = module_parts.pop().replace("EnumLikeWrapper", "")
+            proto_type = getattr(sys.modules[".".join(module_parts)], klass)
+            obj_type = proto_type.serializable_wrapper_type
+
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = obj_type.get_data_protobuf_schema()
 
