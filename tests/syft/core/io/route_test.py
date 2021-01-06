@@ -26,6 +26,25 @@ from syft.grid.connections.webrtc import WebRTCConnection
 # --------------------- TEST HELPERS ---------------------
 
 
+class MockNode(Node):
+    """Mock Node object for testing purposes."""
+
+    def recv_immediate_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithoutReply
+    ) -> None:
+        return None
+
+    def recv_eventual_msg_without_reply(
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> None:
+        return None
+
+    def recv_immediate_msg_with_reply(
+        self, msg: SignedImmediateSyftMessageWithReply
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        return _construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
+
+
 def _construct_address() -> Address:
     """Helper method to construct an Address"""
     return Address(
@@ -96,13 +115,6 @@ def test_solo_route_init() -> None:
     assert h_solo.schema.destination is destination
     assert h_solo.connection is virtual_client
 
-    # Test SoloRoute with WebRTCConnection (BidirectionalConnection) in constructor
-    connection = WebRTCConnection(node=Node())
-    b_solo = SoloRoute(destination=destination, connection=connection)
-
-    assert b_solo.schema.destination is destination
-    assert b_solo.connection is connection
-
 
 def test_broadcast_route_init() -> None:
     """
@@ -135,8 +147,11 @@ def test_route_pprint_property_method() -> None:
 
 def test_solo_route_send_immediate_msg_without_reply() -> None:
     """Test SoloRoute.send_immediate_msg_without_reply method works."""
+    node = MockNode()
     destination = SpecificLocation()
-    connection = WebRTCConnection(node=Node())
+    server = VirtualServerConnection(node=node)
+    connection = VirtualClientConnection(server=server)
+
     h_solo = SoloRoute(destination=destination, connection=connection)
     msg = _construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
 
@@ -145,8 +160,11 @@ def test_solo_route_send_immediate_msg_without_reply() -> None:
 
 def test_solo_route_send_eventual_msg_without_reply() -> None:
     """Test SoloRoute.send_eventual_msg_without_reply method works."""
+    node = MockNode()
     destination = SpecificLocation()
-    connection = WebRTCConnection(node=Node())
+    server = VirtualServerConnection(node=node)
+    connection = VirtualClientConnection(server=server)
+
     h_solo = SoloRoute(destination=destination, connection=connection)
     msg = _construct_dummy_message(SignedEventualSyftMessageWithoutReply)
 
@@ -155,13 +173,6 @@ def test_solo_route_send_eventual_msg_without_reply() -> None:
 
 def test_solo_route_send_immediate_msg_with_reply() -> None:
     """Test SoloRoute.send_immediate_msg_with_reply method works."""
-
-    class MockNode(Node):
-        def recv_immediate_msg_with_reply(
-            self, msg: SignedImmediateSyftMessageWithReply
-        ) -> SignedImmediateSyftMessageWithoutReply:
-            return _construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
-
     node = MockNode()
     destination = SpecificLocation()
     server = VirtualServerConnection(node=node)
