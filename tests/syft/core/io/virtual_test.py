@@ -1,8 +1,9 @@
 from typing import Callable
 from typing import Union
+from unittest.mock import patch
 
 import pytest
-from nacl.signing import SigningKey
+from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
 
 from syft.core.common.uid import UID
@@ -36,16 +37,6 @@ def _gen_node() -> Node:
     )
 
 
-def get_signing_key() -> SigningKey:
-    # return a the signing key to use
-    key = "e89ff2e651b42393b6ecb5956419088781309d953d72bd73a0968525a3a6a951"
-    return SigningKey(bytes.fromhex(key))
-
-
-def get_verify_key() -> VerifyKey:
-    return get_signing_key().verify_key
-
-
 def _gen_dummy_message(
     msg_class: Callable,
 ) -> Union[
@@ -60,7 +51,7 @@ def _gen_dummy_message(
     - SignedImmediateSyftMessageWithoutReply
     """
     address = _gen_address()
-    key = get_verify_key()
+    key = VerifyKey(crypto_sign_keypair()[0])
 
     return msg_class(
         address=address,
@@ -109,23 +100,35 @@ def test_virtual_client_connection_init() -> None:
 
 # --------------------- CLASS METHODS ---------------------
 
-# def test_virtual_server_connection_recv_immedaite_msg_with_reply() -> None:
-#     """Test that VirtualServerConnection.recv_immedaite_msg_with_reply works."""
-#     node = _gen_node()
-#     server = VirtualServerConnection(node=node)
-#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
-#     assert isinstance(
-#         server.recv_immediate_msg_with_reply(msg=msg),
-#         SignedEventualSyftMessageWithoutReply
-#     )
-#
-#
-# def test_virtual_server_connection_recv_immedaite_msg_without_reply() -> None:
-#     """Test that VirtualServerConnection.recv_immedaite_msg_without_reply works."""
-#     node = _gen_node()
-#     server = VirtualServerConnection(node=node)
-#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithoutReply)
-#     assert server.recv_immediate_msg_without_reply(msg=msg) is None
+
+def test_virtual_server_connection_recv_immedaite_msg_with_reply() -> None:
+    """Test that VirtualServerConnection.recv_immedaite_msg_with_reply works."""
+    node = _gen_node()
+    server = VirtualServerConnection(node=node)
+
+    input_msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
+    output_msg = _gen_dummy_message(SignedEventualSyftMessageWithoutReply)
+    with patch(
+        "syft.core.io.virtual.VirtualServerConnection.recv_immediate_msg_with_reply",
+        return_value=output_msg,
+    ):
+        assert isinstance(
+            server.recv_immediate_msg_with_reply(msg=input_msg),
+            SignedEventualSyftMessageWithoutReply,
+        )
+
+
+def test_virtual_server_connection_recv_immedaite_msg_without_reply() -> None:
+    """Test that VirtualServerConnection.recv_immedaite_msg_without_reply works."""
+    node = _gen_node()
+    server = VirtualServerConnection(node=node)
+    msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
+
+    with patch(
+        "syft.core.io.virtual.VirtualServerConnection.recv_immediate_msg_without_reply",
+        return_value=None,
+    ):
+        assert not server.recv_immediate_msg_without_reply(msg=msg)
 
 
 def test_virtual_server_connection_recv_eventual_msg_without_reply() -> None:
@@ -140,31 +143,40 @@ def test_virtual_server_connection_recv_eventual_msg_without_reply() -> None:
         assert server.recv_eventual_msg_without_reply(msg=msg) is None
 
 
-# def test_virtual_client_connection_send_immediate_msg_without_reply() -> None:
-#     """
-#     Test that VirtualClientConnection.send_immediate_msg_without_reply works.
-#     """
-#     node = _gen_node()
-#     server = VirtualServerConnection(node=node)
-#     client = VirtualClientConnection(server=server)
-#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithoutReply)
-#
-#     assert client.send_immediate_msg_without_reply(msg=msg) is None
-#
-#
-# def test_virtual_client_connection_send_immediate_msg_with_reply() -> None:
-#     """
-#     Test that VirtualClientConnection.send_immediate_msg_with_reply works.
-#     """
-#     node = _gen_node()
-#     server = VirtualServerConnection(node=node)
-#     client = VirtualClientConnection(server=server)
-#     msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
-#
-#     assert isinstance(
-#         client.send_immediate_msg_with_reply(msg=msg),
-#         SignedImmediateSyftMessageWithoutReply
-#     )
+def test_virtual_client_connection_send_immediate_msg_without_reply() -> None:
+    """
+    Test that VirtualClientConnection.send_immediate_msg_without_reply works.
+    """
+    node = _gen_node()
+    server = VirtualServerConnection(node=node)
+    client = VirtualClientConnection(server=server)
+    msg = _gen_dummy_message(SignedImmediateSyftMessageWithoutReply)
+
+    with patch(
+        "syft.core.io.virtual.VirtualServerConnection.recv_immediate_msg_without_reply",
+        return_value=None,
+    ):
+        assert client.send_immediate_msg_without_reply(msg=msg) is None
+
+
+def test_virtual_client_connection_send_immediate_msg_with_reply() -> None:
+    """
+    Test that VirtualClientConnection.send_immediate_msg_with_reply works.
+    """
+    node = _gen_node()
+    server = VirtualServerConnection(node=node)
+    client = VirtualClientConnection(server=server)
+    input_msg = _gen_dummy_message(SignedImmediateSyftMessageWithReply)
+    output_msg = _gen_dummy_message(SignedImmediateSyftMessageWithoutReply)
+
+    with patch(
+        "syft.core.io.virtual.VirtualServerConnection.recv_immediate_msg_with_reply",
+        return_value=output_msg,
+    ):
+        assert isinstance(
+            client.send_immediate_msg_with_reply(msg=input_msg),
+            SignedImmediateSyftMessageWithoutReply,
+        )
 
 
 def test_virtual_client_connection_send_eventual_msg_without_reply() -> None:
