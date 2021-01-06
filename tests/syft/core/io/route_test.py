@@ -19,8 +19,8 @@ from syft.core.io.route import RouteSchema
 from syft.core.io.route import SoloRoute
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.io.virtual import VirtualClientConnection
+from syft.core.io.virtual import VirtualServerConnection
 from syft.core.node.common.node import Node
-from syft.grid.connections.http_connection import HTTPConnection
 from syft.grid.connections.webrtc import WebRTCConnection
 
 
@@ -88,15 +88,16 @@ def test_solo_route_init() -> None:
     Test that SoloRoute will use the Location and
     ClientConnection/BidirectionalConnection passed into its constructor.
     """
-    # Test SoloRoute with ClientConnection in constructor
+    # Test SoloRoute with VirtualClientConnection (ClientConnection) in constructor
     destination = SpecificLocation()
-    connection = HTTPConnection(url="https://opengrid.openmined.org/")
-    h_solo = SoloRoute(destination=destination, connection=connection)
+    virtual_server = VirtualServerConnection(node=Node())
+    virtual_client = VirtualClientConnection(server=virtual_server)
+    h_solo = SoloRoute(destination=destination, connection=virtual_client)
 
     assert h_solo.schema.destination is destination
-    assert h_solo.connection is connection
+    assert h_solo.connection is virtual_client
 
-    # Test SoloRoute with WebRTCConnection in constructor
+    # Test SoloRoute with WebRTCConnection (BidirectionalConnection) in constructor
     connection = WebRTCConnection(node=Node())
     b_solo = SoloRoute(destination=destination, connection=connection)
 
@@ -110,11 +111,12 @@ def test_broadcast_route_init() -> None:
     ClientConnection passed into its constructor.
     """
     destination = SpecificLocation()
-    connection = HTTPConnection(url="https://opengrid.openmined.org/")
-    b_route = BroadcastRoute(destination=destination, connection=connection)
+    virtual_server = VirtualServerConnection(node=Node())
+    virtual_client = VirtualClientConnection(server=virtual_server)
+    b_route = BroadcastRoute(destination=destination, connection=virtual_client)
 
     assert b_route.schema.destination is destination
-    assert b_route.connection is connection
+    assert b_route.connection is virtual_client
 
 
 # --------------------- CLASS & PROPERTY METHODS ---------------------
@@ -135,7 +137,7 @@ def test_route_pprint_property_method() -> None:
 def test_solo_route_send_immediate_msg_without_reply() -> None:
     """Test SoloRoute.send_immediate_msg_without_reply method works."""
     destination = SpecificLocation()
-    connection = HTTPConnection(url="https://opengrid.openmined.org/")
+    connection = WebRTCConnection(node=Node())
     h_solo = SoloRoute(destination=destination, connection=connection)
     msg = _construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
 
@@ -145,7 +147,7 @@ def test_solo_route_send_immediate_msg_without_reply() -> None:
 def test_solo_route_send_eventual_msg_without_reply() -> None:
     """Test SoloRoute.send_eventual_msg_without_reply method works."""
     destination = SpecificLocation()
-    connection = HTTPConnection(url="https://opengrid.openmined.org/")
+    connection = WebRTCConnection(node=Node())
     h_solo = SoloRoute(destination=destination, connection=connection)
     msg = _construct_dummy_message(SignedEventualSyftMessageWithoutReply)
 
@@ -155,14 +157,14 @@ def test_solo_route_send_eventual_msg_without_reply() -> None:
 # def test_solo_route_send_immediate_msg_with_reply() -> None:
 #     """Test SoloRoute.send_immediate_msg_with_reply method works."""
 #     destination = SpecificLocation()
-#     connection = HTTPConnection(url="https://opengrid.openmined.org/")
+#     connection = WebRTCConnection(node=Node())
 #     h_solo = SoloRoute(destination=destination, connection=connection)
 #     msg = _construct_dummy_message(SignedImmediateSyftMessageWithReply)
 #
 #     ret = h_solo.send_immediate_msg_with_reply(msg)
 #     assert isinstance(
 #         ret,
-#         SignedImmediateSyftMessageWithoutReply,
+#         SignedImmediateSyftMessageWithReply,
 #     )
 
 
@@ -176,7 +178,7 @@ def test_solo_route_default_serialization_and_deserialization() -> None:
     """
 
     destination = SpecificLocation()
-    connection = HTTPConnection(url="https://opengrid.openmined.org/")
+    connection = WebRTCConnection(node=Node())
     h_solo = SoloRoute(destination=destination, connection=connection)
 
     with pytest.raises(NotImplementedError):
