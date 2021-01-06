@@ -27,12 +27,41 @@ on:
 jobs:
   python-tests-all:
     strategy:
-      max-parallel: 216
+      max-parallel: 270
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        chunk: [1, 2, 3, 4, 5, 6]
+        chunk: [1, 2, 3, 4, 5, 6, 7]
+        include:
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 1
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 2
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 3
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 4
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 5
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 6
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 7
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
@@ -79,21 +108,21 @@ jobs:
       - name: Run torch test chunks Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          export TEST_CHUNKS=12
+          export TEST_CHUNKS=14
           export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
-          export TEST_CHUNK=$(( ${{ matrix.chunk }}+6 ))
+          export TEST_CHUNK=$(( ${{ matrix.chunk }}+7 ))
           echo "Running $TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
 
       - name: Run torch test chunks Windows
         if: startsWith(runner.os, 'Windows')
         run: |
-          $Env:TEST_CHUNKS=12
+          $Env:TEST_CHUNKS=14
           $Env:TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $Env:TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
-          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+6
+          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+7
           echo "Running $Env:TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
