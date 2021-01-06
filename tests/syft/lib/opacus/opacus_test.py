@@ -5,11 +5,7 @@ import pytest
 import syft as sy
 
 
-@pytest.mark.vendor(
-    lib="opacus",
-    python={"min_version": (3, 7)},
-    torch={"min_version": "1.6.0"},
-)
+@pytest.mark.vendor(lib="opacus", python={"min_version": (3, 6, 9)})
 def test_remote_engine_simple() -> None:
     sy.load_lib("opacus")
 
