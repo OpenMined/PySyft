@@ -16,7 +16,9 @@ from ...util import aggressive_set_attr
 
 # this will overwrite the .serializable_wrapper_type with an auto generated
 # wrapper which will basically just hold the object whose type is C type class
-def GenerateEnumLikeWrapper(enum_like_type: type, import_path: str) -> None:
+def GenerateEnumLikeWrapper(
+    enum_like_type: type, import_path: str, parent_path: str
+) -> None:
     class EnumLikeWrapper(StorableObject):
         def __init__(self, value: object):
             # set empty defaults, then this object will be used in construct_new_object
@@ -31,14 +33,17 @@ def GenerateEnumLikeWrapper(enum_like_type: type, import_path: str) -> None:
 
         def _data_object2proto(self) -> Any:
             proto = EnumMember_PB()
-            proto.member_name = str(self.value)
+            proto.member_name = str(self.value).split(".")[-1]
             return proto
 
         @staticmethod
         def _data_proto2object(proto: Any) -> "EnumLikeWrapper":
-            name = proto.member_name.split(".")
-            module = importlib.import_module(".".join(name[:-1]))
-            obj = getattr(module, name[-1])
+            name = proto.member_name
+            parents = parent_path.split(".")
+            module = importlib.import_module(parents[0])
+            for p in parents[1:]:
+                module = getattr(module, p)
+            obj = getattr(module, name)
             return EnumLikeWrapper(value=obj)
 
         @staticmethod

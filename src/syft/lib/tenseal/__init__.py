@@ -12,6 +12,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...lib.python.enum import GenerateEnumLikeWrapper
 from ..misc.union import UnionGenerator
 from .ckks_vector import CKKSVector  # noqa: 401
 from .context import ContextWrapper  # noqa: 401
@@ -67,6 +68,12 @@ def create_ast() -> Globals:
         ("tenseal.CKKSVector.matmul", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.decrypt", "syft.lib.python.List"),
     ]
+
+    GenerateEnumLikeWrapper(
+        enum_like_type=ts.SCHEME_TYPE,
+        import_path="tenseal.SCHEME_TYPE",
+        parent_path="tenseal.SCHEME_TYPE",
+    )
 
     add_modules(ast, modules)
     add_classes(ast, classes)

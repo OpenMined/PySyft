@@ -73,7 +73,9 @@ def create_torch_ast() -> Globals:
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("torch.dtype", "tenseal.dtype", torch.dtype)
     ]
-    GenerateEnumLikeWrapper(enum_like_type=torch.dtype, import_path="torch.dtype")
+    GenerateEnumLikeWrapper(
+        enum_like_type=torch.dtype, import_path="torch.dtype", parent_path="torch"
+    )
     add_classes(ast, classes)
 
     for klass in ast.classes:
