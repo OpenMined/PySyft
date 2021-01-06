@@ -1,28 +1,27 @@
-# std
+# stdlib
 from typing import Callable
 from typing import Union
 
 # third party
-import pytest
 from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
+import pytest
 
-# syft
-from syft.core.common.uid import UID
+# syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.uid import UID
 from syft.core.io.address import Address
+from syft.core.io.location.specific import SpecificLocation
 from syft.core.io.route import BroadcastRoute
 from syft.core.io.route import Route
 from syft.core.io.route import RouteSchema
 from syft.core.io.route import SoloRoute
-from syft.core.io.location.specific import SpecificLocation
 from syft.core.io.virtual import VirtualClientConnection
 from syft.core.io.virtual import VirtualServerConnection
 from syft.core.node.common.node import Node
 from syft.grid.connections.webrtc import WebRTCConnection
-
 
 # --------------------- TEST HELPERS ---------------------
 
@@ -154,18 +153,28 @@ def test_solo_route_send_eventual_msg_without_reply() -> None:
     assert not h_solo.send_eventual_msg_without_reply(msg)
 
 
-# def test_solo_route_send_immediate_msg_with_reply() -> None:
-#     """Test SoloRoute.send_immediate_msg_with_reply method works."""
-#     destination = SpecificLocation()
-#     connection = WebRTCConnection(node=Node())
-#     h_solo = SoloRoute(destination=destination, connection=connection)
-#     msg = _construct_dummy_message(SignedImmediateSyftMessageWithReply)
-#
-#     ret = h_solo.send_immediate_msg_with_reply(msg)
-#     assert isinstance(
-#         ret,
-#         SignedImmediateSyftMessageWithReply,
-#     )
+def test_solo_route_send_immediate_msg_with_reply() -> None:
+    """Test SoloRoute.send_immediate_msg_with_reply method works."""
+
+    class MockNode(Node):
+        def recv_immediate_msg_with_reply(
+            self, msg: SignedImmediateSyftMessageWithReply
+        ) -> SignedImmediateSyftMessageWithoutReply:
+            return _construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
+
+    node = MockNode()
+    destination = SpecificLocation()
+    server = VirtualServerConnection(node=node)
+    connection = VirtualClientConnection(server=server)
+
+    h_solo = SoloRoute(destination=destination, connection=connection)
+    msg = _construct_dummy_message(SignedImmediateSyftMessageWithReply)
+    ret = h_solo.send_immediate_msg_with_reply(msg)
+
+    assert isinstance(
+        ret,
+        SignedImmediateSyftMessageWithoutReply,
+    )
 
 
 # --------------------- SERDE ---------------------
