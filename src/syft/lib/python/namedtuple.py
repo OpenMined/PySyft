@@ -9,6 +9,7 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from packaging import version
 import torch
 
 # syft relative
@@ -228,11 +229,17 @@ def add_torch_return_types() -> None:
         [[-0.1000, 0.1000, 0.2000], [0.2000, 0.3000, 0.4000], [0.0000, -0.3000, 0.5000]]
     )
 
-    cummax = x.cummax(0)
-    supported_types.append(type(cummax))
+    torch_version_ge_1d5d0 = version.parse(
+        torch.__version__.split("+")[0]
+    ) >= version.parse("1.5.0")
 
-    cummin = x.cummin(0)
-    supported_types.append(type(cummin))
+    if torch_version_ge_1d5d0:
+        cummax = x.cummax(0)
+        supported_types.append(type(cummax))
+
+    if torch_version_ge_1d5d0:
+        cummin = x.cummin(0)
+        supported_types.append(type(cummin))
 
     eig = x.eig(True)
     supported_types.append(type(eig))

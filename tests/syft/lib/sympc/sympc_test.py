@@ -6,6 +6,7 @@ import torch as th
 import syft as sy
 
 
+@pytest.mark.asyncio
 @pytest.mark.vendor(
     lib="sympc", python={"min_version": (3, 7)}, torch={"min_version": "1.7.0"}
 )
