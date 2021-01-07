@@ -11,6 +11,7 @@ import tenseal as ts
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
+from ...ast import add_static_data_attributes
 from ...ast.globals import Globals
 from ...lib.python.enum import GenerateEnumLikeWrapper
 from ..misc.union import UnionGenerator
@@ -40,9 +41,6 @@ def create_ast() -> Globals:
     ]
 
     methods = [
-        ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
-        ("tenseal.SCHEME_TYPE.CKKS", "tenseal.SCHEME_TYPE"),
-        ("tenseal.SCHEME_TYPE.NONE", "tenseal.SCHEME_TYPE"),
         # Context
         ("tenseal.Context.generate_galois_keys", "syft.lib.python._SyNone"),
         ("tenseal.Context.generate_relin_keys", "syft.lib.python._SyNone"),
@@ -78,6 +76,13 @@ def create_ast() -> Globals:
     add_modules(ast, modules)
     add_classes(ast, classes)
     add_methods(ast, methods)
+
+    static_data_attributes = [
+        ("tenseal.SCHEME_TYPE.BFV", "tenseal.SCHEME_TYPE"),
+        ("tenseal.SCHEME_TYPE.CKKS", "tenseal.SCHEME_TYPE"),
+        ("tenseal.SCHEME_TYPE.NONE", "tenseal.SCHEME_TYPE"),
+    ]
+    add_static_data_attributes(ast, static_data_attributes)
 
     for klass in ast.classes:
         klass.create_pointer_class()

@@ -14,6 +14,7 @@ from google.protobuf.message import Message
 # syft relative
 from .. import lib
 from ..ast.callable import Callable
+from ..ast.static_data_attribute import StaticDataAttribute
 from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
@@ -121,6 +122,13 @@ class Class(Callable):
     def __repr__(self) -> str:
         return f"{self.name}"
 
+    def __getattribute__(self: Any, name: str) -> Any:
+        attr = object.__getattribute__(self, name)
+        if isinstance(attr, StaticDataAttribute):
+            return attr()
+
+        return attr
+
     @property
     def pointer_type(self) -> Union[Callable, CallableT]:
         return getattr(self, self.pointer_name)
@@ -199,7 +207,9 @@ class Class(Callable):
             # where Callable is ast.callable.Callable
             # where CallableT is typing.Callable == any function, method, lambda
             # so we have to check for path_and_name
-            if attr_path_and_name is not None:
+            if isinstance(attr, StaticDataAttribute):
+                setattr(self, attr_name, attr)
+            elif attr_path_and_name is not None:
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
 
             if attr_name == "__len__":

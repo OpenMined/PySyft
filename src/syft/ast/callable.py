@@ -74,10 +74,24 @@ class Callable(ast.attribute.Attribute):
             )
 
     def add_path(
-        self, path: List[str], index: int, return_type_name: Optional[str] = None
+        self,
+        path: List[str],
+        index: int,
+        return_type_name: Optional[str] = None,
+        ref_func: Optional[CallableT] = None,
     ) -> None:
         if index < len(path):
             if path[index] not in self.attrs:
+                if ref_func is not None:
+                    self.attrs[
+                        path[index]
+                    ] = ast.static_data_attribute.StaticDataAttribute(
+                        name=path[index],
+                        path_and_name=unsplit(path[: index + 1]),
+                        ref=ref_func,
+                        return_type_name=return_type_name,
+                    )
+                    return
 
                 attr_ref = getattr(self.ref, path[index])
 
