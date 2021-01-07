@@ -27,3 +27,8 @@ Technically yes, although there can be some issues with the code expecting some 
 ## How do I do MLOps with Syft and Duet or connect more than two systems?
 Anything more automated or scaleable past p2p will be handled by a separate parallel project called [Grid](https://github.com/OpenMined/pygrid). The two teams work very closely and there are some areas of overlap so rest assured the Syft team is well aware of the desire for more granular user permission systems, many to many connections and cloud deployment / orchestration and they are coming!
 
+## Why am I getting ModuleNotFoundError?
+This is probably because you are using the latest version of PySyft.
+If you need PySyft 0.2.x you can install it by choosing a specific version such as: `pip install syft==0.2.9`.
+
+**Note** If you are pursuing the [Udacity - Secure and Private AI Course](https://www.udacity.com/course/secure-and-private-ai--ud185), you need version `0.1.2a1`. Simply run: `pip install syft==0.1.2a1`
