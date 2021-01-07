@@ -70,7 +70,7 @@ $ pip install syft
 ```
 
 This will auto-install PyTorch and other dependencies as required, to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](CONTRIBUTING.md).
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 
 ## Documentation
 The latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
@@ -106,7 +106,7 @@ These tutorials cover how to operate common network types over the Duet API.
 
 ## Start Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
 Also, join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
@@ -188,7 +188,7 @@ If you would like to become a user of PySyft, please progress to our User Docume
 
 ## Want to Develop PySyft?
 If you would like to become a developer of PySyft, please see our
-[Contributor Documentation](CONTRIBUTING.md).
+[Contributor Documentation](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 This documentation will help you set up your development environment, give you a roadmap
 for learning the codebase, and help you find your first project to contribute.
 
