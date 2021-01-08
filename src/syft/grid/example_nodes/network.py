@@ -9,6 +9,7 @@ $ python src/syft/grid/example_nodes/network.py
 """
 # stdlib
 import os
+import sys
 
 # third party
 import flask
@@ -77,6 +78,16 @@ def process_network_msgs() -> flask.Response:
 
 def run() -> None:
     global network
+
+    num_args = len(sys.argv)
+    if num_args > 1:
+        if sys.argv[1] == "IPV6":
+            os.environ["IP_MODE"] = "IPV6"
+        else:
+            os.environ["IP_MODE"] = "IPV4"
+    else:
+        os.environ["IP_MODE"] = "IPV4"
+
     print("====================================")
     print("========== NODE ROOT KEY ===========")
     print("====================================")
