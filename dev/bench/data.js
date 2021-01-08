@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608773614340,
+  "lastUpdate": 1610089969548,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -749,6 +749,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00008932192981187414",
             "extra": "mean: 875.7477294677836 usec\nrounds: 621"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kangnahua@gmail.com",
+            "name": "Nahua",
+            "username": "nahuakang"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e4fe695dffebf70d248bd86c34b949d053619b07",
+          "message": "Testcov/syft core io remaining (#4952)\n\n* Add unit tests for init to all classes in route\r\n\r\n* Add tests for route property methods\r\n\r\n* Add tests for send msg methods; fix one return type bug in HTTPConnection; comment off failed unit test\r\n\r\n* Add placeholder unit test for SoloRoute serde\r\n\r\n* Add unit tests for init and messages; 2 messages method are failing\r\n\r\n* Add unit tests for virtual client connection class methods; two not working\r\n\r\n* Move away from using HTTPConnection; use VirtualClientConnection or WebRTCConnection for testing\r\n\r\n* Patch for unit tests with type checking error issues\r\n\r\n* Fix SoloRoute test with MockNode\r\n\r\n- Ran isort\r\n\r\n* Fix unit tests with Madhava's approach\r\n\r\n* Remove serde test for solo route as node has no object2proto method\r\n\r\n* Refactor unit tests for route and virtual tests\r\n\r\nCo-authored-by: Madhava Jay <me@madhavajay.com>",
+          "timestamp": "2021-01-08T17:10:10+10:00",
+          "tree_id": "d2ae9f1305236b35fec796c074d433d5c0c4f3c7",
+          "url": "https://github.com/OpenMined/PySyft/commit/e4fe695dffebf70d248bd86c34b949d053619b07"
+        },
+        "date": 1610089967939,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1008.1859394799623,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00031306783281660137",
+            "extra": "mean: 991.8805260424632 usec\nrounds: 576"
           }
         ]
       }
