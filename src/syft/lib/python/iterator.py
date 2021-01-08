@@ -66,7 +66,8 @@ class Iterator(PyPrimitive):
                     pass
 
             exhausted = getattr(self, "exhausted", False)
-            if (max_len is not None and self._index >= max_len) or exhausted:
+            self_index = getattr(self, "_index", 0)
+            if (max_len is not None and self_index >= max_len) or exhausted:
                 setattr(self, "exhausted", True)
                 raise StopIteration
 

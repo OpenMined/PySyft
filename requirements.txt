@@ -36,11 +36,12 @@ PyNaCl
 pyscaffold[all]
 pytest
 pytest-asyncio
+pytest-benchmark
 pytest-cov
 pytest-xdist[psutil]
 requests
 sqlitedict
-torch>=1.5
+torch>=1.4
 torchvision
 typeguard
 typing-extensions # backport to older python 3
