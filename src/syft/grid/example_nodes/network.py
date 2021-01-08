@@ -85,14 +85,15 @@ def run() -> None:
     PORT = os.getenv("PORT", 5000)
     print(f"Starting Node on PORT: {PORT}")
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    
+
     MODE = os.getenv("IP_MODE")
     if MODE == "IPV6":
-        print("Listening on : {MODE}")
+        print(f"Listening on : {MODE}")
         # used :: so that the server works for IPV6
         app.run(host="::", port=int(PORT))
     else:
-        print("Listening on : {MODE}")
+        print(f"Listening on : {MODE}")
         app.run(host="0.0.0.0", port=int(PORT))  # nosec
+
 
 run()
