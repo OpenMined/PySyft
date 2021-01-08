@@ -1,10 +1,10 @@
 # stdlib
 import importlib
 from typing import Any as TypeAny
+from typing import Callable as CallableT
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 from typing import Union
-from typing import Callable as CallableT
 
 # syft relative
 from . import attribute  # noqa: F401
@@ -89,7 +89,7 @@ def add_static_data_attributes(
     for path, return_type in paths:
         parent = get_parent(path, ast)
         path_list = path.split(".")
-        parent.add_path(  # type: ignore
+        parent.add_path(
             path=path_list,
             index=len(path_list) - 1,
             return_type_name=return_type,

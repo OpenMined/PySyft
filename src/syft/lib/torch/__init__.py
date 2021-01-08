@@ -13,6 +13,7 @@ import torch
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast import add_classes
+from ...ast import add_static_data_attributes
 from ...ast.globals import Globals
 from ...lib.python.enum import GenerateEnumLikeWrapper
 from .allowlist import allowlist
@@ -77,6 +78,24 @@ def create_torch_ast() -> Globals:
         enum_like_type=torch.dtype, import_path="torch.dtype", parent_path="torch"
     )
     add_classes(ast, classes)
+
+    static_data_attributes = [
+        ("torch.uint8", "torch.dtype"),
+        ("torch.int8", "torch.dtype"),
+        ("torch.int16", "torch.dtype"),
+        ("torch.short", "torch.dtype"),
+        ("torch.int32", "torch.dtype"),
+        ("torch.int", "torch.dtype"),
+        ("torch.int64", "torch.dtype"),
+        ("torch.long", "torch.dtype"),
+        ("torch.float16", "torch.dtype"),
+        ("torch.half", "torch.dtype"),
+        ("torch.float32", "torch.dtype"),
+        ("torch.float", "torch.dtype"),
+        ("torch.float64", "torch.dtype"),
+        ("torch.double", "torch.dtype"),
+    ]
+    add_static_data_attributes(ast, static_data_attributes)
 
     for klass in ast.classes:
         klass.create_pointer_class()

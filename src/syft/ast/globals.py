@@ -39,7 +39,7 @@ class Globals(Module):
             obj_type=obj_type,
         )
 
-    def add_path(
+    def add_path(  # type: ignore
         self,
         path: Union[str, List[str]],
         index: int = 0,

@@ -22,6 +22,13 @@ class Module(ast.attribute.Attribute):
 
     lookup_cache: Dict[Any, Any] = {}
 
+    def __getattribute__(self: Any, name: str) -> Any:
+        attr = object.__getattribute__(self, name)
+        if isinstance(attr, ast.static_data_attribute.StaticDataAttribute):
+            return attr()
+
+        return attr
+
     def add_attr(
         self,
         attr_name: str,
@@ -72,51 +79,63 @@ class Module(ast.attribute.Attribute):
         index: int,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[Union[Callable, CallableT]] = None,
+        ref_func: Optional[CallableT] = None,
     ) -> None:
         if path[index] not in self.attrs:
-            attr_ref = getattr(self.ref, path[index])
+            if ref_func is not None:
+                self.add_attr(
+                    attr_name=path[index],
+                    attr=ast.static_data_attribute.StaticDataAttribute(
+                        name=path[index],
+                        path_and_name=unsplit(path[: index + 1]),
+                        ref=ref_func,
+                        return_type_name=return_type_name,
+                    ),
+                )
+            else:
+                attr_ref = getattr(self.ref, path[index])
 
-            if isinstance(attr_ref, module_type):
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=ast.module.Module(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
+                if isinstance(attr_ref, module_type):
+                    self.add_attr(
+                        attr_name=path[index],
+                        attr=ast.module.Module(
+                            path[index],
+                            unsplit(path[: index + 1]),
+                            attr_ref,
+                            return_type_name=return_type_name,
+                        ),
+                    )
+                elif isinstance(attr_ref, class_type):
+                    klass = ast.klass.Class(
+                        name=path[index],
+                        path_and_name=unsplit(path[: index + 1]),
+                        ref=attr_ref,
                         return_type_name=return_type_name,
-                    ),
-                )
-            elif isinstance(attr_ref, class_type):
-                klass = ast.klass.Class(
-                    name=path[index],
-                    path_and_name=unsplit(path[: index + 1]),
-                    ref=attr_ref,
-                    return_type_name=return_type_name,
-                )
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=klass,
-                )
-            elif isinstance(attr_ref, func_type):
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=ast.function.Function(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
-                        return_type_name=return_type_name,
-                    ),
-                )
-            elif isinstance(attr_ref, builtin_func_type):
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=ast.function.Function(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
-                        return_type_name=return_type_name,
-                    ),
-                )
+                    )
+                    self.add_attr(
+                        attr_name=path[index],
+                        attr=klass,
+                    )
+                elif isinstance(attr_ref, func_type):
+                    self.add_attr(
+                        attr_name=path[index],
+                        attr=ast.function.Function(
+                            path[index],
+                            unsplit(path[: index + 1]),
+                            attr_ref,
+                            return_type_name=return_type_name,
+                        ),
+                    )
+                elif isinstance(attr_ref, builtin_func_type):
+                    self.add_attr(
+                        attr_name=path[index],
+                        attr=ast.function.Function(
+                            path[index],
+                            unsplit(path[: index + 1]),
+                            attr_ref,
+                            return_type_name=return_type_name,
+                        ),
+                    )
 
         attr = self.attrs[path[index]]
         attr_ref = getattr(self.ref, path[index], None)
