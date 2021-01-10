@@ -11,6 +11,7 @@ import asyncio
 from nacl.signing import SigningKey
 import nest_asyncio
 import pytest
+from pytest import MonkeyPatch
 
 # syft absolute
 from syft.core.node.common.service.repr_service import ReprMessage
@@ -63,6 +64,21 @@ async def test_init_mock_runtime_error() -> None:
         with pytest.raises(RuntimeError):
             domain = Domain(name="test")
             WebRTCConnection(node=domain)
+
+
+# FIXME: This test is not working
+@pytest.mark.asyncio
+async def test_init_new_event_loop(monkeypatch: MonkeyPatch) -> None:
+    nest_asyncio.apply()
+
+    WebRTCConnection.loop = None
+    mock_new_loop = Mock()
+
+    monkeypatch.setattr(asyncio, "new_event_loop", mock_new_loop)
+
+    domain = Domain(name="test")
+    WebRTCConnection(node=domain)
+    assert mock_new_loop.call_count == 1
 
 
 @pytest.mark.slow
