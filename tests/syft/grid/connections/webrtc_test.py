@@ -54,7 +54,8 @@ async def test_init_patch_runtime_error(
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
-
+    print(f"=====> {mock_logger.error.call_count}")
+    print(f"=====> {mock_logger.error.call_args}")
     assert mock_logger.error.call_args[0][0] == expected_log
     assert webrtc.loop == "mock_loop"
 
