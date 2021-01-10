@@ -40,45 +40,25 @@ async def test_init() -> None:
     assert not webrtc._client_address
 
 
-# FIXME: This test is not working
 @pytest.mark.asyncio
-async def test_init_patch_runtime_error() -> None:
+async def test_init_patch_runtime_error(monkeypatch: MonkeyPatch) -> None:
     nest_asyncio.apply()
 
-    with patch(
-        "syft.grid.connections.webrtc.get_running_loop", return_value=RuntimeError
-    ):
-        with pytest.raises(RuntimeError):
-            domain = Domain(name="test")
-            WebRTCConnection(node=domain)
-
-
-# FIXME: This test is not working
-@pytest.mark.asyncio
-async def test_init_mock_runtime_error() -> None:
-    nest_asyncio.apply()
-
-    mock_running_loop = Mock()
-    mock_running_loop.side_effect = RuntimeError
-    with patch("syft.grid.connections.webrtc.get_running_loop", mock_running_loop):
-        with pytest.raises(RuntimeError):
-            domain = Domain(name="test")
-            WebRTCConnection(node=domain)
-
-
-# FIXME: This test is not working
-@pytest.mark.asyncio
-async def test_init_new_event_loop(monkeypatch: MonkeyPatch) -> None:
-    nest_asyncio.apply()
-
-    WebRTCConnection.loop = None
     mock_new_loop = Mock()
-
     monkeypatch.setattr(asyncio, "new_event_loop", mock_new_loop)
 
-    domain = Domain(name="test")
-    WebRTCConnection(node=domain)
-    assert mock_new_loop.call_count == 1
+    with patch(
+        "syft.grid.connections.webrtc.logger", side_effect=RuntimeError()
+    ) as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.get_running_loop", side_effect=RuntimeError()
+        ):
+            expected_log = "♫♫♫ > ...error getting a running event Loop... "
+            domain = Domain(name="test")
+            WebRTCConnection(node=domain)
+
+            assert mock_logger.error.call_args[0][0] == expected_log
+            assert mock_new_loop.call_count == 1
 
 
 @pytest.mark.slow
