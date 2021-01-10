@@ -61,6 +61,24 @@ async def test_init_patch_runtime_error(monkeypatch: MonkeyPatch) -> None:
             assert webrtc.loop == "mock_loop"
 
 
+@pytest.mark.asyncio
+async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
+    nest_asyncio.apply()
+
+    with patch(
+        "syft.grid.connections.webrtc.logger", side_effect=RuntimeError()
+    ) as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCPeerConnection", side_effect=Exception()
+        ):
+            with pytest.raises(Exception):
+                domain = Domain(name="test")
+                WebRTCConnection(node=domain)
+
+            expected_log = "Got an exception in WebRTCConnection __init__. "
+            assert mock_logger.error.call_args[0][0] == expected_log
+
+
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
