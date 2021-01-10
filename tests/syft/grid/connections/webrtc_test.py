@@ -40,16 +40,15 @@ async def test_init() -> None:
 
 
 @pytest.mark.asyncio
-@patch("syft.grid.connections.webrtc.logger", side_effect=RuntimeError())
+@patch("syft.grid.connections.webrtc.logger")
 @patch("syft.grid.connections.webrtc.get_running_loop", side_effect=RuntimeError())
-@patch("asyncio.new_event_loop", return_value="mock_loop")
+@patch("syft.grid.connections.webrtc.asyncio.new_event_loop", return_value="mock_loop")
 async def test_init_patch_runtime_error(
     mock_new_event_loop: Mock,
     mock_get_running_loop: Mock,
     mock_logger: Mock,
 ) -> None:
     nest_asyncio.apply()
-
     expected_log = "♫♫♫ > ...error getting a running event Loop... "
 
     domain = Domain(name="test")
