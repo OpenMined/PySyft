@@ -1,9 +1,13 @@
 # stdlib
 import json
+from unittest.mock import patch
+from unittest.mock import Mock
 
 # third party
+from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
+import asyncio
 from nacl.signing import SigningKey
 import nest_asyncio
 import pytest
@@ -21,12 +25,44 @@ def get_signing_key() -> SigningKey:
 
 
 @pytest.mark.asyncio
-async def test_init_without_event_loop() -> None:
+async def test_init() -> None:
     nest_asyncio.apply()
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
+    assert webrtc.node == domain
+    assert webrtc.loop is not None
+    assert isinstance(webrtc.producer_pool, asyncio.Queue)
+    assert isinstance(webrtc.consumer_pool, asyncio.Queue)
+    assert isinstance(webrtc.peer_connection, RTCPeerConnection)
+    assert not webrtc._client_address
+
+
+# FIXME: This test is not working
+@pytest.mark.asyncio
+async def test_init_patch_runtime_error() -> None:
+    nest_asyncio.apply()
+
+    with patch(
+        "syft.grid.connections.webrtc.get_running_loop", return_value=RuntimeError
+    ):
+        with pytest.raises(RuntimeError):
+            domain = Domain(name="test")
+            WebRTCConnection(node=domain)
+
+
+# FIXME: This test is not working
+@pytest.mark.asyncio
+async def test_init_mock_runtime_error() -> None:
+    nest_asyncio.apply()
+
+    mock_running_loop = Mock()
+    mock_running_loop.side_effect = RuntimeError
+    with patch("syft.grid.connections.webrtc.get_running_loop", mock_running_loop):
+        with pytest.raises(RuntimeError):
+            domain = Domain(name="test")
+            WebRTCConnection(node=domain)
 
 
 @pytest.mark.slow

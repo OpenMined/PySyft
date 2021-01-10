@@ -47,11 +47,11 @@ Signaling Steps:
 
     3 - [PULL] The PySyft Peer (Answer) will send a message to
     the Signaling Server checking if the desired node pushed
-    any offer msg in his queue.
+    any offer msg in their queue.
 
     4 - The Signaling Server will check the existence of offer messages addressed
     to the PySyft Peer (Answer) made by the desired node address (PySyft.Address).
-    If that's the case, so the offer message will be sent to the peer as a response.
+    If that's the case, then the offer message will be sent to the peer as a response.
 
     5 - [PUSH] The PySyft Peer (Answer) will process the offer message
     in order to know the network address of the other peer.
