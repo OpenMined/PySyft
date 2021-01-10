@@ -40,24 +40,6 @@ async def test_init() -> None:
     assert not webrtc._client_address
 
 
-# @pytest.mark.asyncio
-# @patch("syft.grid.connections.webrtc.logger")
-# @patch("syft.grid.connections.webrtc.get_running_loop", side_effect=RuntimeError())
-# @patch("syft.grid.connections.webrtc.asyncio.new_event_loop", return_value="mock_loop")
-# async def test_init_patch_runtime_error(
-#     mock_new_event_loop: Mock,
-#     mock_get_running_loop: Mock,
-#     mock_logger: Mock,
-# ) -> None:
-#     nest_asyncio.apply()
-#     expected_log = "♫♫♫ > ...error getting a running event Loop... "
-#
-#     domain = Domain(name="test")
-#     webrtc = WebRTCConnection(node=domain)
-#     print(f"=====> {mock_logger.error.call_count}")
-#     print(f"=====> {mock_logger.error.call_args}")
-#     assert mock_logger.error.call_args[0][0] == expected_log
-#     assert webrtc.loop == "mock_loop"
 @pytest.mark.asyncio
 async def test_init_patch_runtime_error(monkeypatch: MonkeyPatch) -> None:
     nest_asyncio.apply()
@@ -76,7 +58,6 @@ async def test_init_patch_runtime_error(monkeypatch: MonkeyPatch) -> None:
             webrtc = WebRTCConnection(node=domain)
 
             assert mock_logger.error.call_args[0][0] == expected_log
-            assert mock_new_loop.call_count == 1
             assert webrtc.loop == "mock_loop"
 
 
