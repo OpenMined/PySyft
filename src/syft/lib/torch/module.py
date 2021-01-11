@@ -20,12 +20,12 @@ import torch
 from ...decorators import syft_decorator
 
 
-def debug(msg):
+def debug(msg: str) -> None:
     print(msg)
     logger.debug(msg)
 
 
-def critical(msg):
+def critical(msg: str) -> None:
     print(msg)
     logger.critical(msg)
 
