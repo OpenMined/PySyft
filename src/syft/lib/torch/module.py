@@ -19,6 +19,13 @@ import torch
 # syft relative
 from ...decorators import syft_decorator
 
+def debug(msg):
+    print(msg)
+    logger.debug(msg)
+
+def critical(msg):
+    print(msg)
+    logger.critical(msg)
 
 # circular imports when using the syft.lib.full_name_with_qualname version
 def full_name_with_qualname(klass: type) -> str:
@@ -76,7 +83,6 @@ def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
 
     return (args, kwargs)
 
-
 class Module:
     """
     This is our equivalent of torch.nn.Module and aims to have the same external
@@ -93,15 +99,11 @@ class Module:
         self.local_model: Optional["Module"] = None
         self.duet = None
         if "syft" in full_name_with_qualname(klass=type(torch_ref)):
-            log = "> Creating remote model"
-            print(log)
-            logger.debug(log)
+            debug("> Creating remote model")
             self.is_local = False
         else:
             # otherwise we have a local model
-            log = "> Creating local model"
-            print(log)
-            logger.debug(log)
+            debug("> Creating local model")
             self.is_local = True
 
         self.torch_ref = torch_ref
@@ -177,132 +179,126 @@ class Module:
         return self
 
     def load_state_dict(self, input: Union[str, os.PathLike, Dict[str, Any]]) -> None:
+        print("loading state dict")
         if not self.is_local:
-            print("> This model is remote so try calling .get()")
+            debug("> This model is remote so try calling .get()")
             return None
+
+        state_dict = {}
+        if isinstance(input, (str, os.PathLike)):
+            try:
+                file_path = Path(input)
+                if os.path.exists(file_path):
+                    with open(Path(input), "rb") as f:
+                        state_dict = torch.load(f)
+            except Exception as e:
+                critical(f"  Failed to load state dict from path: {file_path}. {e}")
         else:
-            state_dict = {}
-            if isinstance(input, (str, os.PathLike)):
-                try:
-                    file_path = Path(input)
-                    if os.path.exists(file_path):
-                        with open(Path(input), "rb") as f:
-                            state_dict = torch.load(f)
-                except Exception as e:
-                    log = f"  Failed to load state dict from path: {file_path}. {e}"
-                    print(log)
-                    logger.critical(log)
-            else:
-                state_dict = dict(input)
+            state_dict = dict(input)
 
-            if issubclass(type(state_dict), dict):
-                print("> Loading model weights")
-                layers: Dict[str, Any] = {}
-                for save_key, values in state_dict.items():
-                    parts = save_key.split(".")
-                    if len(parts) < 2:
-                        print(f"  state dict key is too short: {save_key}")
-                        continue
-                    layer = parts[0]
-                    attr = parts[1]
-                    if layer not in layers:
-                        layers[layer] = {}
-                    layers[layer][attr] = values
+        if issubclass(type(state_dict), dict):
+            debug("> Loading model weights")
+            layers: Dict[str, Any] = {}
+            for save_key, values in state_dict.items():
+                parts = save_key.split(".")
+                if len(parts) < 2:
+                    debug(f"  state dict key is too short: {save_key}")
+                    continue
+                layer = parts[0]
+                attr = parts[1]
+                if layer not in layers:
+                    layers[layer] = {}
+                layers[layer][attr] = values
 
-                for layer, sd in layers.items():
-                    local_layer = getattr(self, layer, None)
-                    if local_layer is not None and hasattr(
-                        local_layer, "load_state_dict"
-                    ):
-                        d = local_layer.load_state_dict(sd)
-                        print(f"{layer} state dict loaded with: {d}")
-                    else:
-                        print(f"  Model doesnt have layer {layer}")
+            for layer, sd in layers.items():
+                local_layer = getattr(self, layer, None)
+                if local_layer is not None and hasattr(
+                    local_layer, "load_state_dict"
+                ):
+                    d = local_layer.load_state_dict(sd)
+                    debug(f"{layer} state dict loaded with: {d}")
+                else:
+                    debug(f"  Model doesnt have layer {layer}")
 
-                print("> Finished loading weights")
+            debug("> Finished loading weights")
 
-            else:
-                print(
-                    f"  Invalid input: {type(input)}. "
-                    + "Try inputting a state_dict or .pth file."
-                )
+        else:
+            debug(
+                f"  Invalid input: {type(input)}. "
+                + "Try inputting a state_dict or .pth file."
+            )
         return None
 
     def state_dict(self) -> Optional[Dict[str, Any]]:
         if not self.is_local:
-            print("> This model is remote so try calling .get()")
+            debug("> This model is remote so try calling .get()")
             return None
-        else:
-            print("> Saving model weights")
-            model_state_dict = OrderedDict()
-            for name, module in self.modules.items():
-                if hasattr(module, "state_dict"):
-                    for k, v in module.state_dict().items():
-                        save_key = f"{name}.{k}"
-                        model_state_dict[save_key] = v
 
-            print("> Finished saving weights")
-            return model_state_dict
+        debug("> Saving model weights")
+        model_state_dict = OrderedDict()
+        for name, module in self.modules.items():
+            if hasattr(module, "state_dict"):
+                for k, v in module.state_dict().items():
+                    save_key = f"{name}.{k}"
+                    model_state_dict[save_key] = v
+
+        debug("> Finished saving weights")
+        return model_state_dict
 
     def save(self, path: Union[str, bytes, os.PathLike]) -> None:
         if not self.is_local:
-            print("> This model is remote so try calling .get()")
+            debug("> This model is remote so try calling .get()")
             return
-        else:
-            state_dict = self.state_dict()
-            torch.save(state_dict, path)
+
+        state_dict = self.state_dict()
+        torch.save(state_dict, path)
 
     def load(self, path: Union[str, os.PathLike]) -> None:
         if not self.is_local:
-            print("> This model is remote so try calling .get()")
+            debug("> This model is remote so try calling .get()")
             return
-        else:
-            self.load_state_dict(input=path)
+
+        self.load_state_dict(input=path)
 
     def send(self, client: Any) -> Any:
         if not self.is_local:
-            print("> This model is remote so try calling .get()")
+            debug("> This model is remote so try calling .get()")
             return
-        else:
-            log = "> Sending local model"
-            print(log)
-            logger.debug(log)
-            remote_model = copy.copy(self)
-            remote_model.setup(torch_ref=client.torch)
-            remote_model.duet = client
 
-            for name, module in self.modules.items():
-                fqn = full_name_with_qualname(klass=type(module))
-                klass = client.lib_ast(fqn, return_callable=True, obj_type=type(module))
-                module_repr = module.extra_repr()
-                args, kwargs = repr_to_kwargs(repr_str=module_repr)
-                remote_module_ptr = klass(*args, **kwargs)
-                remote_model.__setattr__(name, remote_module_ptr)
+        debug("> Sending local model")
 
-                # if the remote module has state_dict lets get it
-                if hasattr(module, "state_dict") and hasattr(
-                    remote_module_ptr, "load_state_dict"
-                ):
-                    local_state_ord_dict = module.state_dict()
-                    # cast to dict because OrderedDict is not supported
+        remote_model = copy.copy(self)
+        remote_model.setup(torch_ref=client.torch)
+        remote_model.duet = client
 
-                    # get a blocking copy of the state_dict
-                    log = f"  Sending local layer: {name}"
-                    print(log)
-                    logger.debug(log)
-                    # cant import Dict / PrimitiveFactory due to circular imports
-                    remote_state_dict_ptr = client.syft.lib.python.Dict(
-                        dict(local_state_ord_dict)
-                    )
-                    # iterate through the key, values
-                    # weights and biases should be in there
-                    remote_module_ptr.load_state_dict(remote_state_dict_ptr)
+        for name, module in self.modules.items():
+            fqn = full_name_with_qualname(klass=type(module))
+            klass = client.lib_ast(fqn, return_callable=True, obj_type=type(module))
+            module_repr = module.extra_repr()
+            args, kwargs = repr_to_kwargs(repr_str=module_repr)
+            remote_module_ptr = klass(*args, **kwargs)
+            remote_model.__setattr__(name, remote_module_ptr)
 
-            log = "\n> Finished sending local model <\n\n"
-            print(log)
-            logger.debug(log)
-            self.remote_model = remote_model
-            return self.remote_model
+            # if the remote module has state_dict lets get it
+            if hasattr(module, "state_dict") and hasattr(
+                remote_module_ptr, "load_state_dict"
+            ):
+                local_state_ord_dict = module.state_dict()
+                # cast to dict because OrderedDict is not supported
+
+                # get a blocking copy of the state_dict
+                debug(f"  Sending local layer: {name}")
+                # cant import Dict / PrimitiveFactory due to circular imports
+                remote_state_dict_ptr = client.syft.lib.python.Dict(
+                    dict(local_state_ord_dict)
+                )
+                # iterate through the key, values
+                # weights and biases should be in there
+                remote_module_ptr.load_state_dict(remote_state_dict_ptr)
+
+        debug("\n> Finished sending local model <\n\n")
+        self.remote_model = remote_model
+        return self.remote_model
 
     def get(
         self,
@@ -313,82 +309,75 @@ class Module:
         delete_obj: bool = False,
     ) -> Optional["Module"]:
         if self.is_local:
-            log = "> This model is local. Maybe you meant to call .send()?"
-            print(log)
-            logger.debug(log)
+            debug("> This model is local. Maybe you meant to call .send()?")
             return None
-        else:
-            request_name = name
-            log = "> Downloading remote model"
-            print(log)
-            logger.debug(log)
 
-            local_model = copy.copy(self)
-            local_model.setup(torch_ref=torch)
-            local_model.duet = self.duet
+        request_name = name
+        debug("> Downloading remote model")
 
-            for layer_name, module in self.modules.items():
-                module_parts = module.path_and_name.split(".")
-                klass_name = module_parts.pop()
-                klass = getattr(sys.modules[".".join(module_parts)], klass_name)
-                repr_ptr = module.extra_repr()
+        local_model = copy.copy(self)
+        local_model.setup(torch_ref=torch)
+        local_model.duet = self.duet
 
-                module_repr = repr_ptr.get(
-                    request_block=request_block,
-                    name=request_name,
-                    reason=reason,
-                    timeout_secs=timeout_secs,
+        for layer_name, module in self.modules.items():
+            module_parts = module.path_and_name.split(".")
+            klass_name = module_parts.pop()
+            klass = getattr(sys.modules[".".join(module_parts)], klass_name)
+            repr_ptr = module.extra_repr()
+
+            module_repr = repr_ptr.get(
+                request_block=request_block,
+                name=request_name,
+                reason=reason,
+                timeout_secs=timeout_secs,
+            )
+
+            if module_repr is None:
+                debug(
+                    f"  Request for {request_name} extra_repr failed, skipping layer"
+                )
+                continue
+
+            args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
+            local_module = klass(*args, **kwargs)
+
+            # the local real module has been set on the sy module
+            local_model.__setattr__(layer_name, local_module)
+
+            try:
+                # if the remote module has state_dict lets get it
+                if hasattr(module, "state_dict") and hasattr(
+                    local_module, "load_state_dict"
+                ):
+                    debug("loading remote state dict")
+                    sd_ptr = module.state_dict()
+                    # get a blocking copy of the state_dict
+                    debug(f"  Downloading remote layer: {layer_name}")
+                    state_dict = sd_ptr.get(
+                        request_block=request_block,
+                        name=request_name,
+                        reason=reason,
+                        timeout_secs=timeout_secs,
+                        delete_obj=delete_obj,
+                    )
+                    # iterate through the key, values
+                    # weights and biases should be in there
+                    if state_dict is not None:
+                        # TODO: support torch.nn.modules.module._IncompatibleKeys
+                        local_module.load_state_dict(state_dict)
+                    else:
+                        debug(
+                            f"  Failed to get {layer_name} state_dict, skipping layer."
+                        )
+
+            except Exception as e:
+                critical(
+                    f"  Failed to download remote state for {layer_name}. {e}"
                 )
 
-                if module_repr is None:
-                    print(
-                        f"  Request for {request_name} extra_repr failed, skipping layer"
-                    )
-                    continue
-
-                args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
-                local_module = klass(*args, **kwargs)
-
-                # the local real module has been set on the sy module
-                local_model.__setattr__(layer_name, local_module)
-
-                try:
-                    # if the remote module has state_dict lets get it
-                    if hasattr(module, "state_dict") and hasattr(
-                        local_module, "load_state_dict"
-                    ):
-                        sd_ptr = module.state_dict()
-                        # get a blocking copy of the state_dict
-                        log = f"  Downloading remote layer: {layer_name}"
-                        print(log)
-                        logger.debug(log)
-                        state_dict = sd_ptr.get(
-                            request_block=request_block,
-                            name=request_name,
-                            reason=reason,
-                            timeout_secs=timeout_secs,
-                            delete_obj=delete_obj,
-                        )
-                        # iterate through the key, values
-                        # weights and biases should be in there
-                        if state_dict is not None:
-                            # TODO: support torch.nn.modules.module._IncompatibleKeys
-                            local_module.load_state_dict(state_dict)
-                        else:
-                            print(
-                                f"  Failed to get {layer_name} state_dict, skipping layer."
-                            )
-
-                except Exception as e:
-                    logger.error(
-                        f"  Failed to download remote state for {layer_name}. {e}"
-                    )
-
-            log = "\n> Finished downloading remote model <\n\n"
-            print(log)
-            logger.debug(log)
-            self.local_model = local_model
-            return self.local_model
+        debug("\n> Finished downloading remote model <\n\n")
+        self.local_model = local_model
+        return self.local_model
 
     # zero them so we know they are copied
     def zero_layers(self) -> None:
@@ -400,7 +389,7 @@ class Module:
 
     # easy way to check the weights have changed
     def debug_sum_layers(self) -> None:
-        print("> Summing layers for debugging: ")
+        debug("> Summing layers for debugging: ")
         for n, m in self.modules.items():
             if hasattr(m, "state_dict"):
                 if self.is_local:
@@ -411,6 +400,4 @@ class Module:
                 for k, v in state_dict.items():
                     if hasattr(v, "sum"):
                         s = v.sum().item()
-                        log = f"  Layer {n} sum({k}): {s}"
-                        print(log)
-                        logger.debug(log)
+                        debug(f"  Layer {n} sum({k}): {s}")
