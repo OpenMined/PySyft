@@ -19,13 +19,16 @@ import torch
 # syft relative
 from ...decorators import syft_decorator
 
+
 def debug(msg):
     print(msg)
     logger.debug(msg)
 
+
 def critical(msg):
     print(msg)
     logger.critical(msg)
+
 
 # circular imports when using the syft.lib.full_name_with_qualname version
 def full_name_with_qualname(klass: type) -> str:
@@ -82,6 +85,7 @@ def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
             logger.debug(log)
 
     return (args, kwargs)
+
 
 class Module:
     """
@@ -212,9 +216,7 @@ class Module:
 
             for layer, sd in layers.items():
                 local_layer = getattr(self, layer, None)
-                if local_layer is not None and hasattr(
-                    local_layer, "load_state_dict"
-                ):
+                if local_layer is not None and hasattr(local_layer, "load_state_dict"):
                     d = local_layer.load_state_dict(sd)
                     debug(f"{layer} state dict loaded with: {d}")
                 else:
@@ -333,9 +335,7 @@ class Module:
             )
 
             if module_repr is None:
-                debug(
-                    f"  Request for {request_name} extra_repr failed, skipping layer"
-                )
+                debug(f"  Request for {request_name} extra_repr failed, skipping layer")
                 continue
 
             args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
@@ -360,20 +360,24 @@ class Module:
                         timeout_secs=timeout_secs,
                         delete_obj=delete_obj,
                     )
+                    from collections import OrderedDict
+
+                    ordered_state_dict = OrderedDict()
+
+                    for elem, item in state_dict.items():
+                        ordered_state_dict[str(elem)] = item
                     # iterate through the key, values
                     # weights and biases should be in there
                     if state_dict is not None:
                         # TODO: support torch.nn.modules.module._IncompatibleKeys
-                        local_module.load_state_dict(state_dict)
+                        local_module.load_state_dict(ordered_state_dict)
                     else:
                         debug(
                             f"  Failed to get {layer_name} state_dict, skipping layer."
                         )
 
             except Exception as e:
-                critical(
-                    f"  Failed to download remote state for {layer_name}. {e}"
-                )
+                critical(f"  Failed to download remote state for {layer_name}. {e}")
 
         debug("\n> Finished downloading remote model <\n\n")
         self.local_model = local_model
