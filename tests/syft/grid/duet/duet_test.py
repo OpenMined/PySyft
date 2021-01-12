@@ -30,7 +30,7 @@ def test_duet() -> None:
 
     for do, ds in registered_tests:
         mgr = Manager()
-        barrier = mgr.Barrier(2)  # type: ignore
+        barrier = mgr.Barrier(2, timeout=20)  # type: ignore
 
         do_proc = pool.apipe(do, barrier, port)
         ds_proc = pool.apipe(ds, barrier, port)
