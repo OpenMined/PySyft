@@ -30,6 +30,7 @@ matplotlib
 nbconvert
 packaging
 pandas
+pathos
 protobuf
 pyjwt
 PyNaCl
