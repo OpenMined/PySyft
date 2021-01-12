@@ -1,8 +1,10 @@
 # stdlib
 import atexit
-from multiprocessing import Manager, set_start_method, Process
-from pathos.multiprocessing import ProcessPool
-import socket
+from multiprocessing import set_start_method, Process
+
+# from pathos.multiprocessing import ProcessPool
+
+# import socket
 from time import sleep
 from typing import Callable
 from typing import List
@@ -36,21 +38,21 @@ def test_duet() -> None:
     # let the flask server init:
     sleep(5)
 
-    pool = ProcessPool(nodes=2)
+    # pool = ProcessPool(nodes=2)
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", port)) == 0
+    # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    #    assert s.connect_ex(("localhost", port)) == 0
 
-    for do, ds in registered_tests:
-        mgr = Manager()
-        barrier = mgr.Barrier(2, timeout=20)  # type: ignore
+    # for do, ds in registered_tests:
+    #    mgr = Manager()
+    #    barrier = mgr.Barrier(2, timeout=20)  # type: ignore
 
-        do_proc = pool.apipe(do, barrier, port)
-        ds_proc = pool.apipe(ds, barrier, port)
+    #   do_proc = pool.apipe(do, barrier, port)
+    #    ds_proc = pool.apipe(ds, barrier, port)
 
-        do_proc.get()
-        ds_proc.get()
+    #    do_proc.get()
+    #    ds_proc.get()
 
-    pool.close()
-    pool.terminate()
-    pool.join()
+    # pool.close()
+    # pool.terminate()
+    # pool.join()
