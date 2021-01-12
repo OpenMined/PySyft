@@ -49,7 +49,15 @@ def test_repr():
     assert repr(a0) == "()"
     assert repr(a2), "(0, 1 ==  2)"
 
+
 def test_hash():
     assert hash(Tuple()) == hash(())
-    assert hash(Tuple(1,)) == hash((1,))
-    assert hash(Tuple(-1,0,1)) == hash((-1,0,1))
+    assert (
+        hash(
+            Tuple(
+                1,
+            )
+        )
+        == hash((1,))
+    )
+    assert hash(Tuple(-1, 0, 1)) == hash((-1, 0, 1))
