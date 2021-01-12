@@ -159,16 +159,22 @@ def test_module_send_get(
     model_ptr = model.send(alice_client)
     data_ptr = data.send(alice_client)
     labels_ptr = labels.send(alice_client)
+
     results_ptr = model_ptr(data_ptr)
     remote_loss_func = alice_client.torch.nn.L1Loss()
     remote_loss = remote_loss_func(results_ptr, labels_ptr)
     remote_loss.backward()
 
     direct_param = model_ptr.parameters().get()
+    for param in direct_param:
+        assert param.grad is not None
+
+    # get() uses state_dict/load_state_dict
+    # load_state_dict breaks the computational graph, and we won't have the gradients here.
+    # ref: https://discuss.pytorch.org/t/loading-a-state-dict-seems-to-erase-grad/56676
     model_parameter = model_ptr.get().parameters()
+    for param in model_parameter:
+        assert param.grad is None
 
     for idx, param in enumerate(direct_param):
-        assert param.grad is not None
-        assert model_parameter[idx].grad is not None
         assert param.tolist() == model_parameter[idx].tolist()
-        assert param.grad == model_parameter[idx].grad

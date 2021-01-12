@@ -349,8 +349,8 @@ class Module:
                         timeout_secs=timeout_secs,
                         delete_obj=delete_obj,
                     )
+                    # We have to recreate the OrderedDict for load_state_dict to work
                     ordered_state_dict = OrderedDict()
-
                     for elem, item in state_dict.items():
                         ordered_state_dict[str(elem)] = item
                     # iterate through the key, values
