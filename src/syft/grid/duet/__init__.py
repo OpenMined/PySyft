@@ -8,10 +8,10 @@ from typing import Generator
 from typing import Optional
 
 # third party
-import nest_asyncio
 import requests
 
 # syft relative
+from ...core.common.environment import is_jupyter
 from ...core.node.domain.domain import Domain
 from .bcolors import bcolors
 from .exchange_ids import DuetCredentialExchanger
@@ -20,11 +20,11 @@ from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
-try:
-    nest_asyncio.apply()
-except RuntimeError as e:
-    # this happens when pytest-xdist parallel threaded tests are run on some systems
-    print("Nothing to patch", e)
+if is_jupyter:
+    # third party
+    from IPython.core.display import Image
+    from IPython.core.display import display
+
 
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
@@ -46,15 +46,6 @@ def generate_donation_msg(name: str) -> str:
 
 
 DUET_DONATE_MSG = generate_donation_msg(name="Duet")
-
-try:
-    # third party
-    from IPython.core.display import Image
-    from IPython.core.display import display
-
-    jupyter = True
-except ImportError:
-    jupyter = False
 
 
 def get_available_network() -> str:
@@ -174,7 +165,7 @@ def launch_duet(
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
 ) -> WebRTCDuet:
-    if os.path.isfile(LOGO_URL) and jupyter:
+    if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
                 LOGO_URL,
@@ -238,7 +229,7 @@ def join_duet(
     loopback: bool = False,
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
 ) -> WebRTCDuet:
-    if os.path.isfile(LOGO_URL) and jupyter:
+    if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
                 LOGO_URL,
