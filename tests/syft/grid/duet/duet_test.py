@@ -1,5 +1,4 @@
 # stdlib
-import atexit
 from multiprocessing import Manager, set_start_method
 from pathos.multiprocessing import ProcessPool
 import socket
@@ -18,23 +17,13 @@ set_start_method("spawn")
 registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
-pool = ProcessPool(nodes=3)
-
-
-def cleanup() -> None:
-    pool.close()
-    pool.terminate()
-    pool.join()
-
-
-atexit.register(cleanup)
-
-port = 21000
-pool.amap(run, [port])
-
 
 def test_duet() -> None:
     # let the flask server init:
+    pool = ProcessPool(nodes=3)
+    port = 21000
+    pool.amap(run, [port])
+
     sleep(5)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -49,3 +38,7 @@ def test_duet() -> None:
 
         do_proc.get()
         ds_proc.get()
+
+    pool.close()
+    pool.terminate()
+    pool.join()
