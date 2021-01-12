@@ -47,11 +47,11 @@ def test_duet() -> None:
         mgr = Manager()
         barrier = mgr.Barrier(2, timeout=20)  # type: ignore
 
-        _ = pool.apipe(do, barrier, port)
-        _ = pool.apipe(ds, barrier, port)
+        do_proc = pool.apipe(do, barrier, port)
+        ds_proc = pool.apipe(ds, barrier, port)
 
-        # do_proc.get()
-        # ds_proc.get()
+        do_proc.get()
+        ds_proc.get()
 
     pool.close()
     pool.terminate()
