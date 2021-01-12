@@ -1,6 +1,6 @@
 # stdlib
 import atexit
-from multiprocessing import Manager
+from multiprocessing import Manager, freeze_support
 from pathos.multiprocessing import ProcessPool
 import socket
 from time import sleep
@@ -12,6 +12,8 @@ from typing import Tuple
 from .duet_scenarios_tests import register_duet_scenarios
 
 from .signaling_server_test import run
+
+freeze_support()
 
 registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
