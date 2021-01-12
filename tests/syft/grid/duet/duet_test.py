@@ -1,5 +1,6 @@
 # stdlib
-from multiprocessing import Manager, set_start_method
+import atexit
+from multiprocessing import Manager, set_start_method, Process
 from pathos.multiprocessing import ProcessPool
 import socket
 from time import sleep
@@ -14,17 +15,28 @@ from .signaling_server_test import run
 
 set_start_method("spawn")
 
+port = 21000
+grid_proc = Process(target=run, args=(port,))
+grid_proc.start()
+
+
+def grid_cleanup() -> None:
+    global grid_proc
+    grid_proc.terminate()
+    grid_proc.join()
+
+
+atexit.register(grid_cleanup)
+
 registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
 
 def test_duet() -> None:
     # let the flask server init:
-    pool = ProcessPool(nodes=3)
-    port = 21000
-    pool.amap(run, [port])
-
     sleep(5)
+
+    pool = ProcessPool(nodes=2)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", port)) == 0
