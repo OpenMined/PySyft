@@ -18,6 +18,7 @@ import torch
 
 # syft relative
 from ...decorators import syft_decorator
+from ...lib.util import full_name_with_qualname
 
 
 def debug(msg: str) -> None:
@@ -26,13 +27,8 @@ def debug(msg: str) -> None:
 
 
 def critical(msg: str) -> None:
-    print(msg)
     logger.critical(msg)
-
-
-# circular imports when using the syft.lib.full_name_with_qualname version
-def full_name_with_qualname(klass: type) -> str:
-    return f"{klass.__module__}.{klass.__qualname__}"
+    raise Exception(msg)
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -183,52 +179,45 @@ class Module:
         return self
 
     def load_state_dict(self, input: Union[str, os.PathLike, Dict[str, Any]]) -> None:
-        print("loading state dict")
         if not self.is_local:
             debug("> This model is remote so try calling .get()")
             return None
 
         state_dict = {}
         if isinstance(input, (str, os.PathLike)):
-            try:
-                file_path = Path(input)
-                if os.path.exists(file_path):
-                    with open(Path(input), "rb") as f:
-                        state_dict = torch.load(f)
-            except Exception as e:
-                critical(f"  Failed to load state dict from path: {file_path}. {e}")
+            with open(Path(input), "rb") as f:
+                state_dict = torch.load(f)
         else:
             state_dict = dict(input)
 
-        if issubclass(type(state_dict), dict):
-            debug("> Loading model weights")
-            layers: Dict[str, Any] = {}
-            for save_key, values in state_dict.items():
-                parts = save_key.split(".")
-                if len(parts) < 2:
-                    debug(f"  state dict key is too short: {save_key}")
-                    continue
-                layer = parts[0]
-                attr = parts[1]
-                if layer not in layers:
-                    layers[layer] = {}
-                layers[layer][attr] = values
-
-            for layer, sd in layers.items():
-                local_layer = getattr(self, layer, None)
-                if local_layer is not None and hasattr(local_layer, "load_state_dict"):
-                    d = local_layer.load_state_dict(sd)
-                    debug(f"{layer} state dict loaded with: {d}")
-                else:
-                    debug(f"  Model doesnt have layer {layer}")
-
-            debug("> Finished loading weights")
-
-        else:
-            debug(
+        if not issubclass(type(state_dict), dict):
+            critical(
                 f"  Invalid input: {type(input)}. "
                 + "Try inputting a state_dict or .pth file."
             )
+
+        debug("> Loading model weights")
+        layers: Dict[str, Any] = {}
+        for save_key, values in state_dict.items():
+            parts = save_key.split(".")
+            if len(parts) < 2:
+                debug(f"  state dict key is too short: {save_key}")
+                continue
+            layer = parts[0]
+            attr = parts[1]
+            if layer not in layers:
+                layers[layer] = {}
+            layers[layer][attr] = values
+
+        for layer, sd in layers.items():
+            local_layer = getattr(self, layer, None)
+            if local_layer is not None and hasattr(local_layer, "load_state_dict"):
+                d = local_layer.load_state_dict(sd)
+                debug(f"  {layer} state dict loaded with: {d}")
+            else:
+                debug(f"  Model doesnt have layer {layer}")
+
+        debug("> Finished loading weights")
         return None
 
     def state_dict(self) -> Optional[Dict[str, Any]]:
@@ -360,8 +349,6 @@ class Module:
                         timeout_secs=timeout_secs,
                         delete_obj=delete_obj,
                     )
-                    from collections import OrderedDict
-
                     ordered_state_dict = OrderedDict()
 
                     for elem, item in state_dict.items():
