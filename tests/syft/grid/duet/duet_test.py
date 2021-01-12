@@ -46,7 +46,7 @@ class SyftTestProcess(Process):
 
 def test_duet() -> None:
     # let the flask server init:
-    sleep(1)
+    sleep(5)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", port)) == 0
