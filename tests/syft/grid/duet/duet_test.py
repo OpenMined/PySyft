@@ -11,17 +11,15 @@ from typing import Tuple
 from .duet_scenarios_tests import register_duet_scenarios
 from .signaling_server_test import run
 
-pool = ProcessPool(nodes=4)
-
-port = 21000
-pool.amap(run, [port])
-
 registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
 
 def test_duet() -> None:
-    global pool
+    pool = ProcessPool(nodes=3)
+
+    port = 21000
+    pool.amap(run, [port])
     # let the flask server init:
     sleep(5)
 
