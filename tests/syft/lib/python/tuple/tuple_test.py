@@ -52,12 +52,5 @@ def test_repr():
 
 def test_hash():
     assert hash(Tuple()) == hash(())
-    assert (
-        hash(
-            Tuple(
-                1,
-            )
-        )
-        == hash((1,))
-    )
-    assert hash(Tuple(-1, 0, 1)) == hash((-1, 0, 1))
+    assert hash(Tuple((1,))) == hash((1,))
+    assert hash(Tuple((-1, 0, 1))) == hash((-1, 0, 1))
