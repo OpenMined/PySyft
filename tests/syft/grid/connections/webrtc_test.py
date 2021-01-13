@@ -1,9 +1,11 @@
 # stdlib
 import json
+from typing import Any
 from unittest.mock import patch
 from unittest.mock import Mock
 
 # third party
+from aiortc import RTCDataChannel
 from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
@@ -16,7 +18,13 @@ from pytest import MonkeyPatch
 # syft absolute
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
+from syft.grid.connections.webrtc import DC_MAX_CHUNK_SIZE
 from syft.grid.connections.webrtc import WebRTCConnection
+
+
+class AsyncMock(Mock):
+    async def __call__(self, *args: Any, **kwargs: Any) -> None:
+        return super(AsyncMock, self).__call__(*args, **kwargs)
 
 
 def get_signing_key() -> SigningKey:
@@ -108,6 +116,52 @@ async def test_signaling_process() -> None:
 
     response = await webrtc._process_answer(payload=answer_payload)
     assert response is None
+
+
+@pytest.mark.asyncio
+async def test_set_offer_raise_exception() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+
+    with patch(
+        "syft.grid.connections.webrtc.RTCPeerConnection.createDataChannel",
+        side_effect=Exception(),
+    ):
+        with pytest.raises(Exception):
+            await webrtc._set_offer()
+
+
+@pytest.mark.asyncio
+async def test_set_offer_sets_channel() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    _ = await webrtc._set_offer()
+    assert isinstance(webrtc.channel, RTCDataChannel)
+    assert webrtc.channel.bufferedAmountLowThreshold == 16 * DC_MAX_CHUNK_SIZE
+
+
+@pytest.mark.asyncio
+async def test_set_offer_on_message() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    _ = await webrtc._set_offer()
+
+    channel_methods = list(webrtc.channel._events.values())
+    on_open = list(channel_methods[1].values())[0]
+
+    coro_mock = AsyncMock()
+    with patch(
+        "syft.grid.connections.webrtc.WebRTCConnection.producer",
+        return_value=coro_mock(),
+    ) as producer_mock:
+        await on_open()
+        assert producer_mock.call_count == 1
 
 
 @pytest.mark.asyncio
