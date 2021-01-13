@@ -12,7 +12,7 @@ from typing import Tuple
 from .duet_scenarios_tests import register_duet_scenarios
 
 from .signaling_server_test import run
-from .process import SyftTestProcess
+from .process_test import SyftTestProcess
 
 log_to_stderr()
 
@@ -50,8 +50,13 @@ def test_duet() -> None:
         ds_proc = SyftTestProcess(target=ds, args=(barrier, port))
         ds_proc.start()
 
-        do_proc.join()
-        ds_proc.join()
+        do_proc.join(10)
+        ds_proc.join(10)
+
+        if do_proc.is_alive():
+            raise Exception("do_proc is hanged")
+        if ds_proc.is_alive():
+            raise Exception("ds_proc is hanged")
 
         if do_proc.exception:
             exception, tb = do_proc.exception
