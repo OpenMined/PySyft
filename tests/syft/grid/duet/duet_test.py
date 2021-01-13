@@ -1,43 +1,18 @@
 # stdlib
 import atexit
-import traceback
 from multiprocessing import Manager, log_to_stderr, Process
-from multiprocessing import Pipe
 
 import socket
 from time import sleep
 from typing import Callable
 from typing import List
 from typing import Tuple
-from typing import Any
-from typing import Optional
 
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
 
 from .signaling_server_test import run
-
-
-class SyftTestProcess(Process):
-    def __init__(self, *args: Any, **kwargs: Any):
-        Process.__init__(self, *args, **kwargs)
-        self._pconn, self._cconn = Pipe()
-        self._exception = None
-
-    def run(self) -> None:
-        try:
-            Process.run(self)
-            self._cconn.send(None)
-        except Exception as e:
-            tb = traceback.format_exc()
-            self._cconn.send((e, tb))
-
-    @property
-    def exception(self) -> Optional[tuple]:
-        if self._pconn.poll():
-            self._exception = self._pconn.recv()
-        return self._exception
-
+from .process import SyftTestProcess
 
 log_to_stderr()
 
@@ -85,6 +60,3 @@ def test_duet() -> None:
         if ds_proc.exception:
             exception, tb = ds_proc.exception
             raise Exception(tb) from exception
-
-        # do_proc.get()
-        # ds_proc.get()
