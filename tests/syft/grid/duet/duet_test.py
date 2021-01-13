@@ -1,21 +1,45 @@
 # stdlib
 import atexit
-from multiprocessing import Manager, set_start_method, Process
-
-from pathos.multiprocessing import ProcessPool
+import traceback
+from multiprocessing import Manager, log_to_stderr, Process
+from multiprocessing import Pipe
 
 import socket
 from time import sleep
 from typing import Callable
 from typing import List
 from typing import Tuple
+from typing import Any
+from typing import Optional
 
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
 
 from .signaling_server_test import run
 
-set_start_method("spawn")
+
+class SyftTestProcess(Process):
+    def __init__(self, *args: Any, **kwargs: Any):
+        Process.__init__(self, *args, **kwargs)
+        self._pconn, self._cconn = Pipe()
+        self._exception = None
+
+    def run(self) -> None:
+        try:
+            Process.run(self)
+            self._cconn.send(None)
+        except Exception as e:
+            tb = traceback.format_exc()
+            self._cconn.send((e, tb))
+
+    @property
+    def exception(self) -> Optional[tuple]:
+        if self._pconn.poll():
+            self._exception = self._pconn.recv()
+        return self._exception
+
+
+log_to_stderr()
 
 port = 21000
 grid_proc = Process(target=run, args=(port,))
@@ -38,21 +62,29 @@ def test_duet() -> None:
     # let the flask server init:
     sleep(5)
 
-    pool = ProcessPool(nodes=2)
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", port)) == 0
 
     for do, ds in registered_tests:
         mgr = Manager()
-        barrier = mgr.Barrier(2, timeout=20)  # type: ignore
+        barrier = mgr.Barrier(2, timeout=5)  # type: ignore
 
-        do_proc = pool.apipe(do, barrier, port)
-        ds_proc = pool.apipe(ds, barrier, port)
+        do_proc = SyftTestProcess(target=do, args=(barrier, port))
+        do_proc.start()
 
-        do_proc.get()
-        ds_proc.get()
+        ds_proc = SyftTestProcess(target=ds, args=(barrier, port))
+        ds_proc.start()
 
-    pool.close()
-    pool.terminate()
-    pool.join()
+        do_proc.join()
+        ds_proc.join()
+
+        if do_proc.exception:
+            exception, tb = do_proc.exception
+            raise Exception(tb) from exception
+
+        if ds_proc.exception:
+            exception, tb = ds_proc.exception
+            raise Exception(tb) from exception
+
+        # do_proc.get()
+        # ds_proc.get()
