@@ -14,6 +14,14 @@ from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from .misc import create_union_ast
 
+sympc_available = True
+
+try:
+    # syft relative
+    from ..lib.sympc import create_sympc_ast
+except ImportError:
+    sympc_available = False
+
 
 class VendorLibraryImportException(Exception):
     pass
@@ -92,7 +100,6 @@ def create_lib_ast() -> Globals:
     # to properly generated unions
     misc_ast = getattr(getattr(create_union_ast(lib_ast), "syft"), "lib")
     misc_root = getattr(getattr(lib_ast, "syft"), "lib")
-
     misc_root.add_attr(attr_name="misc", attr=misc_ast.attrs["misc"])
     return lib_ast
 

@@ -2,6 +2,7 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+
 from typing import Union as TypeUnion
 
 # syft relative
@@ -9,6 +10,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+
 
 PACKAGE_SUPPORT = {"lib": "sympc", "torch": {"min_version": "1.6.0"}}
 
