@@ -5,7 +5,6 @@ import json
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from nacl.signing import SigningKey
-import nest_asyncio
 import pytest
 
 # syft absolute
@@ -22,7 +21,6 @@ def get_signing_key() -> SigningKey:
 
 @pytest.mark.asyncio
 async def test_init_without_event_loop() -> None:
-    nest_asyncio.apply()
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
@@ -32,7 +30,6 @@ async def test_init_without_event_loop() -> None:
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
-    nest_asyncio.apply()
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
@@ -62,7 +59,6 @@ async def test_signaling_process() -> None:
 
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
-    nest_asyncio.apply()
 
     test_domain = Domain(name="test")
 
