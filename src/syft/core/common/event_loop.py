@@ -7,6 +7,7 @@ from typing import Dict as TypeDict
 from typing import Optional
 
 # third party
+from loguru import logger
 import nest_asyncio
 
 # syft relative
@@ -34,7 +35,6 @@ try:
 except RuntimeError:
     pass
 
-
 # no event loop found, lets create one so that future asyncio imports use the same loop
 if loop is None:
     loop = asyncio.new_event_loop()
@@ -45,10 +45,7 @@ asyncio._set_running_loop(loop)
 
 # https://github.com/erdewit/nest_asyncio
 # patch the event loop to allow nested event loops
-try:
-    nest_asyncio.apply(loop)
-except Exception as e:
-    print(f"Failed to patch event loop with nest_asyncio {e}")
+nest_asyncio.apply(loop)
 
 
 def loop_in_thread(loop: TypeAny) -> None:
@@ -61,10 +58,10 @@ class EventLoopThread:
 
     def __init__(self, loop: TypeAny) -> None:
         if "loop" not in self.__shared_state:
-            print("Starting Event Loop")
+            logger.info("Starting Event Loop")
             self.__shared_state["loop"] = loop
         if "thread" not in self.__shared_state:
-            print("Starting Event Loop Thread")
+            logger.info("Starting Event Loop Thread")
             # daemon=True needed to allow REPL exit() to terminate the thread
             # stdlib
             import threading
@@ -76,13 +73,13 @@ class EventLoopThread:
 
     def shutdown(self) -> None:
         if "loop" in self.__shared_state:
-            print("Stopping Event Loop")
+            logger.info("Stopping Event Loop")
             loop.stop()  # type: ignore
             loop.run_until_complete(loop.shutdown_asyncgens())  # type: ignore
             del self.__shared_state["loop"]
 
         if "thread" in self.__shared_state:
-            print("Stopping Event Loop Thread")
+            logger.info("Stopping Event Loop Thread")
             t = self.__shared_state["thread"]
             t.join()
             del self.__shared_state["thread"]
@@ -96,8 +93,8 @@ event_loop_thread: Optional[EventLoopThread] = None
 # allow threads to be disabled in REPL which will require an event loop to be started
 # before running import syft, an example use case is the SCONE container which has
 # threads disabled
-thread_env = os.environ.get("SYFT_USE_EVENT_LOOP_THREAD", "1")
-SYFT_USE_EVENT_LOOP_THREAD = not (thread_env == "0" or thread_env.lower() == "false")
+thread_env = str(os.environ.get("SYFT_USE_EVENT_LOOP_THREAD", "1")).lower()
+SYFT_USE_EVENT_LOOP_THREAD = thread_env not in {"0", "false"}
 
 # REPL requires us to create the Thread and Exit handler
 if not is_jupyter and is_interactive and SYFT_USE_EVENT_LOOP_THREAD:
@@ -105,11 +102,10 @@ if not is_jupyter and is_interactive and SYFT_USE_EVENT_LOOP_THREAD:
     event_loop_thread = EventLoopThread(loop=loop)
 
     def exit_handler() -> None:
-        print("Shutting down Syft")
+        logger.info("Shutting Down Syft")
         if event_loop_thread is not None:
             event_loop_thread.shutdown()
 
     atexit.register(exit_handler)
-
 
 __all__ = ["loop", "event_loop_thread"]
