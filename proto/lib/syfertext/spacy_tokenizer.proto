@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+
+message TokenSplits{
+    repeated string splits = 1;
+
+}
+
+
+message SpacyTokenizer {
+    bytes uuid = 1;
+    repeated string prefixes = 2;
+    repeated string suffixes = 3;
+    repeated string infixes = 4;
+    map<string, TokenSplits> exceptions = 5;
+}

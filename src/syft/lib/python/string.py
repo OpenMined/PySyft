@@ -18,9 +18,12 @@ from ...decorators import syft_decorator
 from ...proto.lib.python.string_pb2 import String as String_PB
 from ...util import aggressive_set_attr
 from .int import Int
+from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 
+class StringIterator(Iterator):
+    pass
 
 class String(UserString, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -77,11 +80,9 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def __iter__(self) -> PyPrimitive:
-        # TODO fix this
-        res = super().__iter__()
-        return PrimitiveFactory.generate_primitive(value=res)
-
+    def __iter__(self) -> StringIterator:
+        return StringIterator(self)
+               
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> PyPrimitive:
         res = super().__le__(other)

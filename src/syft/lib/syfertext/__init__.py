@@ -20,29 +20,36 @@ def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
 def create_ast() -> Globals:
 
     import syfertext
-    from . import default_tokenizer
+    from . import spacy_tokenizer    
     
     ast = Globals()
 
 
     # Define which SyferText modules to add to the AST
     modules = ['syfertext',
-               'syfertext.tokenizers'
+               'syfertext.tokenizers',
+               'syfertext.data',
+               'syfertext.data.units',
     ]
 
     # Define which SyferText classes to add to the AST    
     classes = [
-        ('syfertext.tokenizers.DefaultTokenizer',
-         'syfertext.tokenizers.DefaultTokenizer',
-          syfertext.tokenizers.DefaultTokenizer
+        ('syfertext.tokenizers.SpacyTokenizer',
+         'syfertext.tokenizers.SpacyTokenizer',
+          syfertext.tokenizers.SpacyTokenizer
+        ),
+        ('syfertext.data.units.TextDoc',
+         'syfertext.data.units.TextDoc',
+          syfertext.data.units.TextDoc
         ),
     ]
 
     # Define which methods to add to the AST
     methods = [
-        ('syfertext.tokenizers.DefaultTokenizer.__call__',
-         'syft.lib.python.List'
+        ('syfertext.tokenizers.SpacyTokenizer.__call__',
+         'syfertext.data.units.TextDoc'
         ),
+        
     ]
 
 

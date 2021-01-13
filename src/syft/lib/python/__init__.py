@@ -207,7 +207,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.String.__getitem__", "syft.lib.python.String"),
         ("syft.lib.python.String.__gt__", "syft.lib.python.Bool"),
         ("syft.lib.python.String.__int__", "syft.lib.python.Int"),
-        ("syft.lib.python.String.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.String.__iter__", "syft.lib.python.String"),
         ("syft.lib.python.String.__le__", "syft.lib.python.Bool"),
         ("syft.lib.python.String.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.String.__lt__", "syft.lib.python.Bool"),
