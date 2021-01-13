@@ -1,15 +1,15 @@
 # stdlib
+import asyncio
 import json
 from typing import Any
-from unittest.mock import patch
 from unittest.mock import Mock
+from unittest.mock import patch
 
 # third party
 from aiortc import RTCDataChannel
 from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
-import asyncio
 from nacl.signing import SigningKey
 import nest_asyncio
 import pytest
@@ -51,27 +51,6 @@ async def test_init() -> None:
     assert isinstance(webrtc.consumer_pool, asyncio.Queue)
     assert isinstance(webrtc.peer_connection, RTCPeerConnection)
     assert not webrtc._client_address
-
-
-@pytest.mark.asyncio
-async def test_init_patch_runtime_error(monkeypatch: MonkeyPatch) -> None:
-    nest_asyncio.apply()
-
-    mock_new_loop = Mock(return_value="mock_loop")
-    monkeypatch.setattr(asyncio, "new_event_loop", mock_new_loop)
-
-    with patch(
-        "syft.grid.connections.webrtc.logger", side_effect=RuntimeError()
-    ) as mock_logger:
-        with patch(
-            "syft.grid.connections.webrtc.get_running_loop", side_effect=RuntimeError()
-        ):
-            expected_log = "♫♫♫ > ...error getting a running event Loop... "
-            domain = Domain(name="test")
-            webrtc = WebRTCConnection(node=domain)
-
-            assert mock_logger.error.call_args[0][0] == expected_log
-            assert webrtc.loop == "mock_loop"
 
 
 @pytest.mark.asyncio
@@ -301,10 +280,16 @@ async def test_close() -> None:
 # --------------------- INTEGRATION ---------------------
 
 
+@pytest.mark.asyncio
+async def test_init_without_event_loop() -> None:
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    assert webrtc is not None
+
+
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
-    nest_asyncio.apply()
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
@@ -334,7 +319,6 @@ async def test_signaling_process() -> None:
 
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
-    nest_asyncio.apply()
 
     test_domain = Domain(name="test")
 

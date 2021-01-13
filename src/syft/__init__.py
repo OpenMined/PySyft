@@ -32,6 +32,7 @@ Syft "python" functionality includes the following modules:
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
+
 # stdlib
 import os
 from pathlib import Path
@@ -46,6 +47,7 @@ from pkg_resources import get_distribution  # noqa: F401
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
+from syft.core.common import event_loop  # noqa: F401
 
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -91,9 +93,6 @@ finally:
 sys.path.append(str(Path(__file__)))
 
 # LIBRARY CONFIG
-
-# do you want verbose logging to help with debugging?
-# logger.add(sys.stderr, level="INFO")
 
 logger.remove()  # remove default logger
 DEFAULT_LOG_FILE = "syft_{time}.log"
