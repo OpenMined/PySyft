@@ -19,8 +19,6 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
     length_rs = session.ring_size.bit_length()
     rs_bytes = session.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
 
-    length_nr_parties = session.nr_parties.bit_length()
-
     return MPCSession_PB(
         uuid=session.uuid.bytes,
         config=conf_proto,
