@@ -13,6 +13,7 @@ on:
     branches:
       - master
       - dev
+      - "0.4"
     paths:
       - "**.py"
       - "setup.cfg"
@@ -26,11 +27,41 @@ on:
 jobs:
   python-tests-all:
     strategy:
-      max-parallel: 36
+      max-parallel: 270
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        chunk: [1, 2, 3, 4, 5, 6, 7]
+        include:
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 1
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 2
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 3
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 4
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 5
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 6
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 7
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
@@ -46,60 +77,52 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: Cache packages
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              TORCHVISION_VERSION="0.6.0"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              TORCHVISION_VERSION="0.6.1"
-          elif [ $TORCH_VERSION = "1.6.0" ]
-          then
-              TORCHVISION_VERSION="0.7"
-          elif [ $TORCH_VERSION = "1.7.0" ]
-          then
-              TORCHVISION_VERSION="0.8.1"
-          fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
+          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-              $env:TORCHVISION_VERSION="0.6.0"
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-              $env:TORCHVISION_VERSION="0.6.1"
-          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
-              $env:TORCHVISION_VERSION="0.7"
-          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
-              $env:TORCHVISION_VERSION="0.8.1"
-          }
-          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
 
-      - name: Run all tests
+      - name: Install packages
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt --default-timeout=60
           pip install -e .
-          pytest -m 'all' --cov-fail-under 80 -n auto
+
+      - name: Run torch test chunks Linux and MacOS
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          export TEST_CHUNKS=14
+          export TEST_CHUNK=${{ matrix.chunk }}
+          echo "Running $TEST_CHUNK"
+          pytest -m torch -n auto -p no:benchmark --no-cov
+          export TEST_CHUNK=$(( ${{ matrix.chunk }}+7 ))
+          echo "Running $TEST_CHUNK"
+          pytest -m torch -n auto -p no:benchmark --no-cov
+
+      - name: Run torch test chunks Windows
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          $Env:TEST_CHUNKS=14
+          $Env:TEST_CHUNK=${{ matrix.chunk }}
+          echo "Running $Env:TEST_CHUNK"
+          pytest -m torch -n auto -p no:benchmark --no-cov
+          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+7
+          echo "Running $Env:TEST_CHUNK"
+          pytest -m torch -n auto -p no:benchmark --no-cov

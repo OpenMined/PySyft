@@ -1,11 +1,14 @@
 # Time Sequence Prediction
-This is a toy example for beginners to start with. It is helpful for learning both pytorch and time sequence prediction. Two LSTMCell units are used in this example to learn some sine wave signals starting at different phases. After learning the sine waves, the network tries to predict the signal values in the future. The results is shown in the picture below.
+This is a toy example for beginners to start with. It is helpful for learning both PyTorch and time sequence prediction. Two LSTM cell units are used in this example to learn some sine wave signals starting at different phases. After learning the sine waves, the network tries to predict the signal values in the future. The results is shown in the picture below.
 
 ## Usage
 
-```
+```bash
 python generate_sine_wave.py
-python train.py
+python train.py [--steps STEPS]
+
+optional arguments:
+  --steps     steps to run; default: 15
 ```
 
 ## Result

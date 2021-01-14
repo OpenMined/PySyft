@@ -1747,7 +1747,14 @@
         "profile": "default",
         "tensors": ["tensor2"],
         "inputs": [null, 0, 1],
-        "not_available": [{ "data_types": ["bfloat16", "float16"] }]
+        "not_available": [
+          { "data_types": ["bfloat16", "float16"] },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "round_": {
         "profile": "tensor_method_noinput",
@@ -2147,7 +2154,14 @@
       },
       "__getitem__": {
         "profile": "default",
-        "inputs": [false, true, 0, 1]
+        "inputs": [false, true, 0, 1],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "_version": {
         "profile": "tensor_property_noinput",
@@ -2977,6 +2991,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -3039,6 +3058,11 @@
           {
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16", "bool"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -3710,7 +3734,14 @@
       "random_": {
         "profile": "default",
         "inputs": [null],
-        "deterministic": false
+        "deterministic": false,
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "repeat_interleave": {
         "profile": "default",
@@ -4956,6 +4987,10 @@
             "lte_version": "1.7.0",
             "data_types": ["bfloat16", "float16"],
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.4.0",
+            "reason": "added_feature"
           }
         ]
       },
@@ -4968,6 +5003,10 @@
             "lte_version": "1.7.0",
             "data_types": ["bfloat16", "float16"],
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.4.0",
+            "reason": "added_feature"
           }
         ]
       },
@@ -5584,6 +5623,11 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -5597,6 +5641,11 @@
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5612,6 +5661,11 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -5625,6 +5679,11 @@
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5794,6 +5853,11 @@
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -6041,6 +6105,13 @@
         "tensors": ["cholesky"],
         "inputs": [
           { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+        ],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
         ]
       },
       "index_put_": {
@@ -6048,6 +6119,13 @@
         "tensors": ["cholesky"],
         "inputs": [
           { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+        ],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
         ]
       },
       "geometric_": {

@@ -17,7 +17,7 @@ class ObjectStore(ABC):
     """
     ObjectStore is the common interface for all the stores that a Node can handle. This should
     provide a dict-like interface on handling data on a worker. Indexing should be always done
-    by using UID objects, while de indexed value should always be a SerizableObject.
+    by using UID objects, while de-indexed value should always be a SerizableObject.
     """
 
     @syft_decorator(typechecking=True)
@@ -36,7 +36,7 @@ class ObjectStore(ABC):
         Method to print to first 5 entries of the ObjectStore in a database-like format.
 
         Returns:
-            str: header and first 5 entries of store in a formatted manner.
+            str: header and first 5 entries of the store in a formatted manner.
         """
         raise NotImplementedError
 
@@ -124,7 +124,7 @@ class ObjectStore(ABC):
         We should write custom deletion code so we can check if the item exists
         and then ensure deletion is called at a single place and that full __delitem__
         is used where possible instead of the weaker del ref count.
-        Also care needs to be taken to not capture the deleted item in the Exception
+        Also, care needs to be taken to not capture the deleted item in the Exception
         stack trace so it doesn't keep the item around longer.
 
         Method to remove an object from the store based on its UID.

@@ -4,6 +4,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
@@ -18,6 +19,7 @@ from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .protobuf import GenerateProtobufWrapper  # noqa: 401
 from .set import Set
 from .string import String
 from .tuple import Tuple
@@ -377,7 +379,16 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
-        ("syft.lib.python.Iterator.__next__", "torch.Tensor"),
+        (
+            "syft.lib.python.Iterator.__next__",
+            UnionGenerator[
+                "syft.lib.python.Int",
+                "syft.lib.python.Float",
+                "syft.lib.python.String",
+                "torch.nn.Parameter",
+                "torch.Tensor",
+            ],
+        ),  # temp until casting
         ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
         ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
         ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),

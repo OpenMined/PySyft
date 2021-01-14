@@ -1,5 +1,6 @@
 # stdlib
 import pydoc
+import sys
 from typing import List
 from typing import Optional
 
@@ -137,7 +138,6 @@ class StorableObject(AbstractStorableObject):
     @staticmethod
     @syft_decorator(typechecking=True)
     def _proto2object(proto: StorableObject_PB) -> object:
-
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
@@ -145,6 +145,14 @@ class StorableObject(AbstractStorableObject):
         #  PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
         obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
+
+        # this happens if we have a special ProtobufWrapper type
+        # need a different way to get obj_type
+        if proto.obj_type.endswith("ProtobufWrapper"):
+            module_parts = proto.obj_type.split(".")
+            klass = module_parts.pop().replace("ProtobufWrapper", "")
+            proto_type = getattr(sys.modules[".".join(module_parts)], klass)
+            obj_type = proto_type.serializable_wrapper_type
 
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = obj_type.get_data_protobuf_schema()
