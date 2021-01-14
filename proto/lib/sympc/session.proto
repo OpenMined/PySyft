@@ -10,7 +10,8 @@ message MPCSession {
   bytes uuid = 1;
   int32 rank = 2;
   bytes ring_size = 3; /* 2 ** 64 cannot be handled */
-  syft.lib.python.Dict config = 4;
-  repeated syft.core.node.common.Client parties = 5;
-  syft.core.node.common.Client ttp = 6;
+  bytes nr_parties = 4;
+  syft.lib.python.Dict config = 5;
+  repeated syft.core.node.common.Client parties = 6;
+  syft.core.node.common.Client ttp = 7;
 }

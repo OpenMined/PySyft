@@ -50,10 +50,12 @@ def create_ast() -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         ("sympc.protocol.spdz.spdz.mul_parties", "sympc.tensor.ShareTensor"),
+        ("sympc.protocol.spdz.spdz.div_wraps", "sympc.tensor.ShareTensor"),
         (
             "sympc.session.Session.przs_generate_random_share",
             "sympc.tensor.ShareTensor",
         ),
+        ("sympc.session.Session.populate_crypto_store", "syft.lib.python._SyNone"),
         (
             "sympc.session.get_generator",
             "torch.Generator",
@@ -67,7 +69,15 @@ def create_ast() -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
+            "sympc.tensor.ShareTensor.__rmul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
             "sympc.tensor.ShareTensor.__mul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.__truediv__",
             "sympc.tensor.ShareTensor",
         ),
         (
