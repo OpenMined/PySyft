@@ -18,7 +18,7 @@ on:
 
 jobs:
   python-linting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       max-parallel: 1
       matrix:
@@ -74,7 +74,7 @@ jobs:
           - os: windows-latest
             python-version: 3.9.0
             torch-version: 1.7.1
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
           - os: macos-latest
@@ -158,7 +158,7 @@ jobs:
 
   python-nb-examples:
     needs: [python-linting]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       max-parallel: 1
       matrix:

@@ -90,31 +90,31 @@ jobs:
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 7
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 1
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 2
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 3
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 4
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 5
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 6
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python-version: 3.9.0
             torch-version: 1.7.1
             chunk: 7
