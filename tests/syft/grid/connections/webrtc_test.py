@@ -35,6 +35,9 @@ def get_signing_key() -> SigningKey:
     return SigningKey(bytes.fromhex(key))
 
 
+# --------------------- INIT ---------------------
+
+
 @pytest.mark.asyncio
 async def test_init() -> None:
     nest_asyncio.apply()
@@ -89,35 +92,7 @@ async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
             assert mock_logger.error.call_args[0][0] == expected_log
 
 
-@pytest.mark.slow
-@pytest.mark.asyncio
-async def test_signaling_process() -> None:
-    nest_asyncio.apply()
-
-    domain = Domain(name="test")
-    webrtc = WebRTCConnection(node=domain)
-
-    offer_payload = await webrtc._set_offer()
-    offer_dict = json.loads(offer_payload)
-    aiortc_session = object_from_string(offer_payload)
-
-    assert "sdp" in offer_dict
-    assert "type" in offer_dict
-    assert offer_dict["type"] == "offer"
-    assert isinstance(aiortc_session, RTCSessionDescription)
-
-    answer_webrtc = WebRTCConnection(node=domain)
-    answer_payload = await answer_webrtc._set_answer(payload=offer_payload)
-    answer_dict = json.loads(answer_payload)
-    aiortc_session = object_from_string(answer_payload)
-
-    assert "sdp" in answer_dict
-    assert "type" in answer_dict
-    assert answer_dict["type"] == "answer"
-    assert isinstance(aiortc_session, RTCSessionDescription)
-
-    response = await webrtc._process_answer(payload=answer_payload)
-    assert response is None
+# --------------------- METHODS ---------------------
 
 
 @pytest.mark.asyncio
@@ -190,6 +165,40 @@ async def test_set_offer_on_message() -> None:
 
         await on_message(DC_CHUNK_END_SIGN)
         assert consumer_mock.call_count == 1
+
+
+# --------------------- INTEGRATION ---------------------
+
+
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_signaling_process() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+
+    offer_payload = await webrtc._set_offer()
+    offer_dict = json.loads(offer_payload)
+    aiortc_session = object_from_string(offer_payload)
+
+    assert "sdp" in offer_dict
+    assert "type" in offer_dict
+    assert offer_dict["type"] == "offer"
+    assert isinstance(aiortc_session, RTCSessionDescription)
+
+    answer_webrtc = WebRTCConnection(node=domain)
+    answer_payload = await answer_webrtc._set_answer(payload=offer_payload)
+    answer_dict = json.loads(answer_payload)
+    aiortc_session = object_from_string(answer_payload)
+
+    assert "sdp" in answer_dict
+    assert "type" in answer_dict
+    assert answer_dict["type"] == "answer"
+    assert isinstance(aiortc_session, RTCSessionDescription)
+
+    response = await webrtc._process_answer(payload=answer_payload)
+    assert response is None
 
 
 @pytest.mark.asyncio
