@@ -42,7 +42,7 @@ def fix_exception_pattern_2(
     not_available: list, tensor_type: str, **kwargs: None
 ) -> None:
     def get_ele_index() -> int:
-        keys = set({"data_types", "lte_version", "gte_version"})
+        keys = {"data_types", "lte_version", "gte_version"}
         i = -1
         for i, ele in enumerate(not_available):
             if (
@@ -85,10 +85,12 @@ def is_failed_op(line: str, failed_ops: set) -> bool:
 
 # --------------------------------
 # backup
-p = Path("./src/syft/lib/torch/")
+root_dir = os.path.abspath(Path(os.path.dirname(__file__)) / "..")
+p = Path(f"{root_dir}/src/syft/lib/torch/")
 shutil.copyfile(p / "allowlist.py", p / "allowlist.py.bak")
 shutil.copyfile(
-    "./tests/syft/lib/allowlist_test.json", "./tests/syft/lib/allowlist_test.json.bak"
+    f"{root_dir}/tests/syft/lib/allowlist_test.json",
+    f"{root_dir}/tests/syft/lib/allowlist_test.json.bak",
 )
 
 
@@ -111,7 +113,7 @@ while continue_loop:
     print()
 
     # Is errors.jsonl file there?
-    err_jsonl = glob.glob("./allowlist_test_errors_*.jsonl")
+    err_jsonl = glob.glob(f"{root_dir}/allowlist_test_errors_*.jsonl")
     # if no, all tests pass, stop loop
     if len(err_jsonl) == 0:
         print()
@@ -175,7 +177,7 @@ while continue_loop:
         f.writelines(lines)
 
     # read allowlist_test.json
-    with open("./tests/syft/lib/allowlist_test.json", "r") as f:
+    with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
         allowlist_test = json.load(f)
 
     # read error.jsonl
@@ -213,5 +215,5 @@ while continue_loop:
             ] = not_available
 
     # update allowlist_test.json
-    with open("./tests/syft/lib/allowlist_test.json", "w") as f:
+    with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
