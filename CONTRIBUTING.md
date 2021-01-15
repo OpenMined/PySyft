@@ -5,7 +5,7 @@ This project is open source and we welcome contributions from everyone in the fo
 
 ## Getting Started
 
-The PySyft codebase, like all OpenMined codebases, is developed by charitable individuals who donate their time and expertice to bettering open-source software. **OpenMined is not a company and individual contributors have no responsibility to solve problems that you may have in your implementation.** Please do not message regular, core contributors to this project or any project on Slack or any other medium for support. There are proper Slack channels in place for receiving support, such as the #lib_pysyft channel on our [Slack community](https://slack.openmined.org). Please file any support requests there. For any bug reports or feature requests, please create an issue. For any PR's, please ensure your work is related to an active PySyft Github issue. Anything else will be closed or will not be responded to.
+The PySyft codebase, like all OpenMined codebases, is developed by charitable individuals who donate their time and expertice to bettering open-source software. **OpenMined is not a company and individual contributors have no responsibility to solve problems that you may have in your implementation.** In the interest of making the best use of our contributors time, please do not DM regular, core contributors to this project or any project on Slack or any other medium for support without prior invitation. There are proper Slack channels in place for receiving support, such as the #lib_pysyft channel on our [Slack community](https://slack.openmined.org). The added benefit of using a channel is that others can step in to help and learn from the discussed topics. Please file any support requests there. For any bug reports or feature requests, please create an issue. For any PR's, please ensure your work is related to an active PySyft Github issue. Anything else will be closed or will not be responded to.
 
 - [Contribution Guidelines](#contribution-guidelines)
   - [Getting Started](#getting-started)
@@ -63,7 +63,7 @@ If you have questions or want to get involved with any of the other exciting pro
 
 ## Issues / PRs
 - Development is done on the `dev` branch so if you want to add a PR please point it at this branch and not `master`.
-- PR's pay be closed without warning for any of the following reasons: lack of an associated Github issue, lack of tests, lack of proper documentation, or anything that isn't within the intended development roadmap of the Syft core team.
+- PR's may be closed without warning for any of the following reasons: lack of an associated Github issue, lack of tests, lack of proper documentation, or anything that isn't within the intended development roadmap of the Syft core team.
 - If you are working on an existing issue posted by someone else, please ask to be added as Assignee so that effort is not duplicated.
 - If you want to contribute to an issue someone else is already working on please get in contact with that person via slack or GitHub and discuss your collaboration.
 - If you wish to create your own issue or PR please explain your reasoning within the Issue template and make sure your code passes all the CI checks.
