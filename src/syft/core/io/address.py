@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -279,7 +278,7 @@ class Address(Serializable):
 
     @property
     def vm(self) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself, this property will return the ID of that vm
         if it is known by the client."""
 
@@ -287,7 +286,7 @@ class Address(Serializable):
 
     @vm.setter
     def vm(self, new_vm: Location) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
@@ -303,10 +302,6 @@ class Address(Serializable):
         if vm is not None:
             return vm.id
         return None
-
-    @property
-    def addressables(self) -> List[Optional[Location]]:
-        return [self.vm, self.device, self.domain, self.network]
 
     def target_emoji(self) -> str:
         output = ""

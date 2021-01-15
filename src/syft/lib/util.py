@@ -54,7 +54,7 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
-    replace each original constructor (th.Tensor) with on we implement (torch\_.UppercaseTensorConstructor), we also
+    replace each original constructor (th.Tensor) with on we implement (torch.UppercaseTensorConstructor), we also
     need to make sure that our new constructor has any static methods which were previously stored on th.Tensor.
     Otherwise, the library might look for them there, not find them, and then trigger an error.
 
@@ -97,7 +97,7 @@ def replace_classes_in_module(
     """Recursively replace occurrence of `from_class` to `to_class` inside module.
 
     For example, when syft replaces torch.nn.parameter.Parameter constructor,
-    there's also need to replace same constructor in other modules that has already
+    there's also need to replace the same constructor in other modules that has already
     imported it.
 
     Args:

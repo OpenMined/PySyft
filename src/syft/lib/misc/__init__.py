@@ -20,13 +20,13 @@ def get_allowed_functions(
     lib_ast: globals.Globals, union_types: TypeList[str]
 ) -> Dict[str, bool]:
     """
-    This function generates the set of functions that can go into a union type.
+    This function generates a set of functions that can go into a union type.
 
     A function has to meet the following requirements to be present on a union type:
         1. If it's present on all Class attributes associated with the union types
         on the ast, add it.
         2. If it's not present on all Class attributes associated with the union
-        types, check if the exist on the original type functions list. If they
+        types, check if they exist on the original type functions list. If they
         do exist, drop it, if not, add it.
 
     Args:
@@ -35,7 +35,7 @@ def get_allowed_functions(
 
     Returns:
         allowed_functions (dict): The keys of the dict are function names (str)
-        and the values are Bool (if the are allowed or not).
+        and the values are Bool (if they are allowed or not).
     """
 
     allowed_functions: Dict[str, bool] = defaultdict(lambda: True)

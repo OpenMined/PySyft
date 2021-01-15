@@ -19,11 +19,11 @@ def _deserialize(
 ) -> Union[Serializable, object]:
     """We assume you're deserializing a protobuf object by default
 
-    This function deserializes from an encoding to a Python object. There are a few ways of
+    This function deserializes from encoding to a Python object. There are a few ways of
     using this function:
-    1. An Message object is passed, this will transform a protobuf message into its associated class. 
+    1. An Message object is passed, this will transform a protobuf message into its associated class.
     the from_proto has to be set (it is by default).
-    2. Bytes are passed. This requires the from_bytes flag set the schema_type specified. 
+    2. Bytes are passed. This requires the from_bytes flag set the schema_type specified.
     We cannot (and we should not) be able to get the schema_type from the binary representation.
 
     Note: The only format that does not require the schema_type is when we are passing
@@ -32,7 +32,7 @@ def _deserialize(
     Raises: ValueError if you are not setting one from_<protocol> flag.
             ValueError if you are deserializing a data type that requires a schema type and not
             providing one.
-            TypeError if you are are trying to deserialize an unsupported type.
+            TypeError if you are trying to deserialize an unsupported type.
 
     :param blob: this parameter is the data to be deserialized from various formats.
     :type blob: Union[str, dict, bytes, Messages]

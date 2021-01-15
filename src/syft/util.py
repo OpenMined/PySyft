@@ -19,7 +19,7 @@ from .decorators.syft_decorator_impl import syft_decorator
 
 @syft_decorator(typechecking=True)
 def get_subclasses(obj_type: type) -> List[type]:
-    """Recusively generate the list of all classes within the sub-tree of an object
+    """Recursively generate the list of all classes within the sub-tree of an object
 
     As a paradigm in Syft, we often allow for something to be known about by another
     part of the codebase merely because it has subclassed a particular object. While
@@ -97,7 +97,7 @@ def get_fully_qualified_name(obj: object) -> str:
     is the current fully qualified path and name for the SyftMessage
     object.
 
-    :param obj: the object we we want to get the name of
+    :param obj: the object we want to get the name of
     :type obj: object
     :returns: the full path and name of the object
     :rtype: str

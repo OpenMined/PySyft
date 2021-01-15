@@ -3,14 +3,69 @@
 This document contains a set of guidelines to help you during the contribution process.
 This project is open source and we welcome contributions from everyone in the form of bug fixes, new features, documentation and suggestions.
 
+## Getting Started
+
+The PySyft codebase, like all OpenMined codebases, is developed by charitable individuals who donate their time and expertice to bettering open-source software. **OpenMined is not a company and individual contributors have no responsibility to solve problems that you may have in your implementation.** In the interest of making the best use of our contributors time, please do not DM regular, core contributors to this project or any project on Slack or any other medium for support without prior invitation. There are proper Slack channels in place for receiving support, such as the #lib_pysyft channel on our [Slack community](https://slack.openmined.org). The added benefit of using a channel is that others can step in to help and learn from the discussed topics. Please file any support requests there. For any bug reports or feature requests, please create an issue. For any PR's, please ensure your work is related to an active PySyft Github issue. Anything else will be closed or will not be responded to.
+
+- [Contribution Guidelines](#contribution-guidelines)
+  - [Getting Started](#getting-started)
+  - [Slack](#slack)
+  - [Issues / PRs](#issues--prs)
+    - [Beginner Issues](#beginner-issues)
+  - [Requirements](#requirements)
+    - [Linux](#linux)
+    - [MacOS](#macos)
+    - [Windows](#windows)
+  - [Git](#git)
+    - [MacOS](#macos-1)
+  - [protoc](#protoc)
+    - [MacOS](#macos-2)
+    - [Ubuntu](#ubuntu)
+  - [Python Versions](#python-versions)
+    - [MacOS](#macos-3)
+    - [For Linux/WSL based Systems](#for-linuxwsl-based-systems)
+    - [Using pyenv](#using-pyenv)
+  - [Virtual Environments](#virtual-environments)
+    - [What is a Virtual Environment](#what-is-a-virtual-environment)
+        - [What about Python Package Management](#what-about-python-package-management)
+  - [Pipenv](#pipenv)
+    - [Common Issues](#common-issues)
+  - [Git Repo](#git-repo)
+    - [Forking PySyft](#forking-pysyft)
+    - [Clone GitHub Repo](#clone-github-repo)
+    - [Switch to Dev-Branch](#switch-to-dev-branch)
+    - [Branching](#branching)
+    - [Syncing your Fork](#syncing-your-fork)
+    - [Learn More Git](#learn-more-git)
+  - [Setting up the VirtualEnv](#setting-up-the-virtualenv)
+    - [Pipenv](#pipenv-1)
+    - [Install Python Dependencies](#install-python-dependencies)
+    - [Linking the PySyft src](#linking-the-pysyft-src)
+  - [Jupyter](#jupyter)
+  - [Duet Network](#duet-network)
+  - [Code Quality](#code-quality)
+    - [Formatting, Linting and Type Checking](#formatting-linting-and-type-checking)
+    - [Tests and CI](#tests-and-ci)
+    - [Writing Test Cases](#writing-test-cases)
+    - [Documentation and Code Style Guide](#documentation-and-code-style-guide)
+    - [Imports Formatting](#imports-formatting)
+    - [Generating Documentation](#generating-documentation)
+  - [Type Checking](#type-checking)
+  - [Pre-Commit](#pre-commit)
+    - [MacOS](#macos-4)
+  - [Useful Scripts](#useful-scripts)
+    - [Creating a Pull Request](#creating-a-pull-request)
+    - [Check CI and Wait for Reviews](#check-ci-and-wait-for-reviews)
+  - [Support](#support)
 
 ## Slack
 If you have questions or want to get involved with any of the other exciting projects at OpenMined [Join our Slack community](http://slack.openmined.org).
 
 ## Issues / PRs
 - Development is done on the `dev` branch so if you want to add a PR please point it at this branch and not `master`.
-- If you are working on a existing issue posted by someone else, please ask to be added as Assignee so that effort is not duplicated.
-- If you want to contribute to an issue someone else is already working on please get in contact with that person via slack or github and discuss your collaboration.
+- PR's may be closed without warning for any of the following reasons: lack of an associated Github issue, lack of tests, lack of proper documentation, or anything that isn't within the intended development roadmap of the Syft core team.
+- If you are working on an existing issue posted by someone else, please ask to be added as Assignee so that effort is not duplicated.
+- If you want to contribute to an issue someone else is already working on please get in contact with that person via slack or GitHub and discuss your collaboration.
 - If you wish to create your own issue or PR please explain your reasoning within the Issue template and make sure your code passes all the CI checks.
 
 **Caution**: We try our best to keep the assignee up-to-date, but as we are all humans with our own schedules mistakes happen. If you are unsure, please check the comments of the issue to see if someone else has already started work before you begin.
@@ -26,23 +81,36 @@ Before you get started you will need a few things installed depending on your op
 - git
 - protobuf (protoc)
 
+### OSes
+We intend to provide first class support for dev setup in the current versions of:
+
+- 🐧 Ubuntu
+- 🍎 MacOS
+- 💠 Windows
+
+If there are missing instructions on setup for a specific operating system or tool please open a PR.
 
 ### Linux
 If you are using Ubuntu this is `apt-get` and should already be available on your machine.
+
 ### MacOS
-On MacOS the main package manager is called [Brew](https://brew.sh/).
+On macOS, the main package manager is called [Brew](https://brew.sh/).
 
 Install Brew with:
 ```
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
-Afterwards you can now use the `brew` package manager for installing additionally required packages below.
+Afterwards, you can now use the `brew` package manager for installing additionally required packages below.
 
 ### Windows
-For windows the recommended package manager is [chocolatey](https://chocolatey.org/).
+For Windows users, the recommended package manager is [chocolatey](https://chocolatey.org/).
+Alternatively, you can use [Windows Subsystem Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and follow the instructions under Linux section.
+
 
 ## Git
 You will need git to clone, commit and push code to GitHub.
+
+### Linux
 
 ### MacOS
 ```
@@ -50,7 +118,7 @@ $ brew install git
 ```
 
 ## protoc
-We utilise protobuf and `protoc` protobuf compiler to automatically code generate python protobuf interfaces for much of our serialization / deserialization functionality. To generate protobufs you need the protoc tool installed and available on your path. Protoc / protobuf are available on many OS Package Managers and there are pre-compiled binaries for many systems available on their repo: https://github.com/protocolbuffers/protobuf
+We utilise protobuf and `protoc` protobuf compiler to automatically code generate python protobuf interfaces for much of our serialization/deserialization functionality. To generate protobufs you need the protoc tool installed and available on your path. Protoc / protobuf are available on many OS Package Managers and there are pre-compiled binaries for many systems available on their repo: https://github.com/protocolbuffers/protobuf
 
 ### MacOS
 Install protobuf and protoc like this:
@@ -58,9 +126,16 @@ Install protobuf and protoc like this:
 $ brew install protobuf
 ```
 
+### Ubuntu
+For Ubuntu based systems install protobuf and protoc using the following command:
+
+```
+$ sudo apt install  install protobuf-compiler
+```
+
 
 ## Python Versions
-This project supports Python 3.6+, however if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
+This project supports Python 3.6+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
 
 ### MacOS
 
@@ -68,6 +143,10 @@ Install the `pyenv` tool with `brew`:
 ```
 $ brew install pyenv
 ```
+### For Linux/WSL based Systems
+
+Follow the instructions provided in the repo : https://github.com/pyenv/pyenv-installer
+
 
 ### Using pyenv
 Running the command will give you help:
@@ -103,10 +182,10 @@ $ pyenv versions
 3.9.0
 ```
 
-Thats all we need for now. You generally should not change which python version your system is using by default and instead we will use virtualenv manager to pick from these compiled and installed Python versions later.
+That’s all we need for now. You generally should not change which python version your system is using by default and instead we will use virtualenv manager to pick from these compiled and installed Python versions later.
 
 ## Virtual Environments
-If you do not fully understand what a Virtual Environment is and why you need it, I would urge you to read this section because its actually a very simple concept but misunderstanding Python, site-packages and virtual environments leads to many common problems when working with projects and packages.
+If you do not fully understand what a Virtual Environment is and why you need it, I would urge you to read this section because its actually a very simple concept but misunderstanding Python, site-packages and virtual environments lead to many common problems when working with projects and packages.
 
 ### What is a Virtual Environment
 Ever wonder how python finds your packages that you have installed? The simple answer is, it recursively searches up a few folders from where ever the binary `python` or `python.exe` looking for a folder called site-packages.
@@ -123,31 +202,30 @@ $ ls -l /usr/local/bin/python3
 /usr/local/bin/python3 -> ../Cellar/python@3.9/3.9.0_1/bin/python3
 ```
 
-Okay so that means if I run this python3 interpreter im going to get python 3.9.0 and it will look for packages where ever that folder is in my Brew Cellar.
+Okay, so that means if I run this python3 interpreter I’m going to get python 3.9.0 and it will look for packages where ever that folder is in my Brew Cellar.
 
 So what if I wanted to isolate a project from that and even use a different version of python you ask?
 Quite simply a virtual environment is a folder where you store a copy of the python binary you want to use, and then you change the PATH of your shell to use that binary first so all future package resolution commands including installing packages with `pip` etc will go in that subfolder. This explains why with most virtualenv tools you have to activate them often by running `source` on a shell file to change your shells PATH.
 
-This is so common there are a multitude of tools to help with this, and the process is now officially supported within python3 itself.
+This is so common there is a multitude of tools to help with this, and the process is now officially supported within python3 itself.
 
 **Bonus Points**
 Watch: Reverse-engineering Ian Bicking's brain: inside pip and virtualenv
 https://www.youtube.com/watch?v=DlTasnqVldc
 
 ##### What about Python Package Management
-Okay so virtualenvs are only part of the process, they give you isolated folder structures in which you can install, update and delete packages without worrying about messing up other projects. But how do i install a package? Is that only pip, what about conda or pipenv or poetry?
+Okay so virtualenvs are only part of the process, they give you isolated folder structures in which you can install, update and delete packages without worrying about messing up other projects. But how do I install a package? Is that only pip, what about conda or pipenv or poetry?
 
-Most of these tools aim to provide the same functionality which is to create virtualenvs, and handle the installation of packages as well as making the experience of activating and managing virtualenvs as seamless as possible. Some, as in the case of conda even provide their own package repositories and additional non python package support.
+Most of these tools aim to provide the same functionality which is to create virtualenvs, and handle the installation of packages as well as making the experience of activating and managing virtualenvs as seamless as possible. Some, as in the case of conda even provide their own package repositories and additional non-python package support.
 
 For the example below I will be using `pipenv` purely because it is extremely simple to use, and is itself simply a pip package which means as long as you have any version of python3 on your system you can use this to bootstrap everything else.
 
-name | packages | virtualenvs
---- | --- | --- | ---
-pip + venv | ✅ | ✅
-pipenv | ✅ | ✅
-conda | ✅ | ✅
-poetry | ✅ | ✅
-
+| name       | packages | virtualenvs |
+| ---------- | -------- | ----------- |
+| pip + venv | ✅        | ✅           |
+| pipenv     | ✅        | ✅           |
+| conda      | ✅        | ✅           |
+| poetry     | ✅        | ✅           |
 
 ## Pipenv
 As you will be running pipenv to create virtualenvs you will want to install pipenv into your normal system python site-packages.
@@ -162,7 +240,7 @@ $ pip install pipenv
 pip3 was introduced as an alias to use the pip package manager from python3 on systems where python 2.x is still used by the operating system.
 When in doubt use pip3 or check the path and version that your python or pip binary is using.
 - I don't have pip?
-On some systems like Ubuntu you need to install pip first with `apt-get install python3-pip` or you you can use the new official way to install pip from python:
+On some systems like Ubuntu, you need to install pip first with `apt-get install python3-pip` or you can use the new official way to install pip from python:
 ```
 $ python3 -m ensurepip
 ```
@@ -170,12 +248,12 @@ $ python3 -m ensurepip
 ## Git Repo
 
 ### Forking PySyft
-As you will be making contributions you will need somewhere to push your code. The way you do this is by forking the repository so that your own github user profile has a copy of the source code.
+As you will be making contributions you will need somewhere to push your code. The way you do this is by forking the repository so that your own GitHub user profile has a copy of the source code.
 
 Navigate to the page and click the fork button:
 https://github.com/OpenMined/pysyft
 
-You will now have a url like this with your copy:
+You will now have a URL like this with your copy:
 https://github.com/<your-username>/pysyft
 
 ### Clone GitHub Repo
@@ -184,7 +262,7 @@ $ git clone https://github.com/<your-username>/pysyft
 $ cd pysyft
 ```
 
-### Switch to Dev Branch
+### Switch to Dev-Branch
 The majority of our work will fork off dev.
 ```
 $ git checkout dev
@@ -207,7 +285,7 @@ $ git rebase upstream/<branch-name>
 ```
 
 ### Learn More Git
-If you want to learn more about git or github then checkout [this guide](https://guides.github.com/activities/hello-world).
+If you want to learn more about git or Github then check out [this guide](https://guides.github.com/activities/hello-world).
 
 ## Setting up the VirtualEnv
 Lets create a virtualenv and install the required packages so that we can start developing on Syft.
@@ -239,7 +317,7 @@ $ which python
 /Users/madhavajay/.local/share/virtualenvs/PySyft-lHlz_cKe/bin/python
 ```
 
-Okay, any time we are inside the virtualenv every python and pip command we run will use this isolated version that we defined and will not effect the rest of the system or other projects.
+Okay, any time we are inside the virtualenv every python and pip command we run will use this isolated version that we defined and will not affect the rest of the system or other projects.
 
 ### Install Python Dependencies
 Once you are inside the virtualenv you can do this with pip or pipenv.
@@ -260,7 +338,7 @@ $ pip freeze
 
 ### Linking the PySyft src
 Now we need to link the src directory of the pysyft code base into our site-packages
-so that it acts like its installed but we can change any file we like and `import` again
+so that it acts like it’s installed but we can change any file we like and `import` again
 to see the changes.
 
 ```
@@ -274,12 +352,12 @@ Run the quick tests with all your CPU cores by running:
 $ pytest -m fast -n auto
 ```
 
-If they pass then you know everything is setup correctly.
+If they pass then you know everything is set up correctly.
 
 
 ## Jupyter
 Jupyter is not in requirements.txt as its technically not needed however you will likely use it extensively in Duet.
-Its worth installing this within the Virtual Environment and making sure its a recent version as there are some issues with Jupyter 5.x so its important that you install Jupyter 6+
+It’s worth installing this within the Virtual Environment and making sure its a recent version as there are some issues with Jupyter 5.x so it’s important that you install Jupyter 6+
 
 ```
 $ cd pysyft
@@ -293,7 +371,7 @@ If you wish to run your own Duet Network instead of the AWS one, simply run the 
 $ syft-network
 ```
 
-This will start a flask application on port 5000 which you can then pass in to the sy.duet() commands like so:
+This will start a flask application on port 5000 which you can then pass into the sy.duet() commands like so:
 ```python
 import syft as sy
 duet = sy.duet(network_url="http://127.0.0.1:5000/")
@@ -302,7 +380,7 @@ duet = sy.duet(network_url="http://127.0.0.1:5000/")
 ## Code Quality
 
 ### Formatting, Linting and Type Checking
-We use several tools to keep our code base high quality. They are automatically run when you use the `pre_commit.sh` script.
+We use several tools to keep our codebase high quality. They are automatically run when you use the `pre_commit.sh` script.
 - black
 - flake8
 - isort
@@ -321,14 +399,14 @@ $ pytest -m fast -n auto
 
 ### Writing Test Cases
 
-Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via github if you don't feel confident about your tests.
+Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via GitHub if you don't feel confident about your tests.
 
 ### Documentation and Code Style Guide
-To ensure code quality and make sure other people can understand your changes, you have to document your code. For documentation we are using the Google Python Style Rules which can be found [here](https://github.com/google/styleguide/blob/gh-pages/pyguide.md). A well written example can we viewed [here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+To ensure code quality and make sure other people can understand your changes, you have to document your code. For documentation, we are using the Google Python Style Rules which can be found [here](https://github.com/google/styleguide/blob/gh-pages/pyguide.md). A well-written example can we viewed [here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
 
-You documentation should not describe the obvious, but explain what's the intention behind the code and how you tried to realize your intention.
+Your documentation should not describe the obvious, but explain what's the intention behind the code and how you tried to realize your intention.
 
-You should also document non self-explanatory code fragments e.g. complicated for-loops. Again please do not just describe what each line is doing but also explain the idea behind the code fragment and why you decided to use that exact solution.
+You should also document non-self-explanatory code fragments e.g. complicated for-loops. Again please do not just describe what each line is doing but also explain the idea behind the code fragment and why you decided to use that exact solution.
 
 ### Imports Formatting
 We use isort to automatically format the python imports. Make sure to run it either manually or as part of the `pre_commit.sh` script.
@@ -353,7 +431,7 @@ We are using a tool called [pre-commit](https://pre-commit.com/) which is a plug
 
 ### MacOS
 
-First install the pre-commit tool:
+First, install the pre-commit tool:
 ```
 $ brew install pre-commit
 ```
@@ -370,10 +448,10 @@ $ pre-commit run --all-files
 ```
 
 Now every time you try to commit code these checks will run and warn you if there was an issue.
-This same check is run on CI so if it fails on your machine it will probably fail on GitHub.
+These same checks run on CI, so if it fails on your machine, it will probably fail on GitHub.
 
 ## Useful Scripts
-We have a number of useful utility bash scripts for Linux and MacOS (or WSL) which we
+We have a number of useful utility bash scripts for Linux and macOS (or WSL) which we
 regularly use during development to perform pre-flight checks before committing and pushing.
 
 - pre_commit.sh
@@ -395,25 +473,25 @@ $ pytest -m slow -n auto
 - build_proto.sh
 This script will re-generate all of the protobuf files using the `protoc` protobuf compiler.
 - nb_test.sh
-This converts notebooks that have asserts into tests so they can be run with pytest
+This converts notebooks that have asserts into tests so they can be run with pytest.
 - colab.sh
-This fixes some issues in Colab with python 3.6.9 and our code and helps cloning the
+This fixes some issues in Colab with python 3.6.9 and our code and helps to clone the
 repo if you want to test code which is not on PyPI yet.
 
 ### Creating a Pull Request
 
-At any point in time you can create a pull request, so others can see your changes and give you feedback. Please create all pull requests to the `dev` branch.
+At any point in time, you can create a pull request, so others can see your changes and give you feedback. Please create all pull requests to the `dev` branch.
 
 If your PR is still work in progress and not ready to be merged please add a `[WIP]` at the start of the title and choose the Draft option on GitHub.
 
 Example:`[WIP] Serialization of PointerTensor`
 
 ### Check CI and Wait for Reviews
-After each commit GitHub Actions will check your new code against the formatting guidelines (should not cause any problems when you setup your pre-commit hook) and execute the tests to check if the test coverage is high enough.
+After each commit, GitHub Actions will check your new code against the formatting guidelines (should not cause any problems when you set up your pre-commit hook) and execute the tests to check if the test coverage is high enough.
 
 We will only merge PRs that pass the GitHub Actions checks.
 
-If your check fails, don't worry, you will still be able to make changes and make your code pass the checks. Try to replicate the issue on your local machine by running the same check or test which failed on the same version of Python if possible. Once the issue is fixed simply push your code again to the same branch and the PR will automatically update and run CI again.
+If your check fails, don't worry, you will still be able to make changes and make your code pass the checks. Try to replicate the issue on your local machine by running the same check or test which failed on the same version of Python if possible. Once the issue is fixed, simply push your code again to the same branch and the PR will automatically update and rerun CI.
 
 ## Support
-For support in contributing to this project and like to follow along with any code changes to the library, please join the #code_pysyft Slack channel. [Click here to join our Slack community!](https://slack.openmined.org/)
+For support in contributing to this project and like to follow along with any code changes to the library, please join the #lib_pysyft Slack channel. [Click here to join our Slack community!](https://slack.openmined.org/)

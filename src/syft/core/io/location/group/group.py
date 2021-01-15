@@ -11,7 +11,7 @@ class LocationGroup(Location):
     are two kinds of LocationGroups, RegistryBackedLocationGroup
     and SubscriptionBackedLocationGroup. A registry backed group
     has an official owner with an official list while a subscription
-    backed group is open to whomever knows the key to the group and
+    backed group is open to whoever knows the key to the group and
     chooses to subscribe. Both groups can have inclusion criteria
     which a location does or doesn't meet."""
 
