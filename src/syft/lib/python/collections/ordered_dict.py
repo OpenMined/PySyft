@@ -94,8 +94,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     @classmethod
+    @syft_decorator(typechecking=True, prohibit_args=False)
     def fromkeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
         res = cls(PyOrderedDict.fromkeys(iterable, value))
         return PrimitiveFactory.generate_primitive(value=res)
@@ -135,8 +135,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().setdefault(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def update(self, other: Any = (), /, **kwds: Any) -> SyPrimitiveRet:
+    @syft_decorator(typechecking=False, prohibit_args=False)
+    def update(self, other=(), /, **kwds: Any) -> SyPrimitiveRet:  # type: ignore
         res = super().update(other, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 

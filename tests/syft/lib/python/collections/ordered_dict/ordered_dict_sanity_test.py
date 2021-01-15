@@ -101,7 +101,7 @@ def test_update():
     # Issue 9137: Named argument called 'other' or 'self'
     # shouldn't be treated specially.
     od = OrderedDict()
-    od.update([("self", 23)])
+    od.update(self=23)
     assertEqual(list(od.items()), [("self", 23)])
     od = OrderedDict()
     od.update(other={})
