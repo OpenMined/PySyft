@@ -131,14 +131,14 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
         client_id = ""
         for retry in range(10):
             try:
-                f = open(self.file_path, "r")
-                loopback_config = json.loads(f.read())
+                with open(self.file_path, "r") as f:
+                    loopback_config = json.loads(f.read())
 
-                if "client_id" not in loopback_config:
-                    raise Exception("Client not ready")
+                    if "client_id" not in loopback_config:
+                        raise Exception("Client not ready")
 
-                client_id = str(loopback_config["client_id"])
-                break
+                    client_id = str(loopback_config["client_id"])
+                    break
 
             except Exception as e:
                 try_print("server config load failed", self.file_path, e)
@@ -154,17 +154,17 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
         server_id = ""
         for retry in range(10):
             try:
-                f = open(self.file_path, "r")
-                loopback_config = json.loads(f.read())
-                # only continue once the server has overwritten the file
-                # with only its new server_id
-                if not (
-                    "server_id" in loopback_config
-                    and "client_id" not in loopback_config
-                ):
-                    raise Exception("server not ready")
-                server_id = str(loopback_config["server_id"])
-                break
+                with open(self.file_path, "r") as f:
+                    loopback_config = json.loads(f.read())
+                    # only continue once the server has overwritten the file
+                    # with only its new server_id
+                    if not (
+                        "server_id" in loopback_config
+                        and "client_id" not in loopback_config
+                    ):
+                        raise Exception("server not ready")
+                    server_id = str(loopback_config["server_id"])
+                    break
             except Exception as e:
                 try_print("client config load failed", self.file_path, e)
                 time.sleep(0.5)
