@@ -3,6 +3,55 @@
 This document contains a set of guidelines to help you during the contribution process.
 This project is open source and we welcome contributions from everyone in the form of bug fixes, new features, documentation and suggestions.
 
+- [Contribution Guidelines](#contribution-guidelines)
+  - [Slack](#slack)
+  - [Issues / PRs](#issues--prs)
+    - [Beginner Issues](#beginner-issues)
+  - [Requirements](#requirements)
+    - [Linux](#linux)
+    - [MacOS](#macos)
+    - [Windows](#windows)
+  - [Git](#git)
+    - [MacOS](#macos-1)
+  - [protoc](#protoc)
+    - [MacOS](#macos-2)
+    - [Ubuntu](#ubuntu)
+  - [Python Versions](#python-versions)
+    - [MacOS](#macos-3)
+    - [For Linux/WSL based Systems](#for-linuxwsl-based-systems)
+    - [Using pyenv](#using-pyenv)
+  - [Virtual Environments](#virtual-environments)
+    - [What is a Virtual Environment](#what-is-a-virtual-environment)
+        - [What about Python Package Management](#what-about-python-package-management)
+  - [Pipenv](#pipenv)
+    - [Common Issues](#common-issues)
+  - [Git Repo](#git-repo)
+    - [Forking PySyft](#forking-pysyft)
+    - [Clone GitHub Repo](#clone-github-repo)
+    - [Switch to Dev-Branch](#switch-to-dev-branch)
+    - [Branching](#branching)
+    - [Syncing your Fork](#syncing-your-fork)
+    - [Learn More Git](#learn-more-git)
+  - [Setting up the VirtualEnv](#setting-up-the-virtualenv)
+    - [Pipenv](#pipenv-1)
+    - [Install Python Dependencies](#install-python-dependencies)
+    - [Linking the PySyft src](#linking-the-pysyft-src)
+  - [Jupyter](#jupyter)
+  - [Duet Network](#duet-network)
+  - [Code Quality](#code-quality)
+    - [Formatting, Linting and Type Checking](#formatting-linting-and-type-checking)
+    - [Tests and CI](#tests-and-ci)
+    - [Writing Test Cases](#writing-test-cases)
+    - [Documentation and Code Style Guide](#documentation-and-code-style-guide)
+    - [Imports Formatting](#imports-formatting)
+    - [Generating Documentation](#generating-documentation)
+  - [Type Checking](#type-checking)
+  - [Pre-Commit](#pre-commit)
+    - [MacOS](#macos-4)
+  - [Useful Scripts](#useful-scripts)
+    - [Creating a Pull Request](#creating-a-pull-request)
+    - [Check CI and Wait for Reviews](#check-ci-and-wait-for-reviews)
+  - [Support](#support)
 
 ## Slack
 If you have questions or want to get involved with any of the other exciting projects at OpenMined [Join our Slack community](http://slack.openmined.org).
@@ -39,7 +88,9 @@ $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/
 Afterwards, you can now use the `brew` package manager for installing additionally required packages below.
 
 ### Windows
-For windows, the recommended package manager is [chocolatey](https://chocolatey.org/).
+For Windows users, the recommended package manager is [chocolatey](https://chocolatey.org/).
+Alternatively, you can use [Windows Subsystem Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and follow the instructions under Linux section.
+
 
 ## Git
 You will need git to clone, commit and push code to GitHub.
@@ -58,6 +109,13 @@ Install protobuf and protoc like this:
 $ brew install protobuf
 ```
 
+### Ubuntu
+For Ubuntu based systems install protobuf and protoc using the following command:
+
+```
+$ sudo apt install  install protobuf-compiler
+```
+
 
 ## Python Versions
 This project supports Python 3.6+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
@@ -68,6 +126,10 @@ Install the `pyenv` tool with `brew`:
 ```
 $ brew install pyenv
 ```
+### For Linux/WSL based Systems
+
+Follow the instructions provided in the repo : https://github.com/pyenv/pyenv-installer
+
 
 ### Using pyenv
 Running the command will give you help:
@@ -141,13 +203,12 @@ Most of these tools aim to provide the same functionality which is to create vir
 
 For the example below I will be using `pipenv` purely because it is extremely simple to use, and is itself simply a pip package which means as long as you have any version of python3 on your system you can use this to bootstrap everything else.
 
-name | packages | virtualenvs
---- | --- | --- | ---
-pip + venv | ✅ | ✅
-pipenv | ✅ | ✅
-conda | ✅ | ✅
-poetry | ✅ | ✅
-
+| name       | packages | virtualenvs |
+| ---------- | -------- | ----------- |
+| pip + venv | ✅        | ✅           |
+| pipenv     | ✅        | ✅           |
+| conda      | ✅        | ✅           |
+| poetry     | ✅        | ✅           |
 
 ## Pipenv
 As you will be running pipenv to create virtualenvs you will want to install pipenv into your normal system python site-packages.

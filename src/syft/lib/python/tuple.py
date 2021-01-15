@@ -60,6 +60,10 @@ class Tuple(tuple, PyPrimitive):
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__eq__(other))
 
+    @syft_decorator(typechecking=True, prohibit_args=True)
+    def __hash__(self) -> SyPrimitiveRet:
+        return PrimitiveFactory.generate_primitive(value=super().__hash__())
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__ne__(other))

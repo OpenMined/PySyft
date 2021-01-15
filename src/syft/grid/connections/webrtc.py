@@ -93,6 +93,7 @@ from aiortc.contrib.signaling import object_to_string
 from loguru import logger
 
 # syft relative
+from ...core.common.event_loop import loop
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -102,14 +103,6 @@ from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
 from ...decorators.syft_decorator_impl import syft_decorator
 from ..services.signaling_service import CloseConnectionMessage
-
-try:
-    # stdlib
-    from asyncio import get_running_loop  # noqa Python >=3.7
-except ImportError:  # pragma: no cover
-    # stdlib
-    from asyncio.events import _get_running_loop as get_running_loop  # pragma: no cover
-
 
 message_cooldown = 0.0
 
@@ -138,23 +131,8 @@ class WebRTCConnection(BidirectionalConnection):
         # EventLoop that manages async tasks (producer/consumer)
         # This structure is global and needs to be
         # defined beforehand.
-        try:
-            self.loop = get_running_loop()
-            log = "♫♫♫ > ...using a running event loop..."
-            logger.debug(log)
-            print(log)
-        except RuntimeError as e:
-            self.loop = None
-            log = f"♫♫♫ > ...error getting a running event Loop... {e}"
-            logger.error(log)
-            print(log)
 
-        if self.loop is None:
-            log = "♫♫♫ > ...creating a new event loop..."
-            print(log)
-            logger.debug(log)
-            self.loop = asyncio.new_event_loop()
-
+        self.loop = loop
         # Message pool (High Priority)
         # These queues will be used to manage
         # async  messages.

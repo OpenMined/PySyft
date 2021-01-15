@@ -1,11 +1,5 @@
 name: Pytest-benchmark
 on:
-  pull_request:
-    branches:
-      - dev
-    paths:
-      - "**.py"
-      - ".github/workflows/**.yml"
   push:
     branches:
       - dev

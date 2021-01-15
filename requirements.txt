@@ -41,7 +41,7 @@ pytest-cov
 pytest-xdist[psutil]
 requests
 sqlitedict
-torch>=1.7.1
+torch>=1.4
 torchvision
 typeguard
 typing-extensions # backport to older python 3
