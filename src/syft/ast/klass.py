@@ -177,7 +177,7 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
         def __len__(self: Any) -> int:
             data_len_ptr = len_func(self)
             try:
-                data_len = data_len_ptr.get(**self.get_request_config())
+                data_len = data_len_ptr.get()
                 return data_len
             except Exception:
                 traceback_and_raise(
