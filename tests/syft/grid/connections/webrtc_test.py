@@ -186,6 +186,29 @@ async def test_set_answer_raise_exception() -> None:
         assert expected_log in mock_logger.error.call_args[0][0]
 
 
+@pytest.mark.asyncio
+async def test_set_answer_on_datachannel() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    offer_payload = await webrtc._set_offer()
+
+    answer_webrtc = WebRTCConnection(node=domain)
+    await answer_webrtc._set_answer(payload=offer_payload)
+
+    channel_methods = list(answer_webrtc.peer_connection._events.values())
+    on_datachannel = list(channel_methods[1].values())[0]
+
+    coro_mock = AsyncMock()
+    with patch(
+        "syft.grid.connections.webrtc.WebRTCConnection.producer",
+        return_value=coro_mock(),
+    ) as producer_mock:
+        on_datachannel(webrtc.channel)
+        assert producer_mock.call_count == 1
+
+
 # --------------------- INTEGRATION ---------------------
 
 
