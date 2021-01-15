@@ -74,25 +74,26 @@ class Serializable(metaclass=MetaSerializable):
 
     Eg:
 
-    class WrapperInt(Serializable):
-        def __init__(self, value: int):
-            self.int_obj = value
+    .. code-block:: python
 
-        def _object2proto(self) -> WrapperIntPB:
-            ...
+        class WrapperInt(Serializable)
+            def __init__(self, value: int):
+               self.int_obj = value
 
-        @staticmethod
-        def _proto2object(proto) -> int:
-            ...
+            def _object2proto(self) -> WrapperIntPB:
+               ...
 
-        @staticmethod
-        def get_protobuf_schema() -> GeneratedProtocolMessageType:
-            ...
+            @staticmethod
+            def _proto2object(proto) -> int:
+               ...
 
-        @staticmethod
-        def get_wrapped_type() -> type:
-            return int
+            @staticmethod
+            def get_protobuf_schema() -> GeneratedProtocolMessageType:
+               ...
 
+            @staticmethod
+            def get_wrapped_type() -> type:
+               return int
 
     You must implement the following in order for the subclass to be properly implemented to be
     seen as a wrapper:
