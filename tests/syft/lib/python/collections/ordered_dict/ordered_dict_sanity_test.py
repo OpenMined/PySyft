@@ -18,16 +18,7 @@ from collections.abc import MutableMapping
 import pytest
 
 # syft absolute
-from syft.lib import python
-
-
-def replaced_module(name, replacement):
-    original_module = sys.modules[name]
-    sys.modules[name] = replacement
-    try:
-        yield
-    finally:
-        sys.modules[name] = original_module
+from syft.lib.python.collections import OrderedDict as SyOrderedDict
 
 
 def assertEqual(left, right):
@@ -49,7 +40,7 @@ def assertRaises(exc, obj, methodname, *args):
 
 
 def test_init():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     with pytest.raises(TypeError):
         OrderedDict([("a", 1), ("b", 2)], None)  # too many args
     pairs = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
@@ -78,7 +69,7 @@ def test_init():
 
 
 def test_468():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     items = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6), ("g", 7)]
     shuffle(items)
     argdict = OrderedDict(items)
@@ -87,7 +78,7 @@ def test_468():
 
 
 def test_update():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     with pytest.raises(TypeError):
         OrderedDict().update([("a", 1), ("b", 2)], None)  # too many args
     pairs = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
@@ -148,12 +139,12 @@ def test_init_calls():
             calls.append("items")
             return ()
 
-    python.collections.OrderedDict(Spam())
+    SyOrderedDict(Spam())
     assertEqual(calls, ["keys"])
 
 
 def test_fromkeys():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict.fromkeys("abc")
     assertEqual(list(od.items()), [(c, None) for c in "abc"])
     od = OrderedDict.fromkeys("abc", value=None)
@@ -163,13 +154,13 @@ def test_fromkeys():
 
 
 def test_abc():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     assert isinstance(OrderedDict(), MutableMapping)
     assert issubclass(OrderedDict, MutableMapping)
 
 
 def test_clear():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od = OrderedDict(pairs)
@@ -179,7 +170,7 @@ def test_clear():
 
 
 def test_delitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     od = OrderedDict(pairs)
     del od["a"]
@@ -190,7 +181,7 @@ def test_delitem():
 
 
 def test_setitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict([("d", 1), ("b", 2), ("c", 3), ("a", 4), ("e", 5)])
     od["c"] = 10  # existing element
     od["f"] = 20  # new element
@@ -200,7 +191,7 @@ def test_setitem():
 
 
 def test_iterators():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od = OrderedDict(pairs)
@@ -215,7 +206,7 @@ def test_iterators():
 
 
 def test_detect_deletion_during_iteration():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict.fromkeys("abc")
     it = iter(od)
     key = next(it)
@@ -227,7 +218,7 @@ def test_detect_deletion_during_iteration():
 
 
 def test_sorted_iterators():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     with pytest.raises(TypeError):
         OrderedDict([("a", 1), ("b", 2)], None)
     pairs = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
@@ -240,7 +231,7 @@ def test_sorted_iterators():
 
 
 def test_iterators_empty():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     empty = []
     assertEqual(list(od), empty)
@@ -254,7 +245,7 @@ def test_iterators_empty():
 
 
 def test_popitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od = OrderedDict(pairs)
@@ -266,7 +257,7 @@ def test_popitem():
 
 
 def test_popitem_last():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [(i, i) for i in range(30)]
 
     obj = OrderedDict(pairs)
@@ -278,7 +269,7 @@ def test_popitem_last():
 
 
 def test_pop():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od = OrderedDict(pairs)
@@ -306,7 +297,7 @@ def test_pop():
 
 
 def test_equality():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od1 = OrderedDict(pairs)
@@ -323,7 +314,7 @@ def test_equality():
 
 
 def test_copying():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # Check that ordered dicts are copyable, deepcopyable, picklable,
     # and have a repr/eval round-trip
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
@@ -348,7 +339,7 @@ def test_copying():
 
 
 def test_yaml_linkage():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # Verify that __reduce__ is setup in a way that supports PyYAML's dump() feature.
     # In yaml, lists are native but tuples are not.
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
@@ -359,7 +350,7 @@ def test_yaml_linkage():
 
 
 def test_reduce_not_too_fat():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # do not save instance dictionary if not needed
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     od = OrderedDict(pairs)
@@ -371,7 +362,7 @@ def test_reduce_not_too_fat():
 
 
 def test_pickle_recursive():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od[1] = od
 
@@ -384,7 +375,7 @@ def test_pickle_recursive():
 
 
 def test_repr():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict([("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)])
     assertEqual(
         repr(od),
@@ -395,7 +386,7 @@ def test_repr():
 
 
 def test_repr_recursive():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # See issue #9826
     od = OrderedDict.fromkeys("abc")
     od["x"] = od
@@ -405,7 +396,7 @@ def test_repr_recursive():
 
 
 def test_repr_recursive_values():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od[42] = od.values()
     r = repr(od)
@@ -420,7 +411,7 @@ def test_repr_recursive_values():
 
 
 def test_setdefault():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     shuffle(pairs)
     od = OrderedDict(pairs)
@@ -442,7 +433,7 @@ def test_setdefault():
 
 
 def test_reinsert():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # Given insert a, insert b, delete a, re-insert a,
     # verify that a is now later than b.
     od = OrderedDict()
@@ -455,7 +446,7 @@ def test_reinsert():
 
 
 def test_move_to_end():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict.fromkeys("abcde")
     assertEqual(list(od), list("abcde"))
     od.move_to_end("c")
@@ -475,7 +466,7 @@ def test_move_to_end():
 
 
 def test_move_to_end_issue25406():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict.fromkeys("abc")
     od.move_to_end("c", last=False)
     assertEqual(list(od), list("cab"))
@@ -490,7 +481,7 @@ def test_move_to_end_issue25406():
 
 
 def test_sizeof():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # Wimpy test: Just verify the reported size is larger than a regular dict
     d = dict(a=1)
     od = OrderedDict(**d)
@@ -498,7 +489,7 @@ def test_sizeof():
 
 
 def test_views():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     # See http://bugs.python.org/issue24286
     s = "the quick brown fox jumped over a lazy dog yesterday before dawn".split()
     od = OrderedDict.fromkeys(s)
@@ -507,7 +498,7 @@ def test_views():
 
 
 def test_override_update():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     # Verify that subclasses can override update() without breaking __init__()
     class MyOD(OrderedDict):
@@ -522,7 +513,7 @@ def test_highly_nested():
     # Issues 25395 and 35983: test that the trashcan mechanism works
     # correctly for OrderedDict: deleting a highly nested OrderDict
     # should not crash Python.
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     obj = None
     for _ in range(1000):
         obj = OrderedDict([(None, obj)])
@@ -534,7 +525,7 @@ def test_highly_nested_subclass():
     # Issues 25395 and 35983: test that the trashcan mechanism works
     # correctly for OrderedDict: deleting a highly nested OrderDict
     # should not crash Python.
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     deleted = []
 
     class MyOD(OrderedDict):
@@ -551,7 +542,7 @@ def test_highly_nested_subclass():
 
 
 def test_delitem_hash_collision():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     class Key:
         def __init__(self, hash):
@@ -594,7 +585,7 @@ def test_delitem_hash_collision():
 
 
 def test_issue24347():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     class Key:
         def __hash__(self):
@@ -617,7 +608,7 @@ def test_issue24347():
 
 
 def test_issue24348():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     class Key:
         def __hash__(self):
@@ -641,7 +632,7 @@ def test_issue24667():
     that we will keep the size of the odict the same at each popitem
     call.  This verifies that we handled the dict resize properly.
     """
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     od = OrderedDict()
     for c0 in "0123456789ABCDEF":
@@ -657,14 +648,14 @@ def test_issue24667():
 
 
 def test_dict_setitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     dict.__setitem__(od, "spam", 1)
     assertNotIn("NULL", repr(od))
 
 
 def test_dict_delitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od["spam"] = 1
     od["ham"] = 2
@@ -674,7 +665,7 @@ def test_dict_delitem():
 
 
 def test_dict_clear():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od["spam"] = 1
     od["ham"] = 2
@@ -683,7 +674,7 @@ def test_dict_clear():
 
 
 def test_dict_pop():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od["spam"] = 1
     od["ham"] = 2
@@ -693,7 +684,7 @@ def test_dict_pop():
 
 
 def test_dict_popitem():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     od["spam"] = 1
     od["ham"] = 2
@@ -703,14 +694,14 @@ def test_dict_popitem():
 
 
 def test_dict_setdefault():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     dict.setdefault(od, "spam", 1)
     assertNotIn("NULL", repr(od))
 
 
 def test_dict_update():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
     od = OrderedDict()
     dict.update(od, [("spam", 1)])
     assertNotIn("NULL", repr(od))
@@ -718,7 +709,7 @@ def test_dict_update():
 
 def test_reference_loop():
     # Issue 25935
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     class A:
         od = OrderedDict()
@@ -734,7 +725,7 @@ def test_ordered_dict_items_result_gc():
     # bpo-42536: OrderedDict.items's tuple-reuse speed trick breaks the GC's
     # assumptions about what can be untracked. Make sure we re-track result
     # tuples whenever we reuse them.
-    it = iter(python.collections.OrderedDict({None: []}).items())
+    it = iter(SyOrderedDict({None: []}).items())
     gc.collect()
     # That GC collection probably untracked the recycled internal result
     # tuple, which is initialized to (None, None). Make sure it's re-tracked
@@ -743,7 +734,7 @@ def test_ordered_dict_items_result_gc():
 
 
 def test_key_change_during_iteration():
-    OrderedDict = python.collections.OrderedDict
+    OrderedDict = SyOrderedDict
 
     od = OrderedDict.fromkeys("abcde")
     assertEqual(list(od), list("abcde"))
@@ -766,7 +757,7 @@ def test_weakref_list_is_not_traversed():
 
     gc.collect()
 
-    x = python.collections.OrderedDict()
+    x = SyOrderedDict()
     x.cycle = x
 
     cycle = []
