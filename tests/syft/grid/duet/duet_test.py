@@ -43,7 +43,7 @@ def test_duet() -> None:
     for do, ds in registered_tests:
         mgr = Manager()
         # the testcases can use barriers at the same index to sync their operations
-        barriers = [mgr.Barrier(2, timeout=5)] * 64  # type: ignore
+        barriers = [mgr.Barrier(2, timeout=10)] * 64  # type: ignore
 
         do_proc = SyftTestProcess(target=do, args=(barriers, port))
         do_proc.start()
@@ -51,8 +51,8 @@ def test_duet() -> None:
         ds_proc = SyftTestProcess(target=ds, args=(barriers, port))
         ds_proc.start()
 
-        do_proc.join(20)
-        ds_proc.join(20)
+        do_proc.join(30)
+        ds_proc.join(30)
 
         if do_proc.is_alive():
             do_proc.terminate()
