@@ -1,12 +1,18 @@
 <h1 align="center">
+
   <br>
   <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_big.png" alt="PySyft" width="200"></a>
   <br>
   A library for computing on data<br /> you do not own and cannot see
   <br>
+
 </h1>
+
 <div align="center">
-  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a><br /><br />
+
+  <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a>
+  <br /><br />
+
 </div>
 
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples
@@ -153,7 +159,7 @@ You can either use PySyft to:
 
 1) *Dynamic:* Directly compute over data you cannot see.
 2) *Static:* Create static graphs of computation which can be deployed/scaled at a
-later date on different compute.
+   later date on different compute.
 
 The Syft ecosystem includes libraries which allow for communication with and computation
 over a variety of runtimes:

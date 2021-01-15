@@ -17,10 +17,10 @@ syft.lib.torch.allowlist module
    :undoc-members:
    :show-inheritance:
 
-syft.lib.torch.lowercase\_tensor module
----------------------------------------
+syft.lib.torch.module module
+----------------------------
 
-.. automodule:: syft.lib.torch.lowercase_tensor
+.. automodule:: syft.lib.torch.module
    :members:
    :undoc-members:
    :show-inheritance:
@@ -48,4 +48,3 @@ syft.lib.torch.uppercase\_tensor module
    :members:
    :undoc-members:
    :show-inheritance:
-

@@ -16,4 +16,3 @@ syft.core.pointer.pointer module
    :members:
    :undoc-members:
    :show-inheritance:
-

@@ -9,19 +9,26 @@ syft.grid.duet package
 Submodules
 ----------
 
-syft.grid.duet.duet module
---------------------------
+syft.grid.duet.om\_signaling\_client module
+-------------------------------------------
 
-.. automodule:: syft.grid.duet.duet
+.. automodule:: syft.grid.duet.om_signaling_client
    :members:
    :undoc-members:
    :show-inheritance:
 
-syft.grid.duet.server module
-----------------------------
+syft.grid.duet.signaling\_client module
+---------------------------------------
 
-.. automodule:: syft.grid.duet.server
+.. automodule:: syft.grid.duet.signaling_client
    :members:
    :undoc-members:
    :show-inheritance:
 
+syft.grid.duet.webrtc\_duet module
+----------------------------------
+
+.. automodule:: syft.grid.duet.webrtc_duet
+   :members:
+   :undoc-members:
+   :show-inheritance:
