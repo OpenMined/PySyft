@@ -32,4 +32,3 @@ syft.core.node.device.device module
    :members:
    :undoc-members:
    :show-inheritance:
-

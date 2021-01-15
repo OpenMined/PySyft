@@ -16,4 +16,3 @@ syft.grid.services.signaling\_service module
    :members:
    :undoc-members:
    :show-inheritance:
-

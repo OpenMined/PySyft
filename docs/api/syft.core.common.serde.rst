@@ -32,4 +32,3 @@ syft.core.common.serde.serialize module
    :members:
    :undoc-members:
    :show-inheritance:
-

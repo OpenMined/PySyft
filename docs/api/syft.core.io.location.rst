@@ -32,4 +32,3 @@ syft.core.io.location.specific module
    :members:
    :undoc-members:
    :show-inheritance:
-
