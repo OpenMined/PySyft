@@ -25,13 +25,10 @@ from ..util import upcast
 
 
 class OrderedDict(PyOrderedDict, PyPrimitive):
-    def __init__(self, other: Any = None, _id: Optional[UID] = None):
-        if other is None:
-            other = {}
+    def __init__(self, other: Any = (), /, **kwds: Any):
+        super().__init__(other, **kwds)
 
-        super().__init__(other)
-
-        self._id = UID() if _id is None else _id
+        self._id = UID()  # if _id is None else _id
 
     @property
     def id(self) -> UID:
@@ -76,8 +73,11 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __reversed__(self) -> Any:
-        # returns <class 'odict_iterator'>
         return super().__reversed__()
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __iter__(self) -> Any:
+        return super().__iter__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: Any, value: Any) -> SyPrimitiveRet:
@@ -95,8 +95,9 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def fromkeys(self, other: Any) -> SyPrimitiveRet:
-        res = super().fromkeys(other)
+    @classmethod
+    def fromkeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
+        res = cls(PyOrderedDict.fromkeys(iterable, value))
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -120,8 +121,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def pop(self, other: Any) -> SyPrimitiveRet:
-        res = super().pop(other)
+    def pop(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+        res = super().pop(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -135,8 +136,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def update(self, other: Any) -> SyPrimitiveRet:
-        res = super().update(other)
+    def update(self, other: Any = (), /, **kwds: Any) -> SyPrimitiveRet:
+        res = super().update(other, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
