@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1610674361397,
+  "lastUpdate": 1610688619783,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -811,6 +811,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00036673525326797997",
             "extra": "mean: 939.2840573916008 usec\nrounds: 575"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "52173002+rajatrc1705@users.noreply.github.com",
+            "name": "rajatrc1705",
+            "username": "rajatrc1705"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0882d6f73162a8e743f83097d5b2944cfe5d1e03",
+          "message": "Flask server runs on IPV6 (#4991)\n\n* Flask server runs on IPV6\r\n\r\n* fixed linting issues\r\n\r\n* no major changes to previous commits\r\n\r\n* brought the environment variables code to network.py\r\n\r\n* Improved syft-network IPV6 code\r\n\r\n- Added IPV6 usage to documentation\r\n- Tested IPV6 :: localhost on MacOS in Jupyter Notebooks\r\n\r\n* Fixed Bandit security rule in example network.py\r\n\r\nCo-authored-by: Madhava Jay <me@madhavajay.com>",
+          "timestamp": "2021-01-15T15:28:03+10:00",
+          "tree_id": "3ba4602132bf8bc811e3b2b0f6d14c8e5ecb89d9",
+          "url": "https://github.com/OpenMined/PySyft/commit/0882d6f73162a8e743f83097d5b2944cfe5d1e03"
+        },
+        "date": 1610688619150,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1660.6251800617558,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007066312164928427",
+            "extra": "mean: 602.182847765088 usec\nrounds: 716"
           }
         ]
       }
