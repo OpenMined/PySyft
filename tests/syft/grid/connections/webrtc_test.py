@@ -175,15 +175,15 @@ async def test_set_answer_raise_exception() -> None:
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
 
-    answer_webrtc = WebRTCConnection(node=domain)
-    await answer_webrtc._set_answer(payload=offer_payload)
-
-    with patch(
-        "syft.grid.connections.webrtc.WebRTCConnection.consumer",
-        side_effect=Exception(),
-    ):
+    # FIXME: Nahua is not happy with this test because it "indirectly" triggered exception
+    with patch("syft.grid.connections.webrtc.logger") as mock_logger:
         with pytest.raises(Exception):
-            await webrtc._set_answer()
+            # This would fail because 'have-local-offer' is applied
+            await webrtc._set_answer(payload=offer_payload)
+        assert mock_logger.error
+
+        expected_log = "Got an exception in WebRTCConnection _set_answer."
+        assert expected_log in mock_logger.error.call_args[0][0]
 
 
 # --------------------- INTEGRATION ---------------------
