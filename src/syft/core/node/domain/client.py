@@ -11,7 +11,6 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
-from ....lib.python import String
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -65,43 +64,91 @@ class RequestQueueClient:
     def __repr__(self) -> str:
         return repr(self.requests)
 
+    @property
+    def pandas(self) -> pd.DataFrame:
+        request_lines = [
+            {
+                "Requested Object's tags": request.object_tags,
+                "Reason": request.request_description,
+                "Request ID": request.id,
+                "Requested Object's ID": request.object_id,
+            }
+            for request in self.requests
+        ]
+        return pd.DataFrame(request_lines)
+
+
+class RequestHandlerQueueClient:
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    @property
+    def handlers(self) -> List[Dict]:
+        # syft absolute
+        from syft.core.node.domain.service.request_handler_service import (
+            GetAllRequestHandlersMessage,
+        )
+
+        msg = GetAllRequestHandlersMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
+
+        return handlers
+
+    def __getitem__(self, key: Union[str, int]) -> Dict:
+        """
+        allow three ways to get an request handler:
+            1. use id: str
+            2. use tag: str
+            3. use index: int
+        """
+        if isinstance(key, str):
+            matches = 0
+            match_handler: Optional[Dict] = None
+            for handler in self.handlers:
+                if key in str(handler["id"].value).replace("-", ""):
+                    return handler
+                if key in handler["tags"]:
+                    matches += 1
+                    match_handler = handler
+            if matches == 1 and match_handler is not None:
+                return match_handler
+            elif matches > 1:
+                raise KeyError("More than one item with tag:" + str(key))
+
+            raise KeyError("No such request found for string id:" + str(key))
+        if isinstance(key, int):
+            return self.handlers[key]
+        else:
+            raise KeyError("Please pass in a string or int key")
+
+    def __repr__(self) -> str:
+        return repr(self.handlers)
+
     def add_handler(
         self,
         action: str,
         print_local: bool = False,
         log_local: bool = False,
-        name: Optional[str] = None,
+        tags: List[str] = [],
         timeout_secs: int = -1,
         element_quota: Optional[int] = None,
     ) -> None:
         handler_opts = self._validate_options(
+            id=UID(),
             action=action,
             print_local=print_local,
             log_local=log_local,
-            name=name,
+            tags=tags,
             timeout_secs=timeout_secs,
             element_quota=element_quota,
         )
 
         self._update_handler(handler_opts, keep=True)
 
-    def remove_handler(
-        self,
-        action: str,
-        print_local: bool = False,
-        log_local: bool = False,
-        name: Optional[str] = None,
-        timeout_secs: int = -1,
-        element_quota: Optional[int] = None,
-    ) -> None:
-        handler_opts = self._validate_options(
-            action=action,
-            print_local=print_local,
-            log_local=log_local,
-            name=name,
-            timeout_secs=timeout_secs,
-            element_quota=element_quota,
-        )
+    def remove_handler(self, key: Union[str, int]) -> None:
+        handler_opts = self.__getitem__(key)
 
         self._update_handler(handler_opts, keep=False)
 
@@ -118,9 +165,10 @@ class RequestQueueClient:
         action: str,
         print_local: bool = False,
         log_local: bool = False,
-        name: Optional[str] = None,
+        tags: List[str] = [],
         timeout_secs: int = -1,
         element_quota: Optional[int] = None,
+        id: Optional[UID] = None,
     ) -> Dict[str, Any]:
         handler_opts: Dict[str, Any] = {}
         if action not in ["accept", "deny"]:
@@ -129,13 +177,20 @@ class RequestQueueClient:
         handler_opts["print_local"] = bool(print_local)
         handler_opts["log_local"] = bool(log_local)
 
-        if name is not None:
-            clean_name = str(name.strip().lower())
-            if clean_name:
-                handler_opts["name"] = clean_name
+        handler_opts["tags"] = []
+        if tags is not None:
+            for tag in tags:
+                clean_tag = str(tag.strip().lower())
+                if clean_tag:
+                    handler_opts["tags"].append(clean_tag)
         handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
         if element_quota is not None:
             handler_opts["element_quota"] = max(0, int(element_quota))
+
+        if id is None:
+            id = UID()
+        handler_opts["id"] = id
+
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
@@ -150,30 +205,12 @@ class RequestQueueClient:
         self.client.send_immediate_msg_without_reply(msg=msg)
 
     @property
-    def handlers(self) -> List[Dict[Union[str, String], Any]]:
-        # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
-            GetAllRequestHandlersMessage,
-        )
-
-        msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
-        )
-        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
-        return handlers
-
-    @property
     def pandas(self) -> pd.DataFrame:
-        request_lines = [
-            {
-                "Requested Object's tags": request.object_tags,
-                "Reason": request.request_description,
-                "Request ID": request.id,
-                "Requested Object's ID": request.object_id,
-            }
-            for request in self.requests
+        handler_lines = [
+            {"tags": handler["tags"], "ID": handler["id"], "action": handler["action"]}
+            for handler in self.handlers
         ]
-        return pd.DataFrame(request_lines)
+        return pd.DataFrame(handler_lines)
 
 
 class DomainClient(Client):
@@ -204,6 +241,7 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+        self.request_handlers = RequestHandlerQueueClient(client=self)
         self.post_init()
 
     @property

@@ -218,17 +218,27 @@ class Domain(Node):
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
-        logger.debug(
-            f"HANDLER Check handler {handler} against {request.name} {request.request_id}"
-        )
-        name = handler.get("name", None)
+        logger.debug(f"HANDLER Check handler {handler} against {request.request_id}")
+
+        tags = handler.get("tags", [])
+
         action = handler.get("action", None)
         print_local = handler.get("print_local", None)
         log_local = handler.get("log_local", None)
         element_quota = handler.get("element_quota", None)
 
-        if name is not None and name != request.name.strip().lower():
-            # valid name doesnt match so ignore this handler
+        # How to understand handler["tags"]?
+        #   - Each tag in handler["tags"] is considered as a constrain condition
+        #   - If there are more than one tags in handler["tags"], the total constrain
+        #   condition are the `and` of each condition
+        #   - For example, if hanlder["tags"] is ["a_little_unsafe", "needed_badly"],
+        #   then it means, if a requested object is tagged as "a_little_unsafe" and
+        #   "needed_badly", then it's okay to accept this request;
+        #   but if a requested object is tagged only as "a_little_unsafe", then it's not
+        #   okay to accept it.
+        #   - So, a handler only handle a request if request.object_tags is a superset of
+        #   handler["tags"]
+        if not set(request.object_tags).issuperset(set(tags)):
             logger.debug(
                 f"HANDLER Ignoring request handler {handler} against {request}"
             )
@@ -265,7 +275,7 @@ class Domain(Node):
 
         # print or log rules can execute multiple times so no complex logic here
         if print_local or log_local:
-            log = f"> HANDLER Request {request.name}:"
+            log = f"> HANDLER Request {request.request_id}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"

@@ -202,7 +202,9 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         msg.set_arrival_time(arrival_time=time.time())
 
         # At receiving a request from DS, we clear it's object_tags, and re-set it as the
-        # tags of the object found according to object_id. Because the DS may fake tags.
-        msg.object_tags.clear()
+        # tags of the requested object. Because the DS may give fake tags.
+        while msg.object_tags != []:
+            msg.object_tags.pop()
         msg.object_tags.extend(node.store[msg.object_id]._tags)
+
         node.requests.append(msg)

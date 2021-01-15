@@ -280,31 +280,37 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
     ) -> None:
         if verify_key == node.root_verify_key:
             replacement_handlers = []
+
+            # find if there exists a handler match the handler passed in
             existing_handlers = getattr(node, "request_handlers", None)
             logger.debug(
                 f"> Updating Request Handlers with existing: {existing_handlers}"
             )
-            new_keys = set(msg.handler.keys())
-            new_values = msg.handler.values()
             if existing_handlers is not None:
+                matched = None
                 for existing_handler in existing_handlers:
-                    keys = set(existing_handler.keys())
-                    keys.remove("created_time")  # the new handler has none
-                    values = [existing_handler[key] for key in keys]
-                    if keys == new_keys and set(new_values) == set(values):
-                        # if keep is True we will add a new one
-                        # if keep is False we will drop this anyway
+                    # we match two handlers according to their tags
+                    if existing_handler["tags"] == msg.handler["tags"]:
+                        matched = existing_handler
+                        # if an existing_handler match the passed in handler,
+                        # we ignore it in for loop
                         continue
                     else:
-                        # keep this handler
+                        # if an existing_handler does not match the passed in
+                        # handler, we keep it
                         replacement_handlers.append(existing_handler)
 
                 if msg.keep:
-                    logger.debug(f"> Adding a Request Handler with: {msg.handler}")
                     msg.handler["created_time"] = time.time()
                     replacement_handlers.append(msg.handler)
+                    if matched is not None:
+                        logger.debug(
+                            f"> Replacing a Request Handler {matched} with: {msg.handler}"
+                        )
+                    else:
+                        logger.debug(f"> Adding a Request Handler {msg.handler}")
                 else:
-                    logger.debug(f"> Removing a Request Handler with: {msg.handler}")
+                    logger.debug(f"> Removing a Request Handler: {msg.handler}")
 
                 setattr(node, "request_handlers", replacement_handlers)
                 logger.debug(
