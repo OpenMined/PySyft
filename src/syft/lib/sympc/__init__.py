@@ -75,10 +75,6 @@ def create_ast() -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
-            "sympc.tensor.ShareTensor.__truediv__",
-            "sympc.tensor.ShareTensor",
-        ),
-        (
             "sympc.tensor.ShareTensor.__matmul__",
             "sympc.tensor.ShareTensor",
         ),
