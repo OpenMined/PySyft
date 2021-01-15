@@ -19,6 +19,7 @@ from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
+from .logging import try_print
 
 if is_jupyter:
     # third party
@@ -62,7 +63,6 @@ def get_available_network() -> str:
 def begin_duet_logger(my_domain: Domain) -> None:
     # stdlib
     from contextlib import contextmanager
-    import sys
     import threading
     import time
 
@@ -134,7 +134,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + str(n_messages)
                     )
                     out += "                                "
-                    sys.stdout.write("\r" + out)
+                    try_print("\r" + out)
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):
@@ -173,8 +173,8 @@ def launch_duet(
                 unconfined=True,
             )
         )
-    print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
-    sys.stdout.write(
+    try_print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
+    try_print(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
@@ -183,19 +183,19 @@ def launch_duet(
         + "\033[0m"
     )
 
-    print("♫♫♫ >")
-    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
+    try_print("♫♫♫ >")
+    try_print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    print("♫♫♫ > " + str(network_url))
-    print("♫♫♫ >")
-    sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    try_print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
+    try_print("♫♫♫ > " + str(network_url))
+    try_print("♫♫♫ >")
+    try_print("♫♫♫ > ...waiting for response from OpenGrid Network... ")
 
     signaling_client = register(url=network_url)
 
-    print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+    try_print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
 
     my_domain = Domain(name="Launcher", db_path=db_path)
 
@@ -203,7 +203,7 @@ def launch_duet(
         credential_exchanger = OpenGridTokenFileExchanger()
     target_id = credential_exchanger.run(credential=signaling_client.duet_id)
 
-    print("♫♫♫ > Connecting...")
+    try_print("♫♫♫ > Connecting...")
 
     _ = WebRTCDuet(
         node=my_domain,
@@ -211,14 +211,14 @@ def launch_duet(
         signaling_client=signaling_client,
         offer=True,
     )
-    print()
-    print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    try_print()
+    try_print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     #     return duet, my_domain.get_root_client()
     out_duet = my_domain.get_root_client()
 
     if logging:
         begin_duet_logger(my_domain=my_domain)
-    print()
+    try_print()
 
     return out_duet
 
@@ -237,8 +237,8 @@ def join_duet(
                 unconfined=True,
             )
         )
-    print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
-    sys.stdout.write(
+    try_print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
+    try_print(
         "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
         ":"
         + "\033[1m"
@@ -247,19 +247,19 @@ def join_duet(
         + "\033[0m"
     )
 
-    print("♫♫♫ >")
-    print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
+    try_print("♫♫♫ >")
+    try_print(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
 
     if not network_url:
         network_url = get_available_network()
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    print("♫♫♫ > " + str(network_url))
-    print("♫♫♫ >")
-    sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    try_print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
+    try_print("♫♫♫ > " + str(network_url))
+    try_print("♫♫♫ >")
+    try_print("♫♫♫ > ...waiting for response from OpenGrid Network... ")
 
     signaling_client = register(url=network_url)
 
-    print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+    try_print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
 
     my_domain = Domain(name="Joiner")
 
@@ -279,8 +279,8 @@ def join_duet(
         signaling_client=signaling_client,
         offer=False,
     )
-    print()
-    print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    try_print()
+    try_print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
     # begin_duet_client_logger(duet.node)
 
     return duet
