@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1610089969548,
+  "lastUpdate": 1610674361397,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -780,6 +780,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00031306783281660137",
             "extra": "mean: 991.8805260424632 usec\nrounds: 576"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "39461513+JMLourier@users.noreply.github.com",
+            "name": "JMLourier",
+            "username": "JMLourier"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3f29129f31a5266069254889635dc4c944728575",
+          "message": "Fix all warnings in syft_0.3.0 documentation - first partial implementation (#4937)\n\n* Fixed docstring indentions\r\n\r\n* Fixed code-block\r\n\r\n* Fixes on indentation of docstrings\r\n\r\n* Updating docs\r\n\r\nCo-authored-by: Jean-Michel Lourier <jean-michel@LHIND-N217000.ads.dlh.de>\r\nCo-authored-by: Madhava Jay <me@madhavajay.com>",
+          "timestamp": "2021-01-15T11:30:12+10:00",
+          "tree_id": "aba22c7c1d69e4a2515a04f2f08e25c2021354bc",
+          "url": "https://github.com/OpenMined/PySyft/commit/3f29129f31a5266069254889635dc4c944728575"
+        },
+        "date": 1610674360744,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1064.6406612894164,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00036673525326797997",
+            "extra": "mean: 939.2840573916008 usec\nrounds: 575"
           }
         ]
       }
