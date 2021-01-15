@@ -100,17 +100,19 @@ def test_update():
 
     # Issue 9137: Named argument called 'other' or 'self'
     # shouldn't be treated specially.
+
+    # This doesn't work with Python 3.6
     # od = OrderedDict()
     # od.update(self=23)
     # assertEqual(list(od.items()), [("self", 23)])
-    od = OrderedDict()
-    od.update(other={})
-    assertEqual(list(od.items()), [("other", {})])
     # od = OrderedDict()
     # od.update(red=5, blue=6, other=7, self=8)
     # assertEqual(
     #    sorted(list(od.items())), [("blue", 6), ("other", 7), ("red", 5), ("self", 8)]
     # )
+    od = OrderedDict()
+    od.update(other={})
+    assertEqual(list(od.items()), [("other", {})])
 
     # Make sure that direct calls to update do not clear previous contents
     # add that updates items are not moved to the end
@@ -143,11 +145,11 @@ def test_init_calls():
 
 def test_fromkeys():
     OrderedDict = SyOrderedDict
-    od = OrderedDict.fromkeys("abc")
+    od = OrderedDict.FromKeys("abc")
     assertEqual(list(od.items()), [(c, None) for c in "abc"])
-    od = OrderedDict.fromkeys("abc", value=None)
+    od = OrderedDict.FromKeys("abc", value=None)
     assertEqual(list(od.items()), [(c, None) for c in "abc"])
-    od = OrderedDict.fromkeys("abc", value=0)
+    od = OrderedDict.FromKeys("abc", value=0)
     assertEqual(list(od.items()), [(c, 0) for c in "abc"])
 
 
@@ -205,7 +207,7 @@ def test_iterators():
 
 def test_detect_deletion_during_iteration():
     OrderedDict = SyOrderedDict
-    od = OrderedDict.fromkeys("abc")
+    od = OrderedDict.FromKeys("abc")
     it = iter(od)
     key = next(it)
     del od[key]
@@ -392,7 +394,7 @@ def test_repr():
 def test_repr_recursive():
     OrderedDict = SyOrderedDict
     # See issue #9826
-    od = OrderedDict.fromkeys("abc")
+    od = OrderedDict.FromKeys("abc")
     od["x"] = od
     assertEqual(
         repr(od), "OrderedDict([('a', None), ('b', None), ('c', None), ('x', ...)])"
@@ -451,7 +453,7 @@ def test_reinsert():
 
 def test_move_to_end():
     OrderedDict = SyOrderedDict
-    od = OrderedDict.fromkeys("abcde")
+    od = OrderedDict.FromKeys("abcde")
     assertEqual(list(od), list("abcde"))
     od.move_to_end("c")
     assertEqual(list(od), list("abdec"))
@@ -471,13 +473,13 @@ def test_move_to_end():
 
 def test_move_to_end_issue25406():
     OrderedDict = SyOrderedDict
-    od = OrderedDict.fromkeys("abc")
+    od = OrderedDict.FromKeys("abc")
     od.move_to_end("c", last=False)
     assertEqual(list(od), list("cab"))
     od.move_to_end("a", last=False)
     assertEqual(list(od), list("acb"))
 
-    od = OrderedDict.fromkeys("abc")
+    od = OrderedDict.FromKeys("abc")
     od.move_to_end("a")
     assertEqual(list(od), list("bca"))
     od.move_to_end("c")
@@ -496,7 +498,7 @@ def test_views():
     OrderedDict = SyOrderedDict
     # See http://bugs.python.org/issue24286
     s = "the quick brown fox jumped over a lazy dog yesterday before dawn".split()
-    od = OrderedDict.fromkeys(s)
+    od = OrderedDict.FromKeys(s)
     assertEqual(od.keys(), list(dict(od).keys()))
     assertEqual(od.items(), list(dict(od).items()))
 
@@ -740,7 +742,7 @@ def test_ordered_dict_items_result_gc():
 def test_key_change_during_iteration():
     OrderedDict = SyOrderedDict
 
-    od = OrderedDict.fromkeys("abcde")
+    od = OrderedDict.FromKeys("abcde")
     assertEqual(list(od), list("abcde"))
     with pytest.raises(RuntimeError):
         for i, k in enumerate(od):

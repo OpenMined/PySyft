@@ -91,8 +91,13 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     @classmethod
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def fromkeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
+    def FromKeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
         res = cls(PyOrderedDict.fromkeys(iterable, value))
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def fromkeys(self, iterable: Any, value: Any = None) -> SyPrimitiveRet:
+        res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
