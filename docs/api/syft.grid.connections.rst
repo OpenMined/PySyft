@@ -9,11 +9,18 @@ syft.grid.connections package
 Submodules
 ----------
 
-syft.grid.connections.websocket\_connection module
---------------------------------------------------
+syft.grid.connections.http\_connection module
+---------------------------------------------
 
-.. automodule:: syft.grid.connections.websocket_connection
+.. automodule:: syft.grid.connections.http_connection
    :members:
    :undoc-members:
    :show-inheritance:
 
+syft.grid.connections.webrtc module
+-----------------------------------
+
+.. automodule:: syft.grid.connections.webrtc
+   :members:
+   :undoc-members:
+   :show-inheritance:

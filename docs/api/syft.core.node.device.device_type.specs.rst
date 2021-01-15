@@ -48,4 +48,3 @@ syft.core.node.device.device\_type.specs.storage module
    :members:
    :undoc-members:
    :show-inheritance:
-

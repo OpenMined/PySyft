@@ -33,6 +33,14 @@ syft.core.node.domain.service.request\_answer\_message module
    :undoc-members:
    :show-inheritance:
 
+syft.core.node.domain.service.request\_handler\_service module
+--------------------------------------------------------------
+
+.. automodule:: syft.core.node.domain.service.request_handler_service
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.node.domain.service.request\_message module
 -----------------------------------------------------
 
@@ -40,4 +48,3 @@ syft.core.node.domain.service.request\_message module
    :members:
    :undoc-members:
    :show-inheritance:
-

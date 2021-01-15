@@ -1,29 +1,29 @@
 """
 WebRTC connection representation
 
- This class aims to represent a generic and
+This class aims to represent a generic and
 asynchronous peer-to-peer WebRTC connection
 based in Syft BidirectionalConnection Interface.
 
- This connection interface provides a full-duplex
-The channel, allowing this class to work as a client
+This connection interface provides a full-duplex
+channel, allowing this class to work as a client
 and as a server at the same time.
 
- This class is useful to send/compute data
+This class is useful to send/compute data
 using a p2p channel without the need
 of deploying servers on cloud providers
 or setting firewalls rules  in order
 turn this process "visible" to the world.
 
 How does it work?
-    The WebRTC (Web Real-Time Communication)
+The WebRTC (Web Real-Time Communication)
 is a protocol that uses a full-duplex channel
 (same API as WebSockets), in order to provide
 a high-quality RTC, and NAT traversal
 networking technique in order to be able
 to reach private addresses.
 
-    The WebRTC API includes no provisions
+The WebRTC API includes no provisions
 for signaling, the applications are in charge
 of managing how the connections will be established.
 In our use case, we'll be using ICE (Interactive

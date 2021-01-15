@@ -80,4 +80,3 @@ syft.core.node.common.service.repr\_service module
    :members:
    :undoc-members:
    :show-inheritance:
-
