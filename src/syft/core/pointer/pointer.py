@@ -184,7 +184,6 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        name: str = "",
         reason: str = "",
         verbose: bool = False,
     ) -> Optional[StorableObject]:
@@ -197,7 +196,6 @@ class Pointer(AbstractPointer):
         return self.get(
             request_block=request_block,
             timeout_secs=timeout_secs,
-            name=name,
             reason=reason,
             delete_obj=False,
             verbose=verbose,
@@ -207,7 +205,6 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        name: str = "",
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -225,7 +222,6 @@ class Pointer(AbstractPointer):
             return self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
-                name=name,
                 reason=reason,
                 block=True,
                 timeout_secs=timeout_secs,
@@ -317,7 +313,6 @@ class Pointer(AbstractPointer):
 
     def request(
         self,
-        name: str = "",
         reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
@@ -366,7 +361,6 @@ class Pointer(AbstractPointer):
             timeout_secs = -1  # forever
 
         msg = RequestMessage(
-            name=name,
             request_description=reason,
             address=self.client.address,
             owner_address=self.client.address,
@@ -391,13 +385,11 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestStatus
 
             output_string = "> Waiting for Blocking Request: "
-            if len(name) > 0:
-                output_string += f"  {name}"
+            output_string += f"  {self.id_at_location}"
             if len(reason) > 0:
                 output_string += f": {reason}"
-            if len(name) > 0 or len(name) > 0:
-                if len(output_string) > 0 and output_string[-1] != ".":
-                    output_string += "."
+            if len(output_string) > 0 and output_string[-1] != ".":
+                output_string += "."
             logger.debug(output_string)
             if verbose:
                 print(f"\n{output_string}", end="")
