@@ -25,9 +25,9 @@ from ..util import upcast
 
 
 class OrderedDict(PyOrderedDict, PyPrimitive):
-    def __init__(self, *args: Any, **kwds: Any):
+    def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
         super().__init__(*args, **kwds)
-        self._id = UID()  # if _id is None else _id
+        self._id = _id
 
     @property
     def id(self) -> UID:
@@ -72,6 +72,7 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __reversed__(self) -> Any:
+        # returns <class 'odict_iterator'>
         return super().__reversed__()
 
     @syft_decorator(typechecking=True, prohibit_args=False)

@@ -19,6 +19,7 @@ import pytest
 
 # syft absolute
 from syft.lib.python.collections import OrderedDict as SyOrderedDict
+from syft.core.common.uid import UID
 
 
 def assertEqual(left, right):
@@ -125,6 +126,12 @@ def test_update():
 
     assertRaises(TypeError, OrderedDict().update, 42)
     assertRaises(TypeError, OrderedDict().update, (), ())
+
+    d = OrderedDict(
+        [("a", 1), ("b", 2), ("c", 3), ("d", 44), ("e", 55)],
+        _id=UID.from_string(value="{12345678-1234-5678-1234-567812345678}"),
+    )
+    assert d.id.__eq__(UID.from_string(value="{12345678-1234-5678-1234-567812345678}"))
 
 
 def test_init_calls():
