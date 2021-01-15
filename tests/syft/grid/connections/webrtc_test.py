@@ -167,6 +167,25 @@ async def test_set_offer_on_message() -> None:
         assert consumer_mock.call_count == 1
 
 
+@pytest.mark.asyncio
+async def test_set_answer_raise_exception() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    offer_payload = await webrtc._set_offer()
+
+    answer_webrtc = WebRTCConnection(node=domain)
+    await answer_webrtc._set_answer(payload=offer_payload)
+
+    with patch(
+        "syft.grid.connections.webrtc.WebRTCConnection.consumer",
+        side_effect=Exception(),
+    ):
+        with pytest.raises(Exception):
+            await webrtc._set_answer()
+
+
 # --------------------- INTEGRATION ---------------------
 
 
