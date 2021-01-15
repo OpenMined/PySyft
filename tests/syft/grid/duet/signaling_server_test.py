@@ -59,4 +59,4 @@ def run(port: int) -> None:
     PORT = os.getenv("PORT", port)
     app.debug = False
     app.use_reloader = False
-    app.run(host="0.0.0.0", port=int(PORT))  # nosec
+    app.run(host="127.0.0.1", port=int(PORT))  # nosec
