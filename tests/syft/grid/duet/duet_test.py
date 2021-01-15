@@ -51,12 +51,14 @@ def test_duet() -> None:
         ds_proc = SyftTestProcess(target=ds, args=(barriers, port))
         ds_proc.start()
 
-        do_proc.join(30)
-        ds_proc.join(30)
+        do_proc.join(20)
+        ds_proc.join(20)
 
         if do_proc.is_alive():
+            do_proc.terminate()
             raise Exception("do_proc is hanged")
         if ds_proc.is_alive():
+            ds_proc.terminate()
             raise Exception("ds_proc is hanged")
 
         if do_proc.exception:
