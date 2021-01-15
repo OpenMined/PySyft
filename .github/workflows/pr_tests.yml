@@ -22,7 +22,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [3.9.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -72,13 +72,13 @@ jobs:
             python-version: 3.7
             torch-version: 1.4.0
           - os: windows-latest
-            python-version: 3.9
+            python-version: 3.9.0
             torch-version: 1.7.1
           - os: ubuntu-latest
-            python-version: 3.9
+            python-version: 3.9.0
             torch-version: 1.7.1
           - os: macos-latest
-            python-version: 3.9
+            python-version: 3.9.0
             torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
@@ -162,7 +162,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [3.9.0]
 
     steps:
       - uses: actions/checkout@v2
