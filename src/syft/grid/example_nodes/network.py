@@ -86,7 +86,7 @@ def run() -> None:
     IP_MODE = "IPV6" if IP_MODE == "IPV6" else "IPV4"
     # this signing_key is to aid in local development and is not used in the real
     # PyGrid implementation
-    HOST = "0.0.0.0" if IP_MODE == "IPV4" else "::"
+    HOST = "0.0.0.0" if IP_MODE == "IPV4" else "::"  # nosec
     PORT = os.getenv("PORT", 5000)
 
     print("====================================")
@@ -96,7 +96,7 @@ def run() -> None:
 
     print(f"Using {IP_MODE} and listening on port {PORT}")
 
-    app.run(host=HOST, port=int(PORT))  # nosec
+    app.run(host=HOST, port=int(PORT))
 
 
 run()
