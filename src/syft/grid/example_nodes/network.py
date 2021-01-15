@@ -79,32 +79,24 @@ def process_network_msgs() -> flask.Response:
 def run() -> None:
     global network
 
-    num_args = len(sys.argv)
-    if num_args > 1:
-        if sys.argv[1] == "IPV6":
-            os.environ["IP_MODE"] = "IPV6"
-        else:
-            os.environ["IP_MODE"] = "IPV4"
-    else:
-        os.environ["IP_MODE"] = "IPV4"
+    IP_MODE = os.getenv("IP_MODE", "IPV4")  # default to ipv4
+    if len(sys.argv) > 1:
+        IP_MODE = sys.argv[1]
+
+    IP_MODE = "IPV6" if IP_MODE == "IPV6" else "IPV4"
+    # this signing_key is to aid in local development and is not used in the real
+    # PyGrid implementation
+    HOST = "0.0.0.0" if IP_MODE == "IPV4" else "::"
+    PORT = os.getenv("PORT", 5000)
 
     print("====================================")
     print("========== NODE ROOT KEY ===========")
     print("====================================")
-    # this signing_key is to aid in local development and is not used in the real
-    # PyGrid implementation
-    PORT = os.getenv("PORT", 5000)
-    print(f"Starting Node on PORT: {PORT}")
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
 
-    MODE = os.getenv("IP_MODE")
-    if MODE == "IPV6":
-        print(f"Listening on : {MODE}")
-        # used :: so that the server works for IPV6
-        app.run(host="::", port=int(PORT))
-    else:
-        print(f"Listening on : {MODE}")
-        app.run(host="0.0.0.0", port=int(PORT))  # nosec
+    print(f"Using {IP_MODE} and listening on port {PORT}")
+
+    app.run(host=HOST, port=int(PORT))  # nosec
 
 
 run()
