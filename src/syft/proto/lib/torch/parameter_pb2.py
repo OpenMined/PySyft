@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1fproto/lib/torch/parameter.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"}\n\x0eParameterProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
+    serialized_pb=b'\n\x1fproto/lib/torch/parameter.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"\xae\x01\n\x0eParameterProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12/\n\x0bgrad_sample\x18\x04 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
     ],
@@ -93,6 +93,25 @@ _PARAMETERPROTO = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="grad_sample",
+            full_name="syft.lib.torch.ParameterProto.grad_sample",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -102,8 +121,8 @@ _PARAMETERPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=81,
-    serialized_end=206,
+    serialized_start=82,
+    serialized_end=256,
 )
 
 _PARAMETERPROTO.fields_by_name[
@@ -111,6 +130,9 @@ _PARAMETERPROTO.fields_by_name[
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
 _PARAMETERPROTO.fields_by_name[
     "grad"
+].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
+_PARAMETERPROTO.fields_by_name[
+    "grad_sample"
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
 DESCRIPTOR.message_types_by_name["ParameterProto"] = _PARAMETERPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

@@ -32,20 +32,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: Cache packages
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -57,18 +55,22 @@ jobs:
       - name: Run lint checks
         run: |
           set -e
-          pip install -r requirements.txt
+          pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
 
   python-tests-fast:
     needs: [python-linting]
     strategy:
-      max-parallel: 24
+      max-parallel: 30
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: [3.8, 3.7, 3.6]
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        include:
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -79,178 +81,71 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Windows')
-        with:
-          path: '%LOCALAPPDATA%\pip\Cache'
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
-      - name: Cache packages
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Scan for security issues
         run: |
-          pip install bandit
+          pip install bandit --default-timeout=60
           bandit -r src -ll
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              TORCHVISION_VERSION="0.6.0"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              TORCHVISION_VERSION="0.6.1"
-          elif [ $TORCH_VERSION = "1.6.0" ]
-          then
-              TORCHVISION_VERSION="0.7"
-              TORCHCSPRNG_VERSION="0.1.2"
-          elif [ $TORCH_VERSION = "1.7.0" ]
-          then
-              TORCHVISION_VERSION="0.8.1"
-              TORCHCSPRNG_VERSION="0.1.3"
-          fi
-          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
-
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              echo "No torchcsprng"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              echo "No torchcsprng"
-          else
-            pip install torchcsprng==${TORCHCSPRNG_VERSION}
-          fi
+          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
 
       - name: Install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-              $env:TORCHVISION_VERSION="0.6.0"
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-              $env:TORCHVISION_VERSION="0.6.1"
-          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
-              $env:TORCHVISION_VERSION="0.7"
-              $env:TORCHCSPRNG_VERSION="0.1.2"
-          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
-              $env:TORCHVISION_VERSION="0.8.1"
-              $env:TORCHCSPRNG_VERSION="0.1.3"
-          }
-          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-
-          } Else {
-            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
-          }
-          pip install numpy==1.19.3
+          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           pip freeze
 
-      - name: Run normal tests without coverage
+      - name: Run normal tests
         run: |
-          pytest -m fast --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          cat requirements/supported_libs.txt | xargs -n 1 pip install || true
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
 
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
           foreach ($i in cat requirements/supported_libs.txt) {
-            pip install $i
+            pip install $i --default-timeout=60
           }
-          pip install numpy==1.19.3
+          pip install numpy==1.19.3 --default-timeout=60
 
-      - name: Install PyTorch Linux and MacOS
+      - name: Re-install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              TORCHVISION_VERSION="0.6.0"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              TORCHVISION_VERSION="0.6.1"
-          elif [ $TORCH_VERSION = "1.6.0" ]
-          then
-              TORCHVISION_VERSION="0.7"
-              TORCHCSPRNG_VERSION="0.1.2"
-          elif [ $TORCH_VERSION = "1.7.0" ]
-          then
-              TORCHVISION_VERSION="0.8.1"
-              TORCHCSPRNG_VERSION="0.1.3"
-          fi
-          pip install torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION}
+          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
 
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              echo "No torchcsprng"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              echo "No torchcsprng"
-          else
-            pip install torchcsprng==${TORCHCSPRNG_VERSION}
-          fi
-
-      - name: Install PyTorch Windows
+      - name: Re-install PyTorch Windows
         if: startsWith(runner.os, 'Windows')
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
         run: |
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-              $env:TORCHVISION_VERSION="0.6.0"
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-              $env:TORCHVISION_VERSION="0.6.1"
-          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
-              $env:TORCHVISION_VERSION="0.7"
-              $env:TORCHCSPRNG_VERSION="0.1.2"
-          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
-              $env:TORCHVISION_VERSION="0.8.1"
-              $env:TORCHCSPRNG_VERSION="0.1.3"
-          }
-          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-
-          } Else {
-            pip install torchcsprng==$env:TORCHCSPRNG_VERSION -f https://download.pytorch.org/whl/torch_stable.html
-          }
+          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
 
       - name: Run supported library tests
         run: |
           pip freeze
-          pytest -m libs --cov-fail-under 0 -n auto
+          pytest -m libs -n auto --no-cov
 
   python-nb-examples:
     needs: [python-linting]
@@ -268,24 +163,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: Cache packages
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Run notebook API examples
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api --cov-fail-under 0 -n auto
+          pytest examples/api -n auto --no-cov
