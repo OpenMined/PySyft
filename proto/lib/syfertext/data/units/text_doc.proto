@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+import "proto/lib/syfertext/data/units/attribute_values.proto";
+import "proto/lib/syfertext/data/units/token_meta.proto";
+
+message TextDoc {
+    repeated TokenMeta tokens = 1;
+    map<string, AttributeValues> attributes = 2;
+}

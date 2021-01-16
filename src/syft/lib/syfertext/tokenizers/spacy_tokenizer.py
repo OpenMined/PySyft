@@ -8,11 +8,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syfertext.tokenizers import SpacyTokenizer
 
 # syft relative
-from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
-from ...proto.lib.syfertext.spacy_tokenizer_pb2 import SpacyTokenizer as SpacyTokenizer_PB
-from ...proto.lib.syfertext.spacy_tokenizer_pb2 import TokenSplits as TokenSplits_PB
-from ...util import aggressive_set_attr
+from ....core.common import UID
+from ....core.store.storeable_object import StorableObject
+from ....proto.lib.syfertext.tokenizers.spacy_tokenizer_pb2 import SpacyTokenizer as SpacyTokenizer_PB
+from ....proto.lib.syfertext.tokenizers.spacy_tokenizer_pb2 import TokenSplits as TokenSplits_PB
+from ....util import aggressive_set_attr
 
 
 class SpacyTokenizerWrapper(StorableObject):

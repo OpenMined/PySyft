@@ -8,7 +8,6 @@ message TokenSplits{
 
 }
 
-
 message SpacyTokenizer {
     bytes uuid = 1;
     repeated string prefixes = 2;

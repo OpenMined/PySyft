@@ -20,7 +20,7 @@ def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
 def create_ast() -> Globals:
 
     import syfertext
-    from . import spacy_tokenizer    
+    from .tokenizers import spacy_tokenizer
     
     ast = Globals()
 
@@ -42,6 +42,11 @@ def create_ast() -> Globals:
          'syfertext.data.units.TextDoc',
           syfertext.data.units.TextDoc
         ),
+        ('syfertext.data.units.TokenMeta',
+         'syfertext.data.units.TokenMeta',
+          syfertext.data.units.TokenMeta
+        ),
+        
     ]
 
     # Define which methods to add to the AST
