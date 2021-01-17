@@ -67,7 +67,19 @@ def create_ast() -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
+            "sympc.tensor.ShareTensor.__rmul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
             "sympc.tensor.ShareTensor.__mul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.__matmul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.__rmatmul__",
             "sympc.tensor.ShareTensor",
         ),
     ]
