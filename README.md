@@ -33,7 +33,7 @@ _**Important note about PySyft 0.2.x:** The PySyft 0.2.x codebase is now in its 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[white paper on Arxiv](https://arxiv.org/abs/1811.04017).
+[paper - A generic framework for privacy preserving deep learning](https://arxiv.org/pdf/1811.04017.pdf).
 
 PySyft has also been explained in videos on YouTube:
  - [PriCon Sep 2020 Duet Demo](https://www.youtube.com/watch?v=DppXfA6C8L8&ab_channel=OpenMined)
