@@ -40,13 +40,10 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 """
 
 # stdlib
-import os
 from pathlib import Path
 import sys
-from typing import Union
 
 # third party
-from loguru import logger  # noqa: F401
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
@@ -85,6 +82,7 @@ from syft.lib.torch.module import Module  # noqa: F401
 # syft relative
 # Package Imports
 from . import lib  # noqa: F401
+from . import logging  # noqa: F401
 
 # VERSIONING
 try:
@@ -98,33 +96,4 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-# LIBRARY CONFIG
-
-logger.remove()  # remove default logger
-DEFAULT_LOG_FILE = "syft_{time}.log"
-
-
-# run this to enable logging, or run with disable=True to turn it back off
-# file_path can also be sys.stdout
-def logging(
-    disable: bool = False, file_path: Union[None, str, os.PathLike] = None
-) -> None:
-
-    logger.debug("Logging loaded")
-
-    if not disable:
-        if file_path is not None:
-            LOG_FILE = file_path
-        else:
-            LOG_FILE = DEFAULT_LOG_FILE
-
-        _ = logger.add(
-            LOG_FILE,
-            enqueue=True,
-            colorize=False,
-            diagnose=True,
-            backtrace=True,
-            level="TRACE",
-        )
-    else:
-        logger.remove()
+logging.add_logger(log_level="DEBUG")
