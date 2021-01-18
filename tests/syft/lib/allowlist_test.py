@@ -215,7 +215,7 @@ if os.path.exists(SUPPORT_FILE_PATH):
             try:
                 os.unlink(SUPPORT_FILE_PATH)
                 break
-            except PermissionError:
+            except BaseException:
                 time.sleep(1)
 
 
