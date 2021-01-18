@@ -70,16 +70,6 @@ class Attribute:
         self._extract_attr_type(out, "classes")
         return out
 
-    # @property
-    # def modules(self) -> List["ast.module.Module"]:
-    #     out: List["ast.module.Module"] = []
-    #
-    #     if isinstance(self, ast.module.Module):
-    #         out.append(self)
-    #
-    #     self._extract_attr_type(out, "modules")
-    #     return out
-
     @property
     def properties(self) -> List["ast.property.Property"]:
         out: List["ast.property.Property"] = []
