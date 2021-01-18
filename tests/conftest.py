@@ -22,7 +22,6 @@ from syft import logger
 
 logger.remove()
 logger.add(sink=sys.stderr, level="ERROR")
-logger.add(sink="/tmp/syft_pytest_{time}.log", level="ERROR")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
