@@ -22,6 +22,7 @@ from .service import RequestMessage
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:
         self.client = client
+        self.handlers = RequestHandlerQueueClient(client=client)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -77,55 +78,6 @@ class RequestQueueClient:
         ]
         return pd.DataFrame(request_lines)
 
-
-class RequestHandlerQueueClient:
-    def __init__(self, client: Client) -> None:
-        self.client = client
-
-    @property
-    def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
-            GetAllRequestHandlersMessage,
-        )
-
-        msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
-        )
-        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
-
-        return handlers
-
-    def __getitem__(self, key: Union[str, int]) -> Dict:
-        """
-        allow three ways to get an request handler:
-            1. use id: str
-            2. use tag: str
-            3. use index: int
-        """
-        if isinstance(key, str):
-            matches = 0
-            match_handler: Optional[Dict] = None
-            for handler in self.handlers:
-                if key in str(handler["id"].value).replace("-", ""):
-                    return handler
-                if key in handler["tags"]:
-                    matches += 1
-                    match_handler = handler
-            if matches == 1 and match_handler is not None:
-                return match_handler
-            elif matches > 1:
-                raise KeyError("More than one item with tag:" + str(key))
-
-            raise KeyError("No such request found for string id:" + str(key))
-        if isinstance(key, int):
-            return self.handlers[key]
-        else:
-            raise KeyError("Please pass in a string or int key")
-
-    def __repr__(self) -> str:
-        return repr(self.handlers)
-
     def add_handler(
         self,
         action: str,
@@ -148,12 +100,12 @@ class RequestHandlerQueueClient:
         self._update_handler(handler_opts, keep=True)
 
     def remove_handler(self, key: Union[str, int]) -> None:
-        handler_opts = self.__getitem__(key)
+        handler_opts = self.handlers[key]
 
         self._update_handler(handler_opts, keep=False)
 
     def clear_handlers(self) -> None:
-        for handler in self.handlers:
+        for handler in self.handlers.handlers:
             new_dict = {}
             del handler["created_time"]
             for k, v in handler.items():
@@ -204,6 +156,55 @@ class RequestHandlerQueueClient:
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
+
+class RequestHandlerQueueClient:
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    @property
+    def handlers(self) -> List[Dict]:
+        # syft absolute
+        from syft.core.node.domain.service.request_handler_service import (
+            GetAllRequestHandlersMessage,
+        )
+
+        msg = GetAllRequestHandlersMessage(
+            address=self.client.address, reply_to=self.client.address
+        )
+        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
+
+        return handlers
+
+    def __getitem__(self, key: Union[str, int]) -> Dict:
+        """
+        allow three ways to get an request handler:
+            1. use id: str
+            2. use tag: str
+            3. use index: int
+        """
+        if isinstance(key, str):
+            matches = 0
+            match_handler: Optional[Dict] = None
+            for handler in self.handlers:
+                if key in str(handler["id"].value).replace("-", ""):
+                    return handler
+                if key in handler["tags"]:
+                    matches += 1
+                    match_handler = handler
+            if matches == 1 and match_handler is not None:
+                return match_handler
+            elif matches > 1:
+                raise KeyError("More than one item with tag:" + str(key))
+
+            raise KeyError("No such request found for string id:" + str(key))
+        if isinstance(key, int):
+            return self.handlers[key]
+        else:
+            raise KeyError("Please pass in a string or int key")
+
+    def __repr__(self) -> str:
+        return repr(self.handlers)
+
     @property
     def pandas(self) -> pd.DataFrame:
         handler_lines = [
@@ -241,7 +242,6 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
-        self.request_handlers = RequestHandlerQueueClient(client=self)
         self.post_init()
 
     @property
