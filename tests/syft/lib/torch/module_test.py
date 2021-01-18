@@ -1,13 +1,14 @@
 # stdlib
 import copy
 import os
-import time
 from pathlib import Path
+import time
+from typing import Any
+from typing import Tuple
 
 # third party
-import torch
 import pytest
-from typing import Any, Tuple
+import torch
 
 # syft absolute
 import syft as sy
