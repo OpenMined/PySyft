@@ -2,11 +2,9 @@
 from typing import List
 from typing import Optional
 
-# third party
-from loguru import logger
-
 # syft relative
 from .....decorators import syft_decorator
+from .....logging import debug
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SignedImmediateSyftMessageWithReply
@@ -24,7 +22,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
         node: AbstractNode, msg: SignedImmediateSyftMessageWithoutReply
     ) -> Optional[SignedMessageT]:
         addr = msg.address
-        logger.debug(f"> Forwarding WithoutReply {msg.pprint} to {addr.target_emoji()}")
+        debug(f"> Forwarding WithoutReply {msg.pprint} to {addr.target_emoji()}")
         # order is important, vm, device, domain, network
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
             if scope_id is not None and scope_id in node.store:
@@ -47,7 +45,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
                 addr.network_id,
             ]:
                 if scope_id is not None:
-                    logger.debug(f"> Lookup: {scope_id.emoji()}")
+                    debug(f"> Lookup: {scope_id.emoji()}")
                     if scope_id in node.in_memory_client_registry:
                         in_memory_client = node.in_memory_client_registry[scope_id]
                         return in_memory_client.send_immediate_msg_without_reply(
@@ -57,7 +55,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             # TODO: Need to not catch blanket exceptions
             print(f"{addr} not on nodes in_memory_client. {e}")
             pass
-        logger.debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
+        debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         raise Exception("Address unknown - cannot forward message. Throwing it away.")
 
     @staticmethod
@@ -77,7 +75,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
         # ) -> SignedMessageT:
         # TODO: Add verify_key?
         addr = msg.address
-        logger.debug(f"> Forwarding WithReply {msg.pprint} to {addr.target_emoji()}")
+        debug(f"> Forwarding WithReply {msg.pprint} to {addr.target_emoji()}")
 
         # order is important, vm, device, domain, network
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
@@ -101,7 +99,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                 addr.network_id,
             ]:
                 if scope_id is not None:
-                    logger.debug(f"> Lookup: {scope_id.emoji()}")
+                    debug(f"> Lookup: {scope_id.emoji()}")
                     if scope_id in node.in_memory_client_registry:
                         in_memory_client = node.in_memory_client_registry[scope_id]
                         return in_memory_client.send_immediate_msg_without_reply(
@@ -111,7 +109,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             # TODO: Need to not catch blanket exceptions
             print(f"{addr} not on nodes in_memory_client. {e}")
             pass
-        logger.debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
+        debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         raise Exception("Address unknown - cannot forward message. Throwing it away.")
 
     @staticmethod

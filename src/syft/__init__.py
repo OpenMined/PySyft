@@ -96,4 +96,4 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-logging.add_logger(log_level="DEBUG")
+logging.add_logger(file_path=sys.stderr, log_level="CRITICAL")

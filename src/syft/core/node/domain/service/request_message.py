@@ -6,7 +6,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -25,6 +24,7 @@ from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
+from .....logging import debug, critical
 
 
 class RequestStatus(Enum):
@@ -103,11 +103,11 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
                 )
             except Exception as e:
                 print(e)
-                logger.critical(f"Tried to {action_name} Message on Node. {e}")
-            logger.debug(f"{action_name} Request: " + str(self.id))
+                critical(f"Tried to {action_name} Message on Node. {e}")
+            debug(f"{action_name} Request: " + str(self.id))
         else:
             log = f"No way to dispatch {action_name} Message."
-            logger.critical(log)
+            critical(log)
             raise Exception(log)
 
     def reject(self) -> None:

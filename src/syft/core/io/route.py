@@ -89,7 +89,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft relative
 from ...decorators import syft_decorator
@@ -103,6 +102,7 @@ from .connection import ClientConnection
 from .location import Location
 from .location import SpecificLocation
 from .virtual import VirtualClientConnection
+from ...logging import debug
 
 
 class RouteSchema(ObjectWithID):
@@ -163,7 +163,7 @@ class SoloRoute(Route):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        logger.debug(f"> Routing {msg.pprint} via {self.pprint}")
+        debug(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(

@@ -88,7 +88,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -110,6 +109,7 @@ from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
+from ...logging import debug, error
 
 
 # TODO: Fix the Client, Address, Location confusion
@@ -158,7 +158,7 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
-        logger.debug(
+        debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
             + f"with delete_obj={delete_obj}"
         )
@@ -398,7 +398,7 @@ class Pointer(AbstractPointer):
             if len(name) > 0 or len(name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
-            logger.debug(output_string)
+            debug(output_string)
             if verbose:
                 print(f"\n{output_string}", end="")
             status = None
@@ -414,7 +414,7 @@ class Pointer(AbstractPointer):
                         log = (
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
-                        logger.debug(log)
+                        debug(log)
                         if verbose:
                             print(log)
                         return status
@@ -422,7 +422,7 @@ class Pointer(AbstractPointer):
                     # only check once every second
                     if now - last_check > 1:
                         last_check = now
-                        logger.debug(f"> Sending another Request Message {now - start}")
+                        debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
                             address=self.client.address,
@@ -443,12 +443,12 @@ class Pointer(AbstractPointer):
                             if status == RequestStatus.Accepted:
                                 status_text = "ACCEPTED"
                             log = f" {status_text}"
-                            logger.debug(log)
+                            debug(log)
                             if verbose:
                                 print(log)
                             return status
                 except Exception as e:
-                    logger.error(f"Exception while running blocking request. {e}")
+                    error(f"Exception while running blocking request. {e}")
                     # escape the while loop
                     return status
 

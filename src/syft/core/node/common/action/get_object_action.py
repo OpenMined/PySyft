@@ -3,11 +3,11 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logging import debug, critical, error
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -177,7 +177,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 try:
                     # TODO: send EventualActionWithoutReply to delete the object at the node's
                     # convenience instead of definitely having to delete it now
-                    logger.debug(
+                    debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
                     node.store.delete(key=self.id_at_location)
@@ -185,16 +185,16 @@ class GetObjectAction(ImmediateActionWithReply):
                     log = (
                         f"> GetObjectAction delete exception {self.id_at_location} {e}"
                     )
-                    logger.critical(log)
+                    critical(log)
             else:
-                logger.debug(f"Copying Object with ID {self.id_at_location} in store.")
+                debug(f"Copying Object with ID {self.id_at_location} in store.")
 
-            logger.debug(
+            debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
             )
             return msg
         except Exception as e:
-            logger.error(e)
+            error(e)
             raise e
 
     @property

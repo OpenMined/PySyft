@@ -32,7 +32,6 @@ import asyncio
 from typing import Optional
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 
 # syft relative
@@ -41,6 +40,7 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logging import error
 from ..connections.webrtc import WebRTCConnection
 from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage
@@ -158,7 +158,7 @@ class Duet(DomainClient):
                 )
         except Exception as e:
             log = f"Got an exception in Duet. {e}"
-            logger.error(log)
+            error(log)
             raise e
 
     @syft_decorator(typechecking=True)
@@ -178,7 +178,7 @@ class Duet(DomainClient):
                 task.cancel()
         except Exception as e:
             log = f"Got an exception in Duet notify. {e}"
-            logger.error(log)
+            error(log)
             raise e
 
     def close(self) -> None:
@@ -198,7 +198,7 @@ class Duet(DomainClient):
                 self.signaling_client.send_immediate_msg_without_reply(msg=msg)
         except Exception as e:
             log = f"Got an exception in Duet push. {e}"
-            logger.error(log)
+            error(log)
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
             self._available = False
@@ -247,7 +247,7 @@ class Duet(DomainClient):
                 await asyncio.sleep(0.5)
         except Exception as e:
             log = f"Got an exception in Duet pull. {e}"
-            logger.error(log)
+            error(log)
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
             self._available = False
@@ -285,7 +285,7 @@ class Duet(DomainClient):
             )
         except Exception as e:
             log = f"Got an exception in Duet send_offer. {e}"
-            logger.error(log)
+            error(log)
             raise e
 
     @syft_decorator(typechecking=True)
@@ -314,7 +314,7 @@ class Duet(DomainClient):
             await self._push_msg_queue.put(signaling_answer)
         except Exception as e:
             log = f"Got an exception in Duet _send_answer. {e}"
-            logger.error(log)
+            error(log)
             raise e
 
     @syft_decorator(typechecking=True)
@@ -330,7 +330,7 @@ class Duet(DomainClient):
             await self.connection._process_answer(payload=msg.payload)
         except Exception as e:
             log = f"Got an exception in Duet _ack. {e}"
-            logger.error(log)
+            error(log)
             raise e
 
     @syft_decorator(typechecking=True)
@@ -346,5 +346,5 @@ class Duet(DomainClient):
             )
         except Exception as e:
             log = f"Got an exception in Duet _update_availability. {e}"
-            logger.error(log)
+            error(log)
             raise e

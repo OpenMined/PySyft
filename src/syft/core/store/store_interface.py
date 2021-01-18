@@ -3,14 +3,12 @@ from abc import ABC
 from typing import Iterable
 from typing import Type
 
-# third party
-from loguru import logger
-
 # syft relative
 from ...decorators import syft_decorator
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 from .storeable_object import StorableObject
+from logging import debug
 
 
 class ObjectStore(ABC):
@@ -182,7 +180,7 @@ class ObjectStore(ABC):
         return output
 
     def post_init(self) -> None:
-        logger.debug(f"> Creating {self.pprint}")
+        debug(f"> Creating {self.pprint}")
 
     @property
     def class_name(self) -> str:

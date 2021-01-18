@@ -9,7 +9,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
@@ -17,6 +16,7 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
+from ....logging import debug, error
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -173,7 +173,7 @@ class Client(AbstractNodeClient):
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        logger.debug(f"> Registering {client.pprint} with {self.pprint}")
+        debug(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
             lookup_id=client.id,
@@ -236,7 +236,7 @@ class Client(AbstractNodeClient):
                 f"> {self.pprint} Signing {msg.pprint} with "
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
-            logger.debug(output)
+            debug(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
@@ -246,7 +246,7 @@ class Client(AbstractNodeClient):
             if isinstance(response.message, ExceptionMessage):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
-                logger.error(str(exception))
+                error(str(exception))
                 raise exception
             else:
                 return response.message
@@ -271,9 +271,9 @@ class Client(AbstractNodeClient):
                 f"> {self.pprint} Signing {msg.pprint} with "
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
-            logger.debug(output)
+            debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-        logger.debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -285,7 +285,7 @@ class Client(AbstractNodeClient):
             f"> {self.pprint} Signing {msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"
         )
-        logger.debug(output)
+        debug(output)
         signed_msg: SignedEventualSyftMessageWithoutReply = msg.sign(
             signing_key=self.signing_key
         )

@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -17,6 +16,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
+from ...logging import debug
 
 
 class Unspecified(object):
@@ -100,7 +100,7 @@ class Address(Serializable):
         return output
 
     def post_init(self) -> None:
-        logger.debug(f"> Creating {self.pprint}")
+        debug(f"> Creating {self.pprint}")
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:

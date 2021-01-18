@@ -8,12 +8,12 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logging import critical
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -93,7 +93,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = node.store.get_object(key=self._self.id_at_location)
         if resolved_self is None:
-            logger.critical(
+            critical(
                 f"execute_action on {self.path} failed due to missing object"
                 + f" at: {self._self.id_at_location}"
             )

@@ -11,12 +11,12 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logging import debug
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
     AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
 )
@@ -117,7 +117,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
     ) -> None:
-        logger.debug((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
+        debug((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
         if msg.accept:
             request_id = msg.request_id
             for req in node.requests:
@@ -129,10 +129,8 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         ] = req.id
                         node.requests.remove(req)
 
-                        logger.debug(
-                            f"> Accepting Request:{request_id} {request_id.emoji()}"
-                        )
-                        logger.debug(
+                        debug(f"> Accepting Request:{request_id} {request_id.emoji()}")
+                        debug(
                             "> Adding can_read for 🔑 "
                             + f"{key_emoji(key=req.requester_verify_key)} to "
                             + f"Store UID {req.object_id} {req.object_id.emoji()}"
@@ -150,7 +148,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         or verify_key == req.requester_verify_key
                     ):
                         node.requests.remove(req)
-                        logger.debug(f"> Rejecting Request:{request_id}")
+                        debug(f"> Rejecting Request:{request_id}")
                         return None
 
     @staticmethod

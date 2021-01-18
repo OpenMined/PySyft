@@ -3,12 +3,12 @@ from typing import Callable
 from typing import Optional
 
 # third party
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
+from .....logging import debug
 
 
 class AuthorizationException(Exception):
@@ -27,28 +27,28 @@ def service_auth(
         def process(
             node: AbstractNode, msg: SyftMessage, verify_key: VerifyKey
         ) -> Optional[SyftMessage]:
-            logger.debug(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
+            debug(f"> Checking {msg.pprint} 🔑 Matches {node.pprint} root 🗝")
 
             if root_only:
                 keys = (
                     f"> Matching 🔑 {node.key_emoji(key=verify_key)}  == "
                     + f"{node.key_emoji(key=node.root_verify_key)}  🗝"
                 )
-                logger.debug(keys)
+                debug(keys)
                 if verify_key != node.root_verify_key:
-                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
+                    debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "You are not Authorized to access this service"
                     )
                 else:
-                    logger.debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
+                    debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
 
             elif admin_only:
                 if (
                     verify_key not in node.admin_verify_key_registry
                     and verify_key != node.root_verify_key
                 ):
-                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
+                    debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "User lacks Administrator credentials."
                     )
@@ -58,14 +58,14 @@ def service_auth(
                     verify_key not in node.cpl_ofcr_verify_key_registry
                     and verify_key != node.root_verify_key
                 ):
-                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
+                    debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException(
                         "User lacks Compliance Officer credentials."
                     )
 
             elif existing_users_only:
                 if verify_key not in node.guest_verify_key_registry:
-                    logger.debug(f"> ❌ Auth FAILED {msg.pprint}")
+                    debug(f"> ❌ Auth FAILED {msg.pprint}")
                     raise AuthorizationException("User not known.")
 
             elif guests_welcome:

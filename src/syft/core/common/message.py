@@ -7,7 +7,6 @@ from typing import TypeVar
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -20,6 +19,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
+from ...logging import debug
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")
@@ -50,7 +50,7 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
         init_reason = "Creating"
         if "signed" in self.class_name.lower():
             init_reason += " Signed"
-        logger.debug(f"> {init_reason} {self.pprint} {self.id.emoji()}")
+        debug(f"> {init_reason} {self.pprint} {self.id.emoji()}")
 
 
 class SyftMessage(AbstractMessage):
@@ -84,9 +84,7 @@ class SyftMessage(AbstractMessage):
             A :class:`SignedMessage`
 
         """
-        logger.debug(
-            f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
-        )
+        debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
         signed_message = signing_key.sign(self.serialize(to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -155,7 +153,7 @@ class SignedMessage(SyftMessage):
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        logger.debug(f"> {self.icon} -> Proto 🔢 {self.id}")
+        debug(f"> {self.icon} -> Proto 🔢 {self.id}")
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
@@ -192,7 +190,7 @@ class SignedMessage(SyftMessage):
         icon = "🤷🏾‍♀️"
         if hasattr(obj, "icon"):
             icon = obj.icon
-        logger.debug(f"> {icon} <- 🔢 Proto")
+        debug(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
             raise TypeError(

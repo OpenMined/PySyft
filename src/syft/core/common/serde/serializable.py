@@ -8,7 +8,6 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # Fixes python3.6
 # however, API changed between versions so typing_extensions smooths this over:
@@ -17,6 +16,7 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logging import debug
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
@@ -258,7 +258,7 @@ class Serializable(metaclass=MetaSerializable):
         """
 
         if to_bytes:
-            logger.debug(f"Serializing {type(self)}")
+            debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
             blob = self._object2proto().SerializeToString()

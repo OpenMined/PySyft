@@ -5,7 +5,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from packaging import version
 import tenseal as ts
 
@@ -15,6 +14,7 @@ from ...core.store.storeable_object import StorableObject
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
+from ...logging import info
 
 
 class ContextWrapper(StorableObject):
@@ -48,8 +48,7 @@ class ContextWrapper(StorableObject):
         else:
             if lib_version > version.parse(ts.__version__):
                 log = f"Warning {lib_version} > local imported version {ts.__version__}"
-                print(log)
-                logger.info(log)
+                info(log)
 
         return ts.context_from(proto.content)
 
