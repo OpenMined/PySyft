@@ -9,7 +9,6 @@
 # stdlib
 from typing import Any as TypeAny
 from typing import List as TypeList
-import sys
 
 # third party
 import _pytest
@@ -21,7 +20,6 @@ from syft.lib import vendor_requirements_available
 from syft import logger
 
 logger.remove()
-logger.add(sink=sys.stderr, level="ERROR")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
