@@ -14,7 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logging import debug
+from .....logging import traceback, debug
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
     HeritageUpdateMessage as HeritageUpdateMessage_PB,
 )
@@ -95,7 +95,7 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
                     debug(f"{location_id} not on nodes in_memory_client. {e}")
                     pass
             except Exception as e:
-                print(e)
+                traceback(e)
 
     @staticmethod
     @syft_decorator(typechecking=True)

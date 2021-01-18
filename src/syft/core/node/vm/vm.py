@@ -9,6 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logging import critical
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -68,8 +69,7 @@ class VirtualMachine(Node):
         try:
             return msg.address.vm_id == self.id
         except Exception as e:
-            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
-            print(error)
+            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
             return False
 
     @syft_decorator(typechecking=True)

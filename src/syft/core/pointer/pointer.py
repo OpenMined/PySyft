@@ -399,8 +399,6 @@ class Pointer(AbstractPointer):
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
             debug(output_string)
-            if verbose:
-                print(f"\n{output_string}", end="")
             status = None
             start = time.time()
 
@@ -415,8 +413,6 @@ class Pointer(AbstractPointer):
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
                         debug(log)
-                        if verbose:
-                            print(log)
                         return status
 
                     # only check once every second
@@ -434,8 +430,6 @@ class Pointer(AbstractPointer):
                         status = response.status
                         if response.status == RequestStatus.Pending:
                             time.sleep(0.1)
-                            if verbose:
-                                print(".", end="")
                             continue
                         else:
                             # accepted or rejected lets exit
@@ -444,8 +438,6 @@ class Pointer(AbstractPointer):
                                 status_text = "ACCEPTED"
                             log = f" {status_text}"
                             debug(log)
-                            if verbose:
-                                print(log)
                             return status
                 except Exception as e:
                     error(f"Exception while running blocking request. {e}")

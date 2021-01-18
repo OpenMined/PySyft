@@ -615,19 +615,15 @@ class WebRTCConnection(BidirectionalConnection):
     #                 f"{self.node.name} PQ: {psize} / {producer_watermark} - "
     #                 + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
     #             )
-    #             print(log)
     #             critical(log)
 
     #             if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
     #                 log = f"☠️ HEART BEAT DEAD! {self.node.name}"
-    #                 print(log)
     #                 critical(log)
     #             # else:
     #             #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
-    #             #     print(log)
     #             #     critical(log)
     #         except Exception as e:
     #             log = f"HEART BEAT exception in {self.node.name}. {e}"
-    #             print(log)
     #             critical(log)
     #             raise Exception(log)

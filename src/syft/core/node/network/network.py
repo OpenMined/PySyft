@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....logging import error
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -67,6 +68,5 @@ class Network(Node):
         try:
             return msg.address.network_id == self.id and msg.address.domain is None
         except Exception as e:
-            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
-            print(error)
+            error(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
             return False

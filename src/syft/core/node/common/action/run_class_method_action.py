@@ -144,7 +144,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     method = getattr(resolved_self.data, method_name, None)
                     result = method(*upcasted_args, **upcasted_kwargs)
                 except Exception as e:
-                    print(
+                    critical(
                         f"Unable to resolve method {self.path} on {resolved_self}. {e}"
                     )
                     result = method(

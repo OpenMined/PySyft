@@ -14,7 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ....logging import critical, debug, info
+from ....logging import traceback, critical, debug, info
 from ....lib.python import String
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
@@ -111,10 +111,9 @@ class Domain(Node):
         try:
             return msg.address.domain_id == self.id and msg.address.device is None
         except Exception as excp3:
-            error = (
+            critical(
                 f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
             )
-            print(error)
             return False
 
     @syft_decorator(typechecking=True)
@@ -270,7 +269,7 @@ class Domain(Node):
 
             # if these are enabled output them
             if print_local:
-                print(log)
+                critical(log)
 
             if log_local:
                 info(log)
@@ -341,4 +340,4 @@ class Domain(Node):
                                     # we handled the request so we can exit the loop
                                     break
             except Exception as excp2:
-                print("HANDLER Exception in the while loop!!", excp2)
+                traceback(excp2)

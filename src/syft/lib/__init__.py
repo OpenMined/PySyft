@@ -13,6 +13,7 @@ from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from .misc import create_union_ast
+from ..logging import critical
 
 
 class VendorLibraryImportException(Exception):
@@ -71,9 +72,9 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 # cache the constructor for future created clients
                 lib_ast.loaded_lib_constructors[lib] = update_ast
     except VendorLibraryImportException as e:
-        print(e)
+        critical(e)
     except Exception as e:
-        print(f"Unable to load package support for: {lib}. {e}")
+        critical(f"Unable to load package support for: {lib}. {e}")
 
 
 # now we need to load the relevant frameworks onto the node

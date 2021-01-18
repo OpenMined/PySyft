@@ -24,7 +24,7 @@ from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
-from .....logging import debug, critical
+from .....logging import debug, critical, traceback
 
 
 class RequestStatus(Enum):
@@ -102,7 +102,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
                     verify_key=self.destination_node_if_available.root_verify_key,
                 )
             except Exception as e:
-                print(e)
+                traceback(e)
                 critical(f"Tried to {action_name} Message on Node. {e}")
             debug(f"{action_name} Request: " + str(self.id))
         else:

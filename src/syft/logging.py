@@ -19,8 +19,19 @@ def add_logger(
     log_level: str = "ERROR",
 ) -> None:
     log_file = DEFAULT_LOG_FILE if file_path is None else file_path
-
-    if isinstance(log_file, TextIO):
+    try:
+        logger.add(
+            log_file,
+            format=LOG_FORMAT,
+            enqueue=True,
+            colorize=False,
+            diagnose=True,
+            backtrace=True,
+            rotation="10 MB",
+            retention="1 day",
+            level=log_level,
+        )
+    except BaseException:
         logger.add(
             log_file,
             format=LOG_FORMAT,
@@ -30,24 +41,19 @@ def add_logger(
             backtrace=True,
             level=log_level,
         )
-        return
-
-    logger.add(
-        log_file,
-        format=LOG_FORMAT,
-        enqueue=True,
-        colorize=False,
-        diagnose=True,
-        backtrace=True,
-        rotation="100 MB",
-        retention="2 days",
-        level=log_level,
-    )
 
 
-def exception(*args: Any, **kargs: Any) -> None:
+def traceback_and_raise(*args: Any, **kargs: Any) -> None:
     try:
-        logger.opt(lazy=True).critical(*args, **kargs)
+        logger.opt(lazy=True).exception(*args, **kargs)
+    except BaseException as e:
+        logger.debug("failed to print exception", e)
+    raise Exception(str(*args, **kargs))
+
+
+def traceback(*args: Any, **kargs: Any) -> None:
+    try:
+        logger.opt(lazy=True).exception(*args, **kargs)
     except BaseException as e:
         logger.debug("failed to print exception", e)
     raise Exception(str(*args, **kargs))

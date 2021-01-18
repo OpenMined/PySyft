@@ -16,7 +16,7 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
-from ....logging import debug, error
+from ....logging import critical, debug, error
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -147,7 +147,7 @@ class Client(AbstractNodeClient):
                     if python_attr is not None:
                         self.add_attr(attr_name="python", attr=python_attr)
             except Exception as e:
-                print(f"Failed to set python attribute on client. {e}")
+                critical(f"Failed to set python attribute on client. {e}")
 
     def add_me_to_my_address(self) -> None:
         raise NotImplementedError

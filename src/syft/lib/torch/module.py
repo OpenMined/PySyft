@@ -18,7 +18,7 @@ import torch
 # syft relative
 from ...decorators import syft_decorator
 from ...lib.util import full_name_with_qualname
-from ...logging import info, exception
+from ...logging import info, traceback_and_raise, critical
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -179,7 +179,7 @@ class Module:
             state_dict = dict(input)
 
         if not issubclass(type(state_dict), dict):
-            exception(
+            traceback_and_raise(
                 f"  Invalid input: {type(input)}. "
                 + "Try inputting a state_dict or .pth file."
             )
@@ -352,7 +352,8 @@ class Module:
                         )
 
             except Exception as e:
-                exception(f"  Failed to download remote state for {layer_name}. {e}")
+                critical(f"  Failed to download remote state for {layer_name}.")
+                traceback_and_raise(e)
 
         info("\n> Finished downloading remote model <\n\n")
         self.local_model = local_model

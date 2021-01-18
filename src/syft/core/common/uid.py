@@ -9,6 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logging import critical
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ..common.serde.serializable import Serializable
 
@@ -73,7 +74,7 @@ class UID(Serializable):
         try:
             return UID(value=uuid.UUID(value))
         except Exception as e:
-            print(f"Unable to convert {value} to UUID. {e}")
+            critical(f"Unable to convert {value} to UUID. {e}")
             raise e
 
     @syft_decorator(typechecking=True)

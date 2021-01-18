@@ -16,6 +16,7 @@ from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logging import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,
 )
@@ -100,7 +101,7 @@ class ReprService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(root_only=True)
     def process(node: AbstractNode, msg: ReprMessage, verify_key: VerifyKey) -> None:
-        print(node.__repr__())
+        critical(node.__repr__())
 
     @staticmethod
     def message_handler_types() -> List[Type[ReprMessage]]:

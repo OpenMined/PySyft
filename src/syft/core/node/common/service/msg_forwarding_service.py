@@ -4,7 +4,7 @@ from typing import Optional
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logging import debug
+from .....logging import debug, error
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SignedImmediateSyftMessageWithReply
@@ -31,10 +31,10 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
                     return obj.send_immediate_msg_without_reply(msg=msg)
                 except Exception as e:
                     # TODO: Need to not catch blanket exceptions
-                    print(
+                    error(
                         f"{addr} in store does not have method send_immediate_msg_without_reply"
                     )
-                    print(e)
+                    error(e)
                     pass
 
         try:
@@ -53,7 +53,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
                         )
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
-            print(f"{addr} not on nodes in_memory_client. {e}")
+            error(f"{addr} not on nodes in_memory_client. {e}")
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         raise Exception("Address unknown - cannot forward message. Throwing it away.")
@@ -85,10 +85,10 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                     return obj.send_immediate_msg_with_reply(msg=msg)
                 except Exception as e:
                     # TODO: Need to not catch blanket exceptions
-                    print(
+                    error(
                         f"{addr} in store does not have method send_immediate_msg_with_reply"
                     )
-                    print(e)
+                    error(e)
                     pass
 
         try:
@@ -107,7 +107,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                         )
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
-            print(f"{addr} not on nodes in_memory_client. {e}")
+            error(f"{addr} not on nodes in_memory_client. {e}")
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         raise Exception("Address unknown - cannot forward message. Throwing it away.")
