@@ -134,12 +134,15 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
 
-                    if "client_id" not in loopback_config:
-                        raise Exception("Client not ready")
+                    if "client_id" in loopback_config:
+                        client_id = str(loopback_config["client_id"])
+                        break
 
-                    client_id = str(loopback_config["client_id"])
-                    break
-
+                try_print("client not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                try_print("Cancelling server connection")
+                break
             except Exception as e:
                 try_print("server config load failed", self.file_path, e)
                 time.sleep(0.5)
@@ -158,13 +161,17 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                     loopback_config = json.loads(f.read())
                     # only continue once the server has overwritten the file
                     # with only its new server_id
-                    if not (
+                    if (
                         "server_id" in loopback_config
                         and "client_id" not in loopback_config
                     ):
-                        raise Exception("server not ready")
-                    server_id = str(loopback_config["server_id"])
-                    break
+                        server_id = str(loopback_config["server_id"])
+                        break
+                try_print("server not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                try_print("Cancelling client connection")
+                break
             except Exception as e:
                 try_print("client config load failed", self.file_path, e)
                 time.sleep(0.5)
