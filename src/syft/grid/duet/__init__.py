@@ -134,7 +134,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + str(n_messages)
                     )
                     out += "                                "
-                    try_print("\r" + out)
+                    try_print("\r" + out, end="\r")
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):
