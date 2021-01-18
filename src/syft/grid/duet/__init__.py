@@ -18,7 +18,7 @@ from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
-from ...logging import info
+from ...logging import info, traceback_and_raise
 
 if is_jupyter:
     # third party
@@ -56,7 +56,7 @@ def get_available_network() -> str:
             return addr
         except Exception:
             continue
-    raise Exception("Couldn't find any available network.")
+    traceback_and_raise(Exception("Couldn't find any available network."))
 
 
 def begin_duet_logger(my_domain: Domain) -> None:

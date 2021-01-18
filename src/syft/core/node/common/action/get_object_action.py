@@ -7,7 +7,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import debug, critical, error
+from .....logging import debug, critical, traceback_and_raise
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -69,7 +69,9 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
                 obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
                 ser = obj.serialize()
             else:
-                raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
+                traceback_and_raise(
+                    Exception(f"Cannot send {type(self.obj)} as StorableObject")
+                )
 
         return GetObjectResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -157,7 +159,7 @@ class GetObjectAction(ImmediateActionWithReply):
                     + f"Possible dangling Pointer. {e}"
                 )
 
-                raise Exception(log)
+                traceback_and_raise(Exception(log))
 
             # if you are not the root user check if your verify_key has read_permission
             if (
@@ -168,7 +170,7 @@ class GetObjectAction(ImmediateActionWithReply):
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
                     + "Please submit a request."
                 )
-                raise AuthorizationException(log)
+                traceback_and_raise(AuthorizationException(log))
 
             obj = storeable_object.data
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
@@ -194,8 +196,7 @@ class GetObjectAction(ImmediateActionWithReply):
             )
             return msg
         except Exception as e:
-            error(e)
-            raise e
+            traceback_and_raise(e)
 
     @property
     def pprint(self) -> str:

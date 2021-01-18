@@ -102,7 +102,7 @@ from .connection import ClientConnection
 from .location import Location
 from .location import SpecificLocation
 from .virtual import VirtualClientConnection
-from ...logging import debug
+from ...logging import debug, traceback_and_raise
 
 
 class RouteSchema(ObjectWithID):
@@ -138,17 +138,17 @@ class Route(ObjectWithID):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class SoloRoute(Route):

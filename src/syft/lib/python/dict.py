@@ -8,7 +8,6 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
-import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -19,6 +18,7 @@ from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
+from ...logging import traceback_and_raise, warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator
@@ -39,18 +39,20 @@ class Dict(UserDict, PyPrimitive):
     @syft_decorator(typechecking=False, prohibit_args=False)
     def __init__(*args: Any, **kwargs: Any) -> None:
         if not args:
-            raise TypeError(
-                "descriptor '__init__' of 'Dict' object " "needs an argument"
+            traceback_and_raise(
+                TypeError("descriptor '__init__' of 'Dict' object " "needs an argument")
             )
         self, *args = args  # type: ignore
         if len(args) > 1:
-            raise TypeError("expected at most 1 arguments, got %d" % len(args))
+            traceback_and_raise(
+                TypeError("expected at most 1 arguments, got %d" % len(args))
+            )
         if args:
             args_dict = args[0]
         elif "dict" in kwargs:
             args_dict = kwargs.pop("dict")
 
-            warnings.warn(
+            warning(
                 "Passing 'dict' as keyword argument is deprecated",
                 DeprecationWarning,
                 stacklevel=2,
@@ -188,7 +190,9 @@ class Dict(UserDict, PyPrimitive):
         # test_values which checks for this so we could disable the test or
         # keep this workaround
         if len(args) > 0:
-            raise TypeError("values() takes 1 positional argument but 2 were given")
+            traceback_and_raise(
+                TypeError("values() takes 1 positional argument but 2 were given")
+            )
         return Iterator(ValuesView(self), max_len=max_len)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

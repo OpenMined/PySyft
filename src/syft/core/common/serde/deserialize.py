@@ -6,6 +6,7 @@ from google.protobuf.message import Message
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....logging import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
 from .serializable import Serializable
@@ -58,12 +59,14 @@ def _deserialize(
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except AttributeError:
-        raise TypeError(
-            "You tried to deserialize an unsupported type. This can be caused by "
-            "several reasons. Either you are actively writing Syft code and forgot "
-            "to create one, or you are trying to deserialize an object which was "
-            "serialized using a different version of Syft and the object you tried "
-            "to deserialize is not supported in this version."
+        traceback_and_raise(
+            TypeError(
+                "You tried to deserialize an unsupported type. This can be caused by "
+                "several reasons. Either you are actively writing Syft code and forgot "
+                "to create one, or you are trying to deserialize an object which was "
+                "serialized using a different version of Syft and the object you tried "
+                "to deserialize is not supported in this version."
+            )
         )
 
     return obj_type._proto2object(proto=blob)

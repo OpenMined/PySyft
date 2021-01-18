@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators import syft_decorator
+from .....logging import traceback_and_raise
 from ....common.message import EventualSyftMessageWithoutReply
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
@@ -19,7 +20,7 @@ class NodeService:
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @classmethod
     def class_name(cls) -> str:
@@ -40,7 +41,7 @@ class ImmediateNodeService(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class EventualNodeService(NodeService):
@@ -50,7 +51,7 @@ class EventualNodeService(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class ImmediateNodeServiceWithReply(ImmediateNodeService):
@@ -59,12 +60,12 @@ class ImmediateNodeServiceWithReply(ImmediateNodeService):
     def process(
         node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey
     ) -> ImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class EventualNodeServiceWithoutReply(NodeService):
@@ -73,12 +74,12 @@ class EventualNodeServiceWithoutReply(NodeService):
     def process(
         node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class ImmediateNodeServiceWithoutReply(NodeService):
@@ -87,12 +88,12 @@ class ImmediateNodeServiceWithoutReply(NodeService):
     def process(
         node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class SignedNodeServiceWithReply(ImmediateNodeService):
@@ -101,21 +102,21 @@ class SignedNodeServiceWithReply(ImmediateNodeService):
     def process(
         node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
     ) -> SignedMessageT:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class SignedNodeServiceWithoutReply(ImmediateNodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[Any]]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)

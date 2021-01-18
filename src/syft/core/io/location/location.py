@@ -7,6 +7,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....logging import traceback_and_raise
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID
 
@@ -24,7 +25,7 @@ class Location(Serializable):
 
     @property
     def id(self) -> UID:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
@@ -52,7 +53,7 @@ class Location(Serializable):
         :rtype: Serializable
 
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -67,7 +68,7 @@ class Location(Serializable):
         :rtype: Message
         """
 
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -86,4 +87,4 @@ class Location(Serializable):
         :rtype: GeneratedProtocolMessageType
         """
 
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)

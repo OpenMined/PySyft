@@ -6,6 +6,7 @@ from google.protobuf.message import Message
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....logging import traceback_and_raise
 from .serializable import Serializable
 
 
@@ -47,7 +48,9 @@ def _serialize(
         if hasattr(obj, "serializable_wrapper_type"):
             is_serializable = obj.serializable_wrapper_type(value=obj)  # type: ignore
         else:
-            raise Exception(f"Object {type(obj)} has no serializable_wrapper_type")
+            traceback_and_raise(
+                Exception(f"Object {type(obj)} has no serializable_wrapper_type")
+            )
     else:
         is_serializable = obj
 

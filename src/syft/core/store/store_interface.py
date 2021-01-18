@@ -5,10 +5,10 @@ from typing import Type
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logging import debug, traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 from .storeable_object import StorableObject
-from logging import debug
 
 
 class ObjectStore(ABC):
@@ -26,7 +26,7 @@ class ObjectStore(ABC):
         Returns:
             int: memory size of the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __str__(self) -> str:
@@ -36,7 +36,7 @@ class ObjectStore(ABC):
         Returns:
             str: header and first 5 entries of the store in a formatted manner.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __len__(self) -> int:
@@ -46,7 +46,7 @@ class ObjectStore(ABC):
         Returns:
             int: the number of objects in the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def keys(self) -> Iterable[UID]:
@@ -56,7 +56,7 @@ class ObjectStore(ABC):
         Returns:
             Iterable[UID]: an iterable containing the keys of the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def values(self) -> Iterable[StorableObject]:
@@ -66,7 +66,7 @@ class ObjectStore(ABC):
         Returns:
             Iterable[StorableObject]: an iterable containing the keys of the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __contains__(self, key: UID) -> bool:
@@ -79,7 +79,7 @@ class ObjectStore(ABC):
         Returns:
             bool: if the object is present or not.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __getitem__(self, key: UID) -> StorableObject:
@@ -95,7 +95,7 @@ class ObjectStore(ABC):
         Raises:
             ValueError: If the key is not present in the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __setitem__(self, key: UID, value: StorableObject) -> None:
@@ -110,7 +110,7 @@ class ObjectStore(ABC):
             key (UID): the UID at which to store the StorableObject.
             value (StorableObject): the StorableObject to be stored.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def __delitem__(self, key: UID) -> None:
@@ -133,34 +133,34 @@ class ObjectStore(ABC):
         Raises:
             ValueError: if the key is not present in the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
         """
         Clears all storage owned by the store.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def get_object(self, id: UID) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def has_object(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def store_object(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def delete_object(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def get_objects_of_type(self, obj_type: Type) -> Iterable[AbstractStorableObject]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def icon(self) -> str:

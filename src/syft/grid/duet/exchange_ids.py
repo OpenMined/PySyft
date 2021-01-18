@@ -9,7 +9,7 @@ from typing import Tuple as TypeTuple
 
 # syft relative
 from .bcolors import bcolors
-from ...logging import info
+from ...logging import info, traceback_and_raise
 
 
 class DuetCredentialExchanger:
@@ -25,7 +25,7 @@ class DuetCredentialExchanger:
         return self
 
     def run(self, credential: str) -> str:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):

@@ -4,7 +4,7 @@ from typing import Optional
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logging import debug, error
+from .....logging import debug, error, traceback_and_raise
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SignedImmediateSyftMessageWithReply
@@ -56,7 +56,9 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             error(f"{addr} not on nodes in_memory_client. {e}")
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
-        raise Exception("Address unknown - cannot forward message. Throwing it away.")
+        traceback_and_raise(
+            Exception("Address unknown - cannot forward message. Throwing it away.")
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -110,7 +112,9 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             error(f"{addr} not on nodes in_memory_client. {e}")
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
-        raise Exception("Address unknown - cannot forward message. Throwing it away.")
+        traceback_and_raise(
+            Exception("Address unknown - cannot forward message. Throwing it away.")
+        )
 
     @staticmethod
     @syft_decorator(typechecking=True)

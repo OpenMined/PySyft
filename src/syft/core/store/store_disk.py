@@ -14,7 +14,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
-from ...logging import trace, critical
+from ...logging import trace, critical, traceback_and_raise
 
 
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.
@@ -44,7 +44,7 @@ class DiskObjectStore(ObjectStore):
             return value
         except Exception as e:
             trace(f"{type(self)} get item error {key} {e}")
-            raise e
+            traceback_and_raise(e)
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         if str(key.value) in self.db:
@@ -59,7 +59,7 @@ class DiskObjectStore(ObjectStore):
             self.db.commit(blocking=False)
         except Exception as e:
             trace(f"{type(self)} set item error {key} {type(value)} {e}")
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:

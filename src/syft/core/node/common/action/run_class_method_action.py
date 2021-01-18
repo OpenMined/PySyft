@@ -13,7 +13,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import critical
+from .....logging import critical, traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -178,7 +178,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     assert result.id == self.id_at_location
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
-                    raise Exception(err)
+                    traceback_and_raise(Exception(err))
 
         # QUESTION: There seems to be return value tensors that have no id
         # and get auto wrapped? So is this code not correct?

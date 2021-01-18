@@ -13,7 +13,7 @@ from . import ObjectStore
 from ...decorators import syft_decorator
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logging import critical
+from ...logging import critical, traceback_and_raise
 
 
 class MemoryStore(ObjectStore):
@@ -70,7 +70,7 @@ class MemoryStore(ObjectStore):
             return self._objects[key]
         except Exception as e:
             critical(f"{type(self)} __getitem__ error {key} {e}")
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: UID, value: AbstractStorableObject) -> None:

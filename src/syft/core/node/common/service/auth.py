@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
-from .....logging import debug
+from .....logging import debug, traceback_and_raise
 
 
 class AuthorizationException(Exception):
@@ -37,8 +37,10 @@ def service_auth(
                 debug(keys)
                 if verify_key != node.root_verify_key:
                     debug(f"> ❌ Auth FAILED {msg.pprint}")
-                    raise AuthorizationException(
-                        "You are not Authorized to access this service"
+                    traceback_and_raise(
+                        AuthorizationException(
+                            "You are not Authorized to access this service"
+                        )
                     )
                 else:
                     debug(f"> ✅ Auth Succeeded {msg.pprint} 🔑 == 🗝")
@@ -49,8 +51,8 @@ def service_auth(
                     and verify_key != node.root_verify_key
                 ):
                     debug(f"> ❌ Auth FAILED {msg.pprint}")
-                    raise AuthorizationException(
-                        "User lacks Administrator credentials."
+                    traceback_and_raise(
+                        AuthorizationException("User lacks Administrator credentials.")
                     )
 
             elif cpl_ofcr_only:
@@ -59,21 +61,25 @@ def service_auth(
                     and verify_key != node.root_verify_key
                 ):
                     debug(f"> ❌ Auth FAILED {msg.pprint}")
-                    raise AuthorizationException(
-                        "User lacks Compliance Officer credentials."
+                    traceback_and_raise(
+                        AuthorizationException(
+                            "User lacks Compliance Officer credentials."
+                        )
                     )
 
             elif existing_users_only:
                 if verify_key not in node.guest_verify_key_registry:
                     debug(f"> ❌ Auth FAILED {msg.pprint}")
-                    raise AuthorizationException("User not known.")
+                    traceback_and_raise(AuthorizationException("User not known."))
 
             elif guests_welcome:
                 if register_new_guests:
                     node.guest_verify_key_registry.add(verify_key)
 
             else:
-                raise Exception("You must configure services auth with a flag.")
+                traceback_and_raise(
+                    Exception("You must configure services auth with a flag.")
+                )
 
             # Can be None because not all functions reply
             return func(node=node, msg=msg, verify_key=verify_key)

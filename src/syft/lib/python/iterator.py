@@ -5,6 +5,7 @@ from typing import Optional
 # syft relative
 from ...core.common.uid import UID
 from ...decorators import syft_decorator
+from ...logging import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
@@ -26,7 +27,7 @@ class Iterator(PyPrimitive):
 
     def __reduce__(self) -> Any:
         # see these tests: test_valuesiterator_pickling and test_iterator_pickling
-        raise TypeError(f"Pickling {type(self)} is not supported.")
+        traceback_and_raise(TypeError(f"Pickling {type(self)} is not supported."))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
@@ -69,7 +70,7 @@ class Iterator(PyPrimitive):
             self_index = getattr(self, "_index", 0)
             if (max_len is not None and self_index >= max_len) or exhausted:
                 setattr(self, "exhausted", True)
-                raise StopIteration
+                traceback_and_raise(StopIteration)
 
             try:
                 if hasattr(_obj_ref, "__next__"):
@@ -77,13 +78,13 @@ class Iterator(PyPrimitive):
                         obj = next(_obj_ref)
                     except Exception as e:
                         if type(e) is StopIteration:
-                            raise e
+                            traceback_and_raise(e)
                         if type(e) is AttributeError:
                             # no _mapping exhausted?
-                            raise StopIteration()
+                            traceback_and_raise(StopIteration())
                         if type(e) is NameError:
                             # free after use?
-                            raise StopIteration()
+                            traceback_and_raise(StopIteration())
 
                         # test_dictitems_contains_use_after_free wants us to StopIteration
                         # test_merge_and_mutate and test_mutating_iteration wants us to
@@ -91,7 +92,7 @@ class Iterator(PyPrimitive):
                         # see:
                         # def test_dictitems_contains_use_after_free(self):
                         # Lets RuntimeError for now
-                        raise RuntimeError
+                        traceback_and_raise(RuntimeError)
 
                 elif hasattr(_obj_ref, "__getitem__") and hasattr(self, "_index"):
                     obj = _obj_ref[self._index]
@@ -103,13 +104,15 @@ class Iterator(PyPrimitive):
                     # obj = next(self._obj_ref) # just call self.__next__() instead
                     return self.__next__()
                 else:
-                    raise ValueError("Can't iterate through given object.")
+                    traceback_and_raise(
+                        ValueError("Can't iterate through given object.")
+                    )
             except StopIteration as e:
                 setattr(self, "exhausted", True)
-                raise e
+                traceback_and_raise(e)
 
             if hasattr(self, "_index"):
                 self._index += 1
             return obj
         except Exception as e:
-            raise e
+            traceback_and_raise(e)

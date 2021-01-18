@@ -9,7 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logging import critical
+from ....logging import critical, traceback_and_raise
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -74,7 +74,7 @@ class VirtualMachine(Node):
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
         # TODO: it doesn't at the moment but it needs to in the future,
         #  mostly because nodes should be able to choose waht framweorks they
         #  want to support (and more importantly what versions of those frameworks
@@ -84,7 +84,7 @@ class VirtualMachine(Node):
         # for fw in supported_frameworks:
         #     for name, ast in fw.ast.attrs.items():
         #         if name in self.frameworks.attrs:
-        #             raise KeyError(
+        #             traceback_and_raise(KeyError(
         #                 "Framework already imported. Why are you importing it twice?"
-        #             )
+        #             ))
         #         self.frameworks.attrs[name] = ast

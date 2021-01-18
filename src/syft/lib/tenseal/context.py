@@ -14,7 +14,7 @@ from ...core.store.storeable_object import StorableObject
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
-from ...logging import info
+from ...logging import info, traceback_and_raise
 
 
 class ContextWrapper(StorableObject):
@@ -42,8 +42,10 @@ class ContextWrapper(StorableObject):
         lib_version = version.parse(proto.vendor_lib_version)
 
         if vendor_lib not in sys.modules:
-            raise Exception(
-                f"{vendor_lib} version: {proto.vendor_lib_version} is required"
+            traceback_and_raise(
+                Exception(
+                    f"{vendor_lib} version: {proto.vendor_lib_version} is required"
+                )
             )
         else:
             if lib_version > version.parse(ts.__version__):

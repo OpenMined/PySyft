@@ -9,6 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logging import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -67,8 +68,10 @@ class NetworkClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception(
-            "This client points to a network, you don't need a Domain Location."
+        traceback_and_raise(
+            Exception(
+                "This client points to a network, you don't need a Domain Location."
+            )
         )
 
     @property
@@ -88,8 +91,10 @@ class NetworkClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception(
-            "This client points to a network, you don't need a Device Location."
+        traceback_and_raise(
+            Exception(
+                "This client points to a network, you don't need a Device Location."
+            )
         )
 
     @property
@@ -109,8 +114,8 @@ class NetworkClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception(
-            "This client points to a network, you don't need a VM Location."
+        traceback_and_raise(
+            Exception("This client points to a network, you don't need a VM Location.")
         )
 
     @syft_decorator(typechecking=True)

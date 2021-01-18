@@ -9,6 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logging import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -90,7 +91,9 @@ class DeviceClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a Device, you don't need a VM Location.")
+        traceback_and_raise(
+            Exception("This client points to a Device, you don't need a VM Location.")
+        )
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.device}>"

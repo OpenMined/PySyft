@@ -16,7 +16,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
-from ...logging import debug
+from ...logging import debug, traceback_and_raise
 
 
 class Unspecified(object):
@@ -324,7 +324,7 @@ class Address(Serializable):
         elif self._network is not None:
             return self._network
 
-        raise Exception("Address has no valid parts")
+        traceback_and_raise(Exception("Address has no valid parts"))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> bool:

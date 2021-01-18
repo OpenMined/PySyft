@@ -19,7 +19,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
-from ...logging import debug
+from ...logging import debug, traceback_and_raise
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")
@@ -193,9 +193,11 @@ class SignedMessage(SyftMessage):
         debug(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
-            raise TypeError(
-                "Deserializing SignedMessage. "
-                + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
+            traceback_and_raise(
+                TypeError(
+                    "Deserializing SignedMessage. "
+                    + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
+                )
             )
 
         return obj

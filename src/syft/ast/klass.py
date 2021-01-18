@@ -21,6 +21,7 @@ from ..core.node.common.action.run_class_method_action import RunClassMethodActi
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
+from ..logging import traceback_and_raise
 
 
 def _get_request_config(self: Any) -> Dict[str, Any]:
@@ -59,14 +60,18 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT]]) -> None:
             from syft.lib.python.iterator import Iterator
 
             if not hasattr(self, "__len__"):
-                raise ValueError(
-                    "Can't build a remote iterator on an object with no __len__."
+                traceback_and_raise(
+                    ValueError(
+                        "Can't build a remote iterator on an object with no __len__."
+                    )
                 )
 
             try:
                 data_len = len(self)
             except Exception:
-                raise ValueError("Request to access data length not granted.")
+                traceback_and_raise(
+                    ValueError("Request to access data length not granted.")
+                )
 
             return Iterator(_ref=iter_func(self), max_len=data_len)
 
@@ -75,7 +80,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT]]) -> None:
     attr_name = "__iter__"
     iter_target = attrs[attr_name]
     if not callable(iter_target):
-        raise AttributeError("Can't wrap a non callable iter attribute")
+        traceback_and_raise(AttributeError("Can't wrap a non callable iter attribute"))
     else:
         iter_func: CallableT = iter_target
     attrs[attr_name] = wrap_iter(iter_func)
@@ -89,7 +94,9 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT]]) -> None:
                 data_len = data_len_ptr.get(**self.get_request_config())
                 return data_len
             except Exception:
-                raise ValueError("Request to access data length not granted.")
+                traceback_and_raise(
+                    ValueError("Request to access data length not granted.")
+                )
 
         return __len__
 
@@ -97,7 +104,9 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT]]) -> None:
     len_target = attrs[attr_name]
 
     if not callable(len_target):
-        raise AttributeError("Can't wrap a non callable __len__ attribute")
+        traceback_and_raise(
+            AttributeError("Can't wrap a non callable __len__ attribute")
+        )
     else:
         len_func: CallableT = len_target
 

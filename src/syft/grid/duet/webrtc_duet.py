@@ -40,7 +40,7 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
 from ...decorators.syft_decorator_impl import syft_decorator
-from ...logging import error
+from ...logging import error, traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
 from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage
@@ -153,13 +153,13 @@ class Duet(DomainClient):
             # The exception has been caught and saved in self._exception
             else:
                 # NOTE: Maybe we should create a custom exception type.
-                raise Exception(
-                    f"Something went wrong during the Duet init process. {self._exception}"
+                traceback_and_raise(
+                    Exception(
+                        f"Something went wrong during the Duet init process. {self._exception}"
+                    )
                 )
         except Exception as e:
-            log = f"Got an exception in Duet. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def notify(self) -> None:
@@ -177,9 +177,7 @@ class Duet(DomainClient):
             for task in pending:
                 task.cancel()
         except Exception as e:
-            log = f"Got an exception in Duet notify. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)
 
     def close(self) -> None:
         self.connection.close()
@@ -228,8 +226,10 @@ class Duet(DomainClient):
 
                 # If LoopBack Message it was a loopback request
                 elif isinstance(_response, InvalidLoopBackRequest):
-                    raise Exception(
-                        "You can't perform p2p connection using your current node address as a destination peer."
+                    traceback_and_raise(
+                        Exception(
+                            "You can't perform p2p connection using your current node address as a destination peer."
+                        )
                     )
 
                 # If Signaling Message weren't found
@@ -284,9 +284,7 @@ class Duet(DomainClient):
                 )
             )
         except Exception as e:
-            log = f"Got an exception in Duet send_offer. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def _send_answer(self, msg: SignalingOfferMessage) -> None:
@@ -313,9 +311,7 @@ class Duet(DomainClient):
             # Enqueue it in the push msg queue to be sent to the signaling server.
             await self._push_msg_queue.put(signaling_answer)
         except Exception as e:
-            log = f"Got an exception in Duet _send_answer. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def _ack(self, msg: SignalingAnswerMessage) -> None:
@@ -329,9 +325,7 @@ class Duet(DomainClient):
             # Process received offer message updating target's remote address
             await self.connection._process_answer(payload=msg.payload)
         except Exception as e:
-            log = f"Got an exception in Duet _ack. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def _update_availability(self) -> bool:
@@ -345,6 +339,4 @@ class Duet(DomainClient):
                 and self.connection.peer_connection is not None
             )
         except Exception as e:
-            log = f"Got an exception in Duet _update_availability. {e}"
-            error(log)
-            raise e
+            traceback_and_raise(e)

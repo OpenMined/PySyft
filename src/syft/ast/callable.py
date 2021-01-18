@@ -14,6 +14,7 @@ from ..core.node.common.action.function_or_constructor_action import (
 )
 from .util import module_type
 from .util import unsplit
+from ..logging import traceback_and_raise
 
 
 class Callable(ast.attribute.Attribute):
@@ -82,7 +83,7 @@ class Callable(ast.attribute.Attribute):
                 attr_ref = getattr(self.ref, path[index])
 
                 if isinstance(attr_ref, module_type):
-                    raise Exception("Module cannot be attr of callable.")
+                    traceback_and_raise(Exception("Module cannot be attr of callable."))
                 else:
                     is_property = False
                     if type(attr_ref).__name__ in ["getset_descriptor", "_tuplegetter"]:

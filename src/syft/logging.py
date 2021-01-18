@@ -3,6 +3,7 @@ from typing import Any
 from typing import Union
 from typing import TextIO
 from loguru import logger
+from typing import NoReturn
 
 LOG_FORMAT = "[{time}][{level}][{module}] {message}"
 
@@ -43,7 +44,7 @@ def add_logger(
         )
 
 
-def traceback_and_raise(*args: Any, **kargs: Any) -> None:
+def traceback_and_raise(*args: Any, **kargs: Any) -> NoReturn:
     try:
         logger.opt(lazy=True).exception(*args, **kargs)
     except BaseException as e:
@@ -56,7 +57,6 @@ def traceback(*args: Any, **kargs: Any) -> None:
         logger.opt(lazy=True).exception(*args, **kargs)
     except BaseException as e:
         logger.debug("failed to print exception", e)
-    raise Exception(str(*args, **kargs))
 
 
 def critical(*args: Any, **kargs: Any) -> None:

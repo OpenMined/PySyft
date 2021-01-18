@@ -23,7 +23,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logging import debug, error, critical
+from ....logging import debug, error, critical, traceback_and_raise
 from ....lib import lib_ast
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
@@ -300,7 +300,7 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def known_child_nodes(self) -> List[Address]:
@@ -330,7 +330,7 @@ class Node(AbstractNode):
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
@@ -424,7 +424,7 @@ class Node(AbstractNode):
             if not isinstance(e, DuplicateRequestException):
                 error(e)
                 # TODO: A lot of tests are depending on this raise which seems bad
-                raise e
+                traceback_and_raise(e)
 
             # TODO: finish code to send ExceptionMessage back
             # if isinstance(e, DuplicateRequestException):
@@ -464,7 +464,7 @@ class Node(AbstractNode):
             # Process Message here
             if not msg.is_valid:
                 error(f"Message is not valid. {msg}")
-                raise Exception("Message is not valid.")
+                traceback_and_raise(Exception("Message is not valid."))
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
@@ -476,7 +476,7 @@ class Node(AbstractNode):
                 )
                 error(log)
                 self.ensure_services_have_been_registered_error_if_not()
-                raise KeyError(log)
+                traceback_and_raise(KeyError(log))
 
             result = service.process(
                 node=self,
@@ -505,9 +505,11 @@ class Node(AbstractNode):
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
-            raise Exception(
-                "Please call _register_services on node. This seems to have"
-                "been skipped for some reason."
+            traceback_and_raise(
+                Exception(
+                    "Please call _register_services on node. This seems to have"
+                    "been skipped for some reason."
+                )
             )
 
     @syft_decorator(typechecking=True)
