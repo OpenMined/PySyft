@@ -45,9 +45,12 @@ def add(
         )
 
 
-def traceback_and_raise(e: Any) -> NoReturn:
+def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
     try:
-        logger.opt(lazy=True).exception(e)
+        if verbose:
+            logger.opt(lazy=True).exception(e)
+        else:
+            logger.opt(lazy=True).critical(e)
     except BaseException as e:
         logger.debug("failed to print exception", e)
     raise e
