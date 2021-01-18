@@ -12,7 +12,7 @@ from typing import Union
 from .. import python
 from ...core.common import UID
 from ...decorators import syft_decorator
-from ...logging import traceback_and_raise
+from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
 
 NoneType = type(None)

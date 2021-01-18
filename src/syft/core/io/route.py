@@ -102,7 +102,7 @@ from .connection import ClientConnection
 from .location import Location
 from .location import SpecificLocation
 from .virtual import VirtualClientConnection
-from ...logging import debug, traceback_and_raise
+from ...logger import debug, traceback_and_raise
 
 
 class RouteSchema(ObjectWithID):

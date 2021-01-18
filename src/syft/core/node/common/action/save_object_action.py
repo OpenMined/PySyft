@@ -7,7 +7,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import traceback_and_raise
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )

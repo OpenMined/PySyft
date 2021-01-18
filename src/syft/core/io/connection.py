@@ -6,7 +6,7 @@ from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...decorators import syft_decorator
-from ...logging import traceback_and_raise
+from ...logger import traceback_and_raise
 
 
 class BidirectionalConnection(object):

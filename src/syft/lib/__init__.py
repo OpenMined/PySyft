@@ -13,7 +13,7 @@ from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from .misc import create_union_ast
-from ..logging import critical, traceback_and_raise
+from ..logger import critical, traceback_and_raise
 
 
 class VendorLibraryImportException(Exception):

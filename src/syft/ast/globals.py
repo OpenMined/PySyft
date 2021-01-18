@@ -11,7 +11,7 @@ from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 from .util import unsplit
-from ..logging import traceback_and_raise
+from ..logger import traceback_and_raise
 
 
 class Globals(Module):

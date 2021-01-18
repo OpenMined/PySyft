@@ -5,7 +5,7 @@ from typing import Type
 
 # syft relative
 from ...decorators import syft_decorator
-from ...logging import debug, traceback_and_raise
+from ...logger import debug, traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 from .storeable_object import StorableObject

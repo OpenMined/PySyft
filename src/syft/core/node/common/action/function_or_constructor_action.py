@@ -13,7 +13,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import traceback_and_raise
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )

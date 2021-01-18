@@ -16,7 +16,7 @@ from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import critical
+from .....logger import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,
 )

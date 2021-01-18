@@ -16,7 +16,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
-from ...logging import debug, traceback_and_raise
+from ...logger import debug, traceback_and_raise
 
 
 class Unspecified(object):

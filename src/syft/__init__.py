@@ -82,7 +82,7 @@ from syft.lib.torch.module import Module  # noqa: F401
 # syft relative
 # Package Imports
 from . import lib  # noqa: F401
-from . import logging  # noqa: F401
+from . import logger  # noqa: F401
 
 # VERSIONING
 try:
@@ -96,4 +96,4 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-logging.add_logger(file_path=sys.stderr, log_level="CRITICAL")
+logger.add(sink=sys.stderr, level="CRITICAL")

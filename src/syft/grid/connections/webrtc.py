@@ -101,7 +101,7 @@ from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
 from ...decorators.syft_decorator_impl import syft_decorator
-from ...logging import debug, traceback_and_raise
+from ...logger import debug, traceback_and_raise
 from ..services.signaling_service import CloseConnectionMessage
 
 message_cooldown = 0.0

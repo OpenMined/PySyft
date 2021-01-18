@@ -2,27 +2,28 @@ import os
 from typing import Any
 from typing import Union
 from typing import TextIO
-from loguru import logger
 from typing import NoReturn
+
+from loguru import logger
 
 LOG_FORMAT = "[{time}][{level}][{module}] {message}"
 
 logger.remove()
-DEFAULT_LOG_FILE = "syft_{time}.log"
+DEFAULT_SINK = "syft_{time}.log"
 
 
-def disable_logging() -> None:
+def remove() -> None:
     logger.remove()
 
 
-def add_logger(
-    file_path: Union[None, str, os.PathLike, TextIO] = None,
-    log_level: str = "ERROR",
+def add(
+    sink: Union[None, str, os.PathLike, TextIO] = None,
+    level: str = "ERROR",
 ) -> None:
-    log_file = DEFAULT_LOG_FILE if file_path is None else file_path
+    sink = DEFAULT_SINK if sink is None else sink
     try:
         logger.add(
-            log_file,
+            sink=sink,
             format=LOG_FORMAT,
             enqueue=True,
             colorize=False,
@@ -30,17 +31,17 @@ def add_logger(
             backtrace=True,
             rotation="10 MB",
             retention="1 day",
-            level=log_level,
+            level=level,
         )
     except BaseException:
         logger.add(
-            log_file,
+            sink=sink,
             format=LOG_FORMAT,
             enqueue=True,
             colorize=False,
             diagnose=True,
             backtrace=True,
-            level=log_level,
+            level=level,
         )
 
 

@@ -16,7 +16,7 @@ from flask import request
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.node.domain.domain import Domain
-from syft.logging import critical
+from syft.logger import critical
 
 app = Flask(__name__)
 

@@ -18,7 +18,7 @@ from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
-from ...logging import traceback_and_raise, warning
+from ...logger import traceback_and_raise, warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator

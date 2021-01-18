@@ -21,7 +21,7 @@ from ..core.node.common.action.run_class_method_action import RunClassMethodActi
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..util import aggressive_set_attr
-from ..logging import traceback_and_raise
+from ..logger import traceback_and_raise
 
 
 def _get_request_config(self: Any) -> Dict[str, Any]:

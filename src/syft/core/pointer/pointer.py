@@ -109,7 +109,7 @@ from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-from ...logging import debug, error
+from ...logger import debug, error
 
 
 # TODO: Fix the Client, Address, Location confusion

@@ -9,7 +9,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logging import error, debug
+from .....logger import error, debug
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
     RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
 )

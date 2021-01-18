@@ -12,7 +12,7 @@ import nest_asyncio
 # syft relative
 from .environment import is_interactive
 from .environment import is_jupyter
-from ...logging import info
+from ...logger import info
 
 # Depending on where syft is imported we may need to get the existing event loop or
 # create a new one. In the case of Jupyter there is an existing event loop created

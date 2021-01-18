@@ -9,7 +9,7 @@ from typing import Tuple as TypeTuple
 
 # syft relative
 from .bcolors import bcolors
-from ...logging import info, traceback_and_raise
+from ...logger import info, traceback_and_raise
 
 
 class DuetCredentialExchanger:

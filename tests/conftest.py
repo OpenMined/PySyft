@@ -18,11 +18,11 @@ import pytest
 # syft absolute
 from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
-from syft.logging import add_logger, disable_logging
+from syft import logger
 
-disable_logging()
-add_logger(file_path=sys.stderr, log_level="ERROR")
-add_logger(file_path="/tmp/syft_pytest_{time}.log", log_level="ERROR")
+logger.remove()
+logger.add(sink=sys.stderr, level="ERROR")
+logger.add(sink="/tmp/syft_pytest_{time}.log", level="ERROR")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:

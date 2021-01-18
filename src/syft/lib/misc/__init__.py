@@ -14,7 +14,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
 from .union import lazy_pairing
-from ...logging import traceback_and_raise
+from ...logger import traceback_and_raise
 
 
 def get_allowed_functions(

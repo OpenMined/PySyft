@@ -12,7 +12,7 @@ from nacl.signing import VerifyKey
 from ..... import deserialize
 from ..... import serialize
 from .....decorators import syft_decorator
-from .....logging import traceback_and_raise
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.request_message_pb2 import (
     RequestMessage as RequestMessage_PB,
 )
@@ -25,7 +25,7 @@ from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
-from .....logging import debug, critical, traceback
+from .....logger import debug, critical, traceback
 
 
 class RequestStatus(Enum):

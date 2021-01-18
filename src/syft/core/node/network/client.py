@@ -9,7 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logging import traceback_and_raise
+from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation

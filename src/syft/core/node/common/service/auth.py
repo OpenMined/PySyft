@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
-from .....logging import debug, traceback_and_raise
+from .....logger import debug, traceback_and_raise
 
 
 class AuthorizationException(Exception):

@@ -14,7 +14,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
-from ...logging import trace, critical, traceback_and_raise
+from ...logger import trace, critical, traceback_and_raise
 
 
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.

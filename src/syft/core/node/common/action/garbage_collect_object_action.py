@@ -7,7 +7,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import critical
+from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )

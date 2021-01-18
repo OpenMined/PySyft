@@ -24,7 +24,7 @@ from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
-from syft.logging import info
+from syft.logger import info
 
 app = Flask(__name__)
 

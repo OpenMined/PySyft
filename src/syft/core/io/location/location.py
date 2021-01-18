@@ -7,7 +7,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ....logging import traceback_and_raise
+from ....logger import traceback_and_raise
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID
 

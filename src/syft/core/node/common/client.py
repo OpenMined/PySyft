@@ -16,7 +16,7 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
-from ....logging import critical, debug, error, traceback_and_raise
+from ....logger import critical, debug, error, traceback_and_raise
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB

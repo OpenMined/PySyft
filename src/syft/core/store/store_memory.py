@@ -13,7 +13,7 @@ from . import ObjectStore
 from ...decorators import syft_decorator
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logging import critical, traceback_and_raise
+from ...logger import critical, traceback_and_raise
 
 
 class MemoryStore(ObjectStore):

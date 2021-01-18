@@ -20,7 +20,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logging import critical, traceback
+from ...logger import critical, traceback
 
 
 class StorableObject(AbstractStorableObject):

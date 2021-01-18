@@ -14,7 +14,7 @@ from ...core.store.storeable_object import StorableObject
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
-from ...logging import info, traceback_and_raise
+from ...logger import info, traceback_and_raise
 
 
 class ContextWrapper(StorableObject):

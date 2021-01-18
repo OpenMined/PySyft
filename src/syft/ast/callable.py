@@ -14,7 +14,7 @@ from ..core.node.common.action.function_or_constructor_action import (
 )
 from .util import module_type
 from .util import unsplit
-from ..logging import traceback_and_raise
+from ..logger import traceback_and_raise
 
 
 class Callable(ast.attribute.Attribute):

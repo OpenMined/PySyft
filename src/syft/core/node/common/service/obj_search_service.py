@@ -16,7 +16,7 @@ from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import error
+from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
 )

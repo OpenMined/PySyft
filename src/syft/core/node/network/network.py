@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ....logging import error
+from ....logger import error
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID

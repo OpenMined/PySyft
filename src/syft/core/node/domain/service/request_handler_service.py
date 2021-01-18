@@ -30,7 +30,7 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....logging import error, debug
+from .....logger import error, debug
 
 
 class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):

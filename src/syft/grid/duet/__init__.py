@@ -18,7 +18,7 @@ from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
-from ...logging import info, traceback_and_raise
+from ...logger import info, traceback_and_raise
 
 if is_jupyter:
     # third party

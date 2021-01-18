@@ -19,7 +19,7 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
-from ...logging import debug, traceback_and_raise
+from ...logger import debug, traceback_and_raise
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")

@@ -18,7 +18,7 @@ from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
 from .service import RequestMessage
-from ....logging import traceback_and_raise
+from ....logger import traceback_and_raise
 
 
 class RequestQueueClient:

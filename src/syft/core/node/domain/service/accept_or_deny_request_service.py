@@ -16,7 +16,7 @@ from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logging import debug
+from .....logger import debug
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
     AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
 )

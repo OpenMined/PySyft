@@ -40,7 +40,7 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
 from ...decorators.syft_decorator_impl import syft_decorator
-from ...logging import error, traceback_and_raise
+from ...logger import error, traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
 from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage

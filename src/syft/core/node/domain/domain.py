@@ -14,7 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
-from ....logging import traceback, critical, debug, info
+from ....logger import traceback, critical, debug, info
 from ....lib.python import String
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage

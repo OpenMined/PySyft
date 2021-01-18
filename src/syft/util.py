@@ -14,7 +14,7 @@ import syft
 
 # syft relative
 from .decorators.syft_decorator_impl import syft_decorator
-from logging import error, debug, critical
+from .logger import error, debug, critical
 
 
 @syft_decorator(typechecking=True)

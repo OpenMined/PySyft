@@ -9,7 +9,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logging import critical, traceback_and_raise
+from ....logger import critical, traceback_and_raise
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID

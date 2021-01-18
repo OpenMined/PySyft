@@ -14,7 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logging import traceback, debug
+from .....logger import traceback, debug
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
     HeritageUpdateMessage as HeritageUpdateMessage_PB,
 )
