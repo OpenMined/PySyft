@@ -9,6 +9,7 @@
 # stdlib
 from typing import Any as TypeAny
 from typing import List as TypeList
+import sys
 
 # third party
 import _pytest
@@ -17,6 +18,11 @@ import pytest
 # syft absolute
 from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
+from syft.logging import add_logger, disable_logging
+
+disable_logging()
+add_logger(file_path=sys.stderr, log_level="ERROR")
+add_logger(file_path="/tmp/syft_pytest_{time}.log", log_level="ERROR")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
