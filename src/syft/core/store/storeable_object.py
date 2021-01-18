@@ -20,7 +20,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logging import traceback_and_raise, critical
+from ...logging import critical, traceback
 
 
 class StorableObject(AbstractStorableObject):
@@ -202,7 +202,7 @@ class StorableObject(AbstractStorableObject):
         except Exception as e:
             # torch.return_types.* namedtuple cant setattr
             critical(f"StorableObject {type(obj_type)} cant set attributes")
-            traceback_and_raise(e)
+            traceback(e)
 
         return result
 
