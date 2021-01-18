@@ -18,7 +18,7 @@ from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
 from .service import RequestMessage
-from ...logging import traceback_and_raise
+from ....logging import traceback_and_raise
 
 
 class RequestQueueClient:
@@ -236,8 +236,6 @@ class DomainClient(Client):
             Exception("This client points to a domain, you don't need a Device ID.")
         )
 
-        return Location()
-
     @property
     def vm(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a vm
@@ -258,8 +256,6 @@ class DomainClient(Client):
         traceback_and_raise(
             Exception("This client points to a device, you don't need a VM Location.")
         )
-
-        return Location()
 
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")

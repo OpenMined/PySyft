@@ -44,12 +44,12 @@ def add_logger(
         )
 
 
-def traceback_and_raise(*args: Any, **kargs: Any) -> NoReturn:
+def traceback_and_raise(e: Any) -> NoReturn:
     try:
-        logger.opt(lazy=True).exception(*args, **kargs)
+        logger.opt(lazy=True).exception(e)
     except BaseException as e:
         logger.debug("failed to print exception", e)
-    raise Exception(str(*args, **kargs))
+    raise e
 
 
 def traceback(*args: Any, **kargs: Any) -> None:
