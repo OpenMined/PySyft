@@ -31,11 +31,15 @@ class Attribute:
     ):
         self.path_and_name = path_and_name
         self.object_ref = object_ref
-
-        self.attrs: Dict[str, "Attribute"] = {}
-
-        self.return_type_name = return_type_name
         self.client = client
+        self.attrs: Dict[str, "Attribute"] = {}
+        self.return_type_name = return_type_name
+
+    def set_client(self, client: Any) -> None:
+        self.client = client
+        for _, attr in self.attrs.items():
+            if hasattr(attr, "set_client"):
+                attr.set_client(client=client)  # type: ignore
 
     def __call__(
         self,

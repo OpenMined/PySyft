@@ -71,6 +71,7 @@ class Callable(ast.attribute.Attribute):
                 self.client.send_immediate_msg_without_reply(msg=msg)
                 return ptr
 
+        print(kwargs)
         path = kwargs["path"]
         index = kwargs["index"]
 

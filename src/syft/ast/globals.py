@@ -1,16 +1,23 @@
 # stdlib
 from types import ModuleType
+from typing import Any
 from typing import Callable as CallableT
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
 
 # syft relative
+from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 
 
 class Globals(Module):
+    _copy: Optional["copyType"]
+    registered_clients: Dict[UID, Any] = {}
+    loaded_lib_constructors: Dict[str, CallableT] = {}
+
     """The collection of frameworks held in the global namespace"""
 
     def __call__(
@@ -57,4 +64,22 @@ class Globals(Module):
             )
 
         attr = self.attrs[framework_name]
-        attr.add_path(path=path, index=1, return_type_name=return_type_name)
+        attr.add_path(  # type: ignore
+            path=path, index=1, return_type_name=return_type_name
+        )
+
+    def copy(self, client) -> Optional["Globals"]:
+        if self._copy is not None:
+            return self._copy(client)
+        return None
+
+    def register_updates(self, client: Any) -> None:
+        # any previously loaded libs need to be applied
+        for _, update_ast in self.loaded_lib_constructors.items():
+            update_ast(ast=client)
+
+        # make sure to get any future updates
+        self.registered_clients[client.id] = client
+
+
+copyType = CallableT[[], Globals]

@@ -130,6 +130,30 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if self.is_static:
             result = method(*upcasted_args, **upcasted_kwargs)
         else:
+            # in opacus the step method in torch gets monkey patched on .attach
+            # this means we can't use the original AST method reference and need to
+            # get it again from the actual object so for now lets allow the following
+            # two methods to be resolved at execution time
+            method_name = self.path.split(".")[-1]
+            if method_name in ["step", "zero_grad"]:
+                # TODO: Remove this Opacus workaround
+                try:
+                    method = getattr(resolved_self.data, method_name, None)
+                    result = method(*upcasted_args, **upcasted_kwargs)
+                except Exception as e:
+                    print(
+                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
+                    )
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
+            else:
+                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        # TODO: replace with proper tuple support
+        if type(result) is tuple:
+            # convert to list until we support tuples
+            result = list(result)
             result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
