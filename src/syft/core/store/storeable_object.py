@@ -77,6 +77,13 @@ class StorableObject(AbstractStorableObject):
         self.search_permissions: dict = search_permissions if search_permissions else {}
 
     @property
+    def object_type(self) -> str:
+        object_type = str(type(self.data))
+        if type(self.data).__name__.endswith("ProtobufWrapper"):
+            object_type = str(type(self.data.data))  # type: ignore
+        return object_type
+
+    @property
     def tags(self) -> Optional[List[str]]:
         return self._tags
 

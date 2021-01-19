@@ -73,6 +73,7 @@ class RequestQueueClient:
                 "Reason": request.request_description,
                 "Request ID": request.id,
                 "Requested Object's ID": request.object_id,
+                "Requested Object's type": request.object_type,
             }
             for request in self.requests
         ]

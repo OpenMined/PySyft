@@ -14,4 +14,5 @@ message RequestMessage {
   syft.core.io.Address owner_address = 6;
   bytes requester_verify_key = 7;
   int32 timeout_secs = 8;
+  string object_type = 9;
 }

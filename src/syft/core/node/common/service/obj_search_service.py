@@ -193,7 +193,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
     ) -> ObjectSearchReplyMessage:
         results: List[Pointer] = list()
-
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
@@ -210,6 +209,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     ptr = ptr_type(
                         client=node,
                         id_at_location=obj.id,
+                        object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,
                     )

@@ -135,6 +135,7 @@ class Pointer(AbstractPointer):
         self,
         client: Any,
         id_at_location: Optional[UID] = None,
+        object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> None:
@@ -146,6 +147,7 @@ class Pointer(AbstractPointer):
 
         self.client = client
         self.id_at_location = id_at_location
+        self.object_type = object_type
         self.tags = tags
         self.description = description
         self.gc_enabled = True
@@ -258,6 +260,7 @@ class Pointer(AbstractPointer):
             location=self.client.address.serialize(),
             tags=self.tags,
             description=self.description,
+            object_type=self.object_type,
         )
 
     @staticmethod
@@ -289,6 +292,7 @@ class Pointer(AbstractPointer):
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
+            object_type=proto.object_type,
         )
 
     @staticmethod
@@ -365,6 +369,7 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             owner_address=self.client.address,
             object_id=self.id_at_location,
+            object_type=self.object_type,
             requester_verify_key=self.client.verify_key,
             timeout_secs=timeout_secs,
         )

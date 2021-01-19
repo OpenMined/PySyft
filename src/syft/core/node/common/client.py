@@ -435,7 +435,6 @@ class StoreClient:
 
     @property
     def pandas(self) -> pd.DataFrame:
-
         obj_lines: List[Dict[str, Any]] = list()
         for obj in self.store:
             obj_lines.append(
@@ -443,6 +442,7 @@ class StoreClient:
                     "ID": obj.id_at_location,
                     "Tags": obj.tags,
                     "Description": obj.description,
+                    "object_type": obj.object_type,
                 }
             )
         return pd.DataFrame(obj_lines)

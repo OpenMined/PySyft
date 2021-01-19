@@ -44,6 +44,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         requester_verify_key: VerifyKey,
         owner_address: Address,
         object_tags: List[str] = [],
+        object_type: str = "",
         request_description: str = "",
         request_id: Optional[UID] = None,
         owner_client_if_available: Optional[Client] = None,
@@ -54,6 +55,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
             request_id = UID()
         super().__init__(address=address, msg_id=request_id)
         self.object_tags = object_tags
+        self.object_type = object_type
         self.request_description = request_description
         self.request_id = request_id
         self.requester_verify_key = requester_verify_key
@@ -130,6 +132,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def _object2proto(self) -> RequestMessage_PB:
         msg = RequestMessage_PB()
         msg.object_tags.extend(self.object_tags)
+        msg.object_type = self.object_type
         msg.request_description = self.request_description
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
         msg.target_address.CopyFrom(serialize(obj=self.address))
@@ -150,6 +153,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         request_msg = RequestMessage(
             request_id=deserialize(blob=proto.request_id),
             object_tags=proto.object_tags,
+            object_type=proto.object_type,
             request_description=proto.request_description,
             address=deserialize(blob=proto.target_address),
             object_id=deserialize(blob=proto.object_id),
