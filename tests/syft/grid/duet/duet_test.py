@@ -32,6 +32,7 @@ atexit.register(grid_cleanup)
 registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
+
 @pytest.mark.skip
 def test_duet() -> None:
     # let the flask server init:
