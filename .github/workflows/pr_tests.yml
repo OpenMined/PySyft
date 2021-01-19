@@ -71,6 +71,15 @@ jobs:
           - os: ubuntu-latest
             python-version: 3.7
             torch-version: 1.4.0
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -98,6 +107,12 @@ jobs:
         run: |
           pip install bandit --default-timeout=60
           bandit -r src -ll
+
+      # - name: Install aiortc native dependencies
+      #   if: startsWith(runner.os, 'Linux') == true
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
