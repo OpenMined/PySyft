@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -17,6 +16,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
+from ...logger import debug, traceback_and_raise
 
 
 class Unspecified(object):
@@ -100,7 +100,7 @@ class Address(Serializable):
         return output
 
     def post_init(self) -> None:
-        logger.debug(f"> Creating {self.pprint}")
+        debug(f"> Creating {self.pprint}")
 
     @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
@@ -324,7 +324,7 @@ class Address(Serializable):
         elif self._network is not None:
             return self._network
 
-        raise Exception("Address has no valid parts")
+        traceback_and_raise(Exception("Address has no valid parts"))
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> bool:

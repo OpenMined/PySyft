@@ -13,22 +13,12 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from loguru import logger
 import torch
 
 # syft relative
 from ...decorators import syft_decorator
 from ...lib.util import full_name_with_qualname
-
-
-def debug(msg: str) -> None:
-    print(msg)
-    logger.debug(msg)
-
-
-def critical(msg: str) -> None:
-    logger.critical(msg)
-    raise Exception(msg)
+from ...logger import info, traceback_and_raise, critical
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -76,9 +66,7 @@ def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
                 value = ast.literal_eval(string)
                 kwargs[key.strip()] = value
         except Exception as e:
-            log = f"ast.literal_eval failed to parse part: {string}. {e}"
-            print(log)
-            logger.debug(log)
+            info(f"ast.literal_eval failed to parse part: {string}. {e}")
 
     return (args, kwargs)
 
@@ -99,11 +87,11 @@ class Module:
         self.local_model: Optional["Module"] = None
         self.duet = None
         if "syft" in full_name_with_qualname(klass=type(torch_ref)):
-            debug("> Creating remote model")
+            info("> Creating remote model")
             self.is_local = False
         else:
             # otherwise we have a local model
-            debug("> Creating local model")
+            info("> Creating local model")
             self.is_local = True
 
         self.torch_ref = torch_ref
@@ -180,7 +168,7 @@ class Module:
 
     def load_state_dict(self, input: Union[str, os.PathLike, Dict[str, Any]]) -> None:
         if not self.is_local:
-            debug("> This model is remote so try calling .get()")
+            info("> This model is remote so try calling .get()")
             return None
 
         state_dict = {}
@@ -191,17 +179,17 @@ class Module:
             state_dict = dict(input)
 
         if not issubclass(type(state_dict), dict):
-            critical(
+            traceback_and_raise(
                 f"  Invalid input: {type(input)}. "
                 + "Try inputting a state_dict or .pth file."
             )
 
-        debug("> Loading model weights")
+        info("> Loading model weights")
         layers: Dict[str, Any] = {}
         for save_key, values in state_dict.items():
             parts = save_key.split(".")
             if len(parts) < 2:
-                debug(f"  state dict key is too short: {save_key}")
+                info(f"  state dict key is too short: {save_key}")
                 continue
             layer = parts[0]
             attr = parts[1]
@@ -213,19 +201,19 @@ class Module:
             local_layer = getattr(self, layer, None)
             if local_layer is not None and hasattr(local_layer, "load_state_dict"):
                 d = local_layer.load_state_dict(sd)
-                debug(f"  {layer} state dict loaded with: {d}")
+                info(f"  {layer} state dict loaded with: {d}")
             else:
-                debug(f"  Model doesnt have layer {layer}")
+                info(f"  Model doesnt have layer {layer}")
 
-        debug("> Finished loading weights")
+        info("> Finished loading weights")
         return None
 
     def state_dict(self) -> Optional[Dict[str, Any]]:
         if not self.is_local:
-            debug("> This model is remote so try calling .get()")
+            info("> This model is remote so try calling .get()")
             return None
 
-        debug("> Saving model weights")
+        info("> Saving model weights")
         model_state_dict = OrderedDict()
         for name, module in self.modules.items():
             if hasattr(module, "state_dict"):
@@ -233,12 +221,12 @@ class Module:
                     save_key = f"{name}.{k}"
                     model_state_dict[save_key] = v
 
-        debug("> Finished saving weights")
+        info("> Finished saving weights")
         return model_state_dict
 
     def save(self, path: Union[str, bytes, os.PathLike]) -> None:
         if not self.is_local:
-            debug("> This model is remote so try calling .get()")
+            info("> This model is remote so try calling .get()")
             return
 
         state_dict = self.state_dict()
@@ -246,17 +234,17 @@ class Module:
 
     def load(self, path: Union[str, os.PathLike]) -> None:
         if not self.is_local:
-            debug("> This model is remote so try calling .get()")
+            info("> This model is remote so try calling .get()")
             return
 
         self.load_state_dict(input=path)
 
     def send(self, client: Any) -> Any:
         if not self.is_local:
-            debug("> This model is remote so try calling .get()")
+            info("> This model is remote so try calling .get()")
             return
 
-        debug("> Sending local model")
+        info("> Sending local model")
 
         remote_model = copy.copy(self)
         remote_model.setup(torch_ref=client.torch)
@@ -278,7 +266,7 @@ class Module:
                 # cast to dict because OrderedDict is not supported
 
                 # get a blocking copy of the state_dict
-                debug(f"  Sending local layer: {name}")
+                info(f"  Sending local layer: {name}")
                 # cant import Dict / PrimitiveFactory due to circular imports
                 remote_state_dict_ptr = client.syft.lib.python.Dict(
                     dict(local_state_ord_dict)
@@ -287,7 +275,7 @@ class Module:
                 # weights and biases should be in there
                 remote_module_ptr.load_state_dict(remote_state_dict_ptr)
 
-        debug("\n> Finished sending local model <\n\n")
+        info("\n> Finished sending local model <\n\n")
         self.remote_model = remote_model
         return self.remote_model
 
@@ -300,11 +288,11 @@ class Module:
         delete_obj: bool = False,
     ) -> Optional["Module"]:
         if self.is_local:
-            debug("> This model is local. Maybe you meant to call .send()?")
+            info("> This model is local. Maybe you meant to call .send()?")
             return None
 
         request_name = name
-        debug("> Downloading remote model")
+        info("> Downloading remote model")
 
         local_model = copy.copy(self)
         local_model.setup(torch_ref=torch)
@@ -324,7 +312,7 @@ class Module:
             )
 
             if module_repr is None:
-                debug(f"  Request for {request_name} extra_repr failed, skipping layer")
+                info(f"  Request for {request_name} extra_repr failed, skipping layer")
                 continue
 
             args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
@@ -338,10 +326,10 @@ class Module:
                 if hasattr(module, "state_dict") and hasattr(
                     local_module, "load_state_dict"
                 ):
-                    debug("loading remote state dict")
+                    info("loading remote state dict")
                     sd_ptr = module.state_dict()
                     # get a blocking copy of the state_dict
-                    debug(f"  Downloading remote layer: {layer_name}")
+                    info(f"  Downloading remote layer: {layer_name}")
                     state_dict = sd_ptr.get(
                         request_block=request_block,
                         name=request_name,
@@ -359,14 +347,15 @@ class Module:
                         # TODO: support torch.nn.modules.module._IncompatibleKeys
                         local_module.load_state_dict(ordered_state_dict)
                     else:
-                        debug(
+                        info(
                             f"  Failed to get {layer_name} state_dict, skipping layer."
                         )
 
             except Exception as e:
-                critical(f"  Failed to download remote state for {layer_name}. {e}")
+                critical(f"  Failed to download remote state for {layer_name}.")
+                traceback_and_raise(e)
 
-        debug("\n> Finished downloading remote model <\n\n")
+        info("\n> Finished downloading remote model <\n\n")
         self.local_model = local_model
         return self.local_model
 
@@ -380,7 +369,7 @@ class Module:
 
     # easy way to check the weights have changed
     def debug_sum_layers(self) -> None:
-        debug("> Summing layers for debugging: ")
+        info("> Summing layers for debugging: ")
         for n, m in self.modules.items():
             if hasattr(m, "state_dict"):
                 if self.is_local:
@@ -391,4 +380,4 @@ class Module:
                 for k, v in state_dict.items():
                     if hasattr(v, "sum"):
                         s = v.sum().item()
-                        debug(f"  Layer {n} sum({k}): {s}")
+                        info(f"  Layer {n} sum({k}): {s}")

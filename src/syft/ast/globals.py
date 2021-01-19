@@ -12,6 +12,8 @@ from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 
+from ..logger import traceback_and_raise
+
 
 class Globals(Module):
     """The collection of frameworks held in the global namespace"""
@@ -37,7 +39,7 @@ class Globals(Module):
 
     def add_path(
         self,
-        path: Union[str, List[str]],
+        path: Union[str, List[str]] = None,  # type:  ignore
         index: int = 0,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,
@@ -50,9 +52,11 @@ class Globals(Module):
 
         if framework_name not in self.attrs:
             if framework_reference is None:
-                raise Exception(
-                    "You must pass in a framework object, the first time you add method \
-                    within the framework."
+                traceback_and_raise(
+                    Exception(
+                        "You must pass in a framework object, the first time you add method \
+                        within the framework."
+                    )
                 )
 
             self.attrs[framework_name] = Module(
@@ -68,7 +72,7 @@ class Globals(Module):
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied
         for _, update_ast in self.loaded_lib_constructors.items():
-            update_ast(ast=client)
+            update_ast(ast=client, client=client)
 
         # make sure to get any future updates
         self.registered_clients[client.id] = client

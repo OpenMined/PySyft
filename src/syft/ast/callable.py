@@ -14,12 +14,14 @@ from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
+from .util import module_type
+from ..logger import traceback_and_raise
 
 
 class Callable(ast.attribute.Attribute):
     def __init__(
         self,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[AbstractNodeClient] = None,
@@ -106,6 +108,7 @@ class Callable(ast.attribute.Attribute):
         path: Union[str, List[str]],
         index: int,
         return_type_name: Optional[str] = None,
+        framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
         """
@@ -121,14 +124,13 @@ class Callable(ast.attribute.Attribute):
               return_type_name (Optional[str]): The return type name of the given action as a
                  string (the full path to it, similar to path_and_name).
         """
-
         if index >= len(path) or path[index] in self.attrs:
             return
 
         attr_ref = getattr(self.object_ref, path[index])
 
-        if isinstance(attr_ref, ModuleType):
-            raise Exception("Module cannot be attr of callable.")
+        if isinstance(attr_ref, module_type):
+            traceback_and_raise(Exception("Module cannot be attr of callable."))
 
         self.attrs[path[index]] = ast.callable.Callable(
             path_and_name=".".join(path[: index + 1]),

@@ -90,7 +90,6 @@ from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
-from loguru import logger
 
 # syft relative
 from ...core.common.event_loop import loop
@@ -102,6 +101,7 @@ from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug, traceback_and_raise
 from ..services.signaling_service import CloseConnectionMessage
 
 message_cooldown = 0.0
@@ -157,9 +157,7 @@ class WebRTCConnection(BidirectionalConnection):
             # asyncio.ensure_future(self.heartbeat())
 
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection __init__. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
@@ -219,9 +217,7 @@ class WebRTCConnection(BidirectionalConnection):
             # Return the Offer local_description payload.
             return local_description
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection _set_offer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def _set_answer(self, payload: str) -> str:
@@ -262,9 +258,8 @@ class WebRTCConnection(BidirectionalConnection):
 
             return await self._process_answer(payload=payload)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection _set_answer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
+            raise Exception("mypy workaound: should not get here")
 
     @syft_decorator(typechecking=True)
     async def _process_answer(self, payload: str) -> Union[str, None]:
@@ -303,9 +298,7 @@ class WebRTCConnection(BidirectionalConnection):
                     # Returns the answer peer's local description
                     return local_description
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection _process_answer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
         return None
 
     @syft_decorator(typechecking=True)
@@ -323,7 +316,6 @@ class WebRTCConnection(BidirectionalConnection):
                 await asyncio.sleep(message_cooldown)
                 # If self.producer_pool.get() returned a message
                 # send it as a binary using the RTCDataChannel.
-                # logger.critical(f"> Sending MSG {msg.message} ID: {msg.id}")
                 data = msg.to_bytes()
                 data_len = len(data)
 
@@ -361,9 +353,7 @@ class WebRTCConnection(BidirectionalConnection):
                 else:
                     self.channel.send(data)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection producer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     def close(self) -> None:
         try:
@@ -375,18 +365,14 @@ class WebRTCConnection(BidirectionalConnection):
             # Finish async tasks related with this connection
             self._finish_coroutines()
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection close. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     def _finish_coroutines(self) -> None:
         try:
             asyncio.run(self.peer_connection.close())
             self.__producer_task.cancel()
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection _finish_coroutines. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def consumer(self, msg: bytes) -> None:
@@ -428,9 +414,7 @@ class WebRTCConnection(BidirectionalConnection):
             else:
                 await self.consumer_pool.put(_msg)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection consumer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
@@ -445,18 +429,16 @@ class WebRTCConnection(BidirectionalConnection):
         # Execute node services now
         try:
             r = random.randint(0, 100000)
-            logger.debug(
+            debug(
                 f"> Before recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
             )
             reply = self.node.recv_immediate_msg_with_reply(msg=msg)
-            logger.debug(
+            debug(
                 f"> After recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
             )
             return reply
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection recv_immediate_msg_with_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
@@ -467,17 +449,15 @@ class WebRTCConnection(BidirectionalConnection):
         """
         try:
             r = random.randint(0, 100000)
-            logger.debug(
+            debug(
                 f"> Before recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
             )
             self.node.recv_immediate_msg_without_reply(msg=msg)
-            logger.debug(
+            debug(
                 f"> After recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
             )
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection recv_immediate_msg_without_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
@@ -489,9 +469,8 @@ class WebRTCConnection(BidirectionalConnection):
         try:
             self.node.recv_eventual_msg_without_reply(msg=msg)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection recv_eventual_msg_without_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
+            raise Exception("mypy workaound: should not get here")
 
     @syft_decorator(typechecking=False)
     def send_immediate_msg_with_reply(
@@ -506,9 +485,8 @@ class WebRTCConnection(BidirectionalConnection):
         try:
             return asyncio.run(self.send_sync_message(msg=msg))
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection send_immediate_msg_with_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
+            raise Exception("mypy workaound: should not get here")
 
     @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
@@ -522,9 +500,7 @@ class WebRTCConnection(BidirectionalConnection):
             self.producer_pool.put_nowait(msg)
             time.sleep(message_cooldown)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection send_immediate_msg_without_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
@@ -537,9 +513,7 @@ class WebRTCConnection(BidirectionalConnection):
             asyncio.run(self.producer_pool.put(msg))
             time.sleep(message_cooldown)
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     async def send_sync_message(
@@ -560,16 +534,14 @@ class WebRTCConnection(BidirectionalConnection):
             # without blocking async methods, we need to use queues.
 
             # Enqueue the message to be sent to the target.
-            logger.debug(f"> Before send_sync_message producer_pool.put blocking {r}")
+            debug(f"> Before send_sync_message producer_pool.put blocking {r}")
             # self.producer_pool.put_nowait(msg)
             await self.producer_pool.put(msg)
-            logger.debug(f"> After send_sync_message producer_pool.put blocking {r}")
+            debug(f"> After send_sync_message producer_pool.put blocking {r}")
 
             # Wait for the response checking the consumer queue.
-            logger.debug(
-                f"> Before send_sync_message consumer_pool.get blocking {r} {msg}"
-            )
-            logger.debug(
+            debug(f"> Before send_sync_message consumer_pool.get blocking {r} {msg}")
+            debug(
                 f"> Before send_sync_message consumer_pool.get blocking {r} {msg.message}"
             )
             # before = time.time()
@@ -580,12 +552,10 @@ class WebRTCConnection(BidirectionalConnection):
             #  asyncio.run()
             # self.async_check(before=before, timeout_secs=timeout_secs, r=r)
 
-            logger.debug(f"> After send_sync_message consumer_pool.get blocking {r}")
+            debug(f"> After send_sync_message consumer_pool.get blocking {r}")
             return response
         except Exception as e:
-            log = f"Got an exception in WebRTCConnection send_eventual_msg_without_reply. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     async def async_check(
         self, before: float, timeout_secs: int, r: float
@@ -597,13 +567,11 @@ class WebRTCConnection(BidirectionalConnection):
                 return response
             except Exception as e:
                 now = time.time()
-                logger.debug(
-                    f"> During send_sync_message consumer_pool.get blocking {r}. {e}"
-                )
+                debug(f"> During send_sync_message consumer_pool.get blocking {r}. {e}")
                 if now - before > timeout_secs:
-                    log = f"send_sync_message timeout {timeout_secs} {r}"
-                    logger.critical(log)
-                    raise Exception(log)
+                    traceback_and_raise(
+                        Exception(f"send_sync_message timeout {timeout_secs} {r}")
+                    )
 
     # async def heartbeat(self) -> None:
     #     producer_watermark = 0
@@ -620,19 +588,15 @@ class WebRTCConnection(BidirectionalConnection):
     #                 f"{self.node.name} PQ: {psize} / {producer_watermark} - "
     #                 + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
     #             )
-    #             print(log)
-    #             logger.critical(log)
+    #             critical(log)
 
     #             if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
     #                 log = f"☠️ HEART BEAT DEAD! {self.node.name}"
-    #                 print(log)
-    #                 logger.critical(log)
+    #                 critical(log)
     #             # else:
     #             #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
-    #             #     print(log)
-    #             #     logger.critical(log)
+    #             #     critical(log)
     #         except Exception as e:
     #             log = f"HEART BEAT exception in {self.node.name}. {e}"
-    #             print(log)
-    #             logger.critical(log)
-    #             raise Exception(log)
+    #             critical(log)
+    #             traceback_and_raise(Exception(log))

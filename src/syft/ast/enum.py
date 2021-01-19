@@ -13,7 +13,7 @@ class EnumAttribute(ast.attribute.Attribute):
     def __init__(
         self,
         parent: ast.attribute.Attribute,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         return_type_name: Optional[str] = None,
         client: Optional[AbstractNodeClient] = None,
     ) -> None:
@@ -75,6 +75,9 @@ class EnumAttribute(ast.attribute.Attribute):
         Returns:
             Enum: the enum object from the parent object reference.
         """
+        if self.path_and_name is None:
+            raise ValueError("Path and name should not be None")
+
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def __call__(self, *args, **kwargs) -> None:

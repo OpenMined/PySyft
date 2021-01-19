@@ -2,6 +2,8 @@
 from typing import Any
 from typing import Callable as CallableT
 from typing import Optional
+from typing import List
+from typing import Dict
 from typing import Union
 
 # syft relative
@@ -22,7 +24,7 @@ class StaticAttribute(ast.attribute.Attribute):
     def __init__(
         self,
         parent: ast.attribute.Attribute,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
     ):
@@ -59,9 +61,15 @@ class StaticAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_value(self) -> Any:
+        if self.path_and_name is None:
+            raise ValueError("path_and_none should not be None")
+
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
+        if self.path_and_name is None:
+            raise ValueError("path_and_none should not be None")
+
         setattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1], set_value)
 
     def set_remote_value(self, set_arg: Any) -> None:
@@ -91,10 +99,10 @@ class StaticAttribute(ast.attribute.Attribute):
         self.client.send_immediate_msg_without_reply(msg=cmd)
         return result
 
-    def __call__(
+    def __call__(  # type: ignore
         self, action: StaticAttributeAction
     ) -> Optional[Union["ast.callable.Callable", CallableT]]:
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args, **kwargs):
+    def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
         raise ValueError("MAKE PROPER SCHEMA")

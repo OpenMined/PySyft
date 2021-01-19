@@ -12,7 +12,7 @@ from .. import ast
 class Property(ast.attribute.Attribute):
     def __init__(
         self,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,

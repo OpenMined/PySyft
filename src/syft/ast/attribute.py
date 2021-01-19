@@ -29,7 +29,7 @@ class Attribute:
     def __init__(
         self,
         client: Optional[AbstractNodeClient],
-        path_and_name: str,
+        path_and_name: Optional[str] = None,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
     ):
@@ -97,8 +97,7 @@ class Attribute:
             if sub_prop is None:
                 continue
 
-            for sub in sub_prop:
-                container.append(sub)
+            container.extend(sub_prop)
 
     @property
     def classes(self) -> List["ast.klass.Class"]:
@@ -174,12 +173,12 @@ class Attribute:
          Returns:
              str: The name of the current attribute.
         """
-
-        return self.path_and_name.rsplit(".", maxsplit=1)[-1]
+        path_and_name = self.path_and_name if self.path_and_name else ""
+        return path_and_name.rsplit(".", maxsplit=1)[-1]
 
     def add_path(
         self,
-        path: Union[str, List[str]],
+        path: List[str],
         index: int,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,

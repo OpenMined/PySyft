@@ -3,20 +3,26 @@ The following test suit serves as a set of examples of how to integrate differen
 into our AST and use them.
 """
 # stdlib
+from typing import Any as TypeAny
+from typing import Union as TypeUnion
 from importlib import reload
 
 # syft absolute
 import syft
+import pytest
 from syft.ast.globals import Globals
 from syft.core.node.common.client import Client
-from syft.lib import create_lib_ast
-from syft.lib import registered_callbacks
+from syft.lib import lib_ast
 
-# syft relative
 from . import module_test
 
 
-def create_AST(client: Client) -> Globals:
+def update_ast_test(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
+    test_ast = create_ast_test(client=client)
+    ast.add_attr(attr_name="module_test", attr=test_ast.attrs["module_test"])
+
+
+def create_ast_test(client: Client) -> Globals:
     ast = Globals(client)
 
     methods = [
@@ -45,11 +51,19 @@ def create_AST(client: Client) -> Globals:
     return ast
 
 
+@pytest.fixture(autouse=True, scope="module")
+def registr_module_test() -> None:
+    # Make lib_ast contain the specific methods/attributes
+    update_ast_test(ast=syft.lib_ast)
+
+    # Make sure that when we register a new client it would update the specific AST
+    lib_ast.loaded_lib_constructors["module_test"] = update_ast_test
+
+
 def get_custom_client() -> Client:
-    registered_callbacks["module_test"] = create_AST
-    syft.lib_ast = create_lib_ast(None)
     alice = syft.VirtualMachine(name="alice")
     alice_client = alice.get_root_client()
+
     return alice_client
 
 

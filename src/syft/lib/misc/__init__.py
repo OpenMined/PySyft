@@ -14,6 +14,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
 from .union import lazy_pairing
+from ...logger import traceback_and_raise
 
 
 def get_allowed_functions(
@@ -98,8 +99,10 @@ def create_union_ast(
                     if func:
                         return func(*args, **kwargs)
                     else:
-                        raise ValueError(
-                            f"Can't call {target_method} on {klass} with the instance type of {type(self)}"
+                        traceback_and_raise(
+                            ValueError(
+                                f"Can't call {target_method} on {klass} with the instance type of {type(self)}"
+                            )
                         )
 
                 return func

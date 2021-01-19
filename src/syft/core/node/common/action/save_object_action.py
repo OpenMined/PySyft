@@ -7,6 +7,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
@@ -77,7 +78,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         if serialize_method is None:
             serialize_method = getattr(self.obj, "serialize", None)
         if serialize_method is None:
-            raise Exception(f"{type(self.obj)} has no .serialize() method")
+            traceback_and_raise(
+                Exception(f"{type(self.obj)} has no .serialize() method")
+            )
         obj_ob = serialize_method()
         addr = self.address.serialize()
 

@@ -3,7 +3,6 @@ import inspect
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -13,7 +12,7 @@ from .. import ast
 from ..ast.callable import Callable
 
 
-def is_static_method(host_object, attr):
+def is_static_method(host_object, attr):  # type: ignore
     """Test if a value of a class is static method.
 
     example::
@@ -79,7 +78,7 @@ class Module(ast.attribute.Attribute):
         if attr_ref not in self.lookup_cache and path is not None:
             self.lookup_cache[attr_ref] = path
 
-        self.attrs[attr_name] = attr
+        self.attrs[attr_name] = attr  # type: ignore
 
     def __call__(
         self,
@@ -114,7 +113,7 @@ class Module(ast.attribute.Attribute):
 
     def add_path(
         self,
-        path: Union[str, List[str]],
+        path: List[str],
         index: int = 0,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,
@@ -148,7 +147,7 @@ class Module(ast.attribute.Attribute):
                     attr=klass,
                 )
             elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
-                is_static = is_static_method(self.object_ref, path[index])
+                is_static = is_static_method(self.object_ref, path[index])  # type: ignore
 
                 self.add_attr(
                     attr_name=path[index],
