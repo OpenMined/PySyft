@@ -227,18 +227,8 @@ class Domain(Node):
         log_local = handler.get("log_local", None)
         element_quota = handler.get("element_quota", None)
 
-        # How to understand handler["tags"]?
-        #   - Each tag in handler["tags"] is considered as a constrain condition
-        #   - If there are more than one tags in handler["tags"], the total constrain
-        #   condition are the `and` of each condition
-        #   - For example, if hanlder["tags"] is ["a_little_unsafe", "needed_badly"],
-        #   then it means, if a requested object is tagged as "a_little_unsafe" and
-        #   "needed_badly", then it's okay to accept this request;
-        #   but if a requested object is tagged only as "a_little_unsafe", then it's not
-        #   okay to accept it.
-        #   - So, a handler only handle a request if request.object_tags is a superset of
-        #   handler["tags"]
-        if not set(request.object_tags).issuperset(set(tags)):
+        # We match a handler and a request when they have a same set of tags
+        if not set(request.object_tags) == set(tags):
             logger.debug(
                 f"HANDLER Ignoring request handler {handler} against {request}"
             )
