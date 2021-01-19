@@ -126,7 +126,7 @@ class Client(AbstractNodeClient):
         setattr(self, attr_name, attr)
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = create_lib_ast(self)
+        self.lib_ast = create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)

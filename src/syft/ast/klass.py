@@ -434,8 +434,6 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            print("module_test MATII")
-            print(e)
             raise e
 
     def __getattr__(self, item: str) -> Any:

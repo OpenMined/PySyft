@@ -58,8 +58,7 @@ class Attribute:
             if sub_prop is None:
                 continue
 
-            for sub in sub_prop:
-                container.append(sub)
+            container.extend(sub_prop)
 
     @property
     def classes(self) -> List["ast.klass.Class"]:
