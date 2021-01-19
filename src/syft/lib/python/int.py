@@ -333,7 +333,7 @@ class Int(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        tpl = super().as_integer_ratio()  # type: ignore
+        tpl = super().as_integer_ratio()
         return PrimitiveFactory.generate_primitive(value=tpl)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
