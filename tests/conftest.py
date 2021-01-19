@@ -19,7 +19,7 @@ from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
 from syft import logger
 
-import sys
+# import sys
 
 logger.remove()
 # logger.add(sys.stderr, level="ERROR")
