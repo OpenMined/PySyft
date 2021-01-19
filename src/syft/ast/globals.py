@@ -71,7 +71,7 @@ class Globals(Module):
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied
         for _, update_ast in self.loaded_lib_constructors.items():
-            update_ast(ast=client, client=client)
+            update_ast(ast_or_client=client)
 
         # make sure to get any future updates
         self.registered_clients[client.id] = client

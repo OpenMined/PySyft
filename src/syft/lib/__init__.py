@@ -71,10 +71,10 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             update_ast = getattr(vendor_ast, "update_ast", None)
             if update_ast is not None:
                 global lib_ast
-                update_ast(ast=lib_ast)
+                update_ast(ast_or_client=lib_ast)
 
                 for _, client in lib_ast.registered_clients.items():
-                    update_ast(ast=client, client=client)
+                    update_ast(ast_or_client=client)
 
                 # cache the constructor for future created clients
                 lib_ast.loaded_lib_constructors[lib] = update_ast
