@@ -76,7 +76,6 @@ class Iterator(PyPrimitive):
                     try:
                         obj = next(_obj_ref)
                     except Exception as e:
-                        # print(f"{type(e)} on __next__ in {type(self)}. {e}")
                         if type(e) is StopIteration:
                             raise e
                         if type(e) is AttributeError:
@@ -113,5 +112,4 @@ class Iterator(PyPrimitive):
                 self._index += 1
             return obj
         except Exception as e:
-            # print(f"{type(e)} on __next__ in {type(self)}. {e}")
             raise e

@@ -3,11 +3,11 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import debug, critical, traceback_and_raise
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -69,7 +69,9 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
                 obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
                 ser = obj.serialize()
             else:
-                raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
+                traceback_and_raise(
+                    Exception(f"Cannot send {type(self.obj)} as StorableObject")
+                )
 
         return GetObjectResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -157,7 +159,7 @@ class GetObjectAction(ImmediateActionWithReply):
                     + f"Possible dangling Pointer. {e}"
                 )
 
-                raise Exception(log)
+                traceback_and_raise(Exception(log))
 
             # if you are not the root user check if your verify_key has read_permission
             if (
@@ -168,7 +170,7 @@ class GetObjectAction(ImmediateActionWithReply):
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
                     + "Please submit a request."
                 )
-                raise AuthorizationException(log)
+                traceback_and_raise(AuthorizationException(log))
 
             obj = storeable_object.data
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
@@ -177,7 +179,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 try:
                     # TODO: send EventualActionWithoutReply to delete the object at the node's
                     # convenience instead of definitely having to delete it now
-                    logger.debug(
+                    debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
                     node.store.delete(key=self.id_at_location)
@@ -185,17 +187,16 @@ class GetObjectAction(ImmediateActionWithReply):
                     log = (
                         f"> GetObjectAction delete exception {self.id_at_location} {e}"
                     )
-                    logger.critical(log)
+                    critical(log)
             else:
-                logger.debug(f"Copying Object with ID {self.id_at_location} in store.")
+                debug(f"Copying Object with ID {self.id_at_location} in store.")
 
-            logger.debug(
+            debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
             )
             return msg
         except Exception as e:
-            logger.error(e)
-            raise e
+            traceback_and_raise(e)
 
     @property
     def pprint(self) -> str:

@@ -8,7 +8,6 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # Fixes python3.6
 # however, API changed between versions so typing_extensions smooths this over:
@@ -17,6 +16,7 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logger import debug, traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
@@ -144,7 +144,7 @@ class Serializable(metaclass=MetaSerializable):
         :rtype: Serializable
 
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -159,7 +159,7 @@ class Serializable(metaclass=MetaSerializable):
         :rtype: Message
         """
 
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -178,7 +178,7 @@ class Serializable(metaclass=MetaSerializable):
         :rtype: GeneratedProtocolMessageType
         """
 
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     def get_wrapped_type() -> Type:
@@ -189,7 +189,7 @@ class Serializable(metaclass=MetaSerializable):
         :return: the wrapped type
         :rtype: type
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def to_proto(self) -> Message:
@@ -259,7 +259,7 @@ class Serializable(metaclass=MetaSerializable):
         """
 
         if to_bytes:
-            logger.debug(f"Serializing {type(self)}")
+            debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
             blob = self._object2proto().SerializeToString()
@@ -271,10 +271,12 @@ class Serializable(metaclass=MetaSerializable):
         elif to_proto:
             return type(self)._object2proto(self)
         else:
-            raise Exception(
-                """You must specify at least one deserialization format using
+            traceback_and_raise(
+                Exception(
+                    """You must specify at least one deserialization format using
                             one of the arguments of the serialize() method such as:
                             to_proto, to_bytes."""
+                )
             )
 
     @staticmethod

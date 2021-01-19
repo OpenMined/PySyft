@@ -18,12 +18,12 @@ from typing import TypeVar
 from typing import Union
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logger import debug, error, critical, traceback_and_raise
 from ....lib import lib_ast
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
@@ -122,14 +122,14 @@ class Node(AbstractNode):
             try:
                 self.store = DiskObjectStore(db_path=db_path)
                 log = f"Opened DiskObjectStore at {db_path}."
-                logger.debug(log)
+                debug(log)
             except Exception as e:
                 log = f"Failed to open DiskObjectStore at {db_path}. {e}"
-                logger.critical(log)
+                critical(log)
         else:
             self.store = MemoryStore()
             log = "Created MemoryStore."
-            logger.debug(log)
+            debug(log)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -300,11 +300,11 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def known_child_nodes(self) -> List[Address]:
-        logger.debug(f"> {self.pprint} Getting known Children Nodes")
+        debug(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
             return [
                 client
@@ -325,12 +325,12 @@ class Node(AbstractNode):
                 )
             ]
         else:
-            logger.debug(f"> Node {self.pprint} has no children")
+            debug(f"> Node {self.pprint} has no children")
             return []
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
@@ -340,7 +340,7 @@ class Node(AbstractNode):
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
-            logger.debug(
+            debug(
                 f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
             )
             # try to process message
@@ -349,7 +349,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
-            logger.error(e)
+            error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
@@ -364,10 +364,10 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
-                logger.error("Unable to format the private log message")
+                error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            logger.error(private_log_msg)
+            error(private_log_msg)
 
             # send the public exception back
             response = ExceptionMessage(
@@ -384,14 +384,14 @@ class Node(AbstractNode):
             f"> {self.pprint} Signing {res_msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
         )
-        logger.debug(output)
+        debug(output)
         return res_msg
 
     @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        logger.debug(
+        debug(
             f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
         )
         try:
@@ -399,7 +399,7 @@ class Node(AbstractNode):
                 msg=msg, router=self.immediate_msg_without_reply_router
             )
         except Exception as e:
-            logger.error(f"Exception processing {msg.message}. {e}")
+            error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
             if isinstance(e, DuplicateRequestException):
                 private_log_msg = "An DuplicateRequestException has been triggered"
@@ -414,17 +414,17 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
-                logger.error("Unable to format the private log message")
+                error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            logger.error(private_log_msg)
+            error(private_log_msg)
 
             # we still want to raise for now due to certain exceptions we expect
             # in tests
             if not isinstance(e, DuplicateRequestException):
-                logger.error(e)
+                error(e)
                 # TODO: A lot of tests are depending on this raise which seems bad
-                raise e
+                traceback_and_raise(e)
 
             # TODO: finish code to send ExceptionMessage back
             # if isinstance(e, DuplicateRequestException):
@@ -456,15 +456,15 @@ class Node(AbstractNode):
 
         self.message_counter += 1
 
-        logger.debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
+        debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
         if self.message_is_for_me(msg=msg):
-            logger.debug(
+            debug(
                 f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
             )
             # Process Message here
             if not msg.is_valid:
-                logger.error(f"Message is not valid. {msg}")
-                raise Exception("Message is not valid.")
+                error(f"Message is not valid. {msg}")
+                traceback_and_raise(Exception("Message is not valid."))
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
@@ -474,9 +474,9 @@ class Node(AbstractNode):
                     + f"{type(msg.message)} because there is no service running to process it."
                     + f"{e}"
                 )
-                logger.error(log)
+                error(log)
                 self.ensure_services_have_been_registered_error_if_not()
-                raise KeyError(log)
+                traceback_and_raise(KeyError(log))
 
             result = service.process(
                 node=self,
@@ -486,7 +486,7 @@ class Node(AbstractNode):
             return result
 
         else:
-            logger.debug(
+            debug(
                 f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
             )
             # Forward message onwards
@@ -505,9 +505,11 @@ class Node(AbstractNode):
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
-            raise Exception(
-                "Please call _register_services on node. This seems to have"
-                "been skipped for some reason."
+            traceback_and_raise(
+                Exception(
+                    "Please call _register_services on node. This seems to have"
+                    "been skipped for some reason."
+                )
             )
 
     @syft_decorator(typechecking=True)
