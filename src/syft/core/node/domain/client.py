@@ -107,11 +107,8 @@ class RequestQueueClient:
 
     def clear_handlers(self) -> None:
         for handler in self.handlers.handlers:
-            new_dict = {}
-            del handler["created_time"]
-            for k, v in handler.items():
-                new_dict[str(k)] = v
-            self.remove_handler(**new_dict)
+            id_str = str(handler["id"].value).replace("-", "")
+            self.remove_handler(id_str)
 
     def _validate_options(
         self,
