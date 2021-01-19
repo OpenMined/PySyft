@@ -14,7 +14,6 @@ from .module import Module
 
 
 class Globals(Module):
-    _copy: Optional["copyType"]
     registered_clients: Dict[UID, Any] = {}
     loaded_lib_constructors: Dict[str, CallableT] = {}
 
@@ -32,7 +31,7 @@ class Globals(Module):
         )
 
         if not _path:
-            raise ValueError("NAKE PROPER SCHEMA")
+            raise ValueError("MAKE PROPER SCHEMA")
 
         return self.attrs[_path[index]](path=_path, index=index + 1, obj_type=obj_type)
 
@@ -64,14 +63,7 @@ class Globals(Module):
             )
 
         attr = self.attrs[framework_name]
-        attr.add_path(  # type: ignore
-            path=path, index=1, return_type_name=return_type_name
-        )
-
-    def copy(self, client) -> Optional["Globals"]:
-        if self._copy is not None:
-            return self._copy(client)
-        return None
+        attr.add_path(path=path, index=1, return_type_name=return_type_name)
 
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied
@@ -80,6 +72,3 @@ class Globals(Module):
 
         # make sure to get any future updates
         self.registered_clients[client.id] = client
-
-
-copyType = CallableT[[], Globals]

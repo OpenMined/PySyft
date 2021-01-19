@@ -39,7 +39,7 @@ class Attribute:
         self.client = client
         for _, attr in self.attrs.items():
             if hasattr(attr, "set_client"):
-                attr.set_client(client=client)  # type: ignore
+                attr.set_client(client=client)
 
     def __call__(
         self,
@@ -99,8 +99,7 @@ class Attribute:
         if _path[0] in self.attrs:
             return self.attrs[_path[0]].query(path=_path[1:])
 
-        print(_path)
-        raise ValueError(f"Path {'.'.join(path)} not present in the AST.")
+        raise ValueError(f"Path {'.'.join(_path)} not present in the AST.")
 
     @property
     def name(self) -> str:

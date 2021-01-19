@@ -67,7 +67,10 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         if not isinstance(ser, StorableObject_PB):
             if hasattr(self.obj, "serializable_wrapper_type"):
                 obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
-                ser = obj.serialize()
+                if hasattr(obj, "sy_serialize"):
+                    ser = obj.sy_serialize()
+                else:
+                    ser = obj.serialize()
             else:
                 raise Exception(f"Cannot send {type(self.obj)} as StorableObject")
 

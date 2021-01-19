@@ -17,7 +17,7 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
-from ....lib import lib_ast
+from ....lib import create_lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
@@ -81,7 +81,7 @@ class Client(AbstractNodeClient):
         else:
             self.verify_key = verify_key
 
-        self.install_supported_frameworks(lib_ast=lib_ast)
+        self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
 
@@ -125,13 +125,8 @@ class Client(AbstractNodeClient):
         # so you can do: client.package.class.method
         setattr(self, attr_name, attr)
 
-    def install_supported_frameworks(self, lib_ast: Any) -> None:
-        # we create an initial copy of the startup AST
-        # this re-executes all the create_ast functions just for this client
-        self.lib_ast = lib_ast.copy(self)
-
-        # first time we want to register for future updates
-        lib_ast.register_updates(self)
+    def install_supported_frameworks(self) -> None:
+        self.lib_ast = create_lib_ast(self)
 
         if self.lib_ast is not None:
             for attr_name, attr in self.lib_ast.attrs.items():
@@ -144,7 +139,7 @@ class Client(AbstractNodeClient):
 
                 if lib_attr is not None:
                     python_attr = getattr(lib_attr, "python", None)
-                    self.add_attr(attr_name="python", attr=python_attr)
+                    setattr(self, "python", python_attr)
 
             except Exception as e:
                 print(f"Failed to set python attribute on client. {e}")
