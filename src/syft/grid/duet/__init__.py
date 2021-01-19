@@ -1,4 +1,5 @@
 # stdlib
+import sys
 import json
 import os
 from pathlib import Path
@@ -62,7 +63,6 @@ def get_available_network() -> str:
 def begin_duet_logger(my_domain: Domain) -> None:
     # stdlib
     from contextlib import contextmanager
-    import sys
     import threading
     import time
 

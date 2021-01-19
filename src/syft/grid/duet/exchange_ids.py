@@ -9,7 +9,7 @@ from typing import Tuple as TypeTuple
 
 # syft relative
 from .bcolors import bcolors
-from ...logger import info, traceback_and_raise
+from ...logger import info, debug, traceback_and_raise
 
 
 class DuetCredentialExchanger:
@@ -129,23 +129,31 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
 
         # get Client ID
         client_id = ""
-        while client_id == "":
+        for retry in range(10):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
+
                     if "client_id" in loopback_config:
                         client_id = str(loopback_config["client_id"])
-                    else:
-                        time.sleep(0.01)
-            except Exception as e:
-                info(e)
+                debug("client not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                debug("Cancelling server connection")
                 break
+            except Exception as e:
+                info("server config load failed", self.file_path, e)
+                time.sleep(0.5)
+
+        if client_id == "":
+            raise Exception("failed to load client ID")
+
         return client_id
 
     def _client_exchange(self, credential: str) -> str:
         loopback_config = {}
         server_id = ""
-        while server_id == "":
+        for retry in range(10):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
@@ -156,11 +164,18 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         and "client_id" not in loopback_config
                     ):
                         server_id = str(loopback_config["server_id"])
-                    else:
-                        time.sleep(0.01)
-            except Exception as e:
-                info(e)
+                        break
+                debug("server not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                debug("Cancelling client connection")
                 break
+            except Exception as e:
+                info("client config load failed", self.file_path, e)
+                time.sleep(0.5)
+
+        if server_id == "":
+            raise Exception("failed to load client ID")
 
         loopback_config["client_id"] = credential
 
