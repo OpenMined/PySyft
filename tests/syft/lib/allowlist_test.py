@@ -211,7 +211,12 @@ if os.path.exists(SUPPORT_FILE_PATH):
     diff = time.time() - file_stat.st_mtime
     if diff > 0.1:
         # only delete on the first run
-        os.unlink(SUPPORT_FILE_PATH)
+        for retry in range(5):
+            try:
+                os.unlink(SUPPORT_FILE_PATH)
+                break
+            except BaseException:
+                time.sleep(1)
 
 
 # write test debug info to make it easy to debug long running tests with large output
