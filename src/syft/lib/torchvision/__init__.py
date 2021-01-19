@@ -9,6 +9,7 @@ import torchvision as tv
 # syft relative
 from ...ast.globals import Globals
 from .allowlist import allowlist
+from ...logger import critical
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
@@ -42,7 +43,7 @@ def create_torchvision_ast() -> Globals:
                 return_type_name=return_type,
             )
         else:
-            print(
+            critical(
                 f"Skipping torchvision.{method} not supported in {TORCHVISION_VERSION}"
             )
 

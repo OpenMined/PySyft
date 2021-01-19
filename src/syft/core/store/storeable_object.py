@@ -7,7 +7,6 @@ from typing import Optional
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft absolute
 import syft as sy
@@ -21,6 +20,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from ...logger import critical, traceback
 
 
 class StorableObject(AbstractStorableObject):
@@ -201,8 +201,8 @@ class StorableObject(AbstractStorableObject):
                 )
         except Exception as e:
             # torch.return_types.* namedtuple cant setattr
-            log = f"StorableObject {type(obj_type)} cant set attributes {e}"
-            logger.error(log)
+            critical(f"StorableObject {type(obj_type)} cant set attributes")
+            traceback(e)
 
         return result
 

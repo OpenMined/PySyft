@@ -8,12 +8,12 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import critical, traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -93,7 +93,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = node.store.get_object(key=self._self.id_at_location)
         if resolved_self is None:
-            logger.critical(
+            critical(
                 f"execute_action on {self.path} failed due to missing object"
                 + f" at: {self._self.id_at_location}"
             )
@@ -144,7 +144,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     method = getattr(resolved_self.data, method_name, None)
                     result = method(*upcasted_args, **upcasted_kwargs)
                 except Exception as e:
-                    print(
+                    critical(
                         f"Unable to resolve method {self.path} on {resolved_self}. {e}"
                     )
                     result = method(
@@ -178,7 +178,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     assert result.id == self.id_at_location
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
-                    raise Exception(err)
+                    traceback_and_raise(Exception(err))
 
         # QUESTION: There seems to be return value tensors that have no id
         # and get auto wrapped? So is this code not correct?

@@ -9,7 +9,7 @@ from typing import Tuple as TypeTuple
 
 # syft relative
 from .bcolors import bcolors
-from .logging import try_print
+from ...logger import info, debug, traceback_and_raise
 
 
 class DuetCredentialExchanger:
@@ -25,7 +25,7 @@ class DuetCredentialExchanger:
         return self
 
     def run(self, credential: str) -> str:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
@@ -39,21 +39,21 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
 
     def _server_exchange(self, credential: str) -> str:
         # send Server ID
-        try_print("♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC)
+        info("♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC)
 
-        try_print()
-        try_print(
+        info()
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following code to your Duet Partner!"
         )
-        try_print("\nimport syft as sy")
-        try_print('duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")')
+        info("\nimport syft as sy")
+        info('duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")')
 
         # get Client ID
-        try_print(
+        info(
             "\n♫♫♫ > "
             + bcolors.HEADER
             + "STEP 2:"
@@ -65,22 +65,22 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
             if len(client_id) == 32:
                 break
             else:
-                try_print("    > Error: Invalid Client ID. Please try again.")
-        try_print()
+                info("    > Error: Invalid Client ID. Please try again.")
+        info()
         return client_id
 
     def _client_exchange(self, credential: str) -> None:
         # send client ID
-        try_print(
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following Duet Client ID to your duet partner!"
         )
-        try_print("♫♫♫ > Duet Client ID: " + bcolors.BOLD + credential + bcolors.ENDC)
-        try_print()
-        try_print("♫♫♫ > ...waiting for partner to connect...")
+        info("♫♫♫ > Duet Client ID: " + bcolors.BOLD + credential + bcolors.ENDC)
+        info()
+        info("♫♫♫ > ...waiting for partner to connect...")
 
 
 def get_loopback_path() -> str:
@@ -109,17 +109,17 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
             return self._server_exchange(credential=self.credential)
 
     def _server_exchange(self, credential: str) -> str:
-        try_print()
-        try_print(
+        info()
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following code to your Duet Partner!"
         )
-        try_print("\nimport syft as sy")
-        try_print("duet = sy.join_duet(loopback=True)")
-        try_print()
+        info("\nimport syft as sy")
+        info("duet = sy.join_duet(loopback=True)")
+        info()
 
         # send Server ID
         loopback_config = {}
@@ -136,15 +136,13 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
 
                     if "client_id" in loopback_config:
                         client_id = str(loopback_config["client_id"])
-                        break
-
-                try_print("client not ready")
+                debug("client not ready")
                 time.sleep(0.5)
             except KeyboardInterrupt:
-                try_print("Cancelling server connection")
+                debug("Cancelling server connection")
                 break
             except Exception as e:
-                try_print("server config load failed", self.file_path, e)
+                info("server config load failed", self.file_path, e)
                 time.sleep(0.5)
 
         if client_id == "":
@@ -167,13 +165,13 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                     ):
                         server_id = str(loopback_config["server_id"])
                         break
-                try_print("server not ready")
+                debug("server not ready")
                 time.sleep(0.5)
             except KeyboardInterrupt:
-                try_print("Cancelling client connection")
+                debug("Cancelling client connection")
                 break
             except Exception as e:
-                try_print("client config load failed", self.file_path, e)
+                info("client config load failed", self.file_path, e)
                 time.sleep(0.5)
 
         if server_id == "":

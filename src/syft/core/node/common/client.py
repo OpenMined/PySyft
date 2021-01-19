@@ -9,7 +9,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
@@ -17,6 +16,7 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
+from ....logger import critical, debug, error, traceback_and_raise
 from ....lib import lib_ast
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -147,10 +147,10 @@ class Client(AbstractNodeClient):
                     if python_attr is not None:
                         self.add_attr(attr_name="python", attr=python_attr)
             except Exception as e:
-                print(f"Failed to set python attribute on client. {e}")
+                critical(f"Failed to set python attribute on client. {e}")
 
     def add_me_to_my_address(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @syft_decorator(typechecking=True)
     def register_in_memory_client(self, client: AbstractNodeClient) -> None:
@@ -165,15 +165,19 @@ class Client(AbstractNodeClient):
                     client.address.target_id.id
                 ] = client
             else:
-                raise Exception(
-                    "Unable to save client reference without VirtualClientConnection"
+                traceback_and_raise(
+                    Exception(
+                        "Unable to save client reference without VirtualClientConnection"
+                    )
                 )
         else:
-            raise Exception("Unable to save client reference without SoloRoute")
+            traceback_and_raise(
+                Exception("Unable to save client reference without SoloRoute")
+            )
 
     @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
-        logger.debug(f"> Registering {client.pprint} with {self.pprint}")
+        debug(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
         msg = RegisterChildNodeMessage(
             lookup_id=client.id,
@@ -220,7 +224,7 @@ class Client(AbstractNodeClient):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     # TODO fix the msg type but currently tensor needs SyftMessage
     @syft_decorator(typechecking=True)
@@ -236,7 +240,7 @@ class Client(AbstractNodeClient):
                 f"> {self.pprint} Signing {msg.pprint} with "
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
-            logger.debug(output)
+            debug(output)
             msg = msg.sign(signing_key=self.signing_key)
 
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
@@ -246,13 +250,13 @@ class Client(AbstractNodeClient):
             if isinstance(response.message, ExceptionMessage):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
-                logger.error(str(exception))
-                raise exception
+                error(str(exception))
+                traceback_and_raise(exception)
             else:
                 return response.message
 
-        raise Exception(
-            "Response was signed by a fake key or was corrupted in transit."
+        traceback_and_raise(
+            Exception("Response was signed by a fake key or was corrupted in transit.")
         )
 
     # TODO fix the msg type but currently tensor needs SyftMessage
@@ -271,9 +275,9 @@ class Client(AbstractNodeClient):
                 f"> {self.pprint} Signing {msg.pprint} with "
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"
             )
-            logger.debug(output)
+            debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-        logger.debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -285,7 +289,7 @@ class Client(AbstractNodeClient):
             f"> {self.pprint} Signing {msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"
         )
-        logger.debug(output)
+        debug(output)
         signed_msg: SignedEventualSyftMessageWithoutReply = msg.sign(
             signing_key=self.signing_key
         )
@@ -363,8 +367,10 @@ class Client(AbstractNodeClient):
         )
 
         if type(obj) != obj_type:
-            raise TypeError(
-                f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
+            traceback_and_raise(
+                TypeError(
+                    f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
+                )
             )
 
         return obj
@@ -422,13 +428,13 @@ class StoreClient:
             if matches == 1 and match_obj is not None:
                 return match_obj
             elif matches > 1:
-                raise KeyError("More than one item with tag:" + str(key))
+                traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
 
-            raise KeyError("No such request found for id:" + str(key))
+            traceback_and_raise(KeyError("No such request found for id:" + str(key)))
         if isinstance(key, int):
             return self.store[key]
         else:
-            raise KeyError("Please pass in a string or int key")
+            traceback_and_raise(KeyError("Please pass in a string or int key"))
 
     def __repr__(self) -> str:
         return repr(self.store)

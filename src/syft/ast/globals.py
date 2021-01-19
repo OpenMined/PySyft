@@ -11,6 +11,7 @@ from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 from .util import unsplit
+from ..logger import traceback_and_raise
 
 
 class Globals(Module):
@@ -60,9 +61,11 @@ class Globals(Module):
                     return_type_name=return_type_name,
                 )
             else:
-                raise Exception(
-                    "You must pass in a framework object, the first time you add method \
+                traceback_and_raise(
+                    Exception(
+                        "You must pass in a framework object, the first time you add method \
                     within the framework."
+                    )
                 )
 
         attr = self.attrs[framework_name]
