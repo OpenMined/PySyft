@@ -76,7 +76,9 @@ class Attribute:
     def _extract_attr_type(
         self,
         container: Union[
-            List["Attribute"],
+            List["ast.klass.Class"],
+            List["ast.module.Module"],
+            List["ast.property.Property"],
         ],
         field: str,
     ) -> None:

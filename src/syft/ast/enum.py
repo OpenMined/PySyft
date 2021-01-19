@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 from typing import Optional
+from typing import Any
 
 # syft relative
 from .. import ast
@@ -80,7 +81,7 @@ class EnumAttribute(ast.attribute.Attribute):
 
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
-    def __call__(self, *args, **kwargs) -> None:
+    def __call__(self, *args: Any, **kwargs: Any) -> None:
         """
         An enum attribute is not callable.
 
@@ -89,7 +90,7 @@ class EnumAttribute(ast.attribute.Attribute):
         """
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args, **kwargs) -> None:
+    def add_path(self, *args: Any, **kwargs: Any) -> None:
         """
         An enum can no longer have children nodes.
 
