@@ -35,12 +35,6 @@ class Attribute:
         self.attrs: Dict[str, "Attribute"] = {}
         self.return_type_name = return_type_name
 
-    def set_client(self, client: Any) -> None:
-        self.client = client
-        for _, attr in self.attrs.items():
-            if hasattr(attr, "set_client"):
-                attr.set_client(client=client)
-
     def __call__(
         self,
         path: Union[List[str], str],

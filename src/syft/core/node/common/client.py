@@ -116,7 +116,7 @@ class Client(AbstractNodeClient):
     def add_attr(self, attr_name: str, attr: Any) -> None:
         # this can be called any time after startup to add additional libs
         # bind this client to the ast sub tree
-        attr.set_client(self)
+        attr.client = self
 
         # attach this sub tree to the main ast tree
         self.lib_ast.attrs[attr_name] = attr

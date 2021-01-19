@@ -271,7 +271,19 @@ class Class(Callable):
             description: str = "",
             tags: List[str] = [],
         ) -> Pointer:
-            # we need to generate an ID now because we removed the generic ID creation
+            # if self is proto, change self to it's wrapper object
+            which_obj = self
+            if "ProtobufWrapper" in self.serializable_wrapper_type.__name__:
+                # which_obj should be of the same type as what self._data_proto2object returns
+                which_obj = self.serializable_wrapper_type(value=self)
+
+            id_ = getattr(self, "id", None)
+            if id_ is None:
+                id_ = UID()
+                which_obj.id = id_
+            which_obj.tags = tags
+            which_obj.description = description
+
             id_at_location = UID()
 
             # Step 1: create pointer which will point to result
@@ -285,13 +297,10 @@ class Class(Callable):
             if searchable:
                 ptr.gc_enabled = False
 
-            self.tags = tags
-            self.description = description
-
             # Step 2: create message which contains object to send
             obj_msg = SaveObjectAction(
                 id_at_location=ptr.id_at_location,
-                obj=self,
+                obj=which_obj,
                 address=client.address,
                 anyone_can_search_for_this=searchable,
             )
