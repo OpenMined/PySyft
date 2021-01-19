@@ -13,6 +13,8 @@ from .. import lib
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
+from .util import module_type
+from ..logger import traceback_and_raise
 
 
 class Callable(ast.attribute.Attribute):
@@ -85,13 +87,14 @@ class Callable(ast.attribute.Attribute):
         index: int,
         return_type_name: Optional[str] = None,
     ) -> None:
+
         if index >= len(path) or path[index] in self.attrs:
             return
 
         attr_ref = getattr(self.object_ref, path[index])
 
-        if isinstance(attr_ref, ModuleType):
-            raise Exception("Module cannot be attr of callable.")
+        if isinstance(attr_ref, module_type):
+            traceback_and_raise(Exception("Module cannot be attr of callable."))
 
         self.attrs[path[index]] = ast.callable.Callable(
             path_and_name=".".join(path[: index + 1]),

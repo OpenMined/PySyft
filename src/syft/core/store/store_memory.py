@@ -7,13 +7,13 @@ from typing import ValuesView
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft relative
 from . import ObjectStore
 from ...decorators import syft_decorator
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from ...logger import critical, traceback_and_raise
 
 
 class MemoryStore(ObjectStore):
@@ -69,8 +69,8 @@ class MemoryStore(ObjectStore):
         try:
             return self._objects[key]
         except Exception as e:
-            logger.critical(f"{type(self)} __getitem__ error {key} {e}")
-            raise e
+            critical(f"{type(self)} __getitem__ error {key} {e}")
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: UID, value: AbstractStorableObject) -> None:
@@ -83,9 +83,9 @@ class MemoryStore(ObjectStore):
             if obj is not None:
                 self._objects.__delitem__(key)
             else:
-                logger.critical(f"{type(self)} __delitem__ error {key}.")
+                critical(f"{type(self)} __delitem__ error {key}.")
         except Exception as e:
-            logger.critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
+            critical(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
