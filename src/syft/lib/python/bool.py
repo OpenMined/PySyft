@@ -273,7 +273,7 @@ class Bool(int, PyPrimitive):
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        res = self.value.as_integer_ratio()
+        res = self.value.as_integer_ratio()  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

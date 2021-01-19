@@ -37,7 +37,7 @@ class Globals(Module):
 
     def add_path(
         self,
-        path: Union[str, List[str]],
+        path: Union[str, List[str]] = None,  # type:  ignore
         index: int = 0,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,

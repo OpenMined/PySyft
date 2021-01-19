@@ -15,11 +15,15 @@ from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
 
 
-def get_parent(path: str, root: globals.Globals) -> module.Module:
-    parent = root
+def get_parent(path: str, root: globals.Globals) -> Union[module.Module, klass.Class]:
+    parent: Union[attribute.Attribute, globals.Globals, module.Module] = root
     for step in path.split(".")[:-1]:
         if step in parent.attrs:
             parent = parent.attrs[step]
+
+    if not isinstance(parent, (module.Module, klass.Class)):
+        raise ValueError(f"Expected (Module, Class), but got {type(parent)}")
+
     return parent
 
 

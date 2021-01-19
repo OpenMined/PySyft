@@ -20,7 +20,7 @@ class Callable(ast.attribute.Attribute):
 
     def __init__(
         self,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
@@ -81,9 +81,11 @@ class Callable(ast.attribute.Attribute):
 
     def add_path(
         self,
-        path: List[str],
+        path: Union[str, List[str]],
         index: int,
         return_type_name: Optional[str] = None,
+        framework_reference: Optional[ModuleType] = None,
+        is_static: bool = False,
     ) -> None:
         if index >= len(path) or path[index] in self.attrs:
             return

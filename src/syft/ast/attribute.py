@@ -25,7 +25,7 @@ class Attribute:
     def __init__(
         self,
         client: Optional[Any],
-        path_and_name: str,
+        path_and_name: Optional[str] = None,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
     ):
@@ -99,11 +99,12 @@ class Attribute:
 
     @property
     def name(self) -> str:
-        return self.path_and_name.rsplit(".", maxsplit=1)[-1]
+        path_and_name = self.path_and_name if self.path_and_name else ""
+        return path_and_name.rsplit(".", maxsplit=1)[-1]
 
     def add_path(
         self,
-        path: Union[str, List[str]],
+        path: List[str],
         index: int,
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,

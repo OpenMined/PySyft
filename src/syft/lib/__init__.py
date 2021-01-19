@@ -3,7 +3,6 @@ import importlib
 import sys
 from typing import Any
 from typing import Any as TypeAny
-from typing import Callable
 from typing import Dict as TypeDict
 from typing import Optional
 
@@ -16,8 +15,6 @@ from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from .misc import create_union_ast
-
-registered_callbacks: TypeDict[str, Callable[[Any], Globals]] = {}
 
 
 class VendorLibraryImportException(Exception):
@@ -71,7 +68,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 update_ast(ast=lib_ast)
 
                 for _, client in lib_ast.registered_clients.items():
-                    update_ast(ast=client)
+                    update_ast(ast=client, client=client)
 
                 # cache the constructor for future created clients
                 lib_ast.loaded_lib_constructors[lib] = update_ast
@@ -93,9 +90,6 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
 
-    for elem_name, callback in registered_callbacks.items():
-        lib_ast.add_attr(attr_name=elem_name, attr=callback(client).attrs[elem_name])
-
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
@@ -105,5 +99,4 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     return lib_ast
 
 
-# constructor: copyType = create_lib_ast
 lib_ast = create_lib_ast(None)

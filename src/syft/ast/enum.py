@@ -12,7 +12,7 @@ class EnumAttribute(ast.attribute.Attribute):
     def __init__(
         self,
         parent: ast.attribute.Attribute,
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
     ) -> None:
@@ -48,10 +48,13 @@ class EnumAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_enum_attribute(self) -> int:
+        if self.path_and_name is None:
+            raise ValueError("Path and name should not be None")
+
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
-    def __call__(self, *args, **kwargs) -> None:
+    def __call__(self, *args, **kwargs) -> None:  # type: ignore
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args, **kwargs) -> None:
+    def add_path(self, *args, **kwargs) -> None:  # type: ignore
         raise ValueError("MAKE PROPER SCHEMA")

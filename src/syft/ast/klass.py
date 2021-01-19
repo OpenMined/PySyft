@@ -194,7 +194,7 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 class Class(Callable):
     def __init__(
         self,
-        path_and_name: Optional[str],
+        path_and_name: str,
         object_ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
         client: Optional[Any],
