@@ -63,7 +63,9 @@ class Globals(Module):
             )
 
         attr = self.attrs[framework_name]
-        attr.add_path(path=path, index=1, return_type_name=return_type_name)
+        attr.add_path(  # type: ignore
+            path=path, index=1, return_type_name=return_type_name
+        )
 
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied

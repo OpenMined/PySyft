@@ -107,4 +107,3 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
 # constructor: copyType = create_lib_ast
 lib_ast = create_lib_ast(None)
-lib_ast._copy = create_lib_ast
