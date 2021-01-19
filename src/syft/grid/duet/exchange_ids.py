@@ -9,6 +9,7 @@ from typing import Tuple as TypeTuple
 
 # syft relative
 from .bcolors import bcolors
+from ...logger import info, debug, traceback_and_raise
 
 
 class DuetCredentialExchanger:
@@ -24,26 +25,7 @@ class DuetCredentialExchanger:
         return self
 
     def run(self, credential: str) -> str:
-        raise NotImplementedError
-
-
-# class AriesCredentialExchanger(DuetCredentialExchanger):
-#     def __init__(self, agent: TypeAny) -> None:
-#         super().__init__()
-#         self.agent = agent
-
-#     def run(
-#         self,
-#         credential: str,
-#     ) -> str:
-#         self.requester_id = credential
-#         self.agent.joiner(self.join)
-#         self.agent.send(self.requester_id)
-#         while True:
-#             if self.agent.has_response():
-#                 self.responder_id = self.agent.get_responder_id()
-
-#         return self.responder_id
+        traceback_and_raise(NotImplementedError)
 
 
 class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
@@ -57,21 +39,21 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
 
     def _server_exchange(self, credential: str) -> str:
         # send Server ID
-        print("♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC)
+        info("♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC)
 
-        print()
-        print(
+        info()
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following code to your Duet Partner!"
         )
-        print("\nimport syft as sy")
-        print('duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")')
+        info("\nimport syft as sy")
+        info('duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")')
 
         # get Client ID
-        print(
+        info(
             "\n♫♫♫ > "
             + bcolors.HEADER
             + "STEP 2:"
@@ -83,22 +65,22 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
             if len(client_id) == 32:
                 break
             else:
-                print("    > Error: Invalid Client ID. Please try again.")
-        print()
+                info("    > Error: Invalid Client ID. Please try again.")
+        info()
         return client_id
 
     def _client_exchange(self, credential: str) -> None:
         # send client ID
-        print(
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following Duet Client ID to your duet partner!"
         )
-        print("♫♫♫ > Duet Client ID: " + bcolors.BOLD + credential + bcolors.ENDC)
-        print()
-        print("♫♫♫ > ...waiting for partner to connect...")
+        info("♫♫♫ > Duet Client ID: " + bcolors.BOLD + credential + bcolors.ENDC)
+        info()
+        info("♫♫♫ > ...waiting for partner to connect...")
 
 
 def get_loopback_path() -> str:
@@ -127,17 +109,17 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
             return self._server_exchange(credential=self.credential)
 
     def _server_exchange(self, credential: str) -> str:
-        print()
-        print(
+        info()
+        info(
             "♫♫♫ > "
             + bcolors.HEADER
             + "STEP 1:"
             + bcolors.ENDC
             + " Send the following code to your Duet Partner!"
         )
-        print("\nimport syft as sy")
-        print("duet = sy.join_duet(loopback=True)")
-        print()
+        info("\nimport syft as sy")
+        info("duet = sy.join_duet(loopback=True)")
+        info()
 
         # send Server ID
         loopback_config = {}
@@ -147,23 +129,31 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
 
         # get Client ID
         client_id = ""
-        while client_id == "":
+        for retry in range(10):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
+
                     if "client_id" in loopback_config:
                         client_id = str(loopback_config["client_id"])
-                    else:
-                        time.sleep(0.01)
-            except Exception as e:
-                print(e)
+                debug("client not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                debug("Cancelling server connection")
                 break
+            except Exception as e:
+                info("server config load failed", self.file_path, e)
+                time.sleep(0.5)
+
+        if client_id == "":
+            raise Exception("failed to load client ID")
+
         return client_id
 
     def _client_exchange(self, credential: str) -> str:
         loopback_config = {}
         server_id = ""
-        while server_id == "":
+        for retry in range(10):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
@@ -174,11 +164,18 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         and "client_id" not in loopback_config
                     ):
                         server_id = str(loopback_config["server_id"])
-                    else:
-                        time.sleep(0.01)
-            except Exception as e:
-                print(e)
+                        break
+                debug("server not ready")
+                time.sleep(0.5)
+            except KeyboardInterrupt:
+                debug("Cancelling client connection")
                 break
+            except Exception as e:
+                info("client config load failed", self.file_path, e)
+                time.sleep(0.5)
+
+        if server_id == "":
+            raise Exception("failed to load client ID")
 
         loopback_config["client_id"] = credential
 

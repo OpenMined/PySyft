@@ -1,12 +1,3 @@
-"""
-The purpose of this application is to allow us to dev and test PySyft
-functionality on an actual local network. This is NOT meant to be run in
-production (that's the *actual* grid's job).
-
-For example:
-$ python src/syft/grid/example_nodes/network.py
-
-"""
 # stdlib
 import os
 
@@ -14,7 +5,6 @@ import os
 import flask
 from flask import Flask
 from flask import Response
-from nacl.encoding import HexEncoder
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -24,12 +14,9 @@ from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
-from syft.logger import info
 
 app = Flask(__name__)
-
-network = Network(name="om-net")
-
+network = Network(name="om-test-net")
 network.immediate_services_without_reply.append(PushSignalingService)
 network.immediate_services_with_reply.append(PullSignalingService)
 network.immediate_services_with_reply.append(RegisterDuetPeerService)
@@ -37,7 +24,7 @@ network._register_services()  # re-register all services including SignalingServ
 
 
 @app.route("/metadata")
-def get_metadata() -> flask.Response:
+def metadata() -> flask.Response:
     metadata = network.get_metadata_for_client()
     metadata_proto = metadata.serialize()
     r = Response(
@@ -49,44 +36,27 @@ def get_metadata() -> flask.Response:
 
 
 @app.route("/", methods=["POST"])
-def process_network_msgs() -> flask.Response:
+def post() -> flask.Response:
     data = flask.request.get_data()
     obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
-        info(
-            f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch"
-        )
         reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
         r = Response(response=reply.serialize(to_bytes=True), status=200)
         r.headers["Content-Type"] = "application/octet-stream"
         return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        info(
-            f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
-        )
         network.recv_immediate_msg_without_reply(msg=obj_msg)
         r = Response(status=200)
         return r
     else:
-        info(
-            f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
-        )
         network.recv_eventual_msg_without_reply(msg=obj_msg)
         r = Response(status=200)
         return r
 
 
-def run() -> None:
+def run(port: int) -> None:
     global network
-    info("====================================")
-    info("========== NODE ROOT KEY ===========")
-    info("====================================")
-    # this signing_key is to aid in local development and is not used in the real
-    # PyGrid implementation
-    PORT = os.getenv("PORT", 5000)
-    info(f"Starting Node on PORT: {PORT}")
-    info(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-    app.run(host="0.0.0.0", port=int(PORT))  # nosec
-
-
-run()
+    PORT = os.getenv("PORT", port)
+    app.debug = False
+    app.use_reloader = False
+    app.run(host="127.0.0.1", port=int(PORT))  # nosec

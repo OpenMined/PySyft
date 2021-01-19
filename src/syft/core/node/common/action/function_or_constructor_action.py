@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
@@ -78,9 +79,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         resolved_args = list()
         for arg in self.args:
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
             r_arg = node.store.get_object(key=arg.id_at_location)
@@ -92,9 +95,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
             r_arg = node.store.get_object(key=arg.id_at_location)

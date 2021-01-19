@@ -12,6 +12,8 @@ from ..core.common.uid import UID
 from .callable import Callable
 from .module import Module
 
+from ..logger import traceback_and_raise
+
 
 class Globals(Module):
     registered_clients: Dict[UID, Any] = {}
@@ -50,9 +52,11 @@ class Globals(Module):
 
         if framework_name not in self.attrs:
             if framework_reference is None:
-                raise Exception(
-                    "You must pass in a framework object, the first time you add method \
-                    within the framework."
+                traceback_and_raise(
+                    Exception(
+                        "You must pass in a framework object, the first time you add method \
+                        within the framework."
+                    )
                 )
 
             self.attrs[framework_name] = Module(

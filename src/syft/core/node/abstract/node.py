@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logger import traceback_and_raise
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
@@ -55,27 +56,27 @@ class AbstractNode(Address):
 
     @property
     def known_child_nodes(self) -> List[Any]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def keys(self) -> str:
@@ -103,4 +104,4 @@ class AbstractNodeClient(Address):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
