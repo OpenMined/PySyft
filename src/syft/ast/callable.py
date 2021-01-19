@@ -10,22 +10,36 @@ from typing import Union
 # syft relative
 from .. import ast
 from .. import lib
+from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
 
 
 class Callable(ast.attribute.Attribute):
-    """A method, function, or constructor which can be directly executed"""
-
     def __init__(
         self,
         path_and_name: Optional[str] = None,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
-        client: Optional[Any] = None,
+        client: Optional[AbstractNodeClient] = None,
         is_static: Optional[bool] = False,
     ):
+        """
+        A Callable represent a method (can be static), global function, or constructor which can be
+        directly executed.
+
+
+         Args:
+             client (Optional[AbstractNodeClient]): The client for which all computation is being executed.
+             path_and_name (str): The path for the current node. Eg. `syft.lib.python.List`
+             object_ref (Any): The actual python object for which the computation is being made.
+             return_type_name (Optional[str]): The return type name of the given action as a
+                 string (the full path to it, similar to path_and_name).
+             is_static (bool): if True, the object has to be solved on the AST, not on an
+                existing pointer.
+        """
+
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
@@ -40,6 +54,14 @@ class Callable(ast.attribute.Attribute):
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
+        """
+        The __call__ method on a Callable has two possible roles:
+
+        1. If the client is set, execute the function for it and return the appropriate pointer
+        given the return type name.
+
+        2. If the client is not set, then is being used as a query on the ast.
+        """
         if self.client is not None:
             return_tensor_type_pointer_type = self.client.lib_ast.query(
                 path=self.return_type_name
@@ -81,10 +103,25 @@ class Callable(ast.attribute.Attribute):
 
     def add_path(
         self,
-        path: List[str],
+        path: Union[str, List[str]],
         index: int,
         return_type_name: Optional[str] = None,
+        is_static: bool = False,
     ) -> None:
+        """
+        The add_path method adds new nodes in the AST based on the type of the current node and
+        the type of the object to be added.
+
+         Args:
+              path (Union[List[str], str]): The path for the node in the AST to be added. Eg.
+                  `syft.lib.python.List` or ["syft", "lib", "python", "List]
+              index (int): The associated position in the path for the current node.
+              framework_reference(Optional[ModuleType]):The python framework in which we can solve
+                   the same path to obtain the python object.
+              return_type_name (Optional[str]): The return type name of the given action as a
+                 string (the full path to it, similar to path_and_name).
+        """
+
         if index >= len(path) or path[index] in self.attrs:
             return
 

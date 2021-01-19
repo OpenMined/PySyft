@@ -7,13 +7,13 @@ from typing import Union
 # syft relative
 from .. import ast
 from .. import lib
+from ..core.common.pointer import AbstractPointer
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     GetSetStaticAttributeAction,
 )
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     StaticAttributeAction,
 )
-from ..core.common.pointer import AbstractPointer
 
 
 class StaticAttribute(ast.attribute.Attribute):
