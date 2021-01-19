@@ -1,11 +1,11 @@
 # stdlib
-from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from types import ModuleType
 
 # syft relative
 from .. import ast
@@ -25,15 +25,16 @@ class Attribute:
     def __init__(
         self,
         client: Optional[Any],
-        path_and_name: Optional[str] = None,
+        path_and_name: str,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
     ):
         self.path_and_name = path_and_name
         self.object_ref = object_ref
-        self.client = client
         self.attrs: Dict[str, "Attribute"] = {}
+
         self.return_type_name = return_type_name
+        self.client = client
 
     def __call__(
         self,
@@ -56,7 +57,9 @@ class Attribute:
             sub_prop = getattr(ref, field, None)
             if sub_prop is None:
                 continue
-            container.extend(sub_prop)
+
+            for sub in sub_prop:
+                container.append(sub)
 
     @property
     def classes(self) -> List["ast.klass.Class"]:
@@ -97,9 +100,6 @@ class Attribute:
 
     @property
     def name(self) -> str:
-        if self.path_and_name is None:
-            return ""
-
         return self.path_and_name.rsplit(".", maxsplit=1)[-1]
 
     def add_path(

@@ -1,21 +1,19 @@
 # stdlib
-from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
-from typing import List
 from typing import Optional
 from typing import Union
 
 # syft relative
 from .. import ast
 from .. import lib
-from ..core.common.pointer import AbstractPointer
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     GetSetStaticAttributeAction,
 )
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     StaticAttributeAction,
 )
+from ..core.common.pointer import AbstractPointer
 
 
 class StaticAttribute(ast.attribute.Attribute):
@@ -61,10 +59,10 @@ class StaticAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_value(self) -> Any:
-        return getattr(self.parent.object_ref, self.name)
+        return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
-        setattr(self.parent.object_ref, self.name, set_value)
+        setattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1], set_value)
 
     def set_remote_value(self, set_arg: Any) -> None:
         if self.client is None:
@@ -91,21 +89,12 @@ class StaticAttribute(ast.attribute.Attribute):
             set_arg=downcasted_set_arg_ptr,
         )
         self.client.send_immediate_msg_without_reply(msg=cmd)
+        return result
 
     def __call__(
-        self,
-        path: Union[List[str], str],
-        index: int = 0,
-        obj_type: Optional[type] = None,
+        self, action: StaticAttributeAction
     ) -> Optional[Union["ast.callable.Callable", CallableT]]:
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(
-        self,
-        path: Union[str, List[str]],
-        index: int,
-        return_type_name: Optional[str] = None,
-        framework_reference: Optional[ModuleType] = None,
-        is_static: bool = False,
-    ) -> None:
+    def add_path(self, *args, **kwargs):
         raise ValueError("MAKE PROPER SCHEMA")

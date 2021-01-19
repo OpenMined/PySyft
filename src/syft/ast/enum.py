@@ -51,22 +51,10 @@ class EnumAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_enum_attribute(self) -> int:
-        return getattr(self.parent.object_ref, self.name)
+        return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
-    def __call__(
-        self,
-        path: Union[List[str], str],
-        index: int = 0,
-        obj_type: Optional[type] = None,
-    ) -> None:
+    def __call__(self, *args, **kwargs) -> None:
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(
-        self,
-        path: Union[str, List[str]],
-        index: int,
-        return_type_name: Optional[str] = None,
-        framework_reference: Optional[ModuleType] = None,
-        is_static: bool = False,
-    ) -> None:
+    def add_path(self, *args, **kwargs) -> None:
         raise ValueError("MAKE PROPER SCHEMA")

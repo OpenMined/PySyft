@@ -19,7 +19,7 @@ def get_parent(path: str, root: globals.Globals) -> module.Module:
     parent = root
     for step in path.split(".")[:-1]:
         if step in parent.attrs:
-            parent = parent.attrs[step]  # type: ignore
+            parent = parent.attrs[step]
     return parent
 
 

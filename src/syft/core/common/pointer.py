@@ -1,11 +1,9 @@
-# stdlib
+# syft relative
+from .serde import Serializable
 from typing import Any
 from typing import List
 from typing import Optional
-
-# syft relative
 from ..common.uid import UID
-from .serde import Serializable
 
 
 class AbstractPointer(Serializable):

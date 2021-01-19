@@ -1,19 +1,34 @@
 # stdlib
 import inspect
-from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from types import ModuleType
 
 # syft relative
 from .. import ast
 from ..ast.callable import Callable
 
 
-def is_static_method(host_object: type, attr: str) -> bool:
+def is_static_method(host_object, attr):
+    """Test if a value of a class is static method.
+
+    example::
+
+        class MyClass(object):
+            @staticmethod
+            def method():
+                ...
+
+    :param klass: the class
+    :param attr: attribute name
+    :param value: attribute value
+    """
     value = getattr(host_object, attr)
+
     if not hasattr(host_object, "__mro__"):
         return False
 
@@ -47,7 +62,7 @@ class Module(ast.attribute.Attribute):
     def add_attr(
         self,
         attr_name: str,
-        attr: Optional[ast.attribute.Attribute],
+        attr: Optional[Union[Callable, CallableT]],
         is_static: bool = False,
     ) -> None:
         self.__setattr__(attr_name, attr)

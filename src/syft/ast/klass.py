@@ -1,6 +1,5 @@
 # stdlib
 import inspect
-from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
 from typing import Dict
@@ -9,6 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from types import ModuleType
 
 # third party
 from google.protobuf.message import Message
