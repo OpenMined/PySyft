@@ -266,7 +266,7 @@ class Class(Callable):
         parts = new_class_name.split(".")
         name = parts.pop(-1)
         attrs["__name__"] = name
-        attrs["__module__"] = new_class_name
+        attrs["__module__"] = ".".join(parts)
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
