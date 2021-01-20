@@ -15,12 +15,12 @@ PACKAGE_SUPPORT = {"lib": "sympc", "torch": {"min_version": "1.6.0"}}
 
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    sympc_ast = create_ast()
+def update_ast(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
+    sympc_ast = create_ast(client=client)
     ast.add_attr(attr_name="sympc", attr=sympc_ast.attrs["sympc"])
 
 
-def create_ast() -> Globals:
+def create_ast(client: TypeAny = None) -> Globals:
     # third party
     import sympc
 
@@ -28,7 +28,7 @@ def create_ast() -> Globals:
     from . import session  # noqa: 401
     from . import share  # noqa: 401
 
-    ast = Globals()
+    ast = Globals(client=client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("sympc", sympc),

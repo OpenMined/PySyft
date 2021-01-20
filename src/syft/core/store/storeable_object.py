@@ -7,13 +7,14 @@ from typing import Optional
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft absolute
 import syft as sy
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import traceback
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
@@ -201,8 +202,8 @@ class StorableObject(AbstractStorableObject):
                 )
         except Exception as e:
             # torch.return_types.* namedtuple cant setattr
-            log = f"StorableObject {type(obj_type)} cant set attributes {e}"
-            logger.error(log)
+            critical(f"StorableObject {type(obj_type)} cant set attributes")
+            traceback(e)
 
         return result
 

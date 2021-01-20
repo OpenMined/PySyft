@@ -7,10 +7,10 @@ from typing import Dict as TypeDict
 from typing import Optional
 
 # third party
-from loguru import logger
 import nest_asyncio
 
 # syft relative
+from ...logger import info
 from .environment import is_interactive
 from .environment import is_jupyter
 
@@ -58,10 +58,10 @@ class EventLoopThread:
 
     def __init__(self, loop: TypeAny) -> None:
         if "loop" not in self.__shared_state:
-            logger.info("Starting Event Loop")
+            info("Starting Event Loop")
             self.__shared_state["loop"] = loop
         if "thread" not in self.__shared_state:
-            logger.info("Starting Event Loop Thread")
+            info("Starting Event Loop Thread")
             # daemon=True needed to allow REPL exit() to terminate the thread
             # stdlib
             import threading
@@ -73,13 +73,13 @@ class EventLoopThread:
 
     def shutdown(self) -> None:
         if "loop" in self.__shared_state:
-            logger.info("Stopping Event Loop")
+            info("Stopping Event Loop")
             loop.stop()  # type: ignore
             loop.run_until_complete(loop.shutdown_asyncgens())  # type: ignore
             del self.__shared_state["loop"]
 
         if "thread" in self.__shared_state:
-            logger.info("Stopping Event Loop Thread")
+            info("Stopping Event Loop Thread")
             t = self.__shared_state["thread"]
             t.join()
             del self.__shared_state["thread"]
@@ -102,7 +102,7 @@ if not is_jupyter and is_interactive and SYFT_USE_EVENT_LOOP_THREAD:
     event_loop_thread = EventLoopThread(loop=loop)
 
     def exit_handler() -> None:
-        logger.info("Shutting Down Syft")
+        info("Shutting Down Syft")
         if event_loop_thread is not None:
             event_loop_thread.shutdown()
 

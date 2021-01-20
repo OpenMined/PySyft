@@ -10,6 +10,7 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logger import critical
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -77,6 +78,5 @@ class Device(Node):
         try:
             return msg.address.device_id == self.id and msg.address.vm is None
         except Exception as e:
-            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
-            print(error)
+            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
             return False

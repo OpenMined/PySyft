@@ -4,7 +4,6 @@ from typing import List
 
 # third party
 from forbiddenfruit import curse
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
@@ -15,6 +14,9 @@ import syft
 
 # syft relative
 from .decorators.syft_decorator_impl import syft_decorator
+from .logger import critical
+from .logger import debug
+from .logger import error
 
 
 @syft_decorator(typechecking=True)
@@ -108,7 +110,7 @@ def get_fully_qualified_name(obj: object) -> str:
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
-        logger.error(f"Failed to get FQN: {e}")
+        error(f"Failed to get FQN: {e}")
     return fqn
 
 
@@ -123,14 +125,13 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
 
 
 def obj2pointer_type(obj: object) -> type:
+    fqn = None
     try:
         fqn = get_fully_qualified_name(obj=obj)
     except Exception as e:
         # sometimes the object doesn't have a __module__ so you need to use the type
         # like: collections.OrderedDict
-        logger.debug(
-            f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
-        )
+        debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
         if obj is None:
             fqn = "syft.lib.python._SyNone"
         else:
@@ -141,14 +142,11 @@ def obj2pointer_type(obj: object) -> type:
         fqn = fqn.replace("ProtobufWrapper", "")
 
     try:
-        ref = syft.lib_ast(fqn, return_callable=True)
-    except Exception:
-        # try one more time by removing the class parent module name
-        try:
-            ref = syft.lib_ast(fqn, return_callable=True, obj_type=type(obj))
-        except Exception as e:
-            logger.critical(f"Cannot find {type(obj)} {fqn} in lib_ast. {e}")
-        # TODO maybe return AnyPointer?
+        ref = syft.lib_ast.query(fqn, obj_type=type(obj))
+    except Exception as e:
+        log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
+        critical(log)
+        raise Exception(log)
 
     return ref.pointer_type
 

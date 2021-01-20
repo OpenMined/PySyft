@@ -5,13 +5,14 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from packaging import version
 import tenseal as ts
 
 # syft relative
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
+from ...logger import info
+from ...logger import traceback_and_raise
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
@@ -42,14 +43,15 @@ class ContextWrapper(StorableObject):
         lib_version = version.parse(proto.vendor_lib_version)
 
         if vendor_lib not in sys.modules:
-            raise Exception(
-                f"{vendor_lib} version: {proto.vendor_lib_version} is required"
+            traceback_and_raise(
+                Exception(
+                    f"{vendor_lib} version: {proto.vendor_lib_version} is required"
+                )
             )
         else:
             if lib_version > version.parse(ts.__version__):
                 log = f"Warning {lib_version} > local imported version {ts.__version__}"
-                print(log)
-                logger.info(log)
+                info(log)
 
         return ts.context_from(proto.content)
 
