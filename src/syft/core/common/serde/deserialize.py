@@ -21,11 +21,10 @@ def _deserialize(
 
     This function deserializes from encoding to a Python object. There are a few ways of
     using this function:
-        1. An Message object is passed, this will transform a protobuf message into its
-        associated class. the from_proto has to be set (it is by default).
-        2. Bytes are passed. This requires the from_bytes flag set the schema_type specified.
-        We cannot (and we should not) be able to get the schema_type from the binary
-        representation.
+    1. An Message object is passed, this will transform a protobuf message into its associated class.
+    the from_proto has to be set (it is by default).
+    2. Bytes are passed. This requires the from_bytes flag set the schema_type specified.
+    We cannot (and we should not) be able to get the schema_type from the binary representation.
 
     Note: The only format that does not require the schema_type is when we are passing
     Messages directly.
