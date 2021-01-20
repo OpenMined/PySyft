@@ -12,13 +12,13 @@ import pandas as pd
 
 # syft relative
 from ....lib.python import String
+from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
 from .service import RequestMessage
-from ....logger import traceback_and_raise
 
 
 class RequestQueueClient:

@@ -13,6 +13,8 @@ import syft as sy
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import traceback
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
@@ -20,7 +22,6 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logger import critical, traceback
 
 
 class StorableObject(AbstractStorableObject):

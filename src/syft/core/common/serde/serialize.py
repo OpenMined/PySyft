@@ -54,4 +54,10 @@ def _serialize(
     else:
         is_serializable = obj
 
-    return is_serializable.serialize(to_proto=to_proto, to_bytes=to_bytes)
+    serialize_method = getattr(is_serializable, "sy_serialize", None)
+    if serialize_method is None:
+        serialize_method = getattr(is_serializable, "serialize", None)
+    if serialize_method is None:
+        raise Exception(f"Object {type(obj)} has no serialize method")
+
+    return serialize_method(to_proto=to_proto, to_bytes=to_bytes)

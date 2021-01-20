@@ -1,7 +1,7 @@
 # stdlib
-from typing import List
 from multiprocessing.synchronize import Barrier
 import time
+from typing import List
 
 # syft absolute
 import syft as sy

@@ -11,9 +11,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft relative
 from . import ObjectStore
 from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ...logger import critical, traceback_and_raise
 
 
 class MemoryStore(ObjectStore):

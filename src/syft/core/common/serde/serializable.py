@@ -16,7 +16,8 @@ from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logger import debug, traceback_and_raise
+from ....logger import debug
+from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
@@ -45,7 +46,8 @@ class MetaSerializable(GenericM):
         x = super().__new__(cls, name, bases, dct)
         try:
             protobuf_schema = dct["get_protobuf_schema"].__get__("")()
-            protobuf_schema.schema2type = x
+            if protobuf_schema is not None:
+                protobuf_schema.schema2type = x
         except (KeyError, NotImplementedError):
             ""
         return x

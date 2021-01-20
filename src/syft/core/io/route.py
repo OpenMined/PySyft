@@ -92,6 +92,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logger import debug
+from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
@@ -102,7 +104,6 @@ from .connection import ClientConnection
 from .location import Location
 from .location import SpecificLocation
 from .virtual import VirtualClientConnection
-from ...logger import debug, traceback_and_raise
 
 
 class RouteSchema(ObjectWithID):

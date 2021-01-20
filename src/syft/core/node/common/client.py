@@ -16,8 +16,11 @@ import pandas as pd
 # syft relative
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
-from ....logger import critical, debug, error, traceback_and_raise
-from ....lib import lib_ast
+from ....lib import create_lib_ast
+from ....logger import critical
+from ....logger import debug
+from ....logger import error
+from ....logger import traceback_and_raise
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
@@ -81,7 +84,7 @@ class Client(AbstractNodeClient):
         else:
             self.verify_key = verify_key
 
-        self.install_supported_frameworks(lib_ast=lib_ast)
+        self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
 
@@ -116,7 +119,7 @@ class Client(AbstractNodeClient):
     def add_attr(self, attr_name: str, attr: Any) -> None:
         # this can be called any time after startup to add additional libs
         # bind this client to the ast sub tree
-        attr.set_client(self)
+        attr.client = self
 
         # attach this sub tree to the main ast tree
         self.lib_ast.attrs[attr_name] = attr
@@ -125,27 +128,25 @@ class Client(AbstractNodeClient):
         # so you can do: client.package.class.method
         setattr(self, attr_name, attr)
 
-    def install_supported_frameworks(self, lib_ast: Any) -> None:
-        # we create an initial copy of the startup AST
-        # this re-executes all the create_ast functions just for this client
-        self.lib_ast = lib_ast.copy()
+    def install_supported_frameworks(self) -> None:
+        self.lib_ast = create_lib_ast(client=self)
 
         # first time we want to register for future updates
-        lib_ast.register_updates(self)
+        self.lib_ast.register_updates(self)
 
         if self.lib_ast is not None:
             for attr_name, attr in self.lib_ast.attrs.items():
-                # add the lib and bind it
-                self.add_attr(attr_name=attr_name, attr=attr)
+                setattr(self, attr_name, attr)
 
         # shortcut syft.lib.python to just python
         if hasattr(self.lib_ast, "syft"):
             try:
                 lib_attr = getattr(self.lib_ast.syft, "lib", None)
+
                 if lib_attr is not None:
                     python_attr = getattr(lib_attr, "python", None)
-                    if python_attr is not None:
-                        self.add_attr(attr_name="python", attr=python_attr)
+                    setattr(self, "python", python_attr)
+
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
 

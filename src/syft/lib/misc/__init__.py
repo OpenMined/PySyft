@@ -13,8 +13,8 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
-from .union import lazy_pairing
 from ...logger import traceback_and_raise
+from .union import lazy_pairing
 
 
 def get_allowed_functions(
@@ -68,8 +68,10 @@ def get_allowed_functions(
     return allowed_functions
 
 
-def create_union_ast(lib_ast: globals.Globals) -> globals.Globals:
-    ast = globals.Globals()
+def create_union_ast(
+    lib_ast: globals.Globals, client: TypeAny = None
+) -> globals.Globals:
+    ast = globals.Globals(client)
 
     modules = ["syft", "syft.lib", "syft.lib.misc", "syft.lib.misc.union"]
 
