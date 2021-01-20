@@ -202,21 +202,24 @@ if os.path.exists(ERROR_FILE_PATH):
 
 # we are running many works in parallel and theres a race condition with deleting this
 # file and then writing to it during the collection phase so we are going to just
-# spread out the workers and only delete if the file isnt brand new
+# spread out the workers and only delete if the file isn't brand new
 time.sleep(random.random() * 2)
 
 if os.path.exists(SUPPORT_FILE_PATH):
     # we need to write during gathering so we need to delete this carefully
-    file_stat = os.stat(SUPPORT_FILE_PATH)
-    diff = time.time() - file_stat.st_mtime
-    if diff > 0.1:
-        # only delete on the first run
-        for retry in range(5):
-            try:
-                os.unlink(SUPPORT_FILE_PATH)
-                break
-            except BaseException:
-                time.sleep(1)
+    try:
+        file_stat = os.stat(SUPPORT_FILE_PATH)
+        diff = time.time() - file_stat.st_mtime
+        if diff > 0.1:
+            # only delete on the first run
+            for retry in range(5):
+                try:
+                    os.unlink(SUPPORT_FILE_PATH)
+                    break
+                except BaseException:
+                    time.sleep(1)
+    except Exception:
+        print(f"Failed while trying to os.stat file {SUPPORT_FILE_PATH}")
 
 
 # write test debug info to make it easy to debug long running tests with large output
