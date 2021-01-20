@@ -4,6 +4,7 @@ into our AST and use them.
 """
 # stdlib
 from typing import Union as TypeUnion
+import reload
 
 # third party
 import pytest
