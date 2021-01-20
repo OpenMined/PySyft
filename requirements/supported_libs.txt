@@ -1,5 +1,5 @@
 opacus
 openmined.psi
 python-dp
-sympc @ git+https://github.com/madhavajay/SyMPC@e7643fe64d5c456862ee79a3a6ede96c78bfefc4
+sympc @ git+https://github.com/OpenMined/SyMPC
 tenseal==0.3.0a2
