@@ -27,13 +27,13 @@ LIB_NAME = "pydp"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    dp_ast = create_ast()
+def update_ast(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
+    dp_ast = create_ast(client)
     ast.add_attr(attr_name=LIB_NAME, attr=dp_ast.attrs[LIB_NAME])
 
 
-def create_ast() -> Globals:
-    ast = Globals()
+def create_ast(client: TypeAny = None) -> Globals:
+    ast = Globals(client=client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("pydp", pydp),

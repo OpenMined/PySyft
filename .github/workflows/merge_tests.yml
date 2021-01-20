@@ -62,6 +62,90 @@ jobs:
             python-version: 3.7
             torch-version: 1.4.0
             chunk: 7
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
@@ -89,6 +173,12 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
+      - name: Install aiortc native dependencies
+        if: startsWith(runner.os, 'Linux') == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
 
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true

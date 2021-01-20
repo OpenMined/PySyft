@@ -54,7 +54,7 @@ Example:
     domain_1_client = domain_1.get_root_client()
 
     # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
+    data_ptr_domain_1 = tensor.send(domain_1_client)
 
     # creating the data user domain
     domain_2 = Domain(name="Data user domain")
@@ -88,7 +88,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -96,6 +95,8 @@ import syft as sy
 
 # syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -138,17 +139,12 @@ class Pointer(AbstractPointer):
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> None:
-        if id_at_location is None:
-            id_at_location = UID()
-
-        if tags is None:
-            tags = []
-
-        self.client = client
-        self.id_at_location = id_at_location
-        self.tags = tags
-        self.description = description
-        self.gc_enabled = True
+        super().__init__(
+            client=client,
+            id_at_location=id_at_location,
+            tags=tags,
+            description=description,
+        )
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -158,7 +154,7 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
-        logger.debug(
+        debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
             + f"with delete_obj={delete_obj}"
         )
@@ -177,6 +173,10 @@ class Pointer(AbstractPointer):
             # for ProtobufWrapper's we want to actually vend the real Proto since
             # that is what was originally sent in with .send
             return obj.data
+
+        if self.is_enum:
+            enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
+            return enum_class(obj)
 
         return obj
 
@@ -282,9 +282,7 @@ class Pointer(AbstractPointer):
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
 
-        points_to_type = sy.lib_ast(
-            proto.points_to_object_with_path, return_callable=True
-        )
+        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
@@ -339,7 +337,7 @@ class Pointer(AbstractPointer):
             domain_1_client = domain_1.get_root_client()
 
             # sending the data and receiving a pointer
-            data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
+            data_ptr_domain_1 = tensor.send(domain_1_client)
 
             # requesting access to the pointer
             data_ptr_domain_1.request(name="My Request", reason="Research project.")
@@ -398,9 +396,7 @@ class Pointer(AbstractPointer):
             if len(name) > 0 or len(name) > 0:
                 if len(output_string) > 0 and output_string[-1] != ".":
                     output_string += "."
-            logger.debug(output_string)
-            if verbose:
-                print(f"\n{output_string}", end="")
+            debug(output_string)
             status = None
             start = time.time()
 
@@ -414,15 +410,13 @@ class Pointer(AbstractPointer):
                         log = (
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
-                        logger.debug(log)
-                        if verbose:
-                            print(log)
+                        debug(log)
                         return status
 
                     # only check once every second
                     if now - last_check > 1:
                         last_check = now
-                        logger.debug(f"> Sending another Request Message {now - start}")
+                        debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
                             address=self.client.address,
@@ -434,8 +428,6 @@ class Pointer(AbstractPointer):
                         status = response.status
                         if response.status == RequestStatus.Pending:
                             time.sleep(0.1)
-                            if verbose:
-                                print(".", end="")
                             continue
                         else:
                             # accepted or rejected lets exit
@@ -443,12 +435,10 @@ class Pointer(AbstractPointer):
                             if status == RequestStatus.Accepted:
                                 status_text = "ACCEPTED"
                             log = f" {status_text}"
-                            logger.debug(log)
-                            if verbose:
-                                print(log)
+                            debug(log)
                             return status
                 except Exception as e:
-                    logger.error(f"Exception while running blocking request. {e}")
+                    error(f"Exception while running blocking request. {e}")
                     # escape the while loop
                     return status
 

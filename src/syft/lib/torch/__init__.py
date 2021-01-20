@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import Union
 
@@ -10,6 +11,7 @@ import torch
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
+from ...logger import critical
 from .allowlist import allowlist
 
 TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
@@ -38,8 +40,8 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return True
 
 
-def create_torch_ast() -> Globals:
-    ast = Globals()
+def create_torch_ast(client: Any = None) -> Globals:
+    ast = Globals(client)
 
     # most methods work in all versions and have a single return type
     # for the more complicated ones we pass a dict with keys like return_type and
@@ -61,9 +63,7 @@ def create_torch_ast() -> Globals:
                     path=method, framework_reference=torch, return_type_name=return_type
                 )
         else:
-            pass
-            # TODO: Replace with logging
-            # print(f"Skipping {method} not supported in {TORCH_VERSION}")
+            critical(f"Skipping {method} not supported in {TORCH_VERSION}")
 
     for klass in ast.classes:
         klass.create_pointer_class()

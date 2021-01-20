@@ -9,6 +9,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ..common.serde.serializable import Serializable
 
@@ -73,8 +75,8 @@ class UID(Serializable):
         try:
             return UID(value=uuid.UUID(value))
         except Exception as e:
-            print(f"Unable to convert {value} to UUID. {e}")
-            raise e
+            critical(f"Unable to convert {value} to UUID. {e}")
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def __hash__(self) -> int:
