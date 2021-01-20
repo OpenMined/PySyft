@@ -205,8 +205,44 @@ async def test_set_answer_on_datachannel() -> None:
         "syft.grid.connections.webrtc.WebRTCConnection.producer",
         return_value=coro_mock(),
     ) as producer_mock:
-        on_datachannel(webrtc.channel)
+        channel = answer_webrtc.peer_connection.createDataChannel("datachannel")
+        on_datachannel(channel)
         assert producer_mock.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_set_answer_on_message() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    offer_payload = await webrtc._set_offer()
+
+    answer_webrtc = WebRTCConnection(node=domain)
+    await answer_webrtc._set_answer(payload=offer_payload)
+
+    channel_methods = list(answer_webrtc.peer_connection._events.values())
+    on_channel = list(channel_methods[1].values())[0]
+
+    coro_mock = AsyncMock()
+    with patch(
+        "syft.grid.connections.webrtc.WebRTCConnection.consumer",
+        return_value=coro_mock(),
+    ) as consumer_mock:
+        channel = answer_webrtc.peer_connection.createDataChannel("datachannel")
+        on_channel(channel)
+
+        channel_methods = list(answer_webrtc.channel._events.values())
+        on_message = list(channel_methods[1].values())[0]
+
+        await on_message(message=DC_CHUNK_START_SIGN)
+        assert consumer_mock.call_count == 0
+
+        await on_message(message=b"a")
+        assert consumer_mock.call_count == 0
+
+        await on_message(message=DC_CHUNK_END_SIGN)
+        assert consumer_mock.call_count == 1
 
 
 # --------------------- INTEGRATION ---------------------
