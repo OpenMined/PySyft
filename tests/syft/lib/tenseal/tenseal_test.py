@@ -30,8 +30,12 @@ def test_tenseal_loaded_before() -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
+    ctx_ptr = context.send(alice_client, searchable=True)
     enc_v1_ptr = enc_v1.send(alice_client, searchable=True)
     enc_v2_ptr = enc_v2.send(alice_client, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
 
     result_enc_ptr = enc_v1_ptr + enc_v2_ptr
 
@@ -39,8 +43,7 @@ def test_tenseal_loaded_before() -> None:
     result = result_dec_ptr.get()
     assert result == [4.0, 4.0, 4.0, 4.0, 4.0]  # ~ [4, 4, 4, 4, 4]
 
-    result_enc_ptr2 = enc_v1_ptr.dot(enc_v2)
-
+    result_enc_ptr2 = enc_v1_ptr.dot(enc_v2_ptr)
     result_dec_ptr2 = result_enc_ptr2.decrypt()
     result2 = result_dec_ptr2.get()
     assert [round(i) for i in result2] == [10]  # ~ [10]
@@ -85,8 +88,12 @@ def test_tenseal_loaded_after() -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
+    ctx_ptr = context.send(alice_client, searchable=True)
     enc_v1_ptr = enc_v1.send(alice_client, searchable=True)
     enc_v2_ptr = enc_v2.send(alice_client, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
 
     result_enc_ptr = enc_v1_ptr + enc_v2_ptr
 
@@ -94,7 +101,7 @@ def test_tenseal_loaded_after() -> None:
     result = result_dec_ptr.get()
     assert result == [4.0, 4.0, 4.0, 4.0, 4.0]  # ~ [4, 4, 4, 4, 4]
 
-    result_enc_ptr2 = enc_v1_ptr.dot(enc_v2)
+    result_enc_ptr2 = enc_v1_ptr.dot(enc_v2_ptr)
 
     result_dec_ptr2 = result_enc_ptr2.decrypt()
     result2 = result_dec_ptr2.get()

@@ -30,7 +30,6 @@ class CKKSVector(StorableObject):
         proto = TenSEALVector_PB()
         proto.id.CopyFrom(_serialize(obj=self.id))
         proto.obj_type = get_fully_qualified_name(obj=self.value)
-        proto.context = self.value.context().serialize()  # type: ignore
         proto.vector = self.value.serialize()  # type: ignore
 
         return proto
@@ -38,8 +37,7 @@ class CKKSVector(StorableObject):
     @staticmethod
     def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSVector:
         vec_id: UID = _deserialize(blob=proto.id)
-        context = ts.context_from(proto.context)
-        vec = ts.ckks_vector_from(context, proto.vector)
+        vec = ts.lazy_ckks_vector_from(proto.vector)
         vec.id = vec_id
 
         return vec

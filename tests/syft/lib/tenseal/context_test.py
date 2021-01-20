@@ -4,12 +4,12 @@ import pytest
 # syft absolute
 import syft as sy
 
+# third party
+import tenseal as ts
+
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_send() -> None:
-    # third party
-    import tenseal as ts
-
     """Test sending a TenSEAL context"""
 
     alice = sy.VirtualMachine(name="alice")
