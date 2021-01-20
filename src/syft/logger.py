@@ -1,9 +1,9 @@
 # stdlib
 import os
 from typing import Any
+from typing import Callable
 from typing import NoReturn
 from typing import TextIO
-from typing import Callable
 from typing import Union
 
 # third party
@@ -61,46 +61,44 @@ def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
 
 def create_log_and_print_function(level: str) -> Callable:
     def log_and_print(*args: Any, **kwargs: Any) -> None:
-        attr_name = level
         try:
-            if level == "traceback":
-                attr_name = "exception"  # this one is different
-
-            method = getattr(logger.opt(lazy=True), attr_name, None)
+            method = getattr(logger.opt(lazy=True), level, None)
             if "print" in kwargs and kwargs["print"] is True:
                 del kwargs["print"]
                 print(*args, **kwargs)
             if method is not None:
                 method(*args, **kwargs)
             else:
-                raise Exception(f"no method {attr_name} on logger")
+                raise Exception(f"no method {level} on logger")
         except BaseException as e:
             logger.debug("failed to log exception", e)
 
     return log_and_print
 
 
-log_function_names = [
-    "traceback",
-    "critical",
-    "error",
-    "warning",
-    "info",
-    "debug",
-    "trace",
-]
-log_functions = {}
-for func in log_function_names:
-    log_functions[func] = create_log_and_print_function(level=func)
+def traceback(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="exception")(*args, **kwargs)
 
 
-# when importing the dynamically generated functions in log_function_names this
-# will return the correct function
-def __getattr__(name: str) -> Callable:
-    if name in log_function_names:
-        return log_functions[name]
-    else:
-        return super.__getattr__(name)  # type: ignore
+def critical(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="critical")(*args, **kwargs)
 
 
-__all__ = ["remove", "add", "traceback_and_raise"] + log_function_names
+def error(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="error")(*args, **kwargs)
+
+
+def warning(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="warning")(*args, **kwargs)
+
+
+def info(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="info")(*args, **kwargs)
+
+
+def debug(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="debug")(*args, **kwargs)
+
+
+def trace(*args: Any, **kwargs: Any) -> None:
+    return create_log_and_print_function(level="trace")(*args, **kwargs)
