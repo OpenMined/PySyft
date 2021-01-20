@@ -95,6 +95,8 @@ import syft as sy
 
 # syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -109,7 +111,6 @@ from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-from ...logger import debug, error
 
 
 # TODO: Fix the Client, Address, Location confusion

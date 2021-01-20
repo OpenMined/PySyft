@@ -18,7 +18,9 @@ import torch
 # syft relative
 from ...decorators import syft_decorator
 from ...lib.util import full_name_with_qualname
-from ...logger import info, traceback_and_raise, critical
+from ...logger import critical
+from ...logger import info
+from ...logger import traceback_and_raise
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:

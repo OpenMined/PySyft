@@ -11,10 +11,11 @@ import tenseal as ts
 # syft relative
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
+from ...logger import info
+from ...logger import traceback_and_raise
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
-from ...logger import info, traceback_and_raise
 
 
 class ContextWrapper(StorableObject):

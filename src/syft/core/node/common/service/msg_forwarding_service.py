@@ -4,7 +4,9 @@ from typing import Optional
 
 # syft relative
 from .....decorators import syft_decorator
-from .....logger import debug, error, traceback_and_raise
+from .....logger import debug
+from .....logger import error
+from .....logger import traceback_and_raise
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SignedImmediateSyftMessageWithReply

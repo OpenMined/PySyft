@@ -9,10 +9,9 @@ from typing import Union
 
 # syft relative
 from ..core.common.uid import UID
+from ..logger import traceback_and_raise
 from .callable import Callable
 from .module import Module
-
-from ..logger import traceback_and_raise
 
 
 class Globals(Module):

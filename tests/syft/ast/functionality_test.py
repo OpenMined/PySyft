@@ -3,17 +3,20 @@ The following test suit serves as a set of examples of how to integrate differen
 into our AST and use them.
 """
 # stdlib
+from importlib import reload
 from typing import Any as TypeAny
 from typing import Union as TypeUnion
-from importlib import reload
+
+# third party
+import pytest
 
 # syft absolute
 import syft
-import pytest
 from syft.ast.globals import Globals
 from syft.core.node.common.client import Client
 from syft.lib import lib_ast
 
+# syft relative
 from . import module_test
 
 

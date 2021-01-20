@@ -17,7 +17,10 @@ import pandas as pd
 from ....core.pointer.pointer import Pointer
 from ....decorators import syft_decorator
 from ....lib import create_lib_ast
-from ....logger import critical, debug, error, traceback_and_raise
+from ....logger import critical
+from ....logger import debug
+from ....logger import error
+from ....logger import traceback_and_raise
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name

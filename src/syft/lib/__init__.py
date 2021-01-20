@@ -14,8 +14,9 @@ from ..ast.globals import Globals
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
+from ..logger import critical
+from ..logger import traceback_and_raise
 from .misc import create_union_ast
-from ..logger import critical, traceback_and_raise
 
 
 class VendorLibraryImportException(Exception):

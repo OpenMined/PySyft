@@ -11,8 +11,8 @@ import torch
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
-from .allowlist import allowlist
 from ...logger import critical
+from .allowlist import allowlist
 
 TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
 

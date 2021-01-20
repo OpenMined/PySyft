@@ -9,7 +9,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ...decorators import syft_decorator
-from ...logger import critical, traceback_and_raise
+from ...logger import critical
+from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ..common.serde.serializable import Serializable
 

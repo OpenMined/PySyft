@@ -15,9 +15,9 @@ import _pytest
 import pytest
 
 # syft absolute
+from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
-from syft import logger
 
 # import sys
 

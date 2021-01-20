@@ -1,9 +1,12 @@
+# stdlib
 import os
 from typing import Any
-from typing import Union
-from typing import TextIO
 from typing import NoReturn
+from typing import TextIO
+from typing import Callable
+from typing import Union
 
+# third party
 from loguru import logger
 
 LOG_FORMAT = "[{time}][{level}][{module}] {message}"
@@ -51,55 +54,53 @@ def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
             logger.opt(lazy=True).exception(e)
         else:
             logger.opt(lazy=True).critical(e)
-    except BaseException as e:
-        logger.debug("failed to print exception", e)
+    except BaseException as ex:
+        logger.debug("failed to print exception", ex)
     raise e
 
 
-def traceback(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).exception(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print exception", e)
+def create_log_and_print_function(level: str) -> Callable:
+    def log_and_print(*args: Any, **kwargs: Any) -> None:
+        attr_name = level
+        try:
+            if level == "traceback":
+                attr_name = "exception"  # this one is different
+
+            method = getattr(logger.opt(lazy=True), attr_name, None)
+            if "print" in kwargs and kwargs["print"] is True:
+                del kwargs["print"]
+                print(*args, **kwargs)
+            if method is not None:
+                method(*args, **kwargs)
+            else:
+                raise Exception(f"no method {attr_name} on logger")
+        except BaseException as e:
+            logger.debug("failed to log exception", e)
+
+    return log_and_print
 
 
-def critical(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).critical(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print error", e)
+log_function_names = [
+    "traceback",
+    "critical",
+    "error",
+    "warning",
+    "info",
+    "debug",
+    "trace",
+]
+log_functions = {}
+for func in log_function_names:
+    log_functions[func] = create_log_and_print_function(level=func)
 
 
-def error(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).error(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print error", e)
+# when importing the dynamically generated functions in log_function_names this
+# will return the correct function
+def __getattr__(name: str) -> Callable:
+    if name in log_function_names:
+        return log_functions[name]
+    else:
+        return super.__getattr__(name)  # type: ignore
 
 
-def warning(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).warning(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print warning", e)
-
-
-def info(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).info(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print info", e)
-
-
-def debug(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).debug(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print debug", e)
-
-
-def trace(*args: Any, **kargs: Any) -> None:
-    try:
-        logger.opt(lazy=True).trace(*args, **kargs)
-    except BaseException as e:
-        logger.debug("failed to print trace", e)
+__all__ = ["remove", "add", "traceback_and_raise"] + log_function_names

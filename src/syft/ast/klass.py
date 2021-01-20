@@ -25,8 +25,8 @@ from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
-from ..util import aggressive_set_attr
 from ..logger import traceback_and_raise
+from ..util import aggressive_set_attr
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:

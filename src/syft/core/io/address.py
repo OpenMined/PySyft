@@ -10,13 +10,14 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import traceback_and_raise
 from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
-from ...logger import debug, traceback_and_raise
 
 
 class Unspecified(object):

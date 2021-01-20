@@ -18,6 +18,7 @@ except ImportError:
 # third party
 from typeguard import typechecked
 
+# syft relative
 from ..logger import traceback_and_raise
 
 SKIP_RETURN_TYPE_HINTS = {"__init__"}

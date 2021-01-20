@@ -13,8 +13,8 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
-from .union import lazy_pairing
 from ...logger import traceback_and_raise
+from .union import lazy_pairing
 
 
 def get_allowed_functions(

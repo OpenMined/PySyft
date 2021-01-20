@@ -23,8 +23,11 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....decorators import syft_decorator
-from ....logger import debug, error, critical, traceback_and_raise
 from ....lib import lib_ast
+from ....logger import critical
+from ....logger import debug
+from ....logger import error
+from ....logger import traceback_and_raise
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
