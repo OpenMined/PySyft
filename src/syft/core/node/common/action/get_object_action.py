@@ -7,7 +7,9 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
-from .....logger import debug, critical, traceback_and_raise
+from .....logger import critical
+from .....logger import debug
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -67,7 +69,10 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         if not isinstance(ser, StorableObject_PB):
             if hasattr(self.obj, "serializable_wrapper_type"):
                 obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
-                ser = obj.serialize()
+                if hasattr(obj, "sy_serialize"):
+                    ser = obj.sy_serialize()
+                else:
+                    ser = obj.serialize()
             else:
                 traceback_and_raise(
                     Exception(f"Cannot send {type(self.obj)} as StorableObject")

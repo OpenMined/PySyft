@@ -6,9 +6,10 @@ from typing import Optional
 from nacl.signing import VerifyKey
 
 # syft relative
+from .....logger import debug
+from .....logger import traceback_and_raise
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
-from .....logger import debug, traceback_and_raise
 
 
 class AuthorizationException(Exception):

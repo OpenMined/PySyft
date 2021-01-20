@@ -1,8 +1,8 @@
 # stdlib
-import sys
 import json
 import os
 from pathlib import Path
+import sys
 from typing import Any
 from typing import Generator
 from typing import Optional
@@ -13,13 +13,14 @@ import requests
 # syft relative
 from ...core.common.environment import is_jupyter
 from ...core.node.domain.domain import Domain
+from ...logger import info
+from ...logger import traceback_and_raise
 from .bcolors import bcolors
 from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
-from ...logger import info, traceback_and_raise
 
 if is_jupyter:
     # third party
@@ -134,7 +135,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + str(n_messages)
                     )
                     out += "                                "
-                    info("\r" + out)
+                    info("\r" + out, end="\r", print=True)
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):
@@ -173,29 +174,31 @@ def launch_duet(
                 unconfined=True,
             )
         )
-    info("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
+    info("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n", print=True)
     info(
-        "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-        ":"
-        + "\033[1m"
-        + " Duet is an experimental feature currently in beta.\n"
-        + "♫♫♫ >             Use at your own risk.\n"
+        "♫♫♫ >\033[93m"
+        + " DISCLAIMER"
         + "\033[0m"
+        + ": "
+        + "\033[1m"
+        + "Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ > Use at your own risk.\n"
+        + "\033[0m",
+        print=True,
     )
 
-    info("♫♫♫ >")
-    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
+    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
-    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    info("♫♫♫ > " + str(network_url))
-    info("♫♫♫ >")
-    info("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    info("♫♫♫ > " + str(network_url), print=True)
+    info("♫♫♫ >", print=True)
+    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
 
     signaling_client = register(url=network_url)
 
-    info(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
     my_domain = Domain(name="Launcher", db_path=db_path)
 
@@ -203,7 +206,7 @@ def launch_duet(
         credential_exchanger = OpenGridTokenFileExchanger()
     target_id = credential_exchanger.run(credential=signaling_client.duet_id)
 
-    info("♫♫♫ > Connecting...")
+    info("♫♫♫ > Connecting...", print=True)
 
     _ = WebRTCDuet(
         node=my_domain,
@@ -211,14 +214,14 @@ def launch_duet(
         signaling_client=signaling_client,
         offer=True,
     )
-    info()
-    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    info(print=True)
+    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     #     return duet, my_domain.get_root_client()
     out_duet = my_domain.get_root_client()
 
     if logging:
         begin_duet_logger(my_domain=my_domain)
-    info()
+    info(print=True)
 
     return out_duet
 
@@ -237,29 +240,31 @@ def join_duet(
                 unconfined=True,
             )
         )
-    info("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
+    info("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n", print=True)
     info(
-        "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-        ":"
-        + "\033[1m"
-        + " Duet is an experimental feature currently in beta.\n"
-        + "♫♫♫ >             Use at your own risk.\n"
+        "♫♫♫ >\033[93m"
+        + " DISCLAIMER"
         + "\033[0m"
+        + ": "
+        + "\033[1m"
+        + "Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ > Use at your own risk.\n"
+        + "\033[0m",
+        print=True,
     )
 
-    info("♫♫♫ >")
-    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n")
+    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
-    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    info("♫♫♫ > " + str(network_url))
-    info("♫♫♫ >")
-    info("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    info("♫♫♫ > " + str(network_url), print=True)
+    info("♫♫♫ >", print=True)
+    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
 
     signaling_client = register(url=network_url)
 
-    info(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
     my_domain = Domain(name="Joiner")
 
@@ -279,8 +284,8 @@ def join_duet(
         signaling_client=signaling_client,
         offer=False,
     )
-    info()
-    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    info(print=True)
+    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
 
     return duet

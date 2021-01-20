@@ -105,3 +105,6 @@ class AbstractNodeClient(Address):
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
         traceback_and_raise(NotImplementedError)
+
+    def send_immediate_msg_without_reply(self, msg: Any) -> Any:
+        raise NotImplementedError

@@ -16,10 +16,11 @@ from ...core.common.object import ObjectWithID
 from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import traceback_and_raise
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
-from ...logger import debug, traceback_and_raise
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")

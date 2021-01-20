@@ -22,13 +22,13 @@ PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    tenseal_ast = create_ast()
+def update_ast(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
+    tenseal_ast = create_ast(client=client)
     ast.add_attr(attr_name=LIB_NAME, attr=tenseal_ast.attrs[LIB_NAME])
 
 
-def create_ast() -> Globals:
-    ast = Globals()
+def create_ast(client: TypeAny) -> Globals:
+    ast = Globals(client=client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [("tenseal", ts)]
 

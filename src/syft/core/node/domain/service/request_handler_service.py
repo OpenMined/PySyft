@@ -15,6 +15,8 @@ from .....decorators import syft_decorator
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
+from .....logger import debug
+from .....logger import error
 from .....proto.core.node.domain.service.request_handler_message_pb2 import (
     GetAllRequestHandlersMessage as GetAllRequestHandlersMessage_PB,
 )
@@ -30,7 +32,6 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....logger import error, debug
 
 
 class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):

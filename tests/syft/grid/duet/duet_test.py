@@ -1,18 +1,21 @@
 # stdlib
 import atexit
-from multiprocessing import Manager, log_to_stderr, Process
-
+from multiprocessing import Manager
+from multiprocessing import Process
+from multiprocessing import log_to_stderr
 import socket
 from time import sleep
 from typing import Callable
 from typing import List
 from typing import Tuple
 
+# third party
+import pytest
+
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
-
-from .signaling_server_test import run
 from .process_test import SyftTestProcess
+from .signaling_server_test import run
 
 log_to_stderr()
 
@@ -33,6 +36,7 @@ registered_tests: List[Tuple[Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
 
+@pytest.mark.skip
 def test_duet() -> None:
     # let the flask server init:
     sleep(5)
