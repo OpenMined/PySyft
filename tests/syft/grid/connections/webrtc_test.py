@@ -116,7 +116,7 @@ async def test_set_offer_sets_channel() -> None:
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
-    _ = await webrtc._set_offer()
+    await webrtc._set_offer()
     assert isinstance(webrtc.channel, RTCDataChannel)
     assert webrtc.channel.bufferedAmountLowThreshold == 16 * DC_MAX_CHUNK_SIZE
 
@@ -127,7 +127,7 @@ async def test_set_offer_on_open() -> None:
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
-    _ = await webrtc._set_offer()
+    await webrtc._set_offer()
 
     channel_methods = list(webrtc.channel._events.values())
     on_open = list(channel_methods[1].values())[0]
@@ -147,7 +147,7 @@ async def test_set_offer_on_message() -> None:
 
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
-    _ = await webrtc._set_offer()
+    await webrtc._set_offer()
 
     channel_methods = list(webrtc.channel._events.values())
     on_message = list(channel_methods[2].values())[0]
@@ -243,6 +243,59 @@ async def test_set_answer_on_message() -> None:
 
         await on_message(message=DC_CHUNK_END_SIGN)
         assert consumer_mock.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_finish_coroutines_raise_exception() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+
+    with patch("syft.grid.connections.webrtc.logger") as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
+        ):
+            with pytest.raises(Exception):
+                webrtc._finish_coroutines()
+
+            expected_log = "Got an exception in WebRTCConnection _finish_coroutines."
+            assert expected_log in mock_logger.error.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_close_raise_exception() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+
+    with patch("syft.grid.connections.webrtc.logger") as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
+        ):
+            with pytest.raises(Exception):
+                webrtc.close()
+
+            expected_log = "Got an exception in WebRTCConnection close."
+            assert expected_log in mock_logger.error.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_close() -> None:
+    nest_asyncio.apply()
+
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    await webrtc._set_offer()
+
+    with patch("syft.grid.connections.webrtc.RTCDataChannel.send") as send_mock:
+        with patch(
+            "syft.grid.connections.webrtc.WebRTCConnection._finish_coroutines"
+        ) as finish_mock:
+            webrtc.close()
+            assert send_mock.call_count == 1
+            assert finish_mock.call_count == 1
 
 
 # --------------------- INTEGRATION ---------------------
