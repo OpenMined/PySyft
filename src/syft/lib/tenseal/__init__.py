@@ -107,8 +107,6 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.CKKSVector.enc_matmul_plain_", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.decrypt", "syft.lib.python.List"),
         ("tenseal.CKKSVector.link_context", "syft.lib.python._SyNone"),
-        ("tenseal.CKKSVector.shape", "syft.lib.python.List"),
-        ("tenseal.CKKSVector.scale", "syft.lib.python.Int"),
     ]
 
     add_modules(ast, modules)
