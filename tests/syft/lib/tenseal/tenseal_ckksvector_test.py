@@ -394,21 +394,3 @@ def test_tenseal_ckksvector_matmul(context: Any, duet: sy.VirtualMachine) -> Non
 
     result = enc_v1_ptr.decrypt().get()
     assert _almost_equal(result, [157, -90, 153])
-
-
-@pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_scale(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
-    v1 = [0, 1, 2, 3, 4]
-    enc_v1 = ts.ckks_vector(context, v1)
-
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-
-    enc_v1_ptr.link_context(ctx_ptr)
-
-    result_enc_ptr = enc_v1_ptr.scale()
-
-    result = result_enc_ptr.get()
-    assert result == [2 ** 40]
