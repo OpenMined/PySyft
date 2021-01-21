@@ -1,0 +1,7 @@
+syntax = "proto3";
+package syft.util;
+
+message Device {
+  string type = 1;
+  int32 index = 2;
+}

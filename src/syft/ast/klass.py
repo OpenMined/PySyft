@@ -286,6 +286,10 @@ class Class(Callable):
                 # which_obj should be of the same type as what self._data_proto2object returns
                 which_obj = self.serializable_wrapper_type(value=self)
 
+            if "CTypeWrapper" in self.serializable_wrapper_type.__name__:
+                # which_obj should be of the same type as what self._data_proto2object returns
+                which_obj = self.serializable_wrapper_type(value=self)
+
             id_ = getattr(self, "id", None)
             if id_ is None:
                 id_ = UID()
