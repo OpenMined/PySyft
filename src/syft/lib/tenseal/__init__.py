@@ -13,8 +13,11 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..misc.union import UnionGenerator
-from .ckks_vector import CKKSVector  # noqa: 401
 from .context import ContextWrapper  # noqa: 401
+
+from .ckks_vector import CKKSVector  # noqa: 401
+from .ckks_tensor import CKKSTensor  # noqa: 401
+from .bfv_vector import BFVVector  # noqa: 401
 
 LIB_NAME = "tenseal"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -36,6 +39,8 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.Context", "tenseal.Context", ts.Context),
         ("tenseal.SCHEME_TYPE", "tenseal.SCHEME_TYPE", ts.SCHEME_TYPE),
         ("tenseal.CKKSVector", "tenseal.CKKSVector", ts.CKKSVector),
+        ("tenseal.CKKSTensor", "tenseal.CKKSTensor", ts.CKKSTensor),
+        ("tenseal.BFVVector", "tenseal.BFVVector", ts.BFVVector),
     ]
 
     methods = [
