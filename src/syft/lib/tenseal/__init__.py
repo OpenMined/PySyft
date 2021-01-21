@@ -68,14 +68,6 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.Context.auto_mod_switch", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_relin", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_rescale", "syft.lib.python.Bool"),
-        # PlainTensor
-        # ("tenseal.PlainTensor.raw", "syft.lib.python.List"),
-        # ("tenseal.PlainTensor.dtype", "syft.lib.python.String"),
-        # ("tenseal.PlainTensor.shape", "syft.lib.python.List"),
-        # ("tenseal.PlainTensor.strides", "syft.lib.python.List"),
-        # ("tenseal.PlainTensor.size", "syft.lib.python.Int"),
-        # ("tenseal.PlainTensor.tolist", "syft.lib.python.List"),
-        # ("tenseal.PlainTensor.reshape", "tenseal.PlainTensor"),
         # CKKSVector
         ("tenseal.CKKSVector.__add__", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.__iadd__", "tenseal.CKKSVector"),
