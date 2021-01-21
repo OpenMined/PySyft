@@ -37,7 +37,7 @@ class PlainTensor(StorableObject):
     @staticmethod
     def _data_proto2object(proto: TenSEALVector_PB) -> ts.PlainTensor:
         vec_id: UID = _deserialize(blob=proto.id)
-        vec = ts.lazy_bfv_vector_from(proto.vector)
+        vec = ts.plain_tensor_from(proto.vector)
         vec.id = vec_id
 
         return vec
