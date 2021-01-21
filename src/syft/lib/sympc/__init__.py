@@ -35,12 +35,14 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("sympc.session", sympc.session),
         ("sympc.tensor", sympc.tensor),
         ("sympc.protocol", sympc.protocol),
+        ("sympc.store", sympc.store),
         ("sympc.protocol.spdz", sympc.protocol.spdz),
         ("sympc.protocol.spdz.spdz", sympc.protocol.spdz.spdz),
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("sympc.session.Session", "sympc.session.Session", sympc.session.Session),
+        ("sympc.store.CryptoStore", "sympc.store.CryptoStore", sympc.store.CryptoStore),
         (
             "sympc.tensor.ShareTensor",
             "sympc.tensor.ShareTensor",
@@ -49,10 +51,17 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
+        ("sympc.store.CryptoStore.get_primitives_from_store", "syft.lib.python.List"),
+        ("sympc.session.Session.crypto_store", "sympc.store.CryptoStore"),
         ("sympc.protocol.spdz.spdz.mul_parties", "sympc.tensor.ShareTensor"),
+        ("sympc.protocol.spdz.spdz.div_wraps", "sympc.tensor.ShareTensor"),
         (
             "sympc.session.Session.przs_generate_random_share",
             "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.session.Session.populate_crypto_store",
+            "syft.lib.python._SyNone",
         ),
         (
             "sympc.session.get_generator",
@@ -76,6 +85,10 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
         (
             "sympc.tensor.ShareTensor.__matmul__",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.__truediv__",
             "sympc.tensor.ShareTensor",
         ),
         (

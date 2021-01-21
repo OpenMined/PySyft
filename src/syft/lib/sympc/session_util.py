@@ -5,6 +5,7 @@ from uuid import UUID
 # third party
 from sympc.config import Config
 from sympc.session import Session
+from sympc.store import CryptoStore
 
 # syft relative
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
@@ -19,10 +20,18 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
     length_rs = session.ring_size.bit_length()
     rs_bytes = session.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
 
+    length_nr_parties = session.ring_size.bit_length()
+    nr_parties_bytes = session.nr_parties.to_bytes(
+        (length_nr_parties + 7) // 8, byteorder="big"
+    )
+
+    session.crypto_store = CryptoStore()
+
     return MPCSession_PB(
         uuid=session.uuid.bytes,
         config=conf_proto,
         ring_size=rs_bytes,
+        nr_parties=nr_parties_bytes,
         rank=session.rank,
     )
 
@@ -34,8 +43,11 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     conf_dict = {key.data: value for key, value in conf_dict.items()}
     conf = Config(**conf_dict)
     ring_size = int.from_bytes(proto.ring_size, "big")
+    nr_parties = int.from_bytes(proto.nr_parties, "big")
 
     session = Session(config=conf, uuid=id_session, ring_size=ring_size)
     session.rank = rank
+    session.crypto_store = CryptoStore()
+    session.nr_parties = nr_parties
 
     return session
