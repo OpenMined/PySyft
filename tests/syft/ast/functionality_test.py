@@ -3,8 +3,8 @@ The following test suit serves as a set of examples of how to integrate differen
 into our AST and use them.
 """
 # stdlib
+from importlib import reload
 from typing import Union as TypeUnion
-import reload
 
 # third party
 import pytest
