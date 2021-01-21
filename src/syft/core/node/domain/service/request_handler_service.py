@@ -212,13 +212,18 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+        # For handler["created_time"], it's a large number. In order to keep it's precision
+        # when serde, we need to make it be small. So, we sub 1.6e9 here, and then add 1.6e9
+        # in _proto2object.
+        handlers = [h.copy() for h in self.handlers]
+        for handler in handlers:
+            if "created_time" in handler:
+                handler["created_time"] -= 1.6e9
 
         return GetAllRequestHandlersResponseMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            handlers=list(
-                map(lambda x: downcast(value=x)._object2proto(), self.handlers)
-            ),
+            handlers=list(map(lambda x: downcast(value=x)._object2proto(), handlers)),
         )
 
     @staticmethod
@@ -237,13 +242,15 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        handlers = [upcast(value=Dict._proto2object(proto=x)) for x in proto.handlers]
+        for handler in handlers:
+            if "created_time" in handler:
+                handler["created_time"] += 1.6e9
 
         return GetAllRequestHandlersResponseMessage(
             msg_id=deserialize(blob=proto.msg_id),
             address=deserialize(blob=proto.address),
-            handlers=[
-                upcast(value=Dict._proto2object(proto=x)) for x in proto.handlers
-            ],
+            handlers=handlers,
         )
 
     @staticmethod

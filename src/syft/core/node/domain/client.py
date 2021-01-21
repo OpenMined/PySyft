@@ -4,6 +4,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+import time
 
 # third party
 from nacl.signing import SigningKey
@@ -205,8 +206,22 @@ class RequestHandlerQueueClient:
 
     @property
     def pandas(self) -> pd.DataFrame:
+        def _get_time_remaining(handler: dict) -> int:
+            timeout_secs = handler.get("timeout_secs", -1)
+            if timeout_secs == -1:
+                return -1
+            else:
+                created_time = handler.get("created_time", 0)
+                rem = timeout_secs - (time.time() - created_time)
+                return int(rem)
+
         handler_lines = [
-            {"tags": handler["tags"], "ID": handler["id"], "action": handler["action"]}
+            {
+                "tags": handler["tags"],
+                "ID": handler["id"],
+                "action": handler["action"],
+                "remaining time (s):": _get_time_remaining(handler),
+            }
             for handler in self.handlers
         ]
         return pd.DataFrame(handler_lines)
