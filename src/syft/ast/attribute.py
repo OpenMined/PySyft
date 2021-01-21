@@ -9,6 +9,7 @@ from typing import Union
 # syft relative
 from .. import ast
 from ..core.node.abstract.node import AbstractNodeClient
+from ..logger import traceback_and_raise
 
 
 class Attribute:
@@ -71,7 +72,7 @@ class Attribute:
          Returns:
              Any: The results of running the computation on the object ref.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def _extract_attr_type(
         self,
@@ -165,7 +166,9 @@ class Attribute:
         if _path[0] in self.attrs:
             return self.attrs[_path[0]].query(path=_path[1:])
 
-        raise ValueError(f"Path {'.'.join(_path)} not present in the AST.")
+        traceback_and_raise(
+            ValueError(f"Path {'.'.join(_path)} not present in the AST.")
+        )
 
     @property
     def name(self) -> str:
@@ -201,4 +204,4 @@ class Attribute:
               is_static (bool): if the queried object is static, it has to be found on the ast
                 itself, not on an existing pointer.
         """
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
