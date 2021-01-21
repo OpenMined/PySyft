@@ -12,6 +12,7 @@ from typing import Union
 from .. import python
 from ...core.common import UID
 from ...decorators import syft_decorator
+from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
 
 NoneType = type(None)
@@ -62,7 +63,7 @@ def isprimitive(value: Any) -> bool:
 
 class PrimitiveFactory(ABC):
     def upcast(self) -> Union[int, float, bool, complex, list, str, None]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
     @syft_decorator(typechecking=True)

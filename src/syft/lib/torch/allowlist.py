@@ -74,12 +74,16 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.to_mkldnn"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
+
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
 
 
 # SECTION - The capital Tensor constructors
+# allowlist["torch.__version__"] = "syft.lib.python.String"
+# allowlist["torch.Tensor.retain_graph"] = "syft.lib.python.Bool"
+
 allowlist["torch.Tensor"] = "torch.Tensor"
 allowlist["torch.BFloat16Tensor"] = "torch.Tensor"
 allowlist["torch.BoolTensor"] = "torch.Tensor"

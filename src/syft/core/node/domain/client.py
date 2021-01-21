@@ -1,10 +1,10 @@
 # stdlib
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
-import time
 
 # third party
 from nacl.signing import SigningKey
@@ -12,6 +12,7 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -57,11 +58,15 @@ class RequestQueueClient:
             for request in self.requests:
                 if key == str(request.id.value):
                     return request
-            raise KeyError("No such request found for string id:" + str(key))
+            traceback_and_raise(
+                KeyError("No such request found for string id:" + str(key))
+            )
         if isinstance(key, int):
             return self.requests[key]
         else:
-            raise KeyError("Please pass in a string or int key")
+            traceback_and_raise(KeyError("Please pass in a string or int key"))
+
+        raise Exception("should not get here")
 
     def __repr__(self) -> str:
         return repr(self.requests)
@@ -123,7 +128,7 @@ class RequestQueueClient:
     ) -> Dict[str, Any]:
         handler_opts: Dict[str, Any] = {}
         if action not in ["accept", "deny"]:
-            raise Exception("Action must be 'accept' or 'deny'")
+            traceback_and_raise(Exception("Action must be 'accept' or 'deny'"))
         handler_opts["action"] = action
         handler_opts["print_local"] = bool(print_local)
         handler_opts["log_local"] = bool(log_local)
@@ -278,7 +283,9 @@ class DomainClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a domain, you don't need a Device ID.")
+        traceback_and_raise(
+            Exception("This client points to a domain, you don't need a Device ID.")
+        )
 
     @property
     def vm(self) -> Optional[Location]:
@@ -297,7 +304,9 @@ class DomainClient(Client):
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a device, you don't need a VM Location.")
+        traceback_and_raise(
+            Exception("This client points to a device, you don't need a VM Location.")
+        )
 
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")

@@ -7,7 +7,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
@@ -16,6 +15,8 @@ from .....decorators import syft_decorator
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
+from .....logger import debug
+from .....logger import error
 from .....proto.core.node.domain.service.request_handler_message_pb2 import (
     GetAllRequestHandlersMessage as GetAllRequestHandlersMessage_PB,
 )
@@ -290,9 +291,7 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
 
             # find if there exists a handler match the handler passed in
             existing_handlers = getattr(node, "request_handlers", None)
-            logger.debug(
-                f"> Updating Request Handlers with existing: {existing_handlers}"
-            )
+            debug(f"> Updating Request Handlers with existing: {existing_handlers}")
             if existing_handlers is not None:
                 matched = None
                 for existing_handler in existing_handlers:
@@ -311,20 +310,18 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
                     msg.handler["created_time"] = time.time()
                     replacement_handlers.append(msg.handler)
                     if matched is not None:
-                        logger.debug(
+                        debug(
                             f"> Replacing a Request Handler {matched} with: {msg.handler}"
                         )
                     else:
-                        logger.debug(f"> Adding a Request Handler {msg.handler}")
+                        debug(f"> Adding a Request Handler {msg.handler}")
                 else:
-                    logger.debug(f"> Removing a Request Handler: {msg.handler}")
+                    debug(f"> Removing a Request Handler with: {msg.handler}")
 
                 setattr(node, "request_handlers", replacement_handlers)
-                logger.debug(
-                    f"> Finished Updating Request Handlers with: {existing_handlers}"
-                )
+                debug(f"> Finished Updating Request Handlers with: {existing_handlers}")
             else:
-                logger.error(f"> Node has no Request Handlers attribute: {type(node)}")
+                error(f"> Node has no Request Handlers attribute: {type(node)}")
 
         return
 
@@ -344,9 +341,7 @@ class GetAllRequestHandlersService(ImmediateNodeServiceWithoutReply):
         handlers: List[DictType[str, Any]] = []
         if verify_key == node.root_verify_key:
             existing_handlers = getattr(node, "request_handlers", None)
-            logger.debug(
-                f"> Getting all Existing Request Handlers: {existing_handlers}"
-            )
+            debug(f"> Getting all Existing Request Handlers: {existing_handlers}")
             if existing_handlers is not None:
                 handlers = existing_handlers
 

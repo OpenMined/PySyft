@@ -32,7 +32,7 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        chunk: [1, 2, 3, 4, 5, 6, 7]
+        chunk: [1, 2, 3, 4, 5, 6, 7, 8]
         include:
           - os: ubuntu-latest
             python-version: 3.7
@@ -62,6 +62,106 @@ jobs:
             python-version: 3.7
             torch-version: 1.4.0
             chunk: 7
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+            chunk: 8
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 8
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 8
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 1
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 2
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 3
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 4
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 5
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 6
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 7
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          #   chunk: 8
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
@@ -90,6 +190,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Install aiortc native dependencies
+        if: startsWith(runner.os, 'Linux') == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
+
       - name: Install PyTorch Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |
@@ -108,21 +214,21 @@ jobs:
       - name: Run torch test chunks Linux and MacOS
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          export TEST_CHUNKS=14
+          export TEST_CHUNKS=16
           export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
-          export TEST_CHUNK=$(( ${{ matrix.chunk }}+7 ))
+          export TEST_CHUNK=$(( ${{ matrix.chunk }}+8 ))
           echo "Running $TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
 
       - name: Run torch test chunks Windows
         if: startsWith(runner.os, 'Windows')
         run: |
-          $Env:TEST_CHUNKS=14
+          $Env:TEST_CHUNKS=16
           $Env:TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $Env:TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov
-          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+7
+          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+8
           echo "Running $Env:TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark --no-cov

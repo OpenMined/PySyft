@@ -6,13 +6,16 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
 from ..... import serialize
 from .....decorators import syft_decorator
+from .....logger import critical
+from .....logger import debug
+from .....logger import traceback
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.request_message_pb2 import (
     RequestMessage as RequestMessage_PB,
 )
@@ -104,13 +107,13 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
                     verify_key=self.destination_node_if_available.root_verify_key,
                 )
             except Exception as e:
-                print(e)
-                logger.critical(f"Tried to {action_name} Message on Node. {e}")
-            logger.debug(f"{action_name} Request: " + str(self.id))
+                traceback(e)
+                critical(f"Tried to {action_name} Message on Node. {e}")
+            debug(f"{action_name} Request: " + str(self.id))
         else:
             log = f"No way to dispatch {action_name} Message."
-            logger.critical(log)
-            raise Exception(log)
+            critical(log)
+            traceback_and_raise(Exception(log))
 
     def reject(self) -> None:
         self.deny()
@@ -182,11 +185,13 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         # node.requests.register_request(msg)  # type: ignore
 
         if msg.requester_verify_key != verify_key:
-            raise Exception(
-                "You tried to request access for a key that is not yours!"
-                "You cannot do this! Whatever key you want to request access"
-                "for must be the verify key that also verifies the message"
-                "containing the request."
+            traceback_and_raise(
+                Exception(
+                    "You tried to request access for a key that is not yours!"
+                    "You cannot do this! Whatever key you want to request access"
+                    "for must be the verify key that also verifies the message"
+                    "containing the request."
+                )
             )
 
         # since we reject/accept requests based on the ID, we don't want there to be
@@ -198,8 +203,10 @@ class RequestService(ImmediateNodeServiceWithoutReply):
                 req.object_id == msg.object_id
                 and req.requester_verify_key == msg.requester_verify_key
             ):
-                raise DuplicateRequestException(
-                    f"You have already requested {msg.object_id}"
+                traceback_and_raise(
+                    DuplicateRequestException(
+                        f"You have already requested {msg.object_id}"
+                    )
                 )
 
         # using the local arrival time we can expire the request

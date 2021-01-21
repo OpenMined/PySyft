@@ -11,12 +11,12 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
 )
@@ -215,7 +215,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     )
                     results.append(ptr)
         except Exception as e:
-            logger.error(f"Error searching store. {e}")
+            error(f"Error searching store. {e}")
 
         return ObjectSearchReplyMessage(address=msg.reply_to, results=results)
 
