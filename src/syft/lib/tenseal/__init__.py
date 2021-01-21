@@ -112,6 +112,24 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.CKKSVector.enc_matmul_plain_", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.decrypt", "syft.lib.python.List"),
         ("tenseal.CKKSVector.link_context", "syft.lib.python._SyNone"),
+        # BFVVector
+        ("tenseal.BFVVector.__add__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__iadd__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__radd__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__mul__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__imul__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__rmul__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__sub__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__isub__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.__rsub__", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.add", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.add_", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.mul", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.mul_", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.sub", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.sub_", "tenseal.BFVVector"),
+        ("tenseal.BFVVector.decrypt", "syft.lib.python.List"),
+        ("tenseal.BFVVector.link_context", "syft.lib.python._SyNone"),
     ]
 
     add_modules(ast, modules)
