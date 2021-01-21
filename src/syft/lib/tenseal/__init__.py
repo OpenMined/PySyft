@@ -18,6 +18,7 @@ from .context import ContextWrapper  # noqa: 401
 from .ckks_vector import CKKSVector  # noqa: 401
 from .ckks_tensor import CKKSTensor  # noqa: 401
 from .bfv_vector import BFVVector  # noqa: 401
+from .plain_tensor import PlainTensor  # noqa: 401
 
 LIB_NAME = "tenseal"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -41,6 +42,7 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.CKKSVector", "tenseal.CKKSVector", ts.CKKSVector),
         ("tenseal.CKKSTensor", "tenseal.CKKSTensor", ts.CKKSTensor),
         ("tenseal.BFVVector", "tenseal.BFVVector", ts.BFVVector),
+        ("tenseal.PlainTensor", "tenseal.PlainTensor", ts.PlainTensor),
     ]
 
     methods = [
@@ -66,6 +68,14 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.Context.auto_mod_switch", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_relin", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_rescale", "syft.lib.python.Bool"),
+        # PlainTensor
+        # ("tenseal.PlainTensor.raw", "syft.lib.python.List"),
+        # ("tenseal.PlainTensor.dtype", "syft.lib.python.String"),
+        # ("tenseal.PlainTensor.shape", "syft.lib.python.List"),
+        # ("tenseal.PlainTensor.strides", "syft.lib.python.List"),
+        # ("tenseal.PlainTensor.size", "syft.lib.python.Int"),
+        # ("tenseal.PlainTensor.tolist", "syft.lib.python.List"),
+        # ("tenseal.PlainTensor.reshape", "tenseal.PlainTensor"),
         # CKKSVector
         ("tenseal.CKKSVector.__add__", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.__iadd__", "tenseal.CKKSVector"),
@@ -112,6 +122,42 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.CKKSVector.enc_matmul_plain_", "tenseal.CKKSVector"),
         ("tenseal.CKKSVector.decrypt", "syft.lib.python.List"),
         ("tenseal.CKKSVector.link_context", "syft.lib.python._SyNone"),
+        # CKKSTensor
+        ("tenseal.CKKSTensor.__add__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__iadd__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__radd__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__mul__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__imul__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__rmul__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__sub__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__isub__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__rsub__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__pow__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__ipow__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.__neg__", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.add", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.add_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.mul", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.mul_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.sub", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.sub_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.neg", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.neg_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.sum", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.sum_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.square", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.square_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.pow", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.pow_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.polyval", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.polyval_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.dot", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.dot_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.shape", "syft.lib.python.List"),
+        ("tenseal.CKKSTensor.reshape", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.reshape_", "tenseal.CKKSTensor"),
+        ("tenseal.CKKSTensor.decrypt", "syft.lib.python.List"),
+        ("tenseal.CKKSTensor.link_context", "syft.lib.python._SyNone"),
         # BFVVector
         ("tenseal.BFVVector.__add__", "tenseal.BFVVector"),
         ("tenseal.BFVVector.__iadd__", "tenseal.BFVVector"),

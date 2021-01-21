@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class CKKSTensor(StorableObject):
+class PlainTensor(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -35,9 +35,9 @@ class CKKSTensor(StorableObject):
         return proto
 
     @staticmethod
-    def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSTensor:
+    def _data_proto2object(proto: TenSEALVector_PB) -> ts.PlainTensor:
         vec_id: UID = _deserialize(blob=proto.id)
-        vec = ts.lazy_ckks_tensor_from(proto.vector)
+        vec = ts.lazy_bfv_vector_from(proto.vector)
         vec.id = vec_id
 
         return vec
@@ -48,7 +48,7 @@ class CKKSTensor(StorableObject):
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return ts.CKKSTensor
+        return ts.PlainTensor
 
     @staticmethod
     def construct_new_object(
@@ -64,5 +64,5 @@ class CKKSTensor(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.CKKSTensor, name="serializable_wrapper_type", attr=CKKSTensor
+    obj=ts.PlainTensor, name="serializable_wrapper_type", attr=PlainTensor
 )
