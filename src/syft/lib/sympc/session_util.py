@@ -21,7 +21,9 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
     rs_bytes = session.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
 
     length_nr_parties = session.ring_size.bit_length()
-    nr_parties_bytes = session.nr_parties.to_bytes((length_nr_parties + 7) // 8, byteorder="big")
+    nr_parties_bytes = session.nr_parties.to_bytes(
+        (length_nr_parties + 7) // 8, byteorder="big"
+    )
 
     session.crypto_store = CryptoStore()
 
