@@ -49,8 +49,6 @@ def test_context_send(context: Any) -> None:
     assert len(alice.store) == 1
 
 
-# TODO
-@pytest.mark.xfail
 @pytest.mark.vendor(lib="tenseal")
 def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
     import tenseal as ts
