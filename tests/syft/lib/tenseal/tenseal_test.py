@@ -23,6 +23,8 @@ def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) ->
 def context() -> Any:
     import tenseal as ts
 
+    sy.load_lib("tenseal")
+
     context = ts.context(
         ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
     )

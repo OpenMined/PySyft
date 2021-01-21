@@ -22,6 +22,8 @@ def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) ->
 def context() -> Any:
     import tenseal as ts
 
+    sy.load_lib("tenseal")
+
     context = ts.context(
         ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
     )
@@ -36,27 +38,36 @@ def duet() -> Any:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_send() -> None:
+def test_context_send(context: Any) -> None:
     """Test sending a TenSEAL context"""
-    import tenseal as ts
-
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
     assert len(alice.store) == 0
 
-    ctx = ts.context(ts.SCHEME_TYPE.CKKS, 8192, 0, [40, 20, 40])
-    ctx.global_scale = 2 ** 40
-
-    sy.load_lib("tenseal")
-
-    _ = ctx.send(alice_client)
+    _ = context.send(alice_client)
 
     assert len(alice.store) == 1
 
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
+    import tenseal as ts
+
+    v1 = [0, 1, 2, 3, 4]
+    enc_v1 = ts.ckks_vector(context, v1)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    remove_ctx = ctx_ptr.get(delete_obj=False)
+    enc_v1 = enc_v1_ptr.get(delete_obj=False)
+
+    enc_v1.link_context(remove_ctx)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     import tenseal as ts
 
     v1 = [0, 1, 2, 3, 4]
