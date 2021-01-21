@@ -28,7 +28,6 @@ def context() -> Any:
         ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
     )
     context.global_scale = pow(2, 40)
-    context.generate_galois_keys()
     return context
 
 
@@ -50,6 +49,8 @@ def test_context_send(context: Any) -> None:
     assert len(alice.store) == 1
 
 
+# TODO
+@pytest.mark.xfail
 @pytest.mark.vendor(lib="tenseal")
 def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
     import tenseal as ts
@@ -76,7 +77,55 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
+    assert ctx_ptr.is_private().get() == True  # noqa: E712
+    assert ctx_ptr.has_galois_keys().get() == False  # noqa: E712
+    assert ctx_ptr.has_secret_key().get() == True  # noqa: E712
+    assert ctx_ptr.has_public_key().get() == True  # noqa: E712
+    assert ctx_ptr.has_relin_keys().get() == True  # noqa: E712
+
     enc_v1_ptr.link_context(ctx_ptr)
 
     result = enc_v1_ptr.decrypt().get()
     assert _almost_equal(result, [0, 1, 2, 3, 4])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_context_generate_relin_keys(context: Any, duet: sy.VirtualMachine) -> None:
+    ctx_ptr = context.send(duet, searchable=True)
+
+    assert ctx_ptr.has_relin_keys().get() == True  # noqa: E712
+    ctx_ptr.generate_relin_keys()
+    assert ctx_ptr.has_relin_keys().get() == True  # noqa: E712
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_context_generate_galois_keys(context: Any, duet: sy.VirtualMachine) -> None:
+    ctx_ptr = context.send(duet, searchable=True)
+
+    assert ctx_ptr.has_galois_keys().get() == False  # noqa: E712
+    ctx_ptr.generate_galois_keys()
+    assert ctx_ptr.has_galois_keys().get() == True  # noqa: E712
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_context_make_public(context: Any, duet: sy.VirtualMachine) -> None:
+    context.make_context_public(generate_galois_keys=False, generate_relin_keys=False)
+
+    ctx_ptr = context.send(duet, searchable=True)
+
+    assert ctx_ptr.is_private().get() == False  # noqa: E712
+    assert ctx_ptr.has_galois_keys().get() == False  # noqa: E712
+    assert ctx_ptr.has_secret_key().get() == False  # noqa: E712
+    assert ctx_ptr.has_public_key().get() == True  # noqa: E712
+    assert ctx_ptr.has_relin_keys().get() == True  # noqa: E712
+    assert ctx_ptr.is_public().get() == True  # noqa: E712
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_context_options(context: Any, duet: sy.VirtualMachine) -> None:
+    ctx_ptr = context.send(duet, searchable=True)
+
+    assert ctx_ptr.auto_mod_switch.get() == True  # noqa: E712
+    assert ctx_ptr.auto_relin.get() == True  # noqa: E712
+    assert ctx_ptr.auto_rescale.get() == True  # noqa: E712
+    assert ctx_ptr.global_scale.get() == 2 ** 40
