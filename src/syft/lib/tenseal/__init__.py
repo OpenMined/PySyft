@@ -15,7 +15,7 @@ from ...ast.globals import Globals
 from .bfv_vector import BFVVectorWrapper  # noqa: 401
 from .ckks_tensor import CKKSTensorWrapper  # noqa: 401
 from .ckks_vector import CKKSVectorWrapper  # noqa: 401
-from .context import ContextWrapper  # noqa: 401
+from .context import ContextWrapper, SchemeTypeWrapper  # noqa: 401
 from .plain_tensor import PlainTensorWrapper  # noqa: 401
 
 LIB_NAME = "tenseal"

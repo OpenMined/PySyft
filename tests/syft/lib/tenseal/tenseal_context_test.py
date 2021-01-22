@@ -37,6 +37,17 @@ def test_context_send(context: Any) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
+@pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
+def test_scheme_send(scheme: Any) -> None:
+    """Test sending a TenSEAL scheme"""
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    st_ptr = scheme.send(alice_client, searchable=True)
+    assert st_ptr.get() == scheme
+
+
+@pytest.mark.vendor(lib="tenseal")
 def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
