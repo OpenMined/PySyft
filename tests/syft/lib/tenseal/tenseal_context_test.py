@@ -1,24 +1,12 @@
 # third party
 import pytest
 from typing import Any
-from typing import Sequence
 
 # syft absolute
 import syft as sy
 
 ts = pytest.importorskip("tenseal")
 sy.load_lib("tenseal")
-
-
-def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) -> bool:
-    if len(vec1) != len(vec2):
-        return False
-
-    upper_bound = pow(10, -precision_pow_ten)
-    for v1, v2 in zip(vec1, vec2):
-        if abs(v1 - v2) > upper_bound:
-            return False
-    return True
 
 
 @pytest.fixture(scope="function")
@@ -79,7 +67,7 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1_ptr.link_context(ctx_ptr)
 
     result = enc_v1_ptr.decrypt().get()
-    assert _almost_equal(result, [0, 1, 2, 3, 4])
+    assert pytest.approx(result, abs=0.001) == [0, 1, 2, 3, 4]
 
 
 @pytest.mark.vendor(lib="tenseal")
