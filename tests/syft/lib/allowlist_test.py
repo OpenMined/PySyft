@@ -225,15 +225,21 @@ if os.path.exists(SUPPORT_FILE_PATH):
 # write test debug info to make it easy to debug long running tests with large output
 def write_error_debug(debug_data: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data, default=str)}\n")
+    try:
+        with open(ERROR_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(debug_data, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # write the result of support for the test for creating a comprehensive report
 def write_support_result(test_details: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(SUPPORT_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(test_details, default=str)}\n")
+    try:
+        with open(SUPPORT_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(test_details, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 TEST_DATA = []
