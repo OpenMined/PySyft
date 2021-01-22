@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class PlainTensor(StorableObject):
+class PlainTensorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -64,5 +64,5 @@ class PlainTensor(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.PlainTensor, name="serializable_wrapper_type", attr=PlainTensor
+    obj=ts.PlainTensor, name="serializable_wrapper_type", attr=PlainTensorWrapper
 )

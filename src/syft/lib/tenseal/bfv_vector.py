@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class BFVVector(StorableObject):
+class BFVVectorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -63,4 +63,6 @@ class BFVVector(StorableObject):
         return data
 
 
-aggressive_set_attr(obj=ts.BFVVector, name="serializable_wrapper_type", attr=BFVVector)
+aggressive_set_attr(
+    obj=ts.BFVVector, name="serializable_wrapper_type", attr=BFVVectorWrapper
+)

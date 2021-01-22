@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class CKKSVector(StorableObject):
+class CKKSVectorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -64,5 +64,5 @@ class CKKSVector(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVector
+    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVectorWrapper
 )

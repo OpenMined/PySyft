@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class CKKSTensor(StorableObject):
+class CKKSTensorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -64,5 +64,5 @@ class CKKSTensor(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.CKKSTensor, name="serializable_wrapper_type", attr=CKKSTensor
+    obj=ts.CKKSTensor, name="serializable_wrapper_type", attr=CKKSTensorWrapper
 )
