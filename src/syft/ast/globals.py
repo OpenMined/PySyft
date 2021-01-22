@@ -32,7 +32,9 @@ class Globals(Module):
         )
 
         if not _path:
-            raise ValueError("MAKE PROPER SCHEMA")
+            traceback_and_raise(
+                ValueError("Can't execute remote call if path is not specified.")
+            )
 
         return self.attrs[_path[index]](path=_path, index=index + 1, obj_type=obj_type)
 

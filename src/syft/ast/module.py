@@ -10,22 +10,10 @@ from typing import Union
 # syft relative
 from .. import ast
 from ..ast.callable import Callable
+from ..logger import traceback_and_raise
 
 
 def is_static_method(host_object, attr):  # type: ignore
-    """Test if a value of a class is static method.
-
-    example::
-
-        class MyClass(object):
-            @staticmethod
-            def method():
-                ...
-
-    :param klass: the class
-    :param attr: attribute name
-    :param value: attribute value
-    """
     value = getattr(host_object, attr)
 
     if not hasattr(host_object, "__mro__"):
@@ -67,10 +55,12 @@ class Module(ast.attribute.Attribute):
         self.__setattr__(attr_name, attr)
 
         if is_static is True:
-            raise ValueError("MAKE PROPER ERROR SCHEMA")
+            traceback_and_raise(
+                ValueError("Static methods shouldn't be added to an object.")
+            )
 
         if attr is None:
-            raise ValueError("MAKE PROPER ERROR SCHEMA")
+            traceback_and_raise(ValueError("An attribute reference has to be passed."))
 
         # if add_attr is called directly we need to cache the path as well
         attr_ref = getattr(attr, "object_ref", None)
@@ -96,7 +86,9 @@ class Module(ast.attribute.Attribute):
         )
 
         if not _path:
-            raise ValueError("NAKE PROPER SCHEMA")
+            traceback_and_raise(
+                ValueError("Can't execute remote call if path is not specified.")
+            )
 
         resolved = self.attrs[_path[index]](
             path=_path, index=index + 1, obj_type=obj_type

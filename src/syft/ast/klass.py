@@ -25,6 +25,7 @@ from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
+from ..logger import critical
 from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
 
@@ -453,11 +454,23 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            raise e
+            critical(
+                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
+                "StaticAttribute, be sure they have been added to the AST. Falling back on"
+                "__getattr__ to search in self.attrs for the requested field."
+            )
+            traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
         attrs = super().__getattribute__("attrs")
-        return attrs[item] if item in attrs else None
+        if item not in attrs:
+            traceback_and_raise(
+                KeyError(
+                    f"__getattr__ failed, {item} is not present on the "
+                    f"object, nor the AST attributes!"
+                )
+            )
+        return attrs[item]
 
     def __setattr__(self, key: str, value: Any) -> None:
         if hasattr(super(), "attrs"):
