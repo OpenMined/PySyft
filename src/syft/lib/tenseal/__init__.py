@@ -12,12 +12,10 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
-from ..misc.union import UnionGenerator
-from .context import ContextWrapper  # noqa: 401
-
-from .ckks_vector import CKKSVector  # noqa: 401
-from .ckks_tensor import CKKSTensor  # noqa: 401
 from .bfv_vector import BFVVector  # noqa: 401
+from .ckks_tensor import CKKSTensor  # noqa: 401
+from .ckks_vector import CKKSVector  # noqa: 401
+from .context import ContextWrapper  # noqa: 401
 from .plain_tensor import PlainTensor  # noqa: 401
 
 LIB_NAME = "tenseal"
@@ -60,11 +58,7 @@ def create_ast(client: TypeAny) -> Globals:
         ("tenseal.Context.is_private", "syft.lib.python.Bool"),
         ("tenseal.Context.make_context_public", "syft.lib.python._SyNone"),
         ("tenseal.Context.copy", "tenseal.Context"),
-        # Attr and property doesn't currently work
-        (
-            "tenseal.Context.global_scale",
-            UnionGenerator["syft.lib.python.Int", "syft.lib.python.Float"],
-        ),
+        ("tenseal.Context.global_scale", "syft.lib.python.Float"),
         ("tenseal.Context.auto_mod_switch", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_relin", "syft.lib.python.Bool"),
         ("tenseal.Context.auto_rescale", "syft.lib.python.Bool"),
