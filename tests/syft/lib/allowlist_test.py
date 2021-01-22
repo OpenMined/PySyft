@@ -12,6 +12,8 @@ import platform
 import random
 import sys
 import time
+from filelock import FileLock
+
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -194,32 +196,32 @@ SUPPORT_FILE_PATH = os.path.abspath(
 )
 
 
-# clear the file before running the tests
-if os.path.exists(ERROR_FILE_PATH):
-    # this one we can delete since we dont start writing until we are into the tests
-    os.unlink(ERROR_FILE_PATH)
+def clean_files():
+    print("In prepare allowlist")
+    # clear the file before running the tests
+    if os.path.exists(ERROR_FILE_PATH):
+        print(f"Delete the file {ERROR_FILE_PATH}")
+        # this one we can delete since we dont start writing until we are into the tests
+        os.unlink(ERROR_FILE_PATH)
+
+    if os.path.exists(SUPPORT_FILE_PATH):
+        print(f"Delete the file {SUPPORT_FILE_PATH}")
+        os.unlink(SUPPORT_FILE_PATH)
 
 
-# we are running many works in parallel and theres a race condition with deleting this
-# file and then writing to it during the collection phase so we are going to just
-# spread out the workers and only delete if the file isn't brand new
-time.sleep(random.random() * 2)
+@pytest.fixture(scope="session", autouse=True)
+def session_cleanup(tmp_path_factory, worker_id):
+    if worker_id == "master":
+        clean_files()
 
-if os.path.exists(SUPPORT_FILE_PATH):
-    # we need to write during gathering so we need to delete this carefully
-    try:
-        file_stat = os.stat(SUPPORT_FILE_PATH)
-        diff = time.time() - file_stat.st_mtime
-        if diff > 0.1:
-            # only delete on the first run
-            for retry in range(5):
-                try:
-                    os.unlink(SUPPORT_FILE_PATH)
-                    break
-                except BaseException:
-                    time.sleep(1)
-    except Exception:
-        print(f"Failed while trying to os.stat file {SUPPORT_FILE_PATH}")
+    # get the temp directory shared by all workers
+    root_tmp_dir = tmp_path_factory.getbasetemp().parent
+
+    fn = root_tmp_dir / "allow_list.lock"
+    with FileLock(str(fn)):
+        # only one worker will execute this
+        if not fn.is_file():
+            clean_files()
 
 
 # write test debug info to make it easy to debug long running tests with large output
