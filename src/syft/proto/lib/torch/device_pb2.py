@@ -15,17 +15,17 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/torch/device.proto",
-    package="syft.util",
+    package="syft.lib.torch",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/device.proto\x12\tsyft.util"%\n\x06\x44\x65vice\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05index\x18\x02 \x01(\x05\x62\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/device.proto\x12\x0esyft.lib.torch"%\n\x06\x44\x65vice\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05index\x18\x02 \x01(\x05\x62\x06proto3',
 )
 
 
 _DEVICE = _descriptor.Descriptor(
     name="Device",
-    full_name="syft.util.Device",
+    full_name="syft.lib.torch.Device",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -33,7 +33,7 @@ _DEVICE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="type",
-            full_name="syft.util.Device.type",
+            full_name="syft.lib.torch.Device.type",
             index=0,
             number=1,
             type=9,
@@ -52,7 +52,7 @@ _DEVICE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="index",
-            full_name="syft.util.Device.index",
+            full_name="syft.lib.torch.Device.index",
             index=1,
             number=2,
             type=5,
@@ -78,8 +78,8 @@ _DEVICE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=43,
-    serialized_end=80,
+    serialized_start=48,
+    serialized_end=85,
 )
 
 DESCRIPTOR.message_types_by_name["Device"] = _DEVICE
@@ -91,7 +91,7 @@ Device = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _DEVICE,
         "__module__": "proto.lib.torch.device_pb2"
-        # @@protoc_insertion_point(class_scope:syft.util.Device)
+        # @@protoc_insertion_point(class_scope:syft.lib.torch.Device)
     },
 )
 _sym_db.RegisterMessage(Device)

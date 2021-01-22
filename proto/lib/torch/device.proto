@@ -1,5 +1,6 @@
 syntax = "proto3";
-package syft.util;
+
+package syft.lib.torch;
 
 message Device {
   string type = 1;
