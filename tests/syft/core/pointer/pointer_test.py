@@ -77,17 +77,17 @@ def test_tags() -> None:
 
     ten = th.tensor([1, 2])
 
-    ten = ten.tag("tag1")
-    assert ten.tags == ["tag1"]
+    ten = ten.tag("tag1", "tag1", "other")
+    assert ten.tags == ["tag1", "other"]
 
     # .send without `tags` passed in
     ptr = ten.send(root_client)
-    assert ptr.tags == ["tag1"]
+    assert ptr.tags == ["tag1", "other"]
 
     # .send with `tags` passed in
-    ptr = ten.send(root_client, tags=["tag2"])
-    assert ten.tags == ["tag2"]
-    assert ptr.tags == ["tag2"]
+    ptr = ten.send(root_client, tags=["tag2", "tag2", "other"])
+    assert ten.tags == ["tag2", "other"]
+    assert ptr.tags == ["tag2", "other"]
 
 
 def test_description() -> None:
