@@ -5,7 +5,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
-import warnings
+from ...logger import warning
 
 # syft relative
 from ...core.common.uid import UID
@@ -60,16 +60,17 @@ class TorchTensorWrapper(StorableObject):
             cuda_index = proto.device.index
             if th.cuda.device_count() < (cuda_index + 1):
                 cuda_index = th.cuda.device_count() - 1
-                warnings.warn(
-                    f"The cuda index in message is {cuda_index}, it's outof range. "
-                    + "Using the last of your available GPU indexex."
+                warning(
+                    f"The requested CUDA index {proto.device.index} is invalid."
+                    + f"Falling back to GPU index {cuda_index}.",
+                    print=True,
                 )
             return tensor.cuda(cuda_index)
-        else:
-            warnings.warn(
-                "The device in message is 'cuda', but there is no GPU available. Using CPU."
-            )
-            return tensor
+
+        if proto.device.type == "cuda" and not th.cuda.is_available():
+            warning("Cannot find any CUDA devices, falling back to CPU.", print=True)
+
+        return tensor
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
