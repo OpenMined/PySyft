@@ -95,6 +95,12 @@ class Callable(ast.attribute.Attribute):
                 self.client.send_immediate_msg_without_reply(msg=msg)
                 return ptr
 
+        if "path" not in kwargs or "index" not in kwargs:
+            traceback_and_raise(
+                ValueError(
+                    "AST with not client attached tries to execute remote " "function."
+                )
+            )
         path = kwargs["path"]
         index = kwargs["index"]
 
@@ -130,7 +136,9 @@ class Callable(ast.attribute.Attribute):
         attr_ref = getattr(self.object_ref, path[index])
 
         if isinstance(attr_ref, module_type):
-            traceback_and_raise(Exception("Module cannot be attr of callable."))
+            traceback_and_raise(
+                ValueError("Module cannot be an attribute of Callable.")
+            )
 
         self.attrs[path[index]] = ast.callable.Callable(
             path_and_name=".".join(path[: index + 1]),

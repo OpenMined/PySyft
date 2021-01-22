@@ -8,6 +8,7 @@ from .. import ast
 from ..core.common.pointer import AbstractPointer
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.action.get_enum_attribute_action import EnumAttributeAction
+from ..logger import traceback_and_raise
 
 
 class EnumAttribute(ast.attribute.Attribute):
@@ -47,12 +48,19 @@ class EnumAttribute(ast.attribute.Attribute):
         """
 
         if self.path_and_name is None:
-            raise ValueError("MAKE PROPER SCHEMA - Can't get enum attribute")
+            traceback_and_raise(
+                ValueError(
+                    "Can't get enum attribute, path_and_name to solve it "
+                    "has not been set."
+                )
+            )
 
         if self.client is None:
-            raise ValueError(
-                "MAKE PROPER SCHEMA - Can't get remote value if there is no remote "
-                "client"
+            traceback_and_raise(
+                ValueError(
+                    "Can't get remote enum attribute if there is no client"
+                    "set to get it from"
+                )
             )
 
         return_tensor_type_pointer_type = self.client.lib_ast.query(
@@ -77,9 +85,14 @@ class EnumAttribute(ast.attribute.Attribute):
             Enum: the enum object from the parent object reference.
         """
         if self.path_and_name is None:
-            raise ValueError("Path and name should not be None")
+            traceback_and_raise(
+                ValueError(
+                    "Can't get enum attribute, path_and_name to solve it "
+                    "has not been set remotely."
+                )
+            )
 
-        return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
+        return getattr(self.parent.object_ref, self.name)
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """
@@ -88,13 +101,18 @@ class EnumAttribute(ast.attribute.Attribute):
         Throws:
             ValueError: if the function is called
         """
-        raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
+        traceback_and_raise(
+            ValueError("__call__ should never be executed on an enum " "attribute.")
+        )
 
     def add_path(self, *args: Any, **kwargs: Any) -> None:
         """
-        An enum can no longer have children nodes.
-
-        Throws:
-            ValueError: if the function is called
+                An enum can no longer have children nodes.
+        s
+                Throws:
+                    ValueError: if the function is called
         """
-        raise ValueError("MAKE PROPER SCHEMA")
+        traceback_and_raise(
+            "__add__path should never be called on an enum attribute, "
+            "enum attributes are leaf nodes in the AST."
+        )
