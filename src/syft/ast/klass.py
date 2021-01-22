@@ -290,6 +290,16 @@ class Class(Callable):
             if id_ is None:
                 id_ = UID()
                 which_obj.id = id_
+
+            tags = sorted(set(tags), key=tags.index)  # keep order of original
+            obj_tags = getattr(which_obj, "tags", [])
+            # if `tags` is passed in, use it; else, use obj_tags
+            tags = tags if tags else obj_tags
+
+            obj_description = getattr(which_obj, "description", "")
+            # if `description` is passed in, use it; else, use obj_description
+            description = description if description else obj_description
+
             which_obj.tags = tags
             which_obj.description = description
 
@@ -324,7 +334,7 @@ class Class(Callable):
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
-            self.tags = list(tags)
+            self.tags = sorted(set(tags), key=tags.index)  # keep order of original
             return self
 
         def describe(self: Any, description: str) -> object:
