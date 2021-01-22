@@ -291,6 +291,7 @@ class Class(Callable):
                 id_ = UID()
                 which_obj.id = id_
 
+            tags = sorted(set(tags), key=tags.index)  # keep order of original
             obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags
             tags = tags if tags else obj_tags
@@ -333,7 +334,7 @@ class Class(Callable):
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
-            self.tags = list(tags)
+            self.tags = sorted(set(tags), key=tags.index)  # keep order of original
             return self
 
         def describe(self: Any, description: str) -> object:
