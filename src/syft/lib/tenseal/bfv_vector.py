@@ -54,8 +54,8 @@ class BFVVectorWrapper(StorableObject):
     def construct_new_object(
         id: UID,
         data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> StorableObject:
         data.id = id
         data.tags = tags
