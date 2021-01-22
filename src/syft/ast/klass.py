@@ -290,6 +290,15 @@ class Class(Callable):
             if id_ is None:
                 id_ = UID()
                 which_obj.id = id_
+
+            obj_tags = getattr(which_obj, "tags", [])
+            # if `tags` is passed in, use it; else, use obj_tags
+            tags = tags if tags else obj_tags
+
+            obj_description = getattr(which_obj, "description", "")
+            # if `description` is passed in, use it; else, use obj_description
+            description = description if description else obj_description
+
             which_obj.tags = tags
             which_obj.description = description
 
