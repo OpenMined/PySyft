@@ -6,13 +6,12 @@ import syft as sy
 
 from typing import Any
 
+ts = pytest.importorskip("tenseal")
+sy.load_lib("tenseal")
+
 
 @pytest.fixture(scope="function")
 def context() -> Any:
-    import tenseal as ts
-
-    sy.load_lib("tenseal")
-
     context = ts.context(ts.SCHEME_TYPE.BFV, 8192, 1032193)
     context.generate_galois_keys()
 
@@ -26,8 +25,6 @@ def duet() -> Any:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.bfv_vector(context, v1)
 
@@ -42,8 +39,6 @@ def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -73,8 +68,6 @@ def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -104,8 +97,6 @@ def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
@@ -135,8 +126,6 @@ def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -169,8 +158,6 @@ def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -190,9 +177,7 @@ def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def ptest_tenseal_bfvvector_imul(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
+def test_tenseal_bfvvector_imul(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]

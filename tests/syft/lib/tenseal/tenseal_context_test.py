@@ -6,6 +6,9 @@ from typing import Sequence
 # syft absolute
 import syft as sy
 
+ts = pytest.importorskip("tenseal")
+sy.load_lib("tenseal")
+
 
 def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) -> bool:
     if len(vec1) != len(vec2):
@@ -20,10 +23,6 @@ def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) ->
 
 @pytest.fixture(scope="function")
 def context() -> Any:
-    import tenseal as ts
-
-    sy.load_lib("tenseal")
-
     context = ts.context(
         ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
     )
@@ -51,8 +50,6 @@ def test_context_send(context: Any) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
@@ -67,8 +64,6 @@ def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
-    import tenseal as ts
-
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
