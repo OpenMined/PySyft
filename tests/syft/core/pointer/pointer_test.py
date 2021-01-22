@@ -69,3 +69,41 @@ def test_searchable_property() -> None:
 
     ptr.searchable = False
     assert len(client.store) == 0
+
+
+def test_tags() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    root_client = bob.get_root_client()
+
+    ten = th.tensor([1, 2])
+
+    ten = ten.tag("tag1")
+    assert ten.tags == ["tag1"]
+
+    # .send without `tags` passed in
+    ptr = ten.send(root_client)
+    assert ptr.tags == ["tag1"]
+
+    # .send with `tags` passed in
+    ptr = ten.send(root_client, tags=["tag2"])
+    assert ten.tags == ["tag2"]
+    assert ptr.tags == ["tag2"]
+
+
+def test_description() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    root_client = bob.get_root_client()
+
+    ten = th.tensor([1, 2])
+
+    ten = ten.describe("description 1")
+    assert ten.description == "description 1"
+
+    # .send without `description` passed in
+    ptr = ten.send(root_client)
+    assert ptr.description == "description 1"
+
+    # .send with `description` passed in
+    ptr = ten.send(root_client, description="description 2")
+    assert ten.description == "description 2"
+    assert ptr.description == "description 2"
