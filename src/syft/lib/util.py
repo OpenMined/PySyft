@@ -24,7 +24,7 @@ def generic_update_ast(
         ast = ast_or_client
         new_lib_ast = create_ast(None)
         ast.add_attr(attr_name=lib_name, attr=new_lib_ast.attrs[lib_name])
-    elif issubclass(ast_or_client, AbstractNodeClient):
+    elif isinstance(ast_or_client, AbstractNodeClient):
         client = ast_or_client
         new_lib_ast = create_ast(client)
         client.lib_ast.attrs[lib_name] = new_lib_ast.attrs[lib_name]
