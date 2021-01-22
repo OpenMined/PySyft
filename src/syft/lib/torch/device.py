@@ -12,13 +12,14 @@ from ..python.ctype import GenerateCTypeWrapper
 def object2proto(obj: "device") -> "Device_PB":
     proto = Device_PB()
     proto.type = obj.type
-    proto.index = obj.index
+    # use -2 to represent index=None
+    proto.index = -2 if obj.index is None else obj.index
     return proto
 
 
 def proto2object(proto: "Device_PB") -> Any:
     device_type = proto.type
-    index = proto.index
+    index = None if proto.index == -2 else proto.index
     obj = device(device_type, index)
     return obj
 
