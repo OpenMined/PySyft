@@ -4,7 +4,6 @@ into our AST and use them.
 """
 # stdlib
 from importlib import reload
-from typing import Any as TypeAny
 from typing import Union as TypeUnion
 
 # third party
@@ -13,6 +12,7 @@ import pytest
 # syft absolute
 import syft
 from syft.ast.globals import Globals
+from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.client import Client
 from syft.lib import lib_ast
 
@@ -20,9 +20,20 @@ from syft.lib import lib_ast
 from . import module_test
 
 
-def update_ast_test(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
-    test_ast = create_ast_test(client=client)
-    ast.add_attr(attr_name="module_test", attr=test_ast.attrs["module_test"])
+def update_ast_test(ast_or_client: TypeUnion[Globals, AbstractNodeClient]) -> None:
+    if isinstance(ast_or_client, Globals):
+        ast = ast_or_client
+        test_ast = create_ast_test(None)
+        ast.add_attr(attr_name="module_test", attr=test_ast.attrs["module_test"])
+    elif isinstance(ast_or_client, AbstractNodeClient):
+        client = ast_or_client
+        test_ast = create_ast_test(client=client)
+        client.lib_ast.attrs["module_test"] = test_ast.attrs["module_test"]
+        setattr(client, "module_test", test_ast.attrs["module_test"])
+    else:
+        raise ValueError(
+            f"Expected param of type (Globals, AbstractNodeClient), but got {type(ast_or_client)}"
+        )
 
 
 def create_ast_test(client: Client) -> Globals:
@@ -57,7 +68,7 @@ def create_ast_test(client: Client) -> Globals:
 @pytest.fixture(autouse=True, scope="module")
 def registr_module_test() -> None:
     # Make lib_ast contain the specific methods/attributes
-    update_ast_test(ast=syft.lib_ast)
+    update_ast_test(ast_or_client=syft.lib_ast)
 
     # Make sure that when we register a new client it would update the specific AST
     lib_ast.loaded_lib_constructors["module_test"] = update_ast_test
