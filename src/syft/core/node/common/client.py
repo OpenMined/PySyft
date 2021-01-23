@@ -116,18 +116,6 @@ class Client(AbstractNodeClient):
         meta = _deserialize(blob=metadata)
         return meta.node, meta.name, meta.id
 
-    def add_attr(self, attr_name: str, attr: Any) -> None:
-        # this can be called any time after startup to add additional libs
-        # bind this client to the ast sub tree
-        attr.client = self
-
-        # attach this sub tree to the main ast tree
-        self.lib_ast.attrs[attr_name] = attr
-
-        # make sure that the lib attr_name is available at the top level of the client
-        # so you can do: client.package.class.method
-        setattr(self, attr_name, attr)
-
     def install_supported_frameworks(self) -> None:
         self.lib_ast = create_lib_ast(client=self)
 

@@ -2,12 +2,13 @@
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
-from typing import Union as TypeUnion
+import functools
 
 # third party
 import opacus
 
 # syft relative
+from ..util import generic_update_ast
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
@@ -15,11 +16,6 @@ from ...ast.globals import Globals
 
 LIB_NAME = "opacus"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
-
-
-def update_ast(ast: TypeUnion[Globals, TypeAny], client: TypeAny = None) -> None:
-    opacus_ast = create_ast(client)
-    ast.add_attr(attr_name=LIB_NAME, attr=opacus_ast.attrs[LIB_NAME])
 
 
 def create_ast(client: TypeAny = None) -> Globals:
@@ -62,3 +58,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
+
+
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
