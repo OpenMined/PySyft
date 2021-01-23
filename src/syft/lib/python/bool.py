@@ -29,7 +29,8 @@ class Bool(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
         value = bool(value)
-        return int.__new__(cls, value)  # type: ignore
+        obj = int.__new__(cls, value)  # type: ignore
+        return obj
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, id: Optional[UID] = None):
