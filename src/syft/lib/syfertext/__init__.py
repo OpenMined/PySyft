@@ -1,29 +1,29 @@
 # stdlib
 from typing import Union as TypeUnion
 from typing import Any as TypeAny
+import functools
 
 # syft relative
-from ...ast.globals import Globals
+from ..util import generic_update_ast
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
+from ...ast.globals import Globals
 
+
+# The library name
+LIB_NAME = "syfertext"
 
 # Torch is a dependency for SyferText
-PACKAGE_SUPPORT = {"lib": "syfertext", "torch": {"min_version": "1.4.0"}}
+PACKAGE_SUPPORT = {"lib": LIB_NAME, "torch": {"min_version": "1.4.0"}}
 
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    syfertext_ast = create_ast()
-    ast.add_attr(attr_name="syfertext", attr=syfertext_ast.attrs["syfertext"])
-
-    
-def create_ast() -> Globals:
+def create_ast(client: TypeAny = None) -> Globals:
 
     import syfertext
     from .tokenizers import spacy_tokenizer
     from .data.units import text_doc
     
-    ast = Globals()
+    ast = Globals(client = client)
 
 
     # Define which SyferText modules to add to the AST
@@ -72,3 +72,6 @@ def create_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
         
     return ast    
+
+
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
