@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class CKKSVectorWrapper(StorableObject):
+class BFVVectorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -35,9 +35,9 @@ class CKKSVectorWrapper(StorableObject):
         return proto
 
     @staticmethod
-    def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSVector:
+    def _data_proto2object(proto: TenSEALVector_PB) -> ts.BFVVector:
         vec_id: UID = _deserialize(blob=proto.id)
-        vec = ts.lazy_ckks_vector_from(proto.vector)
+        vec = ts.lazy_bfv_vector_from(proto.vector)
         vec.id = vec_id
 
         return vec
@@ -48,7 +48,7 @@ class CKKSVectorWrapper(StorableObject):
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return ts.CKKSVector
+        return ts.BFVVector
 
     @staticmethod
     def construct_new_object(
@@ -64,5 +64,5 @@ class CKKSVectorWrapper(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVectorWrapper
+    obj=ts.BFVVector, name="serializable_wrapper_type", attr=BFVVectorWrapper
 )
