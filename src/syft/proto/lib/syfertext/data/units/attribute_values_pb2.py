@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n5proto/lib/syfertext/data/units/attribute_values.proto\x12\x12syft.lib.syfertext"*\n\x0f\x41ttributeValues\x12\x17\n\x0f\x61ttribute_value\x18\x01 \x03(\tb\x06proto3',
+    serialized_pb=b'\n5proto/lib/syfertext/data/units/attribute_values.proto\x12\x12syft.lib.syfertext" \n\x0f\x41ttributeValues\x12\r\n\x05value\x18\x01 \x03(\tb\x06proto3',
 )
 
 
@@ -31,8 +31,8 @@ _ATTRIBUTEVALUES = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="attribute_value",
-            full_name="syft.lib.syfertext.AttributeValues.attribute_value",
+            name="value",
+            full_name="syft.lib.syfertext.AttributeValues.value",
             index=0,
             number=1,
             type=9,
@@ -59,7 +59,7 @@ _ATTRIBUTEVALUES = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=77,
-    serialized_end=119,
+    serialized_end=109,
 )
 
 DESCRIPTOR.message_types_by_name["AttributeValues"] = _ATTRIBUTEVALUES

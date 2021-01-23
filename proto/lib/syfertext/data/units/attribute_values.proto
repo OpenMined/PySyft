@@ -3,5 +3,5 @@ syntax = "proto3";
 package syft.lib.syfertext;
 
 message AttributeValues{
-    repeated string attribute_value = 1;
+    repeated string value = 1;
 }

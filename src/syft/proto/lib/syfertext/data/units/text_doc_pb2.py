@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n-proto/lib/syfertext/data/units/text_doc.proto\x12\x12syft.lib.syfertext\x1a\x35proto/lib/syfertext/data/units/attribute_values.proto\x1a/proto/lib/syfertext/data/units/token_meta.proto"\xd1\x01\n\x07TextDoc\x12-\n\x06tokens\x18\x01 \x03(\x0b\x32\x1d.syft.lib.syfertext.TokenMeta\x12?\n\nattributes\x18\x02 \x03(\x0b\x32+.syft.lib.syfertext.TextDoc.AttributesEntry\x1aV\n\x0f\x41ttributesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.syft.lib.syfertext.AttributeValues:\x02\x38\x01\x62\x06proto3',
+    serialized_pb=b'\n-proto/lib/syfertext/data/units/text_doc.proto\x12\x12syft.lib.syfertext\x1a\x35proto/lib/syfertext/data/units/attribute_values.proto\x1a/proto/lib/syfertext/data/units/token_meta.proto"\xe4\x01\n\x07TextDoc\x12\x0c\n\x04uuid\x18\x01 \x01(\x0c\x12\x32\n\x0btoken_metas\x18\x02 \x03(\x0b\x32\x1d.syft.lib.syfertext.TokenMeta\x12?\n\nattributes\x18\x03 \x03(\x0b\x32+.syft.lib.syfertext.TextDoc.AttributesEntry\x1aV\n\x0f\x41ttributesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x32\n\x05value\x18\x02 \x01(\x0b\x32#.syft.lib.syfertext.AttributeValues:\x02\x38\x01\x62\x06proto3',
     dependencies=[
         proto_dot_lib_dot_syfertext_dot_data_dot_units_dot_attribute__values__pb2.DESCRIPTOR,
         proto_dot_lib_dot_syfertext_dot_data_dot_units_dot_token__meta__pb2.DESCRIPTOR,
@@ -89,8 +89,8 @@ _TEXTDOC_ATTRIBUTESENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=297,
-    serialized_end=383,
+    serialized_start=316,
+    serialized_end=402,
 )
 
 _TEXTDOC = _descriptor.Descriptor(
@@ -102,10 +102,29 @@ _TEXTDOC = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="tokens",
-            full_name="syft.lib.syfertext.TextDoc.tokens",
+            name="uuid",
+            full_name="syft.lib.syfertext.TextDoc.uuid",
             index=0,
             number=1,
+            type=12,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"",
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="token_metas",
+            full_name="syft.lib.syfertext.TextDoc.token_metas",
+            index=1,
+            number=2,
             type=11,
             cpp_type=10,
             label=3,
@@ -123,8 +142,8 @@ _TEXTDOC = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="attributes",
             full_name="syft.lib.syfertext.TextDoc.attributes",
-            index=1,
-            number=2,
+            index=2,
+            number=3,
             type=11,
             cpp_type=10,
             label=3,
@@ -151,7 +170,7 @@ _TEXTDOC = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=174,
-    serialized_end=383,
+    serialized_end=402,
 )
 
 _TEXTDOC_ATTRIBUTESENTRY.fields_by_name[
@@ -161,7 +180,7 @@ _TEXTDOC_ATTRIBUTESENTRY.fields_by_name[
 )
 _TEXTDOC_ATTRIBUTESENTRY.containing_type = _TEXTDOC
 _TEXTDOC.fields_by_name[
-    "tokens"
+    "token_metas"
 ].message_type = (
     proto_dot_lib_dot_syfertext_dot_data_dot_units_dot_token__meta__pb2._TOKENMETA
 )

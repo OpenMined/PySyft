@@ -32,7 +32,6 @@ class SpacyTokenizerWrapper(StorableObject):
 
         spacy_tokenizer_pb = SpacyTokenizer_PB()
 
-
         spacy_tokenizer_pb.uuid = self.id.value.bytes
         spacy_tokenizer_pb.prefixes.extend(self.value.prefixes)
         spacy_tokenizer_pb.suffixes.extend(self.value.suffixes)
@@ -61,12 +60,12 @@ class SpacyTokenizerWrapper(StorableObject):
             token_splits = proto.exceptions[token].splits
             token_exceptions[token] = token_splits
 
-        # Create the DefautTokenizer object
+        # Create the SpacyTokenizer object
         spacy_tokenizer = SpacyTokenizer(prefixes = prefixes,
-                                             suffixes = suffixes,
-                                             infixes = infixes,
-                                             exceptions = token_exceptions
-                                             )
+                                         suffixes = suffixes,
+                                         infixes = infixes,
+                                         exceptions = token_exceptions
+                                         )
         
         # Create a uuid.UUID object and assign it as an attribute to the tokenizer
         # The reason I do not set the id directly in the constructor is because I

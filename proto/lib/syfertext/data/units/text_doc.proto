@@ -6,6 +6,7 @@ import "proto/lib/syfertext/data/units/attribute_values.proto";
 import "proto/lib/syfertext/data/units/token_meta.proto";
 
 message TextDoc {
-    repeated TokenMeta tokens = 1;
-    map<string, AttributeValues> attributes = 2;
+    bytes uuid = 1;
+    repeated TokenMeta token_metas = 2;
+    map<string, AttributeValues> attributes = 3;
 }

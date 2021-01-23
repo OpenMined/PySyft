@@ -10,7 +10,7 @@ from ...ast import add_modules
 
 
 # Torch is a dependency for SyferText
-PACKAGE_SUPPORT = {"lib": "syfertext", "torch": {"min_version": "1.6.0"}}
+PACKAGE_SUPPORT = {"lib": "syfertext", "torch": {"min_version": "1.4.0"}}
 
 def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
     syfertext_ast = create_ast()
@@ -21,6 +21,7 @@ def create_ast() -> Globals:
 
     import syfertext
     from .tokenizers import spacy_tokenizer
+    from .data.units import text_doc
     
     ast = Globals()
 
