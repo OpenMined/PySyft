@@ -1371,9 +1371,30 @@ class DictTest(unittest.TestCase):
     def test_free_after_iterating(self):
         # this seems like a bit of a puzzle
         support.check_free_after_iterating(self, iter, Dict)
-        support.check_free_after_iterating(self, lambda d: iter(d.keys()), Dict)
-        support.check_free_after_iterating(self, lambda d: iter(d.values()), Dict)
-        support.check_free_after_iterating(self, lambda d: iter(d.items()), Dict)
+
+        d = Dict({"a": 1, "b": 2, "c": 3})
+
+        it = iter(d.keys())
+        it2 = iter(d.keys())
+        for iterator in it:
+            next(it2)
+        self.assertEqual(list(it), [])
+
+        it = iter(d.values())
+        it2 = iter(d.values())
+        for iterator in it:
+            next(it2)
+        self.assertEqual(list(it), [])
+
+        it = iter(d.items())
+        it2 = iter(d.items())
+        for iterator in it:
+            next(it2)
+        self.assertEqual(list(it), [])
+
+        # support.check_free_after_iterating(self, lambda d: iter(d.keys()), Dict)
+        # support.check_free_after_iterating(self, lambda d: iter(d.values()), Dict)
+        # support.check_free_after_iterating(self, lambda d: iter(d.items()), Dict)
 
     def test_fromkeys_operator_modifying_dict_operand(self):
         # test fix for seg fault reported in issue 27945 part 4a.
