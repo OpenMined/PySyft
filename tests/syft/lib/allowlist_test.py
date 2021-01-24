@@ -179,8 +179,12 @@ for method, return_type_name_or_dict in allowlist.items():
         BASIC_OPS_RETURN_TYPE[method_name] = return_type
 
 # load our custom configurations
-with open(__file__.replace(".py", ".json"), "r") as f:
-    TEST_JSON = json.loads(f.read())
+try:
+    with open(__file__.replace(".py", ".json"), "r") as f:
+        TEST_JSON = json.loads(f.read())
+except Exception as e:
+    print(f"Exception {e} triggered")
+    raise e
 
 # we need a file to keep all the errors in that makes it easy to debug failures
 TARGET_PLATFORM = f"{PYTHON_VERSION}_{TORCH_VERSION}_{OS_NAME}"
@@ -197,7 +201,10 @@ SUPPORT_FILE_PATH = os.path.abspath(
 # clear the file before running the tests
 if os.path.exists(ERROR_FILE_PATH):
     # this one we can delete since we dont start writing until we are into the tests
-    os.unlink(ERROR_FILE_PATH)
+    try:
+        os.unlink(ERROR_FILE_PATH)
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # we are running many works in parallel and theres a race condition with deleting this
@@ -225,15 +232,21 @@ if os.path.exists(SUPPORT_FILE_PATH):
 # write test debug info to make it easy to debug long running tests with large output
 def write_error_debug(debug_data: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data, default=str)}\n")
+    try:
+        with open(ERROR_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(debug_data, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # write the result of support for the test for creating a comprehensive report
 def write_support_result(test_details: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(SUPPORT_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(test_details, default=str)}\n")
+    try:
+        with open(SUPPORT_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(test_details, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 TEST_DATA = []
