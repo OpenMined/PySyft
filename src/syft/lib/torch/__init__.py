@@ -8,6 +8,7 @@ from packaging import version
 import torch
 
 # syft relative
+from . import device  # noqa: 401
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals

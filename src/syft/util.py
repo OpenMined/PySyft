@@ -141,6 +141,9 @@ def obj2pointer_type(obj: object) -> type:
     if fqn.endswith("ProtobufWrapper"):
         fqn = fqn.replace("ProtobufWrapper", "")
 
+    if fqn.endswith("CTypeWrapper"):
+        fqn = fqn.replace("CTypeWrapper", "")
+
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))
     except Exception as e:
