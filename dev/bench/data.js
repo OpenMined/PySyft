@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1610688619783,
+  "lastUpdate": 1611485686062,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -842,6 +842,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000007066312164928427",
             "extra": "mean: 602.182847765088 usec\nrounds: 716"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kangnahua@gmail.com",
+            "name": "Nahua",
+            "username": "nahuakang"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8a1ba1118dc7e11ecd675bca4ec58662235cf49d",
+          "message": "Test Coverage: WebRTC Connection (#5001)\n\n* Add a third unit test for new event loop in init\r\n\r\n* Add set answer try except block test\r\n\r\n* Add set answer on datachannel test\r\n\r\n* Add unit test for set answer on message\r\n\r\n* Add unit tests for close and finish coroutines methods",
+          "timestamp": "2021-01-24T10:46:13+02:00",
+          "tree_id": "82ef27f504416eb6fc950e2a7a051c2bb2a2647e",
+          "url": "https://github.com/OpenMined/PySyft/commit/8a1ba1118dc7e11ecd675bca4ec58662235cf49d"
+        },
+        "date": 1611485685473,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1412.672430431375,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010200423907776019",
+            "extra": "mean: 707.8781877937824 usec\nrounds: 639"
           }
         ]
       }
