@@ -178,6 +178,9 @@ class Pointer(AbstractPointer):
             # that is what was originally sent in with .send
             return obj.data
 
+        if type(obj).__name__.endswith("CTypeWrapper"):
+            return obj.data
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
