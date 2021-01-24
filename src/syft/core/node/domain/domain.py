@@ -229,8 +229,9 @@ class Domain(Node):
         log_local = handler.get("log_local", None)
         element_quota = handler.get("element_quota", None)
 
-        # We match a handler and a request when they have a same set of tags
-        if not set(request.object_tags) == set(tags):
+        # We match a handler and a request when they have a same set of tags,
+        # or if handler["tags"]=[], it matches with any request.
+        if tags != [] and not set(request.object_tags) == set(tags):
             debug(f"HANDLER Ignoring request handler {handler} against {request}")
             return False
 
