@@ -213,7 +213,7 @@ class Duet(DomainClient):
                 # computing time to the next task.
                 msg = await self._pull_msg_queue.get()
 
-                # If self.push_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)
+                # If self.pull_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)
                 # send it to the signaling server.
                 _response = self.signaling_client.send_immediate_msg_with_reply(msg=msg)
 
