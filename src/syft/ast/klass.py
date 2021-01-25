@@ -25,6 +25,7 @@ from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
+from ..logger import critical
 from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
 
@@ -286,10 +287,24 @@ class Class(Callable):
                 # which_obj should be of the same type as what self._data_proto2object returns
                 which_obj = self.serializable_wrapper_type(value=self)
 
+            if "CTypeWrapper" in self.serializable_wrapper_type.__name__:
+                # which_obj should be of the same type as what self._data_proto2object returns
+                which_obj = self.serializable_wrapper_type(value=self)
+
             id_ = getattr(self, "id", None)
             if id_ is None:
                 id_ = UID()
                 which_obj.id = id_
+
+            tags = sorted(set(tags), key=tags.index)  # keep order of original
+            obj_tags = getattr(which_obj, "tags", [])
+            # if `tags` is passed in, use it; else, use obj_tags
+            tags = tags if tags else obj_tags
+
+            obj_description = getattr(which_obj, "description", "")
+            # if `description` is passed in, use it; else, use obj_description
+            description = description if description else obj_description
+
             which_obj.tags = tags
             which_obj.description = description
 
@@ -324,7 +339,7 @@ class Class(Callable):
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
-            self.tags = list(tags)
+            self.tags = sorted(set(tags), key=tags.index)  # keep order of original
             return self
 
         def describe(self: Any, description: str) -> object:
@@ -443,11 +458,23 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            raise e
+            critical(
+                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
+                "StaticAttribute, be sure they have been added to the AST. Falling back on"
+                "__getattr__ to search in self.attrs for the requested field."
+            )
+            traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
         attrs = super().__getattribute__("attrs")
-        return attrs[item] if item in attrs else None
+        if item not in attrs:
+            traceback_and_raise(
+                KeyError(
+                    f"__getattr__ failed, {item} is not present on the "
+                    f"object, nor the AST attributes!"
+                )
+            )
+        return attrs[item]
 
     def __setattr__(self, key: str, value: Any) -> None:
         if hasattr(super(), "attrs"):

@@ -1,0 +1,328 @@
+# third party
+import pytest
+
+# syft absolute
+import syft as sy
+
+from typing import Any
+
+ts = pytest.importorskip("tenseal")
+sy.load_lib("tenseal")
+
+
+def _almost_equal(vec1: Any, vec2: Any, precision_pow_ten: int = 1) -> None:
+    if isinstance(vec1, ts.PlainTensor):
+        vec1 = vec1.tolist()
+    if isinstance(vec2, ts.PlainTensor):
+        vec2 = vec2.tolist()
+
+    upper_bound = pow(10, -precision_pow_ten)
+    assert pytest.approx(vec1, abs=upper_bound) == vec2
+
+
+@pytest.fixture(scope="function")
+def context() -> Any:
+    context = ts.context(
+        ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60]
+    )
+    context.global_scale = pow(2, 40)
+    context.generate_galois_keys()
+    return context
+
+
+@pytest.fixture(scope="function")
+def duet() -> Any:
+    return sy.VirtualMachine().get_root_client()
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_sanity(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    enc_v1 = ts.ckks_tensor(context, v1)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result = enc_v1_ptr.decrypt().get()
+    _almost_equal(result, [0, 1, 2, 3, 4])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_add(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+    enc_v2 = ts.ckks_tensor(context, v2)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
+
+    # add
+    result_enc_ptr = enc_v1_ptr + enc_v2_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # add inplace
+    enc_v1_ptr += enc_v2_ptr
+
+    result = enc_v1_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_sub(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+    enc_v2 = ts.ckks_tensor(context, v2)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
+
+    # sub
+    result_enc_ptr = enc_v1_ptr - enc_v2_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # sub inplace
+    enc_v1_ptr -= enc_v2_ptr
+
+    result = enc_v1_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_mul(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+    enc_v2 = ts.ckks_tensor(context, v2)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
+
+    # mul
+    result_enc_ptr = enc_v1_ptr * enc_v2_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # mul inplace
+    enc_v1_ptr *= enc_v2_ptr
+
+    result = enc_v1_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_iadd(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    # iadd
+    result_enc_ptr = enc_v1_ptr + v2
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # radd
+    result_enc_ptr = v2 + enc_v1_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # iadd inplace
+    enc_v1_ptr += v2
+
+    result = enc_v1_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_isub(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    # isub
+    result_enc_ptr = enc_v1_ptr - v2
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # rsub
+    result_enc_ptr = v2 - enc_v1_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, [v2 - v1 for v1, v2 in zip(v1, v2)])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+    expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    # imul
+    result_enc_ptr = enc_v1_ptr * v2
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+    # rmul
+    result_enc_ptr = v2 * enc_v1_ptr
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_power(context: Any, duet: sy.VirtualMachine) -> None:
+    enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr = enc_v1_ptr ** 3
+
+    result_dec_ptr = result_enc_ptr.decrypt()
+    result = result_dec_ptr.get()
+
+    _almost_equal(result, [0, 1, 8, 27, 64])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_negation(context: Any, duet: sy.VirtualMachine) -> None:
+    enc_v1 = ts.ckks_tensor(context, [1, 2, 3, 4, 5])
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr = -enc_v1_ptr
+
+    result_dec_ptr = result_enc_ptr.decrypt()
+    result = result_dec_ptr.get()
+
+    _almost_equal(result, [-1, -2, -3, -4, -5])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_square(context: Any, duet: sy.VirtualMachine) -> None:
+    enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr = enc_v1_ptr.square()
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, [0, 1, 4, 9, 16])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_sum(context: Any, duet: sy.VirtualMachine) -> None:
+    enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr = enc_v1_ptr.sum()
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, 10)
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_polyval(context: Any, duet: sy.VirtualMachine) -> None:
+    polynom = [1, 2, 3, 4]
+    enc_v1 = ts.ckks_tensor(context, [-2, 2])
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr = enc_v1_ptr.polyval(polynom)
+
+    result = result_enc_ptr.decrypt().get()
+    _almost_equal(result, [-23, 49])
+
+
+@pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_dot(context: Any, duet: sy.VirtualMachine) -> None:
+    v1 = [0, 1, 2, 3, 4]
+    v2 = [4, 3, 2, 1, 0]
+
+    enc_v1 = ts.ckks_tensor(context, v1)
+    enc_v2 = ts.ckks_tensor(context, v2)
+
+    ctx_ptr = context.send(duet, searchable=True)
+    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+
+    enc_v1_ptr.link_context(ctx_ptr)
+    enc_v2_ptr.link_context(ctx_ptr)
+
+    result_enc_ptr2 = enc_v1_ptr.dot(enc_v2_ptr)
+    result_dec_ptr2 = result_enc_ptr2.decrypt()
+    result2 = result_dec_ptr2.get()
+    _almost_equal(result2, 10)
+
+    # inplace
+
+    enc_v1_ptr.dot_(enc_v2_ptr)
+    result_dec_ptr2 = enc_v1_ptr.decrypt()
+    result2 = result_dec_ptr2.get()
+    _almost_equal(result2, 10)

@@ -5,6 +5,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
+from ...logger import warning
 
 # syft relative
 from ...core.common.uid import UID
@@ -13,6 +14,7 @@ from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
 from ...util import aggressive_set_attr
+from ...proto.lib.torch.device_pb2 import Device as Device_PB
 
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
@@ -32,6 +34,12 @@ class TorchTensorWrapper(StorableObject):
         proto.tensor.CopyFrom(protobuf_tensor_serializer(self.value))
 
         proto.requires_grad = getattr(self.value, "requires_grad", False)
+        proto.device.CopyFrom(
+            Device_PB(
+                type=self.value.device.type,  # type: ignore
+                index=self.value.device.index,  # type: ignore
+            )
+        )
 
         if proto.requires_grad:
             grad = getattr(self.value, "grad", None)
@@ -47,6 +55,20 @@ class TorchTensorWrapper(StorableObject):
             tensor.grad = protobuf_tensor_deserializer(proto.grad)
 
         tensor.requires_grad_(proto.requires_grad)
+
+        if proto.device.type == "cuda" and th.cuda.is_available():
+            cuda_index = proto.device.index
+            if th.cuda.device_count() < (cuda_index + 1):
+                cuda_index = th.cuda.device_count() - 1
+                warning(
+                    f"The requested CUDA index {proto.device.index} is invalid."
+                    + f"Falling back to GPU index {cuda_index}.",
+                    print=True,
+                )
+            return tensor.cuda(cuda_index)
+
+        if proto.device.type == "cuda" and not th.cuda.is_available():
+            warning("Cannot find any CUDA devices, falling back to CPU.", print=True)
 
         return tensor
 

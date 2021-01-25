@@ -16,6 +16,7 @@ from ..core.node.common.action.get_or_set_static_attribute_action import (
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     StaticAttributeAction,
 )
+from ..logger import traceback_and_raise
 
 
 class StaticAttribute(ast.attribute.Attribute):
@@ -37,13 +38,18 @@ class StaticAttribute(ast.attribute.Attribute):
 
     def get_remote_value(self) -> AbstractPointer:
         if self.path_and_name is None:
-            raise ValueError("MAKE PROPER SCHEMA - Can't get static_attribute")
+            traceback_and_raise(
+                ValueError("Can't execute remote get if path is not specified.")
+            )
 
         if self.client is None:
-            raise ValueError(
-                "MAKE PROPER SCHEMA - Can't get remote value if there is no remote "
-                "client"
-            )
+            if self.client is None:
+                traceback_and_raise(
+                    ValueError(
+                        "Can't get remote enum attribute if there is no client"
+                        "set to get it from"
+                    )
+                )
 
         return_tensor_type_pointer_type = self.client.lib_ast.query(
             path=self.return_type_name

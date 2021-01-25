@@ -32,7 +32,9 @@ class Globals(Module):
         )
 
         if not _path:
-            raise ValueError("MAKE PROPER SCHEMA")
+            traceback_and_raise(
+                ValueError("Can't execute remote call if path is not specified.")
+            )
 
         return self.attrs[_path[index]](path=_path, index=index + 1, obj_type=obj_type)
 
@@ -71,7 +73,7 @@ class Globals(Module):
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied
         for _, update_ast in self.loaded_lib_constructors.items():
-            update_ast(ast=client, client=client)
+            update_ast(ast_or_client=client)
 
         # make sure to get any future updates
         self.registered_clients[client.id] = client

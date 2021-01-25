@@ -7,6 +7,7 @@ from typing import Union
 
 # syft relative
 from .. import ast
+from ..logger import traceback_and_raise
 
 
 class Property(ast.attribute.Attribute):
@@ -31,4 +32,4 @@ class Property(ast.attribute.Attribute):
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> Optional[Union[Any, CallableT]]:
-        raise ValueError("Property shouldn't be called")
+        traceback_and_raise(ValueError("Property should never be called."))
