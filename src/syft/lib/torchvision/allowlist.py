@@ -7,8 +7,7 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # MNIST
 allowlist["torchvision.transforms.Compose"] = "torchvision.transforms.Compose"
 # allowlist["torchvision.transforms.Compose.__iter__"] = "torchvision.transforms.ToTensor"
-# TODO: Compose.transforms property only exists on the object not on the class?
-# allowlist["torchvision.transforms.Compose.transforms"] = "syft.lib.python.List"
+# TODO: Compose.transforms property only exists on the object not on the class? YES
 allowlist["torchvision.transforms.ToTensor"] = "torchvision.transforms.ToTensor"
 allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normalize"
 # TODO: Normalize properties only exists on the object not on the class?
