@@ -7,6 +7,8 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+import re
+from uuid import UUID
 
 # syft relative
 from ..... import deserialize
@@ -217,5 +219,11 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         while msg.object_tags != []:
             msg.object_tags.pop()
         msg.object_tags.extend(node.store[msg.object_id]._tags)
+
+        if re.findall(r"^\w{32}:__len__$", msg.request_description):
+            parent_tags = node.store[
+                UID(value=UUID(msg.request_description.split(":")[0]))
+            ]._tags
+            msg.object_tags = parent_tags + ["__len__"]
 
         node.requests.append(msg)
