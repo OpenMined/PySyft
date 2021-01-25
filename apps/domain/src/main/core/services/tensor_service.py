@@ -6,6 +6,9 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
+import torch as th
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
@@ -14,6 +17,8 @@ from syft.core.node.common.service.node_service import ImmediateNodeServiceWithR
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.uid import UID
+from syft.core.node.common.action.save_object_action import SaveObjectAction
 
 from syft.grid.messages.tensor_messages import (
     CreateTensorMessage,
@@ -32,80 +37,172 @@ from syft.grid.messages.tensor_messages import (
 @syft_decorator(typechecking=True)
 def create_tensor_msg(
     msg: CreateTensorMessage,
+    node: AbstractNode,
 ) -> CreateTensorResponse:
-    return CreateTensorResponse(
-        address=msg.reply_to,
-        success=True,
-        content={"msg": "tensor created succesfully!"},
-    )
+    try:
+        payload = msg.content
+
+        new_tensor = th.tensor(payload["tensor"])
+        new_tensor.tag(*payload.get("tags", []))
+        new_tensor.describe(payload.get("description", ""))
+
+        id_at_location = UID()
+
+        obj_msg = SaveObjectAction(
+            id_at_location=id_at_location,
+            obj=new_tensor,
+            address=node.address,
+            anyone_can_search_for_this=payload.get("searchable", False),
+        )
+
+        signed_message = obj_msg.sign(
+            signing_key=SigningKey(
+                payload["internal_key"].encode("utf-8"), encoder=HexEncoder
+            )
+        )
+
+        node.recv_immediate_msg_without_reply(msg=signed_message)
+
+        return CreateTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={
+                "msg": "Tensor created succesfully!",
+                "tensor_id": str(id_at_location.value),
+            },
+        )
+    except Exception as e:
+        return CreateTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"error": str(e)},
+        )
 
 
 @syft_decorator(typechecking=True)
 def update_tensor_msg(
     msg: UpdateTensorMessage,
+    node: AbstractNode,
 ) -> UpdateTensorResponse:
-    return UpdateTensorResponse(
-        address=msg.reply_to,
-        success=True,
-        content={"msg": "tensor changed succesfully!"},
-    )
+    try:
+        payload = msg.content
+
+        new_tensor = th.tensor(payload["tensor"])
+        new_tensor.tag(*payload.get("tags", []))
+        new_tensor.describe(payload.get("description", ""))
+
+        key = UID.from_string(value=payload["tensor_id"])
+
+        obj_msg = SaveObjectAction(
+            id_at_location=key,
+            obj=new_tensor,
+            address=node.address,
+            anyone_can_search_for_this=payload.get("searchable", False),
+        )
+
+        signed_message = obj_msg.sign(
+            signing_key=SigningKey(
+                payload["internal_key"].encode("utf-8"), encoder=HexEncoder
+            )
+        )
+
+        node.recv_immediate_msg_without_reply(msg=signed_message)
+
+        return UpdateTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"msg": "Tensor modified succesfully!"},
+        )
+    except Exception as e:
+        return UpdateTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"error": str(e)},
+        )
 
 
 @syft_decorator(typechecking=True)
 def get_tensor_msg(
     msg: GetTensorMessage,
+    node: AbstractNode,
 ) -> GetTensorResponse:
-    return GetTensorResponse(
-        address=msg.reply_to,
-        success=True,
-        content={
-            "tensor": {
-                "id": "5484626",
-                "tags": ["tensor-a"],
-                "description": "tensor sample",
-            }
-        },
-    )
+    try:
+        payload = msg.content
+
+        # Retrieve the dataset from node.store
+        key = UID.from_string(value=payload["tensor_id"])
+        tensor = node.store[key]
+        return GetTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={
+                "tensor": {
+                    "id": payload["tensor_id"],
+                    "tags": tensor.tags,
+                    "description": tensor.description,
+                }
+            },
+        )
+    except Exception as e:
+        return GetTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"error": str(e)},
+        )
 
 
 @syft_decorator(typechecking=True)
 def get_tensors_msg(
     msg: GetTensorsMessage,
+    node: AbstractNode,
 ) -> GetTensorsResponse:
-    return GetTensorsResponse(
-        address=msg.reply_to,
-        success=True,
-        content={
-            "tensors": [
+    try:
+        tensors = node.store.get_objects_of_type(obj_type=th.Tensor)
+
+        result = []
+
+        for tensor in tensors:
+            result.append(
                 {
-                    "id": "35654sad6ada",
-                    "tags": ["tensor-a"],
-                    "description": "tensor sample",
-                },
-                {
-                    "id": "adfarf3f1af5",
-                    "tags": ["tensor-b"],
-                    "description": "tensor sample",
-                },
-                {
-                    "id": "fas4e6e1fas",
-                    "tags": ["tensor-c"],
-                    "description": "tensor sample",
-                },
-            ]
-        },
-    )
+                    "id": str(tensor.id.value),
+                    "tags": tensor.tags,
+                    "description": tensor.description,
+                }
+            )
+        return GetTensorsResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"tensors": result},
+        )
+    except Exception as e:
+        return GetTensorsResponse(
+            address=msg.reply_to, success=False, content={"error": str(e)}
+        )
 
 
 @syft_decorator(typechecking=True)
 def del_tensor_msg(
     msg: DeleteTensorMessage,
+    node: AbstractNode,
 ) -> DeleteTensorResponse:
-    return DeleteTensorResponse(
-        address=msg.reply_to,
-        success=True,
-        content={"msg": "tensor deleted succesfully!"},
-    )
+    try:
+        payload = msg.content
+
+        # Retrieve the dataset from node.store
+        key = UID.from_string(value=payload["tensor_id"])
+        node.store.delete(key=key)
+
+        return DeleteTensorResponse(
+            address=msg.reply_to,
+            success=True,
+            content={"msg": "Tensor deleted successfully!"},
+        )
+    except Exception as e:
+        return DeleteTensorResponse(
+            address=msg.reply_to,
+            success=False,
+            content={"error": str(e)},
+        )
 
 
 class RegisterTensorService(ImmediateNodeServiceWithReply):
@@ -137,7 +234,7 @@ class RegisterTensorService(ImmediateNodeServiceWithReply):
         GetTensorsResponse,
         DeleteTensorResponse,
     ]:
-        return RegisterTensorService.msg_handler_map[type(msg)](msg=msg)
+        return RegisterTensorService.msg_handler_map[type(msg)](msg=msg, node=node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
