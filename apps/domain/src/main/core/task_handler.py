@@ -70,12 +70,14 @@ def task_handler(route_function, data, mandatory, optional=[]):
     return response_body
 
 
-def route_logic(message_class, current_user, content):
+def route_logic(message_class, current_user, msg_content):
     user_key = SigningKey(current_user.private_key.encode("utf-8"), encoder=HexEncoder)
+
+    msg_content["internal_key"] = current_user.private_key
 
     content = {
         "address": node.address,
-        "content": content,
+        "content": msg_content,
         "reply_to": node.address,
     }
 
