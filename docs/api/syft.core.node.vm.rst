@@ -24,4 +24,3 @@ syft.core.node.vm.vm module
    :members:
    :undoc-members:
    :show-inheritance:
-

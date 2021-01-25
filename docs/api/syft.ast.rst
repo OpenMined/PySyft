@@ -72,4 +72,3 @@ syft.ast.util module
    :members:
    :undoc-members:
    :show-inheritance:
-

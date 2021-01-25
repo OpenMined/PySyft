@@ -12,20 +12,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   syft.lib.numpy
+   syft.lib.misc
    syft.lib.python
    syft.lib.torch
+   syft.lib.torchvision
 
 Submodules
 ----------
-
-syft.lib.generic module
------------------------
-
-.. automodule:: syft.lib.generic
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 syft.lib.util module
 --------------------
@@ -34,4 +27,3 @@ syft.lib.util module
    :members:
    :undoc-members:
    :show-inheritance:
-

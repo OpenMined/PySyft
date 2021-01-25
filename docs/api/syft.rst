@@ -28,4 +28,3 @@ syft.util module
    :members:
    :undoc-members:
    :show-inheritance:
-

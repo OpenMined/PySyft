@@ -32,4 +32,3 @@ syft.core.io.location.group.subscription module
    :members:
    :undoc-members:
    :show-inheritance:
-
