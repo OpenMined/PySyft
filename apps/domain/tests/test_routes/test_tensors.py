@@ -5,6 +5,7 @@ import pytest
 from flask import current_app as app
 
 from src.main.core.database import *
+import time
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
@@ -56,6 +57,58 @@ def cleanup(database):
         database.session.rollback()
 
 
+def test_get_all_tensors(client, database, cleanup):
+    new_role = create_role(*admin_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    # Register the first tensor
+    tags = ["#first-tensor"]
+    description = "First tensor description"
+
+    result = client.post(
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6],
+            "description": description,
+            "tags": tags,
+            "searchable": True,
+        },
+        headers=headers,
+    )
+    tensor_id = result.get_json()["tensor_id"]
+
+    # Register the second tensor
+    tags = ["#second-tensor"]
+    description = "Second tensor description"
+
+    result = client.post(
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6],
+            "description": description,
+            "tags": tags,
+            "searchable": True,
+        },
+        headers=headers,
+    )
+    tensor_id = result.get_json()["tensor_id"]
+
+    # Test Get tensors request
+    result = client.get("/dcfl/tensors", headers=headers)
+
+    assert result.status_code == 200
+    assert len(result.get_json()["tensors"]) == 2
+
+
 def test_create_tensor(client, database, cleanup):
     new_role = create_role(*admin_role)
     database.session.add(new_role)
@@ -70,46 +123,17 @@ def test_create_tensor(client, database, cleanup):
     }
 
     result = client.post(
-        "/dcfl/tensors", data={"tensor": "{serialized_tensor}"}, headers=headers
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6, 7, 8],
+            "description": "A tensor sample",
+            "tags": ["#x-tensor", "tensor-sample"],
+            "searchable": True,
+        },
+        headers=headers,
     )
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "tensor created succesfully!"}
-
-
-def test_get_all_tensors(client, database, cleanup):
-    new_role = create_role(*admin_role)
-    database.session.add(new_role)
-    new_user = create_user(*user1)
-    database.session.add(new_user)
-
-    database.session.commit()
-
-    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
-    headers = {
-        "token": token.decode("UTF-8"),
-    }
-
-    result = client.get("/dcfl/tensors", headers=headers)
-    assert result.status_code == 200
-    assert result.get_json() == {
-        "tensors": [
-            {
-                "id": "35654sad6ada",
-                "tags": ["tensor-a"],
-                "description": "tensor sample",
-            },
-            {
-                "id": "adfarf3f1af5",
-                "tags": ["tensor-b"],
-                "description": "tensor sample",
-            },
-            {
-                "id": "fas4e6e1fas",
-                "tags": ["tensor-c"],
-                "description": "tensor sample",
-            },
-        ]
-    }
+    assert result.get_json()["msg"] == "Tensor created succesfully!"
 
 
 def test_get_specific_tensor(client, database, cleanup):
@@ -125,15 +149,28 @@ def test_get_specific_tensor(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    result = client.get("/dcfl/tensors/5484626", headers=headers)
+    # Register a new tensor
+    tags = ["#get-tensor"]
+    description = "Get tensor test"
+
+    result = client.post(
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6],
+            "description": description,
+            "tags": tags,
+            "searchable": True,
+        },
+        headers=headers,
+    )
+    print(" Result: ", result.get_json())
+    tensor_id = result.get_json()["tensor_id"]
+
+    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
     assert result.status_code == 200
-    assert result.get_json() == {
-        "tensor": {
-            "id": "5484626",
-            "tags": ["tensor-a"],
-            "description": "tensor sample",
-        }
-    }
+    tensor = result.get_json()["tensor"]
+    assert tensor["tags"] == tags
+    assert tensor["description"] == description
 
 
 def test_update_tensor(client, database, cleanup):
@@ -149,13 +186,54 @@ def test_update_tensor(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
+    # Register a new tensor
+    tags = ["#get-tensor"]
+    description = "Get tensor test"
+
+    result = client.post(
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6],
+            "description": description,
+            "tags": tags,
+            "searchable": True,
+        },
+        headers=headers,
+    )
+    print(" Result: ", result.get_json())
+    tensor_id = result.get_json()["tensor_id"]
+
+    # Assert registered tensor metadata
+    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
+    assert result.status_code == 200
+    tensor = result.get_json()["tensor"]
+    assert tensor["tags"] == tags
+    assert tensor["description"] == description
+
+    # Update tensor values
+    modified_tags = ["#modified-tensor"]
+    modified_description = "modified tensor test"
+
+    # Update an existent tensor
     result = client.put(
-        "/dcfl/tensors/546313",
-        data={"tensor": "new_serialized_tensor"},
+        "/dcfl/tensors/" + tensor_id,
+        json={
+            "tensor": [1, 2, 5, 6],
+            "description": modified_description,
+            "tags": modified_tags,
+            "searchable": True,
+        },
         headers=headers,
     )
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "tensor changed succesfully!"}
+    assert result.get_json()["msg"] == "Tensor modified succesfully!"
+
+    # Assert updated tensor metadata
+    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
+    assert result.status_code == 200
+    tensor = result.get_json()["tensor"]
+    assert tensor["tags"] == modified_tags
+    assert tensor["description"] == modified_description
 
 
 def test_delete_tensor(client, database, cleanup):
@@ -171,6 +249,24 @@ def test_delete_tensor(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    result = client.delete("/dcfl/tensors/546313", headers=headers)
+    # Register a new tensor
+    tags = ["#get-tensor"]
+    description = "Get tensor test"
+
+    result = client.post(
+        "/dcfl/tensors",
+        json={
+            "tensor": [1, 2, 3, 4, 5, 6],
+            "description": description,
+            "tags": tags,
+            "searchable": True,
+        },
+        headers=headers,
+    )
+    print(" Result: ", result.get_json())
+    tensor_id = result.get_json()["tensor_id"]
+
+    result = client.delete("/dcfl/tensors/" + tensor_id, headers=headers)
+
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "tensor deleted succesfully!"}
+    assert result.get_json() == {"msg": "Tensor deleted successfully!"}
