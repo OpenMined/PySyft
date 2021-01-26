@@ -1,25 +1,12 @@
 # stdlib
-from typing import Any
 from typing import List
-from typing import Optional
-from typing import Union
 
 # third party
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from typing_extensions import final
 
 # syft relative
 from .....decorators import syft_decorator
-from ....common.message import ImmediateSyftMessageWithReply
-from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.message import SignedMessage
-from ....common.message import SyftMessage
-from ....common.uid import UID
-from ....io.location import Location
-from ....io.location import SpecificLocation
 from ...abstract.node import AbstractNode
-from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_answer_message import RequestAnswerMessage
