@@ -11,7 +11,7 @@ allowlist["torchvision.transforms.Compose"] = "torchvision.transforms.Compose"
 # allowlist["torchvision.transforms.Compose.transforms"] = "syft.lib.python.List"
 allowlist["torchvision.transforms.ToTensor"] = "torchvision.transforms.ToTensor"
 allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normalize"
-# allowlist["torchvision.transforms.Normalize.inplace"] = "syft.lib.python.Bool"
+allowlist["torchvision.transforms.Normalize.inplace"] = "syft.lib.python.Bool"
 # TODO: mean and std are actually tuples
 # allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.List"
 # allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.List"
