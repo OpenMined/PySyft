@@ -209,3 +209,19 @@ def test_send_message_from_network_client_to_vm() -> None:
     bob_network_client.send_immediate_msg_without_reply(
         msg=sy.ReprMessage(address=bob_vm.address)
     )
+
+
+@pytest.mark.asyncio
+def test_autoapprove_requests_made_by_root_clients_5015() -> None:
+    import torch
+
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+    p = alice_client.torch.Tensor([1, 2, 3])
+    t = p.get(request_block=True, name="Test")
+    assert torch.equal(t, torch.Tensor([1, 2, 3]))
+
+    alice_guest = alice.get_client()
+    p = alice_guest.torch.Tensor([1, 2, 3])
+    t = p.get(request_block=True, name="Test")
+    assert t is None
