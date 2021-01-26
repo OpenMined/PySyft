@@ -1373,7 +1373,9 @@ class DictTest(unittest.TestCase):
         support.check_free_after_iterating(self, iter, Dict)
 
         d = Dict({"a": 1, "b": 2, "c": 3})
-
+	
+	# this attempts to exhaust the iterator and then assert whether it is completely deallocated
+	
         it = iter(d.keys())
         it2 = iter(d.keys())
         for iterator in it:
