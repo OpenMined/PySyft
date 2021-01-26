@@ -131,7 +131,6 @@ def _get_request_config(self: Any) -> Dict[str, Any]:
     return {
         "request_block": True,
         "timeout_secs": 25,
-        "reason": f"{str(self.id_at_location.value).replace('-','')}:__len__",
         "delete_obj": False,
     }
 
