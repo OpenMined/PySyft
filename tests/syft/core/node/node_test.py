@@ -227,7 +227,7 @@ def test_autoapprove_requests_made_by_root_clients_5015() -> None:
     assert t is None
 
     p = torch.Tensor([4, 5, 6])
-    p.send(alice_client, searchable = True)
+    p.send(alice_client, searchable=True)
     p = alice_client.store[0]
     t = p.get(request_block=True, name="Test", delete_obj=False)
     assert torch.equal(t, torch.Tensor([4, 5, 6]))

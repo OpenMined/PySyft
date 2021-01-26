@@ -39,6 +39,7 @@ class VMRequestService(ImmediateNodeServiceWithoutReply):
     def process(node: AbstractNode, msg: RequestMessage, verify_key: VerifyKey) -> None:
         ""
 
+
 class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
     @syft_decorator(typechecking=True)
@@ -49,7 +50,7 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: RequestAnswerMessage, verify_key: VerifyKey
-    ) -> RequestAnswerResponse:        
+    ) -> RequestAnswerResponse:
         status = RequestStatus.Rejected
         if node.root_verify_key == verify_key:
             status = RequestStatus.Accepted
@@ -57,4 +58,3 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status
         )
-
