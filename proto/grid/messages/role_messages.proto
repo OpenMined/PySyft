@@ -10,64 +10,91 @@ import "proto/core/io/address.proto";
 message CreateRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message CreateRoleResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
 // GET Role
 message GetRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 
 message GetRoleResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
 // GET ALL Roles
 message GetRolesMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetRolesResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
 // SEARCH Role
 message SearchRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message SearchRoleResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
 // UPDATE Role
 message UpdateRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message UpdateRoleResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
+
+
+// Delete Role
+message DeleteRoleMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteRoleResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
