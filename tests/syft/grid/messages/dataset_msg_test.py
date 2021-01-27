@@ -27,7 +27,7 @@ def test_create_dataset_message_serde() -> None:
         "tags": ["#x", "#data-sample"],
         "searchable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
-        "write-permission": ['user-id1', "user-id5", "user-id9"]
+        "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
     msg = CreateDatasetMessage(
         address=target,
@@ -112,7 +112,7 @@ def test_update_dataset_message_serde() -> None:
         "tags": ["#x", "#data-sample"],
         "searchable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
-        "write-permission": ['user-id1', "user-id5", "user-id9"]
+        "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
     msg = UpdateDatasetMessage(
         address=target,
@@ -177,7 +177,7 @@ def test_get_dataset_response_serde() -> None:
         "tags": ["#x", "#data-sample"],
         "searchable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
-        "write-permission": ['user-id1', "user-id5", "user-id9"]
+        "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
 
     msg = GetDatasetResponse(
@@ -226,7 +226,7 @@ def test_get_all_datasets_response_serde() -> None:
                 "tags": ["#x", "#data-sample"],
                 "searchable": True,
                 "read-permission": ["user-id1", "user-id2", "user-id3"],
-                "write-permission": ['user-id1', "user-id5", "user-id9"]
+                "write-permission": ["user-id1", "user-id5", "user-id9"],
             },
             "a84ew64wq6e": {
                 "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
@@ -234,7 +234,7 @@ def test_get_all_datasets_response_serde() -> None:
                 "tags": ["#x", "#data-sample"],
                 "searchable": False,
                 "read-permission": ["user-id1", "user-id2", "user-id3"],
-                "write-permission": []
+                "write-permission": [],
             },
         }
     }
