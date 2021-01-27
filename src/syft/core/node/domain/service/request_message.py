@@ -46,7 +46,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         address: Address,
         requester_verify_key: VerifyKey,
         owner_address: Address,
-        object_tags: List[str] = [],
+        object_tags: Optional[List[str]] = None,
         object_type: str = "",
         request_description: str = "",
         request_id: Optional[UID] = None,
@@ -57,7 +57,8 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         if request_id is None:
             request_id = UID()
         super().__init__(address=address, msg_id=request_id)
-        self.object_tags = object_tags
+
+        self.object_tags = object_tags if object_tags else []
         self.object_type = object_type
         self.request_description = request_description
         self.request_id = request_id
@@ -214,7 +215,7 @@ class RequestService(ImmediateNodeServiceWithoutReply):
 
         # At receiving a request from DS, we clear it's object_tags, and re-set it as the
         # tags of the requested object. Because the DS may give fake tags.
-        while msg.object_tags != []:
+        while len(msg.object_tags):
             msg.object_tags.pop()
         msg.object_tags.extend(node.store[msg.object_id]._tags)
 

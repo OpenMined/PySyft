@@ -214,12 +214,11 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         # For handler["created_time"], it's a large number. In order to keep it's precision
-        # when serde, we need to make it be small. So, we sub 1.6e9 here, and then add 1.6e9
-        # in _proto2object.
+        # when serde, we turn it to string, and then turn it back to float in _proto2object.
         handlers = [h.copy() for h in self.handlers]
         for handler in handlers:
             if "created_time" in handler:
-                handler["created_time"] -= 1.6e9
+                handler["created_time"] = str(handler["created_time"])
 
         return GetAllRequestHandlersResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -246,7 +245,7 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         handlers = [upcast(value=Dict._proto2object(proto=x)) for x in proto.handlers]
         for handler in handlers:
             if "created_time" in handler:
-                handler["created_time"] += 1.6e9
+                handler["created_time"] = float(handler["created_time"])
 
         return GetAllRequestHandlersResponseMessage(
             msg_id=deserialize(blob=proto.msg_id),

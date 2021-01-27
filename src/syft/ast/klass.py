@@ -280,7 +280,7 @@ class Class(Callable):
             client: Any,
             searchable: bool = False,
             description: str = "",
-            tags: List[str] = [],
+            tags: Optional[List[str]] = None,
         ) -> Pointer:
             # if self is proto, change self to it's wrapper object
             which_obj = self
@@ -297,6 +297,7 @@ class Class(Callable):
                 id_ = UID()
                 which_obj.id = id_
 
+            tags = tags if tags else []
             tags = sorted(set(tags), key=tags.index)  # keep order of original
             obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags

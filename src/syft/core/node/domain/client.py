@@ -90,7 +90,7 @@ class RequestQueueClient:
         action: str,
         print_local: bool = False,
         log_local: bool = False,
-        tags: List[str] = [],
+        tags: Optional[List[str]] = None,
         timeout_secs: int = -1,
         element_quota: Optional[int] = None,
     ) -> None:
@@ -121,7 +121,7 @@ class RequestQueueClient:
         action: str,
         print_local: bool = False,
         log_local: bool = False,
-        tags: List[str] = [],
+        tags: Optional[List[str]] = None,
         timeout_secs: int = -1,
         element_quota: Optional[int] = None,
         id: Optional[UID] = None,
@@ -218,7 +218,7 @@ class RequestHandlerQueueClient:
             else:
                 created_time = handler.get("created_time", 0)
                 rem = timeout_secs - (time.time() - created_time)
-                return int(rem)
+                return round(rem)
 
         handler_lines = [
             {
