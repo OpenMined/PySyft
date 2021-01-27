@@ -21,16 +21,16 @@ from syft.proto.grid.messages.association_messages_pb2 import (
     DeleteAssociationRequestResponse as DeleteAssociationRequestResponse_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAllAssociationRequestMessage as GetAllAssociationRequestMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAllAssociationRequestResponse as GetAllAssociationRequestResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestMessage as GetAssociationRequestMessage_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestResponse as GetAssociationRequestResponse_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
+    GetAssociationRequestsMessage as GetAssociationRequestsMessage_PB,
+)
+from syft.proto.grid.messages.association_messages_pb2 import (
+    GetAssociationRequestsResponse as GetAssociationRequestsResponse_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
     ReceiveAssociationRequestMessage as ReceiveAssociationRequestMessage_PB,
@@ -625,7 +625,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
 
 
 @final
-class GetAllAssociationRequestMessage(ImmediateSyftMessageWithReply):
+class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
@@ -637,19 +637,19 @@ class GetAllAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self.content = content
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> GetAllAssociationRequestMessage_PB:
+    def _object2proto(self) -> GetAssociationRequestsMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
         :return: returns a protobuf object
-        :rtype: GetAllAssociationRequestMessage_PB
+        :rtype: GetAssociationRequestsMessage_PB
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return GetAllAssociationRequestMessage_PB(
+        return GetAssociationRequestsMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             content=json.dumps(self.content),
@@ -658,19 +658,19 @@ class GetAllAssociationRequestMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(
-        proto: GetAllAssociationRequestMessage_PB,
-    ) -> "GetAllAssociationRequestMessage":
-        """Creates a GetAllAssociationRequestMessage from a protobuf
+        proto: GetAssociationRequestsMessage_PB,
+    ) -> "GetAssociationRequestsMessage":
+        """Creates a GetAssociationRequestsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
         :return: returns an instance of SignalingOfferMessage
-        :rtype: GetAllAssociationRequestMessage
+        :rtype: GetAssociationRequestsMessage
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return GetAllAssociationRequestMessage(
+        return GetAssociationRequestsMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
@@ -692,11 +692,11 @@ class GetAllAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return GetAllAssociationRequestMessage_PB
+        return GetAssociationRequestsMessage_PB
 
 
 @final
-class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
+class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
@@ -709,7 +709,7 @@ class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.content = content
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> GetAllAssociationRequestResponse_PB:
+    def _object2proto(self) -> GetAssociationRequestsResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
@@ -721,7 +721,7 @@ class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return GetAllAssociationRequestResponse_PB(
+        return GetAssociationRequestsResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             success=self.success,
@@ -730,8 +730,8 @@ class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def _proto2object(
-        proto: GetAllAssociationRequestResponse_PB,
-    ) -> "GetAllAssociationRequestResponse":
+        proto: GetAssociationRequestsResponse_PB,
+    ) -> "GetAssociationRequestsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -742,7 +742,7 @@ class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return GetAllAssociationRequestResponse(
+        return GetAssociationRequestsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             success=proto.success,
@@ -764,7 +764,7 @@ class GetAllAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return GetAllAssociationRequestResponse_PB
+        return GetAssociationRequestsResponse_PB
 
 
 @final
