@@ -18,13 +18,13 @@ def test_create_data_request_message_serde() -> None:
     target = Address(name="Alice")
 
     request_content = {
-            "dataset-id": "68a465aer3adf",
-            "user-id": "user-id7",
-            "request-type": "read"
+        "dataset-id": "68a465aer3adf",
+        "user-id": "user-id7",
+        "request-type": "read",
     }
     msg = CreateRequestMessage(
         address=target,
-        content= request_content,
+        content=request_content,
         reply_to=bob_vm.address,
     )
 
@@ -36,6 +36,7 @@ def test_create_data_request_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_create_data_request_response_serde() -> None:
     target = Address(name="Alice")
 
@@ -43,7 +44,7 @@ def test_create_data_request_response_serde() -> None:
     msg = CreateRequestResponse(
         address=target,
         success=True,
-        content= request_content,
+        content=request_content,
     )
 
     blob = msg.serialize()
@@ -53,6 +54,7 @@ def test_create_data_request_response_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_data_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -72,6 +74,7 @@ def test_delete_data_request_message_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_data_request_response_serde() -> None:
     target = Address(name="Alice")
@@ -97,10 +100,10 @@ def test_update_data_request_message_serde() -> None:
     target = Address(name="Alice")
 
     content = {
-            "request_id": "546a4d51",
-            "dataset-id": "68a465aer3adf",
-            "user-id": "user-id7",
-            "request-type": "write"
+        "request_id": "546a4d51",
+        "dataset-id": "68a465aer3adf",
+        "user-id": "user-id7",
+        "request-type": "write",
     }
     msg = UpdateRequestMessage(
         address=target,
@@ -119,7 +122,6 @@ def test_update_data_request_message_serde() -> None:
 
 def test_update_data_request_response_serde() -> None:
     target = Address(name="Alice")
-
 
     request_content = {"msg": "Data request has been updated successfully!"}
     msg = UpdateRequestResponse(
@@ -141,8 +143,7 @@ def test_get_data_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
-    content = { "request_id" : "eqw9e4a5d846" }
+    content = {"request_id": "eqw9e4a5d846"}
     msg = GetRequestMessage(
         address=target,
         content=content,
@@ -161,14 +162,13 @@ def test_get_data_request_message_serde() -> None:
 def test_get_data_request_response_serde() -> None:
     target = Address(name="Alice")
 
-
     content = {
-            "request_id": "asfdaead131",
-            "dataset-id": "68a465aer3adf",
-            "user-id": "user-id7",
-            "request-type": "read",
+        "request_id": "asfdaead131",
+        "dataset-id": "68a465aer3adf",
+        "user-id": "user-id7",
+        "request-type": "read",
     }
-    
+
     msg = GetRequestResponse(
         address=target,
         success=True,
@@ -183,10 +183,10 @@ def test_get_data_request_response_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_get_all_data_requests_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
-
 
     content = {}
     msg = GetRequestsMessage(
@@ -207,9 +207,8 @@ def test_get_all_data_requests_message_serde() -> None:
 def test_get_all_data_requests_response_serde() -> None:
     target = Address(name="Alice")
 
-
-    request_content = { "workers": 
-        {
+    request_content = {
+        "workers": {
             "626sadaf631": {
                 "dataset-id": "68a465aer3adf",
                 "user-id": "user-id7",

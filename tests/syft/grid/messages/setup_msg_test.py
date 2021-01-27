@@ -11,22 +11,16 @@ def test_create_initial_setup_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    request_content = { 
-            "settings": { 
-                "cloud-admin-token" : "d84we35ad3a1d59a84sd9",
-                "cloud-credentials": "<cloud-credentials.pem>",
-                "infra": {
-                    "autoscaling": True,
-                    "triggers": {
-                        "memory": "50",
-                        "vCPU": "80"
-                    }
-                },
-            }
+    request_content = {
+        "settings": {
+            "cloud-admin-token": "d84we35ad3a1d59a84sd9",
+            "cloud-credentials": "<cloud-credentials.pem>",
+            "infra": {"autoscaling": True, "triggers": {"memory": "50", "vCPU": "80"}},
+        }
     }
     msg = CreateInitialSetUpMessage(
         address=target,
-        content= request_content,
+        content=request_content,
         reply_to=bob_vm.address,
     )
 
@@ -38,6 +32,7 @@ def test_create_initial_setup_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_create_initial_setup_response_serde() -> None:
     target = Address(name="Alice")
 
@@ -45,7 +40,7 @@ def test_create_initial_setup_response_serde() -> None:
     msg = CreateInitialSetUpResponse(
         address=target,
         success=True,
-        content= request_content,
+        content=request_content,
     )
 
     blob = msg.serialize()
@@ -55,6 +50,7 @@ def test_create_initial_setup_response_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_get_initial_setup_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -75,21 +71,16 @@ def test_get_initial_setup_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_delete_worker_response_serde() -> None:
     target = Address(name="Alice")
 
-    content = { 
-            "settings": { 
-                "cloud-admin-token" : "d84we35ad3a1d59a84sd9",
-                "cloud-credentials": "<cloud-credentials.pem>",
-                "infra": {
-                    "autoscaling": True,
-                    "triggers": {
-                        "memory": "50",
-                        "vCPU": "80"
-                    }
-                },
-            }
+    content = {
+        "settings": {
+            "cloud-admin-token": "d84we35ad3a1d59a84sd9",
+            "cloud-credentials": "<cloud-credentials.pem>",
+            "infra": {"autoscaling": True, "triggers": {"memory": "50", "vCPU": "80"}},
+        }
     }
     msg = GetSetUpResponse(
         success=True,
