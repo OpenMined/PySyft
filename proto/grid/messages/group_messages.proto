@@ -38,14 +38,14 @@ message GetGroupResponse {
 }
 
 // GET ALL Groups
-message GetAllGroupMessage {
+message GetGroupsMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message GetAllGroupResponse {
+message GetGroupsResponse {
   syft.core.common.UID msg_id = 1;
   bool success = 2;
   string content = 3;
