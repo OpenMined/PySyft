@@ -1,5 +1,6 @@
 # syft absolute
 import syft as sy
+from typing import Dict, Any
 from syft.core.io.address import Address
 from syft.grid.messages.request_messages import CreateRequestMessage
 from syft.grid.messages.request_messages import CreateRequestResponse
@@ -188,7 +189,7 @@ def test_get_all_data_requests_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = GetRequestsMessage(
         address=target,
         content=content,

@@ -1,5 +1,7 @@
 # syft absolute
 import syft as sy
+from typing import Dict
+from typing import Any
 from syft.core.io.address import Address
 from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
 from syft.grid.messages.association_messages import DeleteAssociationRequestResponse
@@ -58,7 +60,7 @@ def test_receive_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    request_content = {}
+    request_content: Dict[Any, Any] = {}
     msg = ReceiveAssociationRequestMessage(
         address=target,
         content=request_content,
@@ -77,7 +79,7 @@ def test_receive_request_message_serde() -> None:
 def test_receive_request_response_serde() -> None:
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = ReceiveAssociationRequestResponse(
         success=True,
         address=target,
@@ -219,7 +221,7 @@ def test_get_all_association_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = GetAllAssociationRequestMessage(
         address=target,
         content=content,

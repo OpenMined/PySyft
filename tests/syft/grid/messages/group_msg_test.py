@@ -1,5 +1,6 @@
 # syft absolute
 import syft as sy
+from typing import Dict, Any
 from syft.core.io.address import Address
 from syft.grid.messages.group_messages import CreateGroupMessage
 from syft.grid.messages.group_messages import CreateGroupResponse
@@ -200,7 +201,7 @@ def test_get_all_groups_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = GetAllGroupMessage(
         address=target,
         content=content,

@@ -1,5 +1,8 @@
 # syft absolute
 import syft as sy
+from typing import Dict
+from typing import Any
+
 from syft.core.io.address import Address
 from syft.grid.messages.tensor_messages import CreateTensorMessage
 from syft.grid.messages.tensor_messages import CreateTensorResponse
@@ -188,7 +191,7 @@ def test_get_all_tensors_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = GetTensorsMessage(
         address=target,
         content=content,
