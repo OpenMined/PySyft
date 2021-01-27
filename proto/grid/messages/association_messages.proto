@@ -67,14 +67,14 @@ message GetAssociationRequestResponse {
 }
 
 
-message GetAllAssociationRequestMessage {
+message GetAssociationRequestsMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message GetAllAssociationRequestResponse {
+message GetAssociationRequestsResponse {
   syft.core.common.UID msg_id = 1;
   bool success = 2;
   string content = 3;

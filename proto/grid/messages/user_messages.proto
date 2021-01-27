@@ -34,13 +34,13 @@ message GetUserResponse {
 }
 
 // GET ALL USERS
-message GetAllUserMessage {
+message GetUsersMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   syft.core.io.Address reply_to = 4;
 }
 
-message GetAllUserResponse {
+message GetUsersResponse {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   bool success = 3;
