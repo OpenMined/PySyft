@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8e\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15\x43reateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14GetAllDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15GetAllDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14SearchDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15SearchDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15UpdateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8e\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15\x43reateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8c\x01\n\x12GetDatasetsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13GetDatasetsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14SearchDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15SearchDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8e\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x15UpdateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -349,9 +349,9 @@ _GETDATASETRESPONSE = _descriptor.Descriptor(
 )
 
 
-_GETALLDATASETMESSAGE = _descriptor.Descriptor(
-    name="GetAllDatasetMessage",
-    full_name="syft.grid.messages.GetAllDatasetMessage",
+_GETDATASETSMESSAGE = _descriptor.Descriptor(
+    name="GetDatasetsMessage",
+    full_name="syft.grid.messages.GetDatasetsMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -359,7 +359,7 @@ _GETALLDATASETMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllDatasetMessage.msg_id",
+            full_name="syft.grid.messages.GetDatasetsMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -378,7 +378,7 @@ _GETALLDATASETMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllDatasetMessage.address",
+            full_name="syft.grid.messages.GetDatasetsMessage.address",
             index=1,
             number=2,
             type=11,
@@ -397,7 +397,7 @@ _GETALLDATASETMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.GetAllDatasetMessage.reply_to",
+            full_name="syft.grid.messages.GetDatasetsMessage.reply_to",
             index=2,
             number=4,
             type=11,
@@ -424,13 +424,13 @@ _GETALLDATASETMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=661,
-    serialized_end=803,
+    serialized_end=801,
 )
 
 
-_GETALLDATASETRESPONSE = _descriptor.Descriptor(
-    name="GetAllDatasetResponse",
-    full_name="syft.grid.messages.GetAllDatasetResponse",
+_GETDATASETSRESPONSE = _descriptor.Descriptor(
+    name="GetDatasetsResponse",
+    full_name="syft.grid.messages.GetDatasetsResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -438,7 +438,7 @@ _GETALLDATASETRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllDatasetResponse.msg_id",
+            full_name="syft.grid.messages.GetDatasetsResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -457,7 +457,7 @@ _GETALLDATASETRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllDatasetResponse.address",
+            full_name="syft.grid.messages.GetDatasetsResponse.address",
             index=1,
             number=2,
             type=11,
@@ -476,7 +476,7 @@ _GETALLDATASETRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllDatasetResponse.success",
+            full_name="syft.grid.messages.GetDatasetsResponse.success",
             index=2,
             number=3,
             type=8,
@@ -502,8 +502,8 @@ _GETALLDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=805,
-    serialized_end=924,
+    serialized_start=803,
+    serialized_end=920,
 )
 
 
@@ -581,8 +581,8 @@ _SEARCHDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=927,
-    serialized_end=1069,
+    serialized_start=923,
+    serialized_end=1065,
 )
 
 
@@ -660,8 +660,8 @@ _SEARCHDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1071,
-    serialized_end=1190,
+    serialized_start=1067,
+    serialized_end=1186,
 )
 
 
@@ -739,8 +739,8 @@ _UPDATEDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1193,
-    serialized_end=1335,
+    serialized_start=1189,
+    serialized_end=1331,
 )
 
 
@@ -818,8 +818,8 @@ _UPDATEDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1337,
-    serialized_end=1456,
+    serialized_start=1333,
+    serialized_end=1452,
 )
 
 _CREATEDATASETMESSAGE.fields_by_name[
@@ -852,19 +852,19 @@ _GETDATASETRESPONSE.fields_by_name[
 _GETDATASETRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLDATASETMESSAGE.fields_by_name[
+_GETDATASETSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLDATASETMESSAGE.fields_by_name[
+_GETDATASETSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLDATASETMESSAGE.fields_by_name[
+_GETDATASETSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLDATASETRESPONSE.fields_by_name[
+_GETDATASETSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLDATASETRESPONSE.fields_by_name[
+_GETDATASETSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _SEARCHDATASETMESSAGE.fields_by_name[
@@ -901,8 +901,8 @@ DESCRIPTOR.message_types_by_name["CreateDatasetMessage"] = _CREATEDATASETMESSAGE
 DESCRIPTOR.message_types_by_name["CreateDatasetResponse"] = _CREATEDATASETRESPONSE
 DESCRIPTOR.message_types_by_name["GetDatasetMessage"] = _GETDATASETMESSAGE
 DESCRIPTOR.message_types_by_name["GetDatasetResponse"] = _GETDATASETRESPONSE
-DESCRIPTOR.message_types_by_name["GetAllDatasetMessage"] = _GETALLDATASETMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllDatasetResponse"] = _GETALLDATASETRESPONSE
+DESCRIPTOR.message_types_by_name["GetDatasetsMessage"] = _GETDATASETSMESSAGE
+DESCRIPTOR.message_types_by_name["GetDatasetsResponse"] = _GETDATASETSRESPONSE
 DESCRIPTOR.message_types_by_name["SearchDatasetMessage"] = _SEARCHDATASETMESSAGE
 DESCRIPTOR.message_types_by_name["SearchDatasetResponse"] = _SEARCHDATASETRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateDatasetMessage"] = _UPDATEDATASETMESSAGE
@@ -953,27 +953,27 @@ GetDatasetResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetDatasetResponse)
 
-GetAllDatasetMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllDatasetMessage",
+GetDatasetsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetDatasetsMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLDATASETMESSAGE,
+        "DESCRIPTOR": _GETDATASETSMESSAGE,
         "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllDatasetMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetsMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllDatasetMessage)
+_sym_db.RegisterMessage(GetDatasetsMessage)
 
-GetAllDatasetResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllDatasetResponse",
+GetDatasetsResponse = _reflection.GeneratedProtocolMessageType(
+    "GetDatasetsResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLDATASETRESPONSE,
+        "DESCRIPTOR": _GETDATASETSRESPONSE,
         "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllDatasetResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetsResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllDatasetResponse)
+_sym_db.RegisterMessage(GetDatasetsResponse)
 
 SearchDatasetMessage = _reflection.GeneratedProtocolMessageType(
     "SearchDatasetMessage",

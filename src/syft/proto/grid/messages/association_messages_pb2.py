@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n.proto/grid/messages/association_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa8\x01\n\x1dSendAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1eSendAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xab\x01\n ReceiveAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x94\x01\n!ReceiveAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xab\x01\n RespondAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x94\x01\n!RespondAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa7\x01\n\x1cGetAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x90\x01\n\x1dGetAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xaa\x01\n\x1fGetAllAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n GetAllAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xaa\x01\n\x1f\x44\x65leteAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n DeleteAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n.proto/grid/messages/association_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa8\x01\n\x1dSendAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1eSendAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xab\x01\n ReceiveAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x94\x01\n!ReceiveAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xab\x01\n RespondAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x94\x01\n!RespondAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa7\x01\n\x1cGetAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x90\x01\n\x1dGetAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa8\x01\n\x1dGetAssociationRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1eGetAssociationRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xaa\x01\n\x1f\x44\x65leteAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x93\x01\n DeleteAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -817,9 +817,9 @@ _GETASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
 )
 
 
-_GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
-    name="GetAllAssociationRequestMessage",
-    full_name="syft.grid.messages.GetAllAssociationRequestMessage",
+_GETASSOCIATIONREQUESTSMESSAGE = _descriptor.Descriptor(
+    name="GetAssociationRequestsMessage",
+    full_name="syft.grid.messages.GetAssociationRequestsMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -827,7 +827,7 @@ _GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllAssociationRequestMessage.msg_id",
+            full_name="syft.grid.messages.GetAssociationRequestsMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -846,7 +846,7 @@ _GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllAssociationRequestMessage.address",
+            full_name="syft.grid.messages.GetAssociationRequestsMessage.address",
             index=1,
             number=2,
             type=11,
@@ -865,7 +865,7 @@ _GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllAssociationRequestMessage.content",
+            full_name="syft.grid.messages.GetAssociationRequestsMessage.content",
             index=2,
             number=3,
             type=9,
@@ -884,7 +884,7 @@ _GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.GetAllAssociationRequestMessage.reply_to",
+            full_name="syft.grid.messages.GetAssociationRequestsMessage.reply_to",
             index=3,
             number=4,
             type=11,
@@ -911,13 +911,13 @@ _GETALLASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=1425,
-    serialized_end=1595,
+    serialized_end=1593,
 )
 
 
-_GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
-    name="GetAllAssociationRequestResponse",
-    full_name="syft.grid.messages.GetAllAssociationRequestResponse",
+_GETASSOCIATIONREQUESTSRESPONSE = _descriptor.Descriptor(
+    name="GetAssociationRequestsResponse",
+    full_name="syft.grid.messages.GetAssociationRequestsResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -925,7 +925,7 @@ _GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllAssociationRequestResponse.msg_id",
+            full_name="syft.grid.messages.GetAssociationRequestsResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -944,7 +944,7 @@ _GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllAssociationRequestResponse.success",
+            full_name="syft.grid.messages.GetAssociationRequestsResponse.success",
             index=1,
             number=2,
             type=8,
@@ -963,7 +963,7 @@ _GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllAssociationRequestResponse.content",
+            full_name="syft.grid.messages.GetAssociationRequestsResponse.content",
             index=2,
             number=3,
             type=9,
@@ -982,7 +982,7 @@ _GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllAssociationRequestResponse.address",
+            full_name="syft.grid.messages.GetAssociationRequestsResponse.address",
             index=3,
             number=4,
             type=11,
@@ -1008,8 +1008,8 @@ _GETALLASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1598,
-    serialized_end=1745,
+    serialized_start=1596,
+    serialized_end=1741,
 )
 
 
@@ -1106,8 +1106,8 @@ _DELETEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1748,
-    serialized_end=1918,
+    serialized_start=1744,
+    serialized_end=1914,
 )
 
 
@@ -1204,8 +1204,8 @@ _DELETEASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1921,
-    serialized_end=2068,
+    serialized_start=1917,
+    serialized_end=2064,
 )
 
 _SENDASSOCIATIONREQUESTMESSAGE.fields_by_name[
@@ -1268,19 +1268,19 @@ _GETASSOCIATIONREQUESTRESPONSE.fields_by_name[
 _GETASSOCIATIONREQUESTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLASSOCIATIONREQUESTMESSAGE.fields_by_name[
+_GETASSOCIATIONREQUESTSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLASSOCIATIONREQUESTMESSAGE.fields_by_name[
+_GETASSOCIATIONREQUESTSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLASSOCIATIONREQUESTMESSAGE.fields_by_name[
+_GETASSOCIATIONREQUESTSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLASSOCIATIONREQUESTRESPONSE.fields_by_name[
+_GETASSOCIATIONREQUESTSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLASSOCIATIONREQUESTRESPONSE.fields_by_name[
+_GETASSOCIATIONREQUESTSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEASSOCIATIONREQUESTMESSAGE.fields_by_name[
@@ -1323,11 +1323,11 @@ DESCRIPTOR.message_types_by_name[
     "GetAssociationRequestResponse"
 ] = _GETASSOCIATIONREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name[
-    "GetAllAssociationRequestMessage"
-] = _GETALLASSOCIATIONREQUESTMESSAGE
+    "GetAssociationRequestsMessage"
+] = _GETASSOCIATIONREQUESTSMESSAGE
 DESCRIPTOR.message_types_by_name[
-    "GetAllAssociationRequestResponse"
-] = _GETALLASSOCIATIONREQUESTRESPONSE
+    "GetAssociationRequestsResponse"
+] = _GETASSOCIATIONREQUESTSRESPONSE
 DESCRIPTOR.message_types_by_name[
     "DeleteAssociationRequestMessage"
 ] = _DELETEASSOCIATIONREQUESTMESSAGE
@@ -1424,27 +1424,27 @@ GetAssociationRequestResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetAssociationRequestResponse)
 
-GetAllAssociationRequestMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllAssociationRequestMessage",
+GetAssociationRequestsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetAssociationRequestsMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLASSOCIATIONREQUESTMESSAGE,
+        "DESCRIPTOR": _GETASSOCIATIONREQUESTSMESSAGE,
         "__module__": "proto.grid.messages.association_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllAssociationRequestMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAssociationRequestsMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllAssociationRequestMessage)
+_sym_db.RegisterMessage(GetAssociationRequestsMessage)
 
-GetAllAssociationRequestResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllAssociationRequestResponse",
+GetAssociationRequestsResponse = _reflection.GeneratedProtocolMessageType(
+    "GetAssociationRequestsResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLASSOCIATIONREQUESTRESPONSE,
+        "DESCRIPTOR": _GETASSOCIATIONREQUESTSRESPONSE,
         "__module__": "proto.grid.messages.association_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllAssociationRequestResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAssociationRequestsResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllAssociationRequestResponse)
+_sym_db.RegisterMessage(GetAssociationRequestsResponse)
 
 DeleteAssociationRequestMessage = _reflection.GeneratedProtocolMessageType(
     "DeleteAssociationRequestMessage",
