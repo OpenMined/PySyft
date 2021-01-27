@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9f\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14GetAllRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15GetAllRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14\x44\x65leteRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x44\x65leteRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9f\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12GetRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13GetRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14\x44\x65leteRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15\x44\x65leteRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -425,9 +425,9 @@ _GETREQUESTRESPONSE = _descriptor.Descriptor(
 )
 
 
-_GETALLREQUESTMESSAGE = _descriptor.Descriptor(
-    name="GetAllRequestMessage",
-    full_name="syft.grid.messages.GetAllRequestMessage",
+_GETREQUESTSMESSAGE = _descriptor.Descriptor(
+    name="GetRequestsMessage",
+    full_name="syft.grid.messages.GetRequestsMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -435,7 +435,7 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllRequestMessage.msg_id",
+            full_name="syft.grid.messages.GetRequestsMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -454,7 +454,7 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllRequestMessage.address",
+            full_name="syft.grid.messages.GetRequestsMessage.address",
             index=1,
             number=2,
             type=11,
@@ -473,7 +473,7 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllRequestMessage.content",
+            full_name="syft.grid.messages.GetRequestsMessage.content",
             index=2,
             number=3,
             type=9,
@@ -492,7 +492,7 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.GetAllRequestMessage.reply_to",
+            full_name="syft.grid.messages.GetRequestsMessage.reply_to",
             index=3,
             number=4,
             type=11,
@@ -519,13 +519,13 @@ _GETALLREQUESTMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=731,
-    serialized_end=890,
+    serialized_end=888,
 )
 
 
-_GETALLREQUESTRESPONSE = _descriptor.Descriptor(
-    name="GetAllRequestResponse",
-    full_name="syft.grid.messages.GetAllRequestResponse",
+_GETREQUESTSRESPONSE = _descriptor.Descriptor(
+    name="GetRequestsResponse",
+    full_name="syft.grid.messages.GetRequestsResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -533,7 +533,7 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllRequestResponse.msg_id",
+            full_name="syft.grid.messages.GetRequestsResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -552,7 +552,7 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllRequestResponse.success",
+            full_name="syft.grid.messages.GetRequestsResponse.success",
             index=1,
             number=2,
             type=8,
@@ -571,7 +571,7 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllRequestResponse.content",
+            full_name="syft.grid.messages.GetRequestsResponse.content",
             index=2,
             number=3,
             type=9,
@@ -590,7 +590,7 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllRequestResponse.address",
+            full_name="syft.grid.messages.GetRequestsResponse.address",
             index=3,
             number=4,
             type=11,
@@ -616,8 +616,8 @@ _GETALLREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=893,
-    serialized_end=1029,
+    serialized_start=891,
+    serialized_end=1025,
 )
 
 
@@ -714,8 +714,8 @@ _DELETEREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1032,
-    serialized_end=1191,
+    serialized_start=1028,
+    serialized_end=1187,
 )
 
 
@@ -812,8 +812,8 @@ _DELETEREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1194,
-    serialized_end=1330,
+    serialized_start=1190,
+    serialized_end=1326,
 )
 
 
@@ -910,8 +910,8 @@ _UPDATEREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1333,
-    serialized_end=1492,
+    serialized_start=1329,
+    serialized_end=1488,
 )
 
 
@@ -1008,8 +1008,8 @@ _UPDATEREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1495,
-    serialized_end=1631,
+    serialized_start=1491,
+    serialized_end=1627,
 )
 
 _CREATEREQUESTMESSAGE.fields_by_name[
@@ -1042,19 +1042,19 @@ _GETREQUESTRESPONSE.fields_by_name[
 _GETREQUESTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLREQUESTMESSAGE.fields_by_name[
+_GETREQUESTSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLREQUESTMESSAGE.fields_by_name[
+_GETREQUESTSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLREQUESTMESSAGE.fields_by_name[
+_GETREQUESTSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLREQUESTRESPONSE.fields_by_name[
+_GETREQUESTSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLREQUESTRESPONSE.fields_by_name[
+_GETREQUESTSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEREQUESTMESSAGE.fields_by_name[
@@ -1091,8 +1091,8 @@ DESCRIPTOR.message_types_by_name["CreateRequestMessage"] = _CREATEREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["CreateRequestResponse"] = _CREATEREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name["GetRequestMessage"] = _GETREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["GetRequestResponse"] = _GETREQUESTRESPONSE
-DESCRIPTOR.message_types_by_name["GetAllRequestMessage"] = _GETALLREQUESTMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllRequestResponse"] = _GETALLREQUESTRESPONSE
+DESCRIPTOR.message_types_by_name["GetRequestsMessage"] = _GETREQUESTSMESSAGE
+DESCRIPTOR.message_types_by_name["GetRequestsResponse"] = _GETREQUESTSRESPONSE
 DESCRIPTOR.message_types_by_name["DeleteRequestMessage"] = _DELETEREQUESTMESSAGE
 DESCRIPTOR.message_types_by_name["DeleteRequestResponse"] = _DELETEREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateRequestMessage"] = _UPDATEREQUESTMESSAGE
@@ -1143,27 +1143,27 @@ GetRequestResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetRequestResponse)
 
-GetAllRequestMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllRequestMessage",
+GetRequestsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetRequestsMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLREQUESTMESSAGE,
+        "DESCRIPTOR": _GETREQUESTSMESSAGE,
         "__module__": "proto.grid.messages.request_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRequestMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRequestsMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllRequestMessage)
+_sym_db.RegisterMessage(GetRequestsMessage)
 
-GetAllRequestResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllRequestResponse",
+GetRequestsResponse = _reflection.GeneratedProtocolMessageType(
+    "GetRequestsResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLREQUESTRESPONSE,
+        "DESCRIPTOR": _GETREQUESTSRESPONSE,
         "__module__": "proto.grid.messages.request_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRequestResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRequestsResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllRequestResponse)
+_sym_db.RegisterMessage(GetRequestsResponse)
 
 DeleteRequestMessage = _reflection.GeneratedProtocolMessageType(
     "DeleteRequestMessage",
