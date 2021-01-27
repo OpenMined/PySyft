@@ -66,7 +66,6 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 verify_key: None,  # we dont have the passed in sender's UID
             },
         )
-
         node.store[self.id_at_location] = storable_obj
 
     @syft_decorator(typechecking=True)
