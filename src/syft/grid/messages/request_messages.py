@@ -27,16 +27,16 @@ from syft.proto.grid.messages.request_messages_pb2 import (
     DeleteRequestResponse as DeleteRequestResponse_PB,
 )
 from syft.proto.grid.messages.request_messages_pb2 import (
-    GetAllRequestMessage as GetAllRequestMessage_PB,
-)
-from syft.proto.grid.messages.request_messages_pb2 import (
-    GetAllRequestResponse as GetAllRequestResponse_PB,
-)
-from syft.proto.grid.messages.request_messages_pb2 import (
     GetRequestMessage as GetRequestMessage_PB,
 )
 from syft.proto.grid.messages.request_messages_pb2 import (
     GetRequestResponse as GetRequestResponse_PB,
+)
+from syft.proto.grid.messages.request_messages_pb2 import (
+    GetRequestsMessage as GetRequestsMessage_PB,
+)
+from syft.proto.grid.messages.request_messages_pb2 import (
+    GetRequestsResponse as GetRequestsResponse_PB,
 )
 from syft.proto.grid.messages.request_messages_pb2 import (
     UpdateRequestMessage as UpdateRequestMessage_PB,
@@ -333,7 +333,7 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
 
 
 @final
-class GetAllRequestMessage(ImmediateSyftMessageWithReply):
+class GetRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
@@ -345,19 +345,19 @@ class GetAllRequestMessage(ImmediateSyftMessageWithReply):
         self.content = content
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> GetAllRequestMessage_PB:
+    def _object2proto(self) -> GetRequestsMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
         :return: returns a protobuf object
-        :rtype: GetAllRequestMessage_PB
+        :rtype: GetRequestsMessage_PB
         .. note::
             This method is purely an internal method. Please use object.serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return GetAllRequestMessage_PB(
+        return GetRequestsMessage_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             content=json.dumps(self.content),
@@ -366,19 +366,19 @@ class GetAllRequestMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(
-        proto: GetAllRequestMessage_PB,
-    ) -> "GetAllRequestMessage":
-        """Creates a GetAllRequestMessage from a protobuf
+        proto: GetRequestsMessage_PB,
+    ) -> "GetRequestsMessage":
+        """Creates a GetRequestsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
         :return: returns an instance of SignalingOfferMessage
-        :rtype: GetAllRequestMessage
+        :rtype: GetRequestsMessage
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return GetAllRequestMessage(
+        return GetRequestsMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
@@ -400,11 +400,11 @@ class GetAllRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return GetAllRequestMessage_PB
+        return GetRequestsMessage_PB
 
 
 @final
-class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
+class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
@@ -417,7 +417,7 @@ class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
         self.content = content
 
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> GetAllRequestResponse_PB:
+    def _object2proto(self) -> GetRequestsResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
@@ -429,7 +429,7 @@ class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return GetAllRequestResponse_PB(
+        return GetRequestsResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
             success=self.success,
@@ -438,8 +438,8 @@ class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def _proto2object(
-        proto: GetAllRequestResponse_PB,
-    ) -> "GetAllRequestResponse":
+        proto: GetRequestsResponse_PB,
+    ) -> "GetRequestsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -450,7 +450,7 @@ class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return GetAllRequestResponse(
+        return GetRequestsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             success=proto.success,
@@ -472,7 +472,7 @@ class GetAllRequestResponse(ImmediateSyftMessageWithoutReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return GetAllRequestResponse_PB
+        return GetRequestsResponse_PB
 
 
 @final
