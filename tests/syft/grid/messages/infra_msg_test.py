@@ -1,5 +1,6 @@
 # syft absolute
 import syft as sy
+from typing import Dict, Any
 from syft.core.io.address import Address
 from syft.grid.messages.infra_messages import CreateWorkerMessage
 from syft.grid.messages.infra_messages import CreateWorkerResponse
@@ -194,7 +195,7 @@ def test_get_all_workers_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    content = {}
+    content: Dict[Any, Any] = {}
     msg = GetWorkersMessage(
         address=target,
         content=content,

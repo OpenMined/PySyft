@@ -1,5 +1,7 @@
 # syft absolute
 import syft as sy
+from typing import Dict, Any
+
 from syft.core.io.address import Address
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
@@ -56,7 +58,7 @@ def test_get_initial_setup_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    request_content = {}
+    request_content: Dict[Any, Any] = {}
     msg = GetSetUpMessage(
         address=target,
         content=request_content,
