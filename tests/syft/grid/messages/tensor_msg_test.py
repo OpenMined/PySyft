@@ -18,14 +18,14 @@ def test_create_tensor_message_serde() -> None:
     target = Address(name="Alice")
 
     request_content = {
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor Description",
-            "tags": ["#x", "#data-sample"],
-            "searchable": True,
+        "tensor": [1, 2, 3, 4, 5, 6],
+        "description": "Tensor Description",
+        "tags": ["#x", "#data-sample"],
+        "searchable": True,
     }
     msg = CreateTensorMessage(
         address=target,
-        content= request_content,
+        content=request_content,
         reply_to=bob_vm.address,
     )
 
@@ -37,6 +37,7 @@ def test_create_tensor_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_create_tensor_response_serde() -> None:
     target = Address(name="Alice")
 
@@ -44,7 +45,7 @@ def test_create_tensor_response_serde() -> None:
     msg = CreateTensorResponse(
         address=target,
         success=True,
-        content= request_content,
+        content=request_content,
     )
 
     blob = msg.serialize()
@@ -54,6 +55,7 @@ def test_create_tensor_response_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_tensor_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -73,6 +75,7 @@ def test_delete_tensor_message_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_tensor_response_serde() -> None:
     target = Address(name="Alice")
@@ -98,11 +101,11 @@ def test_update_tensor_message_serde() -> None:
     target = Address(name="Alice")
 
     content = {
-            "tensor_id": "546a4d51",
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-            "searchable": True,
+        "tensor_id": "546a4d51",
+        "tensor": [1, 2, 3, 4, 5, 6],
+        "description": "Tensor description",
+        "tags": ["#x", "#data-sample"],
+        "searchable": True,
     }
     msg = UpdateTensorMessage(
         address=target,
@@ -121,7 +124,6 @@ def test_update_tensor_message_serde() -> None:
 
 def test_update_tensor_response_serde() -> None:
     target = Address(name="Alice")
-
 
     request_content = {"msg": "Tensor updated successfully!"}
     msg = UpdateTensorResponse(
@@ -143,8 +145,7 @@ def test_get_tensor_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
-    content = { "tensor_id" : "eqw9e4a5d846" }
+    content = {"tensor_id": "eqw9e4a5d846"}
     msg = GetTensorMessage(
         address=target,
         content=content,
@@ -163,12 +164,11 @@ def test_get_tensor_message_serde() -> None:
 def test_get_tensor_response_serde() -> None:
     target = Address(name="Alice")
 
-
     content = {
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
+        "description": "Tensor description",
+        "tags": ["#x", "#data-sample"],
     }
-    
+
     msg = GetTensorResponse(
         address=target,
         success=True,
@@ -183,10 +183,10 @@ def test_get_tensor_response_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_get_all_tensors_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
-
 
     content = {}
     msg = GetTensorsMessage(
@@ -207,9 +207,8 @@ def test_get_all_tensors_message_serde() -> None:
 def test_get_all_tensors_response_serde() -> None:
     target = Address(name="Alice")
 
-
-    request_content = { "workers": 
-        {
+    request_content = {
+        "workers": {
             "626sadaf631": {
                 "tensor": [1, 2, 3, 4, 5, 6],
                 "description": "Tensor description",
@@ -217,7 +216,7 @@ def test_get_all_tensors_response_serde() -> None:
                 "searchable": True,
             },
             "a84ew64wq6e": {
-                "tensor": [9,8,2,3, 5, 6],
+                "tensor": [9, 8, 2, 3, 5, 6],
                 "description": "Tensor sample description",
                 "tags": ["#y", "#label-sample"],
                 "searchable": True,

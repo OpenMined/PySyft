@@ -22,7 +22,7 @@ def test_association_request_message_serde() -> None:
     request_content = {"domain-name": "My-Domain", "domain-address": "http://url:5000"}
     msg = SendAssociationRequestMessage(
         address=target,
-        content= request_content,
+        content=request_content,
         reply_to=bob_vm.address,
     )
 
@@ -34,6 +34,7 @@ def test_association_request_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
@@ -41,7 +42,7 @@ def test_association_request_response_serde() -> None:
     msg = SendAssociationRequestResponse(
         address=target,
         success=True,
-        content= request_content,
+        content=request_content,
     )
 
     blob = msg.serialize()
@@ -51,6 +52,7 @@ def test_association_request_response_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_receive_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -70,6 +72,7 @@ def test_receive_request_message_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_receive_request_response_serde() -> None:
     target = Address(name="Alice")
@@ -94,7 +97,6 @@ def test_respond_association_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
     content = {"association_request_id": "87564178", "status": "accept"}
     msg = RespondAssociationRequestMessage(
         address=target,
@@ -113,7 +115,6 @@ def test_respond_association_request_message_serde() -> None:
 
 def test_respond_association_request_response_serde() -> None:
     target = Address(name="Alice")
-
 
     request_content = {"msg": "Response registered successfully!"}
     msg = RespondAssociationRequestResponse(
@@ -135,7 +136,6 @@ def test_delete_association_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
     content = {"association_request_id": "21656565"}
     msg = DeleteAssociationRequestMessage(
         address=target,
@@ -155,7 +155,6 @@ def test_delete_association_request_message_serde() -> None:
 def test_delete_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
-
     content = {"msg": "Association Request deleted successfully!"}
     msg = DeleteAssociationRequestResponse(
         address=target,
@@ -171,10 +170,10 @@ def test_delete_association_request_response_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_get_association_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
-
 
     content = {"association_request_id": "87564178"}
     msg = GetAssociationRequestMessage(
@@ -194,7 +193,6 @@ def test_get_association_request_message_serde() -> None:
 
 def test_get_association_request_response_serde() -> None:
     target = Address(name="Alice")
-
 
     request_content = {
         "entity": "OpenMined",
@@ -221,7 +219,6 @@ def test_get_all_association_request_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
     content = {}
     msg = GetAllAssociationRequestMessage(
         address=target,
@@ -241,9 +238,8 @@ def test_get_all_association_request_message_serde() -> None:
 def test_get_all_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
-
     request_content = {
-        "association-requests" : [
+        "association-requests": [
             {
                 "entity": "OpenMined",
                 "entity-type": "Network",

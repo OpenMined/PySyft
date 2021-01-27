@@ -17,17 +17,17 @@ def test_create_worker_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-    request_content = { 
-            "settings": { 
-                "instance-size" : "t4g.medium",
-                "vCPU": "2",
-                "network-bandwith": "5Gbps",
-                "vGPU": True, 
-            }
+    request_content = {
+        "settings": {
+            "instance-size": "t4g.medium",
+            "vCPU": "2",
+            "network-bandwith": "5Gbps",
+            "vGPU": True,
+        }
     }
     msg = CreateWorkerMessage(
         address=target,
-        content= request_content,
+        content=request_content,
         reply_to=bob_vm.address,
     )
 
@@ -39,6 +39,7 @@ def test_create_worker_message_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_create_worker_response_serde() -> None:
     target = Address(name="Alice")
 
@@ -46,7 +47,7 @@ def test_create_worker_response_serde() -> None:
     msg = CreateWorkerResponse(
         address=target,
         success=True,
-        content= request_content,
+        content=request_content,
     )
 
     blob = msg.serialize()
@@ -56,6 +57,7 @@ def test_create_worker_response_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_worker_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -75,6 +77,7 @@ def test_delete_worker_message_serde() -> None:
     assert msg.address == target
     assert msg.content == msg2.content
     assert msg == msg2
+
 
 def test_delete_worker_response_serde() -> None:
     target = Address(name="Alice")
@@ -100,13 +103,13 @@ def test_update_worker_message_serde() -> None:
     target = Address(name="Alice")
 
     content = {
-            "worker-id" : "eqw9e4a5d846",
-            "settings": { 
-                "instance-size" : "t4g.large",
-                "vCPU": "2",
-                "network-bandwith": "5Gbps",
-                "vGPU": True, 
-            }
+        "worker-id": "eqw9e4a5d846",
+        "settings": {
+            "instance-size": "t4g.large",
+            "vCPU": "2",
+            "network-bandwith": "5Gbps",
+            "vGPU": True,
+        },
     }
     msg = UpdateWorkerMessage(
         address=target,
@@ -125,7 +128,6 @@ def test_update_worker_message_serde() -> None:
 
 def test_update_worker_response_serde() -> None:
     target = Address(name="Alice")
-
 
     request_content = {"msg": "Worker Environment updated successfully!"}
     msg = UpdateWorkerResponse(
@@ -147,8 +149,7 @@ def test_get_worker_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
 
-
-    content = { "worker-id" : "eqw9e4a5d846" }
+    content = {"worker-id": "eqw9e4a5d846"}
     msg = GetWorkerMessage(
         address=target,
         content=content,
@@ -167,14 +168,13 @@ def test_get_worker_message_serde() -> None:
 def test_get_worker_response_serde() -> None:
     target = Address(name="Alice")
 
-
     content = {
-            "worker-id" : "eqw9e4a5d846",
-            "environment-name": "Heart Diseases Environment", 
-            "owner": "user-id7",
-            "deployment-date": "05/12/2021",
+        "worker-id": "eqw9e4a5d846",
+        "environment-name": "Heart Diseases Environment",
+        "owner": "user-id7",
+        "deployment-date": "05/12/2021",
     }
-    
+
     msg = GetWorkerResponse(
         address=target,
         success=True,
@@ -189,10 +189,10 @@ def test_get_worker_response_serde() -> None:
     assert msg.content == msg2.content
     assert msg == msg2
 
+
 def test_get_all_workers_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     target = Address(name="Alice")
-
 
     content = {}
     msg = GetWorkersMessage(
@@ -213,17 +213,16 @@ def test_get_all_workers_message_serde() -> None:
 def test_get_all_workers_response_serde() -> None:
     target = Address(name="Alice")
 
-
-    request_content = { "workers": 
-        {
+    request_content = {
+        "workers": {
             "626sadaf631": {
-                "environment-name": "Heart Diseases Environment", 
+                "environment-name": "Heart Diseases Environment",
                 "owner": "user-id7",
                 "deployment-date": "05/12/2021",
             },
             "a84ew64wq6e": {
-                "worker-id" : "eqw9e4a5d846",
-                "environment-name": "Brain Diseases Environment", 
+                "worker-id": "eqw9e4a5d846",
+                "environment-name": "Brain Diseases Environment",
                 "owner": "user-id8",
                 "deployment-date": "15/12/2021",
             },
