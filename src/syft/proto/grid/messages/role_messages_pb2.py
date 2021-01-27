@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8b\x01\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12\x43reateRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x88\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"q\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11GetAllRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12GetAllRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11SearchRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12SearchRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12UpdateRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9c\x01\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12\x43reateRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x82\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x83\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11SearchRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12SearchRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12UpdateRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x85\x01\n\x12\x44\x65leteRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -80,9 +80,28 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateRoleMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.CreateRoleMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -108,7 +127,7 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=132,
-    serialized_end=271,
+    serialized_end=288,
 )
 
 
@@ -140,15 +159,15 @@ _CREATEROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateRoleResponse.address",
+            name="success",
+            full_name="syft.grid.messages.CreateRoleResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -159,15 +178,34 @@ _CREATEROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.CreateRoleResponse.success",
+            name="content",
+            full_name="syft.grid.messages.CreateRoleResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateRoleResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -186,8 +224,8 @@ _CREATEROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=273,
-    serialized_end=389,
+    serialized_start=291,
+    serialized_end=424,
 )
 
 
@@ -238,9 +276,28 @@ _GETROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetRoleMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetRoleMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -265,8 +322,8 @@ _GETROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=392,
-    serialized_end=528,
+    serialized_start=427,
+    serialized_end=580,
 )
 
 
@@ -298,29 +355,10 @@ _GETROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetRoleResponse.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="success",
             full_name="syft.grid.messages.GetRoleResponse.success",
-            index=2,
-            number=3,
+            index=1,
+            number=2,
             type=8,
             cpp_type=7,
             label=1,
@@ -335,38 +373,16 @@ _GETROLERESPONSE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=530,
-    serialized_end=643,
-)
-
-
-_GETALLROLEMESSAGE = _descriptor.Descriptor(
-    name="GetAllRoleMessage",
-    full_name="syft.grid.messages.GetAllRoleMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetAllRoleMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
+            name="content",
+            full_name="syft.grid.messages.GetRoleResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -378,27 +394,8 @@ _GETALLROLEMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllRoleMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetAllRoleMessage.reply_to",
-            index=2,
+            full_name="syft.grid.messages.GetRoleResponse.address",
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -423,14 +420,14 @@ _GETALLROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=646,
-    serialized_end=785,
+    serialized_start=583,
+    serialized_end=713,
 )
 
 
-_GETALLROLERESPONSE = _descriptor.Descriptor(
-    name="GetAllRoleResponse",
-    full_name="syft.grid.messages.GetAllRoleResponse",
+_GETROLESMESSAGE = _descriptor.Descriptor(
+    name="GetRolesMessage",
+    full_name="syft.grid.messages.GetRolesMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -438,7 +435,7 @@ _GETALLROLERESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllRoleResponse.msg_id",
+            full_name="syft.grid.messages.GetRolesMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -457,7 +454,7 @@ _GETALLROLERESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllRoleResponse.address",
+            full_name="syft.grid.messages.GetRolesMessage.address",
             index=1,
             number=2,
             type=11,
@@ -475,15 +472,34 @@ _GETALLROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.GetAllRoleResponse.success",
+            name="content",
+            full_name="syft.grid.messages.GetRolesMessage.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetRolesMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -502,8 +518,106 @@ _GETALLROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=787,
-    serialized_end=903,
+    serialized_start=716,
+    serialized_end=870,
+)
+
+
+_GETROLESRESPONSE = _descriptor.Descriptor(
+    name="GetRolesResponse",
+    full_name="syft.grid.messages.GetRolesResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetRolesResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.grid.messages.GetRolesResponse.success",
+            index=1,
+            number=2,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetRolesResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetRolesResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=873,
+    serialized_end=1004,
 )
 
 
@@ -554,9 +668,28 @@ _SEARCHROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.SearchRoleMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.SearchRoleMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -581,8 +714,8 @@ _SEARCHROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=906,
-    serialized_end=1045,
+    serialized_start=1007,
+    serialized_end=1163,
 )
 
 
@@ -614,15 +747,15 @@ _SEARCHROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.SearchRoleResponse.address",
+            name="success",
+            full_name="syft.grid.messages.SearchRoleResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -633,15 +766,34 @@ _SEARCHROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.SearchRoleResponse.success",
+            name="content",
+            full_name="syft.grid.messages.SearchRoleResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.SearchRoleResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -660,8 +812,8 @@ _SEARCHROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1047,
-    serialized_end=1163,
+    serialized_start=1166,
+    serialized_end=1299,
 )
 
 
@@ -712,9 +864,28 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateRoleMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.UpdateRoleMessage.reply_to",
-            index=2,
+            index=3,
             number=4,
             type=11,
             cpp_type=10,
@@ -739,8 +910,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1166,
-    serialized_end=1305,
+    serialized_start=1302,
+    serialized_end=1458,
 )
 
 
@@ -772,15 +943,15 @@ _UPDATEROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.UpdateRoleResponse.address",
+            name="success",
+            full_name="syft.grid.messages.UpdateRoleResponse.success",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=8,
+            cpp_type=7,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=False,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -791,15 +962,34 @@ _UPDATEROLERESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="success",
-            full_name="syft.grid.messages.UpdateRoleResponse.success",
+            name="content",
+            full_name="syft.grid.messages.UpdateRoleResponse.content",
             index=2,
             number=3,
-            type=8,
-            cpp_type=7,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateRoleResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -818,8 +1008,204 @@ _UPDATEROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1307,
-    serialized_end=1423,
+    serialized_start=1461,
+    serialized_end=1594,
+)
+
+
+_DELETEROLEMESSAGE = _descriptor.Descriptor(
+    name="DeleteRoleMessage",
+    full_name="syft.grid.messages.DeleteRoleMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteRoleMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteRoleMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteRoleMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteRoleMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1597,
+    serialized_end=1753,
+)
+
+
+_DELETEROLERESPONSE = _descriptor.Descriptor(
+    name="DeleteRoleResponse",
+    full_name="syft.grid.messages.DeleteRoleResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteRoleResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="success",
+            full_name="syft.grid.messages.DeleteRoleResponse.success",
+            index=1,
+            number=2,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteRoleResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteRoleResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1756,
+    serialized_end=1889,
 )
 
 _CREATEROLEMESSAGE.fields_by_name[
@@ -852,19 +1238,19 @@ _GETROLERESPONSE.fields_by_name[
 _GETROLERESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLROLEMESSAGE.fields_by_name[
+_GETROLESMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLROLEMESSAGE.fields_by_name[
+_GETROLESMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLROLEMESSAGE.fields_by_name[
+_GETROLESMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLROLERESPONSE.fields_by_name[
+_GETROLESRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLROLERESPONSE.fields_by_name[
+_GETROLESRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _SEARCHROLEMESSAGE.fields_by_name[
@@ -895,18 +1281,35 @@ _UPDATEROLERESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _UPDATEROLERESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_DELETEROLEMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETEROLEMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_DELETEROLEMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_DELETEROLERESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETEROLERESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["CreateRoleMessage"] = _CREATEROLEMESSAGE
 DESCRIPTOR.message_types_by_name["CreateRoleResponse"] = _CREATEROLERESPONSE
 DESCRIPTOR.message_types_by_name["GetRoleMessage"] = _GETROLEMESSAGE
 DESCRIPTOR.message_types_by_name["GetRoleResponse"] = _GETROLERESPONSE
-DESCRIPTOR.message_types_by_name["GetAllRoleMessage"] = _GETALLROLEMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllRoleResponse"] = _GETALLROLERESPONSE
+DESCRIPTOR.message_types_by_name["GetRolesMessage"] = _GETROLESMESSAGE
+DESCRIPTOR.message_types_by_name["GetRolesResponse"] = _GETROLESRESPONSE
 DESCRIPTOR.message_types_by_name["SearchRoleMessage"] = _SEARCHROLEMESSAGE
 DESCRIPTOR.message_types_by_name["SearchRoleResponse"] = _SEARCHROLERESPONSE
 DESCRIPTOR.message_types_by_name["UpdateRoleMessage"] = _UPDATEROLEMESSAGE
 DESCRIPTOR.message_types_by_name["UpdateRoleResponse"] = _UPDATEROLERESPONSE
+DESCRIPTOR.message_types_by_name["DeleteRoleMessage"] = _DELETEROLEMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteRoleResponse"] = _DELETEROLERESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 CreateRoleMessage = _reflection.GeneratedProtocolMessageType(
@@ -953,27 +1356,27 @@ GetRoleResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetRoleResponse)
 
-GetAllRoleMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllRoleMessage",
+GetRolesMessage = _reflection.GeneratedProtocolMessageType(
+    "GetRolesMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLROLEMESSAGE,
+        "DESCRIPTOR": _GETROLESMESSAGE,
         "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRoleMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRolesMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllRoleMessage)
+_sym_db.RegisterMessage(GetRolesMessage)
 
-GetAllRoleResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllRoleResponse",
+GetRolesResponse = _reflection.GeneratedProtocolMessageType(
+    "GetRolesResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLROLERESPONSE,
+        "DESCRIPTOR": _GETROLESRESPONSE,
         "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRoleResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRolesResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllRoleResponse)
+_sym_db.RegisterMessage(GetRolesResponse)
 
 SearchRoleMessage = _reflection.GeneratedProtocolMessageType(
     "SearchRoleMessage",
@@ -1018,6 +1421,28 @@ UpdateRoleResponse = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(UpdateRoleResponse)
+
+DeleteRoleMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteRoleMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETEROLEMESSAGE,
+        "__module__": "proto.grid.messages.role_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteRoleMessage)
+    },
+)
+_sym_db.RegisterMessage(DeleteRoleMessage)
+
+DeleteRoleResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteRoleResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETEROLERESPONSE,
+        "__module__": "proto.grid.messages.role_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteRoleResponse)
+    },
+)
+_sym_db.RegisterMessage(DeleteRoleResponse)
 
 
 # @@protoc_insertion_point(module_scope)

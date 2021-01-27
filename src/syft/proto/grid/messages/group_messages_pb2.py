@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/group_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9d\x01\n\x12\x43reateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x43reateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x83\x01\n\x10GetGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12GetAllGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13GetAllGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12\x44\x65leteGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x44\x65leteGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13UpdateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/group_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9d\x01\n\x12\x43reateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x43reateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x83\x01\n\x10GetGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetGroupsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x84\x01\n\x11GetGroupsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12\x44\x65leteGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13\x44\x65leteGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateGroupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x86\x01\n\x13UpdateGroupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -425,9 +425,9 @@ _GETGROUPRESPONSE = _descriptor.Descriptor(
 )
 
 
-_GETALLGROUPMESSAGE = _descriptor.Descriptor(
-    name="GetAllGroupMessage",
-    full_name="syft.grid.messages.GetAllGroupMessage",
+_GETGROUPSMESSAGE = _descriptor.Descriptor(
+    name="GetGroupsMessage",
+    full_name="syft.grid.messages.GetGroupsMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -435,7 +435,7 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllGroupMessage.msg_id",
+            full_name="syft.grid.messages.GetGroupsMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -454,7 +454,7 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllGroupMessage.address",
+            full_name="syft.grid.messages.GetGroupsMessage.address",
             index=1,
             number=2,
             type=11,
@@ -473,7 +473,7 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllGroupMessage.content",
+            full_name="syft.grid.messages.GetGroupsMessage.content",
             index=2,
             number=3,
             type=9,
@@ -492,7 +492,7 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.GetAllGroupMessage.reply_to",
+            full_name="syft.grid.messages.GetGroupsMessage.reply_to",
             index=3,
             number=4,
             type=11,
@@ -519,13 +519,13 @@ _GETALLGROUPMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=721,
-    serialized_end=878,
+    serialized_end=876,
 )
 
 
-_GETALLGROUPRESPONSE = _descriptor.Descriptor(
-    name="GetAllGroupResponse",
-    full_name="syft.grid.messages.GetAllGroupResponse",
+_GETGROUPSRESPONSE = _descriptor.Descriptor(
+    name="GetGroupsResponse",
+    full_name="syft.grid.messages.GetGroupsResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -533,7 +533,7 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllGroupResponse.msg_id",
+            full_name="syft.grid.messages.GetGroupsResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -552,7 +552,7 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllGroupResponse.success",
+            full_name="syft.grid.messages.GetGroupsResponse.success",
             index=1,
             number=2,
             type=8,
@@ -571,7 +571,7 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.GetAllGroupResponse.content",
+            full_name="syft.grid.messages.GetGroupsResponse.content",
             index=2,
             number=3,
             type=9,
@@ -590,7 +590,7 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllGroupResponse.address",
+            full_name="syft.grid.messages.GetGroupsResponse.address",
             index=3,
             number=4,
             type=11,
@@ -616,8 +616,8 @@ _GETALLGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=881,
-    serialized_end=1015,
+    serialized_start=879,
+    serialized_end=1011,
 )
 
 
@@ -714,8 +714,8 @@ _DELETEGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1018,
-    serialized_end=1175,
+    serialized_start=1014,
+    serialized_end=1171,
 )
 
 
@@ -812,8 +812,8 @@ _DELETEGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1178,
-    serialized_end=1312,
+    serialized_start=1174,
+    serialized_end=1308,
 )
 
 
@@ -910,8 +910,8 @@ _UPDATEGROUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1315,
-    serialized_end=1472,
+    serialized_start=1311,
+    serialized_end=1468,
 )
 
 
@@ -1008,8 +1008,8 @@ _UPDATEGROUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1475,
-    serialized_end=1609,
+    serialized_start=1471,
+    serialized_end=1605,
 )
 
 _CREATEGROUPMESSAGE.fields_by_name[
@@ -1042,19 +1042,19 @@ _GETGROUPRESPONSE.fields_by_name[
 _GETGROUPRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLGROUPMESSAGE.fields_by_name[
+_GETGROUPSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLGROUPMESSAGE.fields_by_name[
+_GETGROUPSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLGROUPMESSAGE.fields_by_name[
+_GETGROUPSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLGROUPRESPONSE.fields_by_name[
+_GETGROUPSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLGROUPRESPONSE.fields_by_name[
+_GETGROUPSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEGROUPMESSAGE.fields_by_name[
@@ -1091,8 +1091,8 @@ DESCRIPTOR.message_types_by_name["CreateGroupMessage"] = _CREATEGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["CreateGroupResponse"] = _CREATEGROUPRESPONSE
 DESCRIPTOR.message_types_by_name["GetGroupMessage"] = _GETGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["GetGroupResponse"] = _GETGROUPRESPONSE
-DESCRIPTOR.message_types_by_name["GetAllGroupMessage"] = _GETALLGROUPMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllGroupResponse"] = _GETALLGROUPRESPONSE
+DESCRIPTOR.message_types_by_name["GetGroupsMessage"] = _GETGROUPSMESSAGE
+DESCRIPTOR.message_types_by_name["GetGroupsResponse"] = _GETGROUPSRESPONSE
 DESCRIPTOR.message_types_by_name["DeleteGroupMessage"] = _DELETEGROUPMESSAGE
 DESCRIPTOR.message_types_by_name["DeleteGroupResponse"] = _DELETEGROUPRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateGroupMessage"] = _UPDATEGROUPMESSAGE
@@ -1143,27 +1143,27 @@ GetGroupResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetGroupResponse)
 
-GetAllGroupMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllGroupMessage",
+GetGroupsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetGroupsMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLGROUPMESSAGE,
+        "DESCRIPTOR": _GETGROUPSMESSAGE,
         "__module__": "proto.grid.messages.group_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllGroupMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetGroupsMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllGroupMessage)
+_sym_db.RegisterMessage(GetGroupsMessage)
 
-GetAllGroupResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllGroupResponse",
+GetGroupsResponse = _reflection.GeneratedProtocolMessageType(
+    "GetGroupsResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLGROUPRESPONSE,
+        "DESCRIPTOR": _GETGROUPSRESPONSE,
         "__module__": "proto.grid.messages.group_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllGroupResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetGroupsResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllGroupResponse)
+_sym_db.RegisterMessage(GetGroupsResponse)
 
 DeleteGroupMessage = _reflection.GeneratedProtocolMessageType(
     "DeleteGroupMessage",

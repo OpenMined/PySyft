@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8b\x01\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12\x43reateUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x88\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"q\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11GetAllUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12GetAllUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11SearchUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12SearchUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12UpdateUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8b\x01\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12\x43reateUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x88\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"q\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x89\x01\n\x0fGetUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"r\n\x10GetUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11SearchUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12SearchUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08"\x8b\x01\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"t\n\x12UpdateUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07success\x18\x03 \x01(\x08\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -349,9 +349,9 @@ _GETUSERRESPONSE = _descriptor.Descriptor(
 )
 
 
-_GETALLUSERMESSAGE = _descriptor.Descriptor(
-    name="GetAllUserMessage",
-    full_name="syft.grid.messages.GetAllUserMessage",
+_GETUSERSMESSAGE = _descriptor.Descriptor(
+    name="GetUsersMessage",
+    full_name="syft.grid.messages.GetUsersMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -359,7 +359,7 @@ _GETALLUSERMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllUserMessage.msg_id",
+            full_name="syft.grid.messages.GetUsersMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -378,7 +378,7 @@ _GETALLUSERMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllUserMessage.address",
+            full_name="syft.grid.messages.GetUsersMessage.address",
             index=1,
             number=2,
             type=11,
@@ -397,7 +397,7 @@ _GETALLUSERMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.GetAllUserMessage.reply_to",
+            full_name="syft.grid.messages.GetUsersMessage.reply_to",
             index=2,
             number=4,
             type=11,
@@ -424,13 +424,13 @@ _GETALLUSERMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=646,
-    serialized_end=785,
+    serialized_end=783,
 )
 
 
-_GETALLUSERRESPONSE = _descriptor.Descriptor(
-    name="GetAllUserResponse",
-    full_name="syft.grid.messages.GetAllUserResponse",
+_GETUSERSRESPONSE = _descriptor.Descriptor(
+    name="GetUsersResponse",
+    full_name="syft.grid.messages.GetUsersResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -438,7 +438,7 @@ _GETALLUSERRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.GetAllUserResponse.msg_id",
+            full_name="syft.grid.messages.GetUsersResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -457,7 +457,7 @@ _GETALLUSERRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.GetAllUserResponse.address",
+            full_name="syft.grid.messages.GetUsersResponse.address",
             index=1,
             number=2,
             type=11,
@@ -476,7 +476,7 @@ _GETALLUSERRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="success",
-            full_name="syft.grid.messages.GetAllUserResponse.success",
+            full_name="syft.grid.messages.GetUsersResponse.success",
             index=2,
             number=3,
             type=8,
@@ -502,8 +502,8 @@ _GETALLUSERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=787,
-    serialized_end=903,
+    serialized_start=785,
+    serialized_end=899,
 )
 
 
@@ -581,8 +581,8 @@ _SEARCHUSERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=906,
-    serialized_end=1045,
+    serialized_start=902,
+    serialized_end=1041,
 )
 
 
@@ -660,8 +660,8 @@ _SEARCHUSERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1047,
-    serialized_end=1163,
+    serialized_start=1043,
+    serialized_end=1159,
 )
 
 
@@ -739,8 +739,8 @@ _UPDATEUSERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1166,
-    serialized_end=1305,
+    serialized_start=1162,
+    serialized_end=1301,
 )
 
 
@@ -818,8 +818,8 @@ _UPDATEUSERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1307,
-    serialized_end=1423,
+    serialized_start=1303,
+    serialized_end=1419,
 )
 
 _CREATEUSERMESSAGE.fields_by_name[
@@ -852,19 +852,19 @@ _GETUSERRESPONSE.fields_by_name[
 _GETUSERRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLUSERMESSAGE.fields_by_name[
+_GETUSERSMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLUSERMESSAGE.fields_by_name[
+_GETUSERSMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLUSERMESSAGE.fields_by_name[
+_GETUSERSMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETALLUSERRESPONSE.fields_by_name[
+_GETUSERSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETALLUSERRESPONSE.fields_by_name[
+_GETUSERSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _SEARCHUSERMESSAGE.fields_by_name[
@@ -901,8 +901,8 @@ DESCRIPTOR.message_types_by_name["CreateUserMessage"] = _CREATEUSERMESSAGE
 DESCRIPTOR.message_types_by_name["CreateUserResponse"] = _CREATEUSERRESPONSE
 DESCRIPTOR.message_types_by_name["GetUserMessage"] = _GETUSERMESSAGE
 DESCRIPTOR.message_types_by_name["GetUserResponse"] = _GETUSERRESPONSE
-DESCRIPTOR.message_types_by_name["GetAllUserMessage"] = _GETALLUSERMESSAGE
-DESCRIPTOR.message_types_by_name["GetAllUserResponse"] = _GETALLUSERRESPONSE
+DESCRIPTOR.message_types_by_name["GetUsersMessage"] = _GETUSERSMESSAGE
+DESCRIPTOR.message_types_by_name["GetUsersResponse"] = _GETUSERSRESPONSE
 DESCRIPTOR.message_types_by_name["SearchUserMessage"] = _SEARCHUSERMESSAGE
 DESCRIPTOR.message_types_by_name["SearchUserResponse"] = _SEARCHUSERRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateUserMessage"] = _UPDATEUSERMESSAGE
@@ -953,27 +953,27 @@ GetUserResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetUserResponse)
 
-GetAllUserMessage = _reflection.GeneratedProtocolMessageType(
-    "GetAllUserMessage",
+GetUsersMessage = _reflection.GeneratedProtocolMessageType(
+    "GetUsersMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLUSERMESSAGE,
+        "DESCRIPTOR": _GETUSERSMESSAGE,
         "__module__": "proto.grid.messages.user_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllUserMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUsersMessage)
     },
 )
-_sym_db.RegisterMessage(GetAllUserMessage)
+_sym_db.RegisterMessage(GetUsersMessage)
 
-GetAllUserResponse = _reflection.GeneratedProtocolMessageType(
-    "GetAllUserResponse",
+GetUsersResponse = _reflection.GeneratedProtocolMessageType(
+    "GetUsersResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETALLUSERRESPONSE,
+        "DESCRIPTOR": _GETUSERSRESPONSE,
         "__module__": "proto.grid.messages.user_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllUserResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUsersResponse)
     },
 )
-_sym_db.RegisterMessage(GetAllUserResponse)
+_sym_db.RegisterMessage(GetUsersResponse)
 
 SearchUserMessage = _reflection.GeneratedProtocolMessageType(
     "SearchUserMessage",
