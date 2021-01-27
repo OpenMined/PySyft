@@ -185,6 +185,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
+        if method_name == "__len__":
+            result.tags = resolved_self.tags + ["__len__"]
+
         node.store[self.id_at_location] = result
 
     @syft_decorator(typechecking=True)

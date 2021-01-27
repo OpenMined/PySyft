@@ -131,7 +131,6 @@ def _get_request_config(self: Any) -> Dict[str, Any]:
     return {
         "request_block": True,
         "timeout_secs": 25,
-        "name": f"__len__ request on {self.id_at_location}",
         "delete_obj": False,
     }
 
@@ -154,7 +153,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
                 )
 
             try:
-                data_len = len(self)
+                data_len = self.__len__()
             except Exception:
                 traceback_and_raise(
                     ValueError("Request to access data length not granted.")
@@ -279,7 +278,7 @@ class Class(Callable):
             client: Any,
             searchable: bool = False,
             description: str = "",
-            tags: List[str] = [],
+            tags: Optional[List[str]] = None,
         ) -> Pointer:
             # if self is proto, change self to it's wrapper object
             which_obj = self
@@ -296,6 +295,7 @@ class Class(Callable):
                 id_ = UID()
                 which_obj.id = id_
 
+            tags = tags if tags else []
             tags = sorted(set(tags), key=tags.index)  # keep order of original
             obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags

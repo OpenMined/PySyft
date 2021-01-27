@@ -100,6 +100,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     n_objects = len(my_domain.store)
                     n_requests = len(my_domain.requests)
                     n_messages = my_domain.message_counter
+                    n_request_handlers = len(my_domain.request_handlers)
 
                     blink_on = (int(iterator / 5) % 2) == 0
 
@@ -133,6 +134,8 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + right_blink
                         + "  Messages: "
                         + str(n_messages)
+                        + "  Request Handlers: "
+                        + str(n_request_handlers)
                     )
                     out += "                                "
                     info("\r" + out, end="\r", print=True)
