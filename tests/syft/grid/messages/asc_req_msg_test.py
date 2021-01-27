@@ -1,0 +1,279 @@
+# syft absolute
+import syft as sy
+from syft.core.io.address import Address
+from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
+from syft.grid.messages.association_messages import DeleteAssociationRequestResponse
+from syft.grid.messages.association_messages import GetAllAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAllAssociationRequestResponse
+from syft.grid.messages.association_messages import GetAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAssociationRequestResponse
+from syft.grid.messages.association_messages import ReceiveAssociationRequestMessage
+from syft.grid.messages.association_messages import ReceiveAssociationRequestResponse
+from syft.grid.messages.association_messages import RespondAssociationRequestMessage
+from syft.grid.messages.association_messages import RespondAssociationRequestResponse
+from syft.grid.messages.association_messages import SendAssociationRequestMessage
+from syft.grid.messages.association_messages import SendAssociationRequestResponse
+
+
+def test_association_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+    request_content = {"domain-name": "My-Domain", "domain-address": "http://url:5000"}
+    msg = SendAssociationRequestMessage(
+        address=target,
+        content= request_content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+def test_association_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+    request_content = {"msg": "Association Request Accepted Successfully!"}
+    msg = SendAssociationRequestResponse(
+        address=target,
+        success=True,
+        content= request_content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+def test_receive_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+    request_content = {}
+    msg = ReceiveAssociationRequestMessage(
+        address=target,
+        content=request_content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+def test_receive_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+    content = {}
+    msg = ReceiveAssociationRequestResponse(
+        success=True,
+        address=target,
+        content=content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_respond_association_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+
+    content = {"association_request_id": "87564178", "status": "accept"}
+    msg = RespondAssociationRequestMessage(
+        address=target,
+        content=content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_respond_association_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+
+    request_content = {"msg": "Response registered successfully!"}
+    msg = RespondAssociationRequestResponse(
+        address=target,
+        success=True,
+        content=request_content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_delete_association_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+
+    content = {"association_request_id": "21656565"}
+    msg = DeleteAssociationRequestMessage(
+        address=target,
+        content=content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_delete_association_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+
+    content = {"msg": "Association Request deleted successfully!"}
+    msg = DeleteAssociationRequestResponse(
+        address=target,
+        success=True,
+        content=content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+def test_get_association_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+
+    content = {"association_request_id": "87564178"}
+    msg = GetAssociationRequestMessage(
+        address=target,
+        content=content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_get_association_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+
+    request_content = {
+        "entity": "OpenMined",
+        "entity-type": "Network",
+        "status": "pending",
+        "date": "05/12/2022",
+    }
+    msg = GetAssociationRequestResponse(
+        address=target,
+        success=True,
+        content=request_content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_get_all_association_request_message_serde() -> None:
+    bob_vm = sy.VirtualMachine(name="Bob")
+    target = Address(name="Alice")
+
+
+    content = {}
+    msg = GetAllAssociationRequestMessage(
+        address=target,
+        content=content,
+        reply_to=bob_vm.address,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
+
+
+def test_get_all_association_request_response_serde() -> None:
+    target = Address(name="Alice")
+
+
+    request_content = {
+        "association-requests" : [
+            {
+                "entity": "OpenMined",
+                "entity-type": "Network",
+                "status": "pending",
+                "date": "05/12/2022",
+            },
+            {
+                "entity": "Hospital-A",
+                "entity-type": "Domain",
+                "status": "pending",
+                "date": "09/10/2022",
+            },
+            {
+                "entity": "OpenMined",
+                "entity-type": "Network",
+                "status": "pending",
+                "date": "07/11/2022",
+            },
+        ]
+    }
+    msg = GetAllAssociationRequestResponse(
+        address=target,
+        success=True,
+        content=request_content,
+    )
+
+    blob = msg.serialize()
+    msg2 = sy.deserialize(blob=blob)
+
+    assert msg.id == msg2.id
+    assert msg.address == target
+    assert msg.content == msg2.content
+    assert msg == msg2
