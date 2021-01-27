@@ -1,14 +1,16 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
 # syft absolute
 import syft as sy
-from typing import Dict
-from typing import Any
 from syft.core.io.address import Address
 from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
 from syft.grid.messages.association_messages import DeleteAssociationRequestResponse
-from syft.grid.messages.association_messages import GetAllAssociationRequestMessage
-from syft.grid.messages.association_messages import GetAllAssociationRequestResponse
 from syft.grid.messages.association_messages import GetAssociationRequestMessage
 from syft.grid.messages.association_messages import GetAssociationRequestResponse
+from syft.grid.messages.association_messages import GetAssociationRequestsMessage
+from syft.grid.messages.association_messages import GetAssociationRequestsResponse
 from syft.grid.messages.association_messages import ReceiveAssociationRequestMessage
 from syft.grid.messages.association_messages import ReceiveAssociationRequestResponse
 from syft.grid.messages.association_messages import RespondAssociationRequestMessage
@@ -222,7 +224,7 @@ def test_get_all_association_request_message_serde() -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
-    msg = GetAllAssociationRequestMessage(
+    msg = GetAssociationRequestsMessage(
         address=target,
         content=content,
         reply_to=bob_vm.address,
@@ -262,7 +264,7 @@ def test_get_all_association_request_response_serde() -> None:
             },
         ]
     }
-    msg = GetAllAssociationRequestResponse(
+    msg = GetAssociationRequestsResponse(
         address=target,
         success=True,
         content=request_content,

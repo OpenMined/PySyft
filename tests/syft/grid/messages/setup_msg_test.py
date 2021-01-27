@@ -1,7 +1,9 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
 # syft absolute
 import syft as sy
-from typing import Dict, Any
-
 from syft.core.io.address import Address
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse

@@ -1,15 +1,18 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
 # syft absolute
 import syft as sy
-from typing import Dict, Any
 from syft.core.io.address import Address
 from syft.grid.messages.group_messages import CreateGroupMessage
 from syft.grid.messages.group_messages import CreateGroupResponse
 from syft.grid.messages.group_messages import DeleteGroupMessage
 from syft.grid.messages.group_messages import DeleteGroupResponse
-from syft.grid.messages.group_messages import GetAllGroupMessage
-from syft.grid.messages.group_messages import GetAllGroupResponse
 from syft.grid.messages.group_messages import GetGroupMessage
 from syft.grid.messages.group_messages import GetGroupResponse
+from syft.grid.messages.group_messages import GetGroupsMessage
+from syft.grid.messages.group_messages import GetGroupsResponse
 from syft.grid.messages.group_messages import UpdateGroupMessage
 from syft.grid.messages.group_messages import UpdateGroupResponse
 
@@ -202,7 +205,7 @@ def test_get_all_groups_message_serde() -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
-    msg = GetAllGroupMessage(
+    msg = GetGroupsMessage(
         address=target,
         content=content,
         reply_to=bob_vm.address,
@@ -243,7 +246,7 @@ def test_get_all_groups_response_serde() -> None:
         }
     }
 
-    msg = GetAllGroupResponse(
+    msg = GetGroupsResponse(
         address=target,
         success=True,
         content=request_content,

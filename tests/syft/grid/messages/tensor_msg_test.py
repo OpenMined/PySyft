@@ -1,8 +1,9 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
 # syft absolute
 import syft as sy
-from typing import Dict
-from typing import Any
-
 from syft.core.io.address import Address
 from syft.grid.messages.tensor_messages import CreateTensorMessage
 from syft.grid.messages.tensor_messages import CreateTensorResponse
