@@ -74,8 +74,7 @@ def test_send_association_request(client, database, cleanup):
         data={"id": "54623156", "address": "159.15.223.162"},
         headers=headers,
     )
-    # assert result.status_code == 200
-    print("My Result: ", result.get_json())
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request sent!"}
 
 
@@ -97,7 +96,7 @@ def test_receive_association_request(client, database, cleanup):
         headers=headers,
     )
 
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request received!"}
 
 
@@ -118,7 +117,7 @@ def test_reply_association_request(client, database, cleanup):
         data={"id": "54623156", "address": "159.15.223.162"},
         headers=headers,
     )
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request was replied!"}
 
 
@@ -135,7 +134,7 @@ def test_get_all_association_requests(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     result = client.get("/association-requests/", headers=headers)
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {
         "association-requests": ["Network A", "Network B", "Network C"]
     }
@@ -154,7 +153,7 @@ def test_get_specific_association_requests(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     result = client.get("/association-requests/51613546", headers=headers)
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {
         "association-request": {
             "ID": "51613546",

@@ -163,7 +163,6 @@ def test_get_specific_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    print(" Result: ", result.get_json())
     tensor_id = result.get_json()["tensor_id"]
 
     result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
@@ -200,7 +199,6 @@ def test_update_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    print(" Result: ", result.get_json())
     tensor_id = result.get_json()["tensor_id"]
 
     # Assert registered tensor metadata
@@ -263,7 +261,7 @@ def test_delete_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    print(" Result: ", result.get_json())
+    
     tensor_id = result.get_json()["tensor_id"]
 
     result = client.delete("/dcfl/tensors/" + tensor_id, headers=headers)
