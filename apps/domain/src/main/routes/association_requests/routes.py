@@ -7,7 +7,7 @@ from syft.grid.messages.association_messages import (
     ReceiveAssociationRequestMessage,
     GetAssociationRequestMessage,
     DeleteAssociationRequestMessage,
-    GetAllAssociationRequestMessage,
+    GetAssociationRequestsMessage,
     RespondAssociationRequestMessage,
 )
 
@@ -87,7 +87,7 @@ def get_all_association_requests(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetAllAssociationRequestMessage, current_user, content
+        route_logic, GetAssociationRequestsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

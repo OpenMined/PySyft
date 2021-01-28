@@ -24,8 +24,8 @@ from syft.grid.messages.group_messages import (
     UpdateGroupResponse,
     DeleteGroupMessage,
     DeleteGroupResponse,
-    GetAllGroupMessage,
-    GetAllGroupResponse,
+    GetGroupsMessage,
+    GetGroupsResponse,
 )
 
 
@@ -64,9 +64,9 @@ def get_group_msg(
 
 @syft_decorator(typechecking=True)
 def get_all_groups_msg(
-    msg: GetAllGroupMessage,
-) -> GetAllGroupResponse:
-    return GetAllGroupResponse(
+    msg: GetGroupsMessage,
+) -> GetGroupsResponse:
+    return GetGroupsResponse(
         address=msg.reply_to,
         success=True,
         content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
@@ -84,13 +84,13 @@ def del_group_msg(
     )
 
 
-class AssociationRequestService(ImmediateNodeServiceWithReply):
+class GroupManagerService(ImmediateNodeServiceWithReply):
 
     msg_handler_map = {
         CreateGroupMessage: create_group_msg,
         UpdateGroupMessage: update_group_msg,
         GetGroupMessage: get_group_msg,
-        GetAllGroupMessage: get_all_groups_msg,
+        GetGroupsMessage: get_all_groups_msg,
         DeleteGroupMessage: del_group_msg,
     }
 
@@ -102,7 +102,7 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
             CreateGroupMessage,
             UpdateGroupMessage,
             GetGroupMessage,
-            GetAllGroupMessage,
+            GetGroupsMessage,
             DeleteGroupMessage,
         ],
         verify_key: VerifyKey,
@@ -110,10 +110,10 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         CreateGroupResponse,
         UpdateGroupResponse,
         GetGroupResponse,
-        GetAllGroupResponse,
+        GetGroupsResponse,
         DeleteGroupResponse,
     ]:
-        return AssociationRequestService.msg_handler_map[type(msg)](msg=msg)
+        return GroupManagerService.msg_handler_map[type(msg)](msg=msg)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
@@ -121,6 +121,6 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
             CreateGroupMessage,
             UpdateGroupMessage,
             GetGroupMessage,
-            GetAllGroupMessage,
+            GetGroupsMessage,
             DeleteGroupMessage,
         ]
