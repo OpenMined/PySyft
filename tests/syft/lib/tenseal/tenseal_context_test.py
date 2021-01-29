@@ -1,6 +1,8 @@
+# stdlib
+from typing import Any
+
 # third party
 import pytest
-from typing import Any
 
 # syft absolute
 import syft as sy

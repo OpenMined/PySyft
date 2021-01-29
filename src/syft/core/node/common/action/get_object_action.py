@@ -37,7 +37,10 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
 
     def __init__(
-        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
+        self, 
+        obj: StorableObject, 
+        address: Address, 
+        msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
@@ -58,25 +61,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-
-        ser = self.obj.serialize()
-
-        # TODO: Fix this hack
-        # we need to check if the serialize chain creates a storable if not
-        # we need to go use the serializable_wrapper_type
-        # this is because klasses have a different def serialize to normal serializables
-        # which checks for the serializable_wrapper_type and uses it
-        if not isinstance(ser, StorableObject_PB):
-            if hasattr(self.obj, "serializable_wrapper_type"):
-                obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
-                if hasattr(obj, "sy_serialize"):
-                    ser = obj.sy_serialize()
-                else:
-                    ser = obj.serialize()
-            else:
-                traceback_and_raise(
-                    Exception(f"Cannot send {type(self.obj)} as StorableObject")
-                )
+        ser = StorableObject(id=UID(), data=self.obj).serialize()
 
         return GetObjectResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -98,9 +83,8 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return GetObjectResponseMessage(
-            obj=_deserialize(blob=proto.obj),
+            obj=_deserialize(blob=proto.obj).data,
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
@@ -157,7 +141,7 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storeable_object = node.store[self.id_at_location]
+                storable_object = node.store[self.id_at_location]
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
@@ -169,7 +153,7 @@ class GetObjectAction(ImmediateActionWithReply):
             # if you are not the root user check if your verify_key has read_permission
             if (
                 verify_key != node.root_verify_key
-                and verify_key not in storeable_object.read_permissions
+                and verify_key not in storable_object.read_permissions
             ):
                 log = (
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
@@ -177,8 +161,11 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = storeable_object.data
-            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
+            msg = GetObjectResponseMessage(
+                obj=storable_object.data,
+                address=self.reply_to, 
+                msg_id=None
+            )
 
             if self.delete_obj:
                 try:
@@ -197,7 +184,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 debug(f"Copying Object with ID {self.id_at_location} in store.")
 
             debug(
-                f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
+                f"Returning Object with ID: {self.id_at_location} {type(storable_object.data)}"
             )
             return msg
         except Exception as e:

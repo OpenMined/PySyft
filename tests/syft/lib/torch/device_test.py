@@ -1,7 +1,9 @@
-# third party
-import torch as th
-import pytest
+# stdlib
 from typing import Any
+
+# third party
+import pytest
+import torch as th
 
 # syft absolute
 import syft as sy
