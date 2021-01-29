@@ -1,26 +1,38 @@
 # stdlib
-from pathlib import Path
-import tempfile
 from typing import List, Optional
 
-# third party
-from loguru import logger
-from sqlitedict import SqliteDict
-from typing_extensions import Final
-
 # syft relative
-from ...decorators import syft_decorator
-from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
+from ...decorators import syft_decorator
 from .storeable_object import StorableObject
 
 
 class Dataset:
+    """
+    Dataset is a wrapper over a collection of Serializable objects.
+
+    Arguments:
+        id (UID): the id at which to store the data.
+        data (List[Serializable]): A list of serializable objects.
+        description (Optional[str]): An optional string that describes what you are storing. Useful
+        when searching.
+        tags (Optional[List[str]]): An optional list of strings that are tags used at search.
+        TODO: add docs about read_permission and search_permission
+
+    Attributes:
+        id (UID): the id at which to store the data.
+        data (List[Serializable]): A list of serializable objects.
+        description (Optional[str]): An optional string that describes what you are storing. Useful
+        when searching.
+        tags (Optional[List[str]]): An optional list of strings that are tags used at search.
+
+    """
+
     @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
-        data: List[object],
+        data: List[StorableObject],
         description: str = "",
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
@@ -69,3 +81,19 @@ class Dataset:
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    @syft_decorator(typechecking=True)
+    def __contains__(self, _id: UID) -> bool:
+        return _id in [el.id for el in self.data]
+
+    @syft_decorator(typechecking=True)
+    def keys(self) -> List[UID]:
+        return [el.id for el in self.data]
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, _id: UID) -> List[StorableObject]:
+        return [el for el in self.data if el.id == _id]
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __delitem__(self, _id: UID) -> None:
+        self.data = [el for el in self.data if el.id != _id]
