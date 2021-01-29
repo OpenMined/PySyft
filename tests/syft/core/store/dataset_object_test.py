@@ -1,10 +1,11 @@
 # third party
 import torch as th
+import syft as sy
 
 # syft absolute
 from syft.core.common import UID
-from syft.core.store.storeable_object import StorableObject
 from syft.core.store.dataset import Dataset
+from syft.core.store.storeable_object import StorableObject
 
 
 def test_create_dataset_with_store_obj() -> None:
@@ -198,3 +199,65 @@ def test_dataset_del() -> None:
     dataset_obj.__delitem__(obj2.id)
 
     assert dataset_obj.data == [obj1, obj3]
+
+
+def test_serde_storable_obj() -> None:
+    id = UID()
+    data = UID()
+    description = "This is a dummy id"
+    tags = ["dummy", "test"]
+    obj1 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = th.Tensor([1, 2, 3, 4])
+    description = "This is a dummy tensor n1"
+    tags = ["dummy", "test"]
+    obj2 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = th.Tensor([10, 20, 30, 40])
+    description = "This is a dummy tensor n2"
+    tags = ["dummy", "test"]
+    obj3 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = [obj1, obj2, obj3]
+    description = "This is a dataset"
+    tags = ["dummy", "dataset"]
+    dataset_obj = Dataset(id=id, data=data, description=description, tags=tags)
+
+    blob = sy.serialize(obj=dataset_obj)
+    sy.deserialize(blob=blob)
+
+
+def test_serde_storable_obj_2() -> None:
+    id = UID()
+    data = UID()
+    description = "This is a dummy id"
+    tags = ["dummy", "test"]
+    obj1 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = th.Tensor([1, 2, 3, 4])
+    description = "This is a dummy tensor n1"
+    tags = ["dummy", "test"]
+    obj2 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = th.Tensor([10, 20, 30, 40])
+    description = "This is a dummy tensor n2"
+    tags = ["dummy", "test"]
+    obj3 = StorableObject(id=id, data=data, description=description, tags=tags)
+
+    id = UID()
+    data = [obj1, obj2, obj3]
+    description = "This is a dataset"
+    tags = ["dummy", "dataset"]
+    obj = Dataset(id=id, data=data, description=description, tags=tags)
+
+    blob = obj.serialize()
+    ds_obj = sy.deserialize(blob=blob)
+
+    assert obj.id == ds_obj.id
+    assert obj.description == ds_obj.description
+    assert obj.tags == ds_obj.tags
