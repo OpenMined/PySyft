@@ -17,6 +17,7 @@ from google.protobuf.message import Message
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
+from ..core.common.group import VerifyAll
 from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
@@ -25,6 +26,7 @@ from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
+from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
@@ -296,33 +298,23 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
         ) -> Pointer:
-            # if self is proto, change self to it's wrapper object
-            which_obj = self
-            if "ProtobufWrapper" in self.serializable_wrapper_type.__name__:
-                # which_obj should be of the same type as what self._data_proto2object returns
-                which_obj = self.serializable_wrapper_type(value=self)
-
-            if "CTypeWrapper" in self.serializable_wrapper_type.__name__:
-                # which_obj should be of the same type as what self._data_proto2object returns
-                which_obj = self.serializable_wrapper_type(value=self)
-
             id_ = getattr(self, "id", None)
             if id_ is None:
                 id_ = UID()
-                which_obj.id = id_
+                self.id = id_
 
             tags = tags if tags else []
             tags = sorted(set(tags), key=tags.index)  # keep order of original
-            obj_tags = getattr(which_obj, "tags", [])
+            obj_tags = getattr(self, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags
             tags = tags if tags else obj_tags
 
-            obj_description = getattr(which_obj, "description", "")
+            obj_description = getattr(self, "description", "")
             # if `description` is passed in, use it; else, use obj_description
             description = description if description else obj_description
 
-            which_obj.tags = tags
-            which_obj.description = description
+            self.tags = tags
+            self.description = description
 
             id_at_location = UID()
 
@@ -338,12 +330,14 @@ class Class(Callable):
                 ptr.gc_enabled = False
 
             # Step 2: create message which contains object to send
-            obj_msg = SaveObjectAction(
-                id_at_location=ptr.id_at_location,
-                obj=which_obj,
-                address=client.address,
-                anyone_can_search_for_this=searchable,
+            storable = StorableObject(
+                id=ptr.id_at_location,
+                data=self,
+                tags=tags,
+                description=description,
+                search_permissions={VerifyAll: None} if searchable else {},
             )
+            obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)
@@ -377,17 +371,6 @@ class Class(Callable):
                 obj=self,
                 to_proto=to_proto,
                 to_bytes=to_bytes,
-            )
-
-        serialize_attr = "serialize"
-        if not hasattr(outer_self.object_ref, serialize_attr):
-            aggressive_set_attr(
-                obj=outer_self.object_ref, name=serialize_attr, attr=serialize
-            )
-        else:
-            serialize_attr = "sy_serialize"
-            aggressive_set_attr(
-                obj=outer_self.object_ref, name=serialize_attr, attr=serialize
             )
 
         aggressive_set_attr(

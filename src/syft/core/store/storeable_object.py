@@ -104,11 +104,12 @@ class StorableObject(AbstractStorableObject):
         id = self.id.serialize()
         proto.id.CopyFrom(id)
 
-        # Step 2: Save the type of wrapper to use to deserialize
-        proto.obj_type = get_fully_qualified_name(obj=self)
+        # # Step 2: Save the type of wrapper to use to deserialize
+        # proto.obj_type = get_fully_qualified_name(obj=self)
+        proto.data_type = get_fully_qualified_name(obj=self.data)
 
-        # Step 3: Serialize data to protobuf and pack into proto
-        data = self._data_object2proto()
+        # # Step 3: Serialize data to protobuf and pack into proto
+        data = self.data._object2proto()
 
         proto.data.Pack(data)
 
@@ -147,27 +148,13 @@ class StorableObject(AbstractStorableObject):
         if not isinstance(id, UID):
             traceback_and_raise(ValueError("TODO"))
 
-        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        #  PYDOC.LOCATE!!!
-        # Step 2: get the type of wrapper to use to deserialize
-        obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
+        # # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
+        # #  PYDOC.LOCATE!!!
+        # # Step 2: get the type of wrapper to use to deserialize
+        data_type = pydoc.locate(proto.data_type)
 
-        # this happens if we have a special ProtobufWrapper type
-        # need a different way to get obj_type
-        if proto.obj_type.endswith("ProtobufWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("ProtobufWrapper", "")
-            proto_type = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = proto_type.serializable_wrapper_type
-
-        if proto.obj_type.endswith("CTypeWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("CTypeWrapper", "")
-            ctype = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = ctype.serializable_wrapper_type
-
-        # Step 3: get the protobuf type we deserialize for .data
-        schematic_type = obj_type.get_data_protobuf_schema()
+        # # Step 3: get the protobuf type we deserialize for .data
+        schematic_type = data_type.get_protobuf_schema()
 
         # Step 4: Deserialize data from protobuf
         data = None
@@ -176,7 +163,7 @@ class StorableObject(AbstractStorableObject):
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
-            data = obj_type._data_proto2object(proto=data)
+            data = data_type._proto2object(proto=data)
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""
@@ -184,19 +171,11 @@ class StorableObject(AbstractStorableObject):
         # Step 6: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = obj_type.construct_new_object(
+        result = StorableObject.construct_new_object(
             id=id, data=data, tags=tags, description=description
         )
 
         return result
-
-    def _data_object2proto(self) -> Message:
-        _serialize = getattr(self.data, "serialize", None)
-
-        if _serialize is None or not callable(_serialize):
-            traceback_and_raise(ValueError("TODO"))
-
-        return _serialize()
 
     @staticmethod
     def _data_proto2object(proto: Message) -> Serializable:
