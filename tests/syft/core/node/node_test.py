@@ -225,14 +225,3 @@ def test_autoapprove_requests_made_by_root_clients_5015() -> None:
     p = alice_guest.torch.Tensor([1, 2, 3])
     t = p.get(request_block=True, name="Test")
     assert t is None
-
-    p = torch.Tensor([4, 5, 6])
-    p.send(alice_client, searchable=True)
-    p = alice_client.store[0]
-    t = p.get(request_block=True, name="Test", delete_obj=False)
-    assert torch.equal(t, torch.Tensor([4, 5, 6]))
-
-    assert len(alice_guest.store) == 1
-    p = alice_guest.store[0]
-    t = p.get(request_block=True, name="Test", delete_obj=False)
-    assert t is None
