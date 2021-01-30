@@ -120,7 +120,7 @@ class Attribute:
         Returns:
             The list of properties in the current AST node attributes.
         """
-        out: List["ast.property.Property"] = []
+        out = []
 
         if isinstance(self, ast.property.Property):
             out.append(self)

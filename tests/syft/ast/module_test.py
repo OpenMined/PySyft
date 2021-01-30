@@ -10,6 +10,8 @@ def global_function() -> int:
 
 
 class A:
+    """This is a test class to be used in functionality test."""
+
     __slots__ = ["_private_attr"]
 
     static_attr: int = 4
@@ -34,6 +36,8 @@ class A:
 
 
 class B(Enum):
+    """This is a test enum to be used in functionality test."""
+
     Car = 1
     Cat = 2
     Dog = 3

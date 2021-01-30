@@ -75,7 +75,9 @@ from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
 
 
-def get_parent(path: str, root: globals.Globals) -> Union[module.Module, klass.Class]:
+def get_parent(
+    path: str, root: Union[attribute.Attribute, globals.Globals, module.Module]
+) -> Union[module.Module, klass.Class]:
     """
     Return the parent of a given path.
 
@@ -90,7 +92,7 @@ def get_parent(path: str, root: globals.Globals) -> Union[module.Module, klass.C
         For instance, given the syft project root directory, the parent to the path
         `syft.lib.python.Int` is `python`.
     """
-    parent: Union[attribute.Attribute, globals.Globals, module.Module] = root
+    parent = root
     for step in path.split(".")[:-1]:
         if step in parent.attrs:
             parent = parent.attrs[step]
