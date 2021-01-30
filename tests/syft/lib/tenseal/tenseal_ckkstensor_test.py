@@ -51,6 +51,7 @@ def test_tenseal_ckkstensor_sanity(context: Any, duet: sy.VirtualMachine) -> Non
     _almost_equal(result, [0, 1, 2, 3, 4])
 
 
+@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_add(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -139,6 +140,7 @@ def test_tenseal_ckkstensor_mul(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
+@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_iadd(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -171,6 +173,7 @@ def test_tenseal_ckkstensor_iadd(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
+@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_isub(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -197,6 +200,7 @@ def test_tenseal_ckkstensor_isub(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, [v2 - v1 for v1, v2 in zip(v1, v2)])
 
 
+@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -223,6 +227,7 @@ def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
+@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_stress_imul(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
