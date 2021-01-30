@@ -66,7 +66,7 @@ def create_ast_test(client: Client) -> Globals:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def registr_module_test() -> None:
+def register_module_test() -> None:
     # Make lib_ast contain the specific methods/attributes
     update_ast_test(ast_or_client=syft.lib_ast)
 
