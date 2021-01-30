@@ -16,6 +16,7 @@ from ..logger import traceback_and_raise
 def is_static_method(host_object, attr):  # type: ignore
     value = getattr(host_object, attr)
 
+    # Host object must contain the method resolution order attribute (mro)
     if not hasattr(host_object, "__mro__"):
         return False
 
@@ -29,7 +30,6 @@ def is_static_method(host_object, attr):  # type: ignore
 
 
 class Module(ast.attribute.Attribute):
-
     """A module which contains other modules or callables."""
 
     def __init__(
@@ -39,6 +39,13 @@ class Module(ast.attribute.Attribute):
         object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
     ):
+        """
+        Args:
+            client: The client for which all computation is being executed.
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`
+            object_ref: The actual python object for which the computation is being made.
+            return_type_name: The given action's return type name, with its full path, in string format.
+        """
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
@@ -52,6 +59,14 @@ class Module(ast.attribute.Attribute):
         attr: Optional[Union[Callable, CallableT]],
         is_static: bool = False,
     ) -> None:
+        """
+        Add an attribute to the current module.
+
+        Args:
+            attr_name: The name of the attribute, e.g. `List` of the path `syft.lib.python.List`.
+            attr: The attribute object.
+            is_static: The actual python object for which the computation is being made.
+        """
         self.__setattr__(attr_name, attr)
 
         if is_static is True:
@@ -62,7 +77,7 @@ class Module(ast.attribute.Attribute):
         if attr is None:
             traceback_and_raise(ValueError("An attribute reference has to be passed."))
 
-        # if add_attr is called directly we need to cache the path as well
+        # If `add_attr` is called directly, we need to cache the path as well
         attr_ref = getattr(attr, "object_ref", None)
         path = getattr(attr, "path_and_name", None)
         if attr_ref not in self.lookup_cache and path is not None:
