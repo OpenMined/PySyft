@@ -22,7 +22,7 @@ from syft.lib import vendor_requirements_available
 import sys
 
 logger.remove()
-logger.add(sys.stderr, level="TRACE")
+logger.add(sys.stderr, level="ERROR")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
