@@ -81,7 +81,6 @@ def test_tenseal_ckkstensor_add(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_sub(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -112,7 +111,6 @@ def test_tenseal_ckkstensor_sub(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_mul(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
@@ -251,7 +249,6 @@ def test_tenseal_ckkstensor_stress_imul(context: Any, duet: sy.VirtualMachine) -
         _almost_equal(result, expected)
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_power(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
@@ -267,7 +264,6 @@ def test_tenseal_ckkstensor_power(context: Any, duet: sy.VirtualMachine) -> None
     _almost_equal(result, [0, 1, 8, 27, 64])
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_negation(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_tensor(context, [1, 2, 3, 4, 5])
@@ -283,7 +279,6 @@ def test_tenseal_ckkstensor_negation(context: Any, duet: sy.VirtualMachine) -> N
     _almost_equal(result, [-1, -2, -3, -4, -5])
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_square(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
@@ -299,7 +294,6 @@ def test_tenseal_ckkstensor_square(context: Any, duet: sy.VirtualMachine) -> Non
     _almost_equal(result, [0, 1, 4, 9, 16])
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_sum(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
@@ -315,7 +309,6 @@ def test_tenseal_ckkstensor_sum(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, 10)
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_polyval(context: Any, duet: sy.VirtualMachine) -> None:
     polynom = [1, 2, 3, 4]
@@ -332,7 +325,6 @@ def test_tenseal_ckkstensor_polyval(context: Any, duet: sy.VirtualMachine) -> No
     _almost_equal(result, [-23, 49])
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_dot(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
