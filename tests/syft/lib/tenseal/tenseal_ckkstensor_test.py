@@ -51,7 +51,6 @@ def test_tenseal_ckkstensor_sanity(context: Any, duet: sy.VirtualMachine) -> Non
     _almost_equal(result, [0, 1, 2, 3, 4])
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_add(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
