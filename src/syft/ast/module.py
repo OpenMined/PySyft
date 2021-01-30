@@ -65,7 +65,7 @@ class Module(ast.attribute.Attribute):
         Args:
             attr_name: The name of the attribute, e.g. `List` of the path `syft.lib.python.List`.
             attr: The attribute object.
-            is_static: The actual python object for which the computation is being made.
+            is_static: The actual Python object for which the computation is being made.
         """
         self.__setattr__(attr_name, attr)
 

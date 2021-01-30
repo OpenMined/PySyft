@@ -20,6 +20,19 @@ from syft.lib import lib_ast
 from . import module_test
 
 
+methods = [
+    ("module_test.A", "module_test.A"),
+    ("module_test.A.test_method", "syft.lib.python.Int"),
+    ("module_test.A.test_property", "syft.lib.python.Float"),
+    ("module_test.A._private_attr", "syft.lib.python.Float"),
+    ("module_test.A.static_method", "syft.lib.python.Float"),
+    ("module_test.A.static_attr", "syft.lib.python.Int"),
+    ("module_test.B.Car", "module_test.B"),
+    ("module_test.global_value", "syft.lib.python.Int"),
+    ("module_test.global_function", "syft.lib.python.Int"),
+]
+
+
 def update_ast_test(ast_or_client: TypeUnion[Globals, AbstractNodeClient]) -> None:
     if isinstance(ast_or_client, Globals):
         ast = ast_or_client
@@ -38,18 +51,6 @@ def update_ast_test(ast_or_client: TypeUnion[Globals, AbstractNodeClient]) -> No
 
 def create_ast_test(client: Client) -> Globals:
     ast = Globals(client)
-
-    methods = [
-        ("module_test.A", "module_test.A"),
-        ("module_test.A.test_method", "syft.lib.python.Int"),
-        ("module_test.A.test_property", "syft.lib.python.Float"),
-        ("module_test.A._private_attr", "syft.lib.python.Float"),
-        ("module_test.A.static_method", "syft.lib.python.Float"),
-        ("module_test.A.static_attr", "syft.lib.python.Int"),
-        ("module_test.B.Car", "module_test.B"),
-        ("module_test.global_value", "syft.lib.python.Int"),
-        ("module_test.global_function", "syft.lib.python.Int"),
-    ]
 
     for method, return_type in methods:
         ast.add_path(
@@ -80,6 +81,23 @@ def custom_client() -> Client:
     alice_client = alice.get_root_client()
 
     return alice_client
+
+
+def test_module_repr() -> None:
+    ast = Globals(None)
+
+    for method, return_type in methods:
+        ast.add_path(
+            path=method, framework_reference=module_test, return_type_name=return_type
+        )
+
+    expected_repr = "Module:\n"
+    for name, module in ast.attrs.items():
+        expected_repr += (
+            "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
+        )
+
+    assert ast.__repr__() == expected_repr
 
 
 def test_method(custom_client: Client) -> None:
