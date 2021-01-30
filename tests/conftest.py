@@ -19,10 +19,10 @@ from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
 
-# import sys
+import sys
 
 logger.remove()
-# logger.add(sys.stderr, level="ERROR")
+logger.add(sys.stderr, level="TRACE")
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
