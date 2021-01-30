@@ -74,16 +74,16 @@ def register_module_test() -> None:
     lib_ast.loaded_lib_constructors["module_test"] = update_ast_test
 
 
-def get_custom_client() -> Client:
+@pytest.fixture()
+def custom_client() -> Client:
     alice = syft.VirtualMachine(name="alice")
     alice_client = alice.get_root_client()
 
     return alice_client
 
 
-def test_method() -> None:
-    client = get_custom_client()
-    a_ptr = client.module_test.A()
+def test_method(custom_client: Client) -> None:
+    a_ptr = custom_client.module_test.A()
     result_ptr = a_ptr.test_method()
 
     a = module_test.A()
@@ -92,9 +92,8 @@ def test_method() -> None:
     assert result == result_ptr.get()
 
 
-def test_property_get() -> None:
-    client = get_custom_client()
-    a_ptr = client.module_test.A()
+def test_property_get(custom_client: Client) -> None:
+    a_ptr = custom_client.module_test.A()
     result_ptr = a_ptr.test_property
 
     a = module_test.A()
@@ -103,11 +102,10 @@ def test_property_get() -> None:
     assert result == result_ptr.get()
 
 
-def test_property_set() -> None:
+def test_property_set(custom_client: Client) -> None:
     value_to_set = 7.5
-    client = get_custom_client()
 
-    a_ptr = client.module_test.A()
+    a_ptr = custom_client.module_test.A()
     a_ptr.test_property = value_to_set
     result_ptr = a_ptr.test_property
 
@@ -118,10 +116,8 @@ def test_property_set() -> None:
     assert result == result_ptr.get()  # type: ignore
 
 
-def test_slot_get() -> None:
-    client = get_custom_client()
-
-    a_ptr = client.module_test.A()
+def test_slot_get(custom_client: Client) -> None:
+    a_ptr = custom_client.module_test.A()
     result_ptr = a_ptr._private_attr
 
     a = module_test.A()
@@ -130,11 +126,10 @@ def test_slot_get() -> None:
     assert result == result_ptr.get()
 
 
-def test_slot_set() -> None:
+def test_slot_set(custom_client: Client) -> None:
     value_to_set = 7.5
-    client = get_custom_client()
 
-    a_ptr = client.module_test.A()
+    a_ptr = custom_client.module_test.A()
     a_ptr._private_attr = value_to_set
     result_ptr = a_ptr._private_attr
 
@@ -145,32 +140,27 @@ def test_slot_set() -> None:
     assert result == result_ptr.get()  # type: ignore
 
 
-def test_global_function() -> None:
-    client = get_custom_client()
-
-    result_ptr = client.module_test.global_function()
+def test_global_function(custom_client: Client) -> None:
+    result_ptr = custom_client.module_test.global_function()
     result = module_test.global_function()
 
     assert result == result_ptr.get()
 
 
-def test_global_attribute_get() -> None:
-    client = get_custom_client()
-
-    result_ptr = client.module_test.global_value
+def test_global_attribute_get(custom_client: Client) -> None:
+    result_ptr = custom_client.module_test.global_value
     result = module_test.global_value
 
     assert result == result_ptr.get()
 
 
-def test_global_attribute_set() -> None:
+def test_global_attribute_set(custom_client: Client) -> None:
     global module_test
 
     set_value = 5
-    client = get_custom_client()
 
-    client.module_test.global_value = set_value
-    result_ptr = client.module_test.global_value
+    custom_client.module_test.global_value = set_value
+    result_ptr = custom_client.module_test.global_value
     sy_result = result_ptr.get()  # type: ignore
 
     module_test = reload(module_test)
@@ -180,29 +170,24 @@ def test_global_attribute_set() -> None:
     assert local_result == sy_result
 
 
-def test_static_method() -> None:
-    client = get_custom_client()
-
-    result_ptr = client.module_test.A.static_method()
+def test_static_method(custom_client: Client) -> None:
+    result_ptr = custom_client.module_test.A.static_method()
     result = module_test.A.static_method()
     assert result == result_ptr.get()
 
 
-def test_static_attribute_get() -> None:
-    client = get_custom_client()
-
-    result_ptr = client.module_test.A.static_attr
+def test_static_attribute_get(custom_client: Client) -> None:
+    result_ptr = custom_client.module_test.A.static_attr
     result = module_test.A.static_attr
 
     assert result == result_ptr.get()
 
 
-def test_static_attribute_set() -> None:
+def test_static_attribute_set(custom_client: Client) -> None:
     value_to_set = 5
-    client = get_custom_client()
 
-    client.module_test.A.static_attr = value_to_set
-    result_ptr = client.module_test.A.static_attr
+    custom_client.module_test.A.static_attr = value_to_set
+    result_ptr = custom_client.module_test.A.static_attr
 
     module_test.A.static_attr = value_to_set
     result = module_test.A.static_attr
@@ -210,10 +195,8 @@ def test_static_attribute_set() -> None:
     assert result == result_ptr.get()  # type: ignore
 
 
-def test_enum() -> None:
-    client = get_custom_client()
-
-    result_ptr = client.module_test.B.Car
+def test_enum(custom_client: Client) -> None:
+    result_ptr = custom_client.module_test.B.Car
     result = module_test.B.Car
 
     assert result == result_ptr.get()
