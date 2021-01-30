@@ -20,7 +20,7 @@ def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) ->
 @pytest.fixture(scope="function")
 def context() -> Any:
     context = ts.context(
-        ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60]
+        ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60], n_threads=1
     )
     context.global_scale = pow(2, 40)
     context.generate_galois_keys()

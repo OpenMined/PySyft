@@ -223,6 +223,33 @@ def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
+def test_tenseal_ckkstensor_stress_imul(context: Any, duet: sy.VirtualMachine) -> None:
+    for i in range(20):
+        v1 = [0, 1, 2, 3, 4]
+        v2 = [4, 3, 2, 1, 0]
+        expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
+
+        enc_v1 = ts.ckks_tensor(context, v1)
+
+        ctx_ptr = context.send(duet, searchable=True)
+        enc_v1_ptr = enc_v1.send(duet, searchable=True)
+
+        enc_v1_ptr.link_context(ctx_ptr)
+
+        # imul
+        result_enc_ptr = enc_v1_ptr * v2
+
+        result = decrypt(context, result_enc_ptr)
+        _almost_equal(result, expected)
+
+        # rmul
+        result_enc_ptr = v2 * enc_v1_ptr
+
+        result = decrypt(context, result_enc_ptr)
+        _almost_equal(result, expected)
+
+
+@pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_power(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_tensor(context, [0, 1, 2, 3, 4])
 

@@ -12,7 +12,10 @@ sy.load_lib("tenseal")
 @pytest.fixture(scope="function")
 def context() -> Any:
     context = ts.context(
-        ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
+        ts.SCHEME_TYPE.CKKS,
+        16384,
+        coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60],
+        n_threads=1,
     )
     context.global_scale = pow(2, 40)
     return context
