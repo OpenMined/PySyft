@@ -223,7 +223,6 @@ def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
     _almost_equal(result, expected)
 
 
-@pytest.mark.skip
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckkstensor_stress_imul(context: Any, duet: sy.VirtualMachine) -> None:
     v1 = [0, 1, 2, 3, 4]
