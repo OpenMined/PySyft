@@ -74,13 +74,20 @@ class Callable(ast.attribute.Attribute):
             )
 
     def add_path(
-        self, path: List[str], index: int, return_type_name: Optional[str] = None
+        self,
+        path: List[str],
+        index: int,
+        return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ) -> None:
         if index < len(path):
             if path[index] not in self.attrs:
-
-                attr_ref = getattr(self.ref, path[index])
-
+                if self.require_pargs and self.parg_list is not []:
+                    mod = self.ref(*self.parg_list)  # type: ignore
+                    attr_ref = getattr(mod, path[index])
+                else:
+                    attr_ref = getattr(self.ref, path[index])
                 if isinstance(attr_ref, module_type):
                     raise Exception("Module cannot be attr of callable.")
                 else:

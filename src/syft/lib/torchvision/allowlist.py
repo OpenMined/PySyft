@@ -1,8 +1,11 @@
 # stdlib
 from typing import Dict
 from typing import Union
+from typing import List
+from typing import Any
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
+module_pargs: Dict[str, List[Any]] = {}
 
 # MNIST
 allowlist["torchvision.transforms.Compose"] = "torchvision.transforms.Compose"
@@ -16,7 +19,11 @@ allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normaliz
 
 allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.Tuple"
 allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.Tuple"
+
 allowlist["torchvision.datasets.MNIST"] = "torchvision.datasets.MNIST"
 allowlist["torchvision.datasets.MNIST.__len__"] = "syft.lib.python.Int"
 allowlist["torchvision.datasets.VisionDataset"] = "torchvision.datasets.VisionDataset"
 allowlist["torchvision.datasets.VisionDataset.__len__"] = "syft.lib.python.Int"
+
+# For all modules requiring positional arguments to access attributes
+module_pargs["torchvision.transforms.Normalize"] = [(1, 2, 3), (1, 2, 3)]
