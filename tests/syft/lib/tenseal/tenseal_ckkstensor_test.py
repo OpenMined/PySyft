@@ -27,7 +27,6 @@ def context() -> Any:
     context = ts.context(
         ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60]
     )
-    context.generate_galois_keys()
     context.global_scale = pow(2, 40)
     return context
 
@@ -147,25 +146,20 @@ def test_tenseal_ckkstensor_iadd(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.ckks_tensor(context, v1)
 
+    v2_ptr = sy.lib.python.List(v2).send(duet, searchable=True)
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
     # iadd
-    result_enc_ptr = enc_v1_ptr + v2
-
-    result = decrypt(context, result_enc_ptr)
-    _almost_equal(result, expected)
-
-    # radd
-    result_enc_ptr = v2 + enc_v1_ptr
+    result_enc_ptr = enc_v1_ptr + v2_ptr
 
     result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # iadd inplace
-    enc_v1_ptr += v2
+    enc_v1_ptr += v2_ptr
 
     result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, expected)
@@ -179,22 +173,17 @@ def test_tenseal_ckkstensor_isub(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.ckks_tensor(context, v1)
 
+    v2_ptr = sy.lib.python.List(v2).send(duet, searchable=True)
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
     # isub
-    result_enc_ptr = enc_v1_ptr - v2
+    result_enc_ptr = enc_v1_ptr - v2_ptr
 
     result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
-
-    # rsub
-    result_enc_ptr = v2 - enc_v1_ptr
-
-    result = decrypt(context, result_enc_ptr)
-    _almost_equal(result, [v2 - v1 for v1, v2 in zip(v1, v2)])
 
 
 @pytest.mark.vendor(lib="tenseal")
@@ -205,19 +194,14 @@ def test_tenseal_ckkstensor_imul(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.ckks_tensor(context, v1)
 
+    v2_ptr = sy.lib.python.List(v2).send(duet, searchable=True)
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
     # imul
-    result_enc_ptr = enc_v1_ptr * v2
-
-    result = decrypt(context, result_enc_ptr)
-    _almost_equal(result, expected)
-
-    # rmul
-    result_enc_ptr = v2 * enc_v1_ptr
+    result_enc_ptr = enc_v1_ptr * v2_ptr
 
     result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)

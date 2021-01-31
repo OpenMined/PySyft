@@ -14,8 +14,6 @@ sy.load_lib("tenseal")
 @pytest.fixture(scope="function")
 def context() -> Any:
     context = ts.context(ts.SCHEME_TYPE.BFV, 8192, 1032193, n_threads=1)
-    context.generate_galois_keys()
-
     return context
 
 
