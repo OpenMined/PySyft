@@ -83,23 +83,6 @@ def custom_client() -> Client:
     return alice_client
 
 
-def test_module_repr() -> None:
-    ast = Globals(None)
-
-    for method, return_type in methods:
-        ast.add_path(
-            path=method, framework_reference=module_test, return_type_name=return_type
-        )
-
-    expected_repr = "Module:\n"
-    for name, module in ast.attrs.items():
-        expected_repr += (
-            "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
-        )
-
-    assert ast.__repr__() == expected_repr
-
-
 def test_method(custom_client: Client) -> None:
     a_ptr = custom_client.module_test.A()
     result_ptr = a_ptr.test_method()
