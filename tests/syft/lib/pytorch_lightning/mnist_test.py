@@ -1,4 +1,5 @@
 import syft as sy
+sy.logger.remove()
 from pytorch_lightning import Trainer, LightningModule
 import torch
 import torchvision
@@ -6,6 +7,7 @@ import torchvision
 
 alice = sy.VirtualMachine(name="alice")
 duet = alice.get_root_client()
+sy.client_cache["duet"] = duet
 
 class SyNet(sy.Module):
     def __init__(self, torch_ref):
@@ -76,12 +78,7 @@ class Model(LightningModule):
         self.remote_model = self.local_model.send(duet)
 
     def get_model(self):
-        return self.remote_model.get(
-            request_block=True,
-            name="model_download",
-            reason="test evaluation",
-            timeout_secs=5
-        )
+        return self.remote_model.get()
 
     def forward(self, x):
         return self.model(x)
@@ -90,8 +87,6 @@ class Model(LightningModule):
         return self.torch.nn.functional.nll_loss(output, target)
 
     def training_step(self, batch, batch_idx):
-        data_ptr = batch[0]
-        target_ptr = batch[1]
         data_ptr, target_ptr = batch[0], batch[1]
         output = self.forward(data_ptr)
         loss = self.loss(output, target_ptr)
@@ -118,14 +113,14 @@ class Model(LightningModule):
         transforms = self.get_transforms()
         train_data_ptr = self.torchvision.datasets.MNIST('../data', train=True, download=True,
                                                          transform=transforms)
-        train_loader_ptr = self.torch.utils.data.DataLoader(train_data_ptr, batch_size=64)
+        train_loader_ptr = self.torch.utils.data.DataLoader(train_data_ptr, batch_size=1)
         return train_loader_ptr
 
     def test_dataloader(self):
         transforms = self.get_transforms()
         test_data = self.torchvision.datasets.MNIST('../data', train=False, download=True,
                                                     transform=transforms)
-        test_loader = self.torch.utils.data.DataLoader(test_data, batch_size=64)
+        test_loader = self.torch.utils.data.DataLoader(test_data, batch_size=1)
         return test_loader
 
 model = Model(torch, download_back=False)
@@ -133,14 +128,15 @@ model.send_model()
 
 trainer = Trainer(
     default_root_dir='./tmp_data',
-    max_epochs=2,
-    limit_train_batches=2,
-    limit_test_batches=2,
-    accumulate_grad_batches=2
+    max_epochs=15,
+    limit_train_batches=4,
+    limit_test_batches=4,
+    accelerator="ddp_cpu",
+    num_processes=2
 )
 
-trainer.test(model)
+# trainer.test(model)
 trainer.fit(model)
 
 model.download_back = True
-trainer.test(model)
+# trainer.test(model)

@@ -148,11 +148,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
-                if method_name == "__getitem__":
-                    # insane hack
-                    result = resolved_self.data[upcasted_args[0]]
-                else:
-                    result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        # TODO: replace with proper tuple support
+        if type(result) is tuple:
+            # convert to list until we support tuples
+            result = list(result)
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive

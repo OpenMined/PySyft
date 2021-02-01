@@ -5,6 +5,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
+from ...logger import warning
 
 # syft relative
 from ...core.common.uid import UID
@@ -15,6 +16,7 @@ from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
 from ...util import aggressive_set_attr
+from ...proto.lib.torch.device_pb2 import Device as Device_PB
 
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 

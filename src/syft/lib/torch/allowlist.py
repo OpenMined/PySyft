@@ -1792,8 +1792,6 @@ allowlist["torch.optim.Rprop.step"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD"] = "torch.optim.SGD"
 allowlist["torch.optim.SGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD.step"] = "syft.lib.python._SyNone"
-allowlist["torch.optim.SGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
-
 
 allowlist["torch.optim.SparseAdam"] = "torch.optim.SparseAdam"
 allowlist["torch.optim.SparseAdam.zero_grad"] = "syft.lib.python._SyNone"
