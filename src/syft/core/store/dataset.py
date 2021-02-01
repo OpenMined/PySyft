@@ -1,5 +1,4 @@
 # stdlib
-import pydoc
 from typing import List, Optional
 
 from loguru import logger
@@ -88,7 +87,7 @@ class Dataset(Serializable):
         description: Optional[str],
         tags: Optional[List[str]],
     ) -> "Dataset":
-        return StorableObject(id=id, data=data, description=description, tags=tags)
+        return Dataset(id=id, data=data, description=description, tags=tags)
 
     @property
     def class_name(self) -> str:
@@ -121,11 +120,13 @@ class Dataset(Serializable):
         # Step 2: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
 
+        # import pdb; pdb.set_trace()
         # Step 3: Serialize data to protobuf and pack into proto
-        # if hasattr(self, "data"):
-        #    if self.data is not None:
-        #        for _d in self.data:
-        #            proto.data.append(_d._object2proto())
+        if hasattr(self, "data"):
+            if self.data is not None:
+                for _d in self.data:
+                    proto_storable = _d._object2proto()
+                    proto.data.append(proto_storable)
 
         if hasattr(self, "description"):
             # Step 4: save the description into proto
@@ -161,33 +162,19 @@ class Dataset(Serializable):
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
-        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        #  PYDOC.LOCATE!!!
-        # Step 2: get the type of wrapper to use to deserialize
-        obj_type: Dataset = pydoc.locate(proto.obj_type)  # type: ignore
+        # Step 2: Deserialize data from protobuf
+        data = list(proto.data) if proto.data else []
+        data = [StorableObject._proto2object(proto=d) for d in data]
 
-        # Step 3: get the protobuf type we deserialize for .data
-        # schematic_type = obj_type.get_data_protobuf_schema()
-
-        # Step 4: Deserialize data from protobuf
-        # data = list(proto.data) if proto.data else []
-        # data =  [ _deserialize(blob=d)  for d in data]
-        #            if callable(schematic_type):
-        #                data = schematic_type()
-        #                descriptor = getattr(schematic_type, "DESCRIPTOR", None)
-        #                if descriptor is not None and d.Is(descriptor):
-        #                    proto.data.Unpack(data)
-        #                data = obj_type._data_proto2object(proto=data)
-
-        # Step 5: get the description from proto
+        # Step 3: get the description from proto
         description = proto.description if proto.description else ""
 
-        # Step 6: get the tags from proto of they exist
+        # Step 4: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = obj_type.construct_new_object(
+        result = Dataset.construct_new_object(
             id=id,
-            data=[StorableObject(id=UID(), data=None, description="", tags=[""])],
+            data=data,
             tags=tags,
             description=description,
         )
@@ -217,7 +204,7 @@ class Dataset(Serializable):
                 )
         except Exception as e:
             # torch.return_types.* namedtuple cant setattr
-            log = f"StorableObject {type(obj_type)} cant set attributes {e}"
+            log = f"Dataset {type(result)} cant set attributes {e}"
             logger.error(log)
 
         return result

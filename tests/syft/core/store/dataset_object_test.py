@@ -203,7 +203,7 @@ def test_dataset_del() -> None:
 
 def test_serde_storable_obj() -> None:
     id = UID()
-    data = UID()
+    data = th.Tensor([-1, -2, -3, -4])
     description = "This is a dummy id"
     tags = ["dummy", "test"]
     obj1 = StorableObject(id=id, data=data, description=description, tags=tags)
@@ -232,7 +232,7 @@ def test_serde_storable_obj() -> None:
 
 def test_serde_storable_obj_2() -> None:
     id = UID()
-    data = UID()
+    data = th.Tensor([-1, -2, -3, -4])
     description = "This is a dummy id"
     tags = ["dummy", "test"]
     obj1 = StorableObject(id=id, data=data, description=description, tags=tags)
@@ -261,3 +261,10 @@ def test_serde_storable_obj_2() -> None:
     assert obj.id == ds_obj.id
     assert obj.description == ds_obj.description
     assert obj.tags == ds_obj.tags
+    assert len(obj.data) == len(ds_obj.data)
+
+    for i in range(len(obj.data)):
+        assert obj.data[i].id == ds_obj.data[i].id
+        assert th.all(th.eq(obj.data[i].data, ds_obj.data[i].data))
+        assert obj.data[i].description == ds_obj.data[i].description
+        assert obj.data[i].tags == ds_obj.data[i].tags
