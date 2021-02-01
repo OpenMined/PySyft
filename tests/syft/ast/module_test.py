@@ -19,6 +19,9 @@ class A:
     def __init__(self) -> None:
         self._private_attr: float = 5.5
 
+    def __len__(self) -> int:
+        return 6
+
     def test_method(self) -> int:
         return 0
 
