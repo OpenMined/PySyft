@@ -71,6 +71,8 @@ class Module(ast.attribute.Attribute):
         path: List[str],
         index: int,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[Union[Callable, CallableT]] = None,
     ) -> None:
         if path[index] not in self.attrs:
@@ -83,6 +85,8 @@ class Module(ast.attribute.Attribute):
                         path[index],
                         unsplit(path[: index + 1]),
                         attr_ref,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         return_type_name=return_type_name,
                     ),
                 )
@@ -92,6 +96,8 @@ class Module(ast.attribute.Attribute):
                     path_and_name=unsplit(path[: index + 1]),
                     ref=attr_ref,
                     return_type_name=return_type_name,
+                    require_pargs=require_pargs,
+                    parg_list=parg_list,
                 )
                 self.add_attr(
                     attr_name=path[index],
@@ -104,6 +110,8 @@ class Module(ast.attribute.Attribute):
                         path[index],
                         unsplit(path[: index + 1]),
                         attr_ref,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         return_type_name=return_type_name,
                     ),
                 )
@@ -114,15 +122,20 @@ class Module(ast.attribute.Attribute):
                         path[index],
                         unsplit(path[: index + 1]),
                         attr_ref,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         return_type_name=return_type_name,
                     ),
                 )
-
         attr = self.attrs[path[index]]
         attr_ref = getattr(self.ref, path[index], None)
         if attr_ref is not None and attr_ref not in self.lookup_cache:
             self.lookup_cache[attr_ref] = path
         if hasattr(attr, "add_path"):
             attr.add_path(  # type: ignore
-                path=path, index=index + 1, return_type_name=return_type_name
+                path=path,
+                index=index + 1,
+                return_type_name=return_type_name,
+                require_pargs=require_pargs,
+                parg_list=parg_list,
             )

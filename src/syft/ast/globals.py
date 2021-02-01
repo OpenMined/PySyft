@@ -8,6 +8,7 @@ from typing import Union
 from .callable import Callable
 from .module import Module
 from .util import unsplit
+from typing import Any
 
 
 class Globals(Module):
@@ -39,6 +40,8 @@ class Globals(Module):
         path: Union[str, List[str]],
         index: int = 0,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[Union[Callable, CallableT]] = None,
     ) -> None:
         if isinstance(path, str):
@@ -53,6 +56,8 @@ class Globals(Module):
                     path_and_name=unsplit(path),
                     ref=framework_reference,
                     return_type_name=return_type_name,
+                    require_pargs=require_pargs,
+                    parg_list=parg_list,
                 )
             else:
                 raise Exception(
@@ -63,7 +68,11 @@ class Globals(Module):
         attr = self.attrs[framework_name]
         if hasattr(attr, "add_path"):
             attr.add_path(  # type: ignore
-                path=path, index=1, return_type_name=return_type_name
+                path=path,
+                index=1,
+                return_type_name=return_type_name,
+                require_pargs=require_pargs,
+                parg_list=parg_list,
             )
 
     def copy(self) -> Optional["Globals"]:

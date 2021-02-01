@@ -21,6 +21,8 @@ class Attribute(ABC):
         ref: Optional[Union["ast.callable.Callable", CallableT]] = None,
         return_type_name: Optional[str] = None,
         is_property: bool = False,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ):
         self.name = name  # __add__
         self.path_and_name = path_and_name  # torch.Tensor.__add__
@@ -30,6 +32,8 @@ class Attribute(ABC):
         ] = {}  # any attrs of __add__ ... is none in this case
         self.return_type_name = return_type_name
         self.is_property = is_property
+        self.require_pargs = require_pargs
+        self.parg_list = parg_list
 
     def set_client(self, client: Any) -> None:
         self.client = client

@@ -8,7 +8,7 @@ import torchvision as tv
 
 # syft relative
 from ...ast.globals import Globals
-from .allowlist import allowlist
+from .allowlist import allowlist, module_pargs
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
@@ -40,6 +40,8 @@ def create_torchvision_ast() -> Globals:
                 path=method,
                 framework_reference=tv,
                 return_type_name=return_type,
+                require_pargs=True if method in module_pargs.keys() else False,
+                parg_list=module_pargs[method] if method in module_pargs.keys() else [],
             )
         else:
             print(

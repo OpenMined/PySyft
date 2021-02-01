@@ -112,11 +112,15 @@ class Class(Callable):
         path_and_name: Optional[str],
         ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ):
         super().__init__(name, path_and_name, ref, return_type_name=return_type_name)
 
         if self.path_and_name is not None:
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
+        self.require_pargs = require_pargs
+        self.parg_list = parg_list
 
     def __repr__(self) -> str:
         return f"{self.name}"
