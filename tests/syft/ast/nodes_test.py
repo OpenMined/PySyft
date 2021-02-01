@@ -2,19 +2,7 @@ from syft.ast.globals import Globals
 
 # syft relative
 from . import module_test
-
-
-methods = [
-    ("module_test.A", "module_test.A"),
-    ("module_test.A.test_method", "syft.lib.python.Int"),
-    ("module_test.A.test_property", "syft.lib.python.Float"),
-    ("module_test.A._private_attr", "syft.lib.python.Float"),
-    ("module_test.A.static_method", "syft.lib.python.Float"),
-    ("module_test.A.static_attr", "syft.lib.python.Int"),
-    ("module_test.B.Car", "module_test.B"),
-    ("module_test.global_value", "syft.lib.python.Int"),
-    ("module_test.global_function", "syft.lib.python.Int"),
-]
+from .functionality_test import methods
 
 
 # -------------------- Module Tests --------------------

@@ -22,6 +22,7 @@ from . import module_test
 
 methods = [
     ("module_test.A", "module_test.A"),
+    ("module_test.A.__len__", "syft.lib.python.Int"),
     ("module_test.A.test_method", "syft.lib.python.Int"),
     ("module_test.A.test_property", "syft.lib.python.Float"),
     ("module_test.A._private_attr", "syft.lib.python.Float"),
@@ -81,6 +82,16 @@ def custom_client() -> Client:
     alice_client = alice.get_root_client()
 
     return alice_client
+
+
+def test_len(custom_client: Client) -> None:
+    a_ptr = custom_client.module_test.A()
+    result_ptr = a_ptr.__len__()
+
+    a = module_test.A()
+    result = len(a)
+
+    assert result == result_ptr.get()
 
 
 def test_method(custom_client: Client) -> None:
