@@ -2,4 +2,4 @@ opacus
 openmined.psi
 python-dp
 sympc @ git+https://github.com/OpenMined/SyMPC
-tenseal==0.3.0a4
+tenseal==0.3.0a5
