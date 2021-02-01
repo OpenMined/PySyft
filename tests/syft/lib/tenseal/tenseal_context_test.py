@@ -12,7 +12,10 @@ sy.load_lib("tenseal")
 @pytest.fixture(scope="function")
 def context() -> Any:
     context = ts.context(
-        ts.SCHEME_TYPE.CKKS, 16384, coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60]
+        ts.SCHEME_TYPE.CKKS,
+        16384,
+        coeff_mod_bit_sizes=[60, 40, 40, 40, 40, 60],
+        n_threads=1,
     )
     context.global_scale = pow(2, 40)
     return context
@@ -69,33 +72,34 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
-    assert ctx_ptr.is_private().get()
+    assert not ctx_ptr.is_private().get()
     assert not ctx_ptr.has_galois_keys().get()
-    assert ctx_ptr.has_secret_key().get()
+    assert not ctx_ptr.has_secret_key().get()
     assert ctx_ptr.has_public_key().get()
     assert ctx_ptr.has_relin_keys().get()
 
     enc_v1_ptr.link_context(ctx_ptr)
 
-    result = enc_v1_ptr.decrypt().get()
+    result = enc_v1_ptr.get()
+    result.link_context(context)
+    result = result.decrypt()
+
     assert pytest.approx(result, abs=0.001) == [0, 1, 2, 3, 4]
 
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_generate_relin_keys(context: Any, duet: sy.VirtualMachine) -> None:
+    context.generate_relin_keys()
     ctx_ptr = context.send(duet, searchable=True)
 
-    assert ctx_ptr.has_relin_keys().get()
-    ctx_ptr.generate_relin_keys()
     assert ctx_ptr.has_relin_keys().get()
 
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_generate_galois_keys(context: Any, duet: sy.VirtualMachine) -> None:
+    context.generate_galois_keys()
     ctx_ptr = context.send(duet, searchable=True)
 
-    assert not ctx_ptr.has_galois_keys().get()
-    ctx_ptr.generate_galois_keys()
     assert ctx_ptr.has_galois_keys().get()
 
 
