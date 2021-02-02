@@ -408,9 +408,8 @@ class StoreClient:
         if isinstance(key, str):
             matches = 0
             match_obj: Optional[Pointer] = None
+
             for obj in self.store:
-                if key in str(obj.id_at_location.value).replace("-", ""):
-                    return obj
                 if key in obj.tags:
                     matches += 1
                     match_obj = obj
@@ -418,8 +417,24 @@ class StoreClient:
                 return match_obj
             elif matches > 1:
                 traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
+            else:
+                # If key does not math with any tags, we then try to match it with id string.
+                # But we only do this if len(key)>=5, because if key is too short, for example
+                # if key="a", there are chances of mismatch it with id string, and I don't
+                # think the user pass a key such short as part of id string.
+                if len(key) >= 5:
+                    for obj in self.store:
+                        if key in str(obj.id_at_location.value).replace("-", ""):
+                            return obj
+                else:
+                    traceback_and_raise(
+                        KeyError(
+                            f"No such item found for tag: {key}, and we "
+                            + "don't consider it as part of id string because its too short."
+                        )
+                    )
 
-            traceback_and_raise(KeyError("No such request found for id:" + str(key)))
+            traceback_and_raise(KeyError("No such item found for id:" + str(key)))
         if isinstance(key, int):
             return self.store[key]
         else:
