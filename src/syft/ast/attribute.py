@@ -33,6 +33,8 @@ class Attribute:
         path_and_name: Optional[str] = None,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ):
         """
         Base constructor for all AST nodes.
@@ -48,7 +50,8 @@ class Attribute:
         self.path_and_name: Optional[str] = path_and_name
         self.object_ref: Any = object_ref
         self.return_type_name: Optional[str] = return_type_name
-
+        self.require_pargs: bool = require_pargs
+        self.parg_list: List[Any] = parg_list
         # the attrs attribute are the nodes that have the current node as a parent node
         # maps from the name on the path ot the actual attribute.
         self.attrs: Dict[str, "Attribute"] = {}
@@ -186,6 +189,8 @@ class Attribute:
         path: List[str],
         index: int,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:

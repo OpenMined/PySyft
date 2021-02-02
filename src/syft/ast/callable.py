@@ -24,6 +24,8 @@ class Callable(ast.attribute.Attribute):
         path_and_name: str,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         client: Optional[AbstractNodeClient] = None,
         is_static: Optional[bool] = False,
     ):
@@ -46,6 +48,8 @@ class Callable(ast.attribute.Attribute):
             path_and_name=path_and_name,
             object_ref=object_ref,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=client,
         )
 
@@ -114,6 +118,8 @@ class Callable(ast.attribute.Attribute):
         path: Union[str, List[str]],
         index: int,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
@@ -132,8 +138,11 @@ class Callable(ast.attribute.Attribute):
         """
         if index >= len(path) or path[index] in self.attrs:
             return
-
-        attr_ref = getattr(self.object_ref, path[index])
+        if self.require_pargs and self.parg_list is not []:
+            mod = self.object_ref(*self.parg_list)
+            attr_ref = getattr(mod, path[index])
+        else:
+            attr_ref = getattr(self.object_ref, path[index])
 
         if isinstance(attr_ref, module_type):
             traceback_and_raise(
@@ -144,5 +153,7 @@ class Callable(ast.attribute.Attribute):
             path_and_name=".".join(path[: index + 1]),
             object_ref=attr_ref,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=self.client,
         )

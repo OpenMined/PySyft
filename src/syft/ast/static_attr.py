@@ -27,12 +27,16 @@ class StaticAttribute(ast.attribute.Attribute):
         parent: ast.attribute.Attribute,
         path_and_name: str,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         client: Optional[Any] = None,
     ):
         self.parent = parent
         super().__init__(
             path_and_name=path_and_name,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=client,
         )
 

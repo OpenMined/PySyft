@@ -4,6 +4,7 @@ from typing import Callable as CallableT
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import List
 
 # syft relative
 from .. import ast
@@ -16,12 +17,16 @@ class Property(ast.attribute.Attribute):
         path_and_name: str,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         client: Optional[Any] = None,
     ):
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=client,
         )
 

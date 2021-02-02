@@ -38,11 +38,15 @@ class Module(ast.attribute.Attribute):
         path_and_name: Optional[str] = None,
         object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ):
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=client,
         )
 
@@ -108,6 +112,8 @@ class Module(ast.attribute.Attribute):
         path: List[str],
         index: int = 0,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
@@ -115,7 +121,11 @@ class Module(ast.attribute.Attribute):
             return
 
         if path[index] not in self.attrs:
-            attr_ref = getattr(self.object_ref, path[index])
+            if self.require_pargs and self.parg_list is not []:
+                mod = self.object_ref(*self.parg_list)
+                attr_ref = getattr(mod, path[index])
+            else:
+                attr_ref = getattr(self.object_ref, path[index])
 
             if inspect.ismodule(attr_ref):
                 self.add_attr(
@@ -124,6 +134,8 @@ class Module(ast.attribute.Attribute):
                         path_and_name=".".join(path[: index + 1]),
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         client=self.client,
                     ),
                 )
@@ -132,6 +144,8 @@ class Module(ast.attribute.Attribute):
                     path_and_name=".".join(path[: index + 1]),
                     object_ref=attr_ref,
                     return_type_name=return_type_name,
+                    require_pargs=require_pargs,
+                    parg_list=parg_list,
                     client=self.client,
                 )
                 self.add_attr(
@@ -147,6 +161,8 @@ class Module(ast.attribute.Attribute):
                         path_and_name=".".join(path[: index + 1]),
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         client=self.client,
                         is_static=is_static,
                     ),
@@ -158,6 +174,8 @@ class Module(ast.attribute.Attribute):
                         path_and_name=".".join(path[: index + 1]),
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        require_pargs=require_pargs,
+                        parg_list=parg_list,
                         client=self.client,
                     ),
                 )
@@ -165,6 +183,8 @@ class Module(ast.attribute.Attribute):
                 static_attribute = ast.static_attr.StaticAttribute(
                     path_and_name=".".join(path[: index + 1]),
                     return_type_name=return_type_name,
+                    require_pargs=require_pargs,
+                    parg_list=parg_list,
                     client=self.client,
                     parent=self,
                 )
@@ -173,11 +193,21 @@ class Module(ast.attribute.Attribute):
                 return
 
         attr = self.attrs[path[index]]
-        attr_ref = getattr(self.object_ref, path[index], None)
+        if self.require_pargs and self.parg_list is not []:
+            mod = self.object_ref(*self.parg_list)
+            attr_ref = getattr(mod, path[index])
+        else:
+            attr_ref = getattr(self.object_ref, path[index])
         if attr_ref is not None and attr_ref not in self.lookup_cache:
             self.lookup_cache[attr_ref] = path
 
-        attr.add_path(path=path, index=index + 1, return_type_name=return_type_name)
+        attr.add_path(
+            path=path,
+            index=index + 1,
+            return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
+        )
 
     def __getattribute__(self, item: str) -> Any:
         target_object = super().__getattribute__(item)
