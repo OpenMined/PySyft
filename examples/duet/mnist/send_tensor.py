@@ -23,10 +23,7 @@ def do() -> None:
 
     loop = asyncio.new_event_loop()
     asyncio._set_running_loop(loop)
-    _ = sy.logger.add(
-        sink="syft_do.log",
-        level="TRACE",
-    )
+    _ = sy.logger.add(sink="syft_do.log", level="TRACE",)
     duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000")
     duet.requests.add_handler(action="accept", name="gimme")
     t = th.randn(4000000)
@@ -46,10 +43,7 @@ def ds() -> None:
 
     loop = asyncio.new_event_loop()
     asyncio._set_running_loop(loop)
-    _ = sy.logger.add(
-        sink="syft_ds.log",
-        level="TRACE",
-    )
+    _ = sy.logger.add(sink="syft_ds.log", level="TRACE",)
     duet = sy.join_duet(loopback=True, network_url="http://localhost:5000")
     time.sleep(1)
     print("DS: Store: ", duet.store)

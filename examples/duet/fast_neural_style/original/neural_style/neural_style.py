@@ -213,10 +213,7 @@ def main():
         "--epochs", type=int, default=2, help="number of training epochs; default: 2"
     )
     train_arg_parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=4,
-        help="batch size for training; default: 4",
+        "--batch_size", type=int, default=4, help="batch size for training; default: 4",
     )
     train_arg_parser.add_argument(
         "--dataset",

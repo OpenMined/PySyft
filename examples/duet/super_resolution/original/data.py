@@ -45,21 +45,12 @@ def calculate_valid_crop_size(crop_size, upscale_factor):
 
 def input_transform(crop_size, upscale_factor):
     return Compose(
-        [
-            CenterCrop(crop_size),
-            Resize(crop_size // upscale_factor),
-            ToTensor(),
-        ]
+        [CenterCrop(crop_size), Resize(crop_size // upscale_factor), ToTensor(),]
     )
 
 
 def target_transform(crop_size):
-    return Compose(
-        [
-            CenterCrop(crop_size),
-            ToTensor(),
-        ]
-    )
+    return Compose([CenterCrop(crop_size), ToTensor(),])
 
 
 def get_training_set(upscale_factor):
