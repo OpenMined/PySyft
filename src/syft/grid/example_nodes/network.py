@@ -9,7 +9,6 @@ $ python src/syft/grid/example_nodes/network.py
 """
 # stdlib
 import os
-import sys
 
 # third party
 import flask
@@ -25,6 +24,7 @@ from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
+from syft.logger import info
 
 app = Flask(__name__)
 
@@ -53,7 +53,7 @@ def process_network_msgs() -> flask.Response:
     data = flask.request.get_data()
     obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
-        print(
+        info(
             f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch"
         )
         reply = network.recv_immediate_msg_with_reply(msg=obj_msg)
@@ -61,14 +61,14 @@ def process_network_msgs() -> flask.Response:
         r.headers["Content-Type"] = "application/octet-stream"
         return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        print(
+        info(
             f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
         )
         network.recv_immediate_msg_without_reply(msg=obj_msg)
         r = Response(status=200)
         return r
     else:
-        print(
+        info(
             f"Signaling server SignedImmediateSyftMessageWithoutReply: {obj_msg.message} watch"
         )
         network.recv_eventual_msg_without_reply(msg=obj_msg)
@@ -78,25 +78,15 @@ def process_network_msgs() -> flask.Response:
 
 def run() -> None:
     global network
-
-    IP_MODE = os.getenv("IP_MODE", "IPV4")  # default to ipv4
-    if len(sys.argv) > 1:
-        IP_MODE = sys.argv[1]
-
-    IP_MODE = "IPV6" if IP_MODE == "IPV6" else "IPV4"
+    info("====================================")
+    info("========== NODE ROOT KEY ===========")
+    info("====================================")
     # this signing_key is to aid in local development and is not used in the real
     # PyGrid implementation
-    HOST = "0.0.0.0" if IP_MODE == "IPV4" else "::"  # nosec
     PORT = os.getenv("PORT", 5000)
-
-    print("====================================")
-    print("========== NODE ROOT KEY ===========")
-    print("====================================")
-    print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
-
-    print(f"Using {IP_MODE} and listening on port {PORT}")
-
-    app.run(host=HOST, port=int(PORT))
+    info(f"Starting Node on PORT: {PORT}")
+    info(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
+    app.run(host="0.0.0.0", port=int(PORT))  # nosec
 
 
 run()

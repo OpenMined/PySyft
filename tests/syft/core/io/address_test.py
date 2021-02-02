@@ -23,7 +23,6 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 
-
 ARGUMENTS = ("vm", "device", "domain", "network")
 
 # --------------------- INITIALIZATION ---------------------

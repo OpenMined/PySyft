@@ -31,7 +31,7 @@ def test_path_cache() -> None:
 
     refs: TypeList[TypeType] = []
     for path in conv2d_paths:
-        klass = sy.lib_ast(path, return_callable=True, obj_type=th.nn.Conv2d)
+        klass = sy.lib_ast.query(path, obj_type=th.nn.Conv2d)
         assert klass == sy.lib_ast.torch.nn.Conv2d
         assert klass.name == "Conv2d"
         assert klass.path_and_name == short_fqn

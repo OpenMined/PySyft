@@ -9,6 +9,7 @@ The PySyft codebase, like all OpenMined codebases, is developed by charitable in
 
 - [Contribution Guidelines](#contribution-guidelines)
   - [Getting Started](#getting-started)
+- [Contribution Guidelines](#contribution-guidelines)
   - [Slack](#slack)
   - [Issues / PRs](#issues--prs)
     - [Beginner Issues](#beginner-issues)
