@@ -43,6 +43,8 @@ class Globals(Module):
         path: Union[str, List[str]] = None,  # type:  ignore
         index: int = 0,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
@@ -64,11 +66,19 @@ class Globals(Module):
                 path_and_name=".".join(path[: index + 1]),
                 object_ref=framework_reference,
                 return_type_name=return_type_name,
+                require_pargs=require_pargs,
+                parg_list=parg_list,
                 client=self.client,
             )
 
         attr = self.attrs[framework_name]
-        attr.add_path(path=path, index=1, return_type_name=return_type_name)
+        attr.add_path(
+            path=path,
+            index=1,
+            return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
+        )
 
     def register_updates(self, client: Any) -> None:
         # any previously loaded libs need to be applied

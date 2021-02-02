@@ -207,11 +207,15 @@ class Class(Callable):
         object_ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
         client: Optional[Any],
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
     ):
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
             return_type_name=return_type_name,
+            require_pargs=require_pargs,
+            parg_list=parg_list,
             client=client,
         )
         if self.path_and_name is not None:
@@ -393,6 +397,8 @@ class Class(Callable):
         path: Union[str, List[str]],
         index: int,
         return_type_name: Optional[str] = None,
+        require_pargs: bool = False,
+        parg_list: List[Any] = [],
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
@@ -406,7 +412,11 @@ class Class(Callable):
         from enum import Enum
         from enum import EnumMeta
 
-        attr_ref = getattr(self.object_ref, _path[index])
+        if self.require_pargs and self.parg_list is not []:
+            mod = self.object_ref(*self.parg_list)
+            attr_ref = getattr(mod, path[index])
+        else:
+            attr_ref = getattr(self.object_ref, path[index])
 
         class_is_enum = isinstance(self.object_ref, EnumMeta)
 
