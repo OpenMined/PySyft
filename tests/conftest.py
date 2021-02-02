@@ -15,8 +15,11 @@ import _pytest
 import pytest
 
 # syft absolute
+from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import vendor_requirements_available
+
+logger.remove()
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:

@@ -25,6 +25,7 @@ from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
+from ...common.service.auth import AuthorizationException
 from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
 
@@ -127,15 +128,21 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         msg: ObjectSearchPermissionUpdateMessage,
         verify_key: VerifyKey,
     ) -> None:
+        storable_object = node.store[msg.target_object_id]
+        if (
+            verify_key != node.root_verify_key
+            or verify_key not in storable_object.read_permissions
+        ):
+            log = (
+                f"You do not have permission to update Object with ID: {msg.target_object_id}"
+                + "Please submit a request."
+            )
+            raise AuthorizationException(log)
         target_verify_key = msg.target_verify_key or VerifyAll
         if msg.add_instead_of_remove:
-            node.store[msg.target_object_id].search_permissions[
-                target_verify_key
-            ] = msg.id
+            storable_object.search_permissions[target_verify_key] = msg.id
         else:
-            node.store[msg.target_object_id].search_permissions.pop(
-                target_verify_key, None
-            )
+            storable_object.search_permissions.pop(target_verify_key, None)
 
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:

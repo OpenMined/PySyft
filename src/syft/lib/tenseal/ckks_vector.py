@@ -16,7 +16,7 @@ from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
 
 
-class CKKSVector(StorableObject):
+class CKKSVectorWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -30,7 +30,6 @@ class CKKSVector(StorableObject):
         proto = TenSEALVector_PB()
         proto.id.CopyFrom(_serialize(obj=self.id))
         proto.obj_type = get_fully_qualified_name(obj=self.value)
-        proto.context = self.value.context().serialize()  # type: ignore
         proto.vector = self.value.serialize()  # type: ignore
 
         return proto
@@ -38,8 +37,7 @@ class CKKSVector(StorableObject):
     @staticmethod
     def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSVector:
         vec_id: UID = _deserialize(blob=proto.id)
-        context = ts.context_from(proto.context)
-        vec = ts.ckks_vector_from(context, proto.vector)
+        vec = ts.lazy_ckks_vector_from(proto.vector)
         vec.id = vec_id
 
         return vec
@@ -56,8 +54,8 @@ class CKKSVector(StorableObject):
     def construct_new_object(
         id: UID,
         data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> StorableObject:
         data.id = id
         data.tags = tags
@@ -66,5 +64,5 @@ class CKKSVector(StorableObject):
 
 
 aggressive_set_attr(
-    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVector
+    obj=ts.CKKSVector, name="serializable_wrapper_type", attr=CKKSVectorWrapper
 )

@@ -6,20 +6,21 @@ Sanity tests for OrderedDict
 """
 
 # stdlib
+from collections.abc import MutableMapping
 import copy
 import gc
 import pickle
-from random import randrange, shuffle
+from random import randrange
+from random import shuffle
 import sys
 import weakref
-from collections.abc import MutableMapping
 
 # third party
 import pytest
 
 # syft absolute
-from syft.lib.python.collections import OrderedDict as SyOrderedDict
 from syft.core.common.uid import UID
+from syft.lib.python.collections import OrderedDict as SyOrderedDict
 
 
 def assertEqual(left, right):
