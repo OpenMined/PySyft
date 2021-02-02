@@ -80,6 +80,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
+        tags = None
 
         mutating_internal = False
         if (
@@ -101,7 +102,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     + f" at: {self._self.id_at_location}"
                 )
                 return
-
+            tags = resolved_self.tags.copy()
             result_read_permissions = resolved_self.read_permissions
         else:
             result_read_permissions = {}
@@ -113,6 +114,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
+            if tags is None:
+                tags = r_arg.tags.copy()
+            else:
+                tags.extend([tag for tag in r_arg.tags if tag not in tags])
 
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
@@ -121,6 +126,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
+            if tags is None:
+                tags = r_arg.tags.copy()
+            else:
+                tags.extend([tag for tag in r_arg.tags if tag not in tags])
 
         (
             upcasted_args,
@@ -185,8 +194,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
-        if method_name == "__len__":
-            result.tags = resolved_self.tags + ["__len__"]
+        if tags is not None:
+            result.tags = tags
+            result.tags.append(self.path.split(".")[-1])
 
         node.store[self.id_at_location] = result
 
