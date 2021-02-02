@@ -7,6 +7,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
@@ -65,14 +66,21 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
                 verify_key: None,  # we dont have the passed in sender's UID
             },
         )
-
         node.store[self.id_at_location] = storable_obj
 
     @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:
 
         id_at_location = self.id_at_location.serialize()
-        obj_ob = self.obj.serialize()  # type: ignore
+        # TODO: rethink this and perhaps dunder __sy prefix all our attached methods
+        serialize_method = getattr(self.obj, "sy_serialize", None)
+        if serialize_method is None:
+            serialize_method = getattr(self.obj, "serialize", None)
+        if serialize_method is None:
+            traceback_and_raise(
+                Exception(f"{type(self.obj)} has no .serialize() method")
+            )
+        obj_ob = serialize_method()
         addr = self.address.serialize()
 
         return SaveObjectAction_PB(
