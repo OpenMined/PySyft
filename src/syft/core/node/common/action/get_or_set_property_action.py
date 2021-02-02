@@ -64,6 +64,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         method = node.lib_ast.query(self.path).object_ref
         resolved_self = node.store.get_object(key=self._self.id_at_location)
         result_read_permissions = resolved_self.read_permissions
+        tags = resolved_self.tags.copy()
 
         resolved_args = []
         for arg in self.args:
@@ -71,6 +72,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+            tags.extend([tag for tag in r_arg.tags if tag not in tags])
             resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
@@ -79,6 +81,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+            tags.extend([tag for tag in r_arg.tags if tag not in tags])
             resolved_kwargs[arg_name] = r_arg.data
 
         if not inspect.isdatadescriptor(method):
@@ -123,6 +126,11 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
                 data=result,
                 read_permissions=result_read_permissions,
             )
+
+        # When GET, result is a new object, we give new tags to it
+        if self.action == PropertyActions.GET:
+            result.tags = tags
+            result.tags.append(self.path.split(".")[-1])
 
         node.store[self.id_at_location] = result
 
