@@ -261,7 +261,7 @@ def test_delete_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    
+
     tensor_id = result.get_json()["tensor_id"]
 
     result = client.delete("/dcfl/tensors/" + tensor_id, headers=headers)
