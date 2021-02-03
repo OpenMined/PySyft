@@ -282,23 +282,26 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
         ) -> Pointer:
-            id_ = getattr(self, "id", None)
-            if id_ is None:
-                id_ = UID()
-                self.id = id_
+            # if self is C type/class, change self to it's wrapper object
+            which_obj = self
+            if hasattr(self, "serializable_wrapper_type"):
+                which_obj = self.serializable_wrapper_type(value=self)
+
+            if not hasattr(which_obj, "id"):
+                which_obj.id = UID()
 
             tags = tags if tags else []
             tags = sorted(set(tags), key=tags.index)  # keep order of original
-            obj_tags = getattr(self, "tags", [])
+            obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags
             tags = tags if tags else obj_tags
 
-            obj_description = getattr(self, "description", "")
+            obj_description = getattr(which_obj, "description", "")
             # if `description` is passed in, use it; else, use obj_description
             description = description if description else obj_description
 
-            self.tags = tags
-            self.description = description
+            which_obj.tags = tags
+            which_obj.description = description
 
             id_at_location = UID()
 
@@ -316,7 +319,7 @@ class Class(Callable):
             # Step 2: create message which contains object to send
             storable = StorableObject(
                 id=ptr.id_at_location,
-                data=self,
+                data=which_obj,
                 tags=tags,
                 description=description,
                 search_permissions={VerifyAll: None}

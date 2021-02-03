@@ -10,6 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
 import syft as sy
+import re
 
 # syft relative
 from ...decorators import syft_decorator
@@ -50,7 +51,7 @@ class StorableObject(AbstractStorableObject):
 
     """
 
-    __slots__ = ["id", "data", "_description", "_tags"]
+    __slots__ = ["id", "_data", "_description", "_tags"]
 
     @syft_decorator(typechecking=True)
     def __init__(
@@ -84,6 +85,26 @@ class StorableObject(AbstractStorableObject):
             object_type = str(type(self.data.data))  # type: ignore
         return object_type
 
+    # Why define data as a property?
+    # For C type/class objects as data. 
+    # We need to use it's wrapper type very often inside StorableObject, so we set _data
+    # attribute as it's wrapper object. But we still want to give a straight API to users, 
+    # so we return the initial C type object when user call obj.data.
+    # For python class objects as data. data and _data are the same thing.
+    @property
+    def data(self):
+        if type(self._data).__name__.endswith("CTypeWrapper"):
+            return self._data.obj
+        else:
+            return self._data
+
+    @data.setter
+    def data(self, value):
+        if hasattr(value, "serializable_wrapper_type"):
+            self._data = value.serializable_wrapper_type(value=value)
+        else:
+            self._data = value
+
     @property
     def tags(self) -> Optional[List[str]]:
         return self._tags
@@ -109,11 +130,10 @@ class StorableObject(AbstractStorableObject):
         proto.id.CopyFrom(id)
 
         # # Step 2: Save the type of wrapper to use to deserialize
-        # proto.obj_type = get_fully_qualified_name(obj=self)
-        proto.data_type = get_fully_qualified_name(obj=self.data)
+        proto.data_type = get_fully_qualified_name(obj=self._data)
 
         # # Step 3: Serialize data to protobuf and pack into proto
-        data = self.data._object2proto()
+        data = self._data._object2proto()
 
         proto.data.Pack(data)
 
@@ -153,7 +173,9 @@ class StorableObject(AbstractStorableObject):
         # # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # #  PYDOC.LOCATE!!!
         # # Step 2: get the type of wrapper to use to deserialize
-        data_type = pydoc.locate(proto.data_type)
+        full_path = re.sub('CTypeWrapper$', '', proto.data_type)
+        data_type = pydoc.locate(full_path)
+        data_type = getattr(data_type, "serializable_wrapper_type", data_type)
 
         # # Step 3: get the protobuf type we deserialize for .data
         schematic_type = data_type.get_protobuf_schema()

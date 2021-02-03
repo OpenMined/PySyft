@@ -11,6 +11,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...util import aggressive_set_attr
+from ...core.common.serde.serializable import Serializable
 
 
 # this will overwrite the .serializable_wrapper_type with an auto generated
@@ -22,29 +23,20 @@ def GenerateCTypeWrapper(
     ctype_object2proto: CallableT,
     ctype_proto2object: CallableT,
 ) -> None:
-    class CTypeWrapper(StorableObject):
+    class CTypeWrapper(Serializable):
         def __init__(self, value: object):
-            # set empty defaults, then this object will be used in construct_new_object
-            # and the real id, tags and description can be stored on the wrapper
-            super().__init__(
-                data=value,
-                id=UID(),
-                tags=[],
-                description="",
-            )
-            self.value = value
+            self.obj = value
 
-        def _data_object2proto(self) -> Any:
-            obj = self.value
-            return ctype_object2proto(obj)
+        def _object2proto(self) -> Any:
+            return ctype_object2proto(self.obj)
 
         @staticmethod
-        def _data_proto2object(proto: Any) -> Any:
+        def _proto2object(proto: Any) -> Any:
             obj = ctype_proto2object(proto)
             return CTypeWrapper(value=obj)
 
         @staticmethod
-        def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        def get_protobuf_schema() -> GeneratedProtocolMessageType:
             return protobuf_scheme
 
         @staticmethod
@@ -60,7 +52,7 @@ def GenerateCTypeWrapper(
             return data
 
         def upcast(self) -> Any:
-            return self.value
+            return self.obj
 
     module_parts = import_path.split(".")
     klass = module_parts.pop()
