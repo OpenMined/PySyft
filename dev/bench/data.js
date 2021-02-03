@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1611485686062,
+  "lastUpdate": 1612344499600,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -873,6 +873,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00010200423907776019",
             "extra": "mean: 707.8781877937824 usec\nrounds: 639"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tudorcebere@gmail.com",
+            "name": "Tudor Cebere",
+            "username": "tudorcebere"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "19cf2cbc11efaae16932f4a5aa9a225060675bd0",
+          "message": "Merge pull request #5101 from madhavajay/madhava/04_dev\n\n0.4 -> dev",
+          "timestamp": "2021-02-03T01:25:34-08:00",
+          "tree_id": "8b9a432c899df99575fbd0bc0a81973b112e9673",
+          "url": "https://github.com/OpenMined/PySyft/commit/19cf2cbc11efaae16932f4a5aa9a225060675bd0"
+        },
+        "date": 1612344498955,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1432.65310844277,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00002681701572300852",
+            "extra": "mean: 698.0056750003882 usec\nrounds: 600"
           }
         ]
       }
