@@ -168,7 +168,7 @@ jobs:
       - name: Run supported library tests
         run: |
           pip freeze
-          pytest -m libs -n auto --no-cov
+          pytest -m libs --no-cov
 
   python-nb-examples:
     needs: [python-linting]
