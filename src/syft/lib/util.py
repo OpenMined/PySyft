@@ -4,9 +4,35 @@ from types import ModuleType
 from typing import Callable
 from typing import Optional
 from typing import Union
+from typing import Union as TypeUnion
 
 # syft relative
+from ..ast.globals import Globals
 from ..decorators.syft_decorator_impl import syft_decorator
+from ..core.node.abstract.node import AbstractNodeClient
+
+
+# this gets called on global ast as well as clients
+# anything which wants to have its ast updated and has an add_attr method
+@syft_decorator(typechecking=True, prohibit_args=False)
+def generic_update_ast(
+    lib_name: str,
+    create_ast: Callable,
+    ast_or_client: TypeUnion[Globals, AbstractNodeClient],
+) -> None:
+    if isinstance(ast_or_client, Globals):
+        ast = ast_or_client
+        new_lib_ast = create_ast(None)
+        ast.add_attr(attr_name=lib_name, attr=new_lib_ast.attrs[lib_name])
+    elif isinstance(ast_or_client, AbstractNodeClient):
+        client = ast_or_client
+        new_lib_ast = create_ast(client)
+        client.lib_ast.attrs[lib_name] = new_lib_ast.attrs[lib_name]
+        setattr(client, lib_name, new_lib_ast.attrs[lib_name])
+    else:
+        raise ValueError(
+            f"Expected param of type (Globals, AbstractNodeClient), but got {type(ast_or_client)}"
+        )
 
 
 @syft_decorator(typechecking=True)

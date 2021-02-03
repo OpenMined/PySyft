@@ -13,13 +13,19 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
+# syft absolute
+from syft.proto.lib.torch import device_pb2 as proto_dot_lib_dot_torch_dot_device__pb2
+
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/torch/tensor.proto",
     package="syft.lib.torch",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/tensor.proto\x12\x0esyft.lib.torch"\xa4\x03\n\nTensorData\x12\r\n\x05shape\x18\x01 \x03(\x03\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x14\n\x0cis_quantized\x18\x03 \x01(\x08\x12\r\n\x05scale\x18\x04 \x01(\x02\x12\x12\n\nzero_point\x18\x05 \x01(\x05\x12\x16\n\x0e\x63ontents_uint8\x18\x10 \x03(\r\x12\x15\n\rcontents_int8\x18\x11 \x03(\x05\x12\x16\n\x0e\x63ontents_int16\x18\x12 \x03(\x05\x12\x16\n\x0e\x63ontents_int32\x18\x13 \x03(\x05\x12\x16\n\x0e\x63ontents_int64\x18\x14 \x03(\x03\x12\x18\n\x10\x63ontents_float16\x18\x15 \x03(\x02\x12\x18\n\x10\x63ontents_float32\x18\x16 \x03(\x02\x12\x18\n\x10\x63ontents_float64\x18\x17 \x03(\x01\x12\x15\n\rcontents_bool\x18\x18 \x03(\x08\x12\x16\n\x0e\x63ontents_qint8\x18\x19 \x03(\x11\x12\x17\n\x0f\x63ontents_quint8\x18\x1a \x03(\r\x12\x17\n\x0f\x63ontents_qint32\x18\x1b \x03(\x11\x12\x19\n\x11\x63ontents_bfloat16\x18\x1c \x03(\x02"z\n\x0bTensorProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/tensor.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/device.proto"\xa4\x03\n\nTensorData\x12\r\n\x05shape\x18\x01 \x03(\x03\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x14\n\x0cis_quantized\x18\x03 \x01(\x08\x12\r\n\x05scale\x18\x04 \x01(\x02\x12\x12\n\nzero_point\x18\x05 \x01(\x05\x12\x16\n\x0e\x63ontents_uint8\x18\x10 \x03(\r\x12\x15\n\rcontents_int8\x18\x11 \x03(\x05\x12\x16\n\x0e\x63ontents_int16\x18\x12 \x03(\x05\x12\x16\n\x0e\x63ontents_int32\x18\x13 \x03(\x05\x12\x16\n\x0e\x63ontents_int64\x18\x14 \x03(\x03\x12\x18\n\x10\x63ontents_float16\x18\x15 \x03(\x02\x12\x18\n\x10\x63ontents_float32\x18\x16 \x03(\x02\x12\x18\n\x10\x63ontents_float64\x18\x17 \x03(\x01\x12\x15\n\rcontents_bool\x18\x18 \x03(\x08\x12\x16\n\x0e\x63ontents_qint8\x18\x19 \x03(\x11\x12\x17\n\x0f\x63ontents_quint8\x18\x1a \x03(\r\x12\x17\n\x0f\x63ontents_qint32\x18\x1b \x03(\x11\x12\x19\n\x11\x63ontents_bfloat16\x18\x1c \x03(\x02"\xa2\x01\n\x0bTensorProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12&\n\x06\x64\x65vice\x18\x04 \x01(\x0b\x32\x16.syft.lib.torch.Deviceb\x06proto3',
+    dependencies=[
+        proto_dot_lib_dot_torch_dot_device__pb2.DESCRIPTOR,
+    ],
 )
 
 
@@ -382,8 +388,8 @@ _TENSORDATA = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=49,
-    serialized_end=469,
+    serialized_start=79,
+    serialized_end=499,
 )
 
 
@@ -452,6 +458,25 @@ _TENSORPROTO = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="device",
+            full_name="syft.lib.torch.TensorProto.device",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -461,12 +486,15 @@ _TENSORPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=471,
-    serialized_end=593,
+    serialized_start=502,
+    serialized_end=664,
 )
 
 _TENSORPROTO.fields_by_name["tensor"].message_type = _TENSORDATA
 _TENSORPROTO.fields_by_name["grad"].message_type = _TENSORDATA
+_TENSORPROTO.fields_by_name[
+    "device"
+].message_type = proto_dot_lib_dot_torch_dot_device__pb2._DEVICE
 DESCRIPTOR.message_types_by_name["TensorData"] = _TENSORDATA
 DESCRIPTOR.message_types_by_name["TensorProto"] = _TENSORPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

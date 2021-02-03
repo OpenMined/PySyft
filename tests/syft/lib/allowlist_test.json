@@ -101,17 +101,17 @@
     "addcdiv_": [
       [
         [
-          [4.7494e-2, 3.6392e1, 1.0532],
-          [2.0031, 1.457e1, 8.2361e-1],
-          [9.6673e-1, 1.3053e2, -9.0004e-1]
+          [0.047494, 36.392, 1.0532],
+          [2.0031, 14.57, 0.82361],
+          [0.96673, 130.53, -0.90004]
         ]
       ]
     ],
     "addmm_": [
       [
-        [4.7494e-2, 3.6392e1, 1.0532],
-        [2.0031, 1.457e1, 8.2361e-1],
-        [9.6673e-1, 1.3053e2, -9.0004e-1]
+        [0.047494, 36.392, 1.0532],
+        [2.0031, 14.57, 0.82361],
+        [0.96673, 130.53, -0.90004]
       ]
     ],
     "addmv": [[0.1504, -0.7959]],
@@ -140,7 +140,6 @@
     "lu_solve": [
       [
         [[1.7754], [0.4711], [-0.0194]],
-
         [[-1.558], [0.1862], [-0.1135]]
       ]
     ],
@@ -166,7 +165,6 @@
             [5, 0],
             [7, 0]
           ],
-
           [
             [1, 0],
             [-1, 0],
@@ -233,7 +231,6 @@
         [0.6335, 0.4042, -0.0182],
         [-0.5273, 0.9782, -1.2118]
       ],
-
       [
         [0.755, -1.454, -0.951],
         [-0.3763, 0.7769, -1.0968],
@@ -318,8 +315,19 @@
       "__abs__": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16", "bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__add__": {
@@ -343,6 +351,11 @@
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float64", "bfloat16", "float32"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -358,14 +371,25 @@
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "__div__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "gte_version": "1.6.0",
@@ -376,27 +400,50 @@
       "__idiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "gte_version": "1.6.0",
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "__floordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "__rfloordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" },
-          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.6.0"
@@ -442,8 +489,14 @@
       "div": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.6.0"
@@ -453,8 +506,14 @@
       "div_": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
@@ -464,24 +523,53 @@
       "floor_divide": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.6.0"
+          }
         ]
       },
       "floor_divide_": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.6.0"
+          }
         ]
       },
       "__mod__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "logical_and": {
@@ -499,21 +587,33 @@
       "remainder": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "remainder_": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "square": {
         "profile": "tensor_method_noinput",
         "min_version": "1.5.0",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.5.1" },
-          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "square_": {
@@ -528,7 +628,12 @@
       },
       "true_divide": {
         "profile": "tensor_float_division_method_v150",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "true_divide_": {
         "profile": "tensor_float_division_method_v150",
@@ -537,7 +642,10 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "__itruediv__": {
@@ -547,7 +655,15 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__truediv__": {
@@ -557,20 +673,30 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.6.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "__rtruediv__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "is_meta": {
         "profile": "tensor_property_noinput",
         "return_type": "syft.lib.python.Bool",
-        "not_available": [{ "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__float__": {
         "profile": "tensor_method_noinput",
@@ -588,6 +714,11 @@
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16", "float64", "float32", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -599,110 +730,206 @@
       "__lshift__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["bool", "bfloat16", "float16"] }]
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"]
+          }
+        ]
       },
       "__rshift__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["bool", "bfloat16", "float16"] }]
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"]
+          }
+        ]
       },
       "__ilshift__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["bool", "bfloat16", "float16"] }]
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"]
+          }
+        ]
       },
       "__irshift__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["bool", "bfloat16", "float16"] }]
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"]
+          }
+        ]
       },
       "__lt__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0"
+          }
+        ]
       },
       "__matmul__": {
         "profile": "default",
         "data_types": ["common"],
         "inputs": ["self"],
-        "not_available": [{ "data_types": ["bool", "bfloat16", "float16"] }]
+        "not_available": [
+          {
+            "data_types": ["bool", "bfloat16", "float16"]
+          }
+        ]
       },
       "__ne__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__mul__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__rmul__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__rdiv__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "__radd__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__gt__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__ge__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__eq__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "eq_": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "eq": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__neg__": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"] },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"]
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "__or__": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "data_types": ["bool"], "inputs": [1, 0], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [1, 0],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "__ior__": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "data_types": ["bool"], "inputs": [1, 0], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [1, 0],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -717,6 +944,11 @@
           {
             "data_types": ["float16", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -732,7 +964,15 @@
             "data_types": ["float16", "bfloat16"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bool"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__ipow__": {
@@ -740,49 +980,118 @@
         "not_available": [
           {
             "lte_version": "1.7.0"
+          },
+          {
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "__le__": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "__rsub__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "inputs": [true, false], "lte_version": "1.7.0" },
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "inputs": [true, false],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__sub__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "inputs": [true, false] },
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "inputs": [true, false]
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__isub__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "inputs": [true, false] },
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "inputs": [true, false]
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__xor__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [0, 1], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -790,10 +1099,19 @@
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [0, 1], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -801,24 +1119,56 @@
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [0, 1], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__ifloordiv__": {
         "profile": "tensor_float_division_method_v150",
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" },
-          { "lte_version": "1.5.0" }
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "lte_version": "1.5.0"
+          }
         ]
       },
       "__imul__": {
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [1, 0], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "inputs": [1, 0],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "__index__": {
@@ -829,6 +1179,11 @@
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float64", "bfloat16", "float32", "float16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -840,22 +1195,55 @@
       "__reversed__": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bool"], "lte_version": "1.4.0" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.4.0"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "abs_": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "abs": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "acos_": {
@@ -873,7 +1261,23 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "uint8",
+              "int16",
+              "int64",
+              "bool",
+              "int8",
+              "int32",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "acos": {
@@ -891,35 +1295,92 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "uint8",
+              "int16",
+              "int64",
+              "bool",
+              "int8",
+              "int32",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "add_": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "data_types": ["bool"], "inputs": [1, 0], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "inputs": [1, 0],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "add": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "data_types": ["bool"], "inputs": [1, 0], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "inputs": [1, 0],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "angle": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "argmax": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "asin_": {
@@ -937,7 +1398,23 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "asin": {
@@ -955,7 +1432,23 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "atan_": {
@@ -973,7 +1466,23 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "atan": {
@@ -991,13 +1500,32 @@
             ],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "atan2_": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "inputs": [false, true, 0, 1], "lte_version": "1.7.0" },
+          {
+            "inputs": [false, true, 0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": [
               "bool",
@@ -1010,13 +1538,32 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "atan2": {
         "profile": "tensor_method_input",
         "not_available": [
-          { "inputs": [false, true, 0, 1], "lte_version": "1.7.0" },
+          {
+            "inputs": [false, true, 0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": [
               "bool",
@@ -1029,6 +1576,22 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1038,6 +1601,11 @@
           {
             "data_types": ["bfloat16", "float16", "float32", "float64"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1047,6 +1615,11 @@
           {
             "data_types": ["bfloat16", "float16", "float32", "float64"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1054,10 +1627,19 @@
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [0, 1], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "bfloat16", "float64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1065,10 +1647,19 @@
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "data_types": ["bool"], "inputs": [0, 1], "lte_version": "1.7.0" },
+          {
+            "data_types": ["bool"],
+            "inputs": [0, 1],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1079,8 +1670,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "ceil": {
@@ -1090,8 +1687,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "char": {
@@ -1103,7 +1706,11 @@
       "copy_": {
         "profile": "default",
         "data_types": ["common"],
-        "not_available": [{ "inputs": [false, true, 0, 1] }]
+        "not_available": [
+          {
+            "inputs": [false, true, 0, 1]
+          }
+        ]
       },
       "cos_": {
         "profile": "tensor_method_noinput",
@@ -1112,8 +1719,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "cos": {
@@ -1123,8 +1749,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "cosh_": {
@@ -1134,7 +1779,24 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "cosh": {
@@ -1144,7 +1806,24 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "cpu": {
@@ -1157,7 +1836,10 @@
         "profile": "default",
         "data_types": ["common"],
         "not_available": [
-          { "inputs": ["self", false, true, [0], [1]], "lte_version": "1.7.0" },
+          {
+            "inputs": ["self", false, true, [0], [1]],
+            "lte_version": "1.7.0"
+          },
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0"
@@ -1175,9 +1857,18 @@
         "data_types": ["common"],
         "tensors": ["tensor1"],
         "not_available": [
-          { "inputs": [false, true, 0, 1, [0], [1]], "lte_version": "1.7.0" },
-          { "data_types": ["bool", "bfloat16"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "inputs": [false, true, 0, 1, [0], [1]],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "double": {
@@ -1190,8 +1881,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "erf": {
@@ -1201,8 +1898,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "erfc_": {
@@ -1212,8 +1915,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "erfc": {
@@ -1223,8 +1932,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "erfinv_": {
@@ -1234,8 +1949,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "erfinv": {
@@ -1245,8 +1966,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "exp_": {
@@ -1256,8 +1983,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "exp": {
@@ -1267,8 +2000,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "expm1_": {
@@ -1278,8 +2017,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "expm1": {
@@ -1289,8 +2034,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "flatten": {
@@ -1309,8 +2060,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "floor": {
@@ -1320,8 +2090,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "frac_": {
@@ -1331,7 +2120,15 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "frac": {
@@ -1341,7 +2138,15 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "ger": {
@@ -1349,32 +2154,65 @@
         "tensors": ["tensor1"],
         "inputs": ["self"],
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.6.0" }
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.6.0"
+          }
         ]
       },
       "ge_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "ge": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "gt_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "gt": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "le_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "le": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "half": {
         "profile": "tensor_method_noinput"
@@ -1413,8 +2251,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "lgamma": {
@@ -1424,8 +2281,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log_": {
@@ -1435,8 +2311,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log": {
@@ -1446,8 +2341,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log10_": {
@@ -1457,8 +2371,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log10": {
@@ -1468,8 +2401,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log1p_": {
@@ -1479,8 +2431,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log1p": {
@@ -1490,8 +2461,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log2_": {
@@ -1501,8 +2491,27 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "log2": {
@@ -1512,20 +2521,45 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "logical_not_": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.6.0"
+          }
         ]
       },
       "logical_not": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.6.0" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.6.0"
+          }
         ]
       },
       "logical_xor_": {
@@ -1541,11 +2575,21 @@
       },
       "lt_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0"
+          }
+        ]
       },
       "lt": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.6.0" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.6.0"
+          }
+        ]
       },
       "matmul": {
         "profile": "default",
@@ -1563,22 +2607,40 @@
         "tensors": ["tensor2"],
         "inputs": ["self"],
         "not_available": [
-          { "data_types": ["bool", "float16"], "lte_version": "1.6.0" },
-          { "data_types": ["bool"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.6.0"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "mul_": {
         "profile": "default",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "mul": {
         "profile": "default",
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.6.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.6.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "ndim": {
@@ -1587,24 +2649,44 @@
       },
       "ne": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "ne_": {
         "profile": "default",
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "neg_": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"] },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"]
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "neg": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bool"] },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"]
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "nonzero": {
@@ -1618,8 +2700,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "orgqr": {
@@ -1631,7 +2719,10 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "output_nr": {
@@ -1647,13 +2738,18 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16", "bfloat16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "pow_": {
         "profile": "default",
         "not_available": [
-          { "data_types": ["bool"] },
+          {
+            "data_types": ["bool"]
+          },
           {
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0"
@@ -1663,7 +2759,9 @@
       "pow": {
         "profile": "default",
         "not_available": [
-          { "data_types": ["bool"] },
+          {
+            "data_types": ["bool"]
+          },
           {
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0"
@@ -1675,7 +2773,10 @@
         "tensors": ["tensor2"],
         "inputs": [null, 0, 1],
         "not_available": [
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.7.0" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.0"
+          }
         ]
       },
       "reciprocal_": {
@@ -1685,7 +2786,10 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "reciprocal": {
@@ -1695,7 +2799,10 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["bfloat16", "float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "relu_": {
@@ -1724,7 +2831,10 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "requires_grad": {
@@ -1747,7 +2857,14 @@
         "profile": "default",
         "tensors": ["tensor2"],
         "inputs": [null, 0, 1],
-        "not_available": [{ "data_types": ["bfloat16", "float16"] }]
+        "not_available": [
+          { "data_types": ["bfloat16", "float16"] },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "round_": {
         "profile": "tensor_method_noinput",
@@ -1756,8 +2873,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "round": {
@@ -1767,8 +2890,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "rsqrt_": {
@@ -1810,8 +2939,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sigmoid": {
@@ -1821,20 +2956,32 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sign_": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sign": {
         "profile": "tensor_method_noinput",
         "not_available": [
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sin_": {
@@ -1844,8 +2991,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sin": {
@@ -1855,8 +3008,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sinh_": {
@@ -1892,8 +3051,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sqrt": {
@@ -1903,8 +3068,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "squeeze_": {
@@ -1927,36 +3098,56 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "gte_version": "1.7.0" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "gte_version": "1.7.0"
+          }
         ]
       },
       "sub_": {
         "profile": "default",
         "inputs": ["self", 0, 1],
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sub": {
         "profile": "default",
         "inputs": ["self", 0, 1],
         "not_available": [
-          { "data_types": ["bool"], "lte_version": "1.7.0" },
-          { "data_types": ["float16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "sum": {
         "profile": "default",
         "tensors": ["tensor2"],
         "inputs": [null, 0, 1],
-        "not_available": [{ "data_types": ["float16"], "lte_version": "1.5.1" }]
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          }
+        ]
       },
       "t_": {
-        "profile": "tensor_method_noinput"
-      },
-      "t": {
         "profile": "tensor_method_noinput"
       },
       "tan_": {
@@ -1966,8 +3157,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "tan": {
@@ -1977,8 +3174,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "tanh_": {
@@ -1988,8 +3191,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "tanh": {
@@ -1999,8 +3208,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "to": {
@@ -2068,8 +3283,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "trunc": {
@@ -2079,8 +3300,14 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.7.0" },
-          { "data_types": ["bfloat16"], "lte_version": "1.5.1" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.5.1"
+          }
         ]
       },
       "unique": {
@@ -2113,8 +3340,14 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0"
           },
-          { "data_types": ["float16"], "lte_version": "1.5.1" },
-          { "data_types": ["float16"], "gte_version": "1.7.0" }
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["float16"],
+            "gte_version": "1.7.0"
+          }
         ]
       },
       "view_as": {
@@ -2137,6 +3370,11 @@
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": ["bool", "int8", "int32", "uint8", "int16", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2147,13 +3385,19 @@
       },
       "__getitem__": {
         "profile": "default",
-        "inputs": [false, true, 0, 1]
+        "inputs": [false, true, 0, 1],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "_version": {
         "profile": "tensor_property_noinput",
         "return_type": "syft.lib.python.Int"
       },
-
       "all": {
         "profile": "tensor_method_noinput",
         "not_available": [
@@ -2170,6 +3414,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "only_bool"
+          },
+          {
+            "data_types": [
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2186,6 +3444,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ],
         "return_type": "syft.lib.python.Bool"
@@ -2206,6 +3469,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "only_bool"
+          },
+          {
+            "data_types": [
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2228,6 +3505,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2244,6 +3526,11 @@
             "data_types": ["bool"],
             "lte_version": "1.6.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2255,6 +3542,11 @@
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2266,6 +3558,11 @@
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16", "float16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2280,6 +3577,11 @@
             "data_types": ["bool", "bfloat16", "float16", "float32", "float64"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float32", "float64", "bfloat16", "bool", "float16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2314,7 +3616,10 @@
             "glte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "absolute_": {
@@ -2325,7 +3630,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "acosh": {
@@ -2345,7 +3653,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "acosh_": {
@@ -2365,7 +3676,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "asinh": {
@@ -2385,7 +3699,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "asinh_": {
@@ -2405,7 +3722,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "atanh": {
@@ -2425,7 +3745,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "atanh_": {
@@ -2445,7 +3768,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "cholesky_solve": {
@@ -2486,7 +3812,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "deg2rad_": {
@@ -2506,7 +3835,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "fliplr": {
@@ -2518,7 +3850,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "flipud": {
@@ -2529,7 +3864,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "isfinite": {
@@ -2540,7 +3878,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "isinf": {
@@ -2551,12 +3892,20 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "isnan": {
         "profile": "tensor_method_noinput",
-        "not_available": [{ "lte_version": "1.5.1", "reason": "not_available" }]
+        "not_available": [
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
+        ]
       },
       "logaddexp": {
         "profile": "default",
@@ -2576,7 +3925,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "logaddexp2": {
@@ -2597,7 +3949,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "logcumsumexp": {
@@ -2618,7 +3973,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "rad2deg": {
@@ -2629,7 +3987,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "rad2deg_": {
@@ -2640,7 +4001,10 @@
             "lte_version": "1.7.0",
             "reason": "no_cpu"
           },
-          { "lte_version": "1.5.1", "reason": "not_available" }
+          {
+            "lte_version": "1.5.1",
+            "reason": "not_available"
+          }
         ]
       },
       "bmm": {
@@ -2772,6 +4136,11 @@
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2782,6 +4151,10 @@
           {
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2977,6 +4350,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -3040,6 +4418,16 @@
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bfloat16", "bool"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -3057,6 +4445,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3074,6 +4467,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3182,7 +4580,8 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
-        ]
+        ],
+        "not_available": []
       },
       "inverse": {
         "profile": "tensor_method_noinput",
@@ -3202,7 +4601,8 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
-        ]
+        ],
+        "not_available": []
       },
       "irfft": {
         "profile": "default",
@@ -3223,7 +4623,8 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
-        ]
+        ],
+        "not_available": []
       },
       "is_complex": {
         "profile": "tensor_method_noinput",
@@ -3299,6 +4700,11 @@
             "data_types": ["float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3315,6 +4721,11 @@
             "data_types": ["bfloat16", "float16"],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ],
         "deterministic": false
@@ -3335,6 +4746,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3355,6 +4779,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3375,6 +4812,11 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3710,7 +5152,14 @@
       "random_": {
         "profile": "default",
         "inputs": [null],
-        "deterministic": false
+        "deterministic": false,
+        "not_available": [
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
+        ]
       },
       "repeat_interleave": {
         "profile": "default",
@@ -4956,6 +6405,10 @@
             "lte_version": "1.7.0",
             "data_types": ["bfloat16", "float16"],
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.4.0",
+            "reason": "added_feature"
           }
         ]
       },
@@ -4968,6 +6421,10 @@
             "lte_version": "1.7.0",
             "data_types": ["bfloat16", "float16"],
             "reason": "no_cpu"
+          },
+          {
+            "lte_version": "1.4.0",
+            "reason": "added_feature"
           }
         ]
       },
@@ -5003,6 +6460,11 @@
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5209,24 +6671,44 @@
       "addbmm": {
         "profile": "default",
         "tensors": ["tensor_m"],
-        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "inputs": [
+          {
+            "batch1": "tensor_batch1",
+            "batch2": "tensor_batch2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addbmm_": {
         "profile": "default",
         "tensors": ["tensor_m"],
-        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "inputs": [
+          {
+            "batch1": "tensor_batch1",
+            "batch2": "tensor_batch2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5315,31 +6797,56 @@
       "baddbmm": {
         "profile": "default",
         "tensors": ["tensor_m"],
-        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "inputs": [
+          {
+            "batch1": "tensor_batch1",
+            "batch2": "tensor_batch2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16", "bool", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "baddbmm_": {
         "profile": "default",
         "tensors": ["tensor_m1"],
-        "inputs": [{ "batch1": "tensor_batch1", "batch2": "tensor_batch2" }],
+        "inputs": [
+          {
+            "batch1": "tensor_batch1",
+            "batch2": "tensor_batch2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addcdiv": {
         "profile": "default",
         "tensors": ["addcdiv"],
-        "inputs": [{ "tensor1": "addcdiv_t1", "tensor2": "addcdiv_t2" }],
+        "inputs": [
+          {
+            "tensor1": "addcdiv_t1",
+            "tensor2": "addcdiv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5354,13 +6861,32 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addcdiv_": {
         "profile": "default",
         "tensors": ["addcdiv_"],
-        "inputs": [{ "tensor1": "addcdiv_t1", "tensor2": "addcdiv_t2" }],
+        "inputs": [
+          {
+            "tensor1": "addcdiv_t1",
+            "tensor2": "addcdiv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5375,37 +6901,76 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addcmul": {
         "profile": "default",
         "tensors": ["addcdiv_"],
-        "inputs": [{ "tensor1": "addcdiv_t1", "tensor2": "addcdiv_t2" }],
+        "inputs": [
+          {
+            "tensor1": "addcdiv_t1",
+            "tensor2": "addcdiv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addcmul_": {
         "profile": "default",
         "tensors": ["addcdiv_"],
-        "inputs": [{ "tensor1": "addcdiv_t1", "tensor2": "addcdiv_t2" }],
+        "inputs": [
+          {
+            "tensor1": "addcdiv_t1",
+            "tensor2": "addcdiv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addmm": {
         "profile": "default",
         "tensors": ["addcdiv"],
-        "inputs": [{ "mat1": "addmm_t1", "mat2": "addmm_t2" }],
+        "inputs": [
+          {
+            "mat1": "addmm_t1",
+            "mat2": "addmm_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool"],
@@ -5416,13 +6981,23 @@
             "data_types": ["float16"],
             "lte_version": "1.6.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addmm_": {
         "profile": "default",
         "tensors": ["addmm_"],
-        "inputs": [{ "mat1": "addmm_t1", "mat2": "addmm_t2" }],
+        "inputs": [
+          {
+            "mat1": "addmm_t1",
+            "mat2": "addmm_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool"],
@@ -5433,37 +7008,67 @@
             "data_types": ["float16"],
             "lte_version": "1.6.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addmv": {
         "profile": "default",
         "tensors": ["addmv"],
-        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }],
+        "inputs": [
+          {
+            "mat": "addmv_t1",
+            "vec": "addmv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addmv_": {
         "profile": "default",
         "tensors": ["addmv"],
-        "inputs": [{ "mat": "addmv_t1", "vec": "addmv_t2" }],
+        "inputs": [
+          {
+            "mat": "addmv_t1",
+            "vec": "addmv_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool", "float16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool", "float16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "addr": {
         "profile": "default",
         "tensors": ["addr"],
-        "inputs": [{ "vec1": "addr_t1", "vec2": "addr_t2" }],
+        "inputs": [
+          {
+            "vec1": "addr_t1",
+            "vec2": "addr_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16", "bool"],
@@ -5475,7 +7080,12 @@
       "addr_": {
         "profile": "default",
         "tensors": ["addr"],
-        "inputs": [{ "vec1": "addr_t1", "vec2": "addr_t2" }],
+        "inputs": [
+          {
+            "vec1": "addr_t1",
+            "vec2": "addr_t2"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bool"],
@@ -5486,6 +7096,11 @@
             "data_types": ["float16"],
             "lte_version": "1.6.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5493,12 +7108,21 @@
         "profile": "default",
         "tensors": ["addr"],
         "return_type": "syft.lib.python.List",
-        "inputs": [{ "LIST_split_sizes": [0, 1, 2] }]
+        "inputs": [
+          {
+            "LIST_split_sizes": [0, 1, 2]
+          }
+        ]
       },
       "stft": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "n_fft": 1, "hop_length": 1 }],
+        "inputs": [
+          {
+            "n_fft": 1,
+            "hop_length": 1
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5519,22 +7143,44 @@
       "transpose": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "dim0": 0, "dim1": 0 }]
+        "inputs": [
+          {
+            "dim0": 0,
+            "dim1": 0
+          }
+        ]
       },
       "transpose_": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "dim0": 0, "dim1": 0 }]
+        "inputs": [
+          {
+            "dim0": 0,
+            "dim1": 0
+          }
+        ]
       },
       "unfold": {
         "profile": "default",
         "tensors": ["unfold"],
-        "inputs": [{ "dimension": 0, "size": 2, "step": 1 }]
+        "inputs": [
+          {
+            "dimension": 0,
+            "size": 2,
+            "step": 1
+          }
+        ]
       },
       "renorm": {
         "profile": "default",
         "tensors": ["tensor2"],
-        "inputs": [{ "p": 1, "dim": 0, "maxnorm": 1 }],
+        "inputs": [
+          {
+            "p": 1,
+            "dim": 0,
+            "maxnorm": 1
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5555,7 +7201,13 @@
       "renorm_": {
         "profile": "default",
         "tensors": ["tensor2"],
-        "inputs": [{ "p": 1, "dim": 0, "maxnorm": 1 }],
+        "inputs": [
+          {
+            "p": 1,
+            "dim": 0,
+            "maxnorm": 1
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5577,12 +7229,21 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
+          {
+            "dim": 0,
+            "index_DTYPE_int64": "scatter_t1",
+            "src": "scatter_t2"
+          }
         ],
         "not_available": [
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5591,12 +7252,21 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
+          {
+            "dim": 0,
+            "index_DTYPE_int64": "scatter_t1",
+            "src": "scatter_t2"
+          }
         ],
         "not_available": [
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5605,12 +7275,21 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
+          {
+            "dim": 0,
+            "index_DTYPE_int64": "scatter_t1",
+            "src": "scatter_t2"
+          }
         ],
         "not_available": [
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5619,12 +7298,21 @@
         "profile": "default",
         "tensors": ["scatter"],
         "inputs": [
-          { "dim": 0, "index_DTYPE_int64": "scatter_t1", "src": "scatter_t2" }
+          {
+            "dim": 0,
+            "index_DTYPE_int64": "scatter_t1",
+            "src": "scatter_t2"
+          }
         ],
         "not_available": [
           {
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
+            "reason": "no_cpu"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
             "reason": "no_cpu"
           }
         ]
@@ -5632,12 +7320,21 @@
       "select": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "dim": 0, "index": 0 }]
+        "inputs": [
+          {
+            "dim": 0,
+            "index": 0
+          }
+        ]
       },
       "multinomial": {
         "profile": "default",
         "tensors": ["tensor1_positive"],
-        "inputs": [{ "num_samples": 1 }],
+        "inputs": [
+          {
+            "num_samples": 1
+          }
+        ],
         "deterministic": false,
         "not_available": [
           {
@@ -5658,22 +7355,44 @@
       "narrow_copy": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "dim": 0, "start": 0, "length": 0 }]
+        "inputs": [
+          {
+            "dim": 0,
+            "start": 0,
+            "length": 0
+          }
+        ]
       },
       "narrow": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "dim": 0, "start": 0, "length": 0 }]
+        "inputs": [
+          {
+            "dim": 0,
+            "start": 0,
+            "length": 0
+          }
+        ]
       },
       "new_full": {
         "profile": "default",
         "tensors": ["tensor1"],
-        "inputs": [{ "LIST_size": [1, 1], "fill_value": 0 }]
+        "inputs": [
+          {
+            "LIST_size": [1, 1],
+            "fill_value": 0
+          }
+        ]
       },
       "ormqr": {
         "profile": "default",
         "tensors": ["tensor2"],
-        "inputs": [{ "input2": "tensor2", "input3": "tensor2" }],
+        "inputs": [
+          {
+            "input2": "tensor2",
+            "input3": "tensor2"
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -5694,7 +7413,12 @@
       "put_": {
         "profile": "default",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "index_DTYPE_int64": [0], "source": "tensor1_1element" }],
+        "inputs": [
+          {
+            "index_DTYPE_int64": [0],
+            "source": "tensor1_1element"
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5706,7 +7430,12 @@
       "masked_fill": {
         "profile": "default",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "mask_DTYPE_bool": "tensor1_1element", "value": 0 }],
+        "inputs": [
+          {
+            "mask_DTYPE_bool": "tensor1_1element",
+            "value": 0
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5718,7 +7447,12 @@
       "masked_fill_": {
         "profile": "default",
         "tensors": ["tensor1_1element_1"],
-        "inputs": [{ "mask_DTYPE_bool": "tensor1_1element", "value": 0 }],
+        "inputs": [
+          {
+            "mask_DTYPE_bool": "tensor1_1element",
+            "value": 0
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -5795,6 +7529,16 @@
             "data_types": ["bfloat16"],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          },
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
           }
         ]
       },
@@ -5857,6 +7601,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5883,6 +7641,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5991,13 +7763,33 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "index_fill": {
         "profile": "default",
         "tensors": ["cholesky"],
-        "inputs": [{ "dim": 0, "0d_index_DTYPE_int64": [0], "value": 0 }],
+        "inputs": [
+          {
+            "dim": 0,
+            "0d_index_DTYPE_int64": [0],
+            "value": 0
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -6018,7 +7810,13 @@
       "index_fill_": {
         "profile": "default",
         "tensors": ["cholesky"],
-        "inputs": [{ "dim": 0, "0d_index_DTYPE_int64": [0], "value": 0 }],
+        "inputs": [
+          {
+            "dim": 0,
+            "0d_index_DTYPE_int64": [0],
+            "value": 0
+          }
+        ],
         "not_available": [
           {
             "data_types": [
@@ -6040,7 +7838,17 @@
         "profile": "default",
         "tensors": ["cholesky"],
         "inputs": [
-          { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+          {
+            "LIST_TENSOR_indices_DTYPE_int64": [[0]],
+            "values": [0.0]
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
         ]
       },
       "index_put_": {
@@ -6048,6 +7856,13 @@
         "tensors": ["cholesky"],
         "inputs": [
           { "LIST_TENSOR_indices_DTYPE_int64": [[0]], "values": [0.0] }
+        ],
+        "not_available": [
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.4.0",
+            "reason": "no_cpu"
+          }
         ]
       },
       "geometric_": {
@@ -6069,17 +7884,31 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
       "__setitem__": {
         "profile": "default",
-        "inputs": [{ "ALL_TUPLE_ARGS_key": 0, "value": 0 }],
+        "inputs": [
+          {
+            "ALL_TUPLE_ARGS_key": 0,
+            "value": 0
+          }
+        ],
         "return_type": "syft.lib.python._SyNone"
       },
       "take": {
         "profile": "default",
-        "inputs": [{ "index_DTYPE_int64": [0] }],
+        "inputs": [
+          {
+            "index_DTYPE_int64": [0]
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16", "bfloat16"],
@@ -6120,7 +7949,11 @@
         "profile": "default",
         "return_type": "syft.lib.python.List",
         "tensors": ["tensor1_1element"],
-        "inputs": [{ "LIST_split_sizes": [1] }],
+        "inputs": [
+          {
+            "LIST_split_sizes": [1]
+          }
+        ],
         "not_available": [
           {
             "lte_version": "1.7.0",
@@ -6131,7 +7964,12 @@
       "device": {
         "profile": "tensor_property_noinput",
         "return_type": "torch.device",
-        "skip": [{ "lte_version": "1.7.0", "reason": "untested" }]
+        "skip": [
+          {
+            "lte_version": "1.7.0",
+            "reason": "untested"
+          }
+        ]
       },
       "detach_": {
         "profile": "default",
@@ -6144,12 +7982,20 @@
           }
         ],
         "skip": [
-          { "lte_version": "1.7.0", "reason": "DistributedDataParallel error" }
+          {
+            "lte_version": "1.7.0",
+            "reason": "DistributedDataParallel error"
+          }
         ]
       },
       "index_select": {
         "profile": "default",
-        "inputs": [{ "dim": 0, "index_DTYPE_int64": [0] }],
+        "inputs": [
+          {
+            "dim": 0,
+            "index_DTYPE_int64": [0]
+          }
+        ],
         "not_available": [
           {
             "data_types": ["bfloat16", "float16"],
@@ -6169,7 +8015,11 @@
       },
       "masked_select": {
         "profile": "default",
-        "inputs": [{ "mask_DTYPE_bool": [0] }],
+        "inputs": [
+          {
+            "mask_DTYPE_bool": [0]
+          }
+        ],
         "not_available": [
           {
             "data_types": ["float16"],
@@ -6198,7 +8048,12 @@
       "istft": {
         "profile": "default",
         "tensors": ["istft"],
-        "inputs": [{ "n_fft": 2, "hop_length": 2 }],
+        "inputs": [
+          {
+            "n_fft": 2,
+            "hop_length": 2
+          }
+        ],
         "not_available": [
           {
             "data_types": [
