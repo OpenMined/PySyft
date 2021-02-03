@@ -34,24 +34,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--network",
-    type=str,
-    help="Grid Network address, e.g. --network=0.0.0.0:7000. Default is os.environ.get('NETWORK',None).",
-    default=os.environ.get("NETWORK", None),
-)
-
-parser.add_argument(
     "--start_local_db",
     dest="start_local_db",
     action="store_true",
     help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
-)
-
-parser.add_argument(
-    "--id",
-    type=str,
-    help="PyGrid Node ID.",
-    default=os.environ.get("NODE_ID", None),
 )
 
 parser.set_defaults(use_test_config=False)
@@ -68,7 +54,6 @@ if __name__ == "__main__":
     else:
         app = create_app()
 
-    _network = args.network
     _address = "http://{}:{}".format(args.host, args.port)
 
     server = pywsgi.WSGIServer(
@@ -76,9 +61,4 @@ if __name__ == "__main__":
     )
     server.serve_forever()
 else:
-    node_id = os.environ.get("NODE_ID", None)
-    num_replicas = os.environ.get("N_REPLICAS", None)
-    _address = os.environ.get("ADDRESS", None)
-    _network = os.environ.get("NETWORK", None)
-
     app = create_app()
