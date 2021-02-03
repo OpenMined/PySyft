@@ -6,9 +6,9 @@ from syft.core.common.serde.deserialize import _deserialize
 from syft.lib.python import ValuesIndices
 
 
-def test_torch_valuesindices_serde():
-    x = torch.Tensor([1, 2, 3])
-    y = x.cummax(0)
+def test_torch_valuesindices_serde() -> None:
+    x = torch.Tensor([[1, 2], [1, 2]])
+    y = x.mode()
     values = y.values
     indices = y.indices
 

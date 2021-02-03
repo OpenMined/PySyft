@@ -1,7 +1,8 @@
 # stdlib
+import inspect
+from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -9,54 +10,90 @@ from typing import Union
 # syft relative
 from .. import ast
 from ..ast.callable import Callable
-from .util import builtin_func_type
-from .util import class_type
-from .util import func_type
-from .util import module_type
-from .util import unsplit
+from ..logger import traceback_and_raise
+
+
+def is_static_method(host_object, attr):  # type: ignore
+    value = getattr(host_object, attr)
+
+    if not hasattr(host_object, "__mro__"):
+        return False
+
+    for cls in inspect.getmro(host_object):
+        if inspect.isroutine(value):
+            if attr in cls.__dict__:
+                bound_value = cls.__dict__[attr]
+                if isinstance(bound_value, staticmethod):
+                    return True
+    return False
 
 
 class Module(ast.attribute.Attribute):
 
     """A module which contains other modules or callables."""
 
-    lookup_cache: Dict[Any, Any] = {}
+    def __init__(
+        self,
+        client: Optional[Any],
+        path_and_name: Optional[str] = None,
+        object_ref: Optional[Union[CallableT, ModuleType]] = None,
+        return_type_name: Optional[str] = None,
+    ):
+        super().__init__(
+            path_and_name=path_and_name,
+            object_ref=object_ref,
+            return_type_name=return_type_name,
+            client=client,
+        )
 
     def add_attr(
         self,
         attr_name: str,
         attr: Optional[Union[Callable, CallableT]],
+        is_static: bool = False,
     ) -> None:
         self.__setattr__(attr_name, attr)
-        if attr is not None:
-            self.attrs[attr_name] = attr
 
-            # if add_attr is called directly we need to cache the path as well
-            attr_ref = getattr(attr, "ref", None)
-            path = getattr(attr, "path_and_name", None)
-            if attr_ref not in self.lookup_cache and path is not None:
-                self.lookup_cache[attr_ref] = path
+        if is_static is True:
+            traceback_and_raise(
+                ValueError("Static methods shouldn't be added to an object.")
+            )
+
+        if attr is None:
+            traceback_and_raise(ValueError("An attribute reference has to be passed."))
+
+        # if add_attr is called directly we need to cache the path as well
+        attr_ref = getattr(attr, "object_ref", None)
+        path = getattr(attr, "path_and_name", None)
+        if attr_ref not in self.lookup_cache and path is not None:
+            self.lookup_cache[attr_ref] = path
+
+        self.attrs[attr_name] = attr  # type: ignore
 
     def __call__(
         self,
-        path: Union[str, List[str]] = [],
+        path: Union[List[str], str],
         index: int = 0,
-        return_callable: bool = False,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+
         if obj_type is not None:
             if obj_type in self.lookup_cache:
                 path = self.lookup_cache[obj_type]
 
-        if isinstance(path, str):
-            path = path.split(".")
-
-        resolved = self.attrs[path[index]](
-            path=path,
-            index=index + 1,
-            return_callable=return_callable,
-            obj_type=obj_type,
+        _path: List[str] = (
+            path.split(".") if isinstance(path, str) else path if path else []
         )
+
+        if not _path:
+            traceback_and_raise(
+                ValueError("Can't execute remote call if path is not specified.")
+            )
+
+        resolved = self.attrs[_path[index]](
+            path=_path, index=index + 1, obj_type=obj_type
+        )
+
         return resolved
 
     def __repr__(self) -> str:
@@ -69,60 +106,91 @@ class Module(ast.attribute.Attribute):
     def add_path(
         self,
         path: List[str],
-        index: int,
+        index: int = 0,
         return_type_name: Optional[str] = None,
-        framework_reference: Optional[Union[Callable, CallableT]] = None,
+        framework_reference: Optional[ModuleType] = None,
+        is_static: bool = False,
     ) -> None:
-        if path[index] not in self.attrs:
-            attr_ref = getattr(self.ref, path[index])
+        if index >= len(path):
+            return
 
-            if isinstance(attr_ref, module_type):
+        if path[index] not in self.attrs:
+            attr_ref = getattr(self.object_ref, path[index])
+
+            if inspect.ismodule(attr_ref):
                 self.add_attr(
                     attr_name=path[index],
                     attr=ast.module.Module(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
+                        path_and_name=".".join(path[: index + 1]),
+                        object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        client=self.client,
                     ),
                 )
-            elif isinstance(attr_ref, class_type):
+            elif inspect.isclass(attr_ref):
                 klass = ast.klass.Class(
-                    name=path[index],
-                    path_and_name=unsplit(path[: index + 1]),
-                    ref=attr_ref,
+                    path_and_name=".".join(path[: index + 1]),
+                    object_ref=attr_ref,
                     return_type_name=return_type_name,
+                    client=self.client,
                 )
                 self.add_attr(
                     attr_name=path[index],
                     attr=klass,
                 )
-            elif isinstance(attr_ref, func_type):
+            elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
+                is_static = is_static_method(self.object_ref, path[index])  # type: ignore
+
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.function.Function(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
+                    attr=ast.callable.Callable(
+                        path_and_name=".".join(path[: index + 1]),
+                        object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        client=self.client,
+                        is_static=is_static,
                     ),
                 )
-            elif isinstance(attr_ref, builtin_func_type):
+            elif inspect.isdatadescriptor(attr_ref):
                 self.add_attr(
                     attr_name=path[index],
-                    attr=ast.function.Function(
-                        path[index],
-                        unsplit(path[: index + 1]),
-                        attr_ref,
+                    attr=ast.property.Property(
+                        path_and_name=".".join(path[: index + 1]),
+                        object_ref=attr_ref,
                         return_type_name=return_type_name,
+                        client=self.client,
                     ),
                 )
+            elif index == len(path) - 1:
+                static_attribute = ast.static_attr.StaticAttribute(
+                    path_and_name=".".join(path[: index + 1]),
+                    return_type_name=return_type_name,
+                    client=self.client,
+                    parent=self,
+                )
+                setattr(self, path[index], static_attribute)
+                self.attrs[path[index]] = static_attribute
+                return
 
         attr = self.attrs[path[index]]
-        attr_ref = getattr(self.ref, path[index], None)
+        attr_ref = getattr(self.object_ref, path[index], None)
         if attr_ref is not None and attr_ref not in self.lookup_cache:
             self.lookup_cache[attr_ref] = path
-        if hasattr(attr, "add_path"):
-            attr.add_path(  # type: ignore
-                path=path, index=index + 1, return_type_name=return_type_name
-            )
+
+        attr.add_path(path=path, index=index + 1, return_type_name=return_type_name)
+
+    def __getattribute__(self, item: str) -> Any:
+        target_object = super().__getattribute__(item)
+        if isinstance(target_object, ast.static_attr.StaticAttribute):
+            return target_object.get_remote_value()
+        return target_object
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        if hasattr(super(), "attrs"):
+            attrs = super().__getattribute__("attrs")
+            if key in attrs:
+                target_object = self.attrs[key]
+                if isinstance(target_object, ast.static_attr.StaticAttribute):
+                    return target_object.set_remote_value(value)
+
+        return super().__setattr__(key, value)

@@ -32,20 +32,19 @@ Syft "python" functionality includes the following modules:
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
+
 # stdlib
-import os
 from pathlib import Path
 import sys
-from typing import Union
 
 # third party
-from loguru import logger  # noqa: F401
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
+from syft.core.common import event_loop  # noqa: F401
 
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -64,18 +63,20 @@ from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 
 # Convenience Functions
 from syft.decorators import type_hints  # noqa: F401
+from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
+from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
-from syft.grid.duet import bcolors  # noqa: F401
 
 # syft relative
 # Package Imports
 from . import lib  # noqa: F401
+from . import logger  # noqa: F401
 
 # VERSIONING
 try:
@@ -89,36 +90,4 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-# LIBRARY CONFIG
-
-# do you want verbose logging to help with debugging?
-# logger.add(sys.stderr, level="INFO")
-
-logger.remove()  # remove default logger
-DEFAULT_LOG_FILE = "syft_{time}.log"
-
-
-# run this to enable logging, or run with disable=True to turn it back off
-# file_path can also be sys.stdout
-def logging(
-    disable: bool = False, file_path: Union[None, str, os.PathLike] = None
-) -> None:
-
-    logger.debug("Logging loaded")
-
-    if not disable:
-        if file_path is not None:
-            LOG_FILE = file_path
-        else:
-            LOG_FILE = DEFAULT_LOG_FILE
-
-        _ = logger.add(
-            LOG_FILE,
-            enqueue=True,
-            colorize=False,
-            diagnose=True,
-            backtrace=True,
-            level="TRACE",
-        )
-    else:
-        logger.remove()
+logger.add(sink=sys.stderr, level="CRITICAL")

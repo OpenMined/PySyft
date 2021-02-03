@@ -18,6 +18,9 @@ except ImportError:
 # third party
 from typeguard import typechecked
 
+# syft relative
+from ..logger import traceback_and_raise
+
 SKIP_RETURN_TYPE_HINTS = {"__init__"}
 
 
@@ -80,18 +83,22 @@ def type_hints(
             # Thus, the way this check works is to return an error if we find an argument which
             # isn't in kwargs and isn't "self".
             if param_name not in kwargs and len(args) > max_arg_len:
-                raise AttributeError(
-                    f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
-                    f"Please pass in all arguments as kwargs when coding/using PySyft."
+                traceback_and_raise(
+                    AttributeError(
+                        f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
+                        f"Please pass in all arguments as kwargs when coding/using PySyft."
+                    )
                 )
 
     if (
         literal_signature.return_annotation is literal_signature.empty
         and decorated.__name__ not in SKIP_RETURN_TYPE_HINTS
     ):
-        raise AttributeError(
-            f"Return type not annotated, please provide typing to the return type for function"
-            f"{decorated.__qualname__}."
+        traceback_and_raise(
+            AttributeError(
+                f"Return type not annotated, please provide typing to the return type for function"
+                f"{decorated.__qualname__}."
+            )
         )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
@@ -99,9 +106,11 @@ def type_hints(
             continue
 
         if param_name not in solved_signature:
-            raise AttributeError(
-                f"Argument types not annotated, please provide typing to all argument types for"
-                f"function {decorated.__qualname__}."
+            traceback_and_raise(
+                AttributeError(
+                    f"Argument types not annotated, please provide typing to all argument types for"
+                    f"function {decorated.__qualname__}."
+                )
             )
 
     def decorator(*args: Tuple[Any, ...], **kwargs: Any) -> type:

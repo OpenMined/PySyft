@@ -330,7 +330,7 @@ def test_id_hex():
 
 
 def test_id_imag():
-    res = test_float.imag()
+    res = test_float.imag
     py_res = python_float.imag
 
     assert res == py_res
@@ -348,7 +348,7 @@ def test_id_is_integer():
 
 
 def test_id_real():
-    res = test_float.real()
+    res = test_float.real
     py_res = python_float.real
 
     assert res == py_res

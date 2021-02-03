@@ -25,12 +25,7 @@ def do() -> None:
     asyncio._set_running_loop(loop)
     _ = sy.logger.add(
         sink="syft_do.log",
-        enqueue=True,
-        colorize=False,
-        diagnose=True,
-        backtrace=True,
         level="TRACE",
-        encoding="utf-8",
     )
     duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000")
     duet.requests.add_handler(action="accept", name="gimme")
@@ -53,12 +48,7 @@ def ds() -> None:
     asyncio._set_running_loop(loop)
     _ = sy.logger.add(
         sink="syft_ds.log",
-        enqueue=True,
-        colorize=False,
-        diagnose=True,
-        backtrace=True,
         level="TRACE",
-        encoding="utf-8",
     )
     duet = sy.join_duet(loopback=True, network_url="http://localhost:5000")
     time.sleep(1)
