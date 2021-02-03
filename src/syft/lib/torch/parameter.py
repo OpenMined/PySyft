@@ -39,6 +39,11 @@ class PyTorchParameterWrapper(StorableObject):
         grad = getattr(self.value, "grad", None)
         if grad is not None:
             proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
+
+        # opacus monkey patches this onto the Parameter class
+        grad_sample = getattr(self.value, "grad_sample", None)
+        if grad_sample is not None:
+            proto.grad_sample.CopyFrom(protobuf_tensor_serializer(grad_sample))
         return proto
 
     @staticmethod
@@ -47,6 +52,10 @@ class PyTorchParameterWrapper(StorableObject):
         param = Parameter(data, requires_grad=proto.requires_grad)
         if proto.HasField("grad"):
             param.grad = protobuf_tensor_deserializer(proto.grad)
+
+        # opacus monkey patches this onto the Parameter class
+        if proto.HasField("grad_sample"):
+            param.grad_sample = protobuf_tensor_deserializer(proto.grad_sample)
         return param
 
     @staticmethod

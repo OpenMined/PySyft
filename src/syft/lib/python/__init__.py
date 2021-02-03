@@ -1,9 +1,14 @@
+# stdlib
+from typing import Optional
+
 # syft relative
 from . import collections
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...core.node.abstract.node import AbstractNodeClient
+from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
@@ -18,6 +23,7 @@ from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .protobuf import GenerateProtobufWrapper  # noqa: 401
 from .set import Set
 from .string import String
 from .tuple import Tuple
@@ -41,8 +47,8 @@ for syft_type in [
     syft_type.__module__ = __name__
 
 
-def create_python_ast() -> Globals:
-    ast = Globals()
+def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
+    ast = Globals(client)
 
     modules = ["syft", "syft.lib", "syft.lib.python", "syft.lib.python.collections"]
     classes = [
@@ -198,6 +204,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__ipow__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__pos__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.conjugate", "syft.lib.python.Float"),
+        ("syft.lib.python.Float.imag", "syft.lib.python.Int"),
+        ("syft.lib.python.Float.real", "syft.lib.python.Float"),
         # String Methods
         ("syft.lib.python.String.__add__", "syft.lib.python.String"),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool"),
@@ -377,7 +385,16 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
-        ("syft.lib.python.Iterator.__next__", "syft.lib.python.Any"),
+        (
+            "syft.lib.python.Iterator.__next__",
+            UnionGenerator[
+                "syft.lib.python.Int",
+                "syft.lib.python.Float",
+                "syft.lib.python.String",
+                "torch.nn.Parameter",
+                "torch.Tensor",
+            ],
+        ),  # temp until casting
         ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
         ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
         ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
