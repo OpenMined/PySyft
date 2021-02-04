@@ -14,9 +14,6 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
 from syft.proto.lib.sympc import session_pb2 as proto_dot_lib_dot_sympc_dot_session__pb2
 from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
 
@@ -26,9 +23,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a%proto/core/common/common_object.proto\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1dproto/lib/sympc/session.proto"g\n\x0bShareTensor\x12+\n\x06tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12+\n\x07session\x18\x02 \x01(\x0b\x32\x1a.syft.lib.sympc.MPCSessionb\x06proto3',
+    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1dproto/lib/sympc/session.proto"g\n\x0bShareTensor\x12+\n\x06tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12+\n\x07session\x18\x02 \x01(\x0b\x32\x1a.syft.lib.sympc.MPCSessionb\x06proto3',
     dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
         proto_dot_lib_dot_sympc_dot_session__pb2.DESCRIPTOR,
     ],
@@ -90,8 +86,8 @@ _SHARETENSOR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=154,
-    serialized_end=257,
+    serialized_start=115,
+    serialized_end=218,
 )
 
 _SHARETENSOR.fields_by_name[

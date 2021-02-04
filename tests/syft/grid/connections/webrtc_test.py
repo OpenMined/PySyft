@@ -14,8 +14,6 @@ from nacl.signing import SigningKey
 import nest_asyncio
 import pytest
 
-# from pytest import MonkeyPatch
-
 # syft absolute
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
@@ -23,6 +21,8 @@ from syft.grid.connections.webrtc import DC_CHUNK_END_SIGN
 from syft.grid.connections.webrtc import DC_CHUNK_START_SIGN
 from syft.grid.connections.webrtc import DC_MAX_CHUNK_SIZE
 from syft.grid.connections.webrtc import WebRTCConnection
+
+# from pytest import MonkeyPatch
 
 
 class AsyncMock(Mock):

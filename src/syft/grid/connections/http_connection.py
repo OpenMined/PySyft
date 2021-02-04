@@ -1,7 +1,7 @@
 # third party
 import requests
 
-# syft relative
+# syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
