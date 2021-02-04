@@ -59,10 +59,6 @@ def test_duet() -> None:
 
         do_proc.terminate()
 
-        if ds_proc.is_alive():
-            ds_proc.terminate()
-            raise Exception(f"ds_proc is hanged in {testcase}")
-
         if do_proc.exception:
             exception, tb = do_proc.exception
             raise Exception(tb) from exception
@@ -70,5 +66,9 @@ def test_duet() -> None:
         if ds_proc.exception:
             exception, tb = ds_proc.exception
             raise Exception(tb) from exception
+
+        if ds_proc.is_alive():
+            ds_proc.terminate()
+            raise Exception(f"ds_proc is hanged in {testcase}")
 
         print(f"test {testcase} passed in {time.time() - start} seconds")
