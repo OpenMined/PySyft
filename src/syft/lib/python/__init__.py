@@ -12,7 +12,6 @@ from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
-from .dict import DictWrapper
 from .float import Float
 from .int import Int
 from .iterator import Iterator
@@ -32,7 +31,6 @@ for syft_type in [
     Bool,
     Complex,
     Dict,
-    DictWrapper,
     Float,
     Int,
     SyNone,

@@ -1,5 +1,6 @@
 # stdlib
 import pydoc
+import re
 import sys
 from typing import List
 from typing import Optional
@@ -10,7 +11,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
 import syft as sy
-import re
 
 # syft relative
 from ...logger import traceback_and_raise
@@ -19,10 +19,12 @@ from ...util import get_fully_qualified_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
 
+@bind_protobuf
 class StorableObject(AbstractStorableObject):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
@@ -83,9 +85,9 @@ class StorableObject(AbstractStorableObject):
         return object_type
 
     # Why define data as a property?
-    # For C type/class objects as data. 
+    # For C type/class objects as data.
     # We need to use it's wrapper type very often inside StorableObject, so we set _data
-    # attribute as it's wrapper object. But we still want to give a straight API to users, 
+    # attribute as it's wrapper object. But we still want to give a straight API to users,
     # so we return the initial C type object when user call obj.data.
     # For python class objects as data. data and _data are the same thing.
     @property
@@ -171,7 +173,7 @@ class StorableObject(AbstractStorableObject):
         # # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # #  PYDOC.LOCATE!!!
         # # Step 2: get the type of wrapper to use to deserialize
-        full_path = re.sub('CTypeWrapper$', '', proto.data_type)
+        full_path = re.sub("CTypeWrapper$", "", proto.data_type)
         data_type = pydoc.locate(full_path)
         data_type = getattr(data_type, "serializable_wrapper_type", data_type)
 

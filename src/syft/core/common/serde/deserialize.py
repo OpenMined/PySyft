@@ -68,14 +68,21 @@ def _deserialize(
 
         blob.ParseFromString(data_message.content)
 
-    # lets try to lookup the type we are deserializing
-    obj_type = getattr(type(blob), "schema2type", None)
+    try:
+        # lets try to lookup the type we are deserializing
+        obj_type = getattr(type(blob), "schema2type", None)
 
-    if not isinstance(obj_type, type):
+    # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
+    except AttributeError:
         traceback_and_raise(deserialization_error)
 
     _proto2object = getattr(obj_type, "_proto2object", None)
+
     if not callable(_proto2object):
         traceback_and_raise(deserialization_error)
 
-    return _proto2object(proto=blob)
+    obj = _proto2object(proto=blob)
+    # the real object is nested in CTypeWrapper's
+    if type(_proto2object).__name__.endswith("CTypeWrapper"):
+        obj = _proto2object.obj
+    return obj

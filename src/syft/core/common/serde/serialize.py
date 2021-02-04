@@ -42,7 +42,17 @@ def _serialize(
     """
 
     is_serializable: Serializable
-    is_serializable = obj
+    if not isinstance(obj, Serializable):
+        if hasattr(obj, "serializable_wrapper_type"):
+            is_serializable = obj.serializable_wrapper_type(value=obj)  # type: ignore
+        else:
+            traceback_and_raise(
+                Exception(
+                    f"Object {type(obj)} is not serializable and has no serializable_wrapper_type"
+                )
+            )
+    else:
+        is_serializable = obj
 
     serialize_method = getattr(is_serializable, "sy_serialize", None)
     if serialize_method is None:

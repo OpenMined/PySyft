@@ -19,6 +19,7 @@ from .....proto.core.store.store_object_pb2 import StorableObject as StorableObj
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -27,6 +28,7 @@ from ..service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
 
 
+@bind_protobuf
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
     GetObjectResponseMessages are the type of messages that are sent in reponse to a
@@ -106,6 +108,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         return GetObjectResponseMessage_PB
 
 
+@bind_protobuf
 class GetObjectAction(ImmediateActionWithReply):
     """
     This kind of action is used when a Node wants to get an object located on another Node.
