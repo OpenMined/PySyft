@@ -1,6 +1,14 @@
-from syft.lib.tensor.tensorbase import SyftTensor, FloatTensor, DataTensor
-from typing import List, Any
+# stdlib
+from typing import Any
+from typing import List
+
+# third party
 import torch
+
+# syft absolute
+from syft.lib.tensor.tensorbase import DataTensor
+from syft.lib.tensor.tensorbase import FloatTensor
+from syft.lib.tensor.tensorbase import SyftTensor
 
 
 def get_children_types(t: Any, types: Any = None) -> List[Any]:

@@ -1,5 +1,7 @@
 # type: ignore
-from typing import Any, Callable
+# stdlib
+from typing import Any
+from typing import Callable
 
 
 def isfunc(x: Any) -> bool:

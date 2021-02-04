@@ -1,12 +1,17 @@
-import torch
-import numpy as np
-from typing import Union, List, Any
-from syft.decorators import syft_decorator
-from syft.lib.tensor.tensorbase_util import (
-    call_func_and_wrap_result,
-    isfunc,
-)
+# stdlib
 from functools import partial
+from typing import Any
+from typing import List
+from typing import Union
+
+# third party
+import numpy as np
+import torch
+
+# syft absolute
+from syft.decorators import syft_decorator
+from syft.lib.tensor.tensorbase_util import call_func_and_wrap_result
+from syft.lib.tensor.tensorbase_util import isfunc
 
 Num = Union[int, float]
 
