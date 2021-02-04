@@ -40,7 +40,7 @@ def ds_test(barriers: List[Barrier], port: int) -> None:
 
     duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
 
-    time.sleep(3)
+    time.sleep(10)
 
     ctx = duet.store[0].get(request_block=True, delete_obj=False)
     data = duet.store[1].get(request_block=True, delete_obj=False)
