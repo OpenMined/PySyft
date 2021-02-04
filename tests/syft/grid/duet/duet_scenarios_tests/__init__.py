@@ -6,6 +6,8 @@ from typing import Tuple
 # syft relative
 from .duet_init_test import test_scenario_init
 from .duet_sanity_test import test_scenario_sanity
+from .duet_tenseal_test import test_scenario_tenseal_sanity
+from .duet_torch_test import test_scenario_torch_tensor_sanity
 
 
 def register_duet_scenarios(
@@ -13,3 +15,5 @@ def register_duet_scenarios(
 ) -> None:
     registered_tests.append(test_scenario_init)
     registered_tests.append(test_scenario_sanity)
+    registered_tests.append(test_scenario_torch_tensor_sanity)
+    registered_tests.append(test_scenario_tenseal_sanity)
