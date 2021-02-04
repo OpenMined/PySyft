@@ -6,68 +6,93 @@ import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
 
-// CREATE USER
+// CREATE User
 message CreateUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message CreateUserResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-// GET USER
+// GET User
 message GetUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 
 message GetUserResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-// GET ALL USERS
+// GET ALL Users
 message GetUsersMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetUsersResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-// SEARCH USER
-message SearchUserMessage {
+// Delete User
+message DeleteUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message SearchUserResponse {
+message DeleteUserResponse {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  bool success = 3;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
 
-// UPDATE USER
+// UPDATE User
 message UpdateUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
+  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message UpdateUserResponse {
   syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Search Users
+message SearchUsersMessage {
+  syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  bool success = 3;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SearchUsersResponse {
+  syft.core.common.UID msg_id = 1;
+  bool success = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
 }
