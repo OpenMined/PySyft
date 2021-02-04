@@ -322,13 +322,9 @@ class Class(Callable):
                 data=which_obj,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll: None}
-                if searchable else {}
+                search_permissions={VerifyAll(): None} if searchable else {},
             )
-            obj_msg = SaveObjectAction(
-                obj=storable,
-                address=client.address
-            )
+            obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)

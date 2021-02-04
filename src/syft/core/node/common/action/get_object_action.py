@@ -25,8 +25,10 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
+from ....common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
     GetObjectResponseMessages are the type of messages that are sent in reponse to a
@@ -37,10 +39,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
 
     def __init__(
-        self, 
-        obj: StorableObject, 
-        address: Address, 
-        msg_id: Optional[UID] = None
+        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
@@ -110,6 +109,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         return GetObjectResponseMessage_PB
 
 
+@bind_protobuf
 class GetObjectAction(ImmediateActionWithReply):
     """
     This kind of action is used when a Node wants to get an object located on another Node.
@@ -162,9 +162,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 traceback_and_raise(AuthorizationException(log))
 
             msg = GetObjectResponseMessage(
-                obj=storable_object.data,
-                address=self.reply_to, 
-                msg_id=None
+                obj=storable_object.data, address=self.reply_to, msg_id=None
             )
 
             if self.delete_obj:

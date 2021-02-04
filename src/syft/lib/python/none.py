@@ -17,10 +17,12 @@ from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
+from ...core.common.serde.serializable import bind_protobuf
 
 NoneType = type(None)
 
 
+@bind_protobuf
 class _SyNone(PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, id: Optional[UID] = None):
@@ -77,34 +79,6 @@ class _SyNone(PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return None_PB
 
-
-class SyNoneWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> None_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: None_PB) -> "SyNoneWrapper":
-        return SyNone._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return None_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return SyNone
-
     @staticmethod
     def construct_new_object(
         id: UID,
@@ -119,5 +93,3 @@ class SyNoneWrapper(StorableObject):
 
 
 SyNone = _SyNone()
-
-aggressive_set_attr(obj=SyNone, name="serializable_wrapper_type", attr=SyNoneWrapper)

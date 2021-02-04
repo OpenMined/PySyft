@@ -14,10 +14,8 @@ from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKeyWrapper_
 from ...util import aggressive_set_attr
 from ..store.store_interface import StorableObject
 from .uid import UID
-
-
-class VerifyAll:
-    "This class can be used to refer to the set of ALL workers."
+from .serde.serializable import Serializable
+from .serde.serializable import bind_protobuf
 
 
 class VerifyKeyWrapper(StorableObject):
@@ -63,30 +61,18 @@ aggressive_set_attr(
 )
 
 
-class VerifyAllWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> VerifyAllWrapper_PB:
+@bind_protobuf
+class VerifyAll(Serializable):
+    def _object2proto(self) -> VerifyAllWrapper_PB:
         return VerifyAllWrapper_PB(all=Empty_PB())
 
     @staticmethod
-    def _data_proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
+    def _proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
         return VerifyAll
 
     @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return VerifyAllWrapper_PB
-
-    @staticmethod
-    def get_wrapped_type() -> Type:
-        return VerifyAll
 
     @staticmethod
     def construct_new_object(
@@ -99,8 +85,3 @@ class VerifyAllWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
-
-
-aggressive_set_attr(
-    obj=VerifyAll, name="serializable_wrapper_type", attr=VerifyAllWrapper
-)

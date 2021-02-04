@@ -18,6 +18,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.uid import UID
 from ..io.location import Location
+from ..common.serde.serializable import bind_protobuf
 
 
 class Unspecified(object):
@@ -25,6 +26,7 @@ class Unspecified(object):
         return "Unspecified"
 
 
+@bind_protobuf
 class Address(Serializable):
     name: Optional[str]
 

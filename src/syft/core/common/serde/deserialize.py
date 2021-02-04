@@ -69,4 +69,7 @@ def _deserialize(
             )
         )
 
-    return obj_type._proto2object(proto=blob)
+    res = obj_type._proto2object(proto=blob)
+    if type(res).__name__.endswith("CTypeWrapper"):
+        res = res.obj
+    return res

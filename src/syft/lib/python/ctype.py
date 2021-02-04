@@ -12,6 +12,7 @@ from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...util import aggressive_set_attr
 from ...core.common.serde.serializable import Serializable
+from ...core.common.serde.serializable import bind_protobuf
 
 
 # this will overwrite the .serializable_wrapper_type with an auto generated
@@ -23,6 +24,7 @@ def GenerateCTypeWrapper(
     ctype_object2proto: CallableT,
     ctype_proto2object: CallableT,
 ) -> None:
+    @bind_protobuf
     class CTypeWrapper(Serializable):
         def __init__(self, value: object):
             self.obj = value
