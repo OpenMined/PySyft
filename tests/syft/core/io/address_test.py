@@ -48,9 +48,11 @@ def _gen_address_kwargs() -> list:
     Helper method to generate pre-ordered arguments for initializing an Address instance.
     There are at least 3 arguments, all taken from 'vm', 'device', 'domain', 'network'.
     """
-    all_combos = [ARGUMENTS]
+    # the order matches the _gen_icons below
+    all_combos = []
     for combination in combinations(ARGUMENTS, 3):
         all_combos.append(list(combination))
+    all_combos.append(ARGUMENTS)
     return [{key: SpecificLocation(id=UID()) for key in combo} for combo in all_combos]
 
 
