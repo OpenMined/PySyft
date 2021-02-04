@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1612410260849,
+  "lastUpdate": 1612475173602,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -935,6 +935,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000006913855794565416",
             "extra": "mean: 617.5104422780059 usec\nrounds: 667"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "murarugeorgec@gmail.com",
+            "name": "George-Cristian Muraru",
+            "username": "gmuraru"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8e077d01e6b544078803658ad8be37293536e99",
+          "message": "Add Session Manager (#5112)",
+          "timestamp": "2021-02-04T23:43:48+02:00",
+          "tree_id": "61d1b13dbe4b21d182c856f43e0a69d8e106ea6d",
+          "url": "https://github.com/OpenMined/PySyft/commit/d8e077d01e6b544078803658ad8be37293536e99"
+        },
+        "date": 1612475173121,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1324.039758256802,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010124830742663644",
+            "extra": "mean: 755.2643293103035 usec\nrounds: 580"
           }
         ]
       }
