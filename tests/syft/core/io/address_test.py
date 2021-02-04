@@ -23,7 +23,7 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 
-ARGUMENTS = ("vm", "device", "domain", "network")
+ARGUMENTS = ["vm", "device", "domain", "network"]
 
 # --------------------- INITIALIZATION ---------------------
 
@@ -48,7 +48,9 @@ def _gen_address_kwargs() -> list:
     Helper method to generate pre-ordered arguments for initializing an Address instance.
     There are at least 3 arguments, all taken from 'vm', 'device', 'domain', 'network'.
     """
-    all_combos = list(combinations(ARGUMENTS, 3)) + [ARGUMENTS]
+    all_combos = [ARGUMENTS]
+    for combination in combinations(ARGUMENTS, 3):
+        all_combos.append(list(combination))
     return [{key: SpecificLocation(id=UID()) for key in combo} for combo in all_combos]
 
 
