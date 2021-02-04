@@ -1,4 +1,5 @@
 # stdlib
+import sys, os
 from multiprocessing import Pipe
 from multiprocessing import Process
 import traceback
@@ -14,6 +15,7 @@ class SyftTestProcess(Process):
 
     def run(self) -> None:
         try:
+            sys.stdout = open(os.devnull, 'w')
             Process.run(self)
             self._cconn.send(None)
         except Exception as e:
