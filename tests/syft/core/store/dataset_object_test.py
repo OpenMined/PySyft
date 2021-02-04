@@ -1,8 +1,8 @@
 # third party
 import torch as th
-import syft as sy
 
 # syft absolute
+import syft as sy
 from syft.core.common import UID
 from syft.core.store.dataset import Dataset
 from syft.core.store.storeable_object import StorableObject

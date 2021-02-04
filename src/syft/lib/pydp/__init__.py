@@ -1,8 +1,8 @@
 # stdlib
+import functools
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
-import functools
 
 # third party
 import pydp
@@ -17,12 +17,12 @@ from pydp.algorithms.laplacian import Min
 from pydp.algorithms.laplacian import Percentile
 
 # syft relative
-from ..util import generic_update_ast
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..misc.union import UnionGenerator
+from ..util import generic_update_ast
 
 LIB_NAME = "pydp"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}

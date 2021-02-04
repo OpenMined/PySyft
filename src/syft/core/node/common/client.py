@@ -176,9 +176,7 @@ class Client(AbstractNodeClient):
 
         if self.network is not None:
             client.network = (
-                self.network
-                if self.network is not None  # type: ignore # nested "is not None"
-                else client.network
+                self.network if self.network is not None else client.network
             )
 
         # QUESTION
@@ -190,18 +188,10 @@ class Client(AbstractNodeClient):
         # then see the test line node_test.py:
         # bob_network_client.register(client=bob_domain_client)
         if self.domain is not None:
-            client.domain = (
-                self.domain
-                if self.domain is not None  # type: ignore # nested "is not None"
-                else client.domain
-            )
+            client.domain = self.domain if self.domain is not None else client.domain
 
         if self.device is not None:
-            client.device = (
-                self.device
-                if self.device is not None  # type: ignore # nested "is not None"
-                else client.device
-            )
+            client.device = self.device if self.device is not None else client.device
 
             assert self.device == client.device
 

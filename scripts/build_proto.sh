@@ -23,5 +23,5 @@ else
     find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 fi
 
-# isort src/syft/proto/**/*.py
 black src/syft/proto
+isort src/syft/proto
