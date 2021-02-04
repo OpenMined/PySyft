@@ -5,11 +5,11 @@ from multiprocessing import Process
 from multiprocessing import log_to_stderr
 from multiprocessing import set_start_method
 import socket
+import time
 from time import sleep
 from typing import Callable
 from typing import List
 from typing import Tuple
-import time
 
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
