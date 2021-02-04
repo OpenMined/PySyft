@@ -1,67 +1,40 @@
-from datetime import datetime, timedelta
-from json import dumps, loads
-from json.decoder import JSONDecodeError
-from secrets import token_hex
-
-import jwt
-from bcrypt import checkpw, gensalt, hashpw
-from flask import Response
-from flask import current_app as app
-from flask import request
-
-
 from .blueprint import users_blueprint as user_route
+from flask import request, Response
+import json
+
+from syft.grid.messages.user_messages import (
+    CreateUserMessage,
+    DeleteUserMessage,
+    GetUserMessage,
+    GetUsersMessage,
+    UpdateUserMessage,
+    SearchUsersMessage,
+)
+
 from ..auth import error_handler, token_required
+from ...core.task_handler import route_logic
 from ...core.node import node
-from ...core.exceptions import (
-    AuthorizationError,
-    GroupNotFoundError,
-    InvalidCredentialsError,
-    MissingRequestKeyError,
-    PyGridError,
-    RoleNotFoundError,
-    UserNotFoundError,
-)
-
-from ...core.codes import RESPONSE_MSG
-from ...core.task_handler import task_handler, process_as_syft_message
-from ...core.database import db, Group, Role, User, UserGroup, expand_user_object
-from ...core.users.user_ops import (
-    change_user_email,
-    change_user_groups,
-    change_user_password,
-    change_user_role,
-    delete_user,
-    get_all_users,
-    get_specific_user,
-    login_user,
-    search_users,
-    signup_user,
-)
-
-from syft.core.node.common.service.repr_service import ReprMessage
 
 
 @user_route.route("", methods=["POST"])
-def create_user():
-    def route_logic():
-        content = loads(request.data)
+@token_required
+def create_user(current_user):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["current_user"] = current_user
 
-        response_body = task_handler(
-            route_function=signup_user,
-            data=content,
-            mandatory={
-                "password": MissingRequestKeyError,
-                "email": MissingRequestKeyError,
-            },
-            optional=["role"],
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, CreateUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
@@ -73,7 +46,7 @@ def login_route():
 
         # Execute task
         response_body = task_handler(
-            route_function=login_user,
+            route_function=node.login,
             data=content,
             mandatory={
                 "password": MissingRequestKeyError,
@@ -92,237 +65,172 @@ def login_route():
 @user_route.route("", methods=["GET"])
 @token_required
 def get_all_users_route(current_user):
-    def route_logic(current_user):
-        # Execute task
-        response_body = task_handler(
-            route_function=get_all_users,
-            data={"current_user": current_user},
-            mandatory={
-                "current_user": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-    status_code, response_body = error_handler(route_logic, current_user)
+    status_code, response_msg = error_handler(
+        route_logic, GetUsersMessage, current_user, content
+    )
+
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>", methods=["GET"])
 @token_required
 def get_specific_user_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Execute task
-        response_body = task_handler(
-            route_function=get_specific_user,
-            data={"current_user": current_user, "user_id": user_id},
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["user_id"] = user_id
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    status_code, response_msg = error_handler(
+        route_logic, GetUserMessage, current_user, content
+    )
+
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>/email", methods=["PUT"])
 @token_required
 def change_user_email_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Get request body
-        content = loads(request.data)
-        content["current_user"] = current_user
-        content["user_id"] = user_id
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["user_id"] = user_id
 
-        # Execute task
-        response_body = task_handler(
-            route_function=change_user_email,
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-                "email": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, UpdateUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>/role", methods=["PUT"])
 @token_required
 def change_user_role_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Get request body
-        content = loads(request.data)
-        content["current_user"] = current_user
-        content["user_id"] = user_id
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["user_id"] = user_id
 
-        # Execute task
-        response_body = task_handler(
-            route_function=change_user_role,
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-                "role": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, UpdateUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>/password", methods=["PUT"])
 @token_required
 def change_user_password_role(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Get request body
-        content = loads(request.data)
-        content["current_user"] = current_user
-        content["user_id"] = user_id
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["user_id"] = user_id
 
-        # Execute task
-        response_body = task_handler(
-            route_function=change_user_password,
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-                "password": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, UpdateUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>/groups", methods=["PUT"])
 @token_required
 def change_user_groups_route(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Get request body
-        content = loads(request.data)
-        content["current_user"] = current_user
-        content["user_id"] = user_id
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["user_id"] = user_id
 
-        # Execute task
-        response_body = task_handler(
-            route_function=change_user_groups,
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-                "groups": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, UpdateUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/<user_id>", methods=["DELETE"])
 @token_required
 def delete_user_role(current_user, user_id):
-    def route_logic(current_user, user_id):
-        # Get request body
+    # Get request body
+    content = request.get_json()
+    if not content:
         content = {}
-        content["current_user"] = current_user
-        content["user_id"] = user_id
+    content["user_id"] = user_id
 
-        # Execute task
-        response_body = task_handler(
-            route_function=delete_user,
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "user_id": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, DeleteUserMessage, current_user, content
+    )
 
-    status_code, response_body = error_handler(route_logic, current_user, user_id)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @user_route.route("/search", methods=["POST"])
 @token_required
 def search_users_route(current_user):
-    def route_logic(current_user):
-        # Get request body
-        content = loads(request.data)
-        content["current_user"] = current_user
-        content["filters"] = content
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-        # Execute task
-        response_body = task_handler(
-            route_function=search_users,  # REVIEW @Benardi
-            data=content,
-            mandatory={
-                "current_user": MissingRequestKeyError,
-                "filters": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    status_code, response_body = error_handler(route_logic, current_user)
-
-    return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+    status_code, response_msg = error_handler(
+        route_logic, SearchUsersMessage, current_user, content
     )
 
-
-@user_route.route("/test", methods=["POST"])
-def test_users_route():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
-
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage
-        syft_message["message_content"] = content
-        syft_message["sign_key"] = node.signing_key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,  # REVIEW @Benardi
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    status_code, response_body = error_handler(route_logic)
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
