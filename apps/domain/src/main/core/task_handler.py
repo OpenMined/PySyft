@@ -71,9 +71,13 @@ def task_handler(route_function, data, mandatory, optional=[]):
 
 
 def route_logic(message_class, current_user, msg_content):
-    user_key = SigningKey(current_user.private_key.encode("utf-8"), encoder=HexEncoder)
-
-    msg_content["internal_key"] = current_user.private_key
+    if current_user:
+        user_key = SigningKey(
+            current_user.private_key.encode("utf-8"), encoder=HexEncoder
+        )
+        msg_content["internal_key"] = current_user.private_key
+    else:
+        user_key = SigningKey.generate()
 
     content = {
         "address": node.address,
