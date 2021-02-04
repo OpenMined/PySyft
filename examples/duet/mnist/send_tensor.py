@@ -15,8 +15,9 @@ mp.set_start_method("spawn", force=True)
 
 
 def do() -> None:
-    # stdlib
+    # syft absolute
     import syft as sy
+
     _ = sy.logger.add(
         sink="syft_do.log",
         level="TRACE",
@@ -36,8 +37,9 @@ def do() -> None:
 
 
 def ds() -> None:
-    # stdlib
+    # syft absolute
     import syft as sy
+
     _ = sy.logger.add(
         sink="syft_ds.log",
         level="TRACE",
@@ -47,9 +49,7 @@ def ds() -> None:
     time.sleep(1)
     print("DS: Store: ", duet.store)
     start = time.time()
-    t = duet.store[0].get(
-        request_block=True, delete_obj=False
-    )
+    t = duet.store[0].get(request_block=True, delete_obj=False)
     end = time.time()
     print("DS: Received in:", end - start)
     print("DS: Shape: ", t.shape)

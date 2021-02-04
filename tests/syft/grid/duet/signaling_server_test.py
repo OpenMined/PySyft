@@ -1,4 +1,5 @@
 # stdlib
+import logging
 import os
 
 # third party
@@ -15,8 +16,7 @@ from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
 
-import logging
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.disabled = True
 
 
@@ -57,6 +57,7 @@ def post() -> flask.Response:
         network.recv_eventual_msg_without_reply(msg=obj_msg)
         r = Response(status=200)
         return r
+
 
 def run(port: int) -> None:
     global network

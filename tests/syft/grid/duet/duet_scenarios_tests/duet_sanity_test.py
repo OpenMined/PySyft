@@ -1,12 +1,14 @@
 # stdlib
 from multiprocessing.synchronize import Barrier
+import sys
 import time
 from typing import List
-import os
-import sys
+
 
 def do_test(barriers: List[Barrier], port: int) -> None:
+    # syft absolute
     import syft as sy
+
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
@@ -18,7 +20,9 @@ def do_test(barriers: List[Barrier], port: int) -> None:
 
 
 def ds_test(barriers: List[Barrier], port: int) -> None:
+    # syft absolute
     import syft as sy
+
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
@@ -29,5 +33,6 @@ def ds_test(barriers: List[Barrier], port: int) -> None:
     data = data_ptr.get(request_block=True, delete_obj=False)
 
     assert data == [1, 2, 3]
+
 
 test_scenario_sanity = ("test_scenario_sanity", do_test, ds_test)
