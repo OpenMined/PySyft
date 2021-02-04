@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1612344499600,
+  "lastUpdate": 1612410260849,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -904,6 +904,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00002681701572300852",
             "extra": "mean: 698.0056750003882 usec\nrounds: 600"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@madhavajay.com",
+            "name": "Madhava Jay",
+            "username": "madhavajay"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a90588a38647af88a847b47da511bb0fafa93686",
+          "message": "Merge pull request #5107 from madhavajay/madhava/lint-fix\n\nFixed broken tests and linting issues with absolute utility import",
+          "timestamp": "2021-02-03T19:42:02-08:00",
+          "tree_id": "c5d6bb9a2bff687c72ede0b7c2ccf5825b21a139",
+          "url": "https://github.com/OpenMined/PySyft/commit/a90588a38647af88a847b47da511bb0fafa93686"
+        },
+        "date": 1612410260178,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1619.405813302499,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006913855794565416",
+            "extra": "mean: 617.5104422780059 usec\nrounds: 667"
           }
         ]
       }
