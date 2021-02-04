@@ -16,7 +16,7 @@ from .duet_scenarios_tests import register_duet_scenarios
 from .process_test import SyftTestProcess
 from .signaling_server_test import run
 
-set_start_method('spawn', force=True)
+set_start_method("spawn", force=True)
 log_to_stderr()
 
 port = 21000
@@ -38,7 +38,7 @@ register_duet_scenarios(registered_tests)
 
 def test_duet() -> None:
     # let the flask server init:
-    sleep(5)
+    sleep(3)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", port)) == 0
@@ -71,4 +71,4 @@ def test_duet() -> None:
             exception, tb = ds_proc.exception
             raise Exception(tb) from exception
 
-        print("test {} passed in {} seconds".format(testcase, time.time() - start))
+        print(f"test {testcase} passed in {time.time() - start} seconds")
