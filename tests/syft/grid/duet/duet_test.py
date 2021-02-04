@@ -61,7 +61,7 @@ def test_duet() -> None:
 
         if ds_proc.is_alive():
             ds_proc.terminate()
-            raise Exception("ds_proc is hanged")
+            raise Exception(f"ds_proc is hanged in {testcase}")
 
         if do_proc.exception:
             exception, tb = do_proc.exception
