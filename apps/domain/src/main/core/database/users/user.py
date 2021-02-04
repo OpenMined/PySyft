@@ -10,17 +10,22 @@ class User(BaseModel):
     salt = db.Column(db.String(255))
     private_key = db.Column(db.String(2048))
     role = db.Column(db.Integer, db.ForeignKey("role.id"))
+    group = db.Column(db.Integer, db.ForeignKey("group.id"))
 
     def __str__(self):
-        return f"<User id: {self.id}, email: {self.email}, " f"role: {self.role}>"
+        return (
+            f"<User id: {self.id}, email: {self.email}, "
+            f"role: {self.role} group: {self.group}>"
+        )
 
 
-def create_user(email, hashed_password, salt, private_key, role):
+def create_user(email, hashed_password, salt, private_key, role, group):
     new_user = User(
         email=email,
         hashed_password=hashed_password,
         salt=salt,
         private_key=private_key,
         role=role,
+        group=group,
     )
     return new_user
