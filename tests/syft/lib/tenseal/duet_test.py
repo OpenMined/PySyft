@@ -117,7 +117,7 @@ def test_tenseal_duet_ciphertext_size(signaling_server: Process) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", PORT)) == 0
 
-    for ct_size in [10 ** p for p in range(2, 3)]:
+    for ct_size in [10, 20]:
         for batch_size in [1, 10, ct_size]:
             start = time.time()
 
