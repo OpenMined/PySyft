@@ -766,6 +766,7 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
 
         return DeleteUserResponse_PB
 
+
 @final
 class SearchUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -907,4 +908,3 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return SearchUsersResponse_PB
-

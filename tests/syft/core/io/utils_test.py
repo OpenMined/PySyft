@@ -1,13 +1,16 @@
+# stdlib
 from typing import Callable
 from typing import Union
 
+# third party
 from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
 
-from syft.core.common.uid import UID
+# syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.node.common.node import Node
