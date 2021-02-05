@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1612475173602,
+  "lastUpdate": 1612532523769,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -966,6 +966,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00010124830742663644",
             "extra": "mean: 755.2643293103035 usec\nrounds: 580"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tudorcebere@gmail.com",
+            "name": "Tudor Cebere",
+            "username": "tudorcebere"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "463455a032c21b63a8d1f942c33b67e1ddc6c2f6",
+          "message": "Merge pull request #5115 from OpenMined/5015_autoapprove_root_client_requests\n\n* auto-approve root client requests",
+          "timestamp": "2021-02-05T05:36:40-08:00",
+          "tree_id": "3217aaa2765fb2ea6bb2a4f28c4ef69617f550a1",
+          "url": "https://github.com/OpenMined/PySyft/commit/463455a032c21b63a8d1f942c33b67e1ddc6c2f6"
+        },
+        "date": 1612532523135,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1138.0986628759142,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00022127696732468624",
+            "extra": "mean: 878.6584437882158 usec\nrounds: 507"
           }
         ]
       }
