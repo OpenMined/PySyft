@@ -18,12 +18,13 @@ def test_load_sympc() -> None:
 
     # third party
     from sympc.session import Session
+    from sympc.session import SessionManager
     from sympc.tensor import MPCTensor
 
     sy.load_lib("sympc")
 
     session = Session(parties=[alice_client, bob_client])
-    Session.setup_mpc(session)
+    SessionManager.setup_mpc(session)
 
     y = th.Tensor([-5, 0, 1, 2, 3])
     x_secret = th.Tensor([30])
