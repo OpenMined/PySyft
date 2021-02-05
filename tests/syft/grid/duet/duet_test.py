@@ -1,6 +1,5 @@
 # stdlib
 import atexit
-from multiprocessing import Manager
 from multiprocessing import Process
 from multiprocessing import log_to_stderr
 from multiprocessing import set_start_method
@@ -45,14 +44,11 @@ def test_duet() -> None:
 
     for testcase, do, ds in registered_tests:
         start = time.time()
-        mgr = Manager()
-        # the testcases can use barriers at the same index to sync their operations
-        barriers = [mgr.Barrier(2, timeout=10)] * 64  # type: ignore
 
-        do_proc = SyftTestProcess(target=do, args=(barriers, port))
+        do_proc = SyftTestProcess(target=do, args=(port,))
         do_proc.start()
 
-        ds_proc = SyftTestProcess(target=ds, args=(barriers, port))
+        ds_proc = SyftTestProcess(target=ds, args=(port,))
         ds_proc.start()
 
         ds_proc.join(30)

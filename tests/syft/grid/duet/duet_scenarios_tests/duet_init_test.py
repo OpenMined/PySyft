@@ -1,9 +1,4 @@
-# stdlib
-from multiprocessing.synchronize import Barrier
-from typing import List
-
-
-def do_test(barriers: List[Barrier], port: int) -> None:
+def do_test(port: int) -> None:
     # syft absolute
     import syft as sy
 
@@ -13,7 +8,7 @@ def do_test(barriers: List[Barrier], port: int) -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds_test(barriers: List[Barrier], port: int) -> None:
+def ds_test(port: int) -> None:
     # syft absolute
     import syft as sy
 

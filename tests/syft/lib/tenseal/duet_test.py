@@ -5,6 +5,9 @@ from multiprocessing import set_start_method
 import socket
 import sys
 import time
+from typing import Any
+from typing import Generator
+from typing import List
 
 # third party
 import pytest
@@ -23,7 +26,13 @@ set_start_method("spawn", force=True)
 PORT = 21000
 
 
-def do(ct_size: int) -> None:
+def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]  # noqa: E203
+
+
+def do(ct_size: int, batch_size: int) -> None:
     # third party
     import numpy as np
     import tenseal as ts
@@ -47,13 +56,18 @@ def do(ct_size: int) -> None:
     for i in range(ct_size):
         enc.append(ts.ckks_vector(context, data))
 
+    start = time.time()
     _ = context.send(duet, searchable=True)
-    _ = sy.lib.python.List(enc).send(duet, searchable=True)
+    for chunk in chunks(enc, batch_size):
+        _ = sy.lib.python.List(chunk).send(duet, searchable=True)
+    sys.stderr.write(
+        f"[{ct_size}][{batch_size}] DO sending took {time.time() - start} sec\n"
+    )
 
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds(ct_size: int) -> None:
+def ds(ct_size: int, batch_size: int) -> None:
     # syft absolute
     import syft as sy
 
@@ -64,12 +78,21 @@ def ds(ct_size: int) -> None:
 
     time.sleep(10)
 
-    ctx = duet.store[0].get(request_block=True, delete_obj=False)
-    data = duet.store[1].get(request_block=True, delete_obj=False)
-    for tensor in data:
-        tensor.link_context(ctx)
+    cnt = int(ct_size / batch_size)
 
-    assert len(data) == ct_size, len(data)
+    start = time.time()
+    ctx = duet.store[0].get(request_block=True, delete_obj=False)
+    for idx in range(1, cnt + 1):
+        data = duet.store[idx].get(request_block=True, delete_obj=False)
+
+        for tensor in data:
+            tensor.link_context(ctx)
+
+        assert len(data) == batch_size, len(data)
+
+    sys.stderr.write(
+        f"[{ct_size}][{batch_size}] DS get took {time.time() - start} sec\n"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -94,29 +117,32 @@ def test_tenseal_duet_ciphertext_size(signaling_server: Process) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", PORT)) == 0
 
-    for ct_size in [10 ** p for p in range(1, 3)]:
-        start = time.time()
+    for ct_size in [10 ** p for p in range(2, 3)]:
+        for batch_size in [1, 10, ct_size]:
+            start = time.time()
 
-        do_proc = SyftTestProcess(target=do, args=(ct_size,))
-        do_proc.start()
+            do_proc = SyftTestProcess(target=do, args=(ct_size, batch_size))
+            do_proc.start()
 
-        ds_proc = SyftTestProcess(target=ds, args=(ct_size,))
-        ds_proc.start()
+            ds_proc = SyftTestProcess(target=ds, args=(ct_size, batch_size))
+            ds_proc.start()
 
-        ds_proc.join(400)
+            ds_proc.join(120)
 
-        do_proc.terminate()
+            do_proc.terminate()
 
-        if do_proc.exception:
-            exception, tb = do_proc.exception
-            raise Exception(tb) from exception
+            if do_proc.exception:
+                exception, tb = do_proc.exception
+                raise Exception(tb) from exception
 
-        if ds_proc.exception:
-            exception, tb = ds_proc.exception
-            raise Exception(tb) from exception
+            if ds_proc.exception:
+                exception, tb = ds_proc.exception
+                raise Exception(tb) from exception
 
-        if ds_proc.is_alive():
-            ds_proc.terminate()
-            raise Exception(f"ds_proc is hanged for {ct_size}")
+            if ds_proc.is_alive():
+                ds_proc.terminate()
+                raise Exception(f"ds_proc is hanged for {ct_size}")
 
-        print(f"test {ct_size} passed in {time.time() - start} seconds")
+            print(
+                f"test {ct_size} batch_size {batch_size} passed in {time.time() - start} seconds"
+            )
