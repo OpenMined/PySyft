@@ -19,7 +19,6 @@ from syft.lib import lib_ast
 # syft relative
 from . import module_test
 
-
 methods = [
     ("module_test.A", "module_test.A"),
     ("module_test.A.__len__", "syft.lib.python.Int"),
@@ -86,12 +85,12 @@ def custom_client() -> Client:
 
 def test_len(custom_client: Client) -> None:
     a_ptr = custom_client.module_test.A()
-    result_ptr = a_ptr.__len__()
+    result_from_ptr = a_ptr.__len__()
 
     a = module_test.A()
     result = len(a)
 
-    assert result == result_ptr.get()
+    assert result == result_from_ptr
 
 
 def test_method(custom_client: Client) -> None:
