@@ -22,7 +22,6 @@ from .client import VirtualMachineClient
 
 @final
 class VirtualMachine(Node):
-
     client_type = VirtualMachineClient
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
@@ -52,7 +51,12 @@ class VirtualMachine(Node):
 
         # specific location with name
         self.vm = SpecificLocation(name=self.name)
+        # syft relative
+        from ..domain.service.vm_service import VMRequestAnswerMessageService
+        from ..domain.service.vm_service import VMRequestService
 
+        self.immediate_services_without_reply.append(VMRequestService)
+        self.immediate_services_with_reply.append(VMRequestAnswerMessageService)
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
         self.post_init()
