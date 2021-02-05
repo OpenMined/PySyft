@@ -1,10 +1,7 @@
 # stdlib
-import pydoc
-import sys
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
-# third party
+from loguru import logger
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -12,30 +9,22 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft as sy
 
 # syft relative
+from ..common.uid import UID
 from ...decorators import syft_decorator
-from ...logger import critical
-from ...logger import traceback
-from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
+from .storeable_object import StorableObject
 from ...util import get_fully_qualified_name
-from ...util import key_emoji
+from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
-from ..common.storeable_object import AbstractStorableObject
-from ..common.uid import UID
 
 
-class StorableObject(AbstractStorableObject):
+class Dataset(Serializable):
     """
-    StorableObject is a wrapper over some Serializable objects, which we want to keep in an
-    ObjectStore. The Serializable objects that we want to store have to be backed up in syft-proto
-    in the StorableObject protobuffer, where you can find more details on how to add new types to be
-    serialized.
-
-    This object is frozen, you cannot change one in place.
+    Dataset is a wrapper over a collection of Serializable objects.
 
     Arguments:
         id (UID): the id at which to store the data.
-        data (Serializable): A serializable object.
+        data (List[Serializable]): A list of serializable objects.
         description (Optional[str]): An optional string that describes what you are storing. Useful
         when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
@@ -43,20 +32,18 @@ class StorableObject(AbstractStorableObject):
 
     Attributes:
         id (UID): the id at which to store the data.
-        data (Serializable): A serializable object.
+        data (List[Serializable]): A list of serializable objects.
         description (Optional[str]): An optional string that describes what you are storing. Useful
         when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     """
 
-    __slots__ = ["id", "data", "_description", "_tags"]
-
     @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
-        data: object,
+        data: List[StorableObject],
         description: str = "",
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
@@ -78,13 +65,6 @@ class StorableObject(AbstractStorableObject):
         self.search_permissions: dict = search_permissions if search_permissions else {}
 
     @property
-    def object_type(self) -> str:
-        object_type = str(type(self.data))
-        if type(self.data).__name__.endswith("ProtobufWrapper"):
-            object_type = str(type(self.data.data))  # type: ignore
-        return object_type
-
-    @property
     def tags(self) -> Optional[List[str]]:
         return self._tags
 
@@ -100,9 +80,38 @@ class StorableObject(AbstractStorableObject):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
+    @staticmethod
+    def construct_new_object(
+        id: UID,
+        data: List[StorableObject],
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> "Dataset":
+        return Dataset(id=id, data=data, description=description, tags=tags)
+
+    @property
+    def class_name(self) -> str:
+        return str(self.__class__.__name__)
+
     @syft_decorator(typechecking=True)
-    def _object2proto(self) -> StorableObject_PB:
-        proto = StorableObject_PB()
+    def __contains__(self, _id: UID) -> bool:
+        return _id in [el.id for el in self.data]
+
+    @syft_decorator(typechecking=True)
+    def keys(self) -> List[UID]:
+        return [el.id for el in self.data]
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __getitem__(self, _id: UID) -> List[StorableObject]:
+        return [el for el in self.data if el.id == _id]
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def __delitem__(self, _id: UID) -> None:
+        self.data = [el for el in self.data if el.id != _id]
+
+    @syft_decorator(typechecking=True)
+    def _object2proto(self) -> Dataset_PB:
+        proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
         id = self.id.serialize()
@@ -111,10 +120,13 @@ class StorableObject(AbstractStorableObject):
         # Step 2: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
 
+        # import pdb; pdb.set_trace()
         # Step 3: Serialize data to protobuf and pack into proto
-        data = self._data_object2proto()
-
-        proto.data.Pack(data)
+        if hasattr(self, "data"):
+            if self.data is not None:
+                for _d in self.data:
+                    proto_storable = _d._object2proto()
+                    proto.data.append(proto_storable)
 
         if hasattr(self, "description"):
             # Step 4: save the description into proto
@@ -145,49 +157,26 @@ class StorableObject(AbstractStorableObject):
 
     @staticmethod
     @syft_decorator(typechecking=True)
-    def _proto2object(proto: StorableObject_PB) -> object:
+    def _proto2object(proto: Dataset_PB) -> object:
+
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
-        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        #  PYDOC.LOCATE!!!
-        # Step 2: get the type of wrapper to use to deserialize
-        obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
+        # Step 2: Deserialize data from protobuf
+        data = list(proto.data) if proto.data else []
+        data = [StorableObject._proto2object(proto=d) for d in data]
 
-        # this happens if we have a special ProtobufWrapper type
-        # need a different way to get obj_type
-        if proto.obj_type.endswith("ProtobufWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("ProtobufWrapper", "")
-            proto_type = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = proto_type.serializable_wrapper_type
-
-        if proto.obj_type.endswith("CTypeWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("CTypeWrapper", "")
-            ctype = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = ctype.serializable_wrapper_type
-
-        # Step 3: get the protobuf type we deserialize for .data
-        schematic_type = obj_type.get_data_protobuf_schema()
-
-        # Step 4: Deserialize data from protobuf
-        data = None
-        if callable(schematic_type):
-            data = schematic_type()
-            descriptor = getattr(schematic_type, "DESCRIPTOR", None)
-            if descriptor is not None and proto.data.Is(descriptor):
-                proto.data.Unpack(data)
-            data = obj_type._data_proto2object(proto=data)
-
-        # Step 5: get the description from proto
+        # Step 3: get the description from proto
         description = proto.description if proto.description else ""
 
-        # Step 6: get the tags from proto of they exist
+        # Step 4: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = obj_type.construct_new_object(
-            id=id, data=data, tags=tags, description=description
+        result = Dataset.construct_new_object(
+            id=id,
+            data=data,
+            tags=tags,
+            description=description,
         )
 
         # just a backup
@@ -215,30 +204,10 @@ class StorableObject(AbstractStorableObject):
                 )
         except Exception as e:
             # torch.return_types.* namedtuple cant setattr
-            critical(f"StorableObject {type(obj_type)} cant set attributes")
-            traceback(e)
+            log = f"Dataset {type(result)} cant set attributes {e}"
+            logger.error(log)
 
         return result
-
-    def _data_object2proto(self) -> Message:
-        return self.data.serialize()  # type: ignore
-
-    @staticmethod
-    def _data_proto2object(proto: Message) -> Serializable:
-        return _deserialize(blob=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return StorableObject_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: "StorableObject",
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "StorableObject":
-        return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -257,47 +226,15 @@ class StorableObject(AbstractStorableObject):
         :rtype: GeneratedProtocolMessageType
 
         """
-        return StorableObject_PB
+        return Dataset_PB
 
-    def __repr__(self) -> str:
-        return (
-            "<Storable: "
-            + self.data.__repr__().replace("\n", "").replace("  ", " ")
-            + ">"
-        )
+    def _data_object2proto(self) -> List[Message]:
+        return [d._object2proto() for d in self.data]
 
-    @property
-    def icon(self) -> str:
-        return "🗂️"
+    @staticmethod
+    def _data_proto2object(proto: List[Message]) -> List[Serializable]:
+        return [_deserialize(blob=p) for p in proto]
 
-    @property
-    def pprint(self) -> str:
-        output = f"{self.icon} ({self.class_name}) ("
-        if hasattr(self.data, "pprint"):
-            output += self.data.pprint  # type: ignore
-        elif self.data is not None:
-            output += self.data.__repr__()
-        else:
-            output += "(Key Only)"
-        if len(self._description) > 0:
-            output += f" desc: {self.description}"
-        if len(self._tags) > 0:
-            output += f" tags: {self.tags}"
-        if len(self.read_permissions.keys()) > 0:
-            output += (
-                " can_read: "
-                + f"{[key_emoji(key=key) for key in self.read_permissions.keys()]}"
-            )
-
-        if len(self.search_permissions.keys()) > 0:
-            output += (
-                " can_search: "
-                + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
-            )
-
-        output += ")"
-        return output
-
-    @property
-    def class_name(self) -> str:
-        return str(self.__class__.__name__)
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Dataset_PB

@@ -220,17 +220,18 @@ class Domain(Node):
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
-        debug(
-            f"HANDLER Check handler {handler} against {request.name} {request.request_id}"
-        )
-        name = handler.get("name", None)
+        debug(f"HANDLER Check handler {handler} against {request.request_id}")
+
+        tags = handler.get("tags", [])
+
         action = handler.get("action", None)
         print_local = handler.get("print_local", None)
         log_local = handler.get("log_local", None)
         element_quota = handler.get("element_quota", None)
 
-        if name is not None and name != request.name.strip().lower():
-            # valid name doesnt match so ignore this handler
+        # We match a handler and a request when they have a same set of tags,
+        # or if handler["tags"]=[], it matches with any request.
+        if tags != [] and not set(request.object_tags) == set(tags):
             debug(f"HANDLER Ignoring request handler {handler} against {request}")
             return False
 
@@ -265,7 +266,7 @@ class Domain(Node):
 
         # print or log rules can execute multiple times so no complex logic here
         if print_local or log_local:
-            log = f"> HANDLER Request {request.name}:"
+            log = f"> HANDLER Request {request.request_id}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"

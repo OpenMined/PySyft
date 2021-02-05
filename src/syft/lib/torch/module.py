@@ -285,7 +285,6 @@ class Module:
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        name: str = "",
         reason: str = "",
         delete_obj: bool = False,
     ) -> Optional["Module"]:
@@ -293,7 +292,6 @@ class Module:
             info("> This model is local. Maybe you meant to call .send()?")
             return None
 
-        request_name = name
         info("> Downloading remote model")
 
         local_model = copy.copy(self)
@@ -308,13 +306,12 @@ class Module:
 
             module_repr = repr_ptr.get(
                 request_block=request_block,
-                name=request_name,
                 reason=reason,
                 timeout_secs=timeout_secs,
             )
 
             if module_repr is None:
-                info(f"  Request for {request_name} extra_repr failed, skipping layer")
+                info(f"  Request for {reason} extra_repr failed, skipping layer")
                 continue
 
             args, kwargs = repr_to_kwargs(repr_str=module_repr.upcast())
@@ -334,7 +331,6 @@ class Module:
                     info(f"  Downloading remote layer: {layer_name}")
                     state_dict = sd_ptr.get(
                         request_block=request_block,
-                        name=request_name,
                         reason=reason,
                         timeout_secs=timeout_secs,
                         delete_obj=delete_obj,
