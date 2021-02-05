@@ -64,10 +64,9 @@ def proto2object(proto: Tensor_PB) -> th.Tensor:
     return tensor
 
 GenerateWrapper(
-    ctype=torch_tensor_type,
+    wrapped_type=torch_tensor_type,
     import_path="torch.Tensor",
     protobuf_scheme=Tensor_PB,
-    ctype_object2proto=object2proto,
-    ctype_proto2object=proto2object,
-    module_globals=globals(),
+    type_object2proto=object2proto,
+    type_proto2object=proto2object,
 )

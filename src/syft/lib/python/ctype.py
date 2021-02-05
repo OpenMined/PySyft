@@ -14,16 +14,19 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...util import aggressive_set_attr
 
+# syft absolute
+import syft
+
+module_type = type(syft)
 
 # this will overwrite the .serializable_wrapper_type with an auto generated
-# wrapper which will basically just hold the object whose type is C type class
+# wrapper which will basically just hold the object being wrapped.
 def GenerateWrapper(
-    ctype: type,
+    wrapped_type: type,
     import_path: str,
     protobuf_scheme: GeneratedProtocolMessageType,
-    ctype_object2proto: CallableT,
-    ctype_proto2object: CallableT,
-    module_globals: dict
+    type_object2proto: CallableT,
+    type_proto2object: CallableT,
 ) -> None:
     @bind_protobuf
     class Wrapper(Serializable):
@@ -31,11 +34,11 @@ def GenerateWrapper(
             self.obj = value
 
         def _object2proto(self) -> Any:
-            return ctype_object2proto(self.obj)
+            return type_object2proto(self.obj)
 
         @staticmethod
         def _proto2object(proto: Any) -> Any:
-            obj = ctype_proto2object(proto)
+            obj = type_proto2object(proto)
             return Wrapper(value=obj)
 
         @staticmethod
@@ -57,10 +60,21 @@ def GenerateWrapper(
         def upcast(self) -> Any:
             return self.obj
 
+    # set __module__ and __name__
     module_parts = import_path.split(".")
     klass = module_parts.pop()
     Wrapper.__name__ = f"{klass}Wrapper"
-    Wrapper.__module__ = module_globals['__name__']
-    module_globals[Wrapper.__name__] = Wrapper
+    Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
+    # create a fake module `wrappers` under `syft`
+    if not 'wrappers' in syft.__dict__:
+        syft.__dict__['wrappers'] = module_type(name="wrappers")
+    # for each part of the path, create a fake module and add it to it's parent
+    parent = syft.__dict__['wrappers']
+    for n in module_parts:
+        if not n in parent.__dict__:
+            parent.__dict__[n] = module_type(name=n)
+        parent = parent.__dict__[n]
+    # finally add our wrapper class to the end of the path
+    parent.__dict__[Wrapper.__name__] = Wrapper
 
-    aggressive_set_attr(obj=ctype, name="serializable_wrapper_type", attr=Wrapper)
+    aggressive_set_attr(obj=wrapped_type, name="serializable_wrapper_type", attr=Wrapper)

@@ -103,7 +103,12 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     """
     attr_list = fully_qualified_name.split(".")
     assert attr_list[0] == "syft"
-    assert attr_list[1] == "core" or attr_list[1] == "lib" or attr_list[1] == "grid"
+    assert (
+        attr_list[1] == "core"
+        or attr_list[1] == "lib"
+        or attr_list[1] == "grid"
+        or attr_list[1] == 'wrappers'
+    )
     return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
