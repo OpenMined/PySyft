@@ -114,9 +114,11 @@ from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
+from ..common.serde.serializable import bind_protobuf
 
 
 # TODO: Fix the Client, Address, Location confusion
+@bind_protobuf
 class Pointer(AbstractPointer):
     """
     The pointer is the handler when interacting with remote data.

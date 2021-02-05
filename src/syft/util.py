@@ -101,7 +101,6 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
         a reference to the actual object at that string path
 
     """
-
     attr_list = fully_qualified_name.split(".")
     assert attr_list[0] == "syft"
     assert attr_list[1] == "core" or attr_list[1] == "lib" or attr_list[1] == "grid"
@@ -159,13 +158,6 @@ def obj2pointer_type(obj: object) -> type:
             fqn = "syft.lib.python._SyNone"
         else:
             fqn = get_fully_qualified_name(obj=type(obj))
-
-    # if its a ProtobufWrapper we want the original AST type so we can get the Pointer
-    if fqn.endswith("ProtobufWrapper"):
-        fqn = fqn.replace("ProtobufWrapper", "")
-
-    if fqn.endswith("CTypeWrapper"):
-        fqn = fqn.replace("CTypeWrapper", "")
 
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))

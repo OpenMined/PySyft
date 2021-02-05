@@ -23,6 +23,7 @@ def GenerateCTypeWrapper(
     protobuf_scheme: GeneratedProtocolMessageType,
     ctype_object2proto: CallableT,
     ctype_proto2object: CallableT,
+    module_globals: dict
 ) -> None:
     @bind_protobuf
     class CTypeWrapper(Serializable):
@@ -58,8 +59,8 @@ def GenerateCTypeWrapper(
 
     module_parts = import_path.split(".")
     klass = module_parts.pop()
-    module_path = ".".join(module_parts)
     CTypeWrapper.__name__ = f"{klass}CTypeWrapper"
-    CTypeWrapper.__module__ = module_path
+    CTypeWrapper.__module__ = module_globals['__name__']
+    module_globals[CTypeWrapper.__name__] = CTypeWrapper
 
     aggressive_set_attr(obj=ctype, name="serializable_wrapper_type", attr=CTypeWrapper)
