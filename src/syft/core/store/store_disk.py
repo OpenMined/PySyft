@@ -20,6 +20,7 @@ from .store_interface import ObjectStore
 from .storeable_object import StorableObject
 from ...util import validate_type
 
+
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.
 class DiskObjectStore(ObjectStore):
     def __init__(self, db_path: Optional[str] = None):
@@ -52,7 +53,7 @@ class DiskObjectStore(ObjectStore):
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         if str(key.value) in self.db:
-            return self.__getitem__(key=key)
+            return self.__getitem__(key)
         return None
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:

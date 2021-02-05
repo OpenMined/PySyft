@@ -137,7 +137,9 @@ class Bool(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=self.value.__pos__())
 
     def __pow__(self, __x, __modulo: SyPrimitiveRet = 10) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(value=self.value.__pow__(dispatch_other(__x), dispatch_other(__modulo)))
+        return PrimitiveFactory.generate_primitive(
+            value=self.value.__pow__(dispatch_other(__x), dispatch_other(__modulo))
+        )
 
     def __radd__(self, other: Any) -> SyPrimitiveRet:
         other = dispatch_other(other)
@@ -180,7 +182,9 @@ class Bool(int, PyPrimitive):
 
     def __round__(self, ndigits: Any = None) -> SyPrimitiveRet:
         dispatch_ndigits = dispatch_other(ndigits)
-        return PrimitiveFactory.generate_primitive(value=self.value.__round__(dispatch_ndigits))
+        return PrimitiveFactory.generate_primitive(
+            value=self.value.__round__(dispatch_ndigits)
+        )
 
     def __rpow__(self, other: Any) -> SyPrimitiveRet:
         other = dispatch_other(other)

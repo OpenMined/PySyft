@@ -5,12 +5,9 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
-
-
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
-from .serializable import Serializable
 from typing import Any
 
 

@@ -10,11 +10,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from . import ObjectStore
+from .storeable_object import StorableObject
 
 
 from ...logger import critical
 from ...logger import traceback_and_raise
-from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
 
@@ -32,14 +32,14 @@ class MemoryStore(ObjectStore):
 
     def __init__(self) -> None:
         super().__init__()
-        self._objects: OrderedDict[UID, AbstractStorableObject] = OrderedDict()
+        self._objects: OrderedDict[UID, StorableObject] = OrderedDict()
         self._search_engine = None
         self.post_init()
 
-    def get_object(self, key: UID) -> Optional[AbstractStorableObject]:
+    def get_object(self, key: UID) -> Optional[StorableObject]:
         return self._objects.get(key, None)
 
-    def get_objects_of_type(self, obj_type: type) -> Iterable[AbstractStorableObject]:
+    def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
         return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
 
     def __sizeof__(self) -> int:
@@ -54,20 +54,20 @@ class MemoryStore(ObjectStore):
     def keys(self) -> KeysView[UID]:
         return self._objects.keys()
 
-    def values(self) -> ValuesView[AbstractStorableObject]:
+    def values(self) -> ValuesView[StorableObject]:
         return self._objects.values()
 
     def __contains__(self, key: UID) -> bool:
         return key in self._objects.keys()
 
-    def __getitem__(self, key: UID) -> AbstractStorableObject:
+    def __getitem__(self, key: UID) -> StorableObject:
         try:
             return self._objects[key]
         except Exception as e:
             critical(f"{type(self)} __getitem__ error {key} {e}")
             traceback_and_raise(e)
 
-    def __setitem__(self, key: UID, value: AbstractStorableObject) -> None:
+    def __setitem__(self, key: UID, value: StorableObject) -> None:
         self._objects[key] = value
 
     def delete(self, key: UID) -> None:

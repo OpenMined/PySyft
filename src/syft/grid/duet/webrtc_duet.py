@@ -49,7 +49,8 @@ from ..services.signaling_service import AnswerPullRequestMessage
 from ..services.signaling_service import InvalidLoopBackRequest
 from ..services.signaling_service import OfferPullRequestMessage
 from ..services.signaling_service import SignalingAnswerMessage
-from ..services.signaling_service import SignalingOfferMessage
+from ..services.signaling_service import SignalingOqfferMessage
+from ...util import validate_type
 
 
 class Duet(DomainClient):
@@ -214,15 +215,12 @@ class Duet(DomainClient):
                 # send it to the signaling server.
                 _response = self.signaling_client.send_immediate_msg_with_reply(msg=msg)
 
-                task = None
                 # If Signaling Offer Message was found
                 if isinstance(_response, SignalingOfferMessage):
-                    task = self._send_answer
-
+                    await self._send_answer(msg=_response)
                 # If Signaling Answer Message was found
                 elif isinstance(_response, SignalingAnswerMessage):
-                    task = self._ack
-
+                    await self._ack(msg=_response)
                 # If LoopBack Message it was a loopback request
                 elif isinstance(_response, InvalidLoopBackRequest):
                     traceback_and_raise(
@@ -236,14 +234,10 @@ class Duet(DomainClient):
                     # Just enqueue the request to be processed later.
                     self._pull_msg_queue.put_nowait(msg)
 
-                # If we have tasks to execute
-                if task:
-                    # Execute task using the received message.
-                    await task(msg=_response)
-
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
                 await asyncio.sleep(0.5)
+
         except Exception as e:
             log = f"Got an exception in Duet pull. {e}"
             error(log)
