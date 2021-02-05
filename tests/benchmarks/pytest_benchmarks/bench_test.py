@@ -18,12 +18,10 @@ from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 
 
 @pytest.mark.benchmark
-def test_string_serde(benchmark: Any) -> None:
-    """
-    Test sigmoid approximation with chebyshev method and
-    precision value of 4
-    """
-    benchmark(string_serde)
+@pytest.mark.parametrize("byte_size", [2 ** 10, 2 ** 20, 50 * 2 ** 20])
+def test_string_serde(byte_size: int, benchmark: Any) -> None:
+    data = "a" * byte_size
+    benchmark.pedantic(string_serde, args=(data,))
 
 
 @pytest.mark.benchmark
