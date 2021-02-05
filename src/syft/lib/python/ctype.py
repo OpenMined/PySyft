@@ -17,7 +17,7 @@ from ...util import aggressive_set_attr
 
 # this will overwrite the .serializable_wrapper_type with an auto generated
 # wrapper which will basically just hold the object whose type is C type class
-def GenerateCTypeWrapper(
+def GenerateWrapper(
     ctype: type,
     import_path: str,
     protobuf_scheme: GeneratedProtocolMessageType,
@@ -26,7 +26,7 @@ def GenerateCTypeWrapper(
     module_globals: dict
 ) -> None:
     @bind_protobuf
-    class CTypeWrapper(Serializable):
+    class Wrapper(Serializable):
         def __init__(self, value: object):
             self.obj = value
 
@@ -36,7 +36,7 @@ def GenerateCTypeWrapper(
         @staticmethod
         def _proto2object(proto: Any) -> Any:
             obj = ctype_proto2object(proto)
-            return CTypeWrapper(value=obj)
+            return Wrapper(value=obj)
 
         @staticmethod
         def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -59,8 +59,8 @@ def GenerateCTypeWrapper(
 
     module_parts = import_path.split(".")
     klass = module_parts.pop()
-    CTypeWrapper.__name__ = f"{klass}CTypeWrapper"
-    CTypeWrapper.__module__ = module_globals['__name__']
-    module_globals[CTypeWrapper.__name__] = CTypeWrapper
+    Wrapper.__name__ = f"{klass}Wrapper"
+    Wrapper.__module__ = module_globals['__name__']
+    module_globals[Wrapper.__name__] = Wrapper
 
-    aggressive_set_attr(obj=ctype, name="serializable_wrapper_type", attr=CTypeWrapper)
+    aggressive_set_attr(obj=ctype, name="serializable_wrapper_type", attr=Wrapper)

@@ -82,7 +82,7 @@ def _deserialize(
         traceback_and_raise(deserialization_error)
 
     obj = _proto2object(proto=blob)
-    # the real object is nested in CTypeWrapper's
-    if type(_proto2object).__name__.endswith("CTypeWrapper"):
+    # the real object is nested in Wrapper's
+    if type(_proto2object).__name__.endswith("Wrapper"):
         obj = _proto2object.obj
     return obj

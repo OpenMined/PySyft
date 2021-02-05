@@ -181,7 +181,7 @@ class Pointer(AbstractPointer):
             # that is what was originally sent in with .send
             return obj.data
 
-        if type(obj).__name__.endswith("CTypeWrapper"):
+        if type(obj).__name__.endswith("Wrapper"):
             return obj.data
 
         if self.is_enum:
