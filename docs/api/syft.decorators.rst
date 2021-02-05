@@ -24,4 +24,3 @@ syft.decorators.typecheck module
    :members:
    :undoc-members:
    :show-inheritance:
-

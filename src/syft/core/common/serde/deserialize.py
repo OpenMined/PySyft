@@ -6,6 +6,7 @@ from google.protobuf.message import Message
 
 # syft relative
 from ....decorators.syft_decorator_impl import syft_decorator
+from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
 from .serializable import Serializable
@@ -21,11 +22,10 @@ def _deserialize(
 
     This function deserializes from encoding to a Python object. There are a few ways of
     using this function:
-        1. An Message object is passed, this will transform a protobuf message into its
-        associated class. the from_proto has to be set (it is by default).
-        2. Bytes are passed. This requires the from_bytes flag set the schema_type specified.
-        We cannot (and we should not) be able to get the schema_type from the binary
-        representation.
+    1. An Message object is passed, this will transform a protobuf message into its associated class.
+    the from_proto has to be set (it is by default).
+    2. Bytes are passed. This requires the from_bytes flag set the schema_type specified.
+    We cannot (and we should not) be able to get the schema_type from the binary representation.
 
     Note: The only format that does not require the schema_type is when we are passing
     Messages directly.
@@ -58,12 +58,14 @@ def _deserialize(
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except AttributeError:
-        raise TypeError(
-            "You tried to deserialize an unsupported type. This can be caused by "
-            "several reasons. Either you are actively writing Syft code and forgot "
-            "to create one, or you are trying to deserialize an object which was "
-            "serialized using a different version of Syft and the object you tried "
-            "to deserialize is not supported in this version."
+        traceback_and_raise(
+            TypeError(
+                "You tried to deserialize an unsupported type. This can be caused by "
+                "several reasons. Either you are actively writing Syft code and forgot "
+                "to create one, or you are trying to deserialize an object which was "
+                "serialized using a different version of Syft and the object you tried "
+                "to deserialize is not supported in this version."
+            )
         )
 
     return obj_type._proto2object(proto=blob)

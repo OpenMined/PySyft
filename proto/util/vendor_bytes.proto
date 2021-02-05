@@ -1,0 +1,9 @@
+syntax = "proto3";
+package syft.util;
+
+message VendorBytes {
+  string obj_type = 1;
+  string vendor_lib = 2;
+  string vendor_lib_version = 3;
+  bytes content = 4;
+}

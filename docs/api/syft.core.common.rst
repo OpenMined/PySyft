@@ -25,14 +25,6 @@ syft.core.common.group module
    :undoc-members:
    :show-inheritance:
 
-syft.core.common.lazy\_structures module
-----------------------------------------
-
-.. automodule:: syft.core.common.lazy_structures
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.common.message module
 -------------------------------
 
@@ -72,4 +64,3 @@ syft.core.common.uid module
    :members:
    :undoc-members:
    :show-inheritance:
-

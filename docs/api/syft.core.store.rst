@@ -9,14 +9,6 @@ syft.core.store package
 Submodules
 ----------
 
-syft.core.store.metastore\_interface module
--------------------------------------------
-
-.. automodule:: syft.core.store.metastore_interface
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.store.store\_disk module
 ----------------------------------
 
@@ -48,4 +40,3 @@ syft.core.store.storeable\_object module
    :members:
    :undoc-members:
    :show-inheritance:
-

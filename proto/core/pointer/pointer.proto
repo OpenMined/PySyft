@@ -12,4 +12,5 @@ message Pointer {
   syft.core.io.Address location = 4;
   repeated string tags = 5;
   string description = 6;
+  string object_type = 7;
 }

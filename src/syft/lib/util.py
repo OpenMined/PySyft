@@ -4,9 +4,35 @@ from types import ModuleType
 from typing import Callable
 from typing import Optional
 from typing import Union
+from typing import Union as TypeUnion
 
 # syft relative
+from ..ast.globals import Globals
+from ..core.node.abstract.node import AbstractNodeClient
 from ..decorators.syft_decorator_impl import syft_decorator
+
+
+# this gets called on global ast as well as clients
+# anything which wants to have its ast updated and has an add_attr method
+@syft_decorator(typechecking=True, prohibit_args=False)
+def generic_update_ast(
+    lib_name: str,
+    create_ast: Callable,
+    ast_or_client: TypeUnion[Globals, AbstractNodeClient],
+) -> None:
+    if isinstance(ast_or_client, Globals):
+        ast = ast_or_client
+        new_lib_ast = create_ast(None)
+        ast.add_attr(attr_name=lib_name, attr=new_lib_ast.attrs[lib_name])
+    elif isinstance(ast_or_client, AbstractNodeClient):
+        client = ast_or_client
+        new_lib_ast = create_ast(client)
+        client.lib_ast.attrs[lib_name] = new_lib_ast.attrs[lib_name]
+        setattr(client, lib_name, new_lib_ast.attrs[lib_name])
+    else:
+        raise ValueError(
+            f"Expected param of type (Globals, AbstractNodeClient), but got {type(ast_or_client)}"
+        )
 
 
 @syft_decorator(typechecking=True)
@@ -14,6 +40,8 @@ def is_static_method(klass: type, attr: str) -> bool:
     """Test if a value of a class is static method.
 
     Example:
+
+    .. code-block::
 
         class MyClass(object):
             @staticmethod
@@ -52,7 +80,7 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
-    replace each original constructor (th.Tensor) with on we implement (torch_.UppercaseTensorConstructor), we also
+    replace each original constructor (th.Tensor) with on we implement (torch.UppercaseTensorConstructor), we also
     need to make sure that our new constructor has any static methods which were previously stored on th.Tensor.
     Otherwise, the library might look for them there, not find them, and then trigger an error.
 
@@ -74,9 +102,9 @@ def get_original_constructor_name(object_name: str) -> str:
 
     For each custom constructor, we move the original constructor to a consistent location relative to
     the original constructor so that each custom constructor automatically knows where to find the original
-     method it is overloading. Namely, we move the original constructor to a different attr within the same
-      module as the original constructor. This method specifies the naming convention that we use to name
-      the original constructor when it is moved.
+    method it is overloading. Namely, we move the original constructor to a different attr within the same
+    module as the original constructor. This method specifies the naming convention that we use to name
+    the original constructor when it is moved.
 
       Args:
           object_name (str): the original constructor's original name

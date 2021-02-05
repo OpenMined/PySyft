@@ -12,28 +12,32 @@ is that all operations between pointers will return a pointer, the only way to h
 to the result is by calling .get() on the pointer.
 
 There are two proper ways of receiving a pointer on some data:
-    1. When sending that data on a remote machine the user receives a pointer.
-    2. When the user searches for the data in an object store it receives a pointer to that data,
-    if it has the correct permissions for that.
+
+1. When sending that data on a remote machine the user receives a pointer.
+2. When the user searches for the data in an object store it receives a pointer to that data,
+   if it has the correct permissions for that.
 
 After receiving a pointer, one might want to get the data behind the pointer locally. For that the
 user should:
-    1. Request access by calling .request().
-    Example:
 
-    .. code-block::
+1. Request access by calling .request().
 
-        pointer_object.request(name = "Request name", reason = "Request reason")
+Example:
 
-    2.1 - The data owner has to approve the request (check the domain node docs).
-    2.2 - The data user checks if the request has been approved (check the domain node docs).
-    3. After the request has been approved, the data user can call .get() on the pointer to get the
-    data locally.
-    Example:
+.. code-block::
 
-    .. code-block::
+    pointer_object.request(name = "Request name", reason = "Request reason")
 
-        pointer_object.get()
+2. The data owner has to approve the request (check the domain node docs).
+3. The data user checks if the request has been approved (check the domain node docs).
+4. After the request has been approved, the data user can call .get() on the pointer to get the
+   data locally.
+
+Example:
+
+.. code-block::
+
+    pointer_object.get()
 
 Pointers are being generated for most types of objects in the data science scene, but what you can
 do on them is not the pointers job, see the lib module for more details. One can see the pointer
@@ -54,7 +58,7 @@ Example:
     domain_1_client = domain_1.get_root_client()
 
     # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
+    data_ptr_domain_1 = tensor.send(domain_1_client)
 
     # creating the data user domain
     domain_2 = Domain(name="Data user domain")
@@ -88,7 +92,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -96,6 +99,8 @@ import syft as sy
 
 # syft relative
 from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -135,20 +140,17 @@ class Pointer(AbstractPointer):
         self,
         client: Any,
         id_at_location: Optional[UID] = None,
+        object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> None:
-        if id_at_location is None:
-            id_at_location = UID()
-
-        if tags is None:
-            tags = []
-
-        self.client = client
-        self.id_at_location = id_at_location
-        self.tags = tags
-        self.description = description
-        self.gc_enabled = True
+        super().__init__(
+            client=client,
+            id_at_location=id_at_location,
+            tags=tags,
+            description=description,
+        )
+        self.object_type = object_type
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -158,7 +160,7 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
-        logger.debug(
+        debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
             + f"with delete_obj={delete_obj}"
         )
@@ -171,13 +173,26 @@ class Pointer(AbstractPointer):
 
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
-        return response.obj
+        obj = response.obj
+
+        if type(obj).__name__.endswith("ProtobufWrapper"):
+            # for ProtobufWrapper's we want to actually vend the real Proto since
+            # that is what was originally sent in with .send
+            return obj.data
+
+        if type(obj).__name__.endswith("CTypeWrapper"):
+            return obj.data
+
+        if self.is_enum:
+            enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
+            return enum_class(obj)
+
+        return obj
 
     def get_copy(
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        name: str = "",
         reason: str = "",
         verbose: bool = False,
     ) -> Optional[StorableObject]:
@@ -190,7 +205,6 @@ class Pointer(AbstractPointer):
         return self.get(
             request_block=request_block,
             timeout_secs=timeout_secs,
-            name=name,
             reason=reason,
             delete_obj=False,
             verbose=verbose,
@@ -200,7 +214,6 @@ class Pointer(AbstractPointer):
         self,
         request_block: bool = False,
         timeout_secs: int = 20,
-        name: str = "",
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -218,7 +231,6 @@ class Pointer(AbstractPointer):
             return self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
-                name=name,
                 reason=reason,
                 block=True,
                 timeout_secs=timeout_secs,
@@ -255,6 +267,7 @@ class Pointer(AbstractPointer):
             location=self.client.address.serialize(),
             tags=self.tags,
             description=self.description,
+            object_type=self.object_type,
         )
 
     @staticmethod
@@ -275,9 +288,7 @@ class Pointer(AbstractPointer):
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
 
-        points_to_type = sy.lib_ast(
-            proto.points_to_object_with_path, return_callable=True
-        )
+        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
@@ -286,6 +297,7 @@ class Pointer(AbstractPointer):
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
+            object_type=proto.object_type,
         )
 
     @staticmethod
@@ -310,7 +322,6 @@ class Pointer(AbstractPointer):
 
     def request(
         self,
-        name: str = "",
         reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
@@ -332,7 +343,7 @@ class Pointer(AbstractPointer):
             domain_1_client = domain_1.get_root_client()
 
             # sending the data and receiving a pointer
-            data_ptr_domain_1 = tensor.send(domain_1_client) # or tensor.send_to(domain_1_client)
+            data_ptr_domain_1 = tensor.send(domain_1_client)
 
             # requesting access to the pointer
             data_ptr_domain_1.request(name="My Request", reason="Research project.")
@@ -340,7 +351,7 @@ class Pointer(AbstractPointer):
         :param name: The title of the request that the data owner is going to see.
         :type name: str
         :param reason: The description of the request. This is the reason why you want to have
-        access to the data.
+            access to the data.
         :type reason: str
 
         .. note::
@@ -359,11 +370,11 @@ class Pointer(AbstractPointer):
             timeout_secs = -1  # forever
 
         msg = RequestMessage(
-            name=name,
             request_description=reason,
             address=self.client.address,
             owner_address=self.client.address,
             object_id=self.id_at_location,
+            object_type=self.object_type,
             requester_verify_key=self.client.verify_key,
             timeout_secs=timeout_secs,
         )
@@ -384,16 +395,12 @@ class Pointer(AbstractPointer):
             from ..node.domain.service import RequestStatus
 
             output_string = "> Waiting for Blocking Request: "
-            if len(name) > 0:
-                output_string += f"  {name}"
+            output_string += f"  {self.id_at_location}"
             if len(reason) > 0:
                 output_string += f": {reason}"
-            if len(name) > 0 or len(name) > 0:
-                if len(output_string) > 0 and output_string[-1] != ".":
-                    output_string += "."
-            logger.debug(output_string)
-            if verbose:
-                print(f"\n{output_string}", end="")
+            if len(output_string) > 0 and output_string[-1] != ".":
+                output_string += "."
+            debug(output_string)
             status = None
             start = time.time()
 
@@ -407,15 +414,13 @@ class Pointer(AbstractPointer):
                         log = (
                             f"\n> Blocking Request Timeout after {timeout_secs} seconds"
                         )
-                        logger.debug(log)
-                        if verbose:
-                            print(log)
+                        debug(log)
                         return status
 
                     # only check once every second
                     if now - last_check > 1:
                         last_check = now
-                        logger.debug(f"> Sending another Request Message {now - start}")
+                        debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
                             address=self.client.address,
@@ -427,8 +432,6 @@ class Pointer(AbstractPointer):
                         status = response.status
                         if response.status == RequestStatus.Pending:
                             time.sleep(0.1)
-                            if verbose:
-                                print(".", end="")
                             continue
                         else:
                             # accepted or rejected lets exit
@@ -436,12 +439,10 @@ class Pointer(AbstractPointer):
                             if status == RequestStatus.Accepted:
                                 status_text = "ACCEPTED"
                             log = f" {status_text}"
-                            logger.debug(log)
-                            if verbose:
-                                print(log)
+                            debug(log)
                             return status
                 except Exception as e:
-                    logger.error(f"Exception while running blocking request. {e}")
+                    error(f"Exception while running blocking request. {e}")
                     # escape the while loop
                     return status
 
@@ -479,10 +480,10 @@ class Pointer(AbstractPointer):
     def check_access(self, node: AbstractNode, request_id: UID) -> any:  # type: ignore
         """Method that checks the status of an already made request. There are three
         possible outcomes when requesting access:
-            1. RequestStatus.Accepted - your request has been approved, you can not
-                                        .get() your data.
-            2. RequestStatus.Pending - your request has not been reviewed yet.
-            3. RequestStatus.Rejected - your request has been rejected.
+
+        1. RequestStatus.Accepted - your request has been approved, you can not .get() your data.
+        2. RequestStatus.Pending - your request has not been reviewed yet.
+        3. RequestStatus.Rejected - your request has been rejected.
 
         :param node: The node that queries the request status.
         :type node: AbstractNode
