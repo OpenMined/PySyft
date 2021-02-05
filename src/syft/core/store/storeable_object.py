@@ -175,9 +175,7 @@ class StorableObject(AbstractStorableObject):
         # # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # #  PYDOC.LOCATE!!!
         # # Step 2: get the type of wrapper to use to deserialize
-        full_path = re.sub("CTypeWrapper$", "", proto.data_type)
-        data_type = pydoc.locate(full_path)
-        data_type = getattr(data_type, "serializable_wrapper_type", data_type)
+        data_type = pydoc.locate(proto.data_type)
 
         # # Step 3: get the protobuf type we deserialize for .data
         schematic_type = data_type.get_protobuf_schema()

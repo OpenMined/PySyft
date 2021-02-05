@@ -33,8 +33,9 @@ from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
+from .....core.common.serde.serializable import bind_protobuf
 
-
+@bind_protobuf
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -109,6 +110,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage_PB
 
 
+@bind_protobuf
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
