@@ -15,7 +15,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
+
+
 from .....logger import debug
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
     AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
@@ -44,7 +45,6 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         self.accept = accept
         self.request_id = request_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> AcceptOrDenyRequestMessage_PB:
         """Returns a protobuf serialization of self.
 

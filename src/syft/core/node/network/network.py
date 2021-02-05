@@ -7,7 +7,8 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
+
+
 from ....logger import error
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
@@ -28,7 +29,6 @@ class Network(Node):
     client_type = NetworkClient
     child_type_client_type = DomainClient
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],

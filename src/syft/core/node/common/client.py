@@ -15,7 +15,8 @@ import pandas as pd
 
 # syft relative
 from ....core.pointer.pointer import Pointer
-from ....decorators import syft_decorator
+
+
 from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
@@ -52,7 +53,6 @@ class Client(AbstractNodeClient):
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -141,7 +141,6 @@ class Client(AbstractNodeClient):
     def add_me_to_my_address(self) -> None:
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def register_in_memory_client(self, client: AbstractNodeClient) -> None:
         # WARNING: Gross hack
         route_index = self.default_route_index
@@ -164,7 +163,6 @@ class Client(AbstractNodeClient):
                 Exception("Unable to save client reference without SoloRoute")
             )
 
-    @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
         debug(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
@@ -206,7 +204,7 @@ class Client(AbstractNodeClient):
         traceback_and_raise(NotImplementedError)
 
     # TODO fix the msg type but currently tensor needs SyftMessage
-    @syft_decorator(typechecking=True)
+
     def send_immediate_msg_with_reply(
         self,
         msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
@@ -239,7 +237,7 @@ class Client(AbstractNodeClient):
         )
 
     # TODO fix the msg type but currently tensor needs SyftMessage
-    @syft_decorator(typechecking=True)
+
     def send_immediate_msg_without_reply(
         self,
         msg: Union[
@@ -259,7 +257,6 @@ class Client(AbstractNodeClient):
         debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
@@ -275,19 +272,15 @@ class Client(AbstractNodeClient):
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"
 
-    @syft_decorator(typechecking=True)
     def register_route(self, route: Route) -> None:
         self.routes.append(route)
 
-    @syft_decorator(typechecking=True)
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Client_PB:
         obj_type = get_fully_qualified_name(obj=self)
 

@@ -12,7 +12,8 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
+
+
 from .....logger import critical
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
@@ -190,7 +191,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.
 

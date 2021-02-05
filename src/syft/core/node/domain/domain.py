@@ -13,7 +13,8 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
+
+
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -48,7 +49,6 @@ class Domain(Node):
     client_type = DomainClient
     child_type_client_type = DeviceClient
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -107,7 +107,6 @@ class Domain(Node):
     def id(self) -> UID:
         return self.domain.id
 
-    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
@@ -119,7 +118,6 @@ class Domain(Node):
             )
             return False
 
-    @syft_decorator(typechecking=True)
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client
     ) -> bool:
@@ -135,7 +133,6 @@ class Domain(Node):
 
         return False
 
-    @syft_decorator(typechecking=True)
     def get_request_status(self, message_request_id: UID) -> RequestStatus:
         # is it still pending
         for req in self.requests:
@@ -158,7 +155,6 @@ class Domain(Node):
         # must have been rejected
         return RequestStatus.Rejected
 
-    @syft_decorator(typechecking=True)
     def _get_object(self, request: RequestMessage) -> Optional[Any]:
         try:
             obj_msg = GetObjectAction(
@@ -216,7 +212,6 @@ class Domain(Node):
 
         return False
 
-    @syft_decorator(typechecking=True)
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
@@ -325,7 +320,6 @@ class Domain(Node):
 
         self.requests = alive_requests
 
-    @syft_decorator(typechecking=True)
     async def run_handlers(self) -> None:
         while True:
             await asyncio.sleep(0.01)

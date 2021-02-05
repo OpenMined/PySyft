@@ -3,7 +3,8 @@ from typing import List
 from typing import Optional
 
 # syft relative
-from .....decorators import syft_decorator
+
+
 from .....logger import debug
 from .....logger import error
 from .....logger import traceback_and_raise
@@ -19,7 +20,6 @@ from .node_service import SignedNodeServiceWithoutReply
 
 class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: SignedImmediateSyftMessageWithoutReply
     ) -> Optional[SignedMessageT]:
@@ -63,14 +63,12 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
         )
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [ImmediateSyftMessageWithoutReply]
 
 
 class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -119,6 +117,5 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
         )
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [ImmediateSyftMessageWithReply]

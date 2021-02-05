@@ -7,7 +7,8 @@ from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...decorators.syft_decorator_impl import syft_decorator
+
+
 from ..services.signaling_service import RegisterNewPeerMessage
 
 
@@ -49,7 +50,6 @@ class SignalingClient(object):
     def address(self) -> Address:
         return self.__client.address
 
-    @syft_decorator(typechecking=True)
     def __register(self) -> None:
         _response = self.__client.send_immediate_msg_with_reply(
             msg=RegisterNewPeerMessage(
@@ -58,14 +58,11 @@ class SignalingClient(object):
         )
         self.duet_id = _response.peer_id
 
-    @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(self, msg: SyftMessage) -> SyftMessage:
         return self.__client.send_immediate_msg_with_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(self, msg: SyftMessage) -> None:
         self.__client.send_immediate_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(self, msg: SyftMessage) -> None:
         self.__client.send_eventual_msg_without_reply(msg=msg)

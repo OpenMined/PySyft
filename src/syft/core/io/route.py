@@ -91,7 +91,8 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...decorators import syft_decorator
+
+
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
@@ -177,7 +178,6 @@ class SoloRoute(Route):
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SoloRoute_PB:
         return SoloRoute_PB(
             destination=self.schema.destination._object2proto(),

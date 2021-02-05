@@ -6,7 +6,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
+
+
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
@@ -42,7 +43,6 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -207,7 +207,6 @@ class GetObjectAction(ImmediateActionWithReply):
     def pprint(self) -> str:
         return f"GetObjectAction({self.id_at_location})"
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:
         """Returns a protobuf serialization of self.
 

@@ -8,7 +8,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
+
+
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location.specific import SpecificLocation
@@ -21,7 +22,6 @@ class VirtualMachineClient(Client):
 
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -50,6 +50,5 @@ class VirtualMachineClient(Client):
     def id(self) -> UID:
         return self.vm.id
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"

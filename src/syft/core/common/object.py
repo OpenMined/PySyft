@@ -6,11 +6,13 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...decorators.syft_decorator_impl import syft_decorator
+
+
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from .uid import UID
+from ...util import validate_type
 
 
 class ObjectWithID(Serializable):
@@ -32,7 +34,6 @@ class ObjectWithID(Serializable):
 
     """
 
-    @syft_decorator(typechecking=True)
     def __init__(self, id: Optional[UID] = None):
         """This initializer only exists to set the id attribute, which is the
         primary purpose of this class. It also sets the 'as_wrapper' flag
@@ -64,7 +65,6 @@ class ObjectWithID(Serializable):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 
@@ -83,7 +83,6 @@ class ObjectWithID(Serializable):
         except Exception:
             return False
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         """Returns a human-readable version of the ObjectWithID
 
@@ -94,7 +93,6 @@ class ObjectWithID(Serializable):
         no_dash = str(self.id.value).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
 
-    @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
         """Returns a SHORT human-readable version of SpecificLocation
 
@@ -104,7 +102,6 @@ class ObjectWithID(Serializable):
 
         return f"<{type(self).__name__}:{self.id.repr_short()}>"
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectWithID_PB:
         """Returns a protobuf serialization of self.
 
@@ -136,8 +133,8 @@ class ObjectWithID(Serializable):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
-        return ObjectWithID(id=_deserialize(blob=proto.id))
+        _id = validate_type(_object=_deserialize(proto.id), _type=UID, optional=True)
+        return ObjectWithID(id=_id)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

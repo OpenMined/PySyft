@@ -9,7 +9,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
+
+
 from ....logger import critical
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
@@ -33,7 +34,6 @@ class Device(Node):
     child_type = VirtualMachine
     child_type_client_type = VirtualMachineClient
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,

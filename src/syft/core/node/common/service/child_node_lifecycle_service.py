@@ -8,7 +8,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators import syft_decorator
+
+
 from .....logger import debug
 from .....logger import error
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
@@ -37,7 +38,6 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         self.lookup_id = lookup_id
         self.child_node_client_address = child_node_client_address
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterChildNodeMessage_PB:
         debug(f"> {self.icon} -> Proto 🔢")
         return RegisterChildNodeMessage_PB(
@@ -72,7 +72,6 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     @service_auth(root_only=True)
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: RegisterChildNodeMessage, verify_key: VerifyKey
     ) -> None:
@@ -122,6 +121,5 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         return None
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[Type[RegisterChildNodeMessage]]:
         return [RegisterChildNodeMessage]

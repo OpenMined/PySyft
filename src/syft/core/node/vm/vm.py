@@ -8,7 +8,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
+
+
 from ....logger import critical
 from ....logger import traceback_and_raise
 from ...common.message import SignedMessage
@@ -28,7 +29,6 @@ class VirtualMachine(Node):
     verify_key: Optional[VerifyKey]
     child_type_client_type = None
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,
@@ -77,7 +77,6 @@ class VirtualMachine(Node):
             critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
             return False
 
-    @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
         traceback_and_raise(NotImplementedError)
         # TODO: it doesn't at the moment but it needs to in the future,

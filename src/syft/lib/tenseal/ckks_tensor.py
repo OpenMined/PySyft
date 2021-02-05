@@ -13,7 +13,7 @@ from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ...util import aggressive_set_attr
-from ...util import get_fully_qualified_name
+from ...util import get_fully_qualified_name, validate_type
 
 
 class CKKSTensorWrapper(StorableObject):
@@ -36,7 +36,7 @@ class CKKSTensorWrapper(StorableObject):
 
     @staticmethod
     def _data_proto2object(proto: TenSEALVector_PB) -> ts.CKKSTensor:
-        vec_id: UID = _deserialize(blob=proto.id)
+        vec_id: UID = validate_type(_deserialize(blob=proto.id), UID)
         vec = ts.lazy_ckks_tensor_from(proto.vector)
         vec.id = vec_id
 

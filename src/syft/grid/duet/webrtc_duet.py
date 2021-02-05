@@ -39,7 +39,8 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
-from ...decorators.syft_decorator_impl import syft_decorator
+
+
 from ...logger import error
 from ...logger import traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
@@ -162,7 +163,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def notify(self) -> None:
         try:
             # Enqueue Pull/Push async tasks
@@ -183,7 +183,6 @@ class Duet(DomainClient):
     def close(self) -> None:
         self.connection.close()
 
-    @syft_decorator(typechecking=True)
     async def push(self) -> None:
         # This task is responsible for pushing offer/answer messages.
         try:
@@ -203,7 +202,6 @@ class Duet(DomainClient):
             self._available = False
             self._exception: Exception = e
 
-    @syft_decorator(typechecking=True)
     async def pull(self) -> None:
         try:
             while self._available:
@@ -254,7 +252,6 @@ class Duet(DomainClient):
             self._available = False
             self._exception = e
 
-    @syft_decorator(typechecking=True)
     def send_offer(self, target_id: str) -> None:
         """Starts a new signaling process by creating a new
         offer message and pushing it to the Signaling Server."""
@@ -287,7 +284,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _send_answer(self, msg: SignalingOfferMessage) -> None:
         """Process SignalingOfferMessage and create a new
         SignalingAnswerMessage as a response"""
@@ -314,7 +310,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _ack(self, msg: SignalingAnswerMessage) -> None:
         """Last signaling message, stores remote Node
         metadata and updates target's remote address"""
@@ -328,7 +323,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def _update_availability(self) -> bool:
         """Method used to check if the signaling process is over.
         :return: Boolean flag, True if it's NOT over, and False if it's over.

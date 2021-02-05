@@ -11,18 +11,18 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-from ...decorators import syft_decorator
+
+
 from ...proto.lib.python.none_pb2 import SyNone as None_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
-from .util import SyPrimitiveRet
+from .types import SyPrimitiveRet
 
 NoneType = type(None)
 
 
 class _SyNone(PyPrimitive):
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, id: Optional[UID] = None):
         self._id: UID = id if id else UID()
 
@@ -37,11 +37,9 @@ class _SyNone(PyPrimitive):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=True)
     def upcast(self) -> NoneType:
         return None
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         if isinstance(other, _SyNone):
             return PrimitiveFactory.generate_primitive(value=True)
@@ -52,19 +50,16 @@ class _SyNone(PyPrimitive):
         res = self.upcast().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __hash__(self) -> SyPrimitiveRet:
         res = self.upcast().__hash__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> None_PB:
         none_pb = None_PB()
         none_pb.id.CopyFrom(serialize(obj=self.id))
         return none_pb
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: None_PB) -> "_SyNone":
         none_id: UID = deserialize(blob=proto.id)
 

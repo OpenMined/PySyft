@@ -8,7 +8,8 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-from .....decorators import syft_decorator
+
+
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
 )
@@ -30,7 +31,6 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestsMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -104,7 +104,6 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.requests = requests
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestsResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -172,12 +171,10 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
 
 class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [GetAllRequestsMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
     ) -> GetAllRequestsResponseMessage:

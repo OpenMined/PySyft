@@ -4,14 +4,14 @@ from typing import Optional
 
 # syft relative
 from ...core.common.uid import UID
-from ...decorators import syft_decorator
+
+
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
-from .util import SyPrimitiveRet
+from .types import SyPrimitiveRet
 
 
 class Iterator(PyPrimitive):
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, _ref: Any, max_len: Optional[int] = None):
         super().__init__()
         self._obj_ref = _ref
@@ -20,7 +20,6 @@ class Iterator(PyPrimitive):
         self.max_len = max_len
         self.exhausted = False
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self) -> "Iterator":
         return self
 
@@ -28,7 +27,6 @@ class Iterator(PyPrimitive):
         # see these tests: test_valuesiterator_pickling and test_iterator_pickling
         raise TypeError(f"Pickling {type(self)} is not supported.")
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         if hasattr(other, "_obj_ref"):
             res = self._obj_ref == other._obj_ref
@@ -37,7 +35,6 @@ class Iterator(PyPrimitive):
 
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __next__(self) -> Any:
         # we need to do lots of getattr / setattr because some times the __next__
         # method gets called with a generator

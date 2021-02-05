@@ -16,7 +16,8 @@ from typing import Union
 import torch
 
 # syft relative
-from ...decorators import syft_decorator
+
+
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
@@ -79,7 +80,6 @@ class Module:
     interface. We will need to support both torch Modules and Module Pointers.
     """
 
-    @syft_decorator(typechecking=True)
     def __init__(self, torch_ref: Any) -> None:
         self.setup(torch_ref=torch_ref)
 

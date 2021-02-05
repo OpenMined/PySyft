@@ -11,7 +11,8 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import deserialize
 from ..... import serialize
-from .....decorators import syft_decorator
+
+
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback
@@ -82,7 +83,6 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def deny(self) -> None:
         self.send_msg(accept=False)
 
-    @syft_decorator(typechecking=True)
     def send_msg(self, accept: bool) -> None:
         action_name = "Accept" if accept else "Deny"
         if self.owner_client_if_available is not None:
@@ -126,13 +126,11 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def arrival_time(self) -> Optional[float]:
         return self._arrival_time
 
-    @syft_decorator(typechecking=True)
     def set_arrival_time(self, arrival_time: float) -> None:
         # used to expire requests as their destination, this should never be serialized
         if self._arrival_time is None:
             self._arrival_time = arrival_time
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestMessage_PB:
         msg = RequestMessage_PB()
         msg.object_tags.extend(self.object_tags)
@@ -152,7 +150,6 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestMessage_PB) -> "RequestMessage":
         request_msg = RequestMessage(
             request_id=deserialize(blob=proto.request_id),
@@ -169,19 +166,16 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         return request_msg
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestMessage_PB
 
 
 class RequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [RequestMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: RequestMessage, verify_key: VerifyKey) -> None:
         # node.requests.register_request(msg)  # type: ignore
 

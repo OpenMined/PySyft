@@ -8,7 +8,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
+
+
 from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
@@ -22,7 +23,6 @@ class DeviceClient(Client):
 
     device: SpecificLocation  # redefine the type of self.device to not be optional
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],

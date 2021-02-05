@@ -15,7 +15,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
+
+
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -45,7 +46,6 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         the sender is allowed to see. In the future we'll add support so that
         we can query for subsets."""
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -123,7 +123,6 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         we can query for subsets."""
         self.results = results
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchReplyMessage_PB:
         """Returns a protobuf serialization of self.
 

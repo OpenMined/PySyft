@@ -12,14 +12,15 @@ from .... import deserialize
 from .... import serialize
 from ....core.common.uid import UID
 from ....core.store.storeable_object import StorableObject
-from ....decorators import syft_decorator
+
+
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )
 from ....util import aggressive_set_attr
 from ..primitive_factory import PrimitiveFactory
 from ..primitive_interface import PyPrimitive
-from ..util import SyPrimitiveRet
+from ..types import SyPrimitiveRet
 from ..util import downcast
 from ..util import upcast
 
@@ -40,113 +41,91 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__delitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         res = super().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__getitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> SyPrimitiveRet:
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __reversed__(self) -> Any:
         # returns <class 'odict_iterator'>
         return super().__reversed__()
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __setitem__(self, key: Any, value: Any) -> SyPrimitiveRet:
         res = super().__setitem__(key, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def clear(self) -> SyPrimitiveRet:
         res = super().clear()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> SyPrimitiveRet:
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
 
     @classmethod
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def FromKeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
         res = cls(PyOrderedDict.fromkeys(iterable, value))
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def fromkeys(self, iterable: Any, value: Any = None) -> SyPrimitiveRet:
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def dict_get(self, other: Any) -> SyPrimitiveRet:
         res = super().get(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def items(self) -> SyPrimitiveRet:
         res = list(super().items())
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def keys(self) -> SyPrimitiveRet:
         res = list(super().keys())
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def move_to_end(self, other: Any, last: Any = True) -> SyPrimitiveRet:
         res = super().move_to_end(other, last)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def pop(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().pop(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def popitem(self, last: Any = True) -> SyPrimitiveRet:
         res = super().popitem(last)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def setdefault(self, key: Any, default: Any) -> SyPrimitiveRet:
         res = super().setdefault(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def update(self, *args: Any, **kwds: Any) -> SyPrimitiveRet:
         res = super().update(*args, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def values(self) -> SyPrimitiveRet:
         res = list(super().values())
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> OrderedDict_PB:
         id_ = serialize(obj=self.id)
         # serialize to bytes so that we can avoid using StorableObject
@@ -166,7 +145,6 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return OrderedDict_PB(id=id_, keys=keys, values=values)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: OrderedDict_PB) -> "OrderedDict":
         id_: UID = deserialize(blob=proto.id)
         # deserialize from bytes so that we can avoid using StorableObject

@@ -11,7 +11,8 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-from .....decorators import syft_decorator
+
+
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
@@ -46,7 +47,6 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         self.handler = handler
         self.keep = keep
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRequestHandlerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -121,7 +121,6 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestHandlersMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -197,7 +196,6 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.handlers = handlers
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestHandlersResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -276,12 +274,10 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
 
 class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [UpdateRequestHandlerMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: UpdateRequestHandlerMessage, verify_key: VerifyKey
     ) -> None:
@@ -327,12 +323,10 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
 
 class GetAllRequestHandlersService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [GetAllRequestHandlersMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: GetAllRequestHandlersMessage, verify_key: VerifyKey
     ) -> GetAllRequestHandlersResponseMessage:
