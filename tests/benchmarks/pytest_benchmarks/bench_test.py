@@ -52,10 +52,10 @@ def signaling_server() -> Process:
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize("byte_size", [10 * KB, 100 * KB, MB, 10 * MB])
+@pytest.mark.parametrize("byte_size", [10 * MB, 100 * MB])
 def test_string_serde(byte_size: int, benchmark: Any) -> None:
     data = "a" * byte_size
-    benchmark.pedantic(string_serde, args=(data,))
+    benchmark.pedantic(string_serde, args=(data,), rounds=3, iterations=3)
 
 
 @pytest.mark.benchmark
@@ -71,7 +71,7 @@ def test_duet_string_local(byte_size: int, benchmark: Any) -> None:
     data = "a" * byte_size
     duet = sy.VirtualMachine().get_root_client()
 
-    benchmark.pedantic(send_get_string_local, args=(data, duet))
+    benchmark.pedantic(send_get_string_local, args=(data, duet), rounds=3, iterations=3)
 
 
 @pytest.mark.benchmark
@@ -80,7 +80,7 @@ def test_duet_list_local(list_size: int, benchmark: Any) -> None:
     data = [LIST_TEMPLATE] * list_size
     duet = sy.VirtualMachine().get_root_client()
 
-    benchmark.pedantic(send_get_list_local, args=(data, duet))
+    benchmark.pedantic(send_get_list_local, args=(data, duet), rounds=3, iterations=3)
 
 
 @pytest.mark.benchmark
@@ -92,7 +92,9 @@ def test_duet_string_multiprocess(
 
     data = "a" * byte_size
 
-    benchmark.pedantic(send_get_string_multiprocess, args=(data,))
+    benchmark.pedantic(
+        send_get_string_multiprocess, args=(data,), rounds=3, iterations=3
+    )
 
 
 @pytest.mark.benchmark
@@ -104,4 +106,4 @@ def test_duet_list_multiprocess(
 
     data = [LIST_TEMPLATE] * list_size
 
-    benchmark.pedantic(send_get_list_multiprocess, args=(data,))
+    benchmark.pedantic(send_get_list_multiprocess, args=(data,), rounds=3, iterations=3)
