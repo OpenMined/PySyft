@@ -6,7 +6,7 @@ from torch import device
 
 # syft relative
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
-from ..python.ctype import GenerateCTypeWrapper
+from ..python.ctype import GenerateWrapper
 
 
 def object2proto(obj: "device") -> "Device_PB":
@@ -23,7 +23,7 @@ def proto2object(proto: "Device_PB") -> Any:
     obj = device(device_type, index)
     return obj
 
-GenerateCTypeWrapper(
+GenerateWrapper(
     ctype=device,
     import_path="torch.device",
     protobuf_scheme=Device_PB,

@@ -95,7 +95,7 @@ class StorableObject(AbstractStorableObject):
     # For python class objects as data. data and _data are the same thing.
     @property
     def data(self):
-        if type(self._data).__name__.endswith("CTypeWrapper"):
+        if type(self._data).__name__.endswith("Wrapper"):
             return self._data.obj
         else:
             return self._data
