@@ -11,7 +11,6 @@ from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from nacl.signing import SigningKey
-import nest_asyncio
 import pytest
 from pytest import MonkeyPatch
 
@@ -40,8 +39,6 @@ def get_signing_key() -> SigningKey:
 
 @pytest.mark.asyncio
 async def test_init() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
@@ -55,8 +52,6 @@ async def test_init() -> None:
 
 @pytest.mark.asyncio
 async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
-    nest_asyncio.apply()
-
     with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
         with patch(
             "syft.grid.connections.webrtc.RTCPeerConnection", side_effect=Exception()
@@ -71,8 +66,6 @@ async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
 
 @pytest.mark.asyncio
 async def test_set_offer_raise_exception() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -86,8 +79,6 @@ async def test_set_offer_raise_exception() -> None:
 
 @pytest.mark.asyncio
 async def test_set_offer_sets_channel() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -97,8 +88,6 @@ async def test_set_offer_sets_channel() -> None:
 
 @pytest.mark.asyncio
 async def test_set_offer_on_open() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -117,8 +106,6 @@ async def test_set_offer_on_open() -> None:
 
 @pytest.mark.asyncio
 async def test_set_offer_on_message() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -143,8 +130,6 @@ async def test_set_offer_on_message() -> None:
 
 @pytest.mark.asyncio
 async def test_set_answer_raise_exception() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
@@ -159,8 +144,6 @@ async def test_set_answer_raise_exception() -> None:
 
 @pytest.mark.asyncio
 async def test_set_answer_on_datachannel() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
@@ -183,8 +166,6 @@ async def test_set_answer_on_datachannel() -> None:
 
 @pytest.mark.asyncio
 async def test_set_answer_on_message() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
@@ -218,8 +199,6 @@ async def test_set_answer_on_message() -> None:
 
 @pytest.mark.asyncio
 async def test_finish_coroutines_raise_exception() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -233,8 +212,6 @@ async def test_finish_coroutines_raise_exception() -> None:
 
 @pytest.mark.asyncio
 async def test_close_raise_exception() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -248,8 +225,6 @@ async def test_close_raise_exception() -> None:
 
 @pytest.mark.asyncio
 async def test_close() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -276,7 +251,6 @@ async def test_init_without_event_loop() -> None:
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -305,7 +279,6 @@ async def test_signaling_process() -> None:
 
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
-
     test_domain = Domain(name="test")
 
     webrtc_node = WebRTCConnection(node=test_domain)
