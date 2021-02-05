@@ -24,10 +24,9 @@ def proto2object(proto: "Device_PB") -> Any:
     return obj
 
 GenerateWrapper(
-    ctype=device,
+    wrapped_type=device,
     import_path="torch.device",
     protobuf_scheme=Device_PB,
-    ctype_object2proto=object2proto,
-    ctype_proto2object=proto2object,
-    module_globals=globals(),
+    type_object2proto=object2proto,
+    type_proto2object=proto2object,
 )
