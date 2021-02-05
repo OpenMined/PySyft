@@ -1,11 +1,14 @@
+# syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.io.virtual import create_virtual_connection
 from syft.core.io.virtual import VirtualClientConnection
 from syft.core.io.virtual import VirtualServerConnection
-from tests.syft.core.io.utils_test import construct_dummy_message
-from tests.syft.core.io.utils_test import MockNode
+from syft.core.io.virtual import create_virtual_connection
+
+# syft relative
+from .utils_test import MockNode
+from .utils_test import construct_dummy_message
 
 # --------------------- HELPER FUNCTION ---------------------
 

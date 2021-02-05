@@ -1,12 +1,14 @@
+# stdlib
+from typing import Any
+
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
+
+# syft relative
 from .utils_test import decrypt
-
-from typing import Any
-
 
 ts = pytest.importorskip("tenseal")
 sy.load_lib("tenseal")

@@ -1,15 +1,15 @@
 # stdlib
+import functools
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
-import functools
 
 # syft relative
-from ..util import generic_update_ast
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ..util import generic_update_ast
 
 LIB_NAME = "sympc"
 PACKAGE_SUPPORT = {"lib": LIB_NAME, "torch": {"min_version": "1.6.0"}}

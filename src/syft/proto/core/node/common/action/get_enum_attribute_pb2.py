@@ -18,9 +18,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-from syft.proto.core.pointer import (
-    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
-)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/action/get_enum_attribute.proto",
@@ -28,11 +25,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n6proto/core/node/common/action/get_enum_attribute.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a proto/core/pointer/pointer.proto"\xb9\x01\n\x16GetEnumAttributeAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12-\n\x0eid_at_location\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bvalue_index\x18\x05 \x01(\x05\x62\x06proto3',
+    serialized_pb=b'\n6proto/core/node/common/action/get_enum_attribute.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xb9\x01\n\x16GetEnumAttributeAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12-\n\x0eid_at_location\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bvalue_index\x18\x05 \x01(\x05\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
-        proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
     ],
 )
 
@@ -149,8 +145,8 @@ _GETENUMATTRIBUTEACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=191,
-    serialized_end=376,
+    serialized_start=157,
+    serialized_end=342,
 )
 
 _GETENUMATTRIBUTEACTION.fields_by_name[
