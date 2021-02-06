@@ -3,6 +3,7 @@ from functools import partial
 
 # third party
 import pytest
+from pytest import CaptureFixture
 
 # syft absolute
 import syft
@@ -22,7 +23,7 @@ iter_without_len_methods = [
 ]
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="function")
 def register_module_test_iter_without_len() -> None:
     # Make lib_ast contain the specific methods/attributes
     update_ast_test(ast_or_client=syft.lib_ast, methods=iter_without_len_methods)
@@ -102,7 +103,9 @@ def test_klass_get_and_set_request_config() -> None:
         }
 
 
-def test_klass_iterator_raises_exception(custom_client: Client) -> None:
+def test_klass_wrap_iterator_raises_exception(
+    register_module_test_iter_without_len: CaptureFixture, custom_client: Client
+) -> None:
     iter_without_len_ptr = custom_client.module_test.IterWithoutLen()
     with pytest.raises(ValueError) as exception_info:
         iter_without_len_ptr.__iter__()
