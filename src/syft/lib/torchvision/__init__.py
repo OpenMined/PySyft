@@ -10,7 +10,8 @@ import torchvision as tv
 # syft relative
 from ...ast.globals import Globals
 from ...logger import critical
-from .allowlist import allowlist, module_pargs
+from .allowlist import allowlist
+from .allowlist import module_pargs
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 

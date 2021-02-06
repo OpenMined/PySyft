@@ -1,10 +1,10 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import List
 
 # syft relative
 from .. import ast

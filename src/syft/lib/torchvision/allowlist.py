@@ -1,8 +1,8 @@
 # stdlib
-from typing import Dict
-from typing import Union
-from typing import List
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Union
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 module_pargs: Dict[str, List[Any]] = {}
