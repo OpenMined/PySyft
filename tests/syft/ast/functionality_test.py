@@ -22,6 +22,8 @@ from . import module_test
 methods = [
     ("module_test.A", "module_test.A"),
     ("module_test.A.__len__", "syft.lib.python.Int"),
+    ("module_test.A.__iter__", "module_test.A"),
+    ("module_test.A.__next__", "syft.lib.python.Int"),
     ("module_test.A.test_method", "syft.lib.python.Int"),
     ("module_test.A.test_property", "syft.lib.python.Float"),
     ("module_test.A._private_attr", "syft.lib.python.Float"),
@@ -91,6 +93,17 @@ def test_len(custom_client: Client) -> None:
     result = len(a)
 
     assert result == result_from_ptr
+
+
+def test_iter(custom_client: Client) -> None:
+    a_ptr = custom_client.module_test.A()
+    iter_from_ptr = a_ptr.__iter__()
+
+    a = module_test.A()
+    iter_from_obj = iter(a)
+
+    for _ in range(1, module_test.A.static_attr):
+        assert next(iter_from_obj) == iter_from_ptr.__next__()
 
 
 def test_method(custom_client: Client) -> None:

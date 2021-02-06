@@ -12,7 +12,7 @@ def global_function() -> int:
 class A:
     """This is a test class to be used in functionality test."""
 
-    __slots__ = ["_private_attr"]
+    __slots__ = ["_private_attr", "n"]
 
     static_attr: int = 4
 
@@ -20,7 +20,19 @@ class A:
         self._private_attr: float = 5.5
 
     def __len__(self) -> int:
-        return 6
+        return 3
+
+    def __iter__(self) -> "A":
+        self.n = 1
+        return self
+
+    def __next__(self) -> int:
+        if self.n < A.static_attr:
+            result = self.n
+            self.n += 1
+            return result
+        else:
+            raise StopIteration
 
     def test_method(self) -> int:
         return 0
