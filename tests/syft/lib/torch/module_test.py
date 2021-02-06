@@ -47,8 +47,11 @@ def dataloader() -> Tuple[torch.Tensor, torch.Tensor]:
 
 def test_repr_to_kwargs() -> None:
     assert sy.lib.util.full_name_with_qualname(klass=torch.Tensor) == "torch.Tensor"
+    assert sy.lib.torch.module.repr_to_kwargs("1, 32, kernel_size=(3, 3), stride=(1, 1)") == ([1, 32], {'kernel_size': (3, 3), 'stride': (1, 1)})
+    assert sy.lib.torch.module.repr_to_kwargs("1, 32") == ([1, 32], {})
+    assert sy.lib.torch.module.repr_to_kwargs("kernel_size=(3, 3), stride=(1, 1)") == ([], {'kernel_size': (3, 3), 'stride': (1, 1)})
 
-
+test_repr_to_kwargs()
 def test_module_setup(alice: sy.VirtualMachine, model: SyNet) -> None:
     alice_client = alice.get_root_client()
 
