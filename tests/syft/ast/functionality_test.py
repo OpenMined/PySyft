@@ -3,7 +3,11 @@ The following test suit serves as a set of examples of how to integrate differen
 into our AST and use them.
 """
 # stdlib
+from functools import partial
 from importlib import reload
+from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Union as TypeUnion
 
 # third party
@@ -19,10 +23,10 @@ from syft.lib import lib_ast
 # syft relative
 from . import module_test
 
-methods = [
+module_test_methods = [
     ("module_test.A", "module_test.A"),
     ("module_test.A.__len__", "syft.lib.python.Int"),
-    ("module_test.A.__iter__", "module_test.A"),
+    ("module_test.A.__iter__", "syft.lib.python.Iterator"),
     ("module_test.A.__next__", "syft.lib.python.Int"),
     ("module_test.A.test_method", "syft.lib.python.Int"),
     ("module_test.A.test_property", "syft.lib.python.Float"),
@@ -35,14 +39,17 @@ methods = [
 ]
 
 
-def update_ast_test(ast_or_client: TypeUnion[Globals, AbstractNodeClient]) -> None:
+def update_ast_test(
+    ast_or_client: TypeUnion[Globals, AbstractNodeClient],
+    methods: List[Tuple[str, str]],
+) -> None:
     if isinstance(ast_or_client, Globals):
         ast = ast_or_client
-        test_ast = create_ast_test(None)
+        test_ast = create_ast_test(client=None, methods=methods)
         ast.add_attr(attr_name="module_test", attr=test_ast.attrs["module_test"])
     elif isinstance(ast_or_client, AbstractNodeClient):
         client = ast_or_client
-        test_ast = create_ast_test(client=client)
+        test_ast = create_ast_test(client=client, methods=methods)
         client.lib_ast.attrs["module_test"] = test_ast.attrs["module_test"]
         setattr(client, "module_test", test_ast.attrs["module_test"])
     else:
@@ -51,7 +58,9 @@ def update_ast_test(ast_or_client: TypeUnion[Globals, AbstractNodeClient]) -> No
         )
 
 
-def create_ast_test(client: Client) -> Globals:
+def create_ast_test(
+    client: Optional[AbstractNodeClient], methods: List[Tuple[str, str]]
+) -> Globals:
     ast = Globals(client)
 
     for method, return_type in methods:
@@ -71,10 +80,12 @@ def create_ast_test(client: Client) -> Globals:
 @pytest.fixture(autouse=True, scope="module")
 def register_module_test() -> None:
     # Make lib_ast contain the specific methods/attributes
-    update_ast_test(ast_or_client=syft.lib_ast)
+    update_ast_test(ast_or_client=syft.lib_ast, methods=module_test_methods)
 
     # Make sure that when we register a new client it would update the specific AST
-    lib_ast.loaded_lib_constructors["module_test"] = update_ast_test
+    lib_ast.loaded_lib_constructors["module_test"] = partial(
+        update_ast_test, methods=module_test_methods
+    )
 
 
 @pytest.fixture()

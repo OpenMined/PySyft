@@ -56,3 +56,22 @@ class B(Enum):
     Car = 1
     Cat = 2
     Dog = 3
+
+
+class IterWithoutLen:
+    """This is a test class for testing iterator method in Klass."""
+
+    __slots__ = ["n"]
+    static_attr: int = 1
+
+    def __iter__(self) -> "IterWithoutLen":
+        self.n = 0
+        return self
+
+    def __next__(self) -> int:
+        if self.n < A.static_attr:
+            result = self.n
+            self.n += 1
+            return result
+        else:
+            raise StopIteration
