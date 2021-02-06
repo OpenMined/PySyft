@@ -29,6 +29,18 @@ class SyNet(sy.Module):
     def forward(self, x: torch.Tensor) -> Any:
         return self.fc1(x)
 
+class SyNetEmpty(sy.Module):
+    """
+    Simple test model
+    """
+
+    def __init__(self) -> None:
+        super(SyNetEmpty, self).__init__(torch_ref=torch)
+        #self.fc1 = torch.nn.Linear(IN_DIM, OUT_DIM)
+
+    def forward(self, x: torch.Tensor) -> Any:
+        #return self.fc1(x)
+        return 0
 
 @pytest.fixture(scope="function")
 def alice() -> sy.VirtualMachine:
@@ -39,6 +51,9 @@ def alice() -> sy.VirtualMachine:
 def model() -> SyNet:
     return SyNet()
 
+@pytest.fixture(scope="function")
+def modelEmpty() -> SyNetEmpty:
+    return SyNetEmpty()
 
 @pytest.fixture(scope="function")
 def dataloader() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -77,6 +92,11 @@ def test_module_modules(model: SyNet) -> None:
     assert "fc1" in modules
     assert modules["fc1"].in_features == IN_DIM
 
+def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
+    modules = modelEmpty.modules
+    assert len(modules.items()) == 0
+    
+
 
 def test_module_parameteres(alice: sy.VirtualMachine, model: SyNet) -> None:
     model_ptr = model.send(alice.get_root_client())
@@ -109,6 +129,11 @@ def test_module_state_dict(model: SyNet) -> None:
         assert k in new_state
         assert torch.all(torch.eq(new_state[k], state[k]))
 
+    new_model.is_local = False
+
+    assert new_model.load_state_dict(state) == None
+    assert new_model.state_dict() == None
+
 
 def test_module_load_save(model: SyNet) -> None:
     state = model.state_dict()
@@ -121,10 +146,16 @@ def test_module_load_save(model: SyNet) -> None:
 
     path = folder / str(time.time())
     model.save(path)
+    
+    model.is_local = False
+    assert model.save(path) == None
 
     new_model = SyNet()
     new_model.load(path)
     new_state = new_model.state_dict()
+    
+    new_model.is_local = False
+    assert new_model.load(path) == None
 
     try:
         os.remove(path)
@@ -182,3 +213,10 @@ def test_module_send_get(
 
     for idx, param in enumerate(direct_param):
         assert param.tolist() == model_parameter[idx].tolist()
+
+    model.is_local = False
+
+    assert model.send(alice_client) == None
+
+def test_debug_sum_layers(model: SyNet):
+    assert model.debug_sum_layers() == None
