@@ -1,6 +1,5 @@
 # syft absolute
 from syft.lib.python.bool import Bool
-from syft.lib.python.bool import BoolWrapper
 from syft.lib.python.dict import Dict
 from syft.lib.python.float import Float
 from syft.lib.python.int import Int
@@ -398,10 +397,6 @@ def test_pos():
 
 def test_protobuf_schema():
     assert Bool.get_protobuf_schema()
-
-
-def test_wrapped_type():
-    assert BoolWrapper.get_wrapped_type()
 
 
 def test_to_bytes():

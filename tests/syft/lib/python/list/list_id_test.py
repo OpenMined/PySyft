@@ -1,7 +1,6 @@
 # syft absolute
 from syft.lib.python.int import Int
 from syft.lib.python.list import List
-from syft.lib.python.list import ListWrapper
 
 sy_list = List([Int(1), Int(2), Int(3)])
 other_list = List([Int(4)])
@@ -164,8 +163,3 @@ def test_id_sort():
     tmp_id = tmp_list.id
     tmp_list.sort()
     assert tmp_list.id == tmp_id
-
-
-def test_protobuf_schema():
-    assert List.get_protobuf_schema()
-    assert ListWrapper.get_wrapped_type() is List
