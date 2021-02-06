@@ -322,6 +322,13 @@ Okay, any time we are inside the virtualenv every python and pip command we run 
 ### Install Python Dependencies
 Once you are inside the virtualenv you can do this with pip or pipenv.
 
+#### Windows
+To install the dependencies properly on Windows, first install pytorch v1.7.1 using the following powershell command:
+```
+scripts/pytorch_install.ps1 1.7.1
+```
+then continue below. 
+
 **NOTE** this is required for several `dev` packages like pytest-xdist etc.
 ```
 $ pip install -r requirements.txt
