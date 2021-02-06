@@ -17,6 +17,7 @@ from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
+from ...core.common.serde.serializable import bind_protobuf
 
 
 def dispatch_other(obj: Any) -> bool:
@@ -25,6 +26,7 @@ def dispatch_other(obj: Any) -> bool:
     return obj
 
 
+@bind_protobuf
 class Bool(int, PyPrimitive):
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
@@ -314,34 +316,6 @@ class Bool(int, PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Bool_PB
 
-
-class BoolWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Bool_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Bool_PB) -> "BoolWrapper":
-        return Bool._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Bool_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Bool
-
     @staticmethod
     def construct_new_object(
         id: UID,
@@ -353,6 +327,3 @@ class BoolWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
-
-
-aggressive_set_attr(obj=Bool, name="serializable_wrapper_type", attr=BoolWrapper)
