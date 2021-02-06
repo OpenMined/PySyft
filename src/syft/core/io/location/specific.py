@@ -9,9 +9,9 @@ from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
+from ...common.serde.serializable import bind_protobuf
 from ...common.uid import UID
 from .location import Location
-from ...common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

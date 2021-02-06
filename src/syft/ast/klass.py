@@ -17,6 +17,7 @@ from google.protobuf.message import Message
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
+from ..core.common.group import VerifyAll
 from ..core.common.serde.serializable import Serializable
 from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
@@ -25,11 +26,10 @@ from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
+from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
-from ..core.store.storeable_object import StorableObject
-from ..core.common.group import VerifyAll
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
@@ -348,18 +348,7 @@ class Class(Callable):
         aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
         aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
 
-    def create_serialization_methods(outer_self) -> None:
-        def serialize(  # type: ignore
-            self,
-            to_proto: bool = True,
-            to_bytes: bool = False,
-        ) -> Union[str, bytes, Message]:
-            return _serialize(
-                obj=self,
-                to_proto=to_proto,
-                to_bytes=to_bytes,
-            )
-
+    def create_serialization_methods(outer_self) -> None:        
         aggressive_set_attr(
             obj=outer_self.object_ref, name="to_proto", attr=Serializable.to_proto
         )

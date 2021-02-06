@@ -10,13 +10,13 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.int_pb2 import Int as Int_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
-from ...core.common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

@@ -3,19 +3,22 @@ from typing import Any
 from typing import Callable as CallableT
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
+from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft relative
-from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
-from ...util import aggressive_set_attr
-from ...core.common.serde.serializable import Serializable
-from ...core.common.serde.serializable import bind_protobuf
 
 # syft absolute
 import syft
+
+# syft relative
+from ...core.common import UID
+from ...core.common.serde.serializable import Serializable
+from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serialize import _serialize
+from ...core.store.storeable_object import StorableObject
+from ...util import aggressive_set_attr
 
 module_type = type(syft)
 
@@ -78,3 +81,22 @@ def GenerateWrapper(
     parent.__dict__[Wrapper.__name__] = Wrapper
 
     aggressive_set_attr(obj=wrapped_type, name="serializable_wrapper_type", attr=Wrapper)
+
+
+    def serialize(  # type: ignore
+            self,
+            to_proto: bool = True,
+            to_bytes: bool = False,
+        ) -> Union[str, bytes, Message]:
+        return _serialize(
+            obj=self,
+            to_proto=to_proto,
+            to_bytes=to_bytes,
+        )
+
+    serialize_attr = "serialize"
+    if not hasattr(wrapped_type, serialize_attr):
+        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)
+    else:
+        serialize_attr = "sy_serialize"
+        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)

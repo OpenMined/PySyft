@@ -1,5 +1,6 @@
 # stdlib
 import pydoc
+import re
 import sys
 from typing import List
 from typing import Optional
@@ -10,7 +11,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
 import syft as sy
-import re
 
 # syft relative
 from ...decorators import syft_decorator
@@ -21,9 +21,9 @@ from ...util import get_fully_qualified_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from ..common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

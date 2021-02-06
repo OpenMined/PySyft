@@ -27,7 +27,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/python/list.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto"X\n\x04List\x12-\n\x04\x64\x61ta\x18\x01 \x03(\x0b\x32\x1f.syft.core.store.StorableObject\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b'\n\x1bproto/lib/python/list.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto"7\n\x04List\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x0c\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
@@ -48,8 +48,8 @@ _LIST = _descriptor.Descriptor(
             full_name="syft.lib.python.List.data",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=3,
             has_default_value=False,
             default_value=[],
@@ -91,12 +91,9 @@ _LIST = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=124,
-    serialized_end=212,
+    serialized_end=179,
 )
 
-_LIST.fields_by_name[
-    "data"
-].message_type = proto_dot_core_dot_store_dot_store__object__pb2._STORABLEOBJECT
 _LIST.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID

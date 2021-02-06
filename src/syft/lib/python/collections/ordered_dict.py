@@ -10,6 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft relative
 from .... import deserialize
 from .... import serialize
+from ....core.common.serde.serializable import bind_protobuf
 from ....core.common.uid import UID
 from ....core.store.storeable_object import StorableObject
 from ....decorators import syft_decorator
@@ -24,6 +25,7 @@ from ..util import downcast
 from ..util import upcast
 
 
+@bind_protobuf
 class OrderedDict(PyOrderedDict, PyPrimitive):
     def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
         super().__init__(*args, **kwds)
@@ -191,34 +193,6 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return OrderedDict_PB
 
-
-class DictWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> OrderedDict_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: OrderedDict_PB) -> "OrderedDict":  # type: ignore
-        return OrderedDict._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return OrderedDict_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return OrderedDict
-
     @staticmethod
     def construct_new_object(
         id: UID,
@@ -230,6 +204,3 @@ class DictWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
-
-
-aggressive_set_attr(obj=OrderedDict, name="serializable_wrapper_type", attr=DictWrapper)

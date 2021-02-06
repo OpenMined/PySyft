@@ -13,12 +13,12 @@ from .....proto.core.node.common.action.save_object_pb2 import (
 from ....common.group import VerifyAll
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import Serializable
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from ....common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

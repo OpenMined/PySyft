@@ -13,9 +13,9 @@ from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKeyWrapper_PB
 from ...util import aggressive_set_attr
 from ..store.store_interface import StorableObject
-from .uid import UID
 from .serde.serializable import Serializable
 from .serde.serializable import bind_protobuf
+from .uid import UID
 
 
 class VerifyKeyWrapper(StorableObject):

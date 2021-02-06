@@ -57,6 +57,7 @@ def _deserialize(
         # lets try to lookup the type we are deserializing
         obj_type = type(blob).schema2type  # type: ignore
 
+
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except AttributeError:
         traceback_and_raise(

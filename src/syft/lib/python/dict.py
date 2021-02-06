@@ -16,6 +16,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...logger import traceback_and_raise
@@ -29,7 +30,6 @@ from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
-from ...core.common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

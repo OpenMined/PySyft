@@ -19,13 +19,13 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
-from ....common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf
