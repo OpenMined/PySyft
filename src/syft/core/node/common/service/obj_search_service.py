@@ -11,12 +11,12 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
 )
@@ -193,7 +193,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
     ) -> ObjectSearchReplyMessage:
         results: List[Pointer] = list()
-
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
@@ -201,7 +200,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 contains_all_in_permissions = any(
                     key is VerifyAll for key in obj.search_permissions.keys()
                 )
-
                 if (
                     verify_key in obj.search_permissions.keys()
                     or verify_key == node.root_verify_key
@@ -211,12 +209,13 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     ptr = ptr_type(
                         client=node,
                         id_at_location=obj.id,
+                        object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,
                     )
                     results.append(ptr)
         except Exception as e:
-            logger.error(f"Error searching store. {e}")
+            error(f"Error searching store. {e}")
 
         return ObjectSearchReplyMessage(address=msg.reply_to, results=results)
 

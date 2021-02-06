@@ -62,11 +62,12 @@ $ conda install jupyter notebook
 
 We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
 
-Python | Torch 1.5 | Torch 1.6 | Torch 1.7
---- | --- | --- | ---
-3.6 | ✅ | ✅ | ✅
-3.7 | ✅ | ✅ | ✅
-3.8 | ✅ | ✅ | ✅
+Python | Torch 1.4 | Torch 1.5 | Torch 1.6 | Torch 1.7
+--- | --- | --- | --- | ---
+3.6 | ✅ | ✅ | ✅ | ✅
+3.7 | ✅ | ✅ | ✅ | ✅
+3.8 | ✅ | ✅ | ✅ | ✅
+3.9 | 🔜 | 🔜 | 🔜 | 🔜
 
 ## Installation
 
@@ -76,7 +77,7 @@ $ pip install syft
 ```
 
 This will auto-install PyTorch and other dependencies as required, to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 
 ## Documentation
 The latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
@@ -112,7 +113,7 @@ These tutorials cover how to operate common network types over the Duet API.
 
 ## Start Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md).
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
 Also, join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
@@ -123,10 +124,15 @@ The slack community is very friendly and great about quickly answering questions
 The latest version of PySyft is 0.3.0 however this software is still Beta. If you find
 a bug please file it in the GitHub issues.
 
+
 ## Organizational Contributions
 We are very grateful for contributions to PySyft from the following organizations!
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="200" height="150"/>](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="200"/>](https://dropoutlabs.com/)
---------------------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------
+
+| | | |
+|-|-|-|
+[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
+[<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)
+
 
 ## Support
 For support in using this library, please join the **#lib_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
@@ -194,7 +200,7 @@ If you would like to become a user of PySyft, please progress to our User Docume
 
 ## Want to Develop PySyft?
 If you would like to become a developer of PySyft, please see our
-[Contributor Documentation](CONTRIBUTING.md).
+[Contributor Documentation](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 This documentation will help you set up your development environment, give you a roadmap
 for learning the codebase, and help you find your first project to contribute.
 

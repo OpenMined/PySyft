@@ -13,4 +13,5 @@ message RunFunctionOrConstructorAction {
   syft.core.common.UID id_at_location = 4;
   syft.core.io.Address address = 5;
   syft.core.common.UID msg_id = 6;
+  bool is_static = 7;
 }

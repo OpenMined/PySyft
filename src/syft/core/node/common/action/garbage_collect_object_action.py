@@ -3,11 +3,11 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )
@@ -29,7 +29,7 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         try:
             node.store.delete(key=self.id_at_location)
         except Exception as e:
-            logger.critical(
+            critical(
                 "> GarbageCollectObjectAction deletion exception "
                 + f"{self.id_at_location} {e}"
             )

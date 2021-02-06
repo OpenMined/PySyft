@@ -5,6 +5,7 @@ on what expected inputs and return types are provided by the json file.
 # stdlib
 from itertools import product
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -178,8 +179,12 @@ for method, return_type_name_or_dict in allowlist.items():
         BASIC_OPS_RETURN_TYPE[method_name] = return_type
 
 # load our custom configurations
-with open(__file__.replace(".py", ".json"), "r") as f:
-    TEST_JSON = json.loads(f.read())
+try:
+    with open(__file__.replace(".py", ".json"), "r") as f:
+        TEST_JSON = json.loads(f.read())
+except Exception as e:
+    print(f"Exception {e} triggered")
+    raise e
 
 # we need a file to keep all the errors in that makes it easy to debug failures
 TARGET_PLATFORM = f"{PYTHON_VERSION}_{TORCH_VERSION}_{OS_NAME}"
@@ -196,35 +201,52 @@ SUPPORT_FILE_PATH = os.path.abspath(
 # clear the file before running the tests
 if os.path.exists(ERROR_FILE_PATH):
     # this one we can delete since we dont start writing until we are into the tests
-    os.unlink(ERROR_FILE_PATH)
+    try:
+        os.unlink(ERROR_FILE_PATH)
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # we are running many works in parallel and theres a race condition with deleting this
 # file and then writing to it during the collection phase so we are going to just
-# spread out the workers and only delete if the file isnt brand new
+# spread out the workers and only delete if the file isn't brand new
 time.sleep(random.random() * 2)
 
 if os.path.exists(SUPPORT_FILE_PATH):
     # we need to write during gathering so we need to delete this carefully
-    file_stat = os.stat(SUPPORT_FILE_PATH)
-    diff = time.time() - file_stat.st_mtime
-    if diff > 0.1:
-        # only delete on the first run
-        os.unlink(SUPPORT_FILE_PATH)
+    try:
+        file_stat = os.stat(SUPPORT_FILE_PATH)
+        diff = time.time() - file_stat.st_mtime
+        if diff > 0.1:
+            # only delete on the first run
+            for retry in range(5):
+                try:
+                    os.unlink(SUPPORT_FILE_PATH)
+                    break
+                except BaseException:
+                    time.sleep(1)
+    except Exception:
+        print(f"Failed while trying to os.stat file {SUPPORT_FILE_PATH}")
 
 
 # write test debug info to make it easy to debug long running tests with large output
 def write_error_debug(debug_data: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data, default=str)}\n")
+    try:
+        with open(ERROR_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(debug_data, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # write the result of support for the test for creating a comprehensive report
 def write_support_result(test_details: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(SUPPORT_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(test_details, default=str)}\n")
+    try:
+        with open(SUPPORT_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(test_details, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 TEST_DATA = []
@@ -361,7 +383,20 @@ for op in BASIC_OPS:
             write_support_result(support_data)
 
 
-@pytest.mark.slow
+# if the environment variables below are set bigger than 1 we will split the TEST_DATA
+# into parts so that these can be parallelized by different test runners or containers
+TEST_CHUNK = int(os.getenv("TEST_CHUNK", 1))
+TEST_CHUNKS = int(os.getenv("TEST_CHUNKS", 1))
+
+# chunk the tests
+if TEST_CHUNKS > 1:
+    chunk_size = math.ceil(len(TEST_DATA) / TEST_CHUNKS)
+    start_offset = (TEST_CHUNK - 1) * chunk_size
+    end_offset = start_offset + chunk_size
+    TEST_DATA = TEST_DATA[start_offset:end_offset]
+
+
+@pytest.mark.torch
 @pytest.mark.parametrize(
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,
