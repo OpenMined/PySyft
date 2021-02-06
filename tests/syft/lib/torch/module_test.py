@@ -214,9 +214,18 @@ def test_module_send_get(
     for idx, param in enumerate(direct_param):
         assert param.tolist() == model_parameter[idx].tolist()
 
-    model.is_local = False
+    assert model.get() == None
 
+    model.is_local = False
     assert model.send(alice_client) == None
 
-def test_debug_sum_layers(model: SyNet):
+
+def test_debug_sum_layers(
+    alice: sy.VirtualMachine,
+    model: SyNet
+    ):
     assert model.debug_sum_layers() == None
+    alice_client = alice.get_root_client()
+    model_ptr = model.send(alice_client)
+
+    assert model_ptr.debug_sum_layers() == None
