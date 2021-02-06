@@ -11,7 +11,7 @@ import torchvision as tv
 from ...ast.globals import Globals
 from ...logger import critical
 from .allowlist import allowlist
-from .allowlist import module_pargs
+from .module_pargs import module_pargs
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
