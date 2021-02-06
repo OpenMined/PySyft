@@ -40,6 +40,8 @@ class Callable(ast.attribute.Attribute):
              object_ref (Any): The actual python object for which the computation is being made.
              return_type_name (Optional[str]): The return type name of the given action as a
                  string (the full path to it, similar to path_and_name).
+             require_pargs (bool) : if True, class requires positional arguments to access attributes
+             parg_list (bool) : if require_pargs is True, then parg_list contains list of all positional arguments
              is_static (bool): if True, the object has to be solved on the AST, not on an
                 existing pointer.
         """

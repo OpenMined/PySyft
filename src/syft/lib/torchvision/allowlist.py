@@ -17,8 +17,8 @@ allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normaliz
 # TODO: Normalize properties only exists on the object not on the class?
 allowlist["torchvision.transforms.Normalize.inplace"] = "syft.lib.python.Bool"
 # TODO: mean and std are actually tuples
-allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.List"
-allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.List"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.Tuple"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.Tuple"
 allowlist["torchvision.datasets.MNIST"] = "torchvision.datasets.MNIST"
 allowlist["torchvision.datasets.MNIST.__len__"] = "syft.lib.python.Int"
 allowlist["torchvision.datasets.VisionDataset"] = "torchvision.datasets.VisionDataset"
