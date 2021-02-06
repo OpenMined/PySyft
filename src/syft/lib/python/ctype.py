@@ -3,19 +3,22 @@ from typing import Any
 from typing import Callable as CallableT
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
+from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft absolute
+import syft
 
 # syft relative
 from ...core.common import UID
 from ...core.common.serde.serializable import Serializable
 from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serialize import _serialize
 from ...core.store.storeable_object import StorableObject
 from ...util import aggressive_set_attr
-
-# syft absolute
-import syft
 
 module_type = type(syft)
 
@@ -66,10 +69,10 @@ def GenerateWrapper(
     Wrapper.__name__ = f"{klass}Wrapper"
     Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
     # create a fake module `wrappers` under `syft`
-    if not 'wrappers' in syft.__dict__:
-        syft.__dict__['wrappers'] = module_type(name="wrappers")
+    if not "wrappers" in syft.__dict__:
+        syft.__dict__["wrappers"] = module_type(name="wrappers")
     # for each part of the path, create a fake module and add it to it's parent
-    parent = syft.__dict__['wrappers']
+    parent = syft.__dict__["wrappers"]
     for n in module_parts:
         if not n in parent.__dict__:
             parent.__dict__[n] = module_type(name=n)
@@ -77,4 +80,24 @@ def GenerateWrapper(
     # finally add our wrapper class to the end of the path
     parent.__dict__[Wrapper.__name__] = Wrapper
 
-    aggressive_set_attr(obj=wrapped_type, name="serializable_wrapper_type", attr=Wrapper)
+    aggressive_set_attr(
+        obj=wrapped_type, name="serializable_wrapper_type", attr=Wrapper
+    )
+
+    def serialize(  # type: ignore
+        self,
+        to_proto: bool = True,
+        to_bytes: bool = False,
+    ) -> Union[str, bytes, Message]:
+        return _serialize(
+            obj=self,
+            to_proto=to_proto,
+            to_bytes=to_bytes,
+        )
+
+    serialize_attr = "serialize"
+    if not hasattr(wrapped_type, serialize_attr):
+        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)
+    else:
+        serialize_attr = "sy_serialize"
+        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)

@@ -12,6 +12,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
@@ -27,6 +28,7 @@ class ListIterator(Iterator):
     pass
 
 
+@bind_protobuf
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
@@ -140,13 +142,13 @@ class List(UserList, PyPrimitive):
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
-        data = [serialize(obj=element) for element in downcasted]
+        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return List_PB(id=id_, data=data)
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
         id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element) for element in proto.data]
+        value = [deserialize(blob=element, from_bytes=True) for element in proto.data]
         new_list = List(value=value)
         new_list._id = id_
         return new_list
@@ -154,34 +156,6 @@ class List(UserList, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return List_PB
-
-
-class ListWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> List_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: List_PB) -> "List":  # type: ignore
-        return List._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return List_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return List
 
     @staticmethod
     def construct_new_object(
@@ -194,6 +168,3 @@ class ListWrapper(StorableObject):
         data.tags = tags
         data.description = description
         return data
-
-
-aggressive_set_attr(obj=List, name="serializable_wrapper_type", attr=ListWrapper)

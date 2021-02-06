@@ -63,6 +63,7 @@ def proto2object(proto: Tensor_PB) -> th.Tensor:
 
     return tensor
 
+
 GenerateWrapper(
     wrapped_type=torch_tensor_type,
     import_path="torch.Tensor",

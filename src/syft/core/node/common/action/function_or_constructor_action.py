@@ -18,6 +18,7 @@ from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
@@ -26,6 +27,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
+@bind_protobuf
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run

@@ -13,10 +13,8 @@ from ...util import aggressive_set_attr
 from .ctype import GenerateWrapper
 
 
-
 def GenerateProtobufWrapper(
-    cls_pb: "GenerateProtocolMessageType",
-    import_path: str
+    cls_pb: "GenerateProtocolMessageType", import_path: str
 ) -> None:
     def object2proto(obj: Any) -> Any:
         return obj

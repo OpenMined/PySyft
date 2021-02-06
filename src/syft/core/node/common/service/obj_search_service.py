@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from .....core.common.serde.serializable import bind_protobuf
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -33,7 +34,7 @@ from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
-from .....core.common.serde.serializable import bind_protobuf
+
 
 @bind_protobuf
 @final

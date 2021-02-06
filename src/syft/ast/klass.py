@@ -365,17 +365,6 @@ class Class(Callable):
         aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
 
     def create_serialization_methods(outer_self) -> None:
-        def serialize(  # type: ignore
-            self,
-            to_proto: bool = True,
-            to_bytes: bool = False,
-        ) -> Union[str, bytes, Message]:
-            return _serialize(
-                obj=self,
-                to_proto=to_proto,
-                to_bytes=to_bytes,
-            )
-
         aggressive_set_attr(
             obj=outer_self.object_ref, name="to_proto", attr=Serializable.to_proto
         )

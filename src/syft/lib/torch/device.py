@@ -23,6 +23,7 @@ def proto2object(proto: "Device_PB") -> Any:
     obj = device(device_type, index)
     return obj
 
+
 GenerateWrapper(
     wrapped_type=device,
     import_path="torch.device",
