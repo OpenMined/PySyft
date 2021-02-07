@@ -218,4 +218,4 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
-          pytest tests/syft/notebooks/ -n 1 --no-cov
+          cd tests/syft/notebooks/ && pytest . -n 1 --no-cov
