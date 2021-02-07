@@ -26,9 +26,12 @@ PORT = 21000
 
 
 def cleanup() -> None:
+    checkpoint_dir = "checkpoints"
     try:
-        checkpoint_dir = "checkpoints"
         shutil.rmtree(checkpoint_dir)
+    except BaseException:
+        pass
+    try:
         os.mkdir(checkpoint_dir)
     except BaseException:
         pass

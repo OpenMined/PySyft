@@ -34,6 +34,10 @@ except BaseException as e:
 
 try:
     shutil.rmtree(checkpoint_dir)
+except BaseException as e:
+    print("rmtree failed ", e)
+
+try:
     os.mkdir(checkpoint_dir)
 except BaseException as e:
     print("os.mkdir failed ", e)
