@@ -1,0 +1,128 @@
+# stdlib
+import atexit
+from multiprocessing import Process
+from multiprocessing import set_start_method
+import os
+import shutil
+import socket
+import sys
+import time
+
+# third party
+import pytest
+
+# syft absolute
+import syft as sy
+
+# syft relative
+from ..grid.duet.process_test import SyftTestProcess
+from ..grid.duet.signaling_server_test import run
+
+ts = pytest.importorskip("tenseal")
+sy.load_lib("tenseal")
+
+set_start_method("spawn", force=True)
+PORT = 21000
+
+
+@pytest.fixture(scope="module")
+def signaling_server() -> Process:
+    print(f"creating signaling server on port {PORT}")
+    grid_proc = Process(target=run, args=(PORT,))
+    grid_proc.start()
+
+    def grid_cleanup() -> None:
+        print("stop signaling server")
+        grid_proc.terminate()
+        grid_proc.join()
+
+    atexit.register(grid_cleanup)
+
+    return grid_proc
+
+
+def do() -> None:
+    # stdlib
+    import time
+
+    # syft absolute
+    import syft as sy
+
+    sy.logger.add(sys.stderr, "ERROR")
+
+    start = time.time()
+
+    # syft relative
+    from . import (  # noqa: F401
+        examples_homomorphic_encryption_Tutorial_0_TenSEAL_Syft_Data_Owner_ipynb,
+    )
+
+    sys.stderr.write(f"DO sending took {time.time() - start} sec\n")
+
+    sy.core.common.event_loop.loop.run_forever()
+
+
+def ds() -> None:
+    # stdlib
+    import time
+
+    # syft absolute
+    import syft as sy
+
+    sy.logger.add(sys.stderr, "ERROR")
+    start = time.time()
+
+    # syft relative
+    from . import (  # noqa: F401
+        examples_homomorphic_encryption_Tutorial_0_TenSEAL_Syft_Data_Scientist_ipynb,
+    )
+
+    sys.stderr.write(f"DS get took {time.time() - start} sec\n")
+
+
+def cleanup() -> None:
+    try:
+        checkpoint_dir = "checkpoints"
+        shutil.rmtree(checkpoint_dir)
+        os.mkdir(checkpoint_dir)
+    except BaseException:
+        pass
+
+
+atexit.register(cleanup)
+
+
+def test_examples_homomorphic_encryption_Tutorial_0_TenSEAL_Syft(
+    signaling_server: Process,
+) -> None:
+    time.sleep(3)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        assert s.connect_ex(("localhost", PORT)) == 0
+
+    cleanup()
+
+    start = time.time()
+
+    do_proc = SyftTestProcess(target=do, args=())
+    do_proc.start()
+
+    ds_proc = SyftTestProcess(target=ds, args=())
+    ds_proc.start()
+
+    ds_proc.join(30)
+
+    do_proc.terminate()
+
+    if do_proc.exception:
+        exception, tb = do_proc.exception
+        raise Exception(tb) from exception
+
+    if ds_proc.exception:
+        exception, tb = ds_proc.exception
+        raise Exception(tb) from exception
+
+    if ds_proc.is_alive():
+        ds_proc.terminate()
+        raise Exception("ds_proc is hanged")
+
+    print(f"test passed in {time.time() - start} seconds")
