@@ -106,7 +106,7 @@ def test_{{TESTCASE}}() -> None:
     ds_proc = SyftTestProcess(target=ds, args=())
     ds_proc.start()
 
-    ds_proc.join(240)
+    ds_proc.join(400)
 
     do_proc.terminate()
 
