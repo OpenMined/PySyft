@@ -63,6 +63,10 @@ loop = asyncio.get_event_loop()
     notebook_nodes["cells"].insert(0, custom_cell)
 
     for idx, cell in enumerate(notebook_nodes["cells"]):
+        if cell["cell_type"] == "code" and "loopback=True" in cell["source"]:
+            notebook_nodes["cells"][idx]["source"] = cell["source"].replace(
+                "loopback=True", 'loopback=True, network_url=f"http://127.0.0.1:21000"'
+            )
         if cell["cell_type"] == "markdown" and "Checkpoint" in cell["source"]:
             checkpoint = (
                 cell["source"]
@@ -84,10 +88,10 @@ loop = asyncio.get_event_loop()
                 checkpoint_cell = nbformat.v4.new_code_cell(
                     source=f"""
 Path(\"{ck_file}\").touch()
-for retry in range(20):
+for retry in range(360):
     if Path(\"{wait_file}\").exists():
         break
-    task = loop.create_task(asyncio.sleep(0.1))
+    task = loop.create_task(asyncio.sleep(1))
     loop.run_until_complete(task)
                                                             """
                 )
@@ -103,10 +107,10 @@ for retry in range(20):
                 checkpoint_cell = nbformat.v4.new_code_cell(
                     source=f"""
 Path(\"{ck_file}\").touch()
-for retry in range(20):
+for retry in range(360):
     if Path(\"{wait_file}\").exists():
         break
-    task = loop.create_task(asyncio.sleep(0.1))
+    task = loop.create_task(asyncio.sleep(1))
     loop.run_until_complete(task)
 assert Path(\"{wait_file}\").exists()
                                                             """
@@ -128,3 +132,15 @@ for case in tests:
         print("invalid testcase ", test)
 
     print(case, test)
+
+    template = open(output_dir / "duet_test.py.template").read()
+
+    output_py = template.replace("{{TESTCASE}}", str(case))
+    for script in test:
+        if "Data_Owner" in script:
+            output_py = output_py.replace("{{DO_SCRIPT}}", script)
+        elif "Data_Scientist" in script:
+            output_py = output_py.replace("{{DS_SCRIPT}}", script)
+
+    with open(output_dir / f"duet_{case}_test.py", "w") as out_py:
+        out_py.write(output_py)
