@@ -30,6 +30,7 @@ def GenerateWrapper(
     protobuf_scheme: GeneratedProtocolMessageType,
     type_object2proto: CallableT,
     type_proto2object: CallableT,
+    cons_new_obj: Optional[CallableT] = None
 ) -> None:
     @bind_protobuf
     class Wrapper(Serializable):
@@ -55,10 +56,18 @@ def GenerateWrapper(
             description: Optional[str],
             tags: Optional[List[str]],
         ) -> StorableObject:
-            setattr(data, "_id", id)
-            data.tags = tags
-            data.description = description
-            return data
+            if cons_new_obj:
+                return cons_new_obj(
+                    id=id, 
+                    data=data, 
+                    description=description, 
+                    tags=tags
+                )
+            else:
+                setattr(data, "_id", id)
+                data.tags = tags
+                data.description = description
+                return data
 
         def upcast(self) -> Any:
             return self.obj

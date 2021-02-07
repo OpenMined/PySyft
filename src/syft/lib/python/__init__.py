@@ -17,7 +17,6 @@ from .int import Int
 from .iterator import Iterator
 from .list import List
 from .namedtuple import ValuesIndices
-from .namedtuple import ValuesIndicesWrapper
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
@@ -40,7 +39,6 @@ for syft_type in [
     String,
     Tuple,
     ValuesIndices,
-    ValuesIndicesWrapper,
 ]:
     syft_type.__module__ = __name__
 
