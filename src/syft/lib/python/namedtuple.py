@@ -23,6 +23,7 @@ from ...proto.lib.torch.valuesindices_pb2 import ValuesIndicesProto as ValuesInd
 from ...util import aggressive_set_attr
 from ..torch.tensor_util import protobuf_tensor_deserializer
 from ..torch.tensor_util import protobuf_tensor_serializer
+from .ctype import GenerateWrapper
 
 # this is all the different named tuple attrs so they can be used if an object doesnt
 # have them then getting the wrong attr will fail this needs to be improved with unions
@@ -53,174 +54,149 @@ all_attrs = tuple(
 ValuesIndices = namedtuple("ValuesIndices", all_attrs)  # type: ignore
 
 
-class ValuesIndicesWrapper(StorableObject):
-    def __init__(self, value: object):
-        _id = getattr(value, "id", UID())
-        obj_type, values = ValuesIndicesWrapper.get_parts(return_tuple=value)
-        return_tuple = ValuesIndicesWrapper.make_namedtuple(
-            obj_type=obj_type, values=values, id=_id
-        )
+def object2proto(obj: object) -> ValuesIndices_PB:
+    obj_type = full_name_with_qualname(klass=type(obj))
+    keys = get_keys(klass_name=obj_type)
 
-        super().__init__(
-            data=return_tuple,
-            id=_id,
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
+    values = []
+    for key in keys:
+        values.append(getattr(obj, key, None))
 
-        self.value = return_tuple
+    proto = ValuesIndices_PB()
+    proto.values.extend(list(map(lambda x: protobuf_tensor_serializer(x), values)))
+    proto.keys.extend(list(keys))
+    proto.id.CopyFrom(_serialize(obj=getattr(obj, "id", UID())))
+    proto.obj_type = obj_type
 
-    def _data_object2proto(self) -> ValuesIndices_PB:
-        obj_type = full_name_with_qualname(klass=type(self.data))
-        keys = ValuesIndicesWrapper.get_keys(klass_name=obj_type)
+    return proto
 
-        values = []
-        for key in keys:
-            values.append(getattr(self.data, key, None))
+def proto2object(proto: ValuesIndices_PB) -> "ValuesIndices":  # type: ignore
+    _id: UID = _deserialize(blob=proto.id)
+    values = [protobuf_tensor_deserializer(x) for x in proto.values]
 
-        proto = ValuesIndices_PB()
-        proto.values.extend(list(map(lambda x: protobuf_tensor_serializer(x), values)))
-        proto.keys.extend(list(keys))
-        # proto.values.CopyFrom(protobuf_tensor_serializer(values))
-        # proto.indices.CopyFrom(protobuf_tensor_serializer(indices))
-        proto.id.CopyFrom(_serialize(obj=self.id))
-        proto.obj_type = obj_type
+    return_type = make_namedtuple(
+        obj_type=proto.obj_type, values=values, id=_id
+    )
 
-        return proto
+    return return_type
 
-    @staticmethod
-    def _data_proto2object(proto: ValuesIndices_PB) -> "ValuesIndices":  # type: ignore
-        _id: UID = _deserialize(blob=proto.id)
-        values = [protobuf_tensor_deserializer(x) for x in proto.values]
-        # keys = proto.keys
 
-        return_type = ValuesIndicesWrapper.make_namedtuple(
-            obj_type=proto.obj_type, values=values, id=_id
-        )
+def get_keys(klass_name: str) -> List[str]:
+    keys = []
 
-        return return_type
+    if klass_name == "torch.return_types.eig":
+        key1 = "eigenvalues"
+        key2 = "eigenvectors"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.lstsq":
+        key1 = "solution"
+        key2 = "QR"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.slogdet":
+        key1 = "sign"
+        key2 = "logabsdet"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.qr":
+        key1 = "Q"
+        key2 = "R"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.solve":
+        key1 = "solution"
+        key2 = "LU"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.symeig":
+        key1 = "eigenvalues"
+        key2 = "eigenvectors"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.triangular_solve":
+        key1 = "solution"
+        key2 = "cloned_coefficient"
+        keys.append(key1)
+        keys.append(key2)
+    elif klass_name == "torch.return_types.svd":
+        key1 = "U"
+        key2 = "S"
+        key3 = "V"
+        keys.append(key1)
+        keys.append(key2)
+        keys.append(key3)
+    elif klass_name == "torch.return_types.geqrf":
+        key1 = "a"
+        key2 = "tau"
+        keys.append(key1)
+        keys.append(key2)
+    else:
+        # default
+        key1 = "values"
+        key2 = "indices"
+        keys.append(key1)
+        keys.append(key2)
 
-    @staticmethod
-    def get_keys(klass_name: str) -> List[str]:
-        keys = []
+    return keys
 
-        if klass_name == "torch.return_types.eig":
-            key1 = "eigenvalues"
-            key2 = "eigenvectors"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.lstsq":
-            key1 = "solution"
-            key2 = "QR"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.slogdet":
-            key1 = "sign"
-            key2 = "logabsdet"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.qr":
-            key1 = "Q"
-            key2 = "R"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.solve":
-            key1 = "solution"
-            key2 = "LU"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.symeig":
-            key1 = "eigenvalues"
-            key2 = "eigenvectors"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.triangular_solve":
-            key1 = "solution"
-            key2 = "cloned_coefficient"
-            keys.append(key1)
-            keys.append(key2)
-        elif klass_name == "torch.return_types.svd":
-            key1 = "U"
-            key2 = "S"
-            key3 = "V"
-            keys.append(key1)
-            keys.append(key2)
-            keys.append(key3)
-        elif klass_name == "torch.return_types.geqrf":
-            key1 = "a"
-            key2 = "tau"
-            keys.append(key1)
-            keys.append(key2)
-        else:
-            # default
-            key1 = "values"
-            key2 = "indices"
-            keys.append(key1)
-            keys.append(key2)
 
-        return keys
+def get_parts(return_tuple: Any) -> Tuple[str, List[torch.Tensor]]:
+    obj_type = full_name_with_qualname(klass=type(return_tuple))
+    keys = get_keys(klass_name=obj_type)
+    values = []
+    for key in keys:
+        values.append(getattr(return_tuple, key))
 
-    @staticmethod
-    def get_parts(return_tuple: Any) -> Tuple[str, List[torch.Tensor]]:
-        obj_type = full_name_with_qualname(klass=type(return_tuple))
-        keys = ValuesIndicesWrapper.get_keys(klass_name=obj_type)
-        values = []
-        for key in keys:
-            values.append(getattr(return_tuple, key))
+    return (obj_type, values)
 
-        return (obj_type, values)
 
-    @staticmethod
-    def make_namedtuple(
-        obj_type: str,
-        values: List[torch.Tensor],
-        id: UID,
-        tags: List[str] = [],
-        description: str = "",
-    ) -> Any:
-        module_parts = obj_type.split(".")
-        klass = module_parts.pop()
-        module_name = ".".join(module_parts)
-        keys = ValuesIndicesWrapper.get_keys(klass_name=obj_type)
-        tuple_klass = namedtuple(  # type: ignore
-            klass, (*keys, "tags", "description", "id")
-        )
-        tuple_klass.__module__ = module_name
-        return tuple_klass(*values, tags, description, id)  # type: ignore
+def make_namedtuple(
+    obj_type: str,
+    values: List[torch.Tensor],
+    id: UID,
+    tags: List[str] = [],
+    description: str = "",
+) -> Any:
+    module_parts = obj_type.split(".")
+    klass = module_parts.pop()
+    module_name = ".".join(module_parts)
+    keys = get_keys(klass_name=obj_type)
+    tuple_klass = namedtuple(  # type: ignore
+        klass, (*keys, "tags", "description", "id")
+    )
+    tuple_klass.__module__ = module_name
+    return tuple_klass(*values, tags, description, id)  # type: ignore
 
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return ValuesIndices_PB
 
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        obj_type, values = ValuesIndicesWrapper.get_parts(return_tuple=data)
+def cons_new_obj(
+    id: UID,
+    data: StorableObject,
+    description: Optional[str],
+    tags: Optional[List[str]],
+) -> StorableObject:
+    obj_type, values = get_parts(return_tuple=data)
 
-        if tags is None:
-            # for the type checker
-            tags = []
-        if description is None:
-            # for the type checker
-            description = ""
+    if tags is None:
+        # for the type checker
+        tags = []
+    if description is None:
+        # for the type checker
+        description = ""
 
-        return_tuple = ValuesIndicesWrapper.make_namedtuple(
-            obj_type=obj_type,
-            values=values,
-            id=id,
-            tags=tags,
-            description=description,
-        )
+    return_tuple = make_namedtuple(
+        obj_type=obj_type,
+        values=values,
+        id=id,
+        tags=tags,
+        description=description,
+    )
 
-        return return_tuple
+    return return_tuple
 
 
 # get each of the dynamic torch.return_types.*
-def add_torch_return_types() -> None:
+def get_supported_types():
     supported_types = []
     A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
     B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
@@ -289,26 +265,16 @@ def add_torch_return_types() -> None:
     min_t = s.min(0)
     supported_types.append(type(min_t))
 
-    for types in supported_types:
-        aggressive_set_attr(
-            obj=types, name="serializable_wrapper_type", attr=ValuesIndicesWrapper
-        )
+    return supported_types
+    
 
-        def attr_serialize(  # type: ignore
-            self,
-            to_proto: bool = True,
-            to_bytes: bool = False,
-        ) -> Union[str, bytes, Message]:
-            return _serialize(
-                obj=self,
-                to_proto=to_proto,
-                to_bytes=to_bytes,
-            )
-
-        aggressive_set_attr(obj=types, name="serialize", attr=attr_serialize)
-        aggressive_set_attr(obj=types, name="to_proto", attr=Serializable.to_proto)
-        aggressive_set_attr(obj=types, name="proto", attr=Serializable.proto)
-        aggressive_set_attr(obj=types, name="to_bytes", attr=Serializable.to_bytes)
-
-
-add_torch_return_types()
+supported_types = get_supported_types()
+for typ in supported_types:
+    GenerateWrapper(
+        wrapped_type=typ,
+        import_path=f"{typ.__module__}.{typ.__name__}",
+        protobuf_scheme=ValuesIndices_PB,
+        type_object2proto=object2proto,
+        type_proto2object=proto2object,
+        cons_new_obj=cons_new_obj,
+    )
