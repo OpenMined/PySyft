@@ -354,4 +354,3 @@ class Address(Serializable):
 
         # remove extraneous comma and add a close carrot
         return out[:-1] + ">"
-q
