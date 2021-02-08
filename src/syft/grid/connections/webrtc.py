@@ -119,7 +119,7 @@ except KeyError:
 try:
     DC_MAX_BUFSIZE = int(os.environ["DC_MAX_BUFSIZE"])
 except KeyError:
-    DC_MAX_BUFSIZE = 2 ** 24
+    DC_MAX_BUFSIZE = 2 ** 22
 
 
 class OrderedChunk:

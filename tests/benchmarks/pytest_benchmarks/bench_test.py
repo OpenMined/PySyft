@@ -110,12 +110,14 @@ def test_duet_list_multiprocess(
     benchmark.pedantic(send_get_list_multiprocess, args=(data,), rounds=3, iterations=3)
 
 
+@pytest.mark.skip
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
     "chunk_size,max_buffer",
     [
-        (2 ** 14, 2 ** 22),
-        (2 ** 16, 2 ** 24),
+        (2 ** 14, 2 ** 18),
+        (2 ** 18, 2 ** 23),
+        (2 ** 18, 2 ** 24),
         (2 ** 18, 2 ** 25),
     ],
 )
@@ -124,11 +126,11 @@ def test_duet_chunk_size(
 ) -> None:
     time.sleep(3)
 
-    data = "a" * (40 * MB)
+    data = "a" * (60 * MB)
 
     os.environ["DC_MAX_CHUNK_SIZE"] = str(chunk_size)
     os.environ["DC_MAX_BUFSIZE"] = str(max_buffer)
 
     benchmark.pedantic(
-        send_get_string_multiprocess, args=(data,), rounds=3, iterations=3
+        send_get_string_multiprocess, args=(data,), rounds=2, iterations=2
     )
