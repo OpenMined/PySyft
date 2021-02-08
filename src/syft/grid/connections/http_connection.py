@@ -8,8 +8,6 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SyftMessage
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.io.connection import ClientConnection
-
-
 from syft.proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 

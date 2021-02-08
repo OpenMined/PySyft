@@ -1,8 +1,10 @@
+# stdlib
+from typing import List
+from typing import Optional
+
 # syft relative
 from .serde.serializable import Serializable
 from .uid import UID
-from typing import Optional
-from typing import List
 
 
 class AbstractStorableObject(Serializable):

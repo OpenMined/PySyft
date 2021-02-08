@@ -8,8 +8,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from ....logger import critical
 from ....logger import traceback_and_raise
 from ...common.message import SignedMessage

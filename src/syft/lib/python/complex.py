@@ -11,8 +11,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-
-
 from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from ...util import aggressive_set_attr

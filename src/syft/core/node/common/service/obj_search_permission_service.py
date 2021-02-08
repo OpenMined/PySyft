@@ -15,8 +15,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )

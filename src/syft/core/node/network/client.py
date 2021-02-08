@@ -8,8 +8,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location

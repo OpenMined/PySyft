@@ -8,8 +8,6 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-
-
 from .....proto.core.node.common.action.get_enum_attribute_pb2 import (
     GetEnumAttributeAction as GetEnumAttributeAction_PB,
 )

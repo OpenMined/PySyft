@@ -15,12 +15,11 @@ from nacl.signing import VerifyKey
 from ...core.common.object import ObjectWithID
 from ...core.common.uid import UID
 from ...core.io.address import Address
-
-
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
-from ...util import get_fully_qualified_name, validate_type
+from ...util import get_fully_qualified_name
+from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 
 # this generic type for SignedMessage
@@ -139,15 +138,17 @@ class SignedMessage(SyftMessage):
     @property
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
-            _syft_msg = _deserialize(blob=self.serialized_message, from_bytes=True)
-
-            if not isinstance(_syft_msg, SyftMessage):
-                traceback_and_raise(TypeError("TODO"))
-
+            _syft_msg = validate_type(
+                _deserialize(blob=self.serialized_message, from_bytes=True), SyftMessage
+            )
             self.cached_deseralized_message = _syft_msg
 
         if self.cached_deseralized_message is None:
-            traceback_and_raise(ValueError("TODO"))
+            traceback_and_raise(
+                ValueError(
+                    f"Can't deserialize message {self} with address " f"{self.address}"
+                )
+            )
 
         return self.cached_deseralized_message
 

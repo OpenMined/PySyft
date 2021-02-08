@@ -98,8 +98,6 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # syft relative
-
-
 from ...logger import debug
 from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB

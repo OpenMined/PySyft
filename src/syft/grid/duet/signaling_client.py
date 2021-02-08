@@ -6,8 +6,6 @@ from ...core.common.message import SyftMessage
 from ...core.io.address import Address
 from ...core.io.route import SoloRoute
 from ...core.node.network.client import NetworkClient
-
-
 from ..services.signaling_service import RegisterNewPeerMessage
 
 

@@ -8,12 +8,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft relative
-
-
 from .....proto.core.node.common.action.exception_action_pb2 import (
     ExceptionMessage as ExceptionMessage_PB,
 )
-from .....util import get_fully_qualified_name, validate_type
+from .....util import get_fully_qualified_name
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID

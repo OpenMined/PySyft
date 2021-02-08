@@ -15,8 +15,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from .....logger import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,

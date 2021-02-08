@@ -11,8 +11,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-
-
 from ...proto.lib.python.none_pb2 import SyNone as None_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory

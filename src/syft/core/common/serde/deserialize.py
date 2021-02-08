@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Union
 
 # third party
@@ -8,7 +9,6 @@ from google.protobuf.message import Message
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
-from typing import Any
 
 
 def _deserialize(
@@ -55,7 +55,6 @@ def _deserialize(
         data_message = DataMessage()
         data_message.ParseFromString(blob)
         obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
-
         get_protobuf_schema = getattr(obj_type, "get_protobuf_schema", None)
 
         if not callable(get_protobuf_schema):

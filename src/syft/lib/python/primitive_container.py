@@ -2,8 +2,6 @@
 from typing import Any as TypeAny
 
 # syft relative
-
-
 from .types import SyPrimitiveRet
 
 

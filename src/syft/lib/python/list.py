@@ -13,8 +13,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-
-
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator

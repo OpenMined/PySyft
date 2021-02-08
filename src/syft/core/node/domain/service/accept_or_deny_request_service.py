@@ -15,21 +15,19 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from .....logger import debug
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
     AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
 )
 from .....util import key_emoji
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from .....util import validate_type
-from .....logger import traceback_and_raise
 
 
 @final

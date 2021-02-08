@@ -9,8 +9,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.address_pb2 import Address as Address_PB
@@ -167,16 +165,12 @@ class Address(Serializable):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-        _network = _deserialize(blob=proto.network) if proto.has_network else None
-        _domain = _deserialize(blob=proto.domain) if proto.has_domain else None
-        _device = _deserialize(blob=proto.device) if proto.has_device else None
-        _vm = _deserialize(blob=proto.vm) if proto.has_vm else None
         return Address(
             name=proto.name,
-            network=_network,
-            domain=_domain,
-            device=_device,
-            vm=_vm,
+            network=_deserialize(blob=proto.network) if proto.has_network else None,
+            domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
+            device=_deserialize(blob=proto.device) if proto.has_device else None,
+            vm=_deserialize(blob=proto.vm) if proto.has_vm else None,
         )
 
     @staticmethod
@@ -360,3 +354,4 @@ class Address(Serializable):
 
         # remove extraneous comma and add a close carrot
         return out[:-1] + ">"
+q

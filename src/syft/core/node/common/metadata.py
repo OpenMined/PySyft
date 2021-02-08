@@ -5,14 +5,12 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-
-
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ....util import validate_type
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID
 from ...io.location import Location
-from ....util import validate_type
 
 
 class Metadata(Serializable):

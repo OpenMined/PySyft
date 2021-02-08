@@ -91,8 +91,6 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-
-
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB

@@ -13,7 +13,8 @@ from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ...util import aggressive_set_attr
-from ...util import get_fully_qualified_name, validate_type
+from ...util import get_fully_qualified_name
+from ...util import validate_type
 
 
 class BFVVectorWrapper(StorableObject):

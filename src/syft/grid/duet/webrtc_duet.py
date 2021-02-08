@@ -39,8 +39,6 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
-
-
 from ...logger import error
 from ...logger import traceback_and_raise
 from ..connections.webrtc import WebRTCConnection

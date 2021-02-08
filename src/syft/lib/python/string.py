@@ -14,8 +14,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
-
-
 from ...proto.lib.python.string_pb2 import String as String_PB
 from ...util import aggressive_set_attr
 from .int import Int

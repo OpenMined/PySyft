@@ -129,7 +129,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if self.is_static:
             result = method(*upcasted_args, **upcasted_kwargs)
         else:
-
             if resolved_self is None:
                 traceback_and_raise(
                     ValueError(f"Method {method} called, but self is None.")

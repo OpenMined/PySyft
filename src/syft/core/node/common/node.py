@@ -22,8 +22,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from ....lib import lib_ast
 from ....logger import critical
 from ....logger import debug

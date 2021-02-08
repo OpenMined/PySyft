@@ -8,8 +8,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-
-
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
 )
@@ -23,7 +22,6 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_message import RequestMessage
-from .....logger import traceback_and_raise
 
 
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):

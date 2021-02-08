@@ -1,11 +1,11 @@
 # stdlib
 from typing import List
 from typing import Optional
+
+# third party
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from .....logger import debug
 from .....logger import error
 from .....logger import traceback_and_raise

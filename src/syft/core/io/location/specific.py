@@ -5,13 +5,12 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-
-
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
 from .location import Location
+from ....util import validate_type
 
 
 class SpecificLocation(ObjectWithID, Location):
@@ -63,11 +62,7 @@ class SpecificLocation(ObjectWithID, Location):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-        _id = _deserialize(blob=proto.id)
-
-        if not (isinstance(_id, UID) or _id is None):
-            raise ValueError("TODO")
-
+        _id = validate_type(_deserialize(blob=proto.id), UID, optional=True)
         return SpecificLocation(_id, name=proto.name)
 
     @staticmethod

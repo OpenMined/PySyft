@@ -11,7 +11,6 @@ from typing import Union
 # syft relative
 from .. import python
 from ...core.common import UID
-
 from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
 

@@ -1,12 +1,10 @@
 # stdlib
 from abc import ABC
 from typing import Iterable
-from typing import Type
 from typing import Optional
+from typing import Type
 
 # syft relative
-
-
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject

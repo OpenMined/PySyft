@@ -4,8 +4,6 @@ from typing import Optional
 
 # syft relative
 from ...core.common.uid import UID
-
-
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet

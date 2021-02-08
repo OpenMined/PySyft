@@ -8,8 +8,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from .....logger import debug
 from .....logger import error
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (

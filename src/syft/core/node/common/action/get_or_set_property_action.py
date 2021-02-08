@@ -14,8 +14,6 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-
-
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )

@@ -9,8 +9,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft relative
-
-
 from ...proto.core.io.connection_pb2 import (
     VirtualClientConnection as VirtualClientConnection_PB,
 )

@@ -22,8 +22,6 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.common.service.auth import service_auth
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-
-
 from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )

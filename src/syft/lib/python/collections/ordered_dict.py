@@ -12,8 +12,6 @@ from .... import deserialize
 from .... import serialize
 from ....core.common.uid import UID
 from ....core.store.storeable_object import StorableObject
-
-
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )

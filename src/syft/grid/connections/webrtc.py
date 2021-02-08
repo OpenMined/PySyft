@@ -100,10 +100,9 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
-from ...util import validate_type
-
 from ...logger import debug
 from ...logger import traceback_and_raise
+from ...util import validate_type
 from ..services.signaling_service import CloseConnectionMessage
 
 message_cooldown = 0.0

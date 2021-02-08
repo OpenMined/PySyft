@@ -10,7 +10,6 @@ from nacl.signing import VerifyKey
 from ..... import deserialize
 from ..... import serialize
 from .....logger import traceback_and_raise
-
 from .....proto.core.node.domain.service.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
 )

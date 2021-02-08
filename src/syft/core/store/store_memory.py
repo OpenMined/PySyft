@@ -10,12 +10,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from . import ObjectStore
-from .storeable_object import StorableObject
-
-
 from ...logger import critical
 from ...logger import traceback_and_raise
 from ..common.uid import UID
+from .storeable_object import StorableObject
 
 
 class MemoryStore(ObjectStore):

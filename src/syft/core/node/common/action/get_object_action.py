@@ -6,12 +6,9 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
-from .....util import validate_type
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -19,6 +16,7 @@ from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
 from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID

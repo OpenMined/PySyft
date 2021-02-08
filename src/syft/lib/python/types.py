@@ -1,7 +1,12 @@
-from typing import Union
+# stdlib
+from collections import UserDict
+from collections import UserList
+from collections import UserString
 from typing import NewType
+from typing import Union
+
+# syft relative
 from .primitive_interface import PyPrimitive
-from collections import UserList, UserDict, UserString
 
 NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type: ignore
 ImplementedInterfaces = Union[UserDict, UserList, UserString]

@@ -15,8 +15,6 @@ import pandas as pd
 
 # syft relative
 from ....core.pointer.pointer import Pointer
-
-
 from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug

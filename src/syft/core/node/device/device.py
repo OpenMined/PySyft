@@ -9,8 +9,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from ....logger import critical
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage

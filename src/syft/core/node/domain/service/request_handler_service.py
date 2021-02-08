@@ -11,8 +11,6 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-
-from .....util import traceback_and_raise
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
@@ -27,6 +25,7 @@ from .....proto.core.node.domain.service.request_handler_message_pb2 import (
 from .....proto.core.node.domain.service.request_handler_message_pb2 import (
     UpdateRequestHandlerMessage as UpdateRequestHandlerMessage_PB,
 )
+from .....util import traceback_and_raise
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply

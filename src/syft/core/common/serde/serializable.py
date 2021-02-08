@@ -15,13 +15,12 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
-
-
 from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
+from ....util import validate_type
 
 
 # GenericMeta Fixes python 3.6
@@ -199,13 +198,7 @@ class Serializable(metaclass=MetaSerializable):
         :return: a protobuf message
         :rtype: Message
         """
-
-        result = self.serialize(to_proto=True)
-
-        if not isinstance(result, Message):
-            raise TypeError("TODO")
-
-        return result
+        return validate_type(self.serialize(to_proto=True), Message)
 
     def proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
@@ -213,12 +206,7 @@ class Serializable(metaclass=MetaSerializable):
         :return: a protobuf message
         :rtype: Message
         """
-        result = self.serialize(to_proto=True)
-
-        if not isinstance(result, Message):
-            raise TypeError("TODO")
-
-        return result
+        return validate_type(self.serialize(to_proto=True), Message)
 
     def to_bytes(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
@@ -226,12 +214,7 @@ class Serializable(metaclass=MetaSerializable):
         :return: a binary string
         :rtype: bytes
         """
-        result = self.serialize(to_bytes=True)
-
-        if not isinstance(result, bytes):
-            raise TypeError("TODO")
-
-        return result
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
     def binary(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
@@ -239,12 +222,7 @@ class Serializable(metaclass=MetaSerializable):
         :return: a binary string
         :rtype: bytes
         """
-        result = self.serialize(to_bytes=True)
-
-        if not isinstance(result, bytes):
-            raise TypeError("TODO")
-
-        return result
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
     def serialize(
         self,

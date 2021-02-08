@@ -11,8 +11,6 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import deserialize
 from ..... import serialize
-
-
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback

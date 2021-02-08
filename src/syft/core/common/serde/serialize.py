@@ -5,8 +5,6 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
-
-
 from ....logger import traceback_and_raise
 from .serializable import Serializable
 

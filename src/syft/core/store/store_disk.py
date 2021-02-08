@@ -9,16 +9,14 @@ from sqlitedict import SqliteDict
 from typing_extensions import Final
 
 # syft relative
-
-
 from ...logger import critical
 from ...logger import trace
 from ...logger import traceback_and_raise
+from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from .store_interface import ObjectStore
 from .storeable_object import StorableObject
-from ...util import validate_type
 
 
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.

@@ -13,8 +13,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from .....logger import debug
 from .....logger import traceback
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (

@@ -1,5 +1,6 @@
 # stdlib
 from random import randint
+from typing import Any
 from typing import List
 
 # third party
@@ -11,13 +12,10 @@ from nacl.signing import VerifyKey
 import syft
 
 # syft relative
-
-
 from .logger import critical
 from .logger import debug
 from .logger import error
 from .logger import traceback_and_raise
-from typing import Any
 
 
 def validate_type(_object: object, _type: type, optional: bool = False) -> Any:

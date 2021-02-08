@@ -12,8 +12,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft as sy
 
 # syft relative
-
-
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name

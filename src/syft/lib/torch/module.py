@@ -16,8 +16,6 @@ from typing import Union
 import torch
 
 # syft relative
-
-
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info

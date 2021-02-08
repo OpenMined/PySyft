@@ -15,8 +15,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-
-
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -24,7 +22,8 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
-from .....util import obj2pointer_type, traceback_and_raise
+from .....util import obj2pointer_type
+from .....util import traceback_and_raise
 from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply

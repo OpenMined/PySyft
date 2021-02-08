@@ -1,15 +1,13 @@
 # stdlib
 from typing import Any
 from typing import List
-from typing import Type
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from .....logger import traceback_and_raise
 from ...abstract.node import AbstractNode
 

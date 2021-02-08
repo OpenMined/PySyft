@@ -8,14 +8,7 @@ from typing import Union as TypeUnion
 
 # syft relative
 from ..ast.globals import Globals
-<<<<<<< HEAD
-=======
-
-
->>>>>>> e2cc8ccc9... 2nd cleanup
 from ..core.node.abstract.node import AbstractNodeClient
-from ..decorators.syft_decorator_impl import syft_decorator
-
 
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method

@@ -1,14 +1,12 @@
 # stdlib
 from typing import List
-from typing import Type
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import VerifyKey
 
 # syft relative
-
-
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import EventualNodeServiceWithoutReply
