@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1612532523769,
+  "lastUpdate": 1612760752881,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -997,6 +997,37 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00022127696732468624",
             "extra": "mean: 878.6584437882158 usec\nrounds: 507"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@madhavajay.com",
+            "name": "Madhava Jay",
+            "username": "madhavajay"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2422a0882f847d3c04b2f01823e83b1a361c3063",
+          "message": "Merge pull request #5119 from ariannmichael/issue_5057\n\n#5075 - Solve warnings on tests and open issues for the unsolved",
+          "timestamp": "2021-02-07T21:03:19-08:00",
+          "tree_id": "913778965589cdb899e73f3bf6c28e4d3605a00c",
+          "url": "https://github.com/OpenMined/PySyft/commit/2422a0882f847d3c04b2f01823e83b1a361c3063"
+        },
+        "date": 1612760752399,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde",
+            "value": 1267.2989763545174,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0001489770953780695",
+            "extra": "mean: 789.0797820073813 usec\nrounds: 578"
           }
         ]
       }
