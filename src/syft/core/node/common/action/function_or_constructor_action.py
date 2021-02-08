@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from .....decorators.syft_decorator_impl import syft_decorator
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
@@ -47,15 +48,14 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         id_at_location: UID,
         address: Address,
         msg_id: Optional[UID] = None,
+        is_static: Optional[bool] = False,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.path = path
         self.args = args
         self.kwargs = kwargs
-
-        # TODO: eliminate this explicit parameter and just set the object
-        #  id on the object directly
         self.id_at_location = id_at_location
+        self.is_static = is_static
 
     @staticmethod
     def intersect_keys(
@@ -68,21 +68,22 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # into a new one
         if left is None:
             return right
-        intersection = set(left.keys()).intersection(right.keys())
+        intersection = left.keys() & right.keys()
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
         for arg in self.args:
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
             r_arg = node.store.get_object(key=arg.id_at_location)
@@ -94,9 +95,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
             r_arg = node.store.get_object(key=arg.id_at_location)
@@ -114,11 +117,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
 
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -126,11 +124,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 value=result, id=self.id_at_location
             )
         else:
-            # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
                 result._id = self.id_at_location
-            # else:
-            # TODO: Solve this problem where its an issue
 
         # If we have no permission (None or {}) we add some default permissions based on a permission list
         if result_read_permissions is None:

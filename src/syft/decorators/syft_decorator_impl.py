@@ -33,10 +33,10 @@ def syft_decorator(
             #     return function(*args, **kwargs)
             # except Exception as e:
             #     if LONG_TYPECHECK_STACK_TRACES:
-            #         raise e
+            #         traceback_and_raise( e)
             #     # Truncate stacktrace concerned with the type checking decorator
             #     # so that the true problem is easier to see
-            #     raise Exception(str(e))
+            #     traceback_and_raise( Exception(str(e)))
 
         if other_decorators:
             for other_decorator in other_decorators:

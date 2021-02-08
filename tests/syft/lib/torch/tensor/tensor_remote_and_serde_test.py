@@ -32,20 +32,16 @@ def test_torch_remote_tensor_register() -> None:
     assert len(alice.store) == 0  # Get removes the object
 
 
-def test_torch_remote_tensor_with_alias_send() -> None:
-    """Test sending tensor on the remote worker with alias send method."""
+def test_torch_remote_tensor_with_send() -> None:
+    """Test sending tensor on the remote worker with send method."""
 
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
     x = th.tensor([-1, 0, 1, 2, 3, 4])
-    ptr = x.send_to(alice_client)
+    ptr = x.send(alice_client)
 
     assert len(alice.store) == 1
-
-    # TODO: Fix this from deleting the object in the store due to the variable
-    # see above
-    # ptr = x.send_to(alice_client)
 
     data = ptr.get()
 

@@ -25,13 +25,9 @@ from ..util import upcast
 
 
 class OrderedDict(PyOrderedDict, PyPrimitive):
-    def __init__(self, other: Any = None, _id: Optional[UID] = None):
-        if other is None:
-            other = {}
-
-        super().__init__(other)
-
-        self._id = UID() if _id is None else _id
+    def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
+        super().__init__(*args, **kwds)
+        self._id = _id
 
     @property
     def id(self) -> UID:
@@ -94,9 +90,15 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
 
+    @classmethod
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def fromkeys(self, other: Any) -> SyPrimitiveRet:
-        res = super().fromkeys(other)
+    def FromKeys(cls, iterable: Any, value: Any = None) -> SyPrimitiveRet:
+        res = cls(PyOrderedDict.fromkeys(iterable, value))
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    @syft_decorator(typechecking=True, prohibit_args=False)
+    def fromkeys(self, iterable: Any, value: Any = None) -> SyPrimitiveRet:
+        res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -120,8 +122,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def pop(self, other: Any) -> SyPrimitiveRet:
-        res = super().pop(other)
+    def pop(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+        res = super().pop(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
@@ -135,8 +137,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
-    def update(self, other: Any) -> SyPrimitiveRet:
-        res = super().update(other)
+    def update(self, *args: Any, **kwds: Any) -> SyPrimitiveRet:
+        res = super().update(*args, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @syft_decorator(typechecking=True, prohibit_args=False)

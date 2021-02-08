@@ -31,6 +31,8 @@ class ListIterator(Iterator):
 
 
 class List(UserList, PyPrimitive):
+    __slots__ = ["_id", "_index"]
+
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
         if value is None:
