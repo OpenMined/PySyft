@@ -16,12 +16,10 @@ Num = Union[int, float]
 
 
 class ChildDelegatorTensor:
-    wrap_type: Any = None
-
     def __getattr__(self, name: str) -> Any:
         func_or_attr = getattr(self.child, name)
         if callable(func_or_attr):
-            return partial(call_func_and_wrap_result, func_or_attr, self.wrap_type)
+            return partial(call_func_and_wrap_result, func_or_attr, self.__class__)
         else:
             var = func_or_attr
             return var
@@ -31,7 +29,6 @@ class DataTensor(ChildDelegatorTensor):
     @syft_decorator(typechecking=True)
     def __init__(self, child: Union[torch.FloatTensor, torch.IntTensor]) -> None:
         self.child = child
-        self.wrap_type = DataTensor
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: "DataTensor") -> "DataTensor":
@@ -58,7 +55,6 @@ class FloatTensor(ChildDelegatorTensor):
     @syft_decorator(typechecking=True)
     def __init__(self, child: DataTensor) -> None:
         self.child = child
-        self.wrap_type = FloatTensor
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: "FloatTensor") -> "FloatTensor":
@@ -85,7 +81,6 @@ class IntegerTensor(ChildDelegatorTensor):
     @syft_decorator(typechecking=True)
     def __init__(self, child: DataTensor) -> None:
         self.child = child
-        self.wrap_type = IntegerTensor
 
     # todo: make sure that operations return the correct tensor type
     # e.g. a div between a IntegerTensor and an Int may produce
@@ -115,7 +110,6 @@ class IntegerTensor(ChildDelegatorTensor):
 class SyftTensor(ChildDelegatorTensor):
     def __init__(self, child: Union[FloatTensor, IntegerTensor]) -> None:
         self.child = child
-        self.wrap_type = SyftTensor
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: "SyftTensor") -> "SyftTensor":
