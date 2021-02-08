@@ -78,6 +78,7 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+import math
 import os
 import random
 import time
@@ -119,6 +120,21 @@ try:
     DC_MAX_BUFSIZE = int(os.environ["DC_MAX_BUFSIZE"])
 except KeyError:
     DC_MAX_BUFSIZE = 2 ** 24
+
+
+class OrderedChunk:
+    def __init__(self, idx: int, data: bytes):
+        self.idx = idx
+        self.data = data
+
+    def save(self) -> bytes:
+        return self.idx.to_bytes(4, "big") + self.data
+
+    @classmethod
+    def load(cls, data: bytes) -> "OrderedChunk":
+        idx = int.from_bytes(data[:4], "big")
+        data = data[4:]
+        return cls(idx, data)
 
 
 class WebRTCConnection(BidirectionalConnection):
@@ -178,7 +194,9 @@ class WebRTCConnection(BidirectionalConnection):
         try:
             # Use the Peer Connection structure to
             # set the channel as a RTCDataChannel.
-            self.channel = self.peer_connection.createDataChannel("datachannel")
+            self.channel = self.peer_connection.createDataChannel(
+                "datachannel", ordered=False
+            )
             # Keep send buffer busy with chunks
             self.channel.bufferedAmountLowThreshold = 4 * DC_MAX_CHUNK_SIZE
 
@@ -188,24 +206,28 @@ class WebRTCConnection(BidirectionalConnection):
             async def on_open() -> None:  # type : ignore
                 self.__producer_task = asyncio.ensure_future(self.producer())
 
-            chunked_msg = b""
-            chunked_msg_started = False
+            chunked_msg = []
+            chunks_pending = 0
 
             # This method is the aioRTC "consumer" task
             # and will be running as long as connection remains.
             # At this point we're just setting the method behavior
             # It'll start running after the connection opens.
             @self.channel.on("message")
-            async def on_message(message: bytes) -> None:
-                nonlocal chunked_msg, chunked_msg_started
+            async def on_message(raw: bytes) -> None:
+                nonlocal chunked_msg, chunks_pending
+
+                chunk = OrderedChunk.load(raw)
+                message = chunk.data
+
                 if message == DC_CHUNK_START_SIGN:
-                    chunked_msg_started = True
-                    chunked_msg = b""
-                elif message == DC_CHUNK_END_SIGN:
-                    chunked_msg_started = False
-                    await self.consumer(msg=chunked_msg)
-                elif chunked_msg_started:
-                    chunked_msg += message
+                    chunks_pending = chunk.idx
+                    chunked_msg = [b""] * chunks_pending
+                elif chunks_pending:
+                    chunked_msg[chunk.idx] = message
+                    chunks_pending -= 1
+                    if chunks_pending == 0:
+                        await self.consumer(msg=b"".join(chunked_msg))
                 else:
                     # Forward all received messages to our own consumer method.
                     await self.consumer(msg=message)
@@ -244,20 +266,23 @@ class WebRTCConnection(BidirectionalConnection):
 
                 self.__producer_task = asyncio.ensure_future(self.producer())
 
-                chunked_msg = b""
-                chunked_msg_started = False
+                chunked_msg = []
+                chunks_pending = 0
 
                 @self.channel.on("message")
-                async def on_message(message: bytes) -> None:
-                    nonlocal chunked_msg, chunked_msg_started
+                async def on_message(raw: bytes) -> None:
+                    nonlocal chunked_msg, chunks_pending
+
+                    chunk = OrderedChunk.load(raw)
+                    message = chunk.data
                     if message == DC_CHUNK_START_SIGN:
-                        chunked_msg_started = True
-                        chunked_msg = b""
-                    elif message == DC_CHUNK_END_SIGN:
-                        chunked_msg_started = False
-                        await self.consumer(msg=chunked_msg)
-                    elif chunked_msg_started:
-                        chunked_msg += message
+                        chunks_pending = chunk.idx
+                        chunked_msg = [b""] * chunks_pending
+                    elif chunks_pending:
+                        chunked_msg[chunk.idx] = message
+                        chunks_pending -= 1
+                        if chunks_pending == 0:
+                            await self.consumer(msg=b"".join(chunked_msg))
                     else:
                         await self.consumer(msg=message)
 
@@ -340,23 +365,25 @@ class WebRTCConnection(BidirectionalConnection):
                                 (chunk_num + 1) * DC_MAX_CHUNK_SIZE, data_len
                             )
                             chunk = data[start_offset:end_offset]
-                            self.channel.send(chunk)
+                            self.channel.send(OrderedChunk(chunk_num, chunk).save())
                             chunk_num += 1
                             if chunk_num * DC_MAX_CHUNK_SIZE >= data_len:
                                 done = True
-                                self.channel.send(DC_CHUNK_END_SIGN)
                                 sent.set_result(True)
 
                         if not done:
                             # Set listener for next round of sending when buffer is empty
                             self.channel.once("bufferedamountlow", send_data_chunks)
 
-                    self.channel.send(DC_CHUNK_START_SIGN)
+                    chunk_count = math.ceil(data_len / DC_MAX_CHUNK_SIZE)
+                    self.channel.send(
+                        OrderedChunk(chunk_count, DC_CHUNK_START_SIGN).save()
+                    )
                     send_data_chunks()
                     # Wait until all chunks are dispatched
                     await sent
                 else:
-                    self.channel.send(data)
+                    self.channel.send(OrderedChunk(0, data).save())
         except Exception as e:
             traceback_and_raise(e)
 
@@ -365,7 +392,7 @@ class WebRTCConnection(BidirectionalConnection):
             # Build Close Message to warn the other peer
             bye_msg = CloseConnectionMessage(address=Address())
 
-            self.channel.send(bye_msg.to_bytes())
+            self.channel.send(OrderedChunk(0, bye_msg.to_bytes()).save())
 
             # Finish async tasks related with this connection
             self._finish_coroutines()
