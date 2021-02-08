@@ -78,6 +78,7 @@ Signaling Steps:
 
 # stdlib
 import asyncio
+import os
 import random
 import time
 from typing import Any
@@ -105,13 +106,19 @@ from ...logger import debug
 from ...logger import traceback_and_raise
 from ..services.signaling_service import CloseConnectionMessage
 
-message_cooldown = 0.0
-
 DC_CHUNKING_ENABLED = True
 DC_CHUNK_START_SIGN = b"<<<CHUNK START>>>"
 DC_CHUNK_END_SIGN = b"<<<CHUNK END>>>"
-DC_MAX_CHUNK_SIZE = 16384
-DC_MAX_BUFSIZE = 4 * 2 ** 20
+
+try:
+    DC_MAX_CHUNK_SIZE = int(os.environ["DC_MAX_CHUNK_SIZE"])
+except KeyError:
+    DC_MAX_CHUNK_SIZE = 2 ** 18
+
+try:
+    DC_MAX_BUFSIZE = int(os.environ["DC_MAX_BUFSIZE"])
+except KeyError:
+    DC_MAX_BUFSIZE = 2 ** 24
 
 
 class WebRTCConnection(BidirectionalConnection):
@@ -155,8 +162,6 @@ class WebRTCConnection(BidirectionalConnection):
             self.channel: RTCDataChannel
             self._client_address: Optional[Address] = None
 
-            # asyncio.ensure_future(self.heartbeat())
-
         except Exception as e:
             traceback_and_raise(e)
 
@@ -175,7 +180,7 @@ class WebRTCConnection(BidirectionalConnection):
             # set the channel as a RTCDataChannel.
             self.channel = self.peer_connection.createDataChannel("datachannel")
             # Keep send buffer busy with chunks
-            self.channel.bufferedAmountLowThreshold = 16 * DC_MAX_CHUNK_SIZE
+            self.channel.bufferedAmountLowThreshold = 4 * DC_MAX_CHUNK_SIZE
 
             # This method will be called by aioRTC lib as a callback
             # function when the connection opens.
@@ -314,7 +319,6 @@ class WebRTCConnection(BidirectionalConnection):
                 # and give computing time to the next task.
                 msg = await self.producer_pool.get()
 
-                await asyncio.sleep(message_cooldown)
                 # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
                 data = msg.to_bytes()
@@ -500,7 +504,6 @@ class WebRTCConnection(BidirectionalConnection):
         try:
             # asyncio.run(self.producer_pool.put_nowait(msg))
             self.producer_pool.put_nowait(msg)
-            time.sleep(message_cooldown)
         except Exception as e:
             traceback_and_raise(e)
 
@@ -513,7 +516,6 @@ class WebRTCConnection(BidirectionalConnection):
         """
         try:
             asyncio.run(self.producer_pool.put(msg))
-            time.sleep(message_cooldown)
         except Exception as e:
             traceback_and_raise(e)
 
@@ -546,13 +548,7 @@ class WebRTCConnection(BidirectionalConnection):
             debug(
                 f"> Before send_sync_message consumer_pool.get blocking {r} {msg.message}"
             )
-            # before = time.time()
-            # timeout_secs = 15
-
             response = await self.consumer_pool.get()
-
-            #  asyncio.run()
-            # self.async_check(before=before, timeout_secs=timeout_secs, r=r)
 
             debug(f"> After send_sync_message consumer_pool.get blocking {r}")
             return response
@@ -563,7 +559,6 @@ class WebRTCConnection(BidirectionalConnection):
         self, before: float, timeout_secs: int, r: float
     ) -> SignedImmediateSyftMessageWithoutReply:
         while True:
-            await asyncio.sleep(message_cooldown)
             try:
                 response = self.consumer_pool.get_nowait()
                 return response
@@ -574,31 +569,3 @@ class WebRTCConnection(BidirectionalConnection):
                     traceback_and_raise(
                         Exception(f"send_sync_message timeout {timeout_secs} {r}")
                     )
-
-    # async def heartbeat(self) -> None:
-    #     producer_watermark = 0
-    #     consumer_watermark = 0
-    #     while True:
-    #         await asyncio.sleep(5)
-    #         try:
-    #             psize = self.producer_pool.qsize()
-    #             csize = self.consumer_pool.qsize()
-    #             async_task_count = len(asyncio.all_tasks())
-    #             producer_watermark = max(producer_watermark, psize)
-    #             consumer_watermark = max(consumer_watermark, csize)
-    #             log = (
-    #                 f"{self.node.name} PQ: {psize} / {producer_watermark} - "
-    #                 + f"CQ: {csize} / {consumer_watermark} - AT: {async_task_count}"
-    #             )
-    #             critical(log)
-
-    #             if getattr(self.peer_connection, "_RTCPeerConnection__isClosed", False):
-    #                 log = f"☠️ HEART BEAT DEAD! {self.node.name}"
-    #                 critical(log)
-    #             # else:
-    #             #     log = f"❤️ HEART BEAT ALIVE! {self.node.name}"
-    #             #     critical(log)
-    #         except Exception as e:
-    #             log = f"HEART BEAT exception in {self.node.name}. {e}"
-    #             critical(log)
-    #             traceback_and_raise(Exception(log))
