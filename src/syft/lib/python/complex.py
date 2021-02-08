@@ -18,6 +18,7 @@ from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
+from .types import SyPrimitiveRet
 
 
 # TODO - actually make all of this work
@@ -53,59 +54,59 @@ class Complex(complex, PyPrimitive):
     def upcast(self) -> complex:
         return complex(self)
 
-    def __add__(self, x: complex) -> "Complex":
+    def __add__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__add__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __sub__(self, x: complex) -> "Complex":
+    def __sub__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__sub__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __mul__(self, x: complex) -> "Complex":
+    def __mul__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__mul__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __pow__(self, x: complex) -> "Complex":
-        result = complex.__pow__(self, x)
+    def __pow__(self, x: complex, modulo: Any = 10) -> SyPrimitiveRet:
+        result = complex.__pow__(self, x, modulo)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __truediv__(self, x: complex) -> "Complex":
+    def __truediv__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__truediv__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __radd__(self, x: complex) -> "Complex":
+    def __radd__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__radd__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __rsub__(self, x: complex) -> "Complex":
+    def __rsub__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__rsub__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __rmul__(self, x: complex) -> "Complex":
+    def __rmul__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__rmul__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __rpow__(self, x: complex) -> "Complex":
-        result = complex.__rpow__(self, x)
+    def __rpow__(self, x: complex, modulo: Any = 10) -> SyPrimitiveRet:
+        result = complex.__rpow__(self, x, modulo)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __rtruediv__(self, x: complex) -> "Complex":
+    def __rtruediv__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__rtruediv__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __eq__(self, x: object) -> PyPrimitive:
+    def __eq__(self, x: object) -> SyPrimitiveRet:
         result = complex.__eq__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __ne__(self, x: object) -> PyPrimitive:
+    def __ne__(self, x: object) -> SyPrimitiveRet:
         result = complex.__ne__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __neg__(self) -> "Complex":
+    def __neg__(self) -> SyPrimitiveRet:
         result = complex.__neg__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __pos__(self) -> "Complex":
+    def __pos__(self) -> SyPrimitiveRet:
         result = complex.__pos__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
@@ -116,11 +117,11 @@ class Complex(complex, PyPrimitive):
     #     result = complex.__complex__()
     #     return PrimitiveFactory.generate_primitive(value=result)
 
-    def __abs__(self) -> PyPrimitive:
+    def __abs__(self) -> SyPrimitiveRet:
         result = complex.__abs__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __hash__(self) -> PyPrimitive:
+    def __hash__(self) -> SyPrimitiveRet:
         result = complex.__hash__(self)
         return PrimitiveFactory.generate_primitive(value=result)
 
@@ -160,7 +161,7 @@ class ComplexWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Complex_PB) -> "ComplexWrapper":
+    def _data_proto2object(proto: Complex_PB) -> "Complex":  # type: ignore
         return Complex._proto2object(proto=proto)
 
     @staticmethod

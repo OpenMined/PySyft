@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
+from .....util import validate_type
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -177,7 +178,8 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = storeable_object.data
+            obj = validate_type(storeable_object, StorableObject).data
+
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
             if self.delete_obj:

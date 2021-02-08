@@ -73,9 +73,6 @@ class Dict(UserDict, PyPrimitive):
         # If you want to update it use the _id setter after creation.
         self._id = UID()
 
-    # fix the type signature
-    __init__.__text_signature__ = "($self, dict=None, /, **kwargs)"
-
     @property
     def id(self) -> UID:
         """We reveal PyPrimitive.id as a property to discourage users and
@@ -161,13 +158,13 @@ class Dict(UserDict, PyPrimitive):
         res = super().get(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def items(self, max_len: Optional[int] = None) -> Iterator:
+    def items(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         return Iterator(ItemsView(self), max_len=max_len)
 
-    def keys(self, max_len: Optional[int] = None) -> Iterator:
+    def keys(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         return Iterator(KeysView(self), max_len=max_len)
 
-    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:
+    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         # this is what the super type does and there is a test in dict_test.py
         # test_values which checks for this so we could disable the test or
         # keep this workaround
@@ -190,11 +187,10 @@ class Dict(UserDict, PyPrimitive):
         res = super().setdefault(key, res)
         return res
 
-    def clear(self) -> SyPrimitiveRet:
+    def clear(self) -> None:
         # we get the None return and create a SyNone
         # this is to make sure someone doesn't rewrite the method to return nothing
-        res = super().clear()  # pylint: disable=E1111
-        return PrimitiveFactory.generate_primitive(value=res)
+        return PrimitiveFactory.generate_primitive(value=super().clear())
 
     def _object2proto(self) -> Dict_PB:
         id_ = serialize(obj=self.id)
@@ -256,7 +252,7 @@ class DictWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Dict_PB) -> "DictWrapper":
+    def _data_proto2object(proto: Dict_PB) -> "Dict":  # type: ignore
         return Dict._proto2object(proto=proto)
 
     @staticmethod

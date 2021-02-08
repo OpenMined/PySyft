@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -8,7 +9,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import deserialize
 from ..... import serialize
-
+from .....logger import traceback_and_raise
 
 from .....proto.core.node.domain.service.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
@@ -89,8 +90,16 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: RequestAnswerMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: RequestAnswerMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> RequestAnswerResponse:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
         status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
         address = msg.reply_to
         return RequestAnswerResponse(

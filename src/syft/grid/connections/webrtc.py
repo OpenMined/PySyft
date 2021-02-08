@@ -100,7 +100,7 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
-
+from ...util import validate_type
 
 from ...logger import debug
 from ...logger import traceback_and_raise
@@ -255,7 +255,9 @@ class WebRTCConnection(BidirectionalConnection):
                     else:
                         await self.consumer(msg=message)
 
-            return await self._process_answer(payload=payload)
+            result = await self._process_answer(payload=payload)
+            return validate_type(result, str)
+
         except Exception as e:
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")
@@ -467,7 +469,8 @@ class WebRTCConnection(BidirectionalConnection):
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")
 
-    def send_immediate_msg_with_reply(
+    # TODO: fix this mypy madness
+    def send_immediate_msg_with_reply(  # type: ignore
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithReply:
         """
@@ -477,7 +480,10 @@ class WebRTCConnection(BidirectionalConnection):
         :rtype: SignedImmediateSyftMessageWithReply
         """
         try:
-            return asyncio.run(self.send_sync_message(msg=msg))
+            return validate_type(
+                asyncio.run(self.send_sync_message(msg=msg)),
+                SignedImmediateSyftMessageWithReply,
+            )
         except Exception as e:
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")

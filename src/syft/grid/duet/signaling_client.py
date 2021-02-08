@@ -4,25 +4,22 @@ from nacl.signing import SigningKey
 # syft relative
 from ...core.common.message import SyftMessage
 from ...core.io.address import Address
-from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
-from ...core.node.common.client import Client
+from ...core.node.network.client import NetworkClient
 
 
 from ..services.signaling_service import RegisterNewPeerMessage
 
 
 class SignalingClient(object):
-    def __init__(
-        self, url: str, conn_type: ClientConnection, client_type: Client
-    ) -> None:
+    def __init__(self, url: str, conn_type: type, client_type: NetworkClient) -> None:
         # Load an Signing Key instance
         signing_key = SigningKey.generate()
         verify_key = signing_key.verify_key
 
         # Use Signaling Server metadata
         # to build client route
-        conn = conn_type(url=url)  # type: ignore
+        conn = conn_type(url=url)
         (
             spec_location,
             name,

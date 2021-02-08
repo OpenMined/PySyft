@@ -23,6 +23,7 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_message import RequestMessage
+from .....logger import traceback_and_raise
 
 
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
@@ -176,8 +177,17 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: GetAllRequestsMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestsResponseMessage:
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
 
         if verify_key == node.root_verify_key:
             return GetAllRequestsResponseMessage(

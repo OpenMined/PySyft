@@ -13,6 +13,7 @@ import pandas as pd
 
 # syft relative
 from ....logger import traceback_and_raise
+from ....util import validate_field
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -36,12 +37,11 @@ class RequestQueueClient:
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
-        requests: List[RequestMessage] = self.client.send_immediate_msg_with_reply(
-            msg=msg
-        ).requests
+
+        requests = validate_field(self.client.send_immediate_msg_with_reply(msg=msg), "requests")
 
         for request in requests:
-            request.gc_enabled = False  # type: ignore
+            request.gc_enabled = False
             request.owner_client_if_available = self.client
 
         return requests
@@ -175,9 +175,9 @@ class RequestHandlerQueueClient:
         msg = GetAllRequestHandlersMessage(
             address=self.client.address, reply_to=self.client.address
         )
-        handlers = self.client.send_immediate_msg_with_reply(msg=msg).handlers
-
-        return handlers
+        return validate_field(
+            self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
+        )
 
     def __getitem__(self, key: Union[str, int]) -> Dict:
         """

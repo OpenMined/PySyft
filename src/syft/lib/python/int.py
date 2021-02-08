@@ -141,13 +141,15 @@ class Int(int, PyPrimitive):
         res = super().__rmod__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __pow__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__pow__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __pow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
-    def __rpow__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__rpow__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __rpow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(value=super().__rpow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     def __lshift__(self, other: Any) -> SyPrimitiveRet:
         res = super(Int, self).__lshift__(other)
@@ -157,8 +159,8 @@ class Int(int, PyPrimitive):
         res = super().__rlshift__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __round__(self) -> SyPrimitiveRet:
-        res = super().__round__()
+    def __round__(self, ndigits: Any = None) -> SyPrimitiveRet:
+        res = super().__round__(ndigits)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __rshift__(self, other: Any) -> SyPrimitiveRet:
@@ -239,10 +241,11 @@ class Int(int, PyPrimitive):
             value=super().__mod__(other), id=self.id
         )
 
-    def __ipow__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__pow__(other), id=self.id
-        )
+    def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
+
 
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)
@@ -344,7 +347,7 @@ class IntWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Int_PB) -> "IntWrapper":
+    def _data_proto2object(proto: Int_PB) -> "Int":  # type: ignore
         return Int._proto2object(proto=proto)
 
     @staticmethod

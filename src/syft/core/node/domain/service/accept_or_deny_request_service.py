@@ -28,6 +28,8 @@ from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from .....util import validate_type
+from .....logger import traceback_and_raise
 
 
 @final
@@ -115,11 +117,24 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
 class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ImmediateSyftMessageWithoutReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         debug((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
-        if msg.accept:
-            request_id = msg.request_id
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process AcceptOrDenyRequestService without a "
+                    "specified verification key"
+                )
+            )
+        _msg: AcceptOrDenyRequestMessage = validate_type(
+            msg, AcceptOrDenyRequestMessage
+        )
+        if _msg.accept:
+            request_id = _msg.request_id
             for req in node.requests:
                 if request_id == req.id:
                     # you must be a root user to accept a request
@@ -138,7 +153,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         return None
 
         else:
-            request_id = msg.request_id
+            request_id = _msg.request_id
             for req in node.requests:
                 if request_id == req.id:
                     # if you're a root user you can disable a request

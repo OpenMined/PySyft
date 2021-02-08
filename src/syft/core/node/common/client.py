@@ -372,7 +372,12 @@ class StoreClient:
         msg = ObjectSearchMessage(
             address=self.client.address, reply_to=self.client.address
         )
-        results = self.client.send_immediate_msg_with_reply(msg=msg).results
+
+        results = getattr(
+            self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+        )
+        if results is None:
+            traceback_and_raise(ValueError("TODO"))
 
         # This is because of a current limitation in Pointer where we cannot
         # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.

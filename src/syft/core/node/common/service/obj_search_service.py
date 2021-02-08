@@ -24,7 +24,7 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
-from .....util import obj2pointer_type
+from .....util import obj2pointer_type, traceback_and_raise
 from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
@@ -189,9 +189,18 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
 class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ObjectSearchMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> ObjectSearchReplyMessage:
         results: List[Pointer] = list()
+
+        if verify_key is None:
+            traceback_and_raise(
+                "Can't process an ImmediateObjectSearchService with no "
+                "verification key."
+            )
+
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys

@@ -176,7 +176,15 @@ class RequestService(ImmediateNodeServiceWithoutReply):
         return [RequestMessage]
 
     @staticmethod
-    def process(node: AbstractNode, msg: RequestMessage, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: RequestMessage, verify_key: Optional[VerifyKey] = None
+    ) -> None:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
         # node.requests.register_request(msg)  # type: ignore
 
         if msg.requester_verify_key != verify_key:

@@ -12,7 +12,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import deserialize
 
-
+from .....util import traceback_and_raise
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
@@ -279,8 +279,16 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: UpdateRequestHandlerMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: UpdateRequestHandlerMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
         if verify_key == node.root_verify_key:
             replacement_handlers = []
 
@@ -328,8 +336,17 @@ class GetAllRequestHandlersService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: GetAllRequestHandlersMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: GetAllRequestHandlersMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestHandlersResponseMessage:
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
 
         handlers: List[DictType[str, Any]] = []
         if verify_key == node.root_verify_key:

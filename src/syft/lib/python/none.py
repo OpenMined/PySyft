@@ -47,11 +47,11 @@ class _SyNone(PyPrimitive):
         if other is None:
             return PrimitiveFactory.generate_primitive(value=True)
 
-        res = self.upcast().__eq__(other)
+        res = None.__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __hash__(self) -> SyPrimitiveRet:
-        res = self.upcast().__hash__()
+        res = None.__hash__()
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> None_PB:
@@ -89,7 +89,7 @@ class SyNoneWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: None_PB) -> "SyNoneWrapper":
+    def _data_proto2object(proto: None_PB) -> "SyNone":  # type: ignore
         return SyNone._proto2object(proto=proto)
 
     @staticmethod
@@ -98,7 +98,7 @@ class SyNoneWrapper(StorableObject):
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return SyNone
+        return _SyNone
 
     @staticmethod
     def construct_new_object(

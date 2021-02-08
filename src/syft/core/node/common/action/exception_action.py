@@ -94,7 +94,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
             msg_id=validate_type(_deserialize(blob=proto.msg_id), UID, optional=True),
             address=validate_type(_deserialize(blob=proto.address), Address),
             msg_id_causing_exception=validate_type(
-                _deserialize(blob=proto.msg_id_causing_exception), ExceptionMessage
+                _deserialize(blob=proto.msg_id_causing_exception), UID
             ),
             exception_type=exception_type,
             exception_msg=proto.exception_msg,

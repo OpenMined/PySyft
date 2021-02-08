@@ -1,6 +1,7 @@
 # stdlib
 from typing import List
 from typing import Optional
+from nacl.signing import VerifyKey
 
 # syft relative
 
@@ -21,7 +22,9 @@ from .node_service import SignedNodeServiceWithoutReply
 class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: SignedImmediateSyftMessageWithoutReply
+        node: AbstractNode,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> Optional[SignedMessageT]:
         addr = msg.address
         debug(f"> Forwarding WithoutReply {msg.pprint} to {addr.target_emoji()}")
@@ -29,15 +32,14 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
             if scope_id is not None and scope_id in node.store:
                 obj = node.store[scope_id]
-                try:
-                    return obj.send_immediate_msg_without_reply(msg=msg)
-                except Exception as e:
-                    # TODO: Need to not catch blanket exceptions
+                func = getattr(obj, "send_immediate_msg_without_reply", None)
+
+                if func is None:
                     error(
                         f"{addr} in store does not have method send_immediate_msg_without_reply"
                     )
-                    error(e)
-                    pass
+                else:
+                    return func(msg=msg)
 
         try:
             for scope_id in [
@@ -70,12 +72,10 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
 class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: SignedImmediateSyftMessageWithReply
+        node: AbstractNode,
+        msg: SignedImmediateSyftMessageWithReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> SignedImmediateSyftMessageWithoutReply:
-        # def process(
-        #     node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
-        # ) -> SignedMessageT:
-        # TODO: Add verify_key?
         addr = msg.address
         debug(f"> Forwarding WithReply {msg.pprint} to {addr.target_emoji()}")
 
@@ -83,15 +83,12 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
             if scope_id is not None and scope_id in node.store:
                 obj = node.store[scope_id]
-                try:
-                    return obj.send_immediate_msg_with_reply(msg=msg)
-                except Exception as e:
-                    # TODO: Need to not catch blanket exceptions
+                func = getattr(obj, "send_immediate_msg_with_reply", None)
+                if func is None or not callable(func):
                     error(
                         f"{addr} in store does not have method send_immediate_msg_with_reply"
                     )
-                    error(e)
-                    pass
+                return func(msg=msg)
 
         try:
             for scope_id in [

@@ -87,7 +87,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -103,7 +103,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )

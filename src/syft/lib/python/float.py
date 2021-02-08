@@ -156,11 +156,15 @@ class Float(float, PyPrimitive):
         res = super().is_integer()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __pow__(self, other: Any) -> SyPrimitiveRet:
+    def __pow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
         return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
-    def __rpow__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
+    def __rpow__(self, other: Any, modulo: Optional[Any] = 10) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(
@@ -192,10 +196,10 @@ class Float(float, PyPrimitive):
             value=super().__mod__(other), id=self.id
         )
 
-    def __ipow__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__pow__(other), id=self.id
-        )
+    def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     @property
     def real(self) -> SyPrimitiveRet:
@@ -245,7 +249,7 @@ class FloatWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Float_PB) -> "FloatWrapper":
+    def _data_proto2object(proto: Float_PB) -> "Float":  # type: ignore
         return Float._proto2object(proto)
 
     @staticmethod

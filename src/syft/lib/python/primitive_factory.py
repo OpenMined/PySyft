@@ -11,7 +11,6 @@ from typing import Union
 # syft relative
 from .. import python
 from ...core.common import UID
-from .types import SyPrimitiveRet
 
 from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
@@ -70,9 +69,7 @@ class PrimitiveFactory(ABC):
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
-    ) -> SyPrimitiveRet:  # type: ignore
-        # syft relative
-
+    ) -> Any:
         if isinstance(value, PyPrimitive):
             return value
 

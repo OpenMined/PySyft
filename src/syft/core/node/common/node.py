@@ -284,12 +284,14 @@ class Node(AbstractNode):
         )
 
     def get_root_client(self, routes: List[Route] = []) -> ClientT:
-        client = self.get_client(routes=routes)
+        client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
 
     def get_metadata_for_client(self) -> Metadata:
-        return Metadata(name=self.name, id=self.id, node=self.target_id)
+        return Metadata(
+            name=self.name if self.name else "", id=self.id, node=self.target_id
+        )
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -391,10 +393,12 @@ class Node(AbstractNode):
         debug(
             f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
         )
+
+        self.process_message(
+            msg=msg, router=self.immediate_msg_without_reply_router
+        )
         try:
-            self.process_message(
-                msg=msg, router=self.immediate_msg_without_reply_router
-            )
+            pass
         except Exception as e:
             error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
@@ -489,12 +493,12 @@ class Node(AbstractNode):
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
             if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
         return None
 

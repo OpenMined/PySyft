@@ -1,7 +1,6 @@
 # stdlib
 from collections import UserList
 from typing import Any
-from typing import Callable
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
@@ -19,7 +18,6 @@ from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.list_pb2 import List as List_PB
 from ...util import aggressive_set_attr
 from .iterator import Iterator
-from .none import SyNone
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
@@ -85,7 +83,7 @@ class List(UserList, PyPrimitive):
         res = super().__contains__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __delitem__(self, other: Any) -> SyPrimitiveRet:
+    def __delitem__(self, other: Any) -> None:
         res = super().__delitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -109,11 +107,9 @@ class List(UserList, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def sort(
-        self, key: Optional[Callable] = None, reverse: bool = False
-    ) -> SyPrimitiveRet:
-        super().sort(key=key, reverse=reverse)
-        return SyNone
+    def sort(self, *args: Any, **kwargs: Any) -> None:
+        res = super().sort(*args, **kwargs)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def __len__(self) -> Any:
         res = super().__len__()
@@ -135,9 +131,9 @@ class List(UserList, PyPrimitive):
         res._id = UID()
         return res
 
-    def append(self, item: Any) -> SyPrimitiveRet:
-        super().append(item)
-        return SyNone
+    def append(self, item: Any) -> None:
+        res = super().append(item)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def count(self, other: Any) -> SyPrimitiveRet:
         res = super().count(other)
@@ -178,7 +174,7 @@ class ListWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: List_PB) -> "ListWrapper":
+    def _data_proto2object(proto: List_PB) -> "List":  # type: ignore
         return List._proto2object(proto=proto)
 
     @staticmethod

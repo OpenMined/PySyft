@@ -103,11 +103,11 @@ class Set(set, PyPrimitive):
         res = super().__xor__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def add(self, other: Any) -> SyPrimitiveRet:
+    def add(self, other: Any) -> None:
         res = super().add(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def clear(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def clear(self) -> None:
         res = super().clear()
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -115,20 +115,20 @@ class Set(set, PyPrimitive):
         res = super().difference(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def difference_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def difference_update(self, *args: Any) -> None:
         res = super().difference_update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def discard(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().discard(*args, **kwargs)
+    def discard(self, element: Any) -> None:
+        res = super().discard(element)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def intersection(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().intersection(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def intersection_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().intersection_update(*args)
+    def intersection_update(self, *args: Any) -> None:
+        res = super().intersection_update(args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def isdisjoint(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
@@ -147,24 +147,24 @@ class Set(set, PyPrimitive):
         res = super().pop()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def remove(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().remove(*args, **kwargs)
+    def remove(self, element: Any) -> None:
+        res = super().remove(element)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def symmetric_difference(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().symmetric_difference(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def symmetric_difference_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().symmetric_difference_update(*args, **kwargs)
+    def symmetric_difference_update(self, s: Any) -> None:
+        res = super().symmetric_difference_update(s)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def union(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().union(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().update(*args)
+    def update(self, *args: Any) -> None:
+        res = super().update(args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> Set_PB:
@@ -202,7 +202,8 @@ class ListWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Set_PB) -> "ListWrapper":
+    def _data_proto2object(proto: Set_PB) -> "Set":  # type: ignore
+
         return Set._proto2object(proto=proto)
 
     @staticmethod

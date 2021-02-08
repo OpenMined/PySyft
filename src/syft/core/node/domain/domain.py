@@ -91,7 +91,7 @@ class Domain(Node):
         # TODO: add default compute type
 
         self._register_services()
-        self.request_handlers: List[Dict[str, Any]] = []
+        self.request_handlers: List[Dict[Union[str, String], Any]] = []
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()

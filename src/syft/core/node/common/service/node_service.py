@@ -2,6 +2,7 @@
 from typing import Any
 from typing import List
 from typing import Type
+from typing import Optional
 
 # third party
 from nacl.signing import VerifyKey
@@ -10,10 +11,6 @@ from nacl.signing import VerifyKey
 
 
 from .....logger import traceback_and_raise
-from ....common.message import EventualSyftMessageWithoutReply
-from ....common.message import ImmediateSyftMessageWithReply
-from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.message import SignedMessageT
 from ...abstract.node import AbstractNode
 
 
@@ -34,77 +31,41 @@ class NodeService:
     def pprint(cls) -> str:
         return f"{cls.icon()} ({cls.class_name()})"
 
+    @staticmethod
+    def process(
+        node: AbstractNode, msg: Any, verify_key: Optional[VerifyKey] = None
+    ) -> Any:
+        traceback_and_raise(NotImplementedError)
+
 
 class ImmediateNodeService(NodeService):
     """A service for messages which should be immediately executed"""
 
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class EventualNodeService(NodeService):
     """A service for messages which need not be immediately executed
     but which can be executed at the worker's convenience"""
 
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class ImmediateNodeServiceWithReply(ImmediateNodeService):
-    @staticmethod
-    def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithReply, verify_key: VerifyKey
-    ) -> ImmediateSyftMessageWithoutReply:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class EventualNodeServiceWithoutReply(NodeService):
-    @staticmethod
-    def process(
-        node: AbstractNode, msg: EventualSyftMessageWithoutReply, verify_key: VerifyKey
-    ) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class ImmediateNodeServiceWithoutReply(NodeService):
-    @staticmethod
-    def process(
-        node: AbstractNode, msg: ImmediateSyftMessageWithoutReply, verify_key: VerifyKey
-    ) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class SignedNodeServiceWithReply(ImmediateNodeService):
-    @staticmethod
-    def process(
-        node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey
-    ) -> SignedMessageT:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass
 
 
 class SignedNodeServiceWithoutReply(ImmediateNodeService):
-    @staticmethod
-    def process(node: AbstractNode, msg: SignedMessageT, verify_key: VerifyKey) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def message_handler_types() -> List[Type[Any]]:
-        traceback_and_raise(NotImplementedError)
+    pass

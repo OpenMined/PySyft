@@ -136,10 +136,10 @@ class Bool(int, PyPrimitive):
     def __pos__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.__pos__())
 
-    def __pow__(self, __x, __modulo: SyPrimitiveRet = 10) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=self.value.__pow__(dispatch_other(__x), dispatch_other(__modulo))
-        )
+    def __pow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     def __radd__(self, other: Any) -> SyPrimitiveRet:
         other = dispatch_other(other)
@@ -186,9 +186,11 @@ class Bool(int, PyPrimitive):
             value=self.value.__round__(dispatch_ndigits)
         )
 
-    def __rpow__(self, other: Any) -> SyPrimitiveRet:
+    def __rpow__(self, other: Any, modulo: Any = 10) -> SyPrimitiveRet:
         other = dispatch_other(other)
-        return PrimitiveFactory.generate_primitive(value=self.value.__rpow__(other))
+        return PrimitiveFactory.generate_primitive(
+            value=self.value.__rpow__(other, modulo)
+        )
 
     def __rrshift__(self, other: Any) -> SyPrimitiveRet:
         other = dispatch_other(other)
@@ -280,7 +282,7 @@ class BoolWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Bool_PB) -> "BoolWrapper":
+    def _data_proto2object(proto: Bool_PB) -> "Bool":  # type: ignore
         return Bool._proto2object(proto=proto)
 
     @staticmethod

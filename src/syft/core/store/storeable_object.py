@@ -196,7 +196,7 @@ class StorableObject(AbstractStorableObject):
         _serialize = getattr(self.data, "serialize", None)
 
         if _serialize is None or not callable(_serialize):
-            traceback_and_raise("TODO")
+            traceback_and_raise(ValueError("TODO"))
 
         return _serialize()
 

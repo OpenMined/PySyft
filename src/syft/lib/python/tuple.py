@@ -44,7 +44,7 @@ class Tuple(tuple, PyPrimitive):
         """
         return self._id
 
-    def __new__(cls, *args: Any) -> SyPrimitiveRet:
+    def __new__(cls, *args: Any) -> "Tuple":
         return super(Tuple, cls).__new__(Tuple, *args)
 
     def __add__(self, other: Any) -> SyPrimitiveRet:
@@ -137,7 +137,7 @@ class TupleWrapper(StorableObject):
             return _object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Tuple_PB) -> "TupleWrapper":
+    def _data_proto2object(proto: Tuple_PB) -> "Tuple":  # type: ignore
         return Tuple._proto2object(proto=proto)
 
     @staticmethod

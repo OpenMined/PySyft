@@ -1,6 +1,7 @@
 # stdlib
 from typing import List
 from typing import Type
+from typing import Optional
 
 # third party
 from nacl.signing import VerifyKey
@@ -21,7 +22,9 @@ from ..action.common import ImmediateActionWithoutReply
 class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: ImmediateActionWithoutReply, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ImmediateActionWithoutReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         msg.execute_action(node=node, verify_key=verify_key)
 
@@ -33,7 +36,9 @@ class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply)
 class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: EventualActionWithoutReply, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: EventualActionWithoutReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         msg.execute_action(node=node, verify_key=verify_key)
 
@@ -45,7 +50,9 @@ class EventualObjectActionServiceWithoutReply(EventualNodeServiceWithoutReply):
 class ImmediateObjectActionServiceWithReply(ImmediateNodeServiceWithReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: ImmediateActionWithReply, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ImmediateActionWithReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> ImmediateSyftMessageWithoutReply:
         return msg.execute_action(node=node, verify_key=verify_key)
 

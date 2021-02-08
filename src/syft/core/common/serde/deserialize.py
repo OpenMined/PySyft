@@ -43,6 +43,14 @@ def _deserialize(
     :rtype: Serializable
     """
 
+    deserialization_error = TypeError(
+            "You tried to deserialize an unsupported type. This can be caused by "
+            "several reasons. Either you are actively writing Syft code and forgot "
+            "to create one, or you are trying to deserialize an object which was "
+            "serialized using a different version of Syft and the object you tried "
+            "to deserialize is not supported in this version."
+    )
+
     if from_bytes:
         data_message = DataMessage()
         data_message.ParseFromString(blob)
@@ -51,24 +59,14 @@ def _deserialize(
         get_protobuf_schema = getattr(obj_type, "get_protobuf_schema", None)
 
         if not callable(get_protobuf_schema):
-            traceback_and_raise(
-                AttributeError(
-                    f"The get_protobuf_schema attribute from the "
-                    f"deserialized class {obj_type} is not a callable."
-                )
-            )
+            traceback_and_raise(deserialization_error)
 
         protobuf_type = get_protobuf_schema()
         blob = protobuf_type()
 
         if not isinstance(blob, Message):
             traceback_and_raise(
-                AttributeError(
-                    f"The get_protobuf_schema method from the "
-                    f"deserialized "
-                    f"class {obj_type} returned an object of type "
-                    f"{type(blob)}, not Message."
-                )
+                deserialization_error
             )
 
         blob.ParseFromString(data_message.content)
@@ -78,22 +76,13 @@ def _deserialize(
 
     if not isinstance(obj_type, type):
         traceback_and_raise(
-            AttributeError(
-                f"The target object type {obj_type} is not a type, "
-                f"it's a {type(obj_type)}"
-            )
+            deserialization_error
         )
 
     _proto2object = getattr(obj_type, "_proto2object", None)
     if not callable(_proto2object):
         traceback_and_raise(
-            TypeError(
-                "You tried to deserialize an unsupported type. This can be caused by "
-                "several reasons. Either you are actively writing Syft code and forgot "
-                "to create one, or you are trying to deserialize an object which was "
-                "serialized using a different version of Syft and the object you tried "
-                "to deserialize is not supported in this version."
-            )
+            deserialization_error
         )
 
     return _proto2object(proto=blob)

@@ -90,7 +90,7 @@ class ClientConnection(object):
 
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
-    ) -> SignedImmediateSyftMessageWithReply:
+    ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_without_reply(

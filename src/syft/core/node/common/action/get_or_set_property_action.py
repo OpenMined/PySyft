@@ -63,7 +63,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast.query(self.path).object_ref
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        resolved_self = node.store[self._self.id_at_location]
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []

@@ -25,8 +25,17 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
         return _object
 
     traceback_and_raise(
-        f"Object _object should've been of type {_type}, not {_object}."
+        f"Object {_object} should've been of type {_type}, not {_object}."
     )
+
+
+def validate_field(_object: object, _field: str) -> Any:
+    object = getattr(_object, _field, None)
+
+    if object:
+        return object
+
+    traceback_and_raise(f"Object {_object} has no {_field} field set.")
 
 
 def get_subclasses(obj_type: type) -> List[type]:

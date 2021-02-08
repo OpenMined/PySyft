@@ -49,8 +49,7 @@ from ..services.signaling_service import AnswerPullRequestMessage
 from ..services.signaling_service import InvalidLoopBackRequest
 from ..services.signaling_service import OfferPullRequestMessage
 from ..services.signaling_service import SignalingAnswerMessage
-from ..services.signaling_service import SignalingOqfferMessage
-from ...util import validate_type
+from ..services.signaling_service import SignalingOfferMessage
 
 
 class Duet(DomainClient):

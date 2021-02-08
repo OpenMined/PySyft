@@ -6,5 +6,10 @@ from collections import UserList, UserDict, UserString
 NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type: ignore
 ImplementedInterfaces = Union[UserDict, UserList, UserString]
 ImplementedSingletons = Union[type(None)]  # type: ignore
-PrimitiveRetType = Union[PyPrimitive, NotImplementedType, ImplementedInterfaces]
+PrimitiveRetType = Union[
+    PyPrimitive,
+    NotImplementedType,
+    ImplementedInterfaces,
+    ImplementedSingletons,  # type: ignore
+]
 SyPrimitiveRet = NewType("SyPrimitiveRet", PrimitiveRetType)  # type: ignore
