@@ -6,11 +6,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
+from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
 from .location import Location
-from ....util import validate_type
 
 
 class SpecificLocation(ObjectWithID, Location):

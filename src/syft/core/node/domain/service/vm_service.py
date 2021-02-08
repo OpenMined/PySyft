@@ -1,10 +1,12 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from nacl.signing import VerifyKey
 
 # syft relative
+from .....util import traceback_and_raise
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
@@ -20,7 +22,9 @@ class VMRequestService(ImmediateNodeServiceWithoutReply):
         return [RequestMessage]
 
     @staticmethod
-    def process(node: AbstractNode, msg: RequestMessage, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: RequestMessage, verify_key: Optional[VerifyKey] = None
+    ) -> None:
         ""
 
 
@@ -31,8 +35,17 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: RequestAnswerMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: RequestAnswerMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> RequestAnswerResponse:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
+
         status = RequestStatus.Rejected
         if node.root_verify_key == verify_key:
             status = RequestStatus.Accepted
