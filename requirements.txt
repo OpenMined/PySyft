@@ -28,6 +28,8 @@ jinja2
 loguru
 matplotlib
 nbconvert
+nbconvert
+nbformat
 packaging
 pandas
 protobuf
