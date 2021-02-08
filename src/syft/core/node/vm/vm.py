@@ -9,6 +9,8 @@ from typing_extensions import final
 
 # syft relative
 from ....decorators import syft_decorator
+from ....logger import critical
+from ....logger import traceback_and_raise
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -20,7 +22,6 @@ from .client import VirtualMachineClient
 
 @final
 class VirtualMachine(Node):
-
     client_type = VirtualMachineClient
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
@@ -50,7 +51,12 @@ class VirtualMachine(Node):
 
         # specific location with name
         self.vm = SpecificLocation(name=self.name)
+        # syft relative
+        from ..domain.service.vm_service import VMRequestAnswerMessageService
+        from ..domain.service.vm_service import VMRequestService
 
+        self.immediate_services_without_reply.append(VMRequestService)
+        self.immediate_services_with_reply.append(VMRequestAnswerMessageService)
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
         self.post_init()
@@ -68,13 +74,12 @@ class VirtualMachine(Node):
         try:
             return msg.address.vm_id == self.id
         except Exception as e:
-            error = f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}"
-            print(error)
+            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
             return False
 
     @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
         # TODO: it doesn't at the moment but it needs to in the future,
         #  mostly because nodes should be able to choose waht framweorks they
         #  want to support (and more importantly what versions of those frameworks
@@ -84,7 +89,7 @@ class VirtualMachine(Node):
         # for fw in supported_frameworks:
         #     for name, ast in fw.ast.attrs.items():
         #         if name in self.frameworks.attrs:
-        #             raise KeyError(
+        #             traceback_and_raise(KeyError(
         #                 "Framework already imported. Why are you importing it twice?"
-        #             )
+        #             ))
         #         self.frameworks.attrs[name] = ast

@@ -12,6 +12,7 @@ from ... import serialize
 from ...core.common import UID
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
+from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
@@ -27,10 +28,12 @@ class Complex(complex, PyPrimitive):
         if real is None:
             return complex.__new__(self)
         if imag is None:
-            return complex.__new__(self, real=real)  # type: ignore
+            return complex.__new__(self, real=real)
         if isinstance(real, str):
-            raise TypeError("Complex() can't take second arg if first is a string")
-        return complex.__new__(self, real=real, imag=imag)  # type: ignore
+            traceback_and_raise(
+                TypeError("Complex() can't take second arg if first is a string")
+            )
+        return complex.__new__(self, real=real, imag=imag)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, real: Any = None, imag: Any = None, id: Optional[UID] = None):

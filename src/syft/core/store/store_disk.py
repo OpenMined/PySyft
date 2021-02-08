@@ -5,12 +5,14 @@ from typing import Iterable
 from typing import Optional
 
 # third party
-from loguru import logger
 from sqlitedict import SqliteDict
 from typing_extensions import Final
 
 # syft relative
 from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import trace
+from ...logger import traceback_and_raise
 from ..common.serde.deserialize import _deserialize
 from ..common.uid import UID
 from .store_interface import ObjectStore
@@ -43,8 +45,8 @@ class DiskObjectStore(ObjectStore):
             value = _deserialize(blob=blob, from_bytes=True)
             return value
         except Exception as e:
-            logger.trace(f"{type(self)} get item error {key} {e}")
-            raise e
+            trace(f"{type(self)} get item error {key} {e}")
+            traceback_and_raise(e)
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         if str(key.value) in self.db:
@@ -58,8 +60,8 @@ class DiskObjectStore(ObjectStore):
             self.db[str(key.value)] = blob
             self.db.commit(blocking=False)
         except Exception as e:
-            logger.trace(f"{type(self)} set item error {key} {type(value)} {e}")
-            raise e
+            trace(f"{type(self)} set item error {key} {type(value)} {e}")
+            traceback_and_raise(e)
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
@@ -98,9 +100,9 @@ class DiskObjectStore(ObjectStore):
             if obj is not None:
                 del self.db[str(key.value)]
             else:
-                logger.critical(f"{type(self)} delete error {key}.")
+                critical(f"{type(self)} delete error {key}.")
         except Exception as e:
-            logger.critical(f"{type(self)} Exception in delete {key}. {e}")
+            critical(f"{type(self)} Exception in delete {key}. {e}")
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, key: UID) -> None:
