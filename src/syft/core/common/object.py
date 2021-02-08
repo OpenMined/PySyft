@@ -11,8 +11,9 @@ from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from .uid import UID
+from ..common.serde.serializable import bind_protobuf
 
-
+@bind_protobuf
 class ObjectWithID(Serializable):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id

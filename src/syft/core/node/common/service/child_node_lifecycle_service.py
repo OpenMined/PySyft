@@ -22,8 +22,10 @@ from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .auth import service_auth
 from .heritage_update_service import HeritageUpdateMessage
+from ....common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

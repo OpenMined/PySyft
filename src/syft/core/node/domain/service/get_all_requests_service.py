@@ -22,8 +22,10 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_message import RequestMessage
+from ....common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
@@ -93,6 +95,7 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAllRequestsMessage_PB
 
 
+@bind_protobuf
 class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

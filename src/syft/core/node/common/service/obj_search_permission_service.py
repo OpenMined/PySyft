@@ -27,8 +27,10 @@ from ...abstract.node import AbstractNode
 from ...common.service.auth import AuthorizationException
 from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
+from ....common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 @final
 class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
