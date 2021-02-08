@@ -1,15 +1,18 @@
-# For creating Duet tests from notebooks, you must adapt your notebooks to the following rules:
-# 1. The DO/DS notebooks have a prefefined format:
+# For creating Duet tests from notebooks, adapt your notebooks to the following rules:
+# 1. The DO/DS notebooks have a predefined format:
 #  <test_name>_Data_Owner.ipynb and <test_name>_Data_Scientist.ipynb.
-# 2. Each notebook must have special markdown cells, called Checkpoints, with the following properties:
-#     - The cell contains the text "Checkpoint <int>: ", used by the script for extracting the step number.
+#
+# 2. Each notebook must have special markdown cells called Checkpoints, with the
+#    following properties:
+#     - The cell begins with the text "Checkpoint <int>: "
+#       used by the script for extracting the step number.
 #     - Each Checkpoint cell acts as a barrier in the generated scripts.
-#     - In the DO tests, getting to Checkpoint N means creating a file to mark
-# the checkpoint and waiting for the DS instance to get the Checkpoint N as well.
+#     - In the DO tests, getting to Checkpoint N means creating a file to mark the
+#       checkpoint and waiting for the DS instance to get the Checkpoint N as well.
 #     - In the DS tests, getting to Checkpoint N means creating a file to mark the
-# checkpoint and waiting for the DO instance to get to Checkpoint N + 1.
+#       checkpoint and waiting for the DO instance to get to Checkpoint N + 1.
 #     - The DS notebook instance should always end with a checkpoint cell, to wait for
-# the DO instance to assert the results.
+#       the DO instance to assert the results.
 
 # stdlib
 from collections import defaultdict
