@@ -29,7 +29,7 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
-from syft.lib.python import ValuesIndicesWrapper
+from syft.lib.python.namedtuple import get_keys
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
@@ -600,7 +600,7 @@ def test_all_allowlisted_tensor_methods(
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
                 local_fqn = full_name_with_qualname(klass=type(local_result))
-                keys = ValuesIndicesWrapper.get_keys(klass_name=local_fqn)
+                keys = get_keys(klass_name=local_fqn)
                 # temporary work around while ValuesIndicesWrapper has storable attrs
                 for key in keys:
                     assert compare_tensors(

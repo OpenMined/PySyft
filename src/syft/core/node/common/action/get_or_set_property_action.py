@@ -25,6 +25,7 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
+from ....common.serde.serializable import bind_protobuf
 
 
 class PropertyActions(Enum):
@@ -32,7 +33,7 @@ class PropertyActions(Enum):
     GET = 2
     DEL = 3
 
-
+@bind_protobuf
 class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     def __init__(
         self,

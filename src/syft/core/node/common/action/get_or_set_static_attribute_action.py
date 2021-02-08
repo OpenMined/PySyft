@@ -21,13 +21,14 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
+from ....common.serde.serializable import bind_protobuf
 
 
 class StaticAttributeAction(Enum):
     SET = 1
     GET = 2
 
-
+@bind_protobuf
 class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,

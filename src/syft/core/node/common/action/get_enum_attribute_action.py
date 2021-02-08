@@ -19,8 +19,9 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
+from ....common.serde.serializable import bind_protobuf
 
-
+@bind_protobuf
 class EnumAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,
