@@ -323,11 +323,19 @@ Okay, any time we are inside the virtualenv every python and pip command we run 
 Once you are inside the virtualenv you can do this with pip or pipenv.
 
 #### Windows
-To install the dependencies properly on Windows, first install pytorch v1.7.1 using the following powershell command:
+To install the dependencies properly on Windows, you must first install PyTorch because most Windows binary wheels are not available on PyPI.
+
+You can do this by telling `pip` to use the official PyTorch Wheel Repository instead of the default PyPI repository.
 ```
-scripts/pytorch_install.ps1 1.7.1
+$ pip install torch torchvision -f https://download.pytorch.org/whl/torch_stable.html
 ```
-then continue below. 
+
+*Note* If you need a specific version you can supply it with the `==` syntax. Also be aware there are different versions depending on if you require CUDA for GPU usage or CPU only such as what we use in GitHub CI.
+```
+$ pip install torch==1.7.1 torchvision==0.8.2 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+Then continue below with requirements.txt like normal.
 
 **NOTE** this is required for several `dev` packages like pytest-xdist etc.
 ```
