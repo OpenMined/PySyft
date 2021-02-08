@@ -4,10 +4,6 @@ from typing import Any
 from typing import Callable
 
 
-def isfunc(x: Any) -> bool:
-    return hasattr(x, "__call__")
-
-
 def call_func_and_wrap_result(
     func: Callable, wrap_type: Any = None, *args, **kwargs
 ) -> Any:

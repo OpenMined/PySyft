@@ -11,7 +11,6 @@ import torch
 # syft absolute
 from syft.decorators import syft_decorator
 from syft.lib.tensor.tensorbase_util import call_func_and_wrap_result
-from syft.lib.tensor.tensorbase_util import isfunc
 
 Num = Union[int, float]
 
@@ -21,7 +20,7 @@ class ChildDelegatorTensor:
 
     def __getattr__(self, name: str) -> Any:
         func_or_attr = getattr(self.child, name)
-        if isfunc(func_or_attr):
+        if callable(func_or_attr):
             return partial(call_func_and_wrap_result, func_or_attr, self.wrap_type)
         else:
             var = func_or_attr
