@@ -40,7 +40,7 @@ def get_signing_key() -> SigningKey:
 
 
 @pytest.mark.asyncio
-async def test_init() -> None:
+def test_init() -> None:
     nest_asyncio.apply()
 
     domain = Domain(name="test")
@@ -286,7 +286,7 @@ async def test_close() -> None:
 
 
 @pytest.mark.asyncio
-async def test_init_without_event_loop() -> None:
+def test_init_without_event_loop() -> None:
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
