@@ -143,12 +143,16 @@ class Int(int, PyPrimitive):
 
     def __pow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+            return PrimitiveFactory.generate_primitive(
+                value=super().__pow__(other, modulo)
+            )
         return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     def __rpow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            return PrimitiveFactory.generate_primitive(value=super().__rpow__(other, modulo))
+            return PrimitiveFactory.generate_primitive(
+                value=super().__rpow__(other, modulo)
+            )
         return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     def __lshift__(self, other: Any) -> SyPrimitiveRet:
@@ -159,7 +163,7 @@ class Int(int, PyPrimitive):
         res = super().__rlshift__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __round__(self, ndigits: Any = None) -> SyPrimitiveRet:
+    def __round__(self, ndigits: Any = 0) -> SyPrimitiveRet:
         res = super().__round__(ndigits)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -243,9 +247,12 @@ class Int(int, PyPrimitive):
 
     def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
-        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
-
+            PrimitiveFactory.generate_primitive(
+                value=super().__pow__(other, modulo), id=self.id
+            )
+        return PrimitiveFactory.generate_primitive(
+            value=super().__pow__(other), id=self.id
+        )
 
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)

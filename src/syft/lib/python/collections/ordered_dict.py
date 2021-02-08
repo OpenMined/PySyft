@@ -120,8 +120,8 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().setdefault(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def update(self, object: Any, **kwds: Any) -> SyPrimitiveRet:  # type: ignore
-        res = super().update(object, **kwds)
+    def update(self, *args, **kwds: Any) -> SyPrimitiveRet:  # type: ignore
+        res = super().update(*args, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def values(self) -> SyPrimitiveRet:

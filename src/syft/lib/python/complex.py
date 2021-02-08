@@ -86,9 +86,12 @@ class Complex(complex, PyPrimitive):
         result = complex.__rmul__(self, x)
         return PrimitiveFactory.generate_primitive(value=result)
 
-    def __rpow__(self, x: complex, modulo: Any = 10) -> SyPrimitiveRet:
-        result = complex.__rpow__(self, x, modulo)
-        return PrimitiveFactory.generate_primitive(value=result)
+    def __rpow__(self, x: complex, modulo: Optional[Any] = None) -> SyPrimitiveRet:
+        if modulo:
+            return PrimitiveFactory.generate_primitive(
+                value=complex.__rpow__(self, x, modulo)
+            )
+        return PrimitiveFactory.generate_primitive(value=complex.__rpow__(self, x))
 
     def __rtruediv__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__rtruediv__(self, x)

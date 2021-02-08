@@ -180,17 +180,20 @@ class Bool(int, PyPrimitive):
         other = dispatch_other(other)
         return PrimitiveFactory.generate_primitive(value=self.value.__ror__(other))
 
-    def __round__(self, ndigits: Any = None) -> SyPrimitiveRet:
+    def __round__(self, ndigits: Any = 0) -> SyPrimitiveRet:
         dispatch_ndigits = dispatch_other(ndigits)
         return PrimitiveFactory.generate_primitive(
             value=self.value.__round__(dispatch_ndigits)
         )
 
-    def __rpow__(self, other: Any, modulo: Any = 10) -> SyPrimitiveRet:
+    def __rpow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         other = dispatch_other(other)
-        return PrimitiveFactory.generate_primitive(
-            value=self.value.__rpow__(other, modulo)
-        )
+
+        if modulo:
+            return PrimitiveFactory.generate_primitive(
+                value=self.value.__rpow__(other, modulo)
+            )
+        return PrimitiveFactory.generate_primitive(value=self.value.__rpow__(other))
 
     def __rrshift__(self, other: Any) -> SyPrimitiveRet:
         other = dispatch_other(other)

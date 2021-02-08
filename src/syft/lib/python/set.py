@@ -123,12 +123,12 @@ class Set(set, PyPrimitive):
         res = super().discard(element)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def intersection(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def intersection(self, *args: Any) -> SyPrimitiveRet:
         res = super().intersection(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def intersection_update(self, *args: Any) -> None:
-        res = super().intersection_update(args)
+        res = super().intersection_update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def isdisjoint(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
@@ -164,7 +164,7 @@ class Set(set, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def update(self, *args: Any) -> None:
-        res = super().update(args)
+        res = super().update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> Set_PB:

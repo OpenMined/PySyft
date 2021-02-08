@@ -158,13 +158,17 @@ class Float(float, PyPrimitive):
 
     def __pow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+            return PrimitiveFactory.generate_primitive(
+                value=super().__pow__(other, modulo)
+            )
         return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
-    def __rpow__(self, other: Any, modulo: Optional[Any] = 10) -> SyPrimitiveRet:
+    def __rpow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
-        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
+            return PrimitiveFactory.generate_primitive(
+                value=super().__rpow__(other, modulo)
+            )
+        return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(
@@ -198,8 +202,12 @@ class Float(float, PyPrimitive):
 
     def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            return PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
-        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
+            return PrimitiveFactory.generate_primitive(
+                value=super().__pow__(other, modulo), id=self.id
+            )
+        return PrimitiveFactory.generate_primitive(
+            value=super().__pow__(other), id=self.id
+        )
 
     @property
     def real(self) -> SyPrimitiveRet:

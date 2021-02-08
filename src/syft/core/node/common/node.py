@@ -394,9 +394,7 @@ class Node(AbstractNode):
             f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
         )
 
-        self.process_message(
-            msg=msg, router=self.immediate_msg_without_reply_router
-        )
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
         try:
             pass
         except Exception as e:

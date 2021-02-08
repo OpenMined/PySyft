@@ -38,7 +38,9 @@ class RequestQueueClient:
             address=self.client.address, reply_to=self.client.address
         )
 
-        requests = validate_field(self.client.send_immediate_msg_with_reply(msg=msg), "requests")
+        requests = validate_field(
+            self.client.send_immediate_msg_with_reply(msg=msg), "requests"
+        )
 
         for request in requests:
             request.gc_enabled = False

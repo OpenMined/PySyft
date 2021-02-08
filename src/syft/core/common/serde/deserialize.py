@@ -44,11 +44,11 @@ def _deserialize(
     """
 
     deserialization_error = TypeError(
-            "You tried to deserialize an unsupported type. This can be caused by "
-            "several reasons. Either you are actively writing Syft code and forgot "
-            "to create one, or you are trying to deserialize an object which was "
-            "serialized using a different version of Syft and the object you tried "
-            "to deserialize is not supported in this version."
+        "You tried to deserialize an unsupported type. This can be caused by "
+        "several reasons. Either you are actively writing Syft code and forgot "
+        "to create one, or you are trying to deserialize an object which was "
+        "serialized using a different version of Syft and the object you tried "
+        "to deserialize is not supported in this version."
     )
 
     if from_bytes:
@@ -65,9 +65,7 @@ def _deserialize(
         blob = protobuf_type()
 
         if not isinstance(blob, Message):
-            traceback_and_raise(
-                deserialization_error
-            )
+            traceback_and_raise(deserialization_error)
 
         blob.ParseFromString(data_message.content)
 
@@ -75,14 +73,10 @@ def _deserialize(
     obj_type = getattr(type(blob), "schema2type", None)
 
     if not isinstance(obj_type, type):
-        traceback_and_raise(
-            deserialization_error
-        )
+        traceback_and_raise(deserialization_error)
 
     _proto2object = getattr(obj_type, "_proto2object", None)
     if not callable(_proto2object):
-        traceback_and_raise(
-            deserialization_error
-        )
+        traceback_and_raise(deserialization_error)
 
     return _proto2object(proto=blob)
