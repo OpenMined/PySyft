@@ -26,11 +26,12 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
+from ....common.serde.serializable import bind_protobuf
 
 # TODO: change all message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name
 
-
+@bind_protobuf
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

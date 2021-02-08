@@ -28,6 +28,7 @@ from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
+from ....common.serde.serializable import bind_protobuf
 
 
 class RequestStatus(Enum):
@@ -35,7 +36,7 @@ class RequestStatus(Enum):
     Rejected = 2
     Accepted = 3
 
-
+@bind_protobuf
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["name", "request_description", "request_id"]

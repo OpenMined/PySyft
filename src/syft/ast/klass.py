@@ -30,6 +30,7 @@ from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
+from ..logger import warning
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
@@ -286,6 +287,8 @@ class Class(Callable):
             which_obj = self
             if hasattr(self, "serializable_wrapper_type"):
                 which_obj = self.serializable_wrapper_type(value=self)
+                which_obj.tags = getattr(self, "tags", [])
+                which_obj.description = getattr(self, "description", '')
 
             if not hasattr(which_obj, "id"):
                 which_obj.id = UID()
@@ -302,6 +305,12 @@ class Class(Callable):
 
             which_obj.tags = tags
             which_obj.description = description
+            if hasattr(self, "serializable_wrapper_type"):
+                try:
+                    self.tags = tags
+                    self.description = description
+                except AttributeError:
+                    warning(f"'tags' and 'description' are not attached to {self}, because it's type is not a python class.")
 
             id_at_location = UID()
 

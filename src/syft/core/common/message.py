@@ -21,6 +21,7 @@ from ...logger import traceback_and_raise
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import bind_protobuf
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")
@@ -101,6 +102,7 @@ class SyftMessage(AbstractMessage):
         )
 
 
+@bind_protobuf
 class SignedMessage(SyftMessage):
     """
     SignedMessages are :class:`SyftMessage`s that have been signed by someone.

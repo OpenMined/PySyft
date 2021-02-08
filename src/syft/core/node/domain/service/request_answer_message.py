@@ -22,8 +22,9 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from .request_message import RequestStatus
+from ....common.serde.serializable import bind_protobuf
 
-
+@bind_protobuf
 class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     __slots__ = ["request_id"]
 
@@ -52,7 +53,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestAnswerMessage_PB
 
-
+@bind_protobuf
 class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["status", "request_id"]

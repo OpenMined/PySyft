@@ -11,8 +11,9 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID
 from ...io.location import Location
+from ...common.serde.serializable import bind_protobuf
 
-
+@bind_protobuf
 class Metadata(Serializable):
     @syft_decorator(typechecking=True)
     def __init__(
