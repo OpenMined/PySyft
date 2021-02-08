@@ -1,3 +1,4 @@
+# syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -9,8 +10,10 @@ from syft.core.io.route import SoloRoute
 from syft.core.io.virtual import VirtualClientConnection
 from syft.core.io.virtual import VirtualServerConnection
 from syft.core.node.common.node import Node
-from tests.syft.core.io.utils_test import construct_dummy_message
-from tests.syft.core.io.utils_test import MockNode
+
+# syft relative
+from .utils_test import MockNode
+from .utils_test import construct_dummy_message
 
 # --------------------- INITIALIZATION ---------------------
 

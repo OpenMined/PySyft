@@ -194,7 +194,7 @@ installation is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 
@@ -376,7 +376,7 @@ is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 
@@ -577,7 +577,7 @@ installation is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 

@@ -5,7 +5,7 @@ This project is open source and we welcome contributions from everyone in the fo
 
 ## Getting Started
 
-The PySyft codebase, like all OpenMined codebases, is developed by charitable individuals who donate their time and expertice to bettering open-source software. **OpenMined is not a company and individual contributors have no responsibility to solve problems that you may have in your implementation.** In the interest of making the best use of our contributors time, please do not DM regular, core contributors to this project or any project on Slack or any other medium for support without prior invitation. There are proper Slack channels in place for receiving support, such as the #lib_pysyft channel on our [Slack community](https://slack.openmined.org). The added benefit of using a channel is that others can step in to help and learn from the discussed topics. Please file any support requests there. For any bug reports or feature requests, please create an issue. For any PR's, please ensure your work is related to an active PySyft Github issue. Anything else will be closed or will not be responded to.
+The PySyft codebase, like all OpenMined codebases, is developed by charitable individuals who donate their time and expertise to bettering open-source software. **OpenMined is not a company and individual contributors have no responsibility to solve problems that you may have in your implementation.** In the interest of making the best use of our contributors time, please do not DM regular, core contributors to this project or any project on Slack or any other medium for support without prior invitation. There are proper Slack channels in place for receiving support, such as the #lib_pysyft channel on our [Slack community](https://slack.openmined.org). The added benefit of using a channel is that others can step in to help and learn from the discussed topics. Please file any support requests there. For any bug reports or feature requests, please create an issue. For any PR's, please ensure your work is related to an active PySyft Github issue. Anything else will be closed or will not be responded to.
 
 - [Contribution Guidelines](#contribution-guidelines)
   - [Getting Started](#getting-started)
@@ -321,6 +321,21 @@ Okay, any time we are inside the virtualenv every python and pip command we run 
 
 ### Install Python Dependencies
 Once you are inside the virtualenv you can do this with pip or pipenv.
+
+#### Windows
+To install the dependencies properly on Windows, you must first install PyTorch because most Windows binary wheels are not available on PyPI.
+
+You can do this by telling `pip` to use the official PyTorch Wheel Repository instead of the default PyPI repository.
+```
+$ pip install torch torchvision -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+*Note* If you need a specific version you can supply it with the `==` syntax. Also be aware there are different versions depending on if you require CUDA for GPU usage or CPU only such as what we use in GitHub CI.
+```
+$ pip install torch==1.7.1 torchvision==0.8.2 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+Then continue below with requirements.txt like normal.
 
 **NOTE** this is required for several `dev` packages like pytest-xdist etc.
 ```
