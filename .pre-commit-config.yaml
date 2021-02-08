@@ -57,3 +57,7 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: master
+    hooks:
+      - id: darglint
