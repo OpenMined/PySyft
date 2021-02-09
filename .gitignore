@@ -27,3 +27,5 @@ examples/**/data/*
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal
+tests/syft/notebooks/*.py
+tests/syft/notebooks/checkpoints

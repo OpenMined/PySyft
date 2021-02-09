@@ -217,10 +217,10 @@ jobs:
           export TEST_CHUNKS=16
           export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark --no-cov
+          pytest -m torch -n auto -p no:benchmark
           export TEST_CHUNK=$(( ${{ matrix.chunk }}+8 ))
           echo "Running $TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark --no-cov
+          pytest -m torch -n auto -p no:benchmark
 
       - name: Run torch test chunks Windows
         if: startsWith(runner.os, 'Windows')
@@ -228,7 +228,7 @@ jobs:
           $Env:TEST_CHUNKS=16
           $Env:TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $Env:TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark --no-cov
+          pytest -m torch -n auto -p no:benchmark
           $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+8
           echo "Running $Env:TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark --no-cov
+          pytest -m torch -n auto -p no:benchmark
