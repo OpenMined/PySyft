@@ -74,8 +74,8 @@ class EventLoopThread:
     def shutdown(self) -> None:
         if "loop" in self.__shared_state:
             info("Stopping Event Loop")
-            loop.call_soon_threadsafe(loop.stop)  # type: ignore
             loop.run_until_complete(loop.shutdown_asyncgens())  # type: ignore
+            loop.call_soon_threadsafe(loop.stop)  # type: ignore
             del self.__shared_state["loop"]
 
         if "thread" in self.__shared_state:
