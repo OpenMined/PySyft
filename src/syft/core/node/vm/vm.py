@@ -29,6 +29,7 @@ class VirtualMachine(Node):
 
     def __init__(
         self,
+        *,  # Trasterisk
         name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
