@@ -20,8 +20,8 @@ class EnumAttribute(ast.attribute.Attribute):
         client: Optional[AbstractNodeClient] = None,
     ) -> None:
         """
-        An EnumAttribute represent the attributes of a Python Enum. Due to it's constraints,
-        they are only gettable, not settable.
+        An EnumAttribute represents the attributes of a Python Enum. Due to it's
+        constraints, they are only gettable, not settable.
 
         Args:
             parent: The parent node is needed when solving `EnumAttributes`, as we have no getter functions on

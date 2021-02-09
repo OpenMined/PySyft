@@ -96,7 +96,7 @@ class Callable(ast.attribute.Attribute):
         if "path" not in kwargs or "index" not in kwargs:
             traceback_and_raise(
                 ValueError(
-                    "AST with no client attached tries to execute remote " "function."
+                    "AST with no client attached tries to execute remote function."
                 )
             )
         path = kwargs["path"]
