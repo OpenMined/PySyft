@@ -24,6 +24,7 @@ from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .....util import inherit_tags
 
 
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
@@ -77,6 +78,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
+        tag_args = []
         for arg in self.args:
             if not isinstance(arg, Pointer):
                 traceback_and_raise(
@@ -91,8 +93,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
+            tag_args.append(r_arg)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             if not isinstance(arg, Pointer):
                 traceback_and_raise(
@@ -107,6 +111,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
+            tag_kwargs[arg_name] = r_arg
 
         # upcast our args in case the method only accepts the original types
         (
@@ -137,6 +142,14 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 data=result,
                 read_permissions=result_read_permissions,
             )
+
+        inherit_tags(
+            attr_path_and_name=self.path,
+            result=result,
+            self_obj=None,
+            args=tag_args,
+            kwargs=tag_kwargs,
+        )
 
         node.store[self.id_at_location] = result
 

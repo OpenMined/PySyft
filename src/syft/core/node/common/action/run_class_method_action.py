@@ -24,6 +24,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .....util import inherit_tags
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
@@ -80,7 +81,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        tags = None
 
         mutating_internal = False
         if (
@@ -93,6 +93,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             "__call__"
         ):
             mutating_internal = True
+
+        resolved_self = None
         if not self.is_static:
             resolved_self = node.store.get_object(key=self._self.id_at_location)
 
@@ -102,34 +104,29 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     + f" at: {self._self.id_at_location}"
                 )
                 return
-            tags = resolved_self.tags.copy()
             result_read_permissions = resolved_self.read_permissions
         else:
             result_read_permissions = {}
 
         resolved_args = list()
+        tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
-            if tags is None:
-                tags = r_arg.tags.copy()
-            else:
-                tags.extend([tag for tag in r_arg.tags if tag not in tags])
+            tag_args.append(r_arg)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
-            if tags is None:
-                tags = r_arg.tags.copy()
-            else:
-                tags.extend([tag for tag in r_arg.tags if tag not in tags])
+            tag_kwargs[arg_name] = r_arg
 
         (
             upcasted_args,
@@ -147,23 +144,23 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             if method_name in ["step", "zero_grad"]:
                 # TODO: Remove this Opacus workaround
                 try:
-                    method = getattr(resolved_self.data, method_name, None)
+                    method = getattr(resolved_self.data, method_name, None)  # type: ignore
                     result = method(*upcasted_args, **upcasted_kwargs)
                 except Exception as e:
                     critical(
                         f"Unable to resolve method {self.path} on {resolved_self}. {e}"
                     )
                     result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs  # type: ignore
                     )
             else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)  # type: ignore
 
         # TODO: replace with proper tuple support
         if type(result) is tuple:
             # convert to list until we support tuples
             result = list(result)
-            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)  # type: ignore
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -186,7 +183,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     traceback_and_raise(Exception(err))
 
         if mutating_internal:
-            resolved_self.read_permissions = result_read_permissions
+            resolved_self.read_permissions = result_read_permissions  # type: ignore
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
@@ -194,9 +191,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
-        if tags is not None:
-            result.tags = tags
-            result.tags.append(self.path.split(".")[-1])
+        inherit_tags(
+            attr_path_and_name=self.path,
+            result=result,
+            self_obj=resolved_self,
+            args=tag_args,
+            kwargs=tag_kwargs,
+        )
 
         node.store[self.id_at_location] = result
 
