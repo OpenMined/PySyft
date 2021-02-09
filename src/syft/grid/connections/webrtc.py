@@ -109,7 +109,6 @@ from ..services.signaling_service import CloseConnectionMessage
 
 DC_CHUNKING_ENABLED = True
 DC_CHUNK_START_SIGN = b"<<<CHUNK START>>>"
-DC_CHUNK_END_SIGN = b"<<<CHUNK END>>>"
 
 try:
     DC_MAX_CHUNK_SIZE = int(os.environ["DC_MAX_CHUNK_SIZE"])
