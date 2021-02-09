@@ -288,7 +288,7 @@ class Module:
         reason: str = "",
         delete_obj: bool = False,
     ) -> Optional["Module"]:
-        
+    
         if self.is_local:
             info("> This model is local. Maybe you meant to call .send()?")
             return None

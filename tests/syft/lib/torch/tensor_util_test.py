@@ -1,16 +1,9 @@
 # third party
 import pytest
 import numpy as np
-# third party
 import torch as th
 
-# syft relative
-# from .....proto.lib.torch.tensor import TensorData
-
-# /home/param/git-projects/GSOC 2021/PySyft/src/syft/lib/torch/tensor_util.py
-# /home/param/git-projects/GSOC 2021/PySyft/tests/syft/lib/torch/tensor_util_test.py
-#obj = TensorData()
-
+# syft absolute
 import syft as sy
 
 @pytest.fixture(scope="function")

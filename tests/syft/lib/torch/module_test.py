@@ -36,10 +36,8 @@ class SyNetEmpty(sy.Module):
 
     def __init__(self) -> None:
         super(SyNetEmpty, self).__init__(torch_ref=torch)
-        #self.fc1 = torch.nn.Linear(IN_DIM, OUT_DIM)
 
     def forward(self, x: torch.Tensor) -> Any:
-        #return self.fc1(x)
         return 0
 
 @pytest.fixture(scope="function")
@@ -66,7 +64,6 @@ def test_repr_to_kwargs() -> None:
     assert sy.lib.torch.module.repr_to_kwargs("1, 32") == ([1, 32], {})
     assert sy.lib.torch.module.repr_to_kwargs("kernel_size=(3, 3), stride=(1, 1)") == ([], {'kernel_size': (3, 3), 'stride': (1, 1)})
 
-test_repr_to_kwargs()
 def test_module_setup(alice: sy.VirtualMachine, model: SyNet) -> None:
     alice_client = alice.get_root_client()
 
