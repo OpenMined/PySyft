@@ -135,6 +135,7 @@ async def test_set_answer_raise_exception() -> None:
     offer_payload = await webrtc._set_offer()
 
     # FIXME: Nahua is not happy with this test because it "indirectly" triggered exception
+    # https://github.com/OpenMined/PySyft/issues/5126
     with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
         with pytest.raises(Exception):
             # This would fail because 'have-local-offer' is applied
