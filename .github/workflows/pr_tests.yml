@@ -177,7 +177,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -215,12 +215,6 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
           cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
-      - name: Install supported library packages Windows - Ignore Errors
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          foreach ($i in cat requirements/supported_libs.txt) {
-            pip install $i --default-timeout=60
-          }
 
       - name: Run notebook Duet examples
         run: |
