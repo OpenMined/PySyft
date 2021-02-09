@@ -243,7 +243,7 @@ async def test_close() -> None:
 
 
 @pytest.mark.asyncio
-async def test_init_without_event_loop() -> None:
+def test_init_without_event_loop() -> None:
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
