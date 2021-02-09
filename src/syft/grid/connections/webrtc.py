@@ -195,7 +195,9 @@ class WebRTCConnection(BidirectionalConnection):
             # Use the Peer Connection structure to
             # set the channel as a RTCDataChannel.
             self.channel = self.peer_connection.createDataChannel(
-                "datachannel", ordered=False
+                "datachannel",
+                ordered=False,
+                maxRetransmits=0,
             )
             # Keep send buffer busy with chunks
             self.channel.bufferedAmountLowThreshold = 4 * DC_MAX_CHUNK_SIZE

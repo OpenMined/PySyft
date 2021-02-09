@@ -33,7 +33,7 @@ class ContextWrapper(StorableObject):
         proto.obj_type = get_fully_qualified_name(obj=self.value)
         proto.vendor_lib = "tenseal"
         proto.vendor_lib_version = ts.__version__
-        proto.content = self.value.serialize()  # type: ignore
+        proto.content = self.value.serialize(save_secret_key=True)  # type: ignore
 
         return proto
 
