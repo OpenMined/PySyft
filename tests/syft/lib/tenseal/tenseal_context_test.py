@@ -74,9 +74,9 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
-    assert not ctx_ptr.is_private().get()
+    assert ctx_ptr.is_private().get()
     assert not ctx_ptr.has_galois_keys().get()
-    assert not ctx_ptr.has_secret_key().get()
+    assert ctx_ptr.has_secret_key().get()
     assert ctx_ptr.has_public_key().get()
     assert ctx_ptr.has_relin_keys().get()
 
