@@ -195,6 +195,7 @@ class WebRTCConnection(BidirectionalConnection):
             # set the channel as a RTCDataChannel.
             self.channel = self.peer_connection.createDataChannel(
                 "datachannel",
+                ordered=False,
             )
             # Keep send buffer busy with chunks
             self.channel.bufferedAmountLowThreshold = 4 * DC_MAX_CHUNK_SIZE
@@ -223,8 +224,9 @@ class WebRTCConnection(BidirectionalConnection):
                     chunks_pending = chunk.idx
                     chunked_msg = [b""] * chunks_pending
                 elif chunks_pending:
+                    if chunked_msg[chunk.idx] == b"":
+                        chunks_pending -= 1
                     chunked_msg[chunk.idx] = message
-                    chunks_pending -= 1
                     if chunks_pending == 0:
                         await self.consumer(msg=b"".join(chunked_msg))
                 else:
@@ -278,8 +280,9 @@ class WebRTCConnection(BidirectionalConnection):
                         chunks_pending = chunk.idx
                         chunked_msg = [b""] * chunks_pending
                     elif chunks_pending:
+                        if chunked_msg[chunk.idx] == b"":
+                            chunks_pending -= 1
                         chunked_msg[chunk.idx] = message
-                        chunks_pending -= 1
                         if chunks_pending == 0:
                             await self.consumer(msg=b"".join(chunked_msg))
                     else:
