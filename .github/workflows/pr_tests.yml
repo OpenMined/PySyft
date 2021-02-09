@@ -172,11 +172,12 @@ jobs:
 
   python-nb-examples:
     needs: [python-linting]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 1
       matrix:
         python-version: [3.8]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v2
