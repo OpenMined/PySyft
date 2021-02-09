@@ -466,11 +466,7 @@ class Class(Callable):
             )
             raise e
         except Exception as e:
-            critical(
-                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on "
-                "__getattr__ to search in self.attrs for the requested field."
-            )
+            critical(f"__getattribute__ failed with {type(e).__name__}")
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
