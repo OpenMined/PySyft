@@ -24,7 +24,7 @@ class Float(float, PyPrimitive):
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:
             value = 0.0
-        return float.__new__(cls, value)  # type: ignore
+        return float.__new__(cls, value)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, id: Optional[UID] = None):

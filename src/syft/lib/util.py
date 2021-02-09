@@ -8,8 +8,8 @@ from typing import Union as TypeUnion
 
 # syft relative
 from ..ast.globals import Globals
-from ..decorators.syft_decorator_impl import syft_decorator
 from ..core.node.abstract.node import AbstractNodeClient
+from ..decorators.syft_decorator_impl import syft_decorator
 
 
 # this gets called on global ast as well as clients

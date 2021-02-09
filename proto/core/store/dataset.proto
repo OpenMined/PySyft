@@ -4,7 +4,6 @@ package syft.core.store;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/store/store_object.proto";
-import "google/protobuf/any.proto";
 
 message Dataset {
   syft.core.common.UID id = 1;

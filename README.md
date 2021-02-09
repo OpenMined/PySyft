@@ -124,10 +124,15 @@ The slack community is very friendly and great about quickly answering questions
 The latest version of PySyft is 0.3.0 however this software is still Beta. If you find
 a bug please file it in the GitHub issues.
 
+
 ## Organizational Contributions
 We are very grateful for contributions to PySyft from the following organizations!
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="200"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="200" height="130"/>](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="200" height="150"/>](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="200"/>](https://dropoutlabs.com/)
---------------------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------------------
+
+| | | |
+|-|-|-|
+[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
+[<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)
+
 
 ## Support
 For support in using this library, please join the **#lib_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)

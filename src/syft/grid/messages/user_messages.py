@@ -907,4 +907,3 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return SearchUsersResponse_PB
-

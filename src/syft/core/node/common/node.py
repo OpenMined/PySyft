@@ -273,7 +273,7 @@ class Node(AbstractNode):
             setattr(solo, "name", f"Route ({self.name} <-> {self.name} Client)")
             routes = [solo]
 
-        return self.client_type(
+        return self.client_type(  # type: ignore
             name=self.name,
             routes=routes,
             network=self.network,
