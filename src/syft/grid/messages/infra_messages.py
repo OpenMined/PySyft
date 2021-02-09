@@ -128,12 +128,12 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -152,7 +152,7 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return CreateWorkerResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -173,7 +173,7 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return CreateWorkerResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -271,12 +271,12 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -295,7 +295,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         return CheckWorkerDeploymentResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -316,7 +316,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         return CheckWorkerDeploymentResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -414,12 +414,12 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -438,7 +438,7 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkerResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -459,7 +459,7 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkerResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -557,12 +557,12 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -581,7 +581,7 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkersResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -602,7 +602,7 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -700,12 +700,12 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -724,7 +724,7 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return UpdateWorkerResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -745,7 +745,7 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return UpdateWorkerResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -843,12 +843,12 @@ class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -867,7 +867,7 @@ class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
         return DeleteWorkerResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -888,7 +888,7 @@ class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
         return DeleteWorkerResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 

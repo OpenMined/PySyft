@@ -47,7 +47,7 @@ def test_create_data_request_response_serde() -> None:
     request_content = {"msg": "Request sent succesfully!"}
     msg = CreateRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -85,7 +85,7 @@ def test_delete_data_request_response_serde() -> None:
 
     content = {"msg": "Data Request has been deleted!"}
     msg = DeleteRequestResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -130,7 +130,7 @@ def test_update_data_request_response_serde() -> None:
     request_content = {"msg": "Data request has been updated successfully!"}
     msg = UpdateRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -175,7 +175,7 @@ def test_get_data_request_response_serde() -> None:
 
     msg = GetRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -228,7 +228,7 @@ def test_get_all_data_requests_response_serde() -> None:
 
     msg = GetRequestsResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

@@ -104,12 +104,12 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -128,7 +128,7 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         return GetSetUpResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -149,7 +149,7 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         return GetSetUpResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -247,12 +247,12 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -271,7 +271,7 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         return CreateInitialSetUpResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -292,7 +292,7 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         return CreateInitialSetUpResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 

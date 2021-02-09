@@ -50,7 +50,7 @@ def test_create_role_response_serde() -> None:
     request_content = {"msg": "Role created succesfully!"}
     msg = CreateRoleResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -88,7 +88,7 @@ def test_delete_role_response_serde() -> None:
 
     content = {"msg": "Role has been deleted!"}
     msg = DeleteRoleResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -136,7 +136,7 @@ def test_update_role_response_serde() -> None:
     request_content = {"msg": "Role has been updated successfully!"}
     msg = UpdateRoleResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -183,7 +183,7 @@ def test_get_role_response_serde() -> None:
 
     msg = GetRoleResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -242,7 +242,7 @@ def test_get_all_roles_response_serde() -> None:
 
     msg = GetRolesResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

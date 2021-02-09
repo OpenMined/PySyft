@@ -16,7 +16,7 @@ message CreateTensorMessage {
 
 message CreateTensorResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -32,7 +32,7 @@ message GetTensorMessage {
 
 message GetTensorResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -47,7 +47,7 @@ message GetTensorsMessage {
 
 message GetTensorsResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -62,7 +62,7 @@ message DeleteTensorMessage {
 
 message DeleteTensorResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -77,7 +77,7 @@ message UpdateTensorMessage {
 
 message UpdateTensorResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

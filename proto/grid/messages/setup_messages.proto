@@ -14,7 +14,7 @@ message CreateInitialSetUpMessage {
 
 message CreateInitialSetUpResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -29,7 +29,7 @@ message GetSetUpMessage {
 
 message GetSetUpResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

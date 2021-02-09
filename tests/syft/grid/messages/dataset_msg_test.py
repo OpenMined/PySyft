@@ -50,7 +50,7 @@ def test_create_dataset_response_serde() -> None:
     request_content = {"msg": "Dataset created succesfully!"}
     msg = CreateDatasetResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -88,7 +88,7 @@ def test_delete_dataset_response_serde() -> None:
 
     content = {"msg": "Dataset deleted successfully!"}
     msg = DeleteDatasetResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -135,7 +135,7 @@ def test_update_dataset_response_serde() -> None:
     request_content = {"msg": "Dataset updated successfully!"}
     msg = UpdateDatasetResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -182,7 +182,7 @@ def test_get_dataset_response_serde() -> None:
 
     msg = GetDatasetResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -241,7 +241,7 @@ def test_get_all_datasets_response_serde() -> None:
 
     msg = GetDatasetsResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

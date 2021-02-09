@@ -50,7 +50,7 @@ def test_create_worker_response_serde() -> None:
     request_content = {"msg": "Worker Environment Created Successfully!"}
     msg = CreateWorkerResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -88,7 +88,7 @@ def test_delete_worker_response_serde() -> None:
 
     content = {"msg": "Worker Environment deleted Successfully!"}
     msg = DeleteWorkerResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -136,7 +136,7 @@ def test_update_worker_response_serde() -> None:
     request_content = {"msg": "Worker Environment updated successfully!"}
     msg = UpdateWorkerResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -181,7 +181,7 @@ def test_get_worker_response_serde() -> None:
 
     msg = GetWorkerResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -235,7 +235,7 @@ def test_get_all_workers_response_serde() -> None:
 
     msg = GetWorkersResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

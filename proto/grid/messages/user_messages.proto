@@ -16,7 +16,7 @@ message CreateUserMessage {
 
 message CreateUserResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -32,7 +32,7 @@ message GetUserMessage {
 
 message GetUserResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -47,7 +47,7 @@ message GetUsersMessage {
 
 message GetUsersResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -62,7 +62,7 @@ message DeleteUserMessage {
 
 message DeleteUserResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -77,7 +77,7 @@ message UpdateUserMessage {
 
 message UpdateUserResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -92,7 +92,7 @@ message SearchUsersMessage {
 
 message SearchUsersResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

@@ -16,7 +16,7 @@ message CreateRoleMessage {
 
 message CreateRoleResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -32,7 +32,7 @@ message GetRoleMessage {
 
 message GetRoleResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -47,7 +47,7 @@ message GetRolesMessage {
 
 message GetRolesResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -62,7 +62,7 @@ message SearchRoleMessage {
 
 message SearchRoleResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -77,7 +77,7 @@ message UpdateRoleMessage {
 
 message UpdateRoleResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -93,7 +93,7 @@ message DeleteRoleMessage {
 
 message DeleteRoleResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

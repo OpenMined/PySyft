@@ -51,7 +51,7 @@ def test_create_group_response_serde() -> None:
     request_content = {"msg": "Group Created Successfully!"}
     msg = CreateGroupResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -89,7 +89,7 @@ def test_delete_group_response_serde() -> None:
 
     content = {"msg": "Group deleted Successfully!"}
     msg = DeleteGroupResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -138,7 +138,7 @@ def test_update_group_response_serde() -> None:
     request_content = {"msg": "Group updated successfully!"}
     msg = UpdateGroupResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -187,7 +187,7 @@ def test_get_group_response_serde() -> None:
 
     msg = GetGroupResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -248,7 +248,7 @@ def test_get_all_groups_response_serde() -> None:
 
     msg = GetGroupsResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

@@ -128,12 +128,12 @@ class CreateUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -152,7 +152,7 @@ class CreateUserResponse(ImmediateSyftMessageWithoutReply):
         return CreateUserResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -173,7 +173,7 @@ class CreateUserResponse(ImmediateSyftMessageWithoutReply):
         return CreateUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -271,12 +271,12 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -295,7 +295,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -316,7 +316,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -414,12 +414,12 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -438,7 +438,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -459,7 +459,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -557,12 +557,12 @@ class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -581,7 +581,7 @@ class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
         return UpdateUserResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -602,7 +602,7 @@ class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
         return UpdateUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -700,12 +700,12 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -724,7 +724,7 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
         return DeleteUserResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -745,7 +745,7 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
         return DeleteUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -842,12 +842,12 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        success: bool,
+        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.success = success
+        self.status_code = status_code
         self.content = content
 
     @syft_decorator(typechecking=True)
@@ -866,7 +866,7 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         return SearchUsersResponse_PB(
             msg_id=self.id.serialize(),
             address=self.address.serialize(),
-            success=self.success,
+            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -887,7 +887,7 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         return SearchUsersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            success=proto.success,
+            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 

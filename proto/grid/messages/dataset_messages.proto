@@ -16,7 +16,7 @@ message CreateDatasetMessage {
 
 message CreateDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -32,7 +32,7 @@ message GetDatasetMessage {
 
 message GetDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -47,7 +47,7 @@ message GetDatasetsMessage {
 
 message GetDatasetsResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -62,7 +62,7 @@ message SearchDatasetMessage {
 
 message SearchDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -77,7 +77,7 @@ message UpdateDatasetMessage {
 
 message UpdateDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -92,7 +92,7 @@ message DeleteDatasetMessage {
 
 message DeleteDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

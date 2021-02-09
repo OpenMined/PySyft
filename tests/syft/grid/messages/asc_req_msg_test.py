@@ -42,10 +42,10 @@ def test_association_request_message_serde() -> None:
 def test_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
-    request_content = {"msg": "Association Request Accepted Successfully!"}
+    request_content = {"msg": "Association Request Accepted status_codefully!"}
     msg = SendAssociationRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -83,7 +83,7 @@ def test_receive_request_response_serde() -> None:
 
     content: Dict[Any, Any] = {}
     msg = ReceiveAssociationRequestResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -120,10 +120,10 @@ def test_respond_association_request_message_serde() -> None:
 def test_respond_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
-    request_content = {"msg": "Response registered successfully!"}
+    request_content = {"msg": "Response registered status_codefully!"}
     msg = RespondAssociationRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -159,10 +159,10 @@ def test_delete_association_request_message_serde() -> None:
 def test_delete_association_request_response_serde() -> None:
     target = Address(name="Alice")
 
-    content = {"msg": "Association Request deleted successfully!"}
+    content = {"msg": "Association Request deleted status_codefully!"}
     msg = DeleteAssociationRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -206,7 +206,7 @@ def test_get_association_request_response_serde() -> None:
     }
     msg = GetAssociationRequestResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -266,7 +266,7 @@ def test_get_all_association_request_response_serde() -> None:
     }
     msg = GetAssociationRequestsResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

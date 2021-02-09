@@ -48,7 +48,7 @@ def test_create_tensor_response_serde() -> None:
     request_content = {"msg": "Tensor created succesfully!"}
     msg = CreateTensorResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -86,7 +86,7 @@ def test_delete_tensor_response_serde() -> None:
 
     content = {"msg": "Tensor deleted successfully!"}
     msg = DeleteTensorResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )
@@ -132,7 +132,7 @@ def test_update_tensor_response_serde() -> None:
     request_content = {"msg": "Tensor updated successfully!"}
     msg = UpdateTensorResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -175,7 +175,7 @@ def test_get_tensor_response_serde() -> None:
 
     msg = GetTensorResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=content,
     )
 
@@ -230,7 +230,7 @@ def test_get_all_tensors_response_serde() -> None:
 
     msg = GetTensorsResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 

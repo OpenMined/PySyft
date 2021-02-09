@@ -16,7 +16,7 @@ message SendAssociationRequestMessage {
 
 message SendAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -31,7 +31,7 @@ message ReceiveAssociationRequestMessage {
 
 message ReceiveAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -46,7 +46,7 @@ message RespondAssociationRequestMessage {
 
 message RespondAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -61,7 +61,7 @@ message GetAssociationRequestMessage {
 
 message GetAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -76,7 +76,7 @@ message GetAssociationRequestsMessage {
 
 message GetAssociationRequestsResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -91,7 +91,7 @@ message DeleteAssociationRequestMessage {
 
 message DeleteAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }

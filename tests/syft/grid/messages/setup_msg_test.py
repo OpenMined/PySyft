@@ -43,7 +43,7 @@ def test_create_initial_setup_response_serde() -> None:
     request_content = {"msg": "Initial setup registered successfully!"}
     msg = CreateInitialSetUpResponse(
         address=target,
-        success=True,
+        status_code=200,
         content=request_content,
     )
 
@@ -87,7 +87,7 @@ def test_delete_worker_response_serde() -> None:
         }
     }
     msg = GetSetUpResponse(
-        success=True,
+        status_code=200,
         address=target,
         content=content,
     )

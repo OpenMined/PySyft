@@ -13,9 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# third party
-from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
-
 # syft absolute
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
@@ -30,11 +27,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1eproto/core/store/dataset.proto\x12\x0fsyft.core.store\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a\x19google/protobuf/any.proto"\xe2\x01\n\x07\x44\x61taset\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x1a\n\x12schematic_qualname\x18\x03 \x01(\t\x12-\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32\x1f.syft.core.store.StorableObject\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\x0c\n\x04tags\x18\x06 \x03(\t\x12\x18\n\x10read_permissions\x18\x07 \x01(\x0c\x12\x1a\n\x12search_permissions\x18\x08 \x01(\x0c\x62\x06proto3',
+    serialized_pb=b'\n\x1eproto/core/store/dataset.proto\x12\x0fsyft.core.store\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto"\xe2\x01\n\x07\x44\x61taset\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x1a\n\x12schematic_qualname\x18\x03 \x01(\t\x12-\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32\x1f.syft.core.store.StorableObject\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\x0c\n\x04tags\x18\x06 \x03(\t\x12\x18\n\x10read_permissions\x18\x07 \x01(\x0c\x12\x1a\n\x12search_permissions\x18\x08 \x01(\x0c\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
-        google_dot_protobuf_dot_any__pb2.DESCRIPTOR,
     ],
 )
 
@@ -208,8 +204,8 @@ _DATASET = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=155,
-    serialized_end=381,
+    serialized_start=128,
+    serialized_end=354,
 )
 
 _DATASET.fields_by_name[

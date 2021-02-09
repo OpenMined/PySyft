@@ -16,7 +16,7 @@ message CreateGroupMessage {
 
 message CreateGroupResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -32,7 +32,7 @@ message GetGroupMessage {
 
 message GetGroupResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -47,7 +47,7 @@ message GetGroupsMessage {
 
 message GetGroupsResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -62,7 +62,7 @@ message DeleteGroupMessage {
 
 message DeleteGroupResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -77,7 +77,7 @@ message UpdateGroupMessage {
 
 message UpdateGroupResponse {
   syft.core.common.UID msg_id = 1;
-  bool success = 2;
+  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
