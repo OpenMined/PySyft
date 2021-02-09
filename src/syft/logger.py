@@ -9,7 +9,7 @@ from typing import Union
 # third party
 from loguru import logger
 
-LOG_FORMAT = "[{time}][{level}][{module}] {message}"
+LOG_FORMAT = "[{time}][{level}][{module}]][{process.id}] {message}"
 
 logger.remove()
 DEFAULT_SINK = "syft_{time}.log"

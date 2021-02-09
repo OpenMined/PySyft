@@ -35,10 +35,10 @@ def test_int() -> None:
 
 
 def test_float() -> None:
-    assert float(SyFalse) == Float(0.0)
-    assert float(SyFalse) == SyFalse
-    assert float(SyTrue) == Float(1.0)
-    assert float(SyTrue) == SyTrue
+    assert SyFalse.__float__() == Float(0.0)
+    assert SyFalse.__float__() == SyFalse
+    assert SyTrue.__float__() == Float(1.0)
+    assert SyTrue.__float__() == SyTrue
 
 
 def test_math() -> None:
