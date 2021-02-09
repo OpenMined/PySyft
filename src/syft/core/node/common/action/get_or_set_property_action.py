@@ -25,6 +25,7 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
+from .....util import inherit_tags
 
 
 class PropertyActions(Enum):
@@ -64,24 +65,25 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         method = node.lib_ast.query(self.path).object_ref
         resolved_self = node.store.get_object(key=self._self.id_at_location)
         result_read_permissions = resolved_self.read_permissions
-        tags = resolved_self.tags.copy()
 
         resolved_args = []
+        tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
-            tags.extend([tag for tag in r_arg.tags if tag not in tags])
+            tag_args.append(r_arg)
             resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
-            tags.extend([tag for tag in r_arg.tags if tag not in tags])
+            tag_kwargs[arg_name] = r_arg
             resolved_kwargs[arg_name] = r_arg.data
 
         if not inspect.isdatadescriptor(method):
@@ -129,8 +131,13 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         # When GET, result is a new object, we give new tags to it
         if self.action == PropertyActions.GET:
-            result.tags = tags
-            result.tags.append(self.path.split(".")[-1])
+            inherit_tags(
+                attr_path_and_name=self.path,
+                result=result,
+                self_obj=resolved_self,
+                args=tag_args,
+                kwargs=tag_kwargs,
+            )
 
         node.store[self.id_at_location] = result
 

@@ -1,6 +1,8 @@
 # stdlib
 from random import randint
 from typing import List
+from typing import Optional
+from typing import Union
 
 # third party
 from forbiddenfruit import curse
@@ -533,3 +535,27 @@ def random_name() -> str:
     left_i = randint(0, len(left_name) - 1)
     right_i = randint(0, len(right_name) - 1)
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
+
+
+@syft_decorator(typechecking=True)
+def inherit_tags(
+    attr_path_and_name: str,
+    result: object,
+    self_obj: Optional[object],
+    args: Union[tuple, list],
+    kwargs: dict,
+) -> None:
+    tags = []
+    if self_obj is not None:
+        tags.extend([tag for tag in self_obj.tags])  # type: ignore
+
+    for arg in args:
+        tags.extend([tag for tag in arg.tags if tag not in tags])
+
+    for arg in kwargs.values():
+        tags.extend([tag for tag in arg.tags if tag not in tags])
+
+    # only generate new tags if the result actually inherit some tags.
+    if tags:
+        tags.append(attr_path_and_name.split(".")[-1])
+        result.tags = tags  # type: ignore

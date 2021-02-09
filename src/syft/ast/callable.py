@@ -16,6 +16,7 @@ from ..core.node.common.action.function_or_constructor_action import (
 )
 from ..logger import traceback_and_raise
 from .util import module_type
+from ..util import inherit_tags
 
 
 class Callable(ast.attribute.Attribute):
@@ -93,6 +94,14 @@ class Callable(ast.attribute.Attribute):
                 )
 
                 self.client.send_immediate_msg_without_reply(msg=msg)
+
+                inherit_tags(
+                    attr_path_and_name=self.path_and_name,
+                    result=ptr,
+                    self_obj=None,
+                    args=args,
+                    kwargs=kwargs,
+                )
                 return ptr
 
         if "path" not in kwargs or "index" not in kwargs:
