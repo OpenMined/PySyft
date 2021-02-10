@@ -396,7 +396,8 @@ def delete_autoscaling_condition(autoscaling_id):
 @token_required
 def create_node(current_user):
     # Get request body
-    content = request.get_json()
+    content = json.loads(request.data)
+
     if not content:
         content = {}
 
