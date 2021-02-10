@@ -26,6 +26,7 @@ from .database import db
 from .manager.user_manager import UserManager
 from .manager.role_manager import RoleManager
 from .manager.group_manager import GroupManager
+from .manager.environment_manager import EnvironmentManager
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -62,6 +63,7 @@ class GridDomain(Domain):
         self.users = UserManager(db)
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
+        self.environments = EnvironmentManager(db)
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
