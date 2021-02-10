@@ -26,6 +26,14 @@ class DatabaseManager:
         objects = self.db.session.query(self._schema).filter_by(**kwargs).all()
         return objects
 
+    def first(self, **kwargs) -> Union[None, BaseModel]:
+        """Query db objects filtering by parameters
+        Args:
+            parameters : List of parameters used to filter.
+        """
+        objects = self.db.session.query(self._schema).filter_by(**kwargs).first()
+        return objects
+
     def all(self) -> List[BaseModel]:
         return list(self.db.session.query(self._schema).all())
 
@@ -34,7 +42,7 @@ class DatabaseManager:
         Args:
             parameters: Parameters used to filter the object.
         """
-        object_to_delete = self.query(**kwargs)
+        object_to_delete = self.query(**kwargs)[0]
         self.db.session.delete(object_to_delete)
         self.db.session.commit()
 

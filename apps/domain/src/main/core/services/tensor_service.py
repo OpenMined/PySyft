@@ -65,7 +65,7 @@ def create_tensor_msg(
 
         return CreateTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={
                 "msg": "Tensor created succesfully!",
                 "tensor_id": str(id_at_location.value),
@@ -74,7 +74,7 @@ def create_tensor_msg(
     except Exception as e:
         return CreateTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"error": str(e)},
         )
 
@@ -110,13 +110,13 @@ def update_tensor_msg(
 
         return UpdateTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"msg": "Tensor modified succesfully!"},
         )
     except Exception as e:
         return UpdateTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"error": str(e)},
         )
 
@@ -134,7 +134,7 @@ def get_tensor_msg(
         tensor = node.store[key]
         return GetTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={
                 "tensor": {
                     "id": payload["tensor_id"],
@@ -146,7 +146,7 @@ def get_tensor_msg(
     except Exception as e:
         return GetTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"error": str(e)},
         )
 
@@ -171,7 +171,7 @@ def get_tensors_msg(
             )
         return GetTensorsResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"tensors": result},
         )
     except Exception as e:
@@ -194,7 +194,7 @@ def del_tensor_msg(
 
         return DeleteTensorResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"msg": "Tensor deleted successfully!"},
         )
     except Exception as e:

@@ -39,11 +39,10 @@ def create_initial_setup(
 
         # Final status / message
         final_msg = "Running initial setup!"
-        final_status = True
 
         return CreateInitialSetUpResponse(
             address=msg.reply_to,
-            success=final_status,
+            status_code=200,
             content={"msg": final_msg},
         )
     except Exception as e:
@@ -62,7 +61,7 @@ def get_setup(
     try:
         return GetSetUpResponse(
             address=msg.reply_to,
-            success=True,
+            status_code=200,
             content={"setup": node.setup_configs},
         )
     except Exception as e:

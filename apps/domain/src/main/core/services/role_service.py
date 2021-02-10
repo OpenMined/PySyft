@@ -35,7 +35,7 @@ def create_role_msg(
 ) -> CreateRoleResponse:
     return CreateRoleResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Role created successfully!"},
     )
 
@@ -46,7 +46,7 @@ def update_role_msg(
 ) -> UpdateRoleResponse:
     return UpdateRoleResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Role updated successfully!"},
     )
 
@@ -57,7 +57,7 @@ def get_role_msg(
 ) -> GetRoleResponse:
     return GetRoleResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={
             "name": "mario mario",
             "can_triage_requests": False,
@@ -77,7 +77,7 @@ def get_all_roles_msg(
 ) -> GetRolesResponse:
     return GetRolesResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={
             "roles": {
                 "asd64f85as": {
@@ -112,7 +112,7 @@ def del_role_msg(
     print("I'm here!")
     return DeleteRoleResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Role has been deleted!"},
     )
 

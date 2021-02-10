@@ -18,7 +18,7 @@ from ..core.exceptions import (
 from ..core.database import User, db
 
 
-def token_required_factory(get_token, format_result):
+def token_required_factory(get_token, format_result, optional=False):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -26,18 +26,19 @@ def token_required_factory(get_token, format_result):
             mimetype = "application/json"
             response_body = {}
             try:
-                token = get_token(*args, **kwargs)
-                if token is None:
-                    raise MissingRequestKeyError
+                token = get_token(optional=optional)
             except Exception as e:
                 status_code = 400  # Bad Request
                 response_body[RESPONSE_MSG.ERROR] = str(e)
                 return format_result(response_body, status_code, mimetype)
-
             try:
-                data = jwt.decode(token, app.config["SECRET_KEY"], algorithms="HS256")
-                current_user = User.query.get(data["id"])
-                if current_user is None:
+                current_user = None
+                if token:
+                    data = jwt.decode(
+                        token, app.config["SECRET_KEY"], algorithms="HS256"
+                    )
+                    current_user = User.query.get(data["id"])
+                if current_user is None and not optional:
                     raise UserNotFoundError
             except Exception as e:
                 status_code = 403  # Unauthorized
@@ -51,9 +52,9 @@ def token_required_factory(get_token, format_result):
     return decorator
 
 
-def get_token(*args, **kwargs):
-    token = request.headers.get("token")
-    if token is None:
+def get_token(optional=False):
+    token = request.headers.get("token", None)
+    if token is None and not optional:
         raise MissingRequestKeyError
 
     return token
@@ -64,6 +65,7 @@ def format_result(response_body, status_code, mimetype):
 
 
 token_required = token_required_factory(get_token, format_result)
+optional_token = token_required_factory(get_token, format_result, optional=True)
 
 
 def error_handler(f, *args, **kwargs):
@@ -72,7 +74,6 @@ def error_handler(f, *args, **kwargs):
 
     try:
         response_body = f(*args, **kwargs)
-
     except (InvalidCredentialsError, AuthorizationError) as e:
         status_code = 403  # Unathorized
         response_body[RESPONSE_MSG.ERROR] = str(e)
@@ -83,6 +84,7 @@ def error_handler(f, *args, **kwargs):
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
+        print(type(e), str(e))
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
 

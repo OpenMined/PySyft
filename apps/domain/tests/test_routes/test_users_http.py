@@ -77,7 +77,7 @@ def test_post_user_bad_data_with_key(client, database, cleanup):
     assert result.status_code == 400
 
 
-def test_post_first_user_success(client, database, cleanup):
+def test_post_std_user_success(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*user_role)
@@ -91,29 +91,37 @@ def test_post_first_user_success(client, database, cleanup):
     result = client.post("/users", data=dumps(payload), content_type="application/json")
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert len(result.get_json()["user"]["private_key"]) == 64
-    assert result.get_json()["user"]["role"]["id"] == 2
-    assert result.get_json()["user"]["email"] == "someemail@email.com"
+    assert result.get_json() == {"message": "User created successfully!"}
 
 
-def test_post_first_user_missing_role(client, database, cleanup):
+def test_post_std_user_missing_role(client, database, cleanup):
     new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_role = create_role(*user_role)
     database.session.add(new_role)
     new_user = create_user(*user1)
     database.session.add(new_user)
 
     database.session.commit()
 
-    payload = {"email": "someemail@email.com", "password": "123secretpassword"}
-    result = client.post("/users", data=dumps(payload), content_type="application/json")
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
 
-    assert result.status_code == 404
-    assert result.get_json()["error"] == "Role ID not found!"
+    payload = {
+        "email": "someemail@email.com",
+        "password": "123secretpassword",
+        "role": "Unexpected Role",
+    }
+    result = client.post(
+        "/users", data=dumps(payload), headers=headers, content_type="application/json"
+    )
+
+    assert result.get_json() == {"error": "Role ID not found!"}
 
 
 # TODO: Update unit tests below
-"""
 def test_post_user_with_role(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
@@ -124,13 +132,12 @@ def test_post_user_with_role(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-    }
+    headers = {}
 
     payload = {
         "email": "someemail@email.com",
         "password": "123secretpassword",
-        "role": 1,
+        "role": "User",
     }
 
     result = client.post(
@@ -138,40 +145,7 @@ def test_post_user_with_role(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert len(result.get_json()["user"]["private_key"]) == 64
-    assert result.get_json()["user"]["role"]["id"] == 1
-    assert result.get_json()["user"]["email"] == "someemail@email.com"
-
-
-
-
-def test_post_user_with_missing_role(client, database, cleanup):
-    new_role = create_role(*owner_role)
-    database.session.add(new_role)
-    new_role = create_role(*user_role)
-    database.session.add(new_role)
-    new_user = create_user(*user1)
-    database.session.add(new_user)
-
-    database.session.commit()
-
-    headers = {
-    }
-
-    payload = {
-        "email": "someemail@email.com",
-        "password": "123secretpassword",
-        "role": 3,
-    }
-
-    result = client.post(
-        "/users", data=dumps(payload), headers=headers, content_type="application/json"
-    )
-
-    assert result.status_code == 404
-    assert result.get_json()["error"] == "Role ID not found!"
-"""
+    assert result.get_json() == {"message": "User created successfully!"}
 
 
 def test_login_user_valid_credentials(client, database, cleanup):
@@ -279,8 +253,8 @@ def test_get_users_success(client, database, cleanup):
 
     assert result.status_code == 200
     assert len(result.get_json()["users"]) == 2
-    assert result.get_json()["users"][0]["id"] == 1
-    assert result.get_json()["users"][1]["id"] == 2
+    assert result.get_json()["users"]["1"]["id"] == 1
+    assert result.get_json()["users"]["2"]["id"] == 2
 
 
 def test_get_users_unauthorized(client, database, cleanup):
@@ -302,7 +276,7 @@ def test_get_users_unauthorized(client, database, cleanup):
     result = client.get("/users", headers=headers, content_type="application/json")
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to get User information!"
 
 
 def test_get_users_missing_token(client, database, cleanup):
@@ -432,7 +406,7 @@ def test_get_one_user_unauthorized(client, database, cleanup):
     result = client.get("/users/1", headers=headers, content_type="application/json")
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to get User information!"
 
 
 def test_get_one_missing_user(client, database, cleanup):
@@ -454,7 +428,7 @@ def test_get_one_missing_user(client, database, cleanup):
     result = client.get("/users/3", headers=headers, content_type="application/json")
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 # PUT USER EMAIL
@@ -487,9 +461,7 @@ def test_put_other_user_email_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert result.get_json()["user"]["email"] == "brandnew@brandnewemail.com"
-    assert database.session.query(User).get(2).email == "brandnew@brandnewemail.com"
+    assert result.get_json() == {"message": "User updated successfully!"}
 
 
 def test_put_other_user_email_missing_token(client, database, cleanup):
@@ -574,7 +546,7 @@ def test_put_other_user_email_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to change other user data!"
 
 
 def test_put_own_user_email_success(client, database, cleanup):
@@ -604,9 +576,7 @@ def test_put_own_user_email_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert result.get_json()["user"]["email"] == "brandnew@brandnewemail.com"
-    assert database.session.query(User).get(2).email == "brandnew@brandnewemail.com"
+    assert result.get_json() == {"message": "User updated successfully!"}
 
 
 def test_put_user_email_missing_role(client, database, cleanup):
@@ -633,8 +603,8 @@ def test_put_user_email_missing_role(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 404
-    assert result.get_json()["error"] == "Role ID not found!"
+    assert result.status_code == 200
+    assert result.get_json() == {"message": "User updated successfully!"}
 
 
 def test_put_other_user_email_missing_user(client, database, cleanup):
@@ -653,14 +623,14 @@ def test_put_other_user_email_missing_user(client, database, cleanup):
     }
     payload = {"email": "brandnew@brandnewemail.com"}
     result = client.put(
-        "/users/2/email",
+        "/users/5/email",
         headers=headers,
         data=dumps(payload),
         content_type="application/json",
     )
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 # PUT USER ROLE
@@ -693,9 +663,7 @@ def test_put_other_user_role_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert result.get_json()["user"]["role"]["id"] == 1
-    assert database.session.query(User).get(2).role == 1
+    assert result.get_json() == {"message": "User updated successfully!"}
 
 
 def test_put_other_user_role_missing_token(client, database, cleanup):
@@ -776,7 +744,7 @@ def test_put_other_user_role_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to change other user data!"
 
 
 def test_put_own_user_role_sucess(client, database, cleanup):
@@ -816,18 +784,21 @@ def test_put_own_user_role_sucess(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert result.get_json()["user"]["role"]["id"] == 3
-    assert database.session.query(User).get(2).role == 3
+    assert result.get_json() == {"message": "User updated successfully!"}
 
 
 def test_put_first_user_unauthorized(client, database, cleanup):
+    # Create Owner role
     new_role = create_role(*owner_role)
     database.session.add(new_role)
+    # Create Admin role
     new_role = create_role(*admin_role)
     database.session.add(new_role)
+    # Create User role
     new_role = create_role(*user_role)
     database.session.add(new_role)
+
+    # New Owner User
     new_user = User(
         email="owner@owner.com",
         hashed_password="RcEEa25p/APCVGFaBaiZpytLieFsv22",
@@ -836,6 +807,7 @@ def test_put_first_user_unauthorized(client, database, cleanup):
         role=1,
     )
     database.session.add(new_user)
+
     new_user = create_user(*user4)
     database.session.add(new_user)
     new_user = create_user(*user3)
@@ -856,7 +828,9 @@ def test_put_first_user_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert (
+        result.get_json()["error"] == "You're not allowed to change Owner user roles!"
+    )
 
 
 def test_put_other_user_role_owner_unauthorized(client, database, cleanup):
@@ -894,10 +868,10 @@ def test_put_other_user_role_owner_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You can't change it to Owner role!"
 
 
-def test_put_other_user_role_owner_success(client, database, cleanup):
+def test_put_other_user_role_owner(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*admin_role)
@@ -933,10 +907,8 @@ def test_put_other_user_role_owner_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 3
-    assert result.get_json()["user"]["role"]["id"] == 1
-    assert database.session.query(User).get(3).role == 1
+    assert result.status_code == 403
+    assert result.get_json()["error"] == "You can't change it to Owner role!"
 
 
 def test_put_user_role_missing_role(client, database, cleanup):
@@ -988,7 +960,7 @@ def test_put_other_user_role_missing_user(client, database, cleanup):
     )
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 # PUT USER PASSWORD
@@ -1032,7 +1004,7 @@ def test_put_other_user_password_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
+    assert result.get_json() == {"message": "User updated successfully!"}
     assert checkpw(
         new_password.encode("UTF-8"),
         user.salt.encode("UTF-8") + user.hashed_password.encode("UTF-8"),
@@ -1120,7 +1092,7 @@ def test_put_other_user_password_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to change other user data!"
 
 
 def test_put_own_user_password_success(client, database, cleanup):
@@ -1171,7 +1143,7 @@ def test_put_own_user_password_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 3
+    assert result.get_json() == {"message": "User updated successfully!"}
     assert checkpw(
         new_password.encode("UTF-8"),
         user.salt.encode("UTF-8") + user.hashed_password.encode("UTF-8"),
@@ -1203,7 +1175,7 @@ def test_put_other_user_email_missing_user(client, database, cleanup):
     )
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 # PUT USER GROUPS
@@ -1253,11 +1225,7 @@ def test_put_other_user_groups_success(client, database, cleanup):
     user_groups = database.session.query(UserGroup).filter_by(user=2).all()
 
     assert result.status_code == 200
-
-    assert result.get_json()["user"]["id"] == 2
-    assert len(result.get_json()["user"]["groups"]) == 2
-    assert result.get_json()["user"]["groups"][0]["id"] == 2
-    assert result.get_json()["user"]["groups"][1]["id"] == 3
+    assert result.get_json() == {"message": "User updated successfully!"}
 
     assert len(user_groups) == 2
     assert user_groups[0].group == 2
@@ -1366,10 +1334,10 @@ def test_put_other_user_groups_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert result.get_json()["error"] == "You're not allowed to change other user data!"
 
 
-def test_put_own_user_groups_success(client, database, cleanup):
+def test_put_user_groups_success(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*admin_role)
@@ -1411,7 +1379,7 @@ def test_put_own_user_groups_success(client, database, cleanup):
     assert len(user_groups) == 1
     assert user_groups[0].group == 2
 
-    token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
@@ -1425,10 +1393,7 @@ def test_put_own_user_groups_success(client, database, cleanup):
     user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
     assert result.status_code == 200
-
-    assert result.get_json()["user"]["id"] == 3
-    assert len(result.get_json()["user"]["groups"]) == 1
-    assert result.get_json()["user"]["groups"][0]["id"] == 1
+    assert result.get_json() == {"message": "User updated successfully!"}
 
     assert len(user_groups) == 1
     assert user_groups[0].group == 1
@@ -1468,7 +1433,7 @@ def test_put_other_user_groups_missing_user(client, database, cleanup):
     )
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 def test_put_user_groups_missing_group(client, database, cleanup):
@@ -1509,7 +1474,7 @@ def test_put_user_groups_missing_group(client, database, cleanup):
 
     database.session.commit()
 
-    token = jwt.encode({"id": 3}, app.config["SECRET_KEY"])
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
@@ -1556,6 +1521,7 @@ def test_delete_other_user_success(client, database, cleanup):
     result = client.delete("/users/2", headers=headers, content_type="application/json")
 
     assert result.status_code == 200
+    assert result.get_json() == {"message": "User deleted successfully!"}
     assert database.session.query(User).get(2) is None
 
 
@@ -1619,10 +1585,13 @@ def test_delete_other_user_unauthorized(client, database, cleanup):
     result = client.delete("/users/1", headers=headers, content_type="application/json")
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
+    assert (
+        result.get_json()["error"]
+        == "You're not allowed to delete this user information!"
+    )
 
 
-def test_delete_own_user_success(client, database, cleanup):
+def test_delete_own_user(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
     new_role = create_role(*admin_role)
@@ -1659,8 +1628,12 @@ def test_delete_own_user_success(client, database, cleanup):
     result = client.delete("/users/3", headers=headers, content_type="application/json")
     user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
-    assert result.status_code == 200
-    assert database.session.query(User).get(3) is None
+    assert result.status_code == 403
+    assert (
+        result.get_json()["error"]
+        == "You're not allowed to delete this user information!"
+    )
+    assert database.session.query(User).get(3) is not None
 
 
 def test_delete_other_user_missing_user(client, database, cleanup):
@@ -1687,13 +1660,13 @@ def test_delete_other_user_missing_user(client, database, cleanup):
     result = client.delete("/users/2", headers=headers, content_type="application/json")
 
     assert result.status_code == 404
-    assert result.get_json()["error"] == "User ID not found!"
+    assert result.get_json()["error"] == "User not found!"
 
 
 # SEARCH USERS
 # TODO: Update search unit tests
 
-"""
+
 def test_search_users_success(client, database, cleanup):
     new_role = create_role(*admin_role)
     database.session.add(new_role)
@@ -1732,7 +1705,7 @@ def test_search_users_success(client, database, cleanup):
 
     assert result.status_code == 200
     assert len(result.get_json()["users"]) == 1
-    assert result.get_json()["users"][0]["id"] == 2
+    assert result.get_json()["users"]["2"]["id"] == 2
 
 
 def test_search_users_nomatch(client, database, cleanup):
@@ -1859,8 +1832,7 @@ def test_search_users_onematch(client, database, cleanup):
 
     assert result.status_code == 200
     assert len(result.get_json()["users"]) == 1
-    assert result.get_json()["users"][0]["id"] == 2
-
+    assert result.get_json()["users"]["2"]["id"] == 2
 
 
 def test_search_users_missing_token(client, database, cleanup):
@@ -1875,8 +1847,7 @@ def test_search_users_missing_token(client, database, cleanup):
 
     database.session.commit()
 
-    headers = {
-    }
+    headers = {}
     payload = {"email": "anemail@anemail.com"}
     result = client.post(
         "/users/search",
@@ -1887,8 +1858,6 @@ def test_search_users_missing_token(client, database, cleanup):
 
     assert result.status_code == 400
     assert result.get_json()["error"] == "Missing request key!"
-
-
 
 
 def test_search_users_invalid_token(client, database, cleanup):
@@ -1944,5 +1913,4 @@ def test_search_users_unauthorized(client, database, cleanup):
     )
 
     assert result.status_code == 403
-    assert result.get_json()["error"] == "User is not authorized for this operation!"
-"""
+    assert result.get_json()["error"] == "You're not allowed to get User information!"

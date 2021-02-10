@@ -11,20 +11,20 @@ from syft.grid.messages.user_messages import (
     SearchUsersMessage,
 )
 
-from ..auth import error_handler, token_required
-from ...core.task_handler import route_logic
+from ..auth import error_handler, token_required, optional_token
+from ...core.task_handler import route_logic, task_handler
 from ...core.node import node
+from ...core.exceptions import MissingRequestKeyError
 
 
 @user_route.route("", methods=["POST"])
-@token_required
+@optional_token
 def create_user(current_user):
     # Get request body
     content = request.get_json()
     if not content:
         content = {}
     content["current_user"] = current_user
-
     status_code, response_msg = error_handler(
         route_logic, CreateUserMessage, current_user, content
     )
@@ -42,7 +42,7 @@ def create_user(current_user):
 def login_route():
     def route_logic():
         # Get request body
-        content = loads(request.data)
+        content = json.loads(request.data)
 
         # Execute task
         response_body = task_handler(
@@ -58,20 +58,15 @@ def login_route():
     status_code, response_body = error_handler(route_logic)
 
     return Response(
-        dumps(response_body), status=status_code, mimetype="application/json"
+        json.dumps(response_body), status=status_code, mimetype="application/json"
     )
 
 
 @user_route.route("", methods=["GET"])
 @token_required
 def get_all_users_route(current_user):
-    # Get request body
-    content = request.get_json()
-    if not content:
-        content = {}
-
     status_code, response_msg = error_handler(
-        route_logic, GetUsersMessage, current_user, content
+        route_logic, GetUsersMessage, current_user, {}
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -86,10 +81,8 @@ def get_all_users_route(current_user):
 @user_route.route("/<user_id>", methods=["GET"])
 @token_required
 def get_specific_user_route(current_user, user_id):
-    # Get request body
-    content = request.get_json()
-    if not content:
-        content = {}
+
+    content = {}
     content["user_id"] = user_id
 
     status_code, response_msg = error_handler(
@@ -196,10 +189,7 @@ def change_user_groups_route(current_user, user_id):
 @user_route.route("/<user_id>", methods=["DELETE"])
 @token_required
 def delete_user_role(current_user, user_id):
-    # Get request body
-    content = request.get_json()
-    if not content:
-        content = {}
+    content = {}
     content["user_id"] = user_id
 
     status_code, response_msg = error_handler(

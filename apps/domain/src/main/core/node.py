@@ -1,6 +1,12 @@
 from typing import Optional
 from typing import Dict
 
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+
+from syft.core.node.common.action.exception_action import ExceptionMessage
+from syft.core.node.common.action.exception_action import UnknownPrivateException
+from syft.core.node.common.service.auth import AuthorizationException
 from syft.core.node.domain.domain import Domain
 from syft.core.node.device.client import DeviceClient
 from syft.grid.connections.http_connection import HTTPConnection
@@ -78,6 +84,60 @@ class GridDomain(Domain):
             .SerializeToString()
             .decode("ISO-8859-1"),
         }
+
+    def recv_immediate_msg_with_reply(
+        self, msg: SignedImmediateSyftMessageWithReply, raise_exception=False
+    ) -> SignedImmediateSyftMessageWithoutReply:
+        if raise_exception:
+            response = self.process_message(
+                msg=msg, router=self.immediate_msg_with_reply_router
+            )
+            # maybe I shouldn't have created process_message because it screws up
+            # all the type inference.
+            res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+        else:
+            # exceptions can be easily triggered which break any WebRTC loops
+            # so we need to catch them here and respond with a special exception
+            # message reply
+            try:
+                # try to process message
+                response = self.process_message(
+                    msg=msg, router=self.immediate_msg_with_reply_router
+                )
+
+            except Exception as e:
+                public_exception: Exception
+                if isinstance(e, AuthorizationException):
+                    private_log_msg = "An AuthorizationException has been triggered"
+                    public_exception = e
+                else:
+                    private_log_msg = f"An {type(e)} has been triggered"  # dont send
+                    public_exception = UnknownPrivateException(
+                        "UnknownPrivateException has been triggered."
+                    )
+                try:
+                    # try printing a useful message
+                    private_log_msg += f" by {type(msg.message)} "
+                    private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+                except Exception:
+                    pass
+
+                # send the public exception back
+                response = ExceptionMessage(
+                    address=msg.message.reply_to,  # type: ignore
+                    msg_id_causing_exception=msg.message.id,
+                    exception_type=type(public_exception),
+                    exception_msg=str(public_exception),
+                )
+
+            # maybe I shouldn't have created process_message because it screws up
+            # all the type inference.
+            res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+            output = (
+                f"> {self.pprint} Signing {res_msg.pprint} with "
+                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+            )
+        return res_msg
 
 
 node = GridDomain(name="om-domain")

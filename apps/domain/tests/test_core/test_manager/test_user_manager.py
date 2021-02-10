@@ -130,9 +130,9 @@ def test_set_password(database, cleanup):
 
     assert users.query(id=db_user1.id)[0].hashed_password == "afhuefhaare"
 
-    users.set(user_id=db_user1.id, hashed_password="new_hashed_password")
+    users.set(user_id=db_user1.id, password="new_password")
 
-    assert users.query(id=db_user1.id)[0].hashed_password == "new_hashed_password"
+    assert users.login(email="user1@email.com", password="new_password")
 
 
 def test_set_role(database, cleanup):

@@ -33,8 +33,15 @@ from syft.grid.messages.user_messages import (
     SearchUsersResponse,
 )
 
-from ..exceptions import MissingRequestKeyError, RoleNotFoundError, AuthorizationError
+from ..exceptions import (
+    MissingRequestKeyError,
+    RoleNotFoundError,
+    AuthorizationError,
+    UserNotFoundError,
+    AuthorizationError,
+)
 from ..database.utils import model_to_json
+from ..database import expand_user_object
 
 
 @syft_decorator(typechecking=True)
@@ -51,69 +58,71 @@ def create_user_msg(
 
     users = node.users
 
-    # Default response status
-    _success = True
-    _msg_field = "msg"
-    _msg = ""
-    _admin_role = node.roles.query(name="Owner")[0]
+    _admin_role = node.roles.first(name="Owner")
 
     # Check if email/password fields are empty
     if not _email or not _password:
-        _success = False
-        _msg_field = "error"
-        _msg = "Invalid request payload, empty fields (email/password)!"
-    # 1 - First User
-    elif not len(users):
+        raise MissingRequestKeyError(
+            message="Invalid request payload, empty fields (email/password)!"
+        )
+
+    # 1 - Owner Type
+    # Create Owner type User (First user to be registered)
+    # This user type will use node root key
+    def create_owner_user():
         # Use Domain Root Key
         _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
-        users.signup(
+        _user = users.signup(
             email=_email,
             password=_password,
             role=_admin_role.id,
             private_key=_node_private_key,
         )
-    # 2 - Create User with custom role (Permission required)
-    elif (
-        _role
-        and users.contain(id=_current_user_id)
-        and users.role(user_id=_current_user_id).can_create_users
-    ):
-        _success = node.roles.contain(name=_role) and _role != _admin_role.name
-        if _success:
+        return _user
+
+    # 2 - Custom Type
+    # Create a custom user (with a custom role)
+    # This user can only be created by using an account with "can_create_users" permissions
+    def create_custom_user():
+        if _role != _admin_role.name:
             # Generate a new signing key
             _private_key = SigningKey.generate()
-            users.signup(
+            _user = users.signup(
                 email=_email,
                 password=_password,
-                role=node.roles.query(name=_role)[0].id,
+                role=node.roles.first(name=_role).id,
                 private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
             )
-        # If role name not found
-        elif not node.roles.contain(name=_role):
-            _msg = "Role not found!"
         # If purposed role is Owner
-        elif _role == _admin_role.name:
-            _msg = 'You can\'t create a new User with "Owner" role!'
-    # 3 - Create default user (without custom role)
-    else:
+        else:
+            raise AuthorizationError(
+                message='You can\'t create a new User with "Owner" role!'
+            )
+
+    # 3 - Standard type
+    # Create a common user with no special permissions
+    def create_standard_user():
         # Generate a new signing key
         _private_key = SigningKey.generate()
-        users.signup(
+        _user = users.signup(
             email=_email,
             password=_password,
-            role=node.roles.query(name="User")[0].id,
+            role=node.roles.first(name="User").id,
             private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
         )
 
-    if _success:
-        _msg = "User created successfully!"
+    # Main logic
+    if not len(users):
+        create_owner_user()
+    elif _role and users.can_create_users(user_id=_current_user_id):
+        create_custom_user()
     else:
-        _msg_field = "error"
+        create_standard_user()
 
     return CreateUserResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"message": "User created successfully!"},
     )
 
 
@@ -122,11 +131,6 @@ def update_user_msg(
     msg: UpdateUserMessage,
     node: AbstractNode,
 ) -> UpdateUserResponse:
-
-    # Default response status
-    _success = True
-    _msg_field = "msg"
-    _msg = ""
 
     # Get Payload Content
     _user_id = msg.content.get("user_id", None)
@@ -138,59 +142,68 @@ def update_user_msg(
 
     users = node.users
 
-    # If user ID not found
-    if not users.contain(id=_user_id):
-        _success = False
-        _msg_field = "User ID not found!"
+    _valid_parameters = _email or _password or _role or _groups
+    _allowed = int(_user_id) == int(_current_user_id) or users.can_create_users(
+        user_id=_current_user_id
+    )
+    _valid_user = users.contain(id=_user_id)
+
+    if not _valid_parameters:
+        raise MissingRequestKeyError(
+            "Missing json fields ( email,password,role,groups )"
+        )
+
+    if not _allowed:
+        raise AuthorizationError("You're not allowed to change other user data!")
+
+    if not _valid_user:
+        raise UserNotFoundError
 
     # Change Email Request
     elif _email:
         users.set(user_id=_user_id, email=_email)
+
     # Change Password Request
     elif _password:
-        users.set(user_id=_user_id, email=_email)
+        users.set(user_id=_user_id, password=_password)
+
     # Change Role Request
     elif _role:
-        _success = (
-            node.roles.contain(name=_role)
-            and _role != "Owner"
-            and node.permissions.can_create_users(user_id=_current_user_id)
+        _allowed = (
+            node.roles.first(id=_role).name != "Owner"
+            and users.can_create_users(user_id=_current_user_id)
+            and users.role(user_id=_user_id)
+            and users.role(user_id=_user_id).name != "Owner"
         )
+
         # If all premises were respected
-        if _success:
-            new_role_id = node.roles.query(name=_role)[0].id
+        if _allowed:
+            new_role_id = node.roles.first(id=_role).id
             users.set(user_id=_user_id, role=new_role_id)
-        # If they weren't respected
-        elif not node.roles.contain(name=_role):
-            _msg = "Role not found!"
-        elif _role == "Owner":
-            _msg = "You can't change it to Owner role!"
+        elif node.roles.first(id=_role).name == "Owner":
+            raise AuthorizationError("You can't change it to Owner role!")
+        elif users.role(user_id=_user_id).name == "Owner":
+            raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
-            _msg = "You're not allowed to change User roles!"
+            raise AuthorizationError("You're not allowed to change User roles!")
+
     # Change group
     elif _groups:
-        _success = node.groups.contain(
-            name=_groups
-        ) and node.permissions.can_create_users(user_id=_current_user_id)
+        _allowed = users.can_create_users(user_id=_current_user_id)
+        _valid_groups = (
+            len(list(filter(lambda x: node.groups.first(id=x), _groups))) > 0
+        )
+        print(_valid_groups)
         # If all premises were respected
-        if _success:
-            new_group_id = node.groups.query(name=_role)[0].id
-            node.groups.set(user_id=_user_id, group_id=new_group_id)
-        # If they weren't respected
-        elif not node.groups.contain(name=_groups):
-            _msg = "Group not found!"
-        elif not node.permissions.can_create_users(user_id=_current_user_id):
-            _msg = "You're not allowed to change User groups!"
-
-    if _success:
-        _msg = "User updated successfully!"
-    else:
-        _msg_field = "error"
+        if _allowed and _valid_groups:
+            node.groups.update_user_association(user_id=_user_id, groups=_groups)
+        else:
+            raise AuthorizationError("You're not allowed to change User groups!")
 
     return UpdateUserResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"message": "User updated successfully!"},
     )
 
 
@@ -199,36 +212,24 @@ def get_user_msg(
     msg: GetUserMessage,
     node: AbstractNode,
 ) -> GetUserResponse:
-
-    # Default response status
-    _success = True
-    _msg_field = "user"
-    _msg = ""
-
     # Get Payload Content
     _user_id = msg.content.get("user_id", None)
     _current_user_id = msg.content.get("current_user", None)
 
-    _success = node.users.contain(id=_user_id) and node.permissions.can_triage_requests(
-        user_id=_current_user_id
-    )
+    users = node.users
 
-    if _success:
-        user = node.users.query(id=_user_id)[0]
-    elif node.users.contain(id=_user_id):
-        _msg = "User ID not found!"
-    else:
-        _msg = "You're not allowed to get User information!"
+    _allowed = users.can_triage_requests(user_id=_current_user_id)
 
-    if _success:
+    if _allowed:
+        user = users.first(id=_user_id)
         _msg = model_to_json(user)
     else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to get User information!")
 
     return GetUserResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"user": _msg},
     )
 
 
@@ -237,29 +238,22 @@ def get_all_users_msg(
     msg: GetUsersMessage,
     node: AbstractNode,
 ) -> GetUsersResponse:
-    # Default response status
-    _success = True
-    _msg_field = "users"
-    _msg = ""
-
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
+    users = node.users
 
-    _success = node.permissions.can_triage_requests(user_id=_current_user_id)
+    _allowed = users.can_triage_requests(user_id=_current_user_id)
 
-    if _success:
-        users = node.users.all()
-    else:
-        _msg = "You're not allowed to get User information!"
-
-    if _success:
+    if _allowed:
+        users = users.all()
         _msg = {user.id: model_to_json(user) for user in users}
     else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to get User information!")
+
     return GetUsersResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"users": _msg},
     )
 
 
@@ -268,35 +262,28 @@ def del_user_msg(
     msg: DeleteUserMessage,
     node: AbstractNode,
 ) -> DeleteUserResponse:
-    # Default response status
-    _success = True
-    _msg_field = "user"
-    _msg = ""
 
     # Get Payload Content
     _user_id = msg.content.get("user_id", None)
     _current_user_id = msg.content.get("current_user", None)
 
-    _success = node.users.contain(id=_user_id) and node.permissions.can_create_users(
-        user_id=_current_user_id
+    users = node.users
+
+    _allowed = (
+        users.can_create_users(user_id=_current_user_id)
+        and users.first(id=_user_id)
+        and users.role(user_id=_user_id).name != "Owner"
     )
-
-    if _success:
-        user = node.users.delete(id=_user_id)
-    elif node.users.contain(id=_user_id):
-        _msg = "User ID not found!"
+    print("Allow: ", _allowed)
+    if _allowed:
+        node.users.delete(id=_user_id)
     else:
-        _msg = "You're not allowed to delete User information!"
-
-    if _success:
-        _msg = "User deleted successfully"
-    else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to delete this user information!")
 
     return DeleteUserResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"message": "User deleted successfully!"},
     )
 
 
@@ -305,34 +292,47 @@ def search_users_msg(
     msg: SearchUsersMessage,
     node: AbstractNode,
 ) -> SearchUsersResponse:
-
-    # Default response status
-    _success = True
-    _msg_field = "users"
-    _msg = ""
-
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
-    _email = msg.content.get("email", None)
-    _role = msg.content.get("role", None)
+    users = node.users
+
+    user_parameters = {
+        "email": msg.content.get("email", None),
+        "role": msg.content.get("role", None),
+    }
     _group = msg.content.get("group", None)
 
-    _success = node.permissions.can_triage_requests(user_id=_current_user_id)
+    filter_parameters = lambda key: user_parameters[key]
+    filtered_parameters = filter(filter_parameters, user_parameters.keys())
+    user_parameters = {key: user_parameters[key] for key in filtered_parameters}
 
-    if _success:
-        users = node.users.query(email=_email, role=_role, group=_group)
+    _allowed = users.can_triage_requests(user_id=_current_user_id)
+
+    if _allowed:
+        try:
+            users = node.users.query(**user_parameters)
+            if _group:
+                for user in users:
+                    if node.groups.contain_association(user=user.id, group=_group):
+                        print("Existe!")
+                    else:
+                        print("Nao Existe!")
+                filtered_users = filter(
+                    lambda x: node.groups.contain_association(user=x.id, group=_group),
+                    users,
+                )
+                _msg = {user.id: model_to_json(user) for user in filtered_users}
+            else:
+                _msg = {user.id: model_to_json(user) for user in users}
+        except UserNotFoundError:
+            _msg = {}
     else:
-        _msg = "You're not allowed to get User information!"
+        raise AuthorizationError("You're not allowed to get User information!")
 
-    if _success:
-        _msg = {user.id: model_to_json(user) for user in users}
-    else:
-        _msg_field = "error"
-
-    return DeleteUserResponse(
+    return SearchUsersResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"users": _msg},
     )
 
 

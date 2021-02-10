@@ -37,7 +37,7 @@ def send_association_request_msg(
 ) -> SendAssociationRequestResponse:
     return SendAssociationRequestResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Association request sent!"},
     )
 
@@ -48,7 +48,7 @@ def recv_association_request_msg(
 ) -> ReceiveAssociationRequestResponse:
     return ReceiveAssociationRequestResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Association request received!"},
     )
 
@@ -59,7 +59,7 @@ def respond_association_request_msg(
 ) -> RespondAssociationRequestResponse:
     return RespondAssociationRequestResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Association request was replied!"},
     )
 
@@ -70,7 +70,7 @@ def get_association_request_msg(
 ) -> GetAssociationRequestResponse:
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
     )
 
@@ -81,7 +81,7 @@ def get_all_association_request_msg(
 ) -> GetAssociationRequestsResponse:
     return GetAssociationRequestsResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"association-requests": ["Network A", "Network B", "Network C"]},
     )
 
@@ -92,7 +92,7 @@ def del_association_request_msg(
 ) -> DeleteAssociationRequestResponse:
     return DeleteAssociationRequestResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Association request deleted!"},
     )
 

@@ -7,8 +7,9 @@ class PyGridError(Exception):
 
 
 class AuthorizationError(PyGridError):
-    def __init__(self):
-        message = "User is not authorized for this operation!"
+    def __init__(self, message=""):
+        if not message:
+            message = "User is not authorized for this operation!"
         super().__init__(message)
 
 
@@ -20,7 +21,7 @@ class RoleNotFoundError(PyGridError):
 
 class UserNotFoundError(PyGridError):
     def __init__(self):
-        message = "User ID not found!"
+        message = "User not found!"
         super().__init__(message)
 
 
@@ -43,6 +44,7 @@ class InvalidCredentialsError(PyGridError):
 
 
 class MissingRequestKeyError(PyGridError):
-    def __init__(self):
-        message = "Missing request key!"
+    def __init__(self, message=""):
+        if not message:
+            message = "Missing request key!"
         super().__init__(message)

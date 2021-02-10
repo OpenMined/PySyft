@@ -28,59 +28,189 @@ from syft.grid.messages.group_messages import (
     GetGroupsResponse,
 )
 
+from ..database.utils import model_to_json
+
 
 @syft_decorator(typechecking=True)
 def create_group_msg(
     msg: CreateGroupMessage,
+    node: AbstractNode,
 ) -> CreateGroupResponse:
+    _current_user_id = msg.content.get("current_user", None)
+    _group_name = msg.content.get("name", None)
+    _users = msg.content.get("name", None)
+
+    _success = True
+    _msg_field = "msg"
+    _msg = ""
+
+    # Checks
+    _is_allowed = node.users.role(user_id=_current_user_id).can_create_groups
+
+    if not _group_name:
+        _success = False
+        _msg = "Invalid group name!"
+    elif _is_allowed:
+        node.groups.create(group_name=_group_name, users=_users)
+    else:
+        _success = False
+        _msg = "You're not allowed to create groups!"
+
+    if _success:
+        _msg = "Group created successfully!"
+    else:
+        _msg_field = "error"
+
     return CreateGroupResponse(
         address=msg.reply_to,
-        success=True,
-        content={"msg": "Association request sent!"},
+        success=_success,
+        content={_msg_field: _msg},
     )
 
 
 @syft_decorator(typechecking=True)
 def update_group_msg(
     msg: UpdateGroupMessage,
+    node: AbstractNode,
 ) -> UpdateGroupResponse:
+    _current_user_id = msg.content.get("current_user", None)
+    _group_id = msg.content.get("group_id", None)
+    _group_name = msg.content.get("name", None)
+    _users = msg.content.get("users", None)
+
+    _success = True
+    _msg_field = ""
+    _msg = ""
+
+    # Checks
+    _is_allowed = node.users.role(user_id=_current_user_id).can_edit_groups
+
+    if not node.groups.contain(id=_group_id):
+        _success = False
+        _msg = "Group ID not found!"
+    elif _is_allowed:
+        node.groups.update(group_id=_group_id, group_name=_group_name, users=_users)
+    else:
+        _success = False
+        _msg = "You're not allowed to get this group!"
+
+    if _success:
+        _msg_field = "msg"
+        _msg = "Group updated successfully!"
+    else:
+        _msg_field = "error"
+
     return UpdateGroupResponse(
         address=msg.reply_to,
-        success=True,
-        content={"msg": "Association request received!"},
+        success=_success,
+        content={_msg_field: _msg},
     )
 
 
 @syft_decorator(typechecking=True)
 def get_group_msg(
     msg: GetGroupMessage,
+    node: AbstractNode,
 ) -> GetGroupResponse:
+    _current_user_id = msg.content.get("current_user", None)
+    _group_id = msg.content.get("group_id", None)
+
+    _success = True
+    _msg_field = ""
+    _msg = ""
+
+    # Checks
+    _is_allowed = node.users.role(user_id=_current_user_id).can_triage_requests
+
+    if not node.groups.contain(id=_group_id):
+        _success = False
+        _msg = "Group ID not found!"
+    elif _is_allowed:
+        _group = node.groups.first(id=_group_id)
+    else:
+        _success = False
+        _msg = "You're not allowed to get this group!"
+
+    if _success:
+        _msg = model_to_json(_group)
+        _msg_field = "group"
+    else:
+        _msg_field = "error"
+
     return GetGroupResponse(
         address=msg.reply_to,
-        success=True,
-        content={"msg": "Association request was replied!"},
+        success=_success,
+        content={_msg_field: _msg},
     )
 
 
 @syft_decorator(typechecking=True)
 def get_all_groups_msg(
     msg: GetGroupsMessage,
+    node: AbstractNode,
 ) -> GetGroupsResponse:
+    _current_user_id = msg.content.get("current_user", None)
+
+    _success = True
+    _msg_field = ""
+    _msg = ""
+
+    # Checks
+    _is_allowed = node.users.role(user_id=_current_user_id).can_triage_requests
+
+    if _is_allowed:
+        _groups = node.groups.all()
+    else:
+        _success = False
+        _msg = "You're not allowed to get the groups!"
+
+    if _success:
+        _msg = {group.id: model_to_json(group) for group in _groups}
+        _msg_field = "groups"
+    else:
+        _msg_field = "error"
+
     return GetGroupsResponse(
         address=msg.reply_to,
-        success=True,
-        content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
+        status_code=200,
+        content={_msg_field: _msg},
     )
 
 
 @syft_decorator(typechecking=True)
 def del_group_msg(
     msg: DeleteGroupMessage,
+    node: AbstractNode,
 ) -> DeleteGroupResponse:
+    _current_user_id = msg.content.get("current_user", None)
+    _group_id = msg.content.get("group_id", None)
+
+    _success = True
+    _msg_field = ""
+    _msg = ""
+
+    # Checks
+    _is_allowed = node.users.role(user_id=_current_user_id).can_edit_groups
+
+    if not node.groups.contain(id=_group_id):
+        _success = False
+        _msg = "Group ID not found!"
+    elif _is_allowed:
+        node.groups.delete(id=_group_id)
+    else:
+        _success = False
+        _msg = "You're not allowed to delete this group!"
+
+    if _success:
+        _msg = "User deleted successfully!"
+        _msg_field = "msg"
+    else:
+        _msg_field = "error"
+
     return DeleteGroupResponse(
         address=msg.reply_to,
-        success=True,
-        content={"msg": "Association request deleted!"},
+        success=_success,
+        content={_msg_field: _msg},
     )
 
 
@@ -113,7 +243,7 @@ class GroupManagerService(ImmediateNodeServiceWithReply):
         GetGroupsResponse,
         DeleteGroupResponse,
     ]:
-        return GroupManagerService.msg_handler_map[type(msg)](msg=msg)
+        return GroupManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:

@@ -43,17 +43,17 @@ def create_worker_msg(
         # 2 - Save worker adress/metadata at node.workers
 
         final_msg = "Worker created succesfully!"
-        success = True
+        status_code = True
 
         return CreateWorkerResponse(
             address=msg.reply_to,
-            success=success,
+            status_code=200,
             content={"msg": final_msg},
         )
     except Exception as e:
         return CreateWorkerResponse(
             address=msg.reply_to,
-            success=False,
+            status_code=500,
             content={"error": str(e)},
         )
 
@@ -72,13 +72,13 @@ def check_worker_deployment_msg(
 
         return CheckWorkerDeploymentMessage(
             address=msg.reply_to,
-            success=final_status,
+            status_code=final_status,
             content={"deployment_status": final_msg},
         )
     except Exception as e:
         return CheckWorkerDeploymentMessage(
             address=msg.reply_to,
-            success=False,
+            status_code=500,
             content={"error": str(e)},
         )
 
@@ -99,13 +99,13 @@ def get_worker_msg(
 
         return GetWorkerResponse(
             address=msg.reply_to,
-            success=final_status,
+            status_code=200,
             content=final_msg,
         )
     except Exception as e:
         return CheckWorkerDeploymentMessage(
             address=msg.reply_to,
-            success=False,
+            status_code=500,
             content={"error": str(e)},
         )
 
@@ -131,13 +131,13 @@ def get_workers_msg(
 
         return GetWorkersResponse(
             address=msg.reply_to,
-            success=final_status,
+            status_code=200,
             content=final_msg,
         )
     except Exception as e:
         return GetWorkersResponse(
             address=msg.reply_to,
-            success=False,
+            status_code=False,
             content={"error": str(e)},
         )
 
@@ -149,7 +149,7 @@ def del_worker_msg(
 ) -> DeleteWorkerResponse:
     return DeleteWorkerResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Worker was deleted succesfully!"},
     )
 
@@ -161,7 +161,7 @@ def update_worker_msg(
 ) -> UpdateWorkerResponse:
     return UpdateWorkerResponse(
         address=msg.reply_to,
-        success=True,
+        status_code=200,
         content={"msg": "Worker was updated succesfully!"},
     )
 

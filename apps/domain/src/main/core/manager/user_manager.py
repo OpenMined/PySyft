@@ -1,18 +1,12 @@
 from typing import Dict
+from typing import Union
+from typing import List
 from bcrypt import checkpw, gensalt, hashpw
 
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 from ..database.users.user import User
-from ..exceptions import (
-    AuthorizationError,
-    GroupNotFoundError,
-    InvalidCredentialsError,
-    MissingRequestKeyError,
-    PyGridError,
-    RoleNotFoundError,
-    UserNotFoundError,
-)
+from ..exceptions import UserNotFoundError, AuthorizationError, InvalidCredentialsError
 
 
 class UserManager(DatabaseManager):
@@ -26,13 +20,25 @@ class UserManager(DatabaseManager):
 
     def signup(self, email: str, password: str, role: int, private_key: str):
         salt, hashed = self.__salt_and_hash_password(password, 12)
-        self.register(
+        return self.register(
             email=email,
             role=role,
             private_key=private_key,
             hashed_password=hashed,
             salt=salt,
         )
+
+    def query(self, **kwargs) -> Union[None, List]:
+        results = super().query(**kwargs)
+        if len(results) == 0:
+            raise UserNotFoundError
+        return results
+
+    def first(self, **kwargs) -> Union[None, User]:
+        result = super().first(**kwargs)
+        if not result:
+            raise UserNotFoundError
+        return result
 
     def login(self, email: str, password: str) -> User:
         return self.__login_validation(email, password)
@@ -41,15 +47,19 @@ class UserManager(DatabaseManager):
         self,
         user_id: str,
         email: str = None,
-        hashed_password: str = None,
+        password: str = None,
         role: int = 0,
     ) -> None:
+        if not self.contain(id=user_id):
+            raise UserNotFoundError
+
         if email:
             key = "email"
             value = email
-        elif hashed_password:
-            key = "hashed_password"
-            value = hashed_password
+        elif password:
+            salt, hashed = self.__salt_and_hash_password(password, 12)
+            self.modify({"id": user_id}, {"salt": salt, "hashed_password": hashed})
+            return
         elif role != 0:
             key = "role"
             value = role
@@ -58,26 +68,36 @@ class UserManager(DatabaseManager):
 
         self.modify({"id": user_id}, {key: value})
 
+    def can_create_users(self, user_id: str) -> bool:
+        role = self.role(user_id=user_id)
+        if role:
+            return role.can_create_users
+        else:
+            return False
+
+    def can_triage_requests(self, user_id: str) -> bool:
+        return self.role(user_id=user_id).can_triage_requests
+
     def role(self, user_id: int):
-        query_result = self.query(id=user_id)
-        user = query_result[0]
-        return self.roles.query(id=user.role)[0]
+        try:
+            user = self.first(id=user_id)
+            return self.roles.first(id=user.role)
+        except UserNotFoundError:
+            return False
 
     def __login_validation(self, email: str, password: str) -> bool:
-        query_result = self.query(email=email)
+        try:
+            user = self.first(email=email)
 
-        if len(query_result) != 0:
-            user = query_result[0]
-        else:
-            raise InvalidCredentialsError
+            hashed = user.hashed_password.encode("UTF-8")
+            salt = user.salt.encode("UTF-8")
+            password = password.encode("UTF-8")
 
-        hashed = user.hashed_password.encode("UTF-8")
-        salt = user.salt.encode("UTF-8")
-        password = password.encode("UTF-8")
-
-        if checkpw(password, salt + hashed):
-            return user
-        else:
+            if checkpw(password, salt + hashed):
+                return user
+            else:
+                raise InvalidCredentialsError
+        except UserNotFoundError:
             raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password, rounds):

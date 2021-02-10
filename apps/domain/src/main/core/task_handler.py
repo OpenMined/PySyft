@@ -30,7 +30,9 @@ def process_as_syft_message(message_class, message_content, sign_key):
 
     response = {}
     if isinstance(signed_message, SignedImmediateSyftMessageWithReply):
-        response = node.recv_immediate_msg_with_reply(msg=signed_message)
+        response = node.recv_immediate_msg_with_reply(
+            msg=signed_message, raise_exception=True
+        )
         response = response.message
     elif isinstance(signed_message, SignedImmediateSyftMessageWithoutReply):
         node.recv_immediate_msg_without_reply(msg=signed_message)
@@ -76,6 +78,7 @@ def route_logic(message_class, current_user, msg_content):
             current_user.private_key.encode("utf-8"), encoder=HexEncoder
         )
         msg_content["internal_key"] = current_user.private_key
+        msg_content["current_user"] = current_user.id
     else:
         user_key = SigningKey.generate()
 
