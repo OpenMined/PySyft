@@ -25,6 +25,12 @@ class UserNotFoundError(PyGridError):
         super().__init__(message)
 
 
+class EnvironmentNotFoundError(PyGridError):
+    def __init__(self):
+        message = "Environment not found!"
+        super().__init__(message)
+
+
 class GroupNotFoundError(PyGridError):
     def __init__(self):
         message = "Group ID not found!"
