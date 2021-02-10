@@ -3,6 +3,7 @@ import secrets
 from typing import List
 from typing import Type
 from typing import Union
+from ..database.environment.environment import Environment
 
 # third party
 from nacl.signing import VerifyKey
@@ -42,9 +43,19 @@ def create_worker_msg(
         # 1 - Deploy a Worker into the cloud using the parameters in msg.content
         # 2 - Save worker adress/metadata at node.workers
 
-        final_msg = "Worker created succesfully!"
-        status_code = True
+        current_user_id = msg.content.get("current_user", None)
 
+        env_parameters = {
+            i: msg.content[i]
+            for i in msg.content.keys()
+            if i in list(Environment.__table__.columns.keys())
+        }
+        print("My env parameters: ", env_parameters)
+        new_env = node.environments.register(**env_parameters)
+
+        node.environments.association(user_id=current_user_id, env_id=new_env.id)
+
+        final_msg = "Worker created succesfully!"
         return CreateWorkerResponse(
             address=msg.reply_to,
             status_code=200,

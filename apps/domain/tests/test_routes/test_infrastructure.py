@@ -5,6 +5,8 @@ import pytest
 from flask import current_app as app
 
 from src.main.core.database import *
+from src.main.core.database.environment.environment import Environment
+from src.main.core.database.environment.user_environment import UserEnvironment
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
@@ -51,6 +53,8 @@ def cleanup(database):
         database.session.query(Role).delete()
         database.session.query(Group).delete()
         database.session.query(UserGroup).delete()
+        database.session.query(Environment).delete()
+        database.session.query(UserEnvironment).delete()
         database.session.commit()
     except:
         database.session.rollback()
@@ -154,11 +158,28 @@ def test_create_worker(client, database, cleanup):
 
     result = client.post(
         "/dcfl/workers",
-        data={"name": "test_worker"},
+        json={
+            "address": "http://localhost:5000/",
+            "memory": "32",
+            "instance": "EC2",
+            "gpu": "RTX3070",
+        },
         headers=headers,
     )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 1
+    assert len(database.session.query(UserEnvironment).all()) == 1
+
+    env = database.session.query(Environment).first()
+    assert env.address == "http://localhost:5000/"
+    assert env.memory == "32"
+    assert env.instance == "EC2"
+    assert env.gpu == "RTX3070"
+
+    user_env = database.session.query(UserEnvironment).first()
+    assert user_env.user == 1
+    assert user_env.environment == 1
 
 
 def test_get_all_workers(client, database, cleanup):
