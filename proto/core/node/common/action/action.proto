@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/node/common/action/get_object.proto";
+import "proto/core/node/common/action/run_function_or_constructor.proto";
+
+message Action {
+    string obj_type = 1;
+    oneof action {
+        syft.core.node.common.action.GetObjectAction get_object_action = 2;
+        syft.core.node.common.action.RunFunctionOrConstructorAction run_function_or_constructor_action = 3;
+    }
+}
