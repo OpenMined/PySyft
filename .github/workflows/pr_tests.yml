@@ -219,3 +219,6 @@ jobs:
           pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
           cd tests/syft/notebooks/ && pytest . -n 1
+      - name: Run darglint
+        run: |
+          darglint || true
