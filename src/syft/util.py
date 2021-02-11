@@ -546,14 +546,16 @@ def inherit_tags(
     kwargs: dict,
 ) -> None:
     tags = []
-    if self_obj is not None:
+    if self_obj is not None and hasattr(self_obj, "tags"):
         tags.extend([tag for tag in self_obj.tags])  # type: ignore
 
     for arg in args:
-        tags.extend([tag for tag in arg.tags if tag not in tags])
+        if hasattr(arg, "tags"):
+            tags.extend([tag for tag in arg.tags if tag not in tags])
 
     for arg in kwargs.values():
-        tags.extend([tag for tag in arg.tags if tag not in tags])
+        if hasattr(arg, "tags"):
+            tags.extend([tag for tag in arg.tags if tag not in tags])
 
     # only generate new tags if the result actually inherit some tags.
     if tags:

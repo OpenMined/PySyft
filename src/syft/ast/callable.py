@@ -15,8 +15,8 @@ from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
 from ..logger import traceback_and_raise
-from .util import module_type
 from ..util import inherit_tags
+from .util import module_type
 
 
 class Callable(ast.attribute.Attribute):
