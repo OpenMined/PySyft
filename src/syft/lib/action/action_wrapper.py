@@ -1,4 +1,3 @@
-
 # stdlib
 from typing import List
 from typing import Optional
@@ -6,15 +5,15 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
-from ...core.common.uid import UID
-from syft.core.node.common.action.common import Action
-from ...core.store.storeable_object import StorableObject
-from ...logger import warning
+# syft absolute
 import syft
-
+from syft.core.node.common.action.common import Action
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 
+# syft relative
+from ...core.common.uid import UID
+from ...core.store.storeable_object import StorableObject
+from ...logger import warning
 from ...util import aggressive_set_attr
 
 
@@ -58,6 +57,4 @@ class ActionWrapper(StorableObject):
     #     return data
 
 
-aggressive_set_attr(
-    obj=Action, name="serializable_wrapper_type", attr=ActionWrapper
-)
+aggressive_set_attr(obj=Action, name="serializable_wrapper_type", attr=ActionWrapper)

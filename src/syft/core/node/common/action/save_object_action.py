@@ -80,7 +80,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
             traceback_and_raise(
                 Exception(f"{type(self.obj)} has no .serialize() method")
             )
+        # third party
         import ipdb
+
         ipdb.set_trace()
         obj_ob = serialize_method()
         addr = self.address.serialize()
