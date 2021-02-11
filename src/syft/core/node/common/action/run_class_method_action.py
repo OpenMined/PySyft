@@ -18,13 +18,13 @@ from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from .....util import inherit_tags
 
 
 class RunClassMethodAction(ImmediateActionWithoutReply):

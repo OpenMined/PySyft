@@ -1,10 +1,11 @@
+# stdlib
+from typing import Any
+
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
-
-from typing import Any
 
 ts = pytest.importorskip("tenseal")
 sy.load_lib("tenseal")
