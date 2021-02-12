@@ -61,4 +61,4 @@ repos:
   #   rev: master
   #   hooks:
   #     - id: darglint
-  #       exclude: ^(src/syft/proto|examples/duet)
+  #       args: ["src", "tests"]
