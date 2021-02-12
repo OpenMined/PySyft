@@ -62,6 +62,10 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
+      - name: Run darglint - Ignore Errors
+        continue-on-error: true
+        run: |
+          darglint src tests
 
   python-tests-fast:
     needs: [python-linting]
@@ -219,7 +223,3 @@ jobs:
           pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
           cd tests/syft/notebooks/ && pytest . -n 1
-      - name: Run darglint - Ignore Errors
-        continue-on-error: true
-        run: |
-          darglint src tests

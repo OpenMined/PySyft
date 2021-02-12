@@ -18,7 +18,7 @@
 aiortc
 bandit
 black
-darglint # [TODO]: @J0 remove once all docstrings are changed to compy with Google docstring style
+darglint
 dataclasses # backport to python 3.6
 doc8
 flake8
