@@ -9,6 +9,7 @@
 # serve to show the default.
 
 # stdlib
+import datetime
 import inspect
 import os
 from pathlib import Path
@@ -138,8 +139,9 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
+now = datetime.datetime.now()
 project = "syft"
-copyright = "2021, OpenMined Core Contributors"
+copyright = f"{now.year}, OpenMined Core Contributors"
 
 # The version info for the project you're documenting, acts as a replacement for
 # |version| and |release|, also used in various other places throughout the
