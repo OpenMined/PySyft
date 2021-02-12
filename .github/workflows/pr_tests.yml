@@ -209,3 +209,54 @@ jobs:
           pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto --no-cov
+
+  pygrid-unit-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 3
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - uses: actions/checkout@v2
+        with:
+          name: OpenMined/PyGrid
+          ref: pygrid_0.4.0
+          path: pygrid
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          ls
+          pip install -e . --default-timeout=60
+          pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      pytest-cov --default-timeout=60
+          pytest ./pygrid/apps/domain/tests --no-cov
+          pytest ./pygrid/apps/network/tests --no-cov
+          pytest ./pygrid/apps/worker/tests --no-cov
