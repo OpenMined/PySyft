@@ -1,7 +1,6 @@
 # stdlib
 import pydoc
-import re
-import sys
+from typing import Any
 from typing import List
 from typing import Optional
 
@@ -81,7 +80,7 @@ class StorableObject(AbstractStorableObject):
     def object_type(self) -> str:
         object_type = str(type(self.data))
         if type(self.data).__name__.endswith("ProtobufWrapper"):
-            object_type = str(type(self.data.data))  # type: ignore
+            object_type = str(type(self.data.data))
         return object_type
 
     # Why define data as a property?
@@ -90,15 +89,15 @@ class StorableObject(AbstractStorableObject):
     # attribute as it's wrapper object. But we still want to give a straight API to users,
     # so we return the initial C type object when user call obj.data.
     # For python class objects as data. data and _data are the same thing.
-    @property
-    def data(self):
+    @property  # type: ignore
+    def data(self) -> Any:  # type: ignore
         if type(self._data).__name__.endswith("Wrapper"):
             return self._data.obj
         else:
             return self._data
 
     @data.setter
-    def data(self, value):
+    def data(self, value: Any) -> Any:
         if hasattr(value, "serializable_wrapper_type"):
             self._data = value.serializable_wrapper_type(value=value)
         else:
@@ -176,7 +175,7 @@ class StorableObject(AbstractStorableObject):
         data_type = pydoc.locate(proto.data_type)
 
         # # Step 3: get the protobuf type we deserialize for .data
-        schematic_type = data_type.get_protobuf_schema()
+        schematic_type = data_type.get_protobuf_schema()  # type: ignore
 
         # Step 4: Deserialize data from protobuf
         data = None
@@ -185,7 +184,7 @@ class StorableObject(AbstractStorableObject):
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
-            data = data_type._proto2object(proto=data)
+            data = data_type._proto2object(proto=data)  # type: ignore
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""
@@ -196,6 +195,34 @@ class StorableObject(AbstractStorableObject):
         result = StorableObject.construct_new_object(
             id=id, data=data, tags=tags, description=description
         )
+
+        # just a backup
+        try:
+            result.tags = tags
+            result.description = description
+
+            # default to empty
+            result.read_permissions = {}
+            result.search_permissions = {}
+
+            # Step 7: get the read permissions
+            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
+                result.read_permissions = _deserialize(
+                    blob=proto.read_permissions, from_bytes=True
+                )
+
+            # Step 8: get the search permissions
+            if (
+                proto.search_permissions is not None
+                and len(proto.search_permissions) > 0
+            ):
+                result.search_permissions = _deserialize(
+                    blob=proto.search_permissions, from_bytes=True
+                )
+        except Exception as e:
+            # torch.return_types.* namedtuple cant setattr
+            critical(f"StorableObject {type(result)} cant set attributes")
+            traceback(e)
 
         return result
 
@@ -250,7 +277,7 @@ class StorableObject(AbstractStorableObject):
     def pprint(self) -> str:
         output = f"{self.icon} ({self.class_name}) ("
         if hasattr(self.data, "pprint"):
-            output += self.data.pprint  # type: ignore
+            output += self.data.pprint
         elif self.data is not None:
             output += self.data.__repr__()
         else:

@@ -4,26 +4,21 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 # third party
-from google.protobuf.message import Message
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from packaging import version
 import torch
 
 # syft relative
 from ...core.common.serde.deserialize import _deserialize
-from ...core.common.serde.serializable import Serializable
 from ...core.common.serde.serialize import _serialize
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
+from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_qualname
 from ...proto.lib.torch.valuesindices_pb2 import ValuesIndicesProto as ValuesIndices_PB
-from ...util import aggressive_set_attr
 from ..torch.tensor_util import protobuf_tensor_deserializer
 from ..torch.tensor_util import protobuf_tensor_serializer
-from .ctype import GenerateWrapper
 
 # this is all the different named tuple attrs so they can be used if an object doesnt
 # have them then getting the wrong attr will fail this needs to be improved with unions
@@ -70,13 +65,12 @@ def object2proto(obj: object) -> ValuesIndices_PB:
 
     return proto
 
-def proto2object(proto: ValuesIndices_PB) -> "ValuesIndices":  # type: ignore
+
+def proto2object(proto: ValuesIndices_PB) -> "ValuesIndices":
     _id: UID = _deserialize(blob=proto.id)
     values = [protobuf_tensor_deserializer(x) for x in proto.values]
 
-    return_type = make_namedtuple(
-        obj_type=proto.obj_type, values=values, id=_id
-    )
+    return_type = make_namedtuple(obj_type=proto.obj_type, values=values, id=_id)
 
     return return_type
 
@@ -196,7 +190,7 @@ def cons_new_obj(
 
 
 # get each of the dynamic torch.return_types.*
-def get_supported_types():
+def get_supported_types() -> list:
     supported_types = []
     A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
     B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
@@ -266,7 +260,7 @@ def get_supported_types():
     supported_types.append(type(min_t))
 
     return supported_types
-    
+
 
 supported_types = get_supported_types()
 for typ in supported_types:

@@ -12,7 +12,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
-from ..python import GenerateProtobufWrapper
+from ...generate_wrapper import GenerateProtobufWrapper
 from ..util import generic_update_ast
 
 LIB_NAME = "openmined_psi"

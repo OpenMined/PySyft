@@ -10,16 +10,12 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# third party
-from google.protobuf.message import Message
-
 # syft relative
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
 from ..core.common.group import VerifyAll
 from ..core.common.serde.serializable import Serializable
-from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
@@ -32,6 +28,7 @@ from ..logger import traceback_and_raise
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 from ..logger import warning
+from ..util import aggressive_set_attr
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:

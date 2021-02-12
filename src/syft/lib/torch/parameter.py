@@ -1,21 +1,14 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Type
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
 from torch.nn import Parameter
 
 # syft relative
-from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
-from ...lib.python.ctype import GenerateWrapper
+from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
-from ...util import aggressive_set_attr
 
 torch_tensor = th.tensor([1.0, 2.0, 3.0])
 torch_parameter_type = type(th.nn.parameter.Parameter(torch_tensor))

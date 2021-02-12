@@ -14,18 +14,19 @@ from .....proto.core.node.common.action.get_set_static_attribute_pb2 import (
     GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
-from ....common.serde.serializable import bind_protobuf
 
 
 class StaticAttributeAction(Enum):
     SET = 1
     GET = 2
+
 
 @bind_protobuf
 class GetSetStaticAttributeAction(ImmediateActionWithoutReply):

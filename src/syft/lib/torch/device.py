@@ -5,8 +5,8 @@ from typing import Any
 from torch import device
 
 # syft relative
+from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
-from ..python.ctype import GenerateWrapper
 
 
 def object2proto(obj: "device") -> "Device_PB":
