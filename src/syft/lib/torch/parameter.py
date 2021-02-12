@@ -1,21 +1,14 @@
 # stdlib
-from typing import List
-from typing import Optional
-from typing import Type
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import torch as th
 from torch.nn import Parameter
 
 # syft relative
-from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
-from ...lib.python.ctype import GenerateWrapper
+from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
-from ...util import aggressive_set_attr
 
 torch_tensor = th.tensor([1.0, 2.0, 3.0])
 torch_parameter_type = type(th.nn.parameter.Parameter(torch_tensor))
@@ -37,6 +30,7 @@ def object2proto(obj: object) -> Parameter_PB:
         proto.grad_sample.CopyFrom(protobuf_tensor_serializer(grad_sample))
     return proto
 
+
 def proto2object(proto: Parameter_PB) -> Parameter:
     data = protobuf_tensor_deserializer(proto.tensor)
     param = Parameter(data, requires_grad=proto.requires_grad)
@@ -47,6 +41,7 @@ def proto2object(proto: Parameter_PB) -> Parameter:
     if proto.HasField("grad_sample"):
         param.grad_sample = protobuf_tensor_deserializer(proto.grad_sample)
     return param
+
 
 GenerateWrapper(
     wrapped_type=torch_parameter_type,

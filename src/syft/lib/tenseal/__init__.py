@@ -13,12 +13,6 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
-from .bfv_vector import BFVVectorWrapper  # noqa: 401
-from .ckks_tensor import CKKSTensorWrapper  # noqa: 401
-from .ckks_vector import CKKSVectorWrapper  # noqa: 401
-from .context import ContextWrapper  # noqa: 401
-from .context import SchemeTypeWrapper
-from .plain_tensor import PlainTensorWrapper  # noqa: 401
 
 LIB_NAME = "tenseal"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}

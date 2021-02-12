@@ -15,6 +15,7 @@ from ...core.common.message import ImmediateSyftMessageWithReply
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...core.node.abstract.node import AbstractNode
@@ -52,6 +53,7 @@ from ...proto.grid.service.signaling_service_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -135,6 +137,7 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         return OfferPullRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -218,6 +221,7 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         return AnswerPullRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -293,6 +297,7 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         return RegisterNewPeerMessage_PB
 
 
+@bind_protobuf
 @final
 class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -371,6 +376,7 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         return PeerSuccessfullyRegistered_PB
 
 
+@bind_protobuf
 @final
 class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -459,6 +465,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         return SignalingOfferMessage_PB
 
 
+@bind_protobuf
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -547,6 +554,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         return SignalingAnswerMessage_PB
 
 
+@bind_protobuf
 @final
 class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -620,6 +628,7 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         return SignalingRequestsNotFound_PB
 
 
+@bind_protobuf
 @final
 class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     def __init__(

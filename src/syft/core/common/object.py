@@ -10,8 +10,9 @@ from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
-from .uid import UID
 from ..common.serde.serializable import bind_protobuf
+from .uid import UID
+
 
 @bind_protobuf
 class ObjectWithID(Serializable):

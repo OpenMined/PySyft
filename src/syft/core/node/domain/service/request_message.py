@@ -21,6 +21,7 @@ from .....proto.core.node.domain.service.request_message_pb2 import (
 )
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ....node.common.client import Client
 from ....node.common.node import DuplicateRequestException
@@ -28,13 +29,13 @@ from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
-from ....common.serde.serializable import bind_protobuf
 
 
 class RequestStatus(Enum):
     Pending = 1
     Rejected = 2
     Accepted = 3
+
 
 @bind_protobuf
 class RequestMessage(ImmediateSyftMessageWithoutReply):

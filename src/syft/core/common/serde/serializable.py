@@ -1,18 +1,11 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import Tuple
 from typing import Type
 from typing import Union
 
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# Fixes python3.6
-# however, API changed between versions so typing_extensions smooths this over:
-# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
-from typing_extensions import GenericMeta as GenericM  # type: ignore
 
 # syft relative
 from ....decorators import syft_decorator
@@ -22,8 +15,12 @@ from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
 
+# Fixes python3.6
+# however, API changed between versions so typing_extensions smooths this over:
+# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
 
-def bind_protobuf(cls):
+
+def bind_protobuf(cls: Any) -> Any:
     protobuf_schema = cls.get_protobuf_schema()
     protobuf_schema.schema2type = cls
 

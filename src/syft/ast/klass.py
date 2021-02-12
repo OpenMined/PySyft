@@ -10,16 +10,12 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# third party
-from google.protobuf.message import Message
-
 # syft relative
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
 from ..core.common.group import VerifyAll
 from ..core.common.serde.serializable import Serializable
-from ..core.common.serde.serialize import _serialize
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
@@ -29,8 +25,8 @@ from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
-from ..util import aggressive_set_attr
 from ..logger import warning
+from ..util import aggressive_set_attr
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
@@ -288,7 +284,7 @@ class Class(Callable):
             if hasattr(self, "serializable_wrapper_type"):
                 which_obj = self.serializable_wrapper_type(value=self)
                 which_obj.tags = getattr(self, "tags", [])
-                which_obj.description = getattr(self, "description", '')
+                which_obj.description = getattr(self, "description", "")
 
             if not hasattr(which_obj, "id"):
                 which_obj.id = UID()
@@ -310,7 +306,9 @@ class Class(Callable):
                     self.tags = tags
                     self.description = description
                 except AttributeError:
-                    warning(f"'tags' and 'description' are not attached to {self}, because it's type is not a python class.")
+                    warning(
+                        f"'tags' and 'description' are not attached to {self}, because it's type is not a python class."
+                    )
 
             id_at_location = UID()
 
@@ -357,7 +355,7 @@ class Class(Callable):
         aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
         aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
 
-    def create_serialization_methods(outer_self) -> None:        
+    def create_serialization_methods(outer_self) -> None:
         aggressive_set_attr(
             obj=outer_self.object_ref, name="to_proto", attr=Serializable.to_proto
         )

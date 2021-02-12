@@ -21,15 +21,16 @@ from .....proto.core.node.common.service.heritage_update_service_pb2 import (
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
-from ....common.serde.serializable import bind_protobuf
 
 # TODO: change all message names in syft to have "WithReply" or "WithoutReply"
 # at the end of the name
+
 
 @bind_protobuf
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
