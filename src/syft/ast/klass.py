@@ -15,7 +15,6 @@ from .. import ast
 from .. import lib
 from ..ast.callable import Callable
 from ..core.common.group import VerifyAll
-from ..core.common.serde.serializable import Serializable
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
@@ -371,21 +370,6 @@ class Class(Callable):
 
         aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
         aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
-
-    def create_serialization_methods(outer_self) -> None:
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name="to_proto", attr=Serializable.to_proto
-        )
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name="proto", attr=Serializable.proto
-        )
-        to_bytes_attr = "to_bytes"
-        # int has a to_bytes already, so we can use _to_bytes internally
-        if hasattr(outer_self.object_ref, to_bytes_attr):
-            to_bytes_attr = "_to_bytes"
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name=to_bytes_attr, attr=Serializable.to_bytes
-        )
 
     def add_path(
         self,

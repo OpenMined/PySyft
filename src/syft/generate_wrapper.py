@@ -109,6 +109,16 @@ def GenerateWrapper(
         serialize_attr = "sy_serialize"
         aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)
 
+    aggressive_set_attr(obj=wrapped_type, name="to_proto", attr=Serializable.to_proto)
+    aggressive_set_attr(obj=wrapped_type, name="proto", attr=Serializable.proto)
+    to_bytes_attr = "to_bytes"
+    # int has a to_bytes already, so we can use _to_bytes internally
+    if hasattr(wrapped_type, to_bytes_attr):
+        to_bytes_attr = "_to_bytes"
+    aggressive_set_attr(
+        obj=wrapped_type, name=to_bytes_attr, attr=Serializable.to_bytes
+    )
+
 
 def GenerateProtobufWrapper(
     cls_pb: GeneratedProtocolMessageType, import_path: str
