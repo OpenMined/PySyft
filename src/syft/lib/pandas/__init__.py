@@ -1,8 +1,8 @@
 # stdlib
+import functools
 from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
-from typing import Union as TypeUnion
 
 # third party
 import pandas as pd
@@ -12,21 +12,15 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ..util import generic_update_ast
 from .frame import PandasDataFrameWrapper  # noqa: 401
 
 LIB_NAME = "pandas"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
-# this gets called on global ast as well as clients
-# anything which wants to have its ast updated and has an add_attr method
-def update_ast(ast: TypeUnion[Globals, TypeAny]) -> None:
-    pandas_ast = create_ast()
-    ast.add_attr(attr_name=LIB_NAME, attr=pandas_ast.attrs[LIB_NAME])
-
-
-def create_ast() -> Globals:
-    ast = Globals()
+def create_ast(client: TypeAny = None) -> Globals:
+    ast = Globals(client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [("pandas", pd)]
 
@@ -47,3 +41,6 @@ def create_ast() -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
+
+
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
