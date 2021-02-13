@@ -113,7 +113,6 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
                 except AttributeError:
                     raise Exception("MAKE VALID SCHEMA")
 

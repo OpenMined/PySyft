@@ -78,7 +78,7 @@ Signaling Steps:
 
 # stdlib
 import asyncio
-import random
+import secrets
 import time
 from typing import Any
 from typing import Optional
@@ -430,7 +430,7 @@ class WebRTCConnection(BidirectionalConnection):
         """
         # Execute node services now
         try:
-            r = random.randint(0, 100000)
+            r = secrets.randbelow(100000)
             debug(
                 f"> Before recv_immediate_msg_with_reply {r} {msg.message} {type(msg.message)}"
             )
@@ -450,7 +450,7 @@ class WebRTCConnection(BidirectionalConnection):
         Executes requests instantly.
         """
         try:
-            r = random.randint(0, 100000)
+            r = secrets.randbelow(100000)
             debug(
                 f"> Before recv_immediate_msg_without_reply {r} {msg.message} {type(msg.message)}"
             )
@@ -531,7 +531,7 @@ class WebRTCConnection(BidirectionalConnection):
             # To ensure the sequence of sending / receiving messages
             # it's necessary to keep only a unique reference for reading
             # inputs (producer) and outputs (consumer).
-            r = random.randint(0, 100000)
+            r = secrets.randbelow(100000)
             # To be able to perform this method synchronously (waiting for the reply)
             # without blocking async methods, we need to use queues.
 
