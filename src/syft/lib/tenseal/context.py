@@ -53,7 +53,7 @@ class ContextWrapper(StorableObject):
                 log = f"Warning {lib_version} > local imported version {ts.__version__}"
                 info(log)
 
-        return ts.context_from(proto.content)
+        return ts.context_from(proto.content, n_threads=1)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
