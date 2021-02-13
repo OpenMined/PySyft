@@ -59,7 +59,6 @@ def create_ast_test(client: Client) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
