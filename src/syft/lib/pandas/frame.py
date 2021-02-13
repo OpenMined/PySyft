@@ -1,10 +1,11 @@
 # stdlib
 from typing import List
 from typing import Optional
+import warnings
 
 # third party
-import pandas as pd
 from google.protobuf.reflection import GeneratedProtocolMessageType
+import pandas as pd
 
 # syft relative
 from ...core.common.uid import UID
@@ -53,7 +54,13 @@ class PandasDataFrameWrapper(StorableObject):
         tags: Optional[List[str]],
     ) -> StorableObject:
         data.id = id
-        data.tags = tags
+        # Filter out Pandas UserWarning about creating columns
+        # from attributes (tags is a list)
+        # Not a solution! - adding these attributes goes against expected
+        # behaviour for pandas dataframe attribute->column access
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            data.tags = tags
         data.description = description
         return data
 
