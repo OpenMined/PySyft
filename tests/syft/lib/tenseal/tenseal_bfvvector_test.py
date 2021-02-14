@@ -6,6 +6,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from .utils_test import decrypt
 
 ts = pytest.importorskip("tenseal")
 sy.load_lib("tenseal")
@@ -13,9 +14,7 @@ sy.load_lib("tenseal")
 
 @pytest.fixture(scope="function")
 def context() -> Any:
-    context = ts.context(ts.SCHEME_TYPE.BFV, 8192, 1032193)
-    context.generate_galois_keys()
-
+    context = ts.context(ts.SCHEME_TYPE.BFV, 8192, 1032193, n_threads=1)
     return context
 
 
@@ -34,7 +33,7 @@ def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None
 
     enc_v1_ptr.link_context(ctx_ptr)
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     assert result == [0, 1, 2, 3, 4]
 
 
@@ -57,13 +56,13 @@ def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
     # add
     result_enc_ptr = enc_v1_ptr + enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # add inplace
     enc_v1_ptr += enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     assert result == expected
 
 
@@ -86,13 +85,13 @@ def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
     # sub
     result_enc_ptr = enc_v1_ptr - enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # sub inplace
     enc_v1_ptr -= enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     assert result == expected
 
 
@@ -115,13 +114,13 @@ def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
     # mul
     result_enc_ptr = enc_v1_ptr * enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # mul inplace
     enc_v1_ptr *= enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     assert result == expected
 
 
@@ -141,19 +140,19 @@ def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
     # iadd
     result_enc_ptr = enc_v1_ptr + v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # radd
     result_enc_ptr = v2 + enc_v1_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # iadd inplace
     enc_v1_ptr += v2
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     assert result == expected
 
 
@@ -173,7 +172,7 @@ def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
     # isub
     result_enc_ptr = enc_v1_ptr - v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
 
@@ -193,11 +192,11 @@ def test_tenseal_bfvvector_imul(context: Any, duet: sy.VirtualMachine) -> None:
     # imul
     result_enc_ptr = enc_v1_ptr * v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected
 
     # rmul
     result_enc_ptr = v2 * enc_v1_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     assert result == expected

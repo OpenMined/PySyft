@@ -7,6 +7,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from .utils_test import decrypt
 
 ts = pytest.importorskip("tenseal")
 sy.load_lib("tenseal")
@@ -20,7 +21,7 @@ def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) ->
 @pytest.fixture(scope="function")
 def context() -> Any:
     context = ts.context(
-        ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60]
+        ts.SCHEME_TYPE.CKKS, 8192, coeff_mod_bit_sizes=[60, 40, 40, 60], n_threads=1
     )
     context.global_scale = pow(2, 40)
     context.generate_galois_keys()
@@ -39,10 +40,9 @@ def test_tenseal_ckksvector_sanity(context: Any, duet: sy.VirtualMachine) -> Non
 
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
-
     enc_v1_ptr.link_context(ctx_ptr)
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, [0, 1, 2, 3, 4])
 
 
@@ -65,13 +65,13 @@ def test_tenseal_ckksvector_add(context: Any, duet: sy.VirtualMachine) -> None:
     # add
     result_enc_ptr = enc_v1_ptr + enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # add inplace
     enc_v1_ptr += enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, expected)
 
 
@@ -94,13 +94,13 @@ def test_tenseal_ckksvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
     # sub
     result_enc_ptr = enc_v1_ptr - enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # sub inplace
     enc_v1_ptr -= enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, expected)
 
 
@@ -123,13 +123,13 @@ def test_tenseal_ckksvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
     # mul
     result_enc_ptr = enc_v1_ptr * enc_v2_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # mul inplace
     enc_v1_ptr *= enc_v2_ptr
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, expected)
 
 
@@ -149,19 +149,19 @@ def test_tenseal_ckksvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
     # iadd
     result_enc_ptr = enc_v1_ptr + v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # radd
     result_enc_ptr = v2 + enc_v1_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # iadd inplace
     enc_v1_ptr += v2
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, expected)
 
 
@@ -181,13 +181,13 @@ def test_tenseal_ckksvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
     # isub
     result_enc_ptr = enc_v1_ptr - v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # rsub
     result_enc_ptr = v2 - enc_v1_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [v2 - v1 for v1, v2 in zip(v1, v2)])
 
 
@@ -207,13 +207,13 @@ def ptest_tenseal_ckksvector_imul(context: Any, duet: sy.VirtualMachine) -> None
     # imul
     result_enc_ptr = enc_v1_ptr * v2
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
     # rmul
     result_enc_ptr = v2 * enc_v1_ptr
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, expected)
 
 
@@ -228,8 +228,7 @@ def test_tenseal_ckksvector_power(context: Any, duet: sy.VirtualMachine) -> None
 
     result_enc_ptr = enc_v1_ptr ** 3
 
-    result_dec_ptr = result_enc_ptr.decrypt()
-    result = result_dec_ptr.get()
+    result = decrypt(context, result_enc_ptr)
 
     _almost_equal(result, [0, 1, 8, 27, 64])
 
@@ -245,8 +244,7 @@ def test_tenseal_ckksvector_negation(context: Any, duet: sy.VirtualMachine) -> N
 
     result_enc_ptr = -enc_v1_ptr
 
-    result_dec_ptr = result_enc_ptr.decrypt()
-    result = result_dec_ptr.get()
+    result = decrypt(context, result_enc_ptr)
 
     _almost_equal(result, [-1, -2, -3, -4, -5])
 
@@ -262,7 +260,7 @@ def test_tenseal_ckksvector_square(context: Any, duet: sy.VirtualMachine) -> Non
 
     result_enc_ptr = enc_v1_ptr.square()
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [0, 1, 4, 9, 16])
 
 
@@ -277,7 +275,7 @@ def test_tenseal_ckksvector_sum(context: Any, duet: sy.VirtualMachine) -> None:
 
     result_enc_ptr = enc_v1_ptr.sum()
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [10])
 
 
@@ -293,7 +291,7 @@ def test_tenseal_ckksvector_polyval(context: Any, duet: sy.VirtualMachine) -> No
 
     result_enc_ptr = enc_v1_ptr.polyval(polynom)
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [-23, 49])
 
 
@@ -313,16 +311,15 @@ def test_tenseal_ckksvector_dot(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v2_ptr.link_context(ctx_ptr)
 
     result_enc_ptr2 = enc_v1_ptr.dot(enc_v2_ptr)
-    result_dec_ptr2 = result_enc_ptr2.decrypt()
-    result2 = result_dec_ptr2.get()
-    _almost_equal(result2, [10])
+
+    result = decrypt(context, result_enc_ptr2)
+    _almost_equal(result, [10])
 
     # inplace
 
     enc_v1_ptr.dot_(enc_v2_ptr)
-    result_dec_ptr2 = enc_v1_ptr.decrypt()
-    result2 = result_dec_ptr2.get()
-    _almost_equal(result2, [10])
+    result = decrypt(context, enc_v1_ptr)
+    _almost_equal(result, [10])
 
 
 @pytest.mark.vendor(lib="tenseal")
@@ -346,17 +343,17 @@ def test_tenseal_ckksvector_matmul(context: Any, duet: sy.VirtualMachine) -> Non
     # matmul
     result_enc_ptr = enc_v1_ptr.matmul(matrix)
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [157, -90, 153])
 
     # mm
     result_enc_ptr = enc_v1_ptr.mm(matrix)
 
-    result = result_enc_ptr.decrypt().get()
+    result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [157, -90, 153])
 
     # inplace
     enc_v1_ptr.mm_(matrix)
 
-    result = enc_v1_ptr.decrypt().get()
+    result = decrypt(context, enc_v1_ptr)
     _almost_equal(result, [157, -90, 153])
