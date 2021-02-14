@@ -14,7 +14,6 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet

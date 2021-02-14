@@ -21,7 +21,6 @@ from ...core.store.storeable_object import StorableObject
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
-from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
