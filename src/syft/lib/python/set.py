@@ -15,7 +15,6 @@ from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.set_pb2 import Set as Set_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet

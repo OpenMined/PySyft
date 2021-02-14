@@ -23,6 +23,7 @@ from ....io.address import Address
 class UnknownPrivateException(Exception):
     pass
 
+
 @bind_protobuf
 @final
 class ExceptionMessage(ImmediateSyftMessageWithoutReply):

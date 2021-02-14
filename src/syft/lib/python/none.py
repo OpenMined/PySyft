@@ -14,7 +14,6 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.none_pb2 import SyNone as None_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .util import SyPrimitiveRet

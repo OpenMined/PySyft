@@ -17,7 +17,6 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
-from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .none import SyNone
 from .primitive_factory import PrimitiveFactory
@@ -29,6 +28,7 @@ from .util import downcast
 
 class ListIterator(Iterator):
     pass
+
 
 @bind_protobuf
 class List(UserList, PyPrimitive):

@@ -15,7 +15,6 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
 from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
-from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
@@ -27,6 +26,7 @@ from .util import upcast
 
 class TupleIterator(Iterator):
     pass
+
 
 @bind_protobuf
 class Tuple(tuple, PyPrimitive):
@@ -124,7 +124,10 @@ class Tuple(tuple, PyPrimitive):
     @syft_decorator(typechecking=True)
     def _proto2object(proto: Tuple_PB) -> "Tuple":
         id_: UID = deserialize(blob=proto.id)
-        value = [upcast((deserialize(blob=element, from_bytes=True))) for element in proto.data]
+        value = [
+            upcast((deserialize(blob=element, from_bytes=True)))
+            for element in proto.data
+        ]
         new_list = Tuple(value)
         new_list._id = id_
         return new_list

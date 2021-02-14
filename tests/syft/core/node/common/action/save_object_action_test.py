@@ -11,15 +11,10 @@ from syft.core.store.storeable_object import StorableObject
 
 
 def test_save_object_action_serde() -> None:
-
-    uid = UID()
     obj = th.tensor([1, 2, 3])
     addr = Address(network=SpecificLocation(), device=SpecificLocation())
 
-    storable = StorableObject(
-                id=UID(),
-                data=obj
-            )
+    storable = StorableObject(id=UID(), data=obj)
     msg = SaveObjectAction(obj=storable, address=addr)
 
     blob = msg.serialize()

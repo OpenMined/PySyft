@@ -16,7 +16,6 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
-from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

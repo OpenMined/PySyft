@@ -17,7 +17,6 @@ from ....decorators import syft_decorator
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )
-from ....util import aggressive_set_attr
 from ..primitive_factory import PrimitiveFactory
 from ..primitive_interface import PyPrimitive
 from ..util import SyPrimitiveRet

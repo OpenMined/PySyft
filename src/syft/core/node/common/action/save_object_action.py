@@ -10,7 +10,6 @@ from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
-from ....common.group import VerifyAll
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import Serializable
 from ....common.serde.serializable import bind_protobuf
