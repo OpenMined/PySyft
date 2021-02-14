@@ -315,13 +315,14 @@ def test_basic() -> None:
     assert Int("1z141z5", 36) == 4294967297
 
 
+@pytest.mark.xfail
 def test_underscores() -> None:
     for lit in VALID_UNDERSCORE_LITERALS:
         if any(ch in lit for ch in ".eEjJ"):
             continue
         assert Int(lit, 0) == eval(lit)
         # TODO: check why is this not working
-        # assert Int(lit, 0), Int(lit.replace("_", "") == 0)
+        assert Int(lit, 0), Int(lit.replace("_", "") == 0)
     for lit in INVALID_UNDERSCORE_LITERALS:
         if any(ch in lit for ch in ".eEjJ"):
             continue
@@ -354,6 +355,7 @@ def test_no_args() -> None:
     assert Int() == 0
 
 
+@pytest.mark.xfail
 def test_keyword_args() -> None:
     # Test invoking Int() using keyword arguments.
     assert Int("100", base=2) == 4
@@ -362,10 +364,10 @@ def test_keyword_args() -> None:
     with pytest.raises(TypeError):
         Int(x="100", base=2)
     # TODO these should fail
-    # with pytest.raises(TypeError):
-    #     Int( base=10)
-    # with pytest.raises(TypeError):
-    #     Int( base=0)
+    with pytest.raises(TypeError):
+        Int(base=10)
+    with pytest.raises(TypeError):
+        Int(base=0)
 
 
 def test_Int_base_limits() -> None:
@@ -426,6 +428,7 @@ def test_string_float() -> None:
         Int("1.2")
 
 
+@pytest.mark.xfail
 def test_Intconversion() -> None:
     # Test __Int__()
     class ClassicMissingMethods:
@@ -445,7 +448,7 @@ def test_Intconversion() -> None:
             return 42
 
     # TODO this should work
-    # assert Int(Foo0()) == 42
+    assert Int(Foo0()) == 42
 
     class Classic:
         pass
@@ -460,14 +463,14 @@ def test_Intconversion() -> None:
                 return -12
 
         # TODO this should work
-        # assert Int(IntOverridesTrunc()) == 42
+        assert Int(IntOverridesTrunc()) == 42
 
         class JustTrunc(base):
             def __trunc__(self):
                 return 42
 
         # TODO this should work
-        # assert Int(JustTrunc()) == 42
+        assert Int(JustTrunc()) == 42
 
         class ExceptionalTrunc(base):
             def __trunc__(self):
@@ -487,7 +490,7 @@ def test_Intconversion() -> None:
                     return Index()
 
             # TODO this should work
-            # assert Int(TruncReturnsNonInt()) == 42
+            assert Int(TruncReturnsNonInt()) == 42
 
             class Intable(trunc_result_base):
                 def __Int__(self):
@@ -498,7 +501,7 @@ def test_Intconversion() -> None:
                     return Intable()
 
             # TODO this should work
-            # assert Int(TruncReturnsNonInt()) == 42
+            assert Int(TruncReturnsNonInt()) == 42
 
             class NonIntegral(trunc_result_base):
                 def __trunc__(self):
@@ -545,6 +548,7 @@ def test_Int_subclass_with_index() -> None:
     assert Int(BadIndex()) == 0
 
 
+@pytest.mark.xfail
 def test_Int_subclass_with_Int() -> None:
     class MyInt(Int):
         def __Int__(self):
@@ -555,17 +559,18 @@ def test_Int_subclass_with_Int() -> None:
             return 42.0
 
     # TODO this should work
-    # my_Int = MyInt(7)
-    # assert Int(my_Int) == 7
-    # assert Int(my_Int) == 42
+    my_Int = MyInt(7)
+    assert Int(my_Int) == 7
+    assert Int(my_Int) == 42
 
     # TODO this should work
-    # my_Int = BadInt(7)
-    # assert Int(my_Int) == 7
-    # with pytest.raises(TypeError):
-    #     Int( my_Int)
+    my_Int = BadInt(7)
+    assert Int(my_Int) == 7
+    with pytest.raises(TypeError):
+        Int(my_Int)
 
 
+@pytest.mark.xfail
 def test_Int_returns_Int_subclass() -> None:
     class BadIndex:
         def __index__(self):
@@ -596,30 +601,30 @@ def test_Int_returns_Int_subclass() -> None:
             return True
 
     # TODO: this should work
-    # bad_Int = BadIndex()
-    # with pytest.raises(DeprecationWarning):
-    #     n = Int(bad_Int)
-    # assert Int(n) == 1
+    bad_Int = BadIndex()
+    with pytest.raises(DeprecationWarning):
+        n = Int(bad_Int)
+    assert Int(n) == 1
     # this is not going to work
-    # assert type(n) is Int
+    assert type(n) is Int
 
     bad_Int = BadIndex2()
     n = Int(bad_Int)
     assert Int(n) == 0
 
     # TODO: this should work
-    # bad_Int = BadInt()
-    # with pytest.raises(DeprecationWarning):
-    #     n = Int(bad_Int)
-    # assert Int(n) == 1
+    bad_Int = BadInt()
+    with pytest.raises(DeprecationWarning):
+        n = Int(bad_Int)
+    assert Int(n) == 1
     # not going to work
     # self.assertIs(type(n), Int)
 
     # TODO: this should work
-    # bad_Int = BadInt2()
-    # with pytest.raises(DeprecationWarning):
-    #     n = Int(bad_Int)
-    # assert Int(n) == 1
+    bad_Int = BadInt2()
+    with pytest.raises(DeprecationWarning):
+        n = Int(bad_Int)
+    assert Int(n) == 1
     # not going to work
     # self.assertIs(type(n), Int)
 
