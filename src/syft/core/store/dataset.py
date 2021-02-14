@@ -5,6 +5,7 @@ from typing import Optional
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from loguru import logger
 
 # syft absolute
 import syft as sy
@@ -14,10 +15,12 @@ from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
+@bind_protobuf
 class Dataset(Serializable):
     """
     Dataset is a wrapper over a collection of Serializable objects.
