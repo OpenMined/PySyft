@@ -54,9 +54,12 @@ def _deserialize(
         blob.ParseFromString(data_message.content)  # type: ignore
 
     try:
+        print()
+        print("-" * 10)
+        print(f"type(blob)={type(blob)}")
         # lets try to lookup the type we are deserializing
         obj_type = type(blob).schema2type  # type: ignore
-
+        print("+" * 10)
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
     except AttributeError:
