@@ -30,7 +30,11 @@ def duet() -> Any:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_send(context: Any) -> None:
-    """Test sending a TenSEAL context"""
+    """Test sending a TenSEAL context
+
+    Args:
+        context: TenSEAL context to test
+    """
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
@@ -44,7 +48,11 @@ def test_context_send(context: Any) -> None:
 @pytest.mark.vendor(lib="tenseal")
 @pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
 def test_scheme_send(scheme: Any) -> None:
-    """Test sending a TenSEAL scheme"""
+    """Test sending a TenSEAL scheme
+
+    Args:
+        scheme: TenSEAL scheme to test
+    """
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
