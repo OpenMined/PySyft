@@ -14,22 +14,16 @@ to be universal across all Syft languages (javascript, kotlin, swift, etc.).
 Syft "python" includes all functionality which by its very nature cannot be
 truly polyglot. Syft "core" functionality includes the following modules:
 
-* :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly
-control.
-* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Node
-classes.
+* :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly control.
+* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Node classes.
 * :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Node
-* :py:mod:`syft.core.store` - Server side API for referring to object storage on a node
-(things pointers point to)
+* :py:mod:`syft.core.store` - Server side API for referring to object storage on a node (things pointers point to)
 
 Syft "python" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library common syntax tree using an
-allowlist list of methods
-* :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive
-use of kwargs.
-* :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for
-supported Python libs.
+* :py:mod:`syft.ast` - code generates external library common syntax tree using an allowlist list of methods
+* :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive use of kwargs.
+* :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for supported Python libs.
 
     IMPORTANT: syft.core should be very careful when importing functionality from outside of syft
     core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)

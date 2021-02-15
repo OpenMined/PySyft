@@ -24,4 +24,3 @@ syft.core.node.network.network module
    :members:
    :undoc-members:
    :show-inheritance:
-

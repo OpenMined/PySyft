@@ -1,29 +1,29 @@
 """
 WebRTC connection representation
 
- This class aims to represent a generic and
+This class aims to represent a generic and
 asynchronous peer-to-peer WebRTC connection
 based in Syft BidirectionalConnection Interface.
 
- This connection interface provides a full-duplex
-The channel, allowing this class to work as a client
+This connection interface provides a full-duplex
+channel, allowing this class to work as a client
 and as a server at the same time.
 
- This class is useful to send/compute data
+This class is useful to send/compute data
 using a p2p channel without the need
 of deploying servers on cloud providers
 or setting firewalls rules  in order
 turn this process "visible" to the world.
 
 How does it work?
-    The WebRTC (Web Real-Time Communication)
+The WebRTC (Web Real-Time Communication)
 is a protocol that uses a full-duplex channel
 (same API as WebSockets), in order to provide
 a high-quality RTC, and NAT traversal
 networking technique in order to be able
 to reach private addresses.
 
-    The WebRTC API includes no provisions
+The WebRTC API includes no provisions
 for signaling, the applications are in charge
 of managing how the connections will be established.
 In our use case, we'll be using ICE (Interactive
@@ -47,11 +47,11 @@ Signaling Steps:
 
     3 - [PULL] The PySyft Peer (Answer) will send a message to
     the Signaling Server checking if the desired node pushed
-    any offer msg in his queue.
+    any offer msg in their queue.
 
     4 - The Signaling Server will check the existence of offer messages addressed
     to the PySyft Peer (Answer) made by the desired node address (PySyft.Address).
-    If that's the case, so the offer message will be sent to the peer as a response.
+    If that's the case, then the offer message will be sent to the peer as a response.
 
     5 - [PUSH] The PySyft Peer (Answer) will process the offer message
     in order to know the network address of the other peer.
@@ -177,20 +177,19 @@ class WebRTCConnection(BidirectionalConnection):
             # Keep send buffer busy with chunks
             self.channel.bufferedAmountLowThreshold = 16 * DC_MAX_CHUNK_SIZE
 
-            # This method will be called by as a callback
-            # function by the aioRTC lib when the when
-            # the connection opens.
+            # This method will be called by aioRTC lib as a callback
+            # function when the connection opens.
             @self.channel.on("open")
             async def on_open() -> None:  # type : ignore
                 self.__producer_task = asyncio.ensure_future(self.producer())
 
             chunked_msg = b""
             chunked_msg_started = False
+
             # This method is the aioRTC "consumer" task
             # and will be running as long as connection remains.
             # At this point we're just setting the method behavior
             # It'll start running after the connection opens.
-
             @self.channel.on("message")
             async def on_message(message: bytes) -> None:
                 nonlocal chunked_msg, chunked_msg_started
@@ -304,18 +303,19 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def producer(self) -> None:
-        # Async task to send messages to the other side.
-        # These messages will be enqueued by PySyft Node Clients
-        # by using PySyft routes and ClientConnection's inheritance.
+        """
+        Async task to send messages to the other side.
+        These messages will be enqueued by PySyft Node Clients
+        by using PySyft routes and ClientConnection's inheritance.
+        """
         try:
             while True:
-                # If self.producer_pool is empty
-                # give up task queue priority, giving
-                # computing time to the next task.
+                # If self.producer_pool is empty, give up task queue priority
+                # and give computing time to the next task.
                 msg = await self.producer_pool.get()
 
                 await asyncio.sleep(message_cooldown)
-                # If self.producer_pool.get() returned a message
+                # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
                 data = msg.to_bytes()
                 data_len = len(data)
@@ -377,12 +377,12 @@ class WebRTCConnection(BidirectionalConnection):
 
     @syft_decorator(typechecking=True)
     async def consumer(self, msg: bytes) -> None:
+        """
+        Async task to receive/process messages sent by the other side.
+        These messages will be sent by the other peer as a service requests or responses
+        for requests made by this connection previously (ImmediateSyftMessageWithReply).
+        """
         try:
-            # Async task to receive/process messages sent by the other side.
-            # These messages will be sent by the other peer
-            # as a service requests or responses for requests made by
-            # this connection previously (ImmediateSyftMessageWithReply).
-
             # Deserialize the received message
             _msg = _deserialize(blob=msg, from_bytes=True)
 
@@ -414,6 +414,7 @@ class WebRTCConnection(BidirectionalConnection):
             # If it's true, the message will have the client's address as destination.
             else:
                 await self.consumer_pool.put(_msg)
+
         except Exception as e:
             traceback_and_raise(e)
 

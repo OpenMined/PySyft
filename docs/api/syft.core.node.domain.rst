@@ -32,4 +32,3 @@ syft.core.node.domain.domain module
    :members:
    :undoc-members:
    :show-inheritance:
-

@@ -41,6 +41,8 @@ def is_static_method(klass: type, attr: str) -> bool:
 
     Example:
 
+    .. code-block::
+
         class MyClass(object):
             @staticmethod
             def method():
@@ -78,7 +80,7 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
-    replace each original constructor (th.Tensor) with on we implement (torch_.UppercaseTensorConstructor), we also
+    replace each original constructor (th.Tensor) with on we implement (torch.UppercaseTensorConstructor), we also
     need to make sure that our new constructor has any static methods which were previously stored on th.Tensor.
     Otherwise, the library might look for them there, not find them, and then trigger an error.
 
@@ -100,9 +102,9 @@ def get_original_constructor_name(object_name: str) -> str:
 
     For each custom constructor, we move the original constructor to a consistent location relative to
     the original constructor so that each custom constructor automatically knows where to find the original
-     method it is overloading. Namely, we move the original constructor to a different attr within the same
-      module as the original constructor. This method specifies the naming convention that we use to name
-      the original constructor when it is moved.
+    method it is overloading. Namely, we move the original constructor to a different attr within the same
+    module as the original constructor. This method specifies the naming convention that we use to name
+    the original constructor when it is moved.
 
       Args:
           object_name (str): the original constructor's original name

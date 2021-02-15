@@ -124,7 +124,6 @@ class Dataset(Serializable):
         # Step 2: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
 
-        # import pdb; pdb.set_trace()
         # Step 3: Serialize data to protobuf and pack into proto
         if hasattr(self, "data"):
             if self.data is not None:

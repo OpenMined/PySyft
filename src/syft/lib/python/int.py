@@ -29,9 +29,9 @@ class Int(int, PyPrimitive):
             value = 0
 
         if isinstance(value, str):
-            return int.__new__(cls, value, base)  # type: ignore
+            return int.__new__(cls, value, base)
 
-        return int.__new__(cls, value)  # type: ignore
+        return int.__new__(cls, value)
 
     @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None):
