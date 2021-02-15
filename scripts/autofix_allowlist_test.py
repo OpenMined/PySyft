@@ -108,7 +108,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m slow -n auto -p no:benchmark --no-cov > /dev/null")
+    os.system("pytest -m slow -n auto -p no:benchmark > /dev/null")
     print("Slow test done.")
     print()
 
