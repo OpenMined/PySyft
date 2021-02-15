@@ -75,6 +75,11 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
 
+
+# SECTION - Module methods
+allowlist["torch.set_grad_enabled"] = "syft.lib.python._SyNone"
+allowlist["torch.zeros"] = "torch.Tensor"
+
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
@@ -1019,9 +1024,11 @@ allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 # --------------------------------------------------------------------------------------
 # allowlist["torch.layout"] = "torch.layout"  # requires protobuf serialization
 # allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
-# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
-# allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
-# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
+allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
+allowlist["torch.Size.__len__"] = "syft.lib.python.Int"
+allowlist["torch.Size.__iter__"] = "syft.lib.python.Iterator"
+allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
+allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
