@@ -32,10 +32,11 @@ def get_subclasses(obj_type: type) -> List[type]:
     of those sub-classes etc. returning a full list of descendants of a class in the inheritance
     hierarchy.
 
-    :param obj_type: the type we want to look for sub-classes of
-    :type type:
-    :returns: the list of subclasses of obj_type:
-    :rtype: List[type]
+    Args:
+        obj_type: the type we want to look for sub-classes of
+
+    Returns:
+        the list of subclasses of obj_type
 
     """
 
@@ -53,12 +54,12 @@ def index_modules(a_dict: object, keys: List[str]) -> object:
     This is the recursive inner function of index_syft_by_module_name.
     See that method for a full description.
 
-    :param a_dict: a module we're traversing
-    :type a_dict: object
-    :param keys: the list of string attributes we're using to traverse the module
-    :type keys: List[str]
-    :returns: a reference to the final object
-    :rtype: object
+    Args:
+        a_dict: a module we're traversing
+        keys: the list of string attributes we're using to traverse the module
+
+    Returns:
+        a reference to the final object
 
     """
 
@@ -77,10 +78,11 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     so that we can have generic protobuf objects which just have a string
     representation of the specific object it is meant to deserialize to.
 
-    :param fully_qualified_name: the name of a module, class, or function
-    :type fully_qualified_name: str
-    :returns: a reference to the actual object at that string path
-    :rtype: object
+    Args:
+        fully_qualified_name: the name in str of a module, class, or function
+
+    Returns:
+        a reference to the actual object at that string path
 
     """
 
@@ -99,10 +101,11 @@ def get_fully_qualified_name(obj: object) -> str:
     is the current fully qualified path and name for the SyftMessage
     object.
 
-    :param obj: the object we want to get the name of
-    :type obj: object
-    :returns: the full path and name of the object
-    :rtype: str
+    Args:
+        obj: the object we want to get the name of
+
+    Returns:
+        the full path and name of the object
 
     """
 
@@ -116,8 +119,14 @@ def get_fully_qualified_name(obj: object) -> str:
 
 @syft_decorator(typechecking=True)
 def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
-    """Different objects prefer different types of monkeypatching - try them all"""
+    """Different objects prefer different types of monkeypatching - try them all
 
+    Args:
+        obj: object whose attribute has to be set
+        name: attribute name
+        attr: value given to the attribute
+
+    """
     try:
         setattr(obj, name, attr)
     except Exception:
