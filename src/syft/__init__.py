@@ -91,3 +91,5 @@ finally:
 sys.path.append(str(Path(__file__)))
 
 logger.add(sink=sys.stderr, level="CRITICAL")
+
+client_cache = {}
