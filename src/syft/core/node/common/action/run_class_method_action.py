@@ -190,13 +190,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
-        # TODO: check if inherit_tags replaces this
-        # if method_name == "__len__":
-        #     if isinstance(resolved_self, StorableObject):
-        #         resolved_self.read_permissions = result_read_permissions
-        #         if resolved_self.tags:
-        #             result.tags = resolved_self.tags + ["__len__"]
-
         inherit_tags(
             attr_path_and_name=self.path,
             result=result,

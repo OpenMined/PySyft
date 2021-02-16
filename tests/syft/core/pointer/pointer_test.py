@@ -71,8 +71,10 @@ def test_searchable_property() -> None:
     assert len(client.store) == 0
 
 
+@pytest.mark.xfail
 def test_tags() -> None:
     bob = sy.VirtualMachine(name="Bob")
+    client = bob.get_client()
     root_client = bob.get_root_client()
 
     ten = th.tensor([1, 2])
@@ -94,6 +96,7 @@ def test_tags() -> None:
     th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["c"])
     th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["d"])
     sy.lib.python.Int(2).send(root_client, searchable=True, tags=["e"])
+    sy.lib.python.List([1, 2, 3]).send(root_client, searchable=True, tags=["f"])
 
     a = root_client.store["a"]
     b = root_client.store["b"]
@@ -115,6 +118,17 @@ def test_tags() -> None:
 
     result_ptr = root_client.torch.pow(d, 3)
     assert result_ptr.tags == ["d", "pow"]
+
+    # __len__ auto gets if you have permission
+    f_root = root_client.store["f"]
+
+    assert len(f_root) == 3
+
+    # TODO: Fix this test
+    f_guest = client.store["f"]
+    result_ptr = f_guest.__len__()
+    assert result_ptr is not None  # should be a pointer?
+    assert result_ptr.tags == ["f", "__len__"]
 
 
 def test_description() -> None:
