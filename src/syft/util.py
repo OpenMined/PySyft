@@ -537,7 +537,6 @@ def random_name() -> str:
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
 
 
-@syft_decorator(typechecking=True)
 def inherit_tags(
     attr_path_and_name: str,
     result: object,
