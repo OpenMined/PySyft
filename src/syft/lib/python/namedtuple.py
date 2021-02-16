@@ -15,6 +15,7 @@ from ...core.common.serde.serialize import _serialize
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
 from ...generate_wrapper import GenerateWrapper
+from ...lib.util import full_name_with_name
 from ...lib.util import full_name_with_qualname
 from ...proto.lib.torch.valuesindices_pb2 import ValuesIndicesProto as ValuesIndices_PB
 from ..torch.tensor_util import protobuf_tensor_deserializer
@@ -50,7 +51,7 @@ ValuesIndices = namedtuple("ValuesIndices", all_attrs)  # type: ignore
 
 
 def object2proto(obj: object) -> ValuesIndices_PB:
-    obj_type = full_name_with_qualname(klass=type(obj))
+    obj_type = full_name_with_name(klass=obj.serializable_wrapper_type)  # type: ignore
     keys = get_keys(klass_name=obj_type)
 
     values = []
@@ -153,8 +154,8 @@ def make_namedtuple(
     description: str = "",
 ) -> Any:
     module_parts = obj_type.split(".")
-    klass = module_parts.pop()
-    module_name = ".".join(module_parts)
+    klass = module_parts.pop().replace("Wrapper", "")
+    module_name = ".".join(module_parts[2:])
     keys = get_keys(klass_name=obj_type)
     tuple_klass = namedtuple(  # type: ignore
         klass, (*keys, "tags", "description", "id")
