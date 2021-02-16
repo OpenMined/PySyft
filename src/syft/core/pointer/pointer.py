@@ -98,7 +98,6 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # syft relative
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...logger import debug
 from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
@@ -244,7 +243,6 @@ class Pointer(AbstractPointer):
 
         return None
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
 

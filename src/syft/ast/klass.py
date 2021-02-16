@@ -29,6 +29,7 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
+from ..util import inherit_tags
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
@@ -80,6 +81,13 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
         return result
 
     return run_class_method
@@ -123,6 +131,14 @@ def generate_class_property_function(
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
+        if action == PropertyActions.GET:
+            inherit_tags(
+                attr_path_and_name=attr_path_and_name,
+                result=result,
+                self_obj=__self,
+                args=args,
+                kwargs=kwargs,
+            )
         return result
 
     return class_property_function

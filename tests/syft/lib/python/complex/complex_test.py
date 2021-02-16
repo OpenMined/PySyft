@@ -307,6 +307,7 @@ class ComplexTest(unittest.TestCase):
     def test_conjugate(self):
         self.assertClose(Complex(5.3, 9.8).conjugate(), 5.3 - 9.8j)
 
+    @pytest.mark.slow
     def test_constructor(self):
         class OS:
             def __init__(self, value):
