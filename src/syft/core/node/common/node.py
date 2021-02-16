@@ -22,7 +22,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators import syft_decorator
 from ....lib import lib_ast
 from ....logger import critical
 from ....logger import debug
@@ -93,7 +92,6 @@ class Node(AbstractNode):
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,
@@ -264,7 +262,6 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "📍"
 
-    @syft_decorator(typechecking=True)
     def get_client(self, routes: List[Route] = []) -> ClientT:
         if not len(routes):
             conn_client = create_virtual_connection(node=self)
@@ -284,14 +281,15 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    @syft_decorator(typechecking=True)
     def get_root_client(self, routes: List[Route] = []) -> ClientT:
-        client = self.get_client(routes=routes)
+        client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
 
     def get_metadata_for_client(self) -> Metadata:
-        return Metadata(name=self.name, id=self.id, node=self.target_id)
+        return Metadata(
+            name=self.name if self.name else "", id=self.id, node=self.target_id
+        )
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -330,11 +328,9 @@ class Node(AbstractNode):
             debug(f"> Node {self.pprint} has no children")
             return []
 
-    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -389,17 +385,16 @@ class Node(AbstractNode):
         debug(output)
         return res_msg
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         debug(
             f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
         )
+
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
         try:
-            self.process_message(
-                msg=msg, router=self.immediate_msg_without_reply_router
-            )
+            pass
         except Exception as e:
             error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
@@ -445,7 +440,6 @@ class Node(AbstractNode):
             #     )
         return None
 
-    @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
@@ -495,16 +489,15 @@ class Node(AbstractNode):
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
             if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
         return None
 
-    @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
             traceback_and_raise(
@@ -514,7 +507,6 @@ class Node(AbstractNode):
                 )
             )
 
-    @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
         """In this method, we set each message type to the appropriate
         service for this node. It's important to note that one message type
