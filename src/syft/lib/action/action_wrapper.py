@@ -7,8 +7,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
 import syft
-from syft.core.node.common.action.common import Action
-from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
+# from syft.core.node.common.action.common import Action
+# from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
+from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
+from syft.core.node.common.plan.plan import Plan
 
 # syft relative
 from ...core.common.uid import UID
@@ -17,7 +19,7 @@ from ...logger import warning
 from ...util import aggressive_set_attr
 
 
-class ActionWrapper(StorableObject):
+class PlanWrapper(StorableObject):
     def __init__(self, value: object):
         super().__init__(
             data=value,
@@ -27,36 +29,20 @@ class ActionWrapper(StorableObject):
         )
         self.value = value
 
-    def _data_object2proto(self) -> Action_PB:
-        import ipdb
-        ipdb.set_trace()
-        proto = self.value._object2proto()
-        return proto
+    def _data_object2proto(self) -> Plan_PB:
+        return self.value._object2proto()
 
     @staticmethod
-    def _data_proto2object(proto: Action_PB) -> Action:
-        # obj = syft.deserialize(blob=proto)
-        return Action._proto2object(proto)
+    def _data_proto2object(proto: Plan_PB) -> Plan:
+        return Plan._proto2object(proto)
 
     @staticmethod
     def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Action_PB
+        return Plan_PB
 
     @staticmethod
     def get_wrapped_type() -> type:
-        return Action
-
-    # @staticmethod
-    # def construct_new_object(
-    #     id: UID,
-    #     data: StorableObject,
-    #     description: Optional[str],
-    #     tags: Optional[List[str]],
-    # ) -> StorableObject:
-    #     data.id = id
-    #     data.tags = tags
-    #     data.description = description
-    #     return data
+        return Plan
 
 
-aggressive_set_attr(obj=Action, name="serializable_wrapper_type", attr=ActionWrapper)
+aggressive_set_attr(obj=Plan, name="serializable_wrapper_type", attr=PlanWrapper)
