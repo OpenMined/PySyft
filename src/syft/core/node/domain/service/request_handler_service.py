@@ -11,7 +11,6 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-from .....decorators import syft_decorator
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
@@ -26,6 +25,7 @@ from .....proto.core.node.domain.service.request_handler_message_pb2 import (
 from .....proto.core.node.domain.service.request_handler_message_pb2 import (
     UpdateRequestHandlerMessage as UpdateRequestHandlerMessage_PB,
 )
+from .....util import traceback_and_raise
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
@@ -46,7 +46,6 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         self.handler = handler
         self.keep = keep
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRequestHandlerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -121,7 +120,6 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestHandlersMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -197,7 +195,6 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.handlers = handlers
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestHandlersResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -276,15 +273,21 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
 
 class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [UpdateRequestHandlerMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: UpdateRequestHandlerMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: UpdateRequestHandlerMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
         if verify_key == node.root_verify_key:
             replacement_handlers = []
 
@@ -327,15 +330,22 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
 
 class GetAllRequestHandlersService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [GetAllRequestHandlersMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: GetAllRequestHandlersMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: GetAllRequestHandlersMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestHandlersResponseMessage:
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
 
         handlers: List[DictType[str, Any]] = []
         if verify_key == node.root_verify_key:

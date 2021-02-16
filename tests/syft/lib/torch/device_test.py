@@ -19,6 +19,7 @@ def test_device() -> None:
 
 def test_device_init() -> None:
     bob = sy.VirtualMachine(name="Bob")
+    assert bob.name == "Bob"
     client = bob.get_client()
     torch = client.torch
 
