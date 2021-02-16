@@ -13,7 +13,6 @@ from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.proto.grid.messages.association_messages_pb2 import (
     DeleteAssociationRequestMessage as DeleteAssociationRequestMessage_PB,
 )
@@ -64,7 +63,6 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SendAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -136,7 +134,6 @@ class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SendAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -207,7 +204,6 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ReceiveAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -279,7 +275,6 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ReceiveAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -350,7 +345,6 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RespondAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -422,7 +416,6 @@ class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RespondAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -493,7 +486,6 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -565,7 +557,6 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -636,7 +627,6 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAssociationRequestsMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -708,7 +698,6 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAssociationRequestsResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -779,7 +768,6 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -851,7 +839,6 @@ class DeleteAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
