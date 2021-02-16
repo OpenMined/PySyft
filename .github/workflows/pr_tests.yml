@@ -262,7 +262,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           name: OpenMined/PyGrid
-          ref: pygrid_0.4.0
+          ref: "pygrid_0.4.0"
           path: pygrid
 
       - name: Test PyGrid
