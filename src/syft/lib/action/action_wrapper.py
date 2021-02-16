@@ -28,6 +28,8 @@ class ActionWrapper(StorableObject):
         self.value = value
 
     def _data_object2proto(self) -> Action_PB:
+        import ipdb
+        ipdb.set_trace()
         proto = self.value._object2proto()
         return proto
 
