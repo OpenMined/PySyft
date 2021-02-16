@@ -1,5 +1,6 @@
 # stdlib
 from random import randint
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Union
@@ -10,18 +11,33 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft absolute
-# breaking convention here because index_globals needs
-# the full syft name to be present.
 import syft
 
 # syft relative
-from .decorators.syft_decorator_impl import syft_decorator
 from .logger import critical
 from .logger import debug
 from .logger import error
+from .logger import traceback_and_raise
 
 
-@syft_decorator(typechecking=True)
+def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
+    if isinstance(_object, _type) or (optional and (_object is None)):
+        return _object
+
+    traceback_and_raise(
+        f"Object {_object} should've been of type {_type}, not {_object}."
+    )
+
+
+def validate_field(_object: object, _field: str) -> Any:
+    object = getattr(_object, _field, None)
+
+    if object:
+        return object
+
+    traceback_and_raise(f"Object {_object} has no {_field} field set.")
+
+
 def get_subclasses(obj_type: type) -> List[type]:
     """Recursively generate the list of all classes within the sub-tree of an object
 
@@ -49,7 +65,6 @@ def get_subclasses(obj_type: type) -> List[type]:
     return classes
 
 
-@syft_decorator(typechecking=True)
 def index_modules(a_dict: object, keys: List[str]) -> object:
     """Recursively find a syft module from its path
 
@@ -70,7 +85,6 @@ def index_modules(a_dict: object, keys: List[str]) -> object:
     return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
 
 
-@syft_decorator(typechecking=True)
 def index_syft_by_module_name(fully_qualified_name: str) -> object:
     """Look up a Syft class/module/function from full path and name
 
@@ -94,7 +108,6 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
-@syft_decorator(typechecking=True)
 def get_fully_qualified_name(obj: object) -> str:
     """Return the full path and name of a class
 
@@ -119,7 +132,6 @@ def get_fully_qualified_name(obj: object) -> str:
     return fqn
 
 
-@syft_decorator(typechecking=True)
 def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """Different objects prefer different types of monkeypatching - try them all
 
@@ -175,7 +187,6 @@ def key_emoji(key: object) -> str:
     return "ALL"
 
 
-@syft_decorator(typechecking=True)
 def char_emoji(hex_chars: str) -> str:
     base = ord("\U0001F642")
     hex_base = ord("0")
@@ -539,7 +550,8 @@ right_name = [
 
 
 # we could replace these with some favorite AI / Privacy researches and engineers?
-@syft_decorator(typechecking=True)
+
+
 def random_name() -> str:
     left_i = randint(0, len(left_name) - 1)
     right_i = randint(0, len(right_name) - 1)

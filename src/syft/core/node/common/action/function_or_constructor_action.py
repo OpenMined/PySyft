@@ -12,7 +12,6 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
@@ -88,7 +87,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -106,7 +105,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -153,7 +152,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
         """Returns a protobuf serialization of self.
 

@@ -5,8 +5,8 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
+from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
@@ -31,7 +31,6 @@ class SpecificLocation(ObjectWithID, Location):
         output = f"{self.icon} {self.name} ({self.class_name})@{self.id.emoji()}"
         return output
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SpecificLocation_PB:
         """Returns a protobuf serialization of self.
 
@@ -63,8 +62,8 @@ class SpecificLocation(ObjectWithID, Location):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
-        return SpecificLocation(id=_deserialize(blob=proto.id), name=proto.name)
+        _id = validate_type(_deserialize(blob=proto.id), UID, optional=True)
+        return SpecificLocation(_id, name=proto.name)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
