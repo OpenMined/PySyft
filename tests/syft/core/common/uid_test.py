@@ -41,20 +41,6 @@ def test_uid_creates_value_if_try_to_init_none() -> None:
     assert isinstance(uid.value, uuid_type)
 
 
-def test_uid_raises_typeerror_if_string_id_attempted() -> None:
-    """Tests that the UID class will raise an error if you try to init with a string."""
-
-    with pytest.raises(TypeError):
-        _ = UID(value="a string id")
-
-
-def test_uid_raises_typeerror_if_int_id_attempted() -> None:
-    """Tests that the UID class will raise an error if you try to init with a string."""
-
-    with pytest.raises(TypeError):
-        _ = UID(value=123)
-
-
 # --------------------- CLASS METHODS ---------------------
 
 

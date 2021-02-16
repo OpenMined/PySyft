@@ -39,7 +39,6 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...logger import error
 from ...logger import traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
@@ -162,7 +161,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def notify(self) -> None:
         try:
             # Enqueue Pull/Push async tasks
@@ -183,7 +181,6 @@ class Duet(DomainClient):
     def close(self) -> None:
         self.connection.close()
 
-    @syft_decorator(typechecking=True)
     async def push(self) -> None:
         # This task is responsible for pushing offer/answer messages.
         try:
@@ -203,7 +200,6 @@ class Duet(DomainClient):
             self._available = False
             self._exception: Exception = e
 
-    @syft_decorator(typechecking=True)
     async def pull(self) -> None:
         try:
             while self._available:
@@ -216,15 +212,12 @@ class Duet(DomainClient):
                 # send it to the signaling server.
                 _response = self.signaling_client.send_immediate_msg_with_reply(msg=msg)
 
-                task = None
                 # If Signaling Offer Message was found
                 if isinstance(_response, SignalingOfferMessage):
-                    task = self._send_answer
-
+                    await self._send_answer(msg=_response)
                 # If Signaling Answer Message was found
                 elif isinstance(_response, SignalingAnswerMessage):
-                    task = self._ack
-
+                    await self._ack(msg=_response)
                 # If LoopBack Message it was a loopback request
                 elif isinstance(_response, InvalidLoopBackRequest):
                     traceback_and_raise(
@@ -238,14 +231,10 @@ class Duet(DomainClient):
                     # Just enqueue the request to be processed later.
                     self._pull_msg_queue.put_nowait(msg)
 
-                # If we have tasks to execute
-                if task:
-                    # Execute task using the received message.
-                    await task(msg=_response)
-
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
                 await asyncio.sleep(0.5)
+
         except Exception as e:
             log = f"Got an exception in Duet pull. {e}"
             error(log)
@@ -254,7 +243,6 @@ class Duet(DomainClient):
             self._available = False
             self._exception = e
 
-    @syft_decorator(typechecking=True)
     def send_offer(self, target_id: str) -> None:
         """Starts a new signaling process by creating a new
         offer message and pushing it to the Signaling Server."""
@@ -287,7 +275,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _send_answer(self, msg: SignalingOfferMessage) -> None:
         """Process SignalingOfferMessage and create a new
         SignalingAnswerMessage as a response"""
@@ -314,7 +301,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _ack(self, msg: SignalingAnswerMessage) -> None:
         """Last signaling message, stores remote Node
         metadata and updates target's remote address"""
@@ -328,7 +314,6 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def _update_availability(self) -> bool:
         """Method used to check if the signaling process is over.
         :return: Boolean flag, True if it's NOT over, and False if it's over.
