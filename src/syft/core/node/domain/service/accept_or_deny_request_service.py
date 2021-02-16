@@ -15,12 +15,13 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import debug
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
     AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
 )
 from .....util import key_emoji
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
@@ -44,7 +45,6 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         self.accept = accept
         self.request_id = request_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> AcceptOrDenyRequestMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -115,11 +115,24 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
 class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: AcceptOrDenyRequestMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ImmediateSyftMessageWithoutReply,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         debug((f"> Processing AcceptOrDenyRequestService on {node.pprint}"))
-        if msg.accept:
-            request_id = msg.request_id
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process AcceptOrDenyRequestService without a "
+                    "specified verification key"
+                )
+            )
+        _msg: AcceptOrDenyRequestMessage = validate_type(
+            msg, AcceptOrDenyRequestMessage
+        )
+        if _msg.accept:
+            request_id = _msg.request_id
             for req in node.requests:
                 if request_id == req.id:
                     # you must be a root user to accept a request
@@ -138,7 +151,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         return None
 
         else:
-            request_id = msg.request_id
+            request_id = _msg.request_id
             for req in node.requests:
                 if request_id == req.id:
                     # if you're a root user you can disable a request
