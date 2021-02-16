@@ -13,7 +13,6 @@ from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.proto.grid.messages.role_messages_pb2 import (
     CreateRoleMessage as CreateRoleMessage_PB,
 )
@@ -58,7 +57,6 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateRoleMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -130,7 +128,6 @@ class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateRoleResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -201,7 +198,6 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRoleMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -273,7 +269,6 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRoleResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -344,7 +339,6 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRolesMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -416,7 +410,6 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRolesResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -487,7 +480,6 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRoleMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -559,7 +551,6 @@ class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRoleResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -630,7 +621,6 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteRoleMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -702,7 +692,6 @@ class DeleteRoleResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteRoleResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

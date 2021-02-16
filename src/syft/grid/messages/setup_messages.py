@@ -13,7 +13,6 @@ from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.proto.grid.messages.setup_messages_pb2 import (
     CreateInitialSetUpMessage as CreateInitialSetUpMessage_PB,
 )
@@ -40,7 +39,6 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetSetUpMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -112,7 +110,6 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetSetUpResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -183,7 +180,6 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateInitialSetUpMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -255,7 +251,6 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateInitialSetUpResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

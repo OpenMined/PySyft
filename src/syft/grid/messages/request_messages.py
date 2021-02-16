@@ -13,7 +13,6 @@ from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.proto.grid.messages.request_messages_pb2 import (
     CreateRequestMessage as CreateRequestMessage_PB,
 )
@@ -58,7 +57,6 @@ class CreateRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -130,7 +128,6 @@ class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CreateRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -201,7 +198,6 @@ class GetRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -273,7 +269,6 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -344,7 +339,6 @@ class GetRequestsMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRequestsMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -416,7 +410,6 @@ class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetRequestsResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -487,7 +480,6 @@ class UpdateRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -559,7 +551,6 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UpdateRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -630,7 +621,6 @@ class DeleteRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -702,7 +692,6 @@ class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> DeleteRequestResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
