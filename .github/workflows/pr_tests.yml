@@ -261,9 +261,9 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          name: OpenMined/PyGrid
+          repository: "OpenMined/PyGrid"
           ref: "pygrid_0.4.0"
-          path: pygrid
+          path: "pygrid"
 
       - name: Test PyGrid
         continue-on-error: true
