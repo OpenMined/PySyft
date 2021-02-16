@@ -1,4 +1,5 @@
 # stdlib
+import logging
 import os
 
 # third party
@@ -14,6 +15,10 @@ from syft.core.node.network.network import Network
 from syft.grid.services.signaling_service import PullSignalingService
 from syft.grid.services.signaling_service import PushSignalingService
 from syft.grid.services.signaling_service import RegisterDuetPeerService
+
+log = logging.getLogger("werkzeug")
+log.disabled = True
+
 
 app = Flask(__name__)
 network = Network(name="om-test-net")

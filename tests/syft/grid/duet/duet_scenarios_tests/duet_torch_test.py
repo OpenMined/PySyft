@@ -4,6 +4,9 @@ import time
 
 
 def do_test(port: int) -> None:
+    # third party
+    import torch
+
     # syft absolute
     import syft as sy
 
@@ -12,12 +15,16 @@ def do_test(port: int) -> None:
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
     duet.requests.add_handler(action="accept")
 
-    _ = sy.lib.python.List([1, 2, 3]).send(duet, searchable=True)
+    t = torch.randn(20).reshape(4, 5)
+    _ = t.send(duet, searchable=True)
 
     sy.core.common.event_loop.loop.run_forever()
 
 
 def ds_test(port: int) -> None:
+    # third party
+    import torch
+
     # syft absolute
     import syft as sy
 
@@ -25,12 +32,15 @@ def ds_test(port: int) -> None:
 
     duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
 
-    time.sleep(1)
+    time.sleep(3)
 
-    data_ptr = duet.store[0]
-    data = data_ptr.get(request_block=True, delete_obj=False)
+    data = duet.store[0].get(request_block=True, delete_obj=False)
 
-    assert data == [1, 2, 3]
+    assert data.shape == torch.Size([4, 5]), data.shape
 
 
-test_scenario_sanity = ("test_scenario_sanity", do_test, ds_test)
+test_scenario_torch_tensor_sanity = (
+    "test_scenario_torch_tensor_sanity",
+    do_test,
+    ds_test,
+)
