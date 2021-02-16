@@ -89,6 +89,33 @@ def test_tags() -> None:
     assert ten.tags == ["tag2", "other"]
     assert ptr.tags == ["tag2", "other"]
 
+    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["a"])
+    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["b"])
+    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["c"])
+    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["d"])
+    sy.lib.python.Int(2).send(root_client, searchable=True, tags=["e"])
+
+    a = root_client.store["a"]
+    b = root_client.store["b"]
+    c = root_client.store["c"]
+    d = root_client.store["d"]
+    e = root_client.store["e"]
+
+    result_ptr = a.requires_grad
+    assert result_ptr.tags == ["a", "requires_grad"]
+
+    result_ptr = b.pow(e)
+    assert result_ptr.tags == ["b", "e", "pow"]
+
+    result_ptr = c.pow(exponent=e)
+    assert result_ptr.tags == ["c", "e", "pow"]
+
+    result_ptr = root_client.torch.pow(d, e)
+    assert result_ptr.tags == ["d", "e", "pow"]
+
+    result_ptr = root_client.torch.pow(d, 3)
+    assert result_ptr.tags == ["d", "pow"]
+
 
 def test_description() -> None:
     bob = sy.VirtualMachine(name="Bob")
