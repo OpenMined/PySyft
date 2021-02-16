@@ -62,6 +62,10 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
+      - name: Run darglint - Ignore Errors
+        continue-on-error: true
+        run: |
+          darglint src tests
 
   python-tests-fast:
     needs: [python-linting]
@@ -140,7 +144,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
@@ -167,8 +171,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip freeze
-          pytest -m libs -n auto --no-cov -k "not tenseal"
-          pytest -m libs -n 1 --no-cov -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal"
+          pytest -m libs -n 1 -k "tenseal"
 
   python-nb-examples:
     needs: [python-linting]
@@ -208,4 +212,14 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api -n auto --no-cov
+          pytest examples/api -n auto
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+      - name: Run notebook Duet examples
+        run: |
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          python ./scripts/nb_duet_test.py
+          cd tests/syft/notebooks/ && pytest . -n 1
