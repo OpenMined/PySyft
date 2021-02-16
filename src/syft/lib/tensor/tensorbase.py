@@ -9,7 +9,6 @@ import numpy as np
 import torch
 
 # syft absolute
-from syft.decorators import syft_decorator
 from syft.lib.tensor.tensorbase_util import call_func_and_wrap_result
 
 Num = Union[int, float]
@@ -46,7 +45,6 @@ class DataTensor(ChildDelegatorTensor):
 
 
 class FloatTensor(ChildDelegatorTensor):
-    @syft_decorator(typechecking=True)
     def __init__(self, child: DataTensor) -> None:
         self.child = child
 
@@ -67,7 +65,6 @@ class FloatTensor(ChildDelegatorTensor):
 
 
 class IntegerTensor(ChildDelegatorTensor):
-    @syft_decorator(typechecking=True)
     def __init__(self, child: DataTensor) -> None:
         self.child = child
 
@@ -134,8 +131,16 @@ class SyftTensor(ChildDelegatorTensor):
             raise ValueError()
 
     def __matmul__(self, other: "SyftTensor") -> "SyftTensor":
-        if isinstance(self.child, (FloatTensor, IntegerTensor)) and isinstance(
-            other, SyftTensor
+        if (
+            isinstance(self.child, FloatTensor)
+            and isinstance(other, SyftTensor)
+            and isinstance(other.child, FloatTensor)
+        ):
+            return SyftTensor(child=self.child @ other.child)
+        if (
+            isinstance(self.child, IntegerTensor)
+            and isinstance(other, SyftTensor)
+            and isinstance(other.child, IntegerTensor)
         ):
             return SyftTensor(child=self.child @ other.child)
         else:
@@ -146,6 +151,15 @@ class SyftTensor(ChildDelegatorTensor):
         if isinstance(data, list) or isinstance(data, np.ndarray):
             return cls(
                 child=FloatTensor(child=DataTensor(child=torch.FloatTensor(data)))
+            )
+        else:
+            raise NotImplementedError()
+
+    @classmethod
+    def IntegerTensor(cls, data: Union[List[Num], np.ndarray]) -> "SyftTensor":
+        if isinstance(data, list) or isinstance(data, np.ndarray):
+            return cls(
+                child=IntegerTensor(child=DataTensor(child=torch.IntTensor(data)))
             )
         else:
             raise NotImplementedError()
