@@ -8,9 +8,9 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 
 PyGrid platform is composed by three different components.
 
-- **Network** - A Flask-based application used to manage, monitor, control, and route instructions to various PyGrid Nodes.
-- **Node** - A Flask-based application used to store private data and models for federated learning, as well as to issue instructions to various PyGrid Workers.
-- **Worker** - An emphemeral instance, managed by a PyGrid Node, that is used to compute data.
+- **Network** - A Flask-based application used to manage, monitor, control, and route instructions to various PyGrid Domains.
+- **Domain** - A Flask-based application used to store private data and models for federated learning, as well as to issue instructions to various PyGrid Workers.
+- **Worker** - An emphemeral instance, managed by a PyGrid Domain, that is used to compute data.
 
 ## Use Cases
 
@@ -28,7 +28,7 @@ Model-centric FL is when the model is hosted in PyGrid. This is really useful wh
 4. Once training is completed, a "diff" is generated between the new and the original state of the model
 5. The diff is reported back to PyGrid and it's averaged into the model
 
-This takes place potentially with hundreds, or thousands of devices simultaneously. **For model-centric federated learning, you only need to run a Node. Networks and Workers are irrelevant for this specific use-case.**
+This takes place potentially with hundreds, or thousands of devices simultaneously. **For model-centric federated learning, you only need to run a Domain. Networks and Workers are irrelevant for this specific use-case.**
 
 _Note:_ For posterity sake, we previously used to refer to this process as "static federated learning".
 
@@ -38,27 +38,27 @@ _Note:_ For posterity sake, we previously used to refer to this process as "stat
 
 Data-centric FL is the same problem as model-centric FL, but from the opposite perspective. The most likely scenario for data-centric FL is where a person or organization has data they want to protect in PyGrid (instead of hosting the model, they host data). This would allow a data scientist who is not the data owner, to make requests for training or inference against that data. The following workflow will take place:
 
-1. A data scientist searches for data they would like to train on (they can search either an individual Node, or a Network of Nodes)
+1. A data scientist searches for data they would like to train on (they can search either an individual Domain, or a Network of Domains)
 2. Once the data has been found, they may write a training plan and optionally pre-train a model
-3. The training plan and model are sent to the PyGrid Node in the form of a job request
-4. The PyGrid Node will gather the appropriate data from its database and send the data, the model, and the training plan to a Worker for processing
+3. The training plan and model are sent to the PyGrid Domain in the form of a job request
+4. The PyGrid Domain will gather the appropriate data from its database and send the data, the model, and the training plan to a Worker for processing
 5. The Worker performs the plan on the model using the data
-6. The result is returned to the Node
+6. The result is returned to the Domain
 7. The result is returned to the data scientist
 
 For the last step, we're working on adding the capability for privacy budget tracking to be applied that will allow a data owner to "sign off" on whether or not a trained model should be released.
 
 _Note:_ For posterity sake, we previously used to refer to this process as "dynamic federated learning".
 
-**Node-only data-centric FL**
+**Domain-only data-centric FL**
 
-Technically speaking, it isn't required to run a Network when performing data-centric federated learning. Alternatively, as a data owner, you may opt to only run a Node, but participate in a Network hosted by someone else. The Network host will not have access to your data.
+Technically speaking, it isn't required to run a Network when performing data-centric federated learning. Alternatively, as a data owner, you may opt to only run a Domain, but participate in a Network hosted by someone else. The Network host will not have access to your data.
 
-![Node-only DCFL](assets/DCFL-node.png)
+![Domain-only DCFL](assets/DCFL-node.png)
 
 **Network-based data-centric FL**
 
-Many times you will wat to use a Network to allow multiple Nodes to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Nodes. PyGrid doesn't prescribe one way to organize Nodes and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
+Many times you will wat to use a Network to allow multiple Domains to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Domains. PyGrid doesn't prescribe one way to organize Domains and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
 
 ![Network-based DCFL](assets/DCFL-network.png)
 
@@ -72,7 +72,7 @@ To install Docker, just follow the [docker documentation](https://docs.docker.co
 
 #### 1. Setting the your hostfile
 
-Before start the grid platform locally using Docker, we need to set up the domain names used by the bridge network. In order to use these nodes from outside of the containers context, you should add the following domain names on your `/etc/hosts`
+Before start the grid platform locally using Docker, we need to set up the domain names used by the bridge network. In order to use these Domains from outside of the containers context, you should add the following domain names on your `/etc/hosts`
 
 ```
 127.0.0.1 network
