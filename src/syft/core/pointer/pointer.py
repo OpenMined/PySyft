@@ -176,11 +176,6 @@ class Pointer(AbstractPointer):
 
         obj = response.obj
 
-        if type(obj).__name__.endswith("ProtobufWrapper"):
-            # for ProtobufWrapper's we want to actually vend the real Proto since
-            # that is what was originally sent in with .send
-            return obj.data
-
         if type(obj).__name__.endswith("Wrapper"):
             return obj.data
 

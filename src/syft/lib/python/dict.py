@@ -5,7 +5,6 @@ from collections.abc import KeysView
 from collections.abc import ValuesView
 from typing import Any
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -17,7 +16,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
-from ...core.store.storeable_object import StorableObject
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
@@ -233,15 +231,3 @@ class Dict(UserDict, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Dict_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data

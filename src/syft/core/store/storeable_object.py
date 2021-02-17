@@ -5,7 +5,6 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
@@ -78,10 +77,7 @@ class StorableObject(AbstractStorableObject):
 
     @property
     def object_type(self) -> str:
-        object_type = str(type(self.data))
-        if type(self.data).__name__.endswith("ProtobufWrapper"):
-            object_type = str(type(self.data.data))
-        return object_type
+        return str(type(self.data))
 
     # Why define data as a property?
     # For C type/class objects as data.
@@ -192,56 +188,30 @@ class StorableObject(AbstractStorableObject):
         # Step 6: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = StorableObject.construct_new_object(
-            id=id, data=data, tags=tags, description=description
+        # Step 7: get the read permissions
+        read_permissions = None
+        if proto.read_permissions is not None and len(proto.read_permissions) > 0:
+            read_permissions = _deserialize(
+                blob=proto.read_permissions, from_bytes=True
+            )
+
+        # Step 8: get the search permissions
+        search_permissions = None
+        if proto.search_permissions is not None and len(proto.search_permissions) > 0:
+            search_permissions = _deserialize(
+                blob=proto.search_permissions, from_bytes=True
+            )
+
+        result = StorableObject(
+            id=id,
+            data=data,
+            description=description,
+            tags=tags,
+            read_permissions=read_permissions,
+            search_permissions=search_permissions,
         )
 
-        # just a backup
-        try:
-            result.tags = tags
-            result.description = description
-
-            # default to empty
-            result.read_permissions = {}
-            result.search_permissions = {}
-
-            # Step 7: get the read permissions
-            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-                result.read_permissions = _deserialize(
-                    blob=proto.read_permissions, from_bytes=True
-                )
-
-            # Step 8: get the search permissions
-            if (
-                proto.search_permissions is not None
-                and len(proto.search_permissions) > 0
-            ):
-                result.search_permissions = _deserialize(
-                    blob=proto.search_permissions, from_bytes=True
-                )
-        except Exception as e:
-            # torch.return_types.* namedtuple cant setattr
-            critical(f"StorableObject {type(result)} cant set attributes")
-            traceback(e)
-
         return result
-
-    @staticmethod
-    def _data_proto2object(proto: Message) -> Serializable:
-        return _deserialize(blob=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return StorableObject_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: "StorableObject",
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "StorableObject":
-        return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

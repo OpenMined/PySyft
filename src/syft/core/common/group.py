@@ -1,7 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Optional
 from typing import Type
 
 # third party
@@ -13,10 +11,8 @@ from nacl.signing import VerifyKey
 from ...generate_wrapper import GenerateWrapper
 from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
-from ..store.store_interface import StorableObject
 from .serde.serializable import Serializable
 from .serde.serializable import bind_protobuf
-from .uid import UID
 
 
 def object2proto(obj: Any) -> VerifyKey_PB:
@@ -48,15 +44,3 @@ class VerifyAll(Serializable):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return VerifyAllWrapper_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        data.id = id
-        data.tags = tags
-        data.description = description
-        return data

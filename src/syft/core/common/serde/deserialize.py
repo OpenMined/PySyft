@@ -72,7 +72,6 @@ def _deserialize(
     try:
         # lets try to lookup the type we are deserializing
         obj_type = getattr(type(blob), "schema2type", None)
-
         # when a protobuf type is related to multiple classes, it's schema2type will be None.
         # In that case, we use it's obj_type field.
         if obj_type is None:

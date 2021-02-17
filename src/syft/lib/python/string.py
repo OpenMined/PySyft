@@ -1,7 +1,6 @@
 # stdlib
 from collections import UserString
 from typing import Any
-from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Union
@@ -14,7 +13,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
-from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
@@ -400,15 +398,3 @@ class String(UserString, PyPrimitive):
     # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
     def __rmod__(self, template: Union[PyPrimitive, str]) -> PyPrimitive:
         return self.__class__(str(template) % self)
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data

@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Iterable
-from typing import List as TypeList
 from typing import Optional
 
 # third party
@@ -12,7 +11,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.set_pb2 import Set as Set_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -183,15 +181,3 @@ class Set(set, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Set_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[TypeList[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data

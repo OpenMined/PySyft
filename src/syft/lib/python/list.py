@@ -1,7 +1,6 @@
 # stdlib
 from collections import UserList
 from typing import Any
-from typing import List as TypeList
 from typing import Optional
 from typing import Union
 
@@ -13,7 +12,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
-from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -155,15 +153,3 @@ class List(UserList, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return List_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[TypeList[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
