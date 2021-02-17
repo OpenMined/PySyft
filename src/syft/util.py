@@ -1,6 +1,9 @@
 # stdlib
 from random import randint
+from typing import Any
 from typing import List
+from typing import Optional
+from typing import Union
 
 # third party
 from forbiddenfruit import curse
@@ -8,18 +11,33 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft absolute
-# breaking convention here because index_globals needs
-# the full syft name to be present.
 import syft
 
 # syft relative
-from .decorators.syft_decorator_impl import syft_decorator
 from .logger import critical
 from .logger import debug
 from .logger import error
+from .logger import traceback_and_raise
 
 
-@syft_decorator(typechecking=True)
+def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
+    if isinstance(_object, _type) or (optional and (_object is None)):
+        return _object
+
+    traceback_and_raise(
+        f"Object {_object} should've been of type {_type}, not {_object}."
+    )
+
+
+def validate_field(_object: object, _field: str) -> Any:
+    object = getattr(_object, _field, None)
+
+    if object:
+        return object
+
+    traceback_and_raise(f"Object {_object} has no {_field} field set.")
+
+
 def get_subclasses(obj_type: type) -> List[type]:
     """Recursively generate the list of all classes within the sub-tree of an object
 
@@ -32,10 +50,11 @@ def get_subclasses(obj_type: type) -> List[type]:
     of those sub-classes etc. returning a full list of descendants of a class in the inheritance
     hierarchy.
 
-    :param obj_type: the type we want to look for sub-classes of
-    :type type:
-    :returns: the list of subclasses of obj_type:
-    :rtype: List[type]
+    Args:
+        obj_type: the type we want to look for sub-classes of
+
+    Returns:
+        the list of subclasses of obj_type
 
     """
 
@@ -46,19 +65,18 @@ def get_subclasses(obj_type: type) -> List[type]:
     return classes
 
 
-@syft_decorator(typechecking=True)
 def index_modules(a_dict: object, keys: List[str]) -> object:
     """Recursively find a syft module from its path
 
     This is the recursive inner function of index_syft_by_module_name.
     See that method for a full description.
 
-    :param a_dict: a module we're traversing
-    :type a_dict: object
-    :param keys: the list of string attributes we're using to traverse the module
-    :type keys: List[str]
-    :returns: a reference to the final object
-    :rtype: object
+    Args:
+        a_dict: a module we're traversing
+        keys: the list of string attributes we're using to traverse the module
+
+    Returns:
+        a reference to the final object
 
     """
 
@@ -67,7 +85,6 @@ def index_modules(a_dict: object, keys: List[str]) -> object:
     return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
 
 
-@syft_decorator(typechecking=True)
 def index_syft_by_module_name(fully_qualified_name: str) -> object:
     """Look up a Syft class/module/function from full path and name
 
@@ -77,10 +94,11 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     so that we can have generic protobuf objects which just have a string
     representation of the specific object it is meant to deserialize to.
 
-    :param fully_qualified_name: the name of a module, class, or function
-    :type fully_qualified_name: str
-    :returns: a reference to the actual object at that string path
-    :rtype: object
+    Args:
+        fully_qualified_name: the name in str of a module, class, or function
+
+    Returns:
+        a reference to the actual object at that string path
 
     """
 
@@ -90,7 +108,6 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
-@syft_decorator(typechecking=True)
 def get_fully_qualified_name(obj: object) -> str:
     """Return the full path and name of a class
 
@@ -99,10 +116,11 @@ def get_fully_qualified_name(obj: object) -> str:
     is the current fully qualified path and name for the SyftMessage
     object.
 
-    :param obj: the object we want to get the name of
-    :type obj: object
-    :returns: the full path and name of the object
-    :rtype: str
+    Args:
+        obj: the object we want to get the name of
+
+    Returns:
+        the full path and name of the object
 
     """
 
@@ -114,10 +132,15 @@ def get_fully_qualified_name(obj: object) -> str:
     return fqn
 
 
-@syft_decorator(typechecking=True)
 def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
-    """Different objects prefer different types of monkeypatching - try them all"""
+    """Different objects prefer different types of monkeypatching - try them all
 
+    Args:
+        obj: object whose attribute has to be set
+        name: attribute name
+        attr: value given to the attribute
+
+    """
     try:
         setattr(obj, name, attr)
     except Exception:
@@ -164,7 +187,6 @@ def key_emoji(key: object) -> str:
     return "ALL"
 
 
-@syft_decorator(typechecking=True)
 def char_emoji(hex_chars: str) -> str:
     base = ord("\U0001F642")
     hex_base = ord("0")
@@ -528,8 +550,34 @@ right_name = [
 
 
 # we could replace these with some favorite AI / Privacy researches and engineers?
-@syft_decorator(typechecking=True)
+
+
 def random_name() -> str:
     left_i = randint(0, len(left_name) - 1)
     right_i = randint(0, len(right_name) - 1)
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
+
+
+def inherit_tags(
+    attr_path_and_name: str,
+    result: object,
+    self_obj: Optional[object],
+    args: Union[tuple, list],
+    kwargs: dict,
+) -> None:
+    tags = []
+    if self_obj is not None and hasattr(self_obj, "tags"):
+        tags.extend([tag for tag in self_obj.tags])  # type: ignore
+
+    for arg in args:
+        if hasattr(arg, "tags"):
+            tags.extend([tag for tag in arg.tags if tag not in tags])
+
+    for arg in kwargs.values():
+        if hasattr(arg, "tags"):
+            tags.extend([tag for tag in arg.tags if tag not in tags])
+
+    # only generate new tags if the result actually inherit some tags.
+    if tags:
+        tags.append(attr_path_and_name.split(".")[-1])
+        result.tags = tags  # type: ignore
