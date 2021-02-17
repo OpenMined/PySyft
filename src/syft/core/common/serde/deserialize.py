@@ -76,7 +76,10 @@ def _deserialize(
         # when a protobuf type is related to multiple classes, it's schema2type will be None.
         # In that case, we use it's obj_type field.
         if obj_type is None:
-            obj_type = pydoc.locate(blob.obj_type)  # type: ignore
+            obj_type = getattr(blob, "obj_type", None)
+            if obj_type is None:
+                traceback_and_raise(deserialization_error)
+            obj_type = pydoc.locate(obj_type)  # type: ignore
             obj_type = getattr(obj_type, "serializable_wrapper_type", obj_type)
 
     # uh-oh! Looks like the type doesn't exist. Let's throw an informative error.
