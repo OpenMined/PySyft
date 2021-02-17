@@ -328,18 +328,9 @@ class Int(int, PyPrimitive):
         signed: Optional[bool] = True,
     ) -> bytes:
         if length is not None and byteorder is not None and signed is not None:
-            # XTY >>>
-            # return super().to_bytes(length=length, byteorder=byteorder, signed=signed)
             return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
-            # <<< XTY
         else:
-            # XTY >>>
-            # # get our serializable method
-            # _to_bytes = getattr(self, "_to_bytes", None)
-            # if _to_bytes is not None:
-            #     return _to_bytes.__call__()
             return PyPrimitive.to_bytes(self)
-            # <<< XTY
 
     @staticmethod
     def construct_new_object(

@@ -75,13 +75,13 @@ def _deserialize(
     # In that case, we use it's obj_type field.
     if obj_type is None:
         print()
-        print("&"*10)
+        print("&" * 10)
         print(f"type(blob)={type(blob)}")
-        print("&"*10)
+        print("&" * 10)
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
             traceback_and_raise(deserialization_error)
-        obj_type = pydoc.locate(obj_type)
+        obj_type = pydoc.locate(obj_type)  # type: ignore
         obj_type = getattr(obj_type, "serializable_wrapper_type", obj_type)
 
     if not isinstance(obj_type, type):

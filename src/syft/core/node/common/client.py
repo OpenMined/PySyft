@@ -367,7 +367,6 @@ class StoreClient:
 
     @property
     def store(self) -> List[Pointer]:
-        import pdb; pdb.set_trace()
         msg = ObjectSearchMessage(
             address=self.client.address, reply_to=self.client.address
         )

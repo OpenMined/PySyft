@@ -196,6 +196,21 @@ class StorableObject(AbstractStorableObject):
             id=id, data=data, tags=tags, description=description
         )
 
+        # Step 7: get the read permissions
+        if proto.read_permissions is not None and len(proto.read_permissions) > 0:
+            result.read_permissions = _deserialize(
+                blob=proto.read_permissions, from_bytes=True
+            )
+
+        # Step 8: get the search permissions
+        if (
+            proto.search_permissions is not None
+            and len(proto.search_permissions) > 0
+        ):
+            result.search_permissions = _deserialize(
+                blob=proto.search_permissions, from_bytes=True
+            )
+
         return result
 
     @staticmethod

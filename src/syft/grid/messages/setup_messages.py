@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.setup_messages_pb2 import (
@@ -25,7 +26,6 @@ from syft.proto.grid.messages.setup_messages_pb2 import (
 from syft.proto.grid.messages.setup_messages_pb2 import (
     GetSetUpResponse as GetSetUpResponse_PB,
 )
-from syft.core.common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf

@@ -267,7 +267,6 @@ class Bool(int, PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Bool_PB
 
-    # XTY >>>
     # method signature override
     def to_bytes(
         self,
@@ -279,8 +278,6 @@ class Bool(int, PyPrimitive):
             return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
         else:
             return PyPrimitive.to_bytes(self)
-
-    # <<< XTY
 
     @staticmethod
     def construct_new_object(

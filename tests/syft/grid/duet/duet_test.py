@@ -61,10 +61,6 @@ def test_duet() -> None:
 
         if ds_proc.exception:
             exception, tb = ds_proc.exception
-            print("XTY>>>")
-            print(f"exception:{exception}")
-            print(f"tb={tb}")
-            print("<<<XTY")
             raise Exception(tb) from exception
 
         if ds_proc.is_alive():
