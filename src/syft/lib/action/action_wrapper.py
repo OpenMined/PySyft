@@ -45,5 +45,17 @@ class PlanWrapper(StorableObject):
     def get_wrapped_type() -> type:
         return Plan
 
+    @staticmethod
+    def construct_new_object(
+        id: UID,
+        data: StorableObject,
+        description: Optional[str],
+        tags: Optional[List[str]],
+    ) -> StorableObject:
+        data.id = id
+        data.tags = tags
+        data.description = description
+        return data
+
 
 aggressive_set_attr(obj=Plan, name="serializable_wrapper_type", attr=PlanWrapper)

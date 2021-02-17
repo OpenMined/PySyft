@@ -24,7 +24,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
+from syft.core.node.common.plan.plan import Plan
 
 class RunClassMethodAction(ImmediateActionWithoutReply):
     """
@@ -158,7 +158,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                if isinstance(resolved_self.data, Plan) and method_name == "execute":
+                    result = method(resolved_self.data, node, verify_key, *upcasted_args, **upcasted_kwargs)
+                else:
+                    result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive

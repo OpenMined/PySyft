@@ -11,6 +11,8 @@ from syft.core.common.object import Serializable
 from syft.core.node.common.action.common import Action
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
+from ...abstract.node import AbstractNode
+from nacl.signing import VerifyKey
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -19,9 +21,9 @@ class Plan(Serializable):
     def __init__(self, actions: List[Action]):
         self.actions = actions
 
-    def execute(self):
+    def execute(self, node: AbstractNode, verify_key: VerifyKey):
         for a in self.actions:
-            a.execute_action()
+            a.execute_action(node, verify_key)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -89,10 +91,12 @@ class Plan(Serializable):
         actions = []
 
         for action_proto in proto.actions:
-            module_parts = action_proto.obj_type.split(".")
-            klass = module_parts.pop()
-            obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-            action_type = action_proto.WhichOneof("action")
-            actions.append(obj_type._proto2object(getattr(action_proto, action_type)))
+            module, cls_name = action_proto.obj_type.rsplit(".", 1)
+            action_cls = getattr(sys.modules[module], cls_name)
+
+            # protobuf does no inheritance, so we wrap action subclasses
+            # in the main action class.
+            inner_action = getattr(action_proto, action_proto.WhichOneof("action"))
+            actions.append(action_cls._proto2object(inner_action))
 
         return Plan(actions=actions)
