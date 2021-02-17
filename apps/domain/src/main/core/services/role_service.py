@@ -12,7 +12,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 from syft.grid.messages.role_messages import (
@@ -29,7 +28,6 @@ from syft.grid.messages.role_messages import (
 )
 
 
-@syft_decorator(typechecking=True)
 def create_role_msg(
     msg: CreateRoleMessage,
 ) -> CreateRoleResponse:
@@ -40,7 +38,6 @@ def create_role_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def update_role_msg(
     msg: UpdateRoleMessage,
 ) -> UpdateRoleResponse:
@@ -51,7 +48,6 @@ def update_role_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_role_msg(
     msg: GetRoleMessage,
 ) -> GetRoleResponse:
@@ -71,7 +67,6 @@ def get_role_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_all_roles_msg(
     msg: GetRolesMessage,
 ) -> GetRolesResponse:
@@ -105,7 +100,6 @@ def get_all_roles_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def del_role_msg(
     msg: DeleteRoleMessage,
 ) -> DeleteRoleResponse:

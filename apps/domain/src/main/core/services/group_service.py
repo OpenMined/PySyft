@@ -12,7 +12,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 from syft.grid.messages.group_messages import (
@@ -31,7 +30,6 @@ from syft.grid.messages.group_messages import (
 from ..database.utils import model_to_json
 
 
-@syft_decorator(typechecking=True)
 def create_group_msg(
     msg: CreateGroupMessage,
     node: AbstractNode,
@@ -68,7 +66,6 @@ def create_group_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def update_group_msg(
     msg: UpdateGroupMessage,
     node: AbstractNode,
@@ -107,7 +104,6 @@ def update_group_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_group_msg(
     msg: GetGroupMessage,
     node: AbstractNode,
@@ -144,7 +140,6 @@ def get_group_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_all_groups_msg(
     msg: GetGroupsMessage,
     node: AbstractNode,
@@ -177,7 +172,6 @@ def get_all_groups_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def del_group_msg(
     msg: DeleteGroupMessage,
     node: AbstractNode,
