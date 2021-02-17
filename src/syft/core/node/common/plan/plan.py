@@ -1,26 +1,28 @@
-import sys
-from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
-from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft.core.common.object import Serializable
+# stdlib
 import re
+import sys
 from typing import List
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft absolute
+from syft.core.common.object import Serializable
 from syft.core.node.common.action.common import Action
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
+from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
-
-CAMEL_TO_SNAKE_PAT = re.compile(r'(?<!^)(?=[A-Z])')
+CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
 class Plan(Serializable):
     def __init__(self, actions: List[Action]):
-        self.actions=actions
-
+        self.actions = actions
 
     def execute(self):
         for a in self.actions:
             a.execute_action()
-        
+
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """Return the type of protobuf object which stores a class of this type
@@ -40,7 +42,7 @@ class Plan(Serializable):
         """
 
         return Plan_PB
-    
+
     def _object2proto(self) -> Plan_PB:
         """Returns a protobuf serialization of self.
 
@@ -56,14 +58,18 @@ class Plan(Serializable):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        def camel_to_snake(s ):
-            return CAMEL_TO_SNAKE_PAT.sub('_', s).lower()
 
-        actions_pb = [Action_PB(obj_type = ".".join([action.__module__, action.__class__.__name__]), 
-                                **{camel_to_snake(action.__class__.__name__): action.serialize()}
-                               )
-                      for action in self.actions]
-        
+        def camel_to_snake(s):
+            return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
+
+        actions_pb = [
+            Action_PB(
+                obj_type=".".join([action.__module__, action.__class__.__name__]),
+                **{camel_to_snake(action.__class__.__name__): action.serialize()}
+            )
+            for action in self.actions
+        ]
+
         return Plan_PB(actions=actions_pb)
 
     @staticmethod
@@ -81,7 +87,7 @@ class Plan(Serializable):
             if you wish to deserialize an object.
         """
         actions = []
-        
+
         for action_proto in proto.actions:
             module_parts = action_proto.obj_type.split(".")
             klass = module_parts.pop()
@@ -90,4 +96,3 @@ class Plan(Serializable):
             actions.append(obj_type._proto2object(getattr(action_proto, action_type)))
 
         return Plan(actions=actions)
-

@@ -7,10 +7,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
 import syft
+from syft.core.node.common.plan.plan import Plan
+
 # from syft.core.node.common.action.common import Action
 # from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
-from syft.core.node.common.plan.plan import Plan
 
 # syft relative
 from ...core.common.uid import UID

@@ -97,7 +97,12 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-    lib_ast.add_attr(attr_name="action", attr=plan_ast.attrs["syft"])
+    # import ipdb
+    # ipdb.set_trace()
+    lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
+
+    # lib_ast.add_attr(attr_name="syft", attr=plan_ast.attrs["syft"])
+    # lib_ast.add_path(path="syft", attr=plan_ast.attrs["syft"])
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
