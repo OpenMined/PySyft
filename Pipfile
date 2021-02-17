@@ -1,0 +1,43 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+aiortc = "*"
+bandit = "*"
+black = "*"
+darglint = "*"
+dataclasses = "*"
+doc8 = "*"
+flake8 = "*"
+forbiddenfruit = ">=0.1.3"
+isort = "*"
+loguru = "*"
+matplotlib = "*"
+nbconvert = "*"
+nbformat = "*"
+pandas = "*"
+protobuf = "*"
+pyscaffold = {extras = ["all"], version = "*"}
+pytest = "*"
+pytest-asyncio = "*"
+pytest-benchmark = "*"
+pytest-cov = "*"
+pytest-xdist = {extras = ["psutil"], version = "*"}
+requests = "*"
+sqlitedict = "*"
+torch = ">=1.4"
+torchvision = ">=0.5"
+typeguard = "*"
+typing-extensions = "*"
+websockets = "*"
+Flask = "*"
+Jinja2 = "*"
+PyJWT = "*"
+PyNaCl = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
