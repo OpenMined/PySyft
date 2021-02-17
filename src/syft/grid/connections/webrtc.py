@@ -100,9 +100,9 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.io.address import Address
 from ...core.io.connection import BidirectionalConnection
 from ...core.node.abstract.node import AbstractNode
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...logger import debug
 from ...logger import traceback_and_raise
+from ...util import validate_type
 from ..services.signaling_service import CloseConnectionMessage
 
 message_cooldown = 0.0
@@ -160,7 +160,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _set_offer(self) -> str:
         """
         Initialize a Real-Time Communication Data Channel,
@@ -219,7 +218,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _set_answer(self, payload: str) -> str:
         """
         Receives a signaling offer payload, initialize/set
@@ -256,12 +254,13 @@ class WebRTCConnection(BidirectionalConnection):
                     else:
                         await self.consumer(msg=message)
 
-            return await self._process_answer(payload=payload)
+            result = await self._process_answer(payload=payload)
+            return validate_type(result, str)
+
         except Exception as e:
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")
 
-    @syft_decorator(typechecking=True)
     async def _process_answer(self, payload: str) -> Union[str, None]:
         # Converts payload received by
         # the other peer in aioRTC Object
@@ -301,7 +300,6 @@ class WebRTCConnection(BidirectionalConnection):
             traceback_and_raise(e)
         return None
 
-    @syft_decorator(typechecking=True)
     async def producer(self) -> None:
         """
         Async task to send messages to the other side.
@@ -375,7 +373,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def consumer(self, msg: bytes) -> None:
         """
         Async task to receive/process messages sent by the other side.
@@ -418,7 +415,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -442,7 +438,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -461,7 +456,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
@@ -474,8 +468,8 @@ class WebRTCConnection(BidirectionalConnection):
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")
 
-    @syft_decorator(typechecking=False)
-    def send_immediate_msg_with_reply(
+    # TODO: fix this mypy madness
+    def send_immediate_msg_with_reply(  # type: ignore
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithReply:
         """
@@ -485,12 +479,15 @@ class WebRTCConnection(BidirectionalConnection):
         :rtype: SignedImmediateSyftMessageWithReply
         """
         try:
-            return asyncio.run(self.send_sync_message(msg=msg))
+            # properly fix this!
+            return validate_type(
+                asyncio.run(self.send_sync_message(msg=msg)),
+                object,
+            )
         except Exception as e:
             traceback_and_raise(e)
             raise Exception("mypy workaound: should not get here")
 
-    @syft_decorator(typechecking=True)
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -504,7 +501,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
@@ -517,7 +513,6 @@ class WebRTCConnection(BidirectionalConnection):
         except Exception as e:
             traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def send_sync_message(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:

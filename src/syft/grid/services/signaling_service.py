@@ -23,7 +23,6 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.common.service.auth import service_auth
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )
@@ -68,7 +67,6 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> OfferPullRequestMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -152,7 +150,6 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> AnswerPullRequestMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -232,7 +229,6 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterNewPeerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -309,7 +305,6 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.peer_id = peer_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> PeerSuccessfullyRegistered_PB:
         """Returns a protobuf serialization of self.
 
@@ -394,7 +389,6 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingOfferMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -483,7 +477,6 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingAnswerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -564,7 +557,6 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingRequestsNotFound_PB:
         """Returns a protobuf serialization of self.
 
@@ -638,7 +630,6 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> InvalidLoopBackRequest_PB:
         """Returns a protobuf serialization of self.
 
@@ -711,7 +702,6 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CloseConnectionMessage_PB:
         """Returns a protobuf serialization of self.
 

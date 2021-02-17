@@ -19,7 +19,7 @@ def object2proto(obj: object) -> TenSEALVector_PB:
 
 
 def proto2object(proto: TenSEALVector_PB) -> ts.CKKSTensor:
-    # vec_id: UID = _deserialize(blob=proto.id)
+    # vec_id: UID = validate_type(_deserialize(blob=proto.id))
     vec = ts.lazy_ckks_tensor_from(proto.vector)
     # vec.id = vec_id
 

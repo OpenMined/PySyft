@@ -16,7 +16,6 @@ from typing_extensions import final
 
 # syft relative
 from .....core.common.serde.serializable import bind_protobuf
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -25,6 +24,7 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
 )
 from .....util import obj2pointer_type
+from .....util import traceback_and_raise
 from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
@@ -47,7 +47,6 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         the sender is allowed to see. In the future we'll add support so that
         we can query for subsets."""
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -126,7 +125,6 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         we can query for subsets."""
         self.results = results
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchReplyMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -193,9 +191,18 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
 class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: ObjectSearchMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: ObjectSearchMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> ObjectSearchReplyMessage:
         results: List[Pointer] = list()
+
+        if verify_key is None:
+            traceback_and_raise(
+                "Can't process an ImmediateObjectSearchService with no "
+                "verification key."
+            )
+
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys

@@ -12,12 +12,12 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import critical
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
@@ -94,6 +94,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             "__call__"
         ):
             mutating_internal = True
+
+        resolved_self = None
         if not self.is_static:
             resolved_self = node.store.get_object(key=self._self.id_at_location)
 
@@ -103,26 +105,29 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     + f" at: {self._self.id_at_location}"
                 )
                 return
-
             result_read_permissions = resolved_self.read_permissions
         else:
             result_read_permissions = {}
 
         resolved_args = list()
+        tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
+            tag_args.append(r_arg)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
+            tag_kwargs[arg_name] = r_arg
 
         (
             upcasted_args,
@@ -132,6 +137,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if self.is_static:
             result = method(*upcasted_args, **upcasted_kwargs)
         else:
+            if resolved_self is None:
+                traceback_and_raise(
+                    ValueError(f"Method {method} called, but self is None.")
+                )
+
             # in opacus the step method in torch gets monkey patched on .attach
             # this means we can't use the original AST method reference and need to
             # get it again from the actual object so for now lets allow the following
@@ -151,12 +161,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     )
             else:
                 result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
-
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -179,7 +183,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     traceback_and_raise(Exception(err))
 
         if mutating_internal:
-            resolved_self.read_permissions = result_read_permissions
+            if isinstance(resolved_self, StorableObject):
+                resolved_self.read_permissions = result_read_permissions
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
@@ -187,12 +192,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
-        if method_name == "__len__":
-            result.tags = resolved_self.tags + ["__len__"]
+        inherit_tags(
+            attr_path_and_name=self.path,
+            result=result,
+            self_obj=resolved_self,
+            args=tag_args,
+            kwargs=tag_kwargs,
+        )
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.
 

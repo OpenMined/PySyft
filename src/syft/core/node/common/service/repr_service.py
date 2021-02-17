@@ -15,7 +15,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,
@@ -36,7 +35,6 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ReprMessage_PB:
         """Returns a protobuf serialization of self.
 

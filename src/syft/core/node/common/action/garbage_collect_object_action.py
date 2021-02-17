@@ -6,7 +6,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
@@ -36,7 +35,6 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
                 + f"{self.id_at_location} {e}"
             )
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GarbageCollectObjectAction_PB:
 
         id_pb = self.id_at_location.serialize()
@@ -48,7 +46,6 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         )
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(
         proto: GarbageCollectObjectAction_PB,
     ) -> "GarbageCollectObjectAction":

@@ -9,12 +9,11 @@ from typing import Union as TypeUnion
 # syft relative
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
-from ..decorators.syft_decorator_impl import syft_decorator
-
 
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method
-@syft_decorator(typechecking=True, prohibit_args=False)
+
+
 def generic_update_ast(
     lib_name: str,
     create_ast: Callable,
@@ -35,7 +34,6 @@ def generic_update_ast(
         )
 
 
-@syft_decorator(typechecking=True)
 def is_static_method(klass: type, attr: str) -> bool:
     """Test if a value of a class is static method.
 
@@ -75,7 +73,6 @@ def is_static_method(klass: type, attr: str) -> bool:
     return False
 
 
-@syft_decorator(typechecking=True)
 def copy_static_methods(from_class: type, to_class: type) -> None:
     """Copies all static methods from one class to another class
 
@@ -96,7 +93,6 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
             setattr(to_class, attr, getattr(from_class, attr))
 
 
-@syft_decorator(typechecking=True)
 def get_original_constructor_name(object_name: str) -> str:
     """Generate name for original constructor
 
@@ -113,7 +109,6 @@ def get_original_constructor_name(object_name: str) -> str:
     return f"original_{object_name}"
 
 
-@syft_decorator(typechecking=True)
 def replace_classes_in_module(
     module: ModuleType,
     from_class: Callable,
@@ -159,11 +154,9 @@ def replace_classes_in_module(
     recursive_update(module)
 
 
-@syft_decorator(typechecking=True)
 def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
 
 
-@syft_decorator(typechecking=True)
 def full_name_with_name(klass: type) -> str:
     return f"{klass.__module__}.{klass.__name__}"

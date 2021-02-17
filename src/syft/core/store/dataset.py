@@ -5,13 +5,11 @@ from typing import Optional
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft absolute
 import syft as sy
 
 # syft relative
-from ...decorators import syft_decorator
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
@@ -43,19 +41,18 @@ class Dataset(Serializable):
 
     """
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
         data: List[StorableObject],
-        description: str = "",
+        description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
-        self._description: str = description
+        self._description: str = description if description else ""
         self._tags: List[str] = tags if tags else []
 
         # the dict key of "verify key" objects corresponding to people
@@ -97,23 +94,18 @@ class Dataset(Serializable):
     def class_name(self) -> str:
         return str(self.__class__.__name__)
 
-    @syft_decorator(typechecking=True)
     def __contains__(self, _id: UID) -> bool:
         return _id in [el.id for el in self.data]
 
-    @syft_decorator(typechecking=True)
     def keys(self) -> List[UID]:
         return [el.id for el in self.data]
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, _id: UID) -> List[StorableObject]:
         return [el for el in self.data if el.id == _id]
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dataset_PB:
         proto = Dataset_PB()
 
@@ -159,11 +151,13 @@ class Dataset(Serializable):
         return proto
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def _proto2object(proto: Dataset_PB) -> object:
+    def _proto2object(proto: Dataset_PB) -> Serializable:
 
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
+
+        if not isinstance(id, UID):
+            raise ValueError("TODO")
 
         # Step 2: Deserialize data from protobuf
         data = list(proto.data) if proto.data else []
@@ -181,35 +175,6 @@ class Dataset(Serializable):
             tags=tags,
             description=description,
         )
-
-        # just a backup
-        try:
-            result.tags = tags
-            result.description = description
-
-            # default to empty
-            result.read_permissions = {}
-            result.search_permissions = {}
-
-            # Step 7: get the read permissions
-            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-                result.read_permissions = _deserialize(
-                    blob=proto.read_permissions, from_bytes=True
-                )
-
-            # Step 8: get the search permissions
-            if (
-                proto.search_permissions is not None
-                and len(proto.search_permissions) > 0
-            ):
-                result.search_permissions = _deserialize(
-                    blob=proto.search_permissions, from_bytes=True
-                )
-        except Exception as e:
-            # torch.return_types.* namedtuple cant setattr
-            log = f"Dataset {type(result)} cant set attributes {e}"
-            logger.error(log)
-
         return result
 
     @staticmethod

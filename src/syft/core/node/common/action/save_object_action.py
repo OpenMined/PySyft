@@ -6,7 +6,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
@@ -22,7 +21,6 @@ from .common import ImmediateActionWithoutReply
 
 @bind_protobuf
 class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         obj: StorableObject,
@@ -39,14 +37,12 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         }
         node.store[self.obj.id] = self.obj
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SaveObjectAction_PB:
         obj = self.obj._object2proto()
         addr = self.address.serialize()
         return SaveObjectAction_PB(obj=obj, address=addr)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: SaveObjectAction_PB) -> "SaveObjectAction":
         obj = _deserialize(blob=proto.obj)
         addr = _deserialize(blob=proto.address)

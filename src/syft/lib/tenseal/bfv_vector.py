@@ -19,7 +19,7 @@ def object2proto(obj: object) -> TenSEALVector_PB:
 
 
 def proto2object(proto: TenSEALVector_PB) -> ts.BFVVector:
-    # vec_id: UID = _deserialize(blob=proto.id)
+    # vec_id: UID = validate_type(_deserialize(blob=proto.id), UID)
     vec = ts.lazy_bfv_vector_from(proto.vector)
     # vec.id = vec_id
 

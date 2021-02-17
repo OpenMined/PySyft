@@ -12,9 +12,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft as sy
 
 # syft relative
-from ...decorators import syft_decorator
-from ...logger import critical
-from ...logger import traceback
+from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import key_emoji
@@ -54,19 +52,18 @@ class StorableObject(AbstractStorableObject):
 
     __slots__ = ["id", "_data", "_description", "_tags"]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
         data: object,
-        description: str = "",
+        description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
-        self._description: str = description
+        self._description: str = description if description else ""
         self._tags: List[str] = tags if tags else []
 
         # the dict key of "verify key" objects corresponding to people
@@ -122,7 +119,6 @@ class StorableObject(AbstractStorableObject):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> StorableObject_PB:
         proto = StorableObject_PB()
 
@@ -166,10 +162,12 @@ class StorableObject(AbstractStorableObject):
         return proto
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def _proto2object(proto: StorableObject_PB) -> object:
+    def _proto2object(proto: StorableObject_PB) -> Serializable:
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
+
+        if not isinstance(id, UID):
+            traceback_and_raise(ValueError("TODO"))
 
         # # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # #  PYDOC.LOCATE!!!
@@ -198,34 +196,6 @@ class StorableObject(AbstractStorableObject):
             id=id, data=data, tags=tags, description=description
         )
 
-        # just a backup
-        try:
-            result.tags = tags
-            result.description = description
-
-            # default to empty
-            result.read_permissions = {}
-            result.search_permissions = {}
-
-            # Step 7: get the read permissions
-            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-                result.read_permissions = _deserialize(
-                    blob=proto.read_permissions, from_bytes=True
-                )
-
-            # Step 8: get the search permissions
-            if (
-                proto.search_permissions is not None
-                and len(proto.search_permissions) > 0
-            ):
-                result.search_permissions = _deserialize(
-                    blob=proto.search_permissions, from_bytes=True
-                )
-        except Exception as e:
-            # torch.return_types.* namedtuple cant setattr
-            critical(f"StorableObject {type(result)} cant set attributes")
-            traceback(e)
-
         return result
 
     @staticmethod
@@ -239,7 +209,7 @@ class StorableObject(AbstractStorableObject):
     @staticmethod
     def construct_new_object(
         id: UID,
-        data: "StorableObject",
+        data: object,
         description: Optional[str],
         tags: Optional[List[str]],
     ) -> "StorableObject":

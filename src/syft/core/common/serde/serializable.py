@@ -8,12 +8,12 @@ from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....decorators import syft_decorator
 from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
+from ....util import validate_type
 
 # Fixes python3.6
 # however, API changed between versions so typing_extensions smooths this over:
@@ -127,9 +127,7 @@ class Serializable:
         """
         traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def _object2proto() -> Message:
+    def _object2proto(self) -> Message:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
@@ -141,6 +139,7 @@ class Serializable:
         """
 
         traceback_and_raise(NotImplementedError)
+        raise NotImplementedError
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -172,43 +171,38 @@ class Serializable:
         """
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def to_proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return self.serialize(to_proto=True)
+        return validate_type(self.serialize(to_proto=True), Message)
 
-    @syft_decorator(typechecking=True)
     def proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return self.serialize(to_proto=True)
+        return validate_type(self.serialize(to_proto=True), Message)
 
-    @syft_decorator(typechecking=True)
     def to_bytes(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_bytes=True)
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
-    @syft_decorator(typechecking=True)
     def binary(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_bytes=True)
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
-    @syft_decorator(typechecking=True)
     def serialize(
         self,
         to_proto: bool = True,
@@ -243,14 +237,14 @@ class Serializable:
             debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
-            blob = self._object2proto().SerializeToString()
-            blob = DataMessage(
-                obj_type=get_fully_qualified_name(obj=self), content=blob
+            serialized_data = self._object2proto().SerializeToString()
+            blob: Message = DataMessage(
+                obj_type=get_fully_qualified_name(obj=self), content=serialized_data
             )
             return blob.SerializeToString()
 
         elif to_proto:
-            return type(self)._object2proto(self)
+            return self._object2proto()
         else:
             traceback_and_raise(
                 Exception(

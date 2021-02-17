@@ -6,7 +6,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
@@ -16,6 +15,7 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
@@ -43,7 +43,6 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -160,9 +159,9 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            msg = GetObjectResponseMessage(
-                obj=storable_object.data, address=self.reply_to, msg_id=None
-            )
+            obj = validate_type(storable_object, StorableObject).data
+
+            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
             if self.delete_obj:
                 try:
@@ -191,7 +190,6 @@ class GetObjectAction(ImmediateActionWithReply):
     def pprint(self) -> str:
         return f"GetObjectAction({self.id_at_location})"
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:
         """Returns a protobuf serialization of self.
 

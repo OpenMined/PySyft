@@ -13,11 +13,10 @@ from ... import serialize
 from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
-from ...decorators import syft_decorator
 from ...proto.lib.python.set_pb2 import Set as Set_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
-from .util import SyPrimitiveRet
+from .types import SyPrimitiveRet
 from .util import downcast
 
 
@@ -39,167 +38,134 @@ class Set(set, PyPrimitive):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __and__(self, other: Any) -> SyPrimitiveRet:
         res = super().__and__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         res = super().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ge__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __gt__(self, other: Any) -> SyPrimitiveRet:
         res = super().__gt__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __iand__(self, other: Any) -> SyPrimitiveRet:
         res = super().__iand__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ior__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ior__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __isub__(self, other: Any) -> SyPrimitiveRet:
         res = super().__isub__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ixor__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ixor__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> SyPrimitiveRet:
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __lt__(self, other: Any) -> SyPrimitiveRet:
         res = super().__lt__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __or__(self, other: Any) -> SyPrimitiveRet:
         res = super().__or__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __sub__(self, other: Any) -> SyPrimitiveRet:
         res = super().__sub__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __xor__(self, other: Any) -> SyPrimitiveRet:
         res = super().__xor__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def add(self, other: Any) -> SyPrimitiveRet:
+    def add(self, other: Any) -> None:
         res = super().add(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def clear(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def clear(self) -> None:
         res = super().clear()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def difference(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().difference(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def difference_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def difference_update(self, *args: Any) -> None:
         res = super().difference_update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def discard(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().discard(*args, **kwargs)
+    def discard(self, element: Any) -> None:
+        res = super().discard(element)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def intersection(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def intersection(self, *args: Any) -> SyPrimitiveRet:
         res = super().intersection(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def intersection_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def intersection_update(self, *args: Any) -> None:
         res = super().intersection_update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def isdisjoint(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().isdisjoint(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def issubset(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().issubset(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def issuperset(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().issuperset(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def pop(self) -> SyPrimitiveRet:
         res = super().pop()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def remove(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().remove(*args, **kwargs)
+    def remove(self, element: Any) -> None:
+        res = super().remove(element)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def symmetric_difference(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().symmetric_difference(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def symmetric_difference_update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
-        res = super().symmetric_difference_update(*args, **kwargs)
+    def symmetric_difference_update(self, s: Any) -> None:
+        res = super().symmetric_difference_update(s)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def union(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
         res = super().union(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def update(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:
+    def update(self, *args: Any) -> None:
         res = super().update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Set_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
@@ -207,7 +173,6 @@ class Set(set, PyPrimitive):
         return Set_PB(id=id_, data=data)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: Set_PB) -> "Set":
         id_: UID = deserialize(blob=proto.id)
         value = [deserialize(blob=element, from_bytes=True) for element in proto.data]

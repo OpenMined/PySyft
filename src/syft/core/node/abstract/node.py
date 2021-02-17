@@ -10,7 +10,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators import syft_decorator
 from ....logger import traceback_and_raise
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
@@ -36,7 +35,6 @@ class AbstractNode(Address):
     # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
     signaling_msgs: Dict[Any, Any]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,

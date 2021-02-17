@@ -13,13 +13,12 @@ from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
-from .util import SyPrimitiveRet
+from .types import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
 
@@ -30,7 +29,6 @@ class TupleIterator(Iterator):
 
 @bind_protobuf
 class Tuple(tuple, PyPrimitive):
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, *args: Any):
         self._id = UID()
 
@@ -45,59 +43,45 @@ class Tuple(tuple, PyPrimitive):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __new__(cls, *args: Any) -> SyPrimitiveRet:
+    def __new__(cls, *args: Any) -> "Tuple":
         return super(Tuple, cls).__new__(Tuple, *args)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__add__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, item: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__contains__(item))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__eq__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=True)
     def __hash__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__hash__())
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__ne__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__ge__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __gt__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__gt__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__le__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __lt__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__lt__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__mul__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __rmul__(self, other: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__rmul__(other))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, item: Any) -> Union[SyPrimitiveRet, Any]:
         value = super().__getitem__(item)
         if isprimitive(value=value):
@@ -106,22 +90,18 @@ class Tuple(tuple, PyPrimitive):
             # we can have torch.Tensor and other types
             return value
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, __value: Any) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().count(__value))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def index(
         self, __value: Any, __start: Any = ..., __stop: Any = ...
     ) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().index(__value, __stop))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self, max_len: Optional[int] = None) -> TupleIterator:
         return TupleIterator(self, max_len=max_len)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: Tuple_PB) -> "Tuple":
         id_: UID = deserialize(blob=proto.id)
         value = [
@@ -132,7 +112,6 @@ class Tuple(tuple, PyPrimitive):
         new_list._id = id_
         return new_list
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]

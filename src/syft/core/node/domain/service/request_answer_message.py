@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -8,7 +9,7 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import deserialize
 from ..... import serialize
-from .....decorators import syft_decorator
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.request_answer_message_pb2 import (
     RequestAnswerMessage as RequestAnswerMessage_PB,
 )
@@ -33,7 +34,6 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         super().__init__(reply_to, address)
         self.request_id = request_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestAnswerMessage_PB:
         msg = RequestAnswerMessage_PB()
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
@@ -42,7 +42,6 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         return msg
 
     @staticmethod
-    # @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestAnswerMessage_PB) -> "RequestAnswerMessage":
         return RequestAnswerMessage(
             request_id=deserialize(blob=proto.request_id),
@@ -65,7 +64,6 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         self.status = status
         self.request_id = request_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RequestAnswerResponse_PB:
         msg = RequestAnswerResponse_PB()
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
@@ -74,7 +72,6 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: RequestAnswerResponse_PB) -> "RequestAnswerResponse":
         request_response = RequestAnswerResponse(
             status=RequestStatus(proto.status),
@@ -84,22 +81,27 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         return request_response
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RequestAnswerResponse_PB
 
 
 class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
     @staticmethod
-    # @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [RequestAnswerMessage]
 
     @staticmethod
-    # @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: RequestAnswerMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: RequestAnswerMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> RequestAnswerResponse:
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
         status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
         address = msg.reply_to
         return RequestAnswerResponse(

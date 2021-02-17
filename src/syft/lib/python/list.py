@@ -1,7 +1,6 @@
 # stdlib
 from collections import UserList
 from typing import Any
-from typing import Callable
 from typing import List as TypeList
 from typing import Optional
 from typing import Union
@@ -15,14 +14,12 @@ from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...core.store.storeable_object import StorableObject
-from ...decorators import syft_decorator
 from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
-from .none import SyNone
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
-from .util import SyPrimitiveRet
+from .types import SyPrimitiveRet
 from .util import downcast
 
 
@@ -34,7 +31,6 @@ class ListIterator(Iterator):
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
         if value is None:
             value = []
@@ -55,88 +51,69 @@ class List(UserList, PyPrimitive):
         """
         return self._id
 
-    @syft_decorator(typechecking=True, prohibit_args=True)
     def upcast(self) -> list:
         return list(self)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __gt__(self, other: Any) -> SyPrimitiveRet:
         res = super().__gt__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __lt__(self, other: Any) -> SyPrimitiveRet:
         res = super().__lt__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
         res = super().__iadd__(other)
         return PrimitiveFactory.generate_primitive(value=res, id=self.id)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __imul__(self, other: Any) -> SyPrimitiveRet:
         res = super().__imul__(other)
         return PrimitiveFactory.generate_primitive(value=res, id=self.id)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __add__(self, other: Any) -> SyPrimitiveRet:
         res = super().__add__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def __delitem__(self, other: Any) -> SyPrimitiveRet:
+    def __delitem__(self, other: Any) -> None:
         res = super().__delitem__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         res = super().__eq__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ge__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ge__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __mul__(self, other: Any) -> SyPrimitiveRet:
         res = super().__mul__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __sizeof__(self) -> SyPrimitiveRet:
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def sort(
-        self, key: Optional[Callable] = None, reverse: bool = False
-    ) -> SyPrimitiveRet:
-        super().sort(key=key, reverse=reverse)
-        return SyNone
+    def sort(self, *args: Any, **kwargs: Any) -> None:
+        res = super().sort(*args, **kwargs)
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __len__(self) -> Any:
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, key: Union[int, str, slice]) -> Any:
         res = super().__getitem__(key)  # type: ignore
         # we might be holding a primitive value, but generate_primitive
@@ -145,27 +122,22 @@ class List(UserList, PyPrimitive):
             return PrimitiveFactory.generate_primitive(value=res)
         return res
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __iter__(self, max_len: Optional[int] = None) -> ListIterator:
         return ListIterator(self, max_len=max_len)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def copy(self) -> "List":
         res = super().copy()
         res._id = UID()
         return res
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
-    def append(self, item: Any) -> SyPrimitiveRet:
-        super().append(item)
-        return SyNone
+    def append(self, item: Any) -> None:
+        res = super().append(item)
+        return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def count(self, other: Any) -> SyPrimitiveRet:
         res = super().count(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
@@ -173,7 +145,6 @@ class List(UserList, PyPrimitive):
         return List_PB(id=id_, data=data)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: List_PB) -> "List":
         id_: UID = deserialize(blob=proto.id)
         value = [deserialize(blob=element, from_bytes=True) for element in proto.data]

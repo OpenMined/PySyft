@@ -5,8 +5,8 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ....util import validate_type
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import Serializable
 from ...common.serde.serializable import bind_protobuf
@@ -16,7 +16,6 @@ from ...io.location import Location
 
 @bind_protobuf
 class Metadata(Serializable):
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         node: Location,
@@ -31,7 +30,6 @@ class Metadata(Serializable):
         else:
             self.id = UID()
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Metadata_PB:
         """Returns a protobuf serialization of self.
 
@@ -67,9 +65,9 @@ class Metadata(Serializable):
         """
 
         return Metadata(
-            id=_deserialize(blob=proto.id),
+            id=validate_type(_deserialize(blob=proto.id), UID, optional=True),
             name=proto.name,
-            node=_deserialize(blob=proto.node),
+            node=validate_type(_deserialize(blob=proto.node), Location),
         )
 
     @staticmethod
