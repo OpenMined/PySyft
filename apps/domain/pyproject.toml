@@ -21,7 +21,7 @@ PyJWT = "^1.7.1"
 bcrypt = "^3.2.0"
 loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
-syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_messages"}
+syft = {git = "https://github.com/OpenMined/PySyft", rev = "dev"}
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
