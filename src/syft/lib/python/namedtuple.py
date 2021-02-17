@@ -2,7 +2,6 @@
 from collections import namedtuple
 from typing import Any
 from typing import List
-from typing import Optional
 from typing import Tuple
 
 # third party
@@ -13,7 +12,6 @@ import torch
 from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
 from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_name
 from ...lib.util import full_name_with_qualname
@@ -164,32 +162,6 @@ def make_namedtuple(
     return tuple_klass(*values, tags, description, id)  # type: ignore
 
 
-def cons_new_obj(
-    id: UID,
-    data: StorableObject,
-    description: Optional[str],
-    tags: Optional[List[str]],
-) -> StorableObject:
-    obj_type, values = get_parts(return_tuple=data)
-
-    if tags is None:
-        # for the type checker
-        tags = []
-    if description is None:
-        # for the type checker
-        description = ""
-
-    return_tuple = make_namedtuple(
-        obj_type=obj_type,
-        values=values,
-        id=id,
-        tags=tags,
-        description=description,
-    )
-
-    return return_tuple
-
-
 # get each of the dynamic torch.return_types.*
 def get_supported_types() -> list:
     supported_types = []
@@ -271,5 +243,4 @@ for typ in supported_types:
         protobuf_scheme=ValuesIndices_PB,
         type_object2proto=object2proto,
         type_proto2object=proto2object,
-        cons_new_obj=cons_new_obj,
     )

@@ -1,7 +1,6 @@
 # stdlib
 from collections import OrderedDict as PyOrderedDict
 from typing import Any
-from typing import List
 from typing import Optional
 
 # third party
@@ -12,7 +11,6 @@ from .... import deserialize
 from .... import serialize
 from ....core.common.serde.serializable import bind_protobuf
 from ....core.common.uid import UID
-from ....core.store.storeable_object import StorableObject
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )
@@ -169,15 +167,3 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return OrderedDict_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data

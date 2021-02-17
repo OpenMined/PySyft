@@ -3,7 +3,6 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
@@ -80,15 +79,6 @@ class Dataset(Serializable):
     @description.setter
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: List[StorableObject],
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "Dataset":
-        return Dataset(id=id, data=data, description=description, tags=tags)
 
     @property
     def class_name(self) -> str:
@@ -169,12 +159,7 @@ class Dataset(Serializable):
         # Step 4: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = Dataset.construct_new_object(
-            id=id,
-            data=data,
-            tags=tags,
-            description=description,
-        )
+        result = Dataset(id=id, data=data, description=description, tags=tags)
         return result
 
     @staticmethod
@@ -194,15 +179,4 @@ class Dataset(Serializable):
         :rtype: GeneratedProtocolMessageType
 
         """
-        return Dataset_PB
-
-    def _data_object2proto(self) -> List[Message]:
-        return [d._object2proto() for d in self.data]
-
-    @staticmethod
-    def _data_proto2object(proto: List[Message]) -> List[Serializable]:
-        return [_deserialize(blob=p) for p in proto]
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
         return Dataset_PB

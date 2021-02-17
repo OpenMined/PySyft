@@ -1,8 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
-from typing import List
-from typing import Optional
 from typing import Union
 
 # third party
@@ -13,11 +11,9 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft
 
 # syft relative
-from .core.common import UID
 from .core.common.serde.serializable import Serializable
 from .core.common.serde.serializable import bind_protobuf
 from .core.common.serde.serialize import _serialize
-from .core.store.storeable_object import StorableObject
 from .util import aggressive_set_attr
 
 module_type = type(syft)
@@ -31,7 +27,6 @@ def GenerateWrapper(
     protobuf_scheme: GeneratedProtocolMessageType,
     type_object2proto: CallableT,
     type_proto2object: CallableT,
-    cons_new_obj: Optional[CallableT] = None,
 ) -> None:
     @bind_protobuf
     class Wrapper(Serializable):
@@ -49,23 +44,6 @@ def GenerateWrapper(
         @staticmethod
         def get_protobuf_schema() -> GeneratedProtocolMessageType:
             return protobuf_scheme
-
-        @staticmethod
-        def construct_new_object(
-            id: UID,
-            data: StorableObject,
-            description: Optional[str],
-            tags: Optional[List[str]],
-        ) -> StorableObject:
-            if cons_new_obj:
-                return cons_new_obj(
-                    id=id, data=data, description=description, tags=tags
-                )
-            else:
-                setattr(data, "_id", id)
-                data.tags = tags
-                data.description = description
-                return data
 
         def upcast(self) -> Any:
             return self.obj

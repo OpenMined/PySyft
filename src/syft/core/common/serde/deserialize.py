@@ -74,10 +74,6 @@ def _deserialize(
     # when a protobuf type is related to multiple classes, it's schema2type will be None.
     # In that case, we use it's obj_type field.
     if obj_type is None:
-        print()
-        print("&" * 10)
-        print(f"type(blob)={type(blob)}")
-        print("&" * 10)
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
             traceback_and_raise(deserialization_error)

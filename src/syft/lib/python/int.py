@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 
 # third party
@@ -11,7 +10,6 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
-from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.int_pb2 import Int as Int_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -331,15 +329,3 @@ class Int(int, PyPrimitive):
             return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
         else:
             return PyPrimitive.to_bytes(self)
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
