@@ -383,7 +383,6 @@ class Class(Callable):
                 to_bytes=to_bytes,
             )
 
-
         serialize_attr = "serialize"
 
         if not issubclass(outer_self.object_ref, Serializable):

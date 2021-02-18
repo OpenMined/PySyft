@@ -6,7 +6,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
-import syft
 from syft.core.node.common.plan.plan import Plan
 
 # from syft.core.node.common.action.common import Action
@@ -16,12 +15,11 @@ from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 # syft relative
 from ...core.common.uid import UID
 from ...core.store.storeable_object import StorableObject
-from ...logger import warning
 from ...util import aggressive_set_attr
 
 
 class PlanWrapper(StorableObject):
-    def __init__(self, value: object):
+    def __init__(self, value: Plan):
         super().__init__(
             data=value,
             id=getattr(value, "id", UID()),

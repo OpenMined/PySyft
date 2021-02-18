@@ -5,14 +5,16 @@ from typing import List
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 
 # syft absolute
 from syft.core.common.object import Serializable
 from syft.core.node.common.action.common import Action
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
+
+# syft relative
 from ...abstract.node import AbstractNode
-from nacl.signing import VerifyKey
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -21,7 +23,7 @@ class Plan(Serializable):
     def __init__(self, actions: List[Action]):
         self.actions = actions
 
-    def execute(self, node: AbstractNode, verify_key: VerifyKey):
+    def execute(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for a in self.actions:
             a.execute_action(node, verify_key)
 
@@ -61,7 +63,7 @@ class Plan(Serializable):
             object.
         """
 
-        def camel_to_snake(s):
+        def camel_to_snake(s: str) -> str:
             return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
 
         actions_pb = [
@@ -75,14 +77,14 @@ class Plan(Serializable):
         return Plan_PB(actions=actions_pb)
 
     @staticmethod
-    def _proto2object(proto: Plan_PB) -> "GetObjectAction":
+    def _proto2object(proto: Plan_PB) -> "Plan":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of GetObjectAction
-        :rtype: GetObjectAction
+        :return: returns an instance of Plan
+        :rtype: Plan
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
