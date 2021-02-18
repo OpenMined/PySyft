@@ -1,6 +1,7 @@
 # stdlib
 import re
 import sys
+from typing import Any
 from typing import List
 
 # third party
@@ -23,7 +24,16 @@ class Plan(Serializable):
     def __init__(self, actions: List[Action]):
         self.actions = actions
 
-    def execute(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+    def execute(
+        self, node: AbstractNode, verify_key: VerifyKey, inputs: Any = None
+    ) -> None:
+
+        # import ipdb
+        # ipdb.set_trace()
+
+        if inputs is not None:
+            self.actions[0]._self = inputs
+
         for a in self.actions:
             a.execute_action(node, verify_key)
 

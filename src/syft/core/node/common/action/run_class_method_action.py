@@ -166,7 +166,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data,
                         node,
                         verify_key,
-                        *upcasted_args,
+                        *self.args,
                         **upcasted_kwargs,
                     )
                 else:
