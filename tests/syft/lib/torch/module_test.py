@@ -66,8 +66,7 @@ def test_repr_to_kwargs() -> None:
     assert sy.lib.util.full_name_with_qualname(klass=torch.Tensor) == "torch.Tensor"
     assert sy.lib.torch.module.repr_to_kwargs("1, 32, kernel_size=(3, 3), stride=(1, 1)") == (
         [1, 32], 
-        {'kernel_size': (3, 3), 'stride': (1, 1)}
-        )
+        {'kernel_size': (3, 3), 'stride': (1, 1)})
     assert sy.lib.torch.module.repr_to_kwargs("1, 32") == ([1, 32], {})
     assert sy.lib.torch.module.repr_to_kwargs("kernel_size=(3, 3), stride=(1, 1)") == (
         [], {'kernel_size': (3, 3), 'stride': (1, 1)})
@@ -97,6 +96,7 @@ def test_module_modules(model: SyNet) -> None:
     assert len(modules.items()) == 1
     assert "fc1" in modules
     assert modules["fc1"].in_features == IN_DIM
+
 
 def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
     modules = modelEmpty.modules
@@ -234,4 +234,3 @@ def test_debug_sum_layers(
     model_ptr = model.send(alice_client)
 
     assert model_ptr.debug_sum_layers() is None
-
