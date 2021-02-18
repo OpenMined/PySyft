@@ -214,6 +214,20 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
     attrs[attr_name] = wrap_len(len_func)
 
 
+def attach_tags(obj: object, tags: List[str]) -> None:
+    try:
+        obj.tags = sorted(set(tags), key=tags.index)  # type: ignore
+    except AttributeError:
+        warning(f"can't attach new attribute `tags` to {type(obj)} object.")
+
+
+def attach_description(obj: object, description: str) -> None:
+    try:
+        obj.description = description  # type: ignore
+    except AttributeError:
+        warning(f"can't attach new attribute `description` to {type(obj)} object.")
+
+
 class Class(Callable):
     def __init__(
         self,
@@ -294,36 +308,23 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
         ) -> Pointer:
-            # if self is C type/class, change self to it's wrapper object
-            which_obj = self
-            if hasattr(self, "serializable_wrapper_type"):
-                which_obj = self.serializable_wrapper_type(value=self)
-                which_obj.tags = getattr(self, "tags", [])
-                which_obj.description = getattr(self, "description", "")
+            if not hasattr(self, "id"):
+                try:
+                    self.id = UID()
+                except AttributeError:
+                    pass
 
-            if not hasattr(which_obj, "id"):
-                which_obj.id = UID()
-
-            tags = tags if tags else []
-            tags = sorted(set(tags), key=tags.index)  # keep order of original
-            obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags
+            obj_tags = getattr(self, "tags", [])
+            tags = tags if tags else []
             tags = tags if tags else obj_tags
 
-            obj_description = getattr(which_obj, "description", "")
             # if `description` is passed in, use it; else, use obj_description
+            obj_description = getattr(self, "description", "")
             description = description if description else obj_description
 
-            which_obj.tags = tags
-            which_obj.description = description
-            if hasattr(self, "serializable_wrapper_type"):
-                try:
-                    self.tags = tags
-                    self.description = description
-                except AttributeError:
-                    warning(
-                        f"'tags' and 'description' are not attached to {self}, because it's type is not a python class."
-                    )
+            attach_tags(self, tags)
+            attach_description(self, description)
 
             id_at_location = UID()
 
@@ -341,7 +342,7 @@ class Class(Callable):
             # Step 2: create message which contains object to send
             storable = StorableObject(
                 id=ptr.id_at_location,
-                data=which_obj,
+                data=self,
                 tags=tags,
                 description=description,
                 search_permissions={VerifyAll(): None} if searchable else {},
@@ -358,13 +359,11 @@ class Class(Callable):
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
-            self.tags = sorted(set(tags), key=tags.index)  # keep order of original
+            attach_tags(self, tags)  # type: ignore
             return self
 
         def describe(self: Any, description: str) -> object:
-            self.description = description
-            # QUESTION: Is this supposed to return self?
-            # WHY? Chaining?
+            attach_description(self, description)
             return self
 
         aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)

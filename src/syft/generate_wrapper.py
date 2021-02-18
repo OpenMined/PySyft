@@ -38,8 +38,7 @@ def GenerateWrapper(
 
         @staticmethod
         def _proto2object(proto: Any) -> Any:
-            obj = type_proto2object(proto)
-            return Wrapper(value=obj)
+            return type_proto2object(proto)
 
         @staticmethod
         def get_protobuf_schema() -> GeneratedProtocolMessageType:
