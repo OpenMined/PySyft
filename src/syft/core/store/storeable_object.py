@@ -274,3 +274,12 @@ class StorableObject(AbstractStorableObject):
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    def clean_copy(self) -> "StorableObject":
+        """
+        This method return a copy of self, but clean up the search_permissions and
+        read_permissions attributes.
+        """
+        return StorableObject(
+            id=self.id, data=self.data, tags=self.tags, description=self.description
+        )

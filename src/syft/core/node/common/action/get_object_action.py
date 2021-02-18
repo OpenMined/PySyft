@@ -9,6 +9,7 @@ from nacl.signing import VerifyKey
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
@@ -59,7 +60,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        ser = StorableObject(id=UID(), data=self.obj).serialize()
+        ser = self.obj.serialize()
 
         return GetObjectResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -82,10 +83,22 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
         return GetObjectResponseMessage(
-            obj=_deserialize(blob=proto.obj).data,
+            obj=_deserialize(blob=proto.obj),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
+
+    @property
+    def data(self) -> object:
+        data = self.obj.data
+        try:
+            data.tags = self.obj.tags
+            data.description = self.obj.description
+        except AttributeError:
+            warning(
+                f"'tags' and 'description' can't be attached to {type(data)} object."
+            )
+        return data
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -160,7 +173,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = validate_type(storable_object, StorableObject).data
+            obj = validate_type(storable_object.clean_copy(), StorableObject)
 
             msg = GetObjectResponseMessage(
                 obj=storable_object.data, address=self.reply_to, msg_id=None

@@ -172,13 +172,7 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
-
-        obj = response.obj
-
-        if type(obj).__name__.endswith("Wrapper"):
-            return obj.data
-
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)

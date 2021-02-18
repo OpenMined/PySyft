@@ -10,7 +10,7 @@ from ..services.signaling_service import RegisterNewPeerMessage
 
 
 class SignalingClient(object):
-    def __init__(self, url: str, conn_type: type, client_type: NetworkClient) -> None:
+    def __init__(self, url: str, conn_type: type, client_type: type) -> None:
         # Load an Signing Key instance
         signing_key = SigningKey.generate()
         verify_key = signing_key.verify_key
