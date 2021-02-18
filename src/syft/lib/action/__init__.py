@@ -12,7 +12,7 @@ from syft.core.node.common.action.get_object_action import GetObjectAction
 from syft.core.node.common.plan.plan import Plan
 
 # syft relative
-from . import action_wrapper  # noqa: 401
+from . import plan_wrapper  # noqa: 401
 
 
 def create_plan_ast(client: TypeAny = None) -> Globals:
