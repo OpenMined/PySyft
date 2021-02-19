@@ -48,6 +48,7 @@ def test_send_message_from_device_client_to_device() -> None:
         )
 
 
+@pytest.mark.slow
 def test_register_vm_on_device_fails() -> None:
 
     bob_vm = sy.VirtualMachine(name="Bob")
@@ -65,6 +66,7 @@ def test_register_vm_on_device_fails() -> None:
     assert bob_vm_client.device is not None
 
 
+@pytest.mark.slow
 def test_register_vm_on_device_succeeds() -> None:
     # Register a 🍰 with a 📱
 
@@ -82,6 +84,7 @@ def test_register_vm_on_device_succeeds() -> None:
     assert bob_vm_client.device is not None
 
 
+@pytest.mark.slow
 def test_known_child_nodes() -> None:
     bob_vm = sy.VirtualMachine(name="Bob VM")
     bob_vm_client = bob_vm.get_client()
@@ -106,6 +109,7 @@ def test_known_child_nodes() -> None:
     assert bob_vm_2 in bob_phone.known_child_nodes
 
 
+@pytest.mark.slow
 def test_send_message_from_device_client_to_vm() -> None:
     # Register a 🍰 with a 📱
     # Send ✉️ from 📱 ➡️ 🍰
@@ -131,6 +135,7 @@ def test_send_message_from_device_client_to_vm() -> None:
     )
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 def test_send_message_from_domain_client_to_vm() -> None:
     # Register a 🍰 with a 📱
@@ -166,6 +171,7 @@ def test_send_message_from_domain_client_to_vm() -> None:
     )
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 def test_send_message_from_network_client_to_vm() -> None:
     # Register a 🍰 with a 📱
@@ -211,6 +217,7 @@ def test_send_message_from_network_client_to_vm() -> None:
     )
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 def test_autoapprove_requests_made_by_root_clients_5015() -> None:
     # third party

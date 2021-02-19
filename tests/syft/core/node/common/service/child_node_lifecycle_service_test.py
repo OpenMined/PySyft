@@ -1,3 +1,6 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 from syft.core.node.common.service.child_node_lifecycle_service import (
@@ -5,6 +8,7 @@ from syft.core.node.common.service.child_node_lifecycle_service import (
 )
 
 
+@pytest.mark.slow
 def test_child_node_lifecycle_message_serde() -> None:
     bob_vm = sy.VirtualMachine(name="Bob")
     bob_vm_client = bob_vm.get_client()

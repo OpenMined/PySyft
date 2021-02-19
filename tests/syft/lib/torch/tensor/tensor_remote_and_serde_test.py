@@ -10,6 +10,7 @@ import syft as sy
 from syft.core.node.common.service.auth import AuthorizationException
 
 
+@pytest.mark.slow
 def test_torch_remote_tensor_register() -> None:
     """ Test if sending a tensor will be registered on the remote worker. """
 
@@ -66,6 +67,7 @@ def test_torch_serde() -> None:
     assert (x == x2).all()
 
 
+@pytest.mark.slow
 def test_torch_no_read_permissions() -> None:
 
     bob = sy.VirtualMachine(name="bob")

@@ -2919,6 +2919,7 @@ def test_slice():
     checkraises(TypeError, python.String("abc"), "__getitem__", python.String("def"))
 
 
+@pytest.mark.slow
 def test_extended_getslice():
     # Test extended slicing by comparing with list slicing.
     s = string.ascii_letters + string.digits
