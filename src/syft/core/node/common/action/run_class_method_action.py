@@ -157,7 +157,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
-                # Todo, fix this hacky isinstance. Right now it prevents circular dependency
                 if isinstance(resolved_self.data, Plan) and method_name == "execute":
                     result = method(
                         resolved_self.data,
@@ -283,6 +282,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction_PB
 
     def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
             self._self = new_input
         else:

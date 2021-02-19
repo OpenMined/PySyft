@@ -25,6 +25,14 @@ CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
 class Plan(Serializable):
+    """
+    A plan is a collection of actions, plus some variable inputs, that together form a computation graph.
+
+    Attributes:
+        actions: list of actions
+        inputs: Pointers to the inputs. Defaults to None.
+    """
+
     def __init__(
         self, actions: List[Action], inputs: Union[Pointer, List[Pointer], None] = None
     ):
