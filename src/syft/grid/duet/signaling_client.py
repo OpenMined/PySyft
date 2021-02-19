@@ -5,7 +5,6 @@ from nacl.signing import SigningKey
 from ...core.common.message import SyftMessage
 from ...core.io.address import Address
 from ...core.io.route import SoloRoute
-from ...core.node.network.client import NetworkClient
 from ..services.signaling_service import RegisterNewPeerMessage
 
 
@@ -17,20 +16,20 @@ class SignalingClient(object):
 
         # Use Signaling Server metadata
         # to build client route
-        conn = conn_type(url=url)
-        (
-            spec_location,
-            name,
-            client_id,
-        ) = client_type.deserialize_client_metadata_from_node(
-            metadata=conn._get_metadata()
-        )
+        deserializer = getattr(client_type, "deserialize_client_metadata_from_node")
+        if callable(deserializer):
+            conn = conn_type(url=url)
+            (
+                spec_location,
+                name,
+                client_id,
+            ) = deserializer(metadata=conn._get_metadata())
 
         # Create a new Solo Route using the selected connection type
         route = SoloRoute(destination=spec_location, connection=conn)
 
         # Create a new signaling client using the selected client type
-        signaling_client = client_type(  # type: ignore
+        signaling_client = client_type(
             network=spec_location,
             name=name,
             routes=[route],

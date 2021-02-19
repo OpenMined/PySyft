@@ -7,7 +7,6 @@ import tenseal as ts
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ...util import get_fully_qualified_name
-from ...util import validate_type
 
 
 def object2proto(obj: object) -> TenSEALVector_PB:

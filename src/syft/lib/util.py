@@ -158,6 +158,5 @@ def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
 
 
-@syft_decorator(typechecking=True)
 def full_name_with_name(klass: type) -> str:
     return f"{klass.__module__}.{klass.__name__}"

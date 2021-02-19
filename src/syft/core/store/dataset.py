@@ -4,7 +4,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft absolute
 import syft as sy

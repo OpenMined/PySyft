@@ -1,6 +1,6 @@
 # stdlib
-from typing import Any
 import pydoc
+from typing import Any
 from typing import Union
 
 # third party

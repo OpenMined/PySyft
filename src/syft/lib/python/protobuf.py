@@ -1,20 +1,15 @@
 # stdlib
 from typing import Any
-from typing import List
-from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
-from ...util import aggressive_set_attr
 from .ctype import GenerateWrapper
 
 
 def GenerateProtobufWrapper(
-    cls_pb: "GenerateProtocolMessageType", import_path: str
+    cls_pb: "GeneratedProtocolMessageType", import_path: str
 ) -> None:
     def object2proto(obj: Any) -> Any:
         return obj

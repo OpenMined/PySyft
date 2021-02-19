@@ -24,10 +24,9 @@ from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
-from ..util import aggressive_set_attr
-from ..util import inherit_tags
 from ..logger import warning
 from ..util import aggressive_set_attr
+from ..util import inherit_tags
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
