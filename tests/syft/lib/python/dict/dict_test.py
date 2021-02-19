@@ -481,9 +481,9 @@ class DictTest(unittest.TestCase):
                     b = a.copy()
                 for i in range(size):
                     ka, va = ta = a.popitem()
-                    self.assertEqual(va, int(ka))
+                    self.assertEqual(va, ka.__int__())
                     kb, vb = tb = b.popitem()
-                    self.assertEqual(vb, int(kb))
+                    self.assertEqual(vb, kb.__int__())
                     self.assertFalse(copymode < 0 and ta != tb)
                 self.assertFalse(a)
                 self.assertFalse(b)
