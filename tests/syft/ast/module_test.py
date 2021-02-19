@@ -10,12 +10,29 @@ def global_function() -> int:
 
 
 class A:
-    __slots__ = ["_private_attr"]
+    """This is a test class to be used in functionality test."""
+
+    __slots__ = ["_private_attr", "n"]
 
     static_attr: int = 4
 
     def __init__(self) -> None:
         self._private_attr: float = 5.5
+
+    def __len__(self) -> int:
+        return 3
+
+    def __iter__(self) -> "A":
+        self.n = 1
+        return self
+
+    def __next__(self) -> int:
+        if self.n < A.static_attr:
+            result = self.n
+            self.n += 1
+            return result
+        else:
+            raise StopIteration
 
     def test_method(self) -> int:
         return 0
@@ -34,6 +51,27 @@ class A:
 
 
 class B(Enum):
+    """This is a test enum to be used in functionality test."""
+
     Car = 1
     Cat = 2
     Dog = 3
+
+
+class IterWithoutLen:
+    """This is a test class for testing iterator method in Klass."""
+
+    __slots__ = ["n"]
+    static_attr: int = 1
+
+    def __iter__(self) -> "IterWithoutLen":
+        self.n = 0
+        return self
+
+    def __next__(self) -> int:
+        if self.n < A.static_attr:
+            result = self.n
+            self.n += 1
+            return result
+        else:
+            raise StopIteration
