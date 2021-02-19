@@ -120,7 +120,16 @@ class ComplexTest(unittest.TestCase):
                 unittest.TestCase.assertAlmostEqual(self, a, b)
 
     def assertCloseAbs(self, x, y, eps=1e-9):
-        """Return true iff floats x and y "are close"."""
+        """Return true iff floats x and y "are close".
+
+        Args:
+            x: float value
+            y: float value
+            eps: float value for checking relative difference between x and y
+
+        Returns:
+            true if absolute value of non-zero value x,y less than eps
+        """
         # put the one with larger magnitude second
         if abs(x) > abs(y):
             x, y = y, x
@@ -138,6 +147,9 @@ class ComplexTest(unittest.TestCase):
         (3) both x and y are zeros, with the same sign, or
         (4) x and y are both finite and nonzero, and x == y
 
+        Args:
+            x: float value
+            y: float value
         """
         msg = "floats {!r} and {!r} are not identical"
 
@@ -155,12 +167,23 @@ class ComplexTest(unittest.TestCase):
         self.fail(msg.format(x, y))
 
     def assertClose(self, x, y, eps=1e-9):
-        """Return true iff complexes x and y "are close"."""
+        """Return true iff complexes x and y "are close".
+
+        Args:
+            x: complex value
+            y: complex value
+            eps: float value for checking relative difference between x and y
+        """
         self.assertCloseAbs(x.real, y.real, eps)
         self.assertCloseAbs(x.imag, y.imag, eps)
 
     def check_div(self, x, y):
-        """Compute Complex z=x*y, and check that z/x==y and z/y==x."""
+        """Compute Complex z=x*y, and check that z/x==y and z/y==x.
+
+        Args:
+            x: complex value
+            y: complex value
+        """
         z = x * y
         if x != 0:
             q = z / x
@@ -389,7 +412,14 @@ class ComplexTest(unittest.TestCase):
         # is preserved when constructing from two floats.  (These checks
         # are harmless on systems without support for signed zeros.)
         def split_zeros(x):
-            """Function that produces different results for 0. and -0."""
+            """Function that produces different results for 0. and -0.
+
+            Args:
+                x: real or imaginary float value
+
+            Returns:
+                arc tangent (measured in radians) of x/(-1.0)
+            """
             return atan2(x, -1.0)
 
         self.assertEqual(split_zeros(Complex(1.0, 0.0).imag), split_zeros(0.0))
