@@ -10,12 +10,12 @@ VERSIONS_LUT = {
     "1.5.1": dict(torchvision="0.6.1", torchsprng=None),
     "1.6.0": dict(torchvision="0.7", torchsprng="0.1.2"),
     "1.7.0": dict(torchvision="0.8.1", torchsprng="0.1.3"),
-    "1.7.1": dict(torchvision="0.8.2", torchsprng="0.1.4")
+    "1.7.1": dict(torchvision="0.8.2", torchsprng="0.1.4"),
 }
 
 
 def main(path_req: str, torch_version: str):
-    with open(path_req, 'r') as fp:
+    with open(path_req, "r") as fp:
         req = fp.read()
 
     dep_versions = VERSIONS_LUT.get(torch_version, VERSIONS_NONE)
@@ -29,9 +29,9 @@ def main(path_req: str, torch_version: str):
             )
 
     print(torch_version)
-    with open(path_req, 'w') as fp:
+    with open(path_req, "w") as fp:
         fp.write(req)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(*sys.argv[1:])
