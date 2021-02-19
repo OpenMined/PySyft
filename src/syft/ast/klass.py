@@ -27,6 +27,7 @@ from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..logger import critical
 from ..logger import traceback_and_raise
+from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
@@ -479,12 +480,15 @@ class Class(Callable):
                 return target_object_ptr
 
             return target_object
-        except Exception as e:
-            critical(
+        except AttributeError as e:
+            warning(
                 "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
+                "StaticAttribute, be sure they have been added to the AST. Falling back on "
                 "__getattr__ to search in self.attrs for the requested field."
             )
+            raise e
+        except Exception as e:
+            critical(f"__getattribute__ failed with {type(e).__name__}")
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
