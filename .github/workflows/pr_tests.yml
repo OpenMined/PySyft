@@ -135,7 +135,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
           pip freeze
-        timeout-minutes: 10
+        timeout-minutes: 20
 
       - name: Run normal tests
         run: |
