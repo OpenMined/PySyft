@@ -98,6 +98,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -110,10 +112,6 @@ jobs:
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
 
       - name: Scan for security issues
         run: |
@@ -140,7 +138,7 @@ jobs:
         run: |
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
-          pip freeze
+          pip list
 
       - name: Run normal tests
         run: |
@@ -191,6 +189,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -203,10 +203,6 @@ jobs:
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -244,6 +240,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -256,10 +254,6 @@ jobs:
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
 
       - uses: actions/checkout@v2
         with:
