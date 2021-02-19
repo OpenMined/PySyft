@@ -14,6 +14,7 @@ from ...core.store.storeable_object import StorableObject
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ...util import aggressive_set_attr
 from ...util import get_fully_qualified_name
+from ...util import validate_type
 
 
 class PlainTensorWrapper(StorableObject):
@@ -36,7 +37,7 @@ class PlainTensorWrapper(StorableObject):
 
     @staticmethod
     def _data_proto2object(proto: TenSEALVector_PB) -> ts.PlainTensor:
-        vec_id: UID = _deserialize(blob=proto.id)
+        vec_id: UID = validate_type(_deserialize(blob=proto.id), UID)
         vec = ts.plain_tensor_from(proto.vector)
         vec.id = vec_id
 

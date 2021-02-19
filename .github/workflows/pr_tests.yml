@@ -62,6 +62,10 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
+      - name: Run darglint - Ignore Errors
+        continue-on-error: true
+        run: |
+          darglint src tests
 
   python-tests-fast:
     needs: [python-linting]
@@ -140,7 +144,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
 
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
@@ -167,8 +171,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip freeze
-          pytest -m libs -n auto --no-cov -k "not tenseal"
-          pytest -m libs -n 1 --no-cov -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal"
+          pytest -m libs -n 1 -k "tenseal"
 
   python-nb-examples:
     needs: [python-linting]
@@ -208,4 +212,67 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api -n auto --no-cov
+          pytest examples/api -n auto
+
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+
+      - name: Run notebook Duet examples
+        run: |
+          pip install -r requirements.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          python ./scripts/nb_duet_test.py
+          cd tests/syft/notebooks/ && pytest . -n 1
+
+  pygrid-unit-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 3
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "OpenMined/PyGrid"
+          ref: "pygrid_0.4.0"
+          path: "pygrid"
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          ls
+          pip install -e . --default-timeout=60
+          pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      --default-timeout=60
+          pytest ./pygrid/apps/domain/tests
+          pytest ./pygrid/apps/network/tests
+          pytest ./pygrid/apps/worker/tests
