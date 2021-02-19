@@ -17,9 +17,9 @@ from pytest import MonkeyPatch
 # syft absolute
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
-from syft.grid.connections.webrtc import DC_CHUNK_END_SIGN
 from syft.grid.connections.webrtc import DC_CHUNK_START_SIGN
 from syft.grid.connections.webrtc import DC_MAX_CHUNK_SIZE
+from syft.grid.connections.webrtc import OrderedChunk
 from syft.grid.connections.webrtc import WebRTCConnection
 
 
@@ -84,7 +84,7 @@ async def test_set_offer_sets_channel() -> None:
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
     assert isinstance(webrtc.channel, RTCDataChannel)
-    assert webrtc.channel.bufferedAmountLowThreshold == 16 * DC_MAX_CHUNK_SIZE
+    assert webrtc.channel.bufferedAmountLowThreshold == 4 * DC_MAX_CHUNK_SIZE
 
 
 @pytest.mark.slow
@@ -121,13 +121,10 @@ async def test_set_offer_on_message() -> None:
         "syft.grid.connections.webrtc.WebRTCConnection.consumer",
         return_value=coro_mock(),
     ) as consumer_mock:
-        await on_message(DC_CHUNK_START_SIGN)
+        await on_message(OrderedChunk(1, DC_CHUNK_START_SIGN).save())
         assert consumer_mock.call_count == 0
 
-        await on_message(b"a")
-        assert consumer_mock.call_count == 0
-
-        await on_message(DC_CHUNK_END_SIGN)
+        await on_message(OrderedChunk(0, b"a").save())
         assert consumer_mock.call_count == 1
 
 
@@ -194,13 +191,10 @@ async def test_set_answer_on_message() -> None:
         channel_methods = list(answer_webrtc.channel._events.values())
         on_message = list(channel_methods[1].values())[0]
 
-        await on_message(message=DC_CHUNK_START_SIGN)
+        await on_message(OrderedChunk(1, DC_CHUNK_START_SIGN).save())
         assert consumer_mock.call_count == 0
 
-        await on_message(message=b"a")
-        assert consumer_mock.call_count == 0
-
-        await on_message(message=DC_CHUNK_END_SIGN)
+        await on_message(OrderedChunk(0, b"a").save())
         assert consumer_mock.call_count == 1
 
 

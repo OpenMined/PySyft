@@ -33,7 +33,9 @@ class ContextWrapper(StorableObject):
         proto.obj_type = get_fully_qualified_name(obj=self.value)
         proto.vendor_lib = "tenseal"
         proto.vendor_lib_version = ts.__version__
-        proto.content = self.value.serialize()  # type: ignore
+        # TODO: sending the secret key reduces the latency by a lot, but
+        # we need strong guarantees that it won't be misused.
+        proto.content = self.value.serialize(save_secret_key=True)  # type: ignore
 
         return proto
 
@@ -53,6 +55,8 @@ class ContextWrapper(StorableObject):
                 log = f"Warning {lib_version} > local imported version {ts.__version__}"
                 info(log)
 
+        # TODO: Here we need to generate all the necessary public keys and drop the secret key.
+        # Right now, the context is serialized again, and we lose all the performance improvements.
         return ts.context_from(proto.content, n_threads=1)
 
     @staticmethod
