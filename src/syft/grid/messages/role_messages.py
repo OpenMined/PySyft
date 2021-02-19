@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.role_messages_pb2 import (
@@ -45,6 +46,7 @@ from syft.proto.grid.messages.role_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -115,6 +117,7 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -186,6 +189,7 @@ class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
         return CreateRoleResponse_PB
 
 
+@bind_protobuf
 @final
 class GetRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -256,6 +260,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage_PB
 
 
+@bind_protobuf
 @final
 class GetRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -327,6 +332,7 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse_PB
 
 
+@bind_protobuf
 @final
 class GetRolesMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -397,6 +403,7 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage_PB
 
 
+@bind_protobuf
 @final
 class GetRolesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -468,6 +475,7 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -538,6 +546,7 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -609,6 +618,7 @@ class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
         return UpdateRoleResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -679,6 +689,7 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         return DeleteRoleMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

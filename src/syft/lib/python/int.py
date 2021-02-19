@@ -9,7 +9,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde import Serializable
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.int_pb2 import Int as Int_PB
 from .primitive_factory import PrimitiveFactory
@@ -18,7 +17,7 @@ from .types import SyPrimitiveRet
 
 
 @bind_protobuf
-class Int(int, PyPrimitive, Serializable):
+class Int(int, PyPrimitive):
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
     ) -> "Int":

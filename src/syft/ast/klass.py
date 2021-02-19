@@ -345,7 +345,7 @@ class Class(Callable):
                 data=self,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll: None} if searchable else {},
+                search_permissions={VerifyAll(): None} if searchable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 

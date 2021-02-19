@@ -16,6 +16,7 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
@@ -171,9 +172,9 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            msg = GetObjectResponseMessage(
-                obj=storable_object.data, address=self.reply_to, msg_id=None
-            )
+            obj = validate_type(storable_object.clean_copy(), StorableObject)
+
+            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
             if self.delete_obj:
                 try:

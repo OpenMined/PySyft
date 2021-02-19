@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.group_messages_pb2 import (
@@ -45,6 +46,7 @@ from syft.proto.grid.messages.group_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -115,6 +117,7 @@ class CreateGroupMessage(ImmediateSyftMessageWithReply):
         return CreateGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -186,6 +189,7 @@ class CreateGroupResponse(ImmediateSyftMessageWithoutReply):
         return CreateGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class GetGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -256,6 +260,7 @@ class GetGroupMessage(ImmediateSyftMessageWithReply):
         return GetGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class GetGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -327,6 +332,7 @@ class GetGroupResponse(ImmediateSyftMessageWithoutReply):
         return GetGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class GetGroupsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -397,6 +403,7 @@ class GetGroupsMessage(ImmediateSyftMessageWithReply):
         return GetGroupsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -468,6 +475,7 @@ class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
         return GetGroupsResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -538,6 +546,7 @@ class UpdateGroupMessage(ImmediateSyftMessageWithReply):
         return UpdateGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -609,6 +618,7 @@ class UpdateGroupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -679,6 +689,7 @@ class DeleteGroupMessage(ImmediateSyftMessageWithReply):
         return DeleteGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

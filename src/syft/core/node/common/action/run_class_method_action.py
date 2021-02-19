@@ -200,13 +200,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs=tag_kwargs,
         )
 
-        if (
-            method_name == "__len__"
-            and resolved_self is not None
-            and isinstance(resolved_self.tags, list)
-        ):
-            result.tags = resolved_self.tags + ["__len__"]
-
         node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:

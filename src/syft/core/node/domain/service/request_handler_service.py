@@ -29,11 +29,13 @@ from .....util import traceback_and_raise
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 
 
+@bind_protobuf
 class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
