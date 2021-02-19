@@ -3,6 +3,7 @@ import re
 import sys
 from typing import Any
 from typing import List
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -11,6 +12,7 @@ from nacl.signing import VerifyKey
 # syft absolute
 from syft.core.common.object import Serializable
 from syft.core.node.common.action.common import Action
+from syft.core.pointer.pointer import Pointer
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
@@ -20,19 +22,36 @@ from ...abstract.node import AbstractNode
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
+def listify(x: Any) -> List[Any]:
+    return x if isinstance(x, list) else ([] if x is None else [x])
+
+
 class Plan(Serializable):
-    def __init__(self, actions: List[Action]):
+    def __init__(
+        self, actions: List[Action], inputs: Union[Pointer, List[Pointer], None] = None
+    ):
         self.actions = actions
+        self.inputs: List[Pointer] = listify(inputs)
 
     def execute(
-        self, node: AbstractNode, verify_key: VerifyKey, inputs: Any = None
+        self,
+        node: AbstractNode,
+        verify_key: VerifyKey,
+        inputs: Union[Pointer, List[Pointer], None] = None,
     ) -> None:
 
-        # import ipdb
-        # ipdb.set_trace()
+        # this is pretty cumbersome, we are searching through all actions to check
+        # if we need to redefine some of their attributes that are inputs in the
+        # graph of actions
+        for i, (current_input, new_input) in enumerate(
+            zip(self.inputs, listify(inputs))
+        ):
+            for a in self.actions:
+                if hasattr(a, "remap_input"):
+                    a.remap_input(current_input, new_input)
 
-        if inputs is not None:
-            self.actions[0]._self = inputs
+            # redefine the inputs of the plan
+            self.inputs[i] = new_input
 
         for a in self.actions:
             a.execute_action(node, verify_key)
@@ -83,8 +102,9 @@ class Plan(Serializable):
             )
             for action in self.actions
         ]
+        inputs_pb = [inp._object2proto() for inp in self.inputs]
 
-        return Plan_PB(actions=actions_pb)
+        return Plan_PB(actions=actions_pb, inputs=inputs_pb)
 
     @staticmethod
     def _proto2object(proto: Plan_PB) -> "Plan":
@@ -111,4 +131,8 @@ class Plan(Serializable):
             inner_action = getattr(action_proto, action_proto.WhichOneof("action"))
             actions.append(action_cls._proto2object(inner_action))
 
-        return Plan(actions=actions)
+        inputs = [
+            Pointer._proto2object(pointer_proto) for pointer_proto in proto.inputs
+        ]
+
+        return Plan(actions=actions, inputs=inputs)

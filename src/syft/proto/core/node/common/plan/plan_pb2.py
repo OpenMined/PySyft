@@ -17,11 +17,8 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.node.common.action import (
     action_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2,
 )
-from syft.proto.core.node.common.action import (
-    get_object_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_get__object__pb2,
-)
-from syft.proto.core.node.common.action import (
-    run_function_or_constructor_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_run__function__or__constructor__pb2,
+from syft.proto.core.pointer import (
+    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
 )
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -30,11 +27,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n&proto/core/node/common/plan/plan.proto\x12\x1asyft.core.node.common.plan\x1a.proto/core/node/common/action/get_object.proto\x1a?proto/core/node/common/action/run_function_or_constructor.proto\x1a*proto/core/node/common/action/action.proto"=\n\x04Plan\x12\x35\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32$.syft.core.node.common.action.Actionb\x06proto3',
+    serialized_pb=b'\n&proto/core/node/common/plan/plan.proto\x12\x1asyft.core.node.common.plan\x1a*proto/core/node/common/action/action.proto\x1a proto/core/pointer/pointer.proto"i\n\x04Plan\x12\x35\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32$.syft.core.node.common.action.Action\x12*\n\x06inputs\x18\x02 \x03(\x0b\x32\x1a.syft.core.pointer.Pointerb\x06proto3',
     dependencies=[
-        proto_dot_core_dot_node_dot_common_dot_action_dot_get__object__pb2.DESCRIPTOR,
-        proto_dot_core_dot_node_dot_common_dot_action_dot_run__function__or__constructor__pb2.DESCRIPTOR,
         proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2.DESCRIPTOR,
+        proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
     ],
 )
 
@@ -66,6 +62,25 @@ _PLAN = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="inputs",
+            full_name="syft.core.node.common.plan.Plan.inputs",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -75,13 +90,16 @@ _PLAN = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=227,
-    serialized_end=288,
+    serialized_start=148,
+    serialized_end=253,
 )
 
 _PLAN.fields_by_name[
     "actions"
 ].message_type = proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2._ACTION
+_PLAN.fields_by_name[
+    "inputs"
+].message_type = proto_dot_core_dot_pointer_dot_pointer__pb2._POINTER
 DESCRIPTOR.message_types_by_name["Plan"] = _PLAN
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

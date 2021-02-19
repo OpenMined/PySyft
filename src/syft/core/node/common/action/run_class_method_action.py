@@ -3,15 +3,10 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-
-# syft absolute
-from syft.core.node.common.plan.plan import Plan
 
 # syft relative
 from ..... import lib
@@ -26,6 +21,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..plan.plan import Plan
 from .common import ImmediateActionWithoutReply
 
 
@@ -48,7 +44,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Union[Tuple[Any, ...], List[Any]],
+        args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -161,6 +157,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
+                # Todo, fix this hacky isinstance. Right now it prevents circular dependency
                 if isinstance(resolved_self.data, Plan) and method_name == "execute":
                     result = method(
                         resolved_self.data,
@@ -258,7 +255,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction(
             path=proto.path,
             _self=_deserialize(blob=proto._self),
-            args=tuple(map(lambda x: _deserialize(blob=x), proto.args)),
+            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
@@ -284,3 +281,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        if self._self.id_at_location == current_input.id_at_location:
+            self._self = new_input
+        else:
+            for i, arg in enumerate(self.args):
+                if arg.id_at_location == current_input.id_at_location:
+                    self.args[i] = new_input
