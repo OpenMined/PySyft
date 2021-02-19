@@ -196,11 +196,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
 
-      - name: Install PyTorch versions
+      - name: Adjust PyTorch versions
         run: |
           python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
 
-      - name: Adjust PyTorch versions
+      - name: Install packages
         run: |
           pip install -r requirements.txt --default-timeout=60
           pip install -e .

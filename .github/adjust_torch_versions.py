@@ -1,6 +1,7 @@
+# stdlib
 import os
-import sys
 import re
+import sys
 
 VERSIONS_NONE = dict(torchvision=None, torchsprng=None)
 VERSIONS_LUT = {
