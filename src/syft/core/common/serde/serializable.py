@@ -15,15 +15,11 @@ from ....util import get_fully_qualified_name
 from ....util import random_name
 from ....util import validate_type
 
-# Fixes python3.6
-# however, API changed between versions so typing_extensions smooths this over:
-# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
-
 
 def bind_protobuf(cls: Any) -> Any:
     protobuf_schema = cls.get_protobuf_schema()
     # If protobuf already has schema2type, means it's related to multiple types.
-    # Set it's schema2type to None, becuase we can't take use of it anymore.
+    # Set it's schema2type to None, because we can't take use of it anymore.
     if hasattr(protobuf_schema, "schema2type"):
         protobuf_schema.schema2type = None
     else:
