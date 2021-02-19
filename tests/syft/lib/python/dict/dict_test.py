@@ -1,3 +1,4 @@
+# flake8: noqa
 """
 Tests copied from cpython test suite:
 https://github.com/python/cpython/blob/3.8/Lib/test/test_dict.py
