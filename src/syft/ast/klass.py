@@ -33,14 +33,20 @@ from ..util import inherit_tags
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
-    """It might seem hugely un-necessary to have these methods nested in this way.
-    However, it has to do with ensuring that the scope of attr_path_and_name is local
-    and not global. If we do not put a get_run_class_method around run_class_method then
-    each run_class_method will end up referencing the same attr_path_and_name variable
-    and all methods will actually end up calling the same method. However, if we return
-    the function object itself then it includes the current attr_path_and_name as an internal
-    variable and when we call get_run_class_method multiple times it returns genuinely
-    different methods each time with a different internal attr_path_and_name variable."""
+    """
+    It might seem hugely un-necessary to have these methods nested in this way.
+    However, it has to do with ensuring that the scope of `attr_path_and_name` is local
+    and not global.
+
+    If we do not put a `get_run_class_method` around `run_class_method` then
+    each `run_class_method` will end up referencing the same `attr_path_and_name` variable
+    and all methods will actually end up calling the same method.
+
+    If, instead, we return the function object itself then it includes
+    the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
+    multiple times it returns genuinely different methods each time with a different
+    internal `attr_path_and_name` variable.
+    """
 
     def run_class_method(
         __self: Any,

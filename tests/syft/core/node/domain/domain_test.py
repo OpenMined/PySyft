@@ -52,6 +52,7 @@ def test_domain_request_pending() -> None:
     assert RequestStatus.Pending == response
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 def test_domain_request_denied() -> None:
     domain_1 = Domain(name="remote domain")

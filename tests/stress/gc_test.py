@@ -2,12 +2,14 @@
 import gc
 
 # third party
+import pytest
 import torch
 
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.slow
 def test_same_var_for_ptr_gc() -> None:
     """
     Test for checking if the gc is correctly triggered
