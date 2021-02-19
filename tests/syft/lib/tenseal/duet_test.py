@@ -27,7 +27,15 @@ PORT = 21000
 
 
 def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
-    """Yield successive n-sized chunks from lst."""
+    """Yield successive n-sized chunks from lst.
+
+    Args:
+        lst: list of items to chunk
+        n: number of items to include in each chunk
+
+    Yields:
+        single chunk of n items
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]  # noqa: E203
 
