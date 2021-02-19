@@ -141,3 +141,70 @@ def test_plan_execution() -> None:
 
     assert all(expected_tensor1 == result_tensor_pointer1.get())
     assert all(expected_tensor2 == result_tensor_pointer2.get())
+
+
+def test_plan_batched_execution() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_client()
+
+    # placeholders for our input
+    input_tensor_pointer1 = th.tensor([0, 0]).send(alice_client)
+    input_tensor_pointer2 = th.tensor([0, 0]).send(alice_client)
+
+    # tensors in our model
+    model_tensor_pointer1 = th.tensor([1, 2]).send(alice_client)
+    model_tensor_pointer2 = th.tensor([3, 4]).send(alice_client)
+
+    # placeholders for intermediate results
+    result_tensor_pointer1 = th.tensor([0, 0]).send(alice_client)
+    result_tensor_pointer2 = th.tensor([0, 0]).send(alice_client)
+    result_tensor_pointer3 = th.tensor([0, 0]).send(alice_client)
+
+    # define plan
+    a1 = RunClassMethodAction(
+        path="torch.Tensor.mul",
+        _self=input_tensor_pointer1,
+        args=[model_tensor_pointer1],
+        kwargs={},
+        id_at_location=result_tensor_pointer1.id_at_location,
+        address=Address(),
+        msg_id=UID(),
+    )
+
+    a2 = RunClassMethodAction(
+        path="torch.Tensor.add",
+        _self=result_tensor_pointer1,
+        args=[model_tensor_pointer2],
+        kwargs={},
+        id_at_location=result_tensor_pointer2.id_at_location,
+        address=Address(),
+        msg_id=UID(),
+    )
+
+    a3 = RunFunctionOrConstructorAction(
+        path="torch.eq",
+        args=[result_tensor_pointer2, input_tensor_pointer2],
+        kwargs={},
+        id_at_location=result_tensor_pointer3.id_at_location,
+        address=Address(),
+        msg_id=UID(),
+    )
+
+    plan = Plan([a1, a2, a3], inputs=[input_tensor_pointer1, input_tensor_pointer2])
+    plan_pointer = plan.send(alice_client)
+
+    # Test
+    # x is random input, y is the expected model(x)
+    x_batches = [(th.tensor([1, 1]) + i).send(alice_client) for i in range(2)]
+    y_batches = [
+        ((th.tensor([1, 1]) + i) * th.tensor([1, 2]) + th.tensor([3, 4])).send(
+            alice_client
+        )
+        for i in range(2)
+    ]
+
+    for x, y in zip(x_batches, y_batches):
+        plan_pointer.execute(x, y)
+
+        # checks if (model(x) == y) == [True, True]
+        assert all(result_tensor_pointer3.get())

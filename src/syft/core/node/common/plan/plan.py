@@ -3,6 +3,7 @@ import re
 import sys
 from typing import Any
 from typing import List
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -18,12 +19,9 @@ from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
 # syft relative
 from ...abstract.node import AbstractNode
+from ..util import listify
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
-
-
-def listify(x: Any) -> List[Any]:
-    return x if isinstance(x, list) else ([] if x is None else [x])
 
 
 class Plan(Serializable):
@@ -34,18 +32,14 @@ class Plan(Serializable):
         self.inputs: List[Pointer] = listify(inputs)
 
     def execute(
-        self,
-        node: AbstractNode,
-        verify_key: VerifyKey,
-        inputs: Union[Pointer, List[Pointer], None] = None,
+        self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
     ) -> None:
+        inputs = listify(args)
 
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
-        for i, (current_input, new_input) in enumerate(
-            zip(self.inputs, listify(inputs))
-        ):
+        for i, (current_input, new_input) in enumerate(zip(self.inputs, inputs)):
             for a in self.actions:
                 if hasattr(a, "remap_input"):
                     a.remap_input(current_input, new_input)

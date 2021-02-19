@@ -23,6 +23,7 @@ from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import listify
 from .common import ImmediateActionWithoutReply
 
 
@@ -52,7 +53,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.path = path
-        self.args = args
+        self.args = listify(args)
         self.kwargs = kwargs
         self.id_at_location = id_at_location
         self.is_static = is_static
@@ -221,3 +222,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         """
 
         return RunFunctionOrConstructorAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        for i, arg in enumerate(self.args):
+            if arg.id_at_location == current_input.id_at_location:
+                self.args[i] = new_input
