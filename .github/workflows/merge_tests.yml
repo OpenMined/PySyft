@@ -196,17 +196,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
 
-      - name: Install PyTorch Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
+      - name: Install PyTorch versions
         run: |
-          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
+          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
 
-      - name: Install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
-
-      - name: Install packages
+      - name: Adjust PyTorch versions
         run: |
           pip install -r requirements.txt --default-timeout=60
           pip install -e .
