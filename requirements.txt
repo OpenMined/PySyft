@@ -22,6 +22,7 @@ darglint
 dataclasses # backport to python 3.6
 doc8
 flake8
+flake8-kwarger @ git+https://github.com/madhavajay/flake8-kwarger
 flask
 forbiddenfruit>=0.1.3
 isort
@@ -46,6 +47,5 @@ requests
 sqlitedict
 torch>=1.4
 torchvision>=0.5
-typeguard
 typing-extensions # backport to older python 3
 websockets
