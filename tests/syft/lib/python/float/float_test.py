@@ -163,12 +163,13 @@ def test_float() -> None:
         Float("\u3053\u3093\u306b\u3061\u306f")
 
 
+@pytest.mark.xfail
 def test_underscores() -> None:
     for lit in VALID_UNDERSCORE_LITERALS:
         if not any(ch in lit for ch in "jJxXoObB"):
             assert Float(lit) == eval(lit)
             # TODO this should work!!!
-            # assert Float(lit), Float(lit.replace("_", ""))
+            assert Float(lit), Float(lit.replace("_", ""))
 
     for lit in INVALID_UNDERSCORE_LITERALS:
         if lit in ("0_7", "09_99"):  # octals are not recognized here
