@@ -113,6 +113,8 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError:
                     raise Exception("MAKE VALID SCHEMA")
 
