@@ -77,6 +77,7 @@ async def test_set_offer_raise_exception() -> None:
             await webrtc._set_offer()
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_sets_channel() -> None:
     domain = Domain(name="test")
@@ -86,6 +87,7 @@ async def test_set_offer_sets_channel() -> None:
     assert webrtc.channel.bufferedAmountLowThreshold == 16 * DC_MAX_CHUNK_SIZE
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_on_open() -> None:
     domain = Domain(name="test")
@@ -104,6 +106,7 @@ async def test_set_offer_on_open() -> None:
         assert producer_mock.call_count == 1
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_on_message() -> None:
     domain = Domain(name="test")
@@ -128,6 +131,7 @@ async def test_set_offer_on_message() -> None:
         assert consumer_mock.call_count == 1
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_answer_raise_exception() -> None:
     domain = Domain(name="test")
@@ -143,6 +147,7 @@ async def test_set_answer_raise_exception() -> None:
         assert mock_logger.called
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_answer_on_datachannel() -> None:
     domain = Domain(name="test")
@@ -165,6 +170,7 @@ async def test_set_answer_on_datachannel() -> None:
         assert producer_mock.call_count == 1
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_answer_on_message() -> None:
     domain = Domain(name="test")
@@ -224,6 +230,7 @@ async def test_close_raise_exception() -> None:
             assert mock_logger.called
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_close() -> None:
     domain = Domain(name="test")
