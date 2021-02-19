@@ -6,6 +6,7 @@ import torch as th
 import syft as sy
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_searchable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
@@ -25,6 +26,7 @@ def test_make_searchable(with_verify_key: bool) -> None:
     assert len(client.store) == 1
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_unsearchable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
@@ -49,6 +51,7 @@ def test_make_unsearchable(with_verify_key: bool) -> None:
     assert len(client.store) == 0
 
 
+@pytest.mark.slow
 def test_searchable_property() -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
@@ -71,6 +74,7 @@ def test_searchable_property() -> None:
     assert len(client.store) == 0
 
 
+@pytest.mark.slow
 @pytest.mark.xfail
 def test_tags() -> None:
     bob = sy.VirtualMachine(name="Bob")
