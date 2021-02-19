@@ -21,7 +21,7 @@ class SyNet(sy.Module):
     """
     Simple test model
     """
-    
+
     def __init__(self) -> None:
         super(SyNet, self).__init__(torch_ref=torch)
         self.fc1 = torch.nn.Linear(IN_DIM, OUT_DIM)
@@ -64,12 +64,14 @@ def dataloader() -> Tuple[torch.Tensor, torch.Tensor]:
 
 def test_repr_to_kwargs() -> None:
     assert sy.lib.util.full_name_with_qualname(klass=torch.Tensor) == "torch.Tensor"
-    assert sy.lib.torch.module.repr_to_kwargs("1, 32, kernel_size=(3, 3), stride=(1, 1)") == (
-        [1, 32], 
-        {'kernel_size': (3, 3), 'stride': (1, 1)})
+    assert sy.lib.torch.module.repr_to_kwargs(
+        "1, 32, kernel_size=(3, 3), stride=(1, 1)"
+    ) == ([1, 32], {"kernel_size": (3, 3), "stride": (1, 1)})
     assert sy.lib.torch.module.repr_to_kwargs("1, 32") == ([1, 32], {})
     assert sy.lib.torch.module.repr_to_kwargs("kernel_size=(3, 3), stride=(1, 1)") == (
-        [], {'kernel_size': (3, 3), 'stride': (1, 1)})
+        [],
+        {"kernel_size": (3, 3), "stride": (1, 1)},
+    )
 
 
 def test_module_setup(alice: sy.VirtualMachine, model: SyNet) -> None:
@@ -100,7 +102,7 @@ def test_module_modules(model: SyNet) -> None:
 
 def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
     modules = modelEmpty.modules
-    assert len(modules.items()) == 0    
+    assert len(modules.items()) == 0
 
 
 def test_module_parameteres(alice: sy.VirtualMachine, model: SyNet) -> None:
@@ -151,14 +153,14 @@ def test_module_load_save(model: SyNet) -> None:
 
     path = folder / str(time.time())
     model.save(path)
-    
+
     model.is_local = False
     assert model.save(path) is None
 
     new_model = SyNet()
     new_model.load(path)
     new_state = new_model.state_dict()
-    
+
     new_model.is_local = False
     assert new_model.load(path) is None
 
@@ -225,10 +227,7 @@ def test_module_send_get(
     assert model.send(alice_client) is None
 
 
-def test_debug_sum_layers(
-    alice: sy.VirtualMachine,
-    model: SyNet
-) -> None:
+def test_debug_sum_layers(alice: sy.VirtualMachine, model: SyNet) -> None:
     assert model.debug_sum_layers() is None
     alice_client = alice.get_root_client()
     model_ptr = model.send(alice_client)

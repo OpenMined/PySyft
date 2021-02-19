@@ -8,7 +8,7 @@ import syft as sy
 
 @pytest.fixture(scope="function")
 def tensor() -> th.Tensor:
-    t1 = th.tensor([[1., -1.], [1., -1.]])
+    t1 = th.tensor([[1.0, -1.0], [1.0, -1.0]])
     scale, zero_point = 1e-4, 2
     dtype = th.qint32
     tensor = th.quantize_per_tensor(t1, scale, zero_point, dtype)
