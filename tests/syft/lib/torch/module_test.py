@@ -105,6 +105,7 @@ def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
     assert len(modules.items()) == 0
 
 
+@pytest.mark.slow
 def test_module_parameteres(alice: sy.VirtualMachine, model: SyNet) -> None:
     model_ptr = model.send(alice.get_root_client())
 
@@ -189,6 +190,7 @@ def test_module_gradient_sanity(
     assert model.parameters()[-1].grad is not None
 
 
+@pytest.mark.slow
 def test_module_send_get(
     alice: sy.VirtualMachine,
     model: SyNet,
@@ -227,6 +229,7 @@ def test_module_send_get(
     assert model.send(alice_client) is None
 
 
+@pytest.mark.slow
 def test_debug_sum_layers(alice: sy.VirtualMachine, model: SyNet) -> None:
     assert model.debug_sum_layers() is None
     alice_client = alice.get_root_client()

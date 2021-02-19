@@ -2,12 +2,14 @@
 import gc
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.slow
 def test_parameter_vm_remote_operation() -> None:
 
     alice = sy.VirtualMachine(name="alice")
