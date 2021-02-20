@@ -339,7 +339,7 @@ Then continue below with requirements.txt like normal.
 
 **NOTE** this is required for several `dev` packages like pytest-xdist etc.
 ```
-$ pip install -r requirements.txt
+$ pip install -r requirements.dev.txt
 ```
 or
 ```

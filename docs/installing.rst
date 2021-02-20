@@ -147,7 +147,7 @@ you can now install the dependencies that PySyft relies on using the following c
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make
 sure you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or
@@ -330,7 +330,7 @@ now install the dependencies that PySyft relies on using the following command:
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make sure
 you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or later. Open
@@ -529,7 +529,7 @@ now install the dependencies that PySyft relies on using the following command:
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make sure
 you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or later. Open
