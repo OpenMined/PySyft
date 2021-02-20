@@ -41,9 +41,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -98,6 +98,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -107,13 +109,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
 
       - name: Scan for security issues
         run: |
@@ -140,7 +138,7 @@ jobs:
         run: |
           pip install -r requirements.txt --default-timeout=60
           pip install -e . --default-timeout=60
-          pip freeze
+          pip list
 
       - name: Run normal tests
         run: |
@@ -191,6 +189,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -200,13 +200,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -244,6 +240,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -253,13 +251,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - uses: actions/checkout@v2
         with:
