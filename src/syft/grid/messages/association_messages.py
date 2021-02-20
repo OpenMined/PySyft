@@ -50,7 +50,11 @@ from syft.proto.grid.messages.association_messages_pb2 import (
     SendAssociationRequestResponse as SendAssociationRequestResponse_PB,
 )
 
+# syft relative
+from ...core.common.serde.serializable import bind_protobuf
 
+
+@bind_protobuf
 @final
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -121,6 +125,7 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -192,6 +197,7 @@ class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return SendAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -262,6 +268,7 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -333,6 +340,7 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return ReceiveAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -403,6 +411,7 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -474,6 +483,7 @@ class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return RespondAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -544,6 +554,7 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -615,6 +626,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -685,6 +697,7 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -756,6 +769,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -826,6 +840,7 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return DeleteAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

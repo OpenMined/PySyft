@@ -3,7 +3,6 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
@@ -14,10 +13,12 @@ from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
+@bind_protobuf
 class Dataset(Serializable):
     """
     Dataset is a wrapper over a collection of Serializable objects.
@@ -79,15 +80,6 @@ class Dataset(Serializable):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: List[StorableObject],
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "Dataset":
-        return Dataset(id=id, data=data, description=description, tags=tags)
-
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
@@ -114,7 +106,6 @@ class Dataset(Serializable):
         # Step 2: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
 
-        # import pdb; pdb.set_trace()
         # Step 3: Serialize data to protobuf and pack into proto
         if hasattr(self, "data"):
             if self.data is not None:
@@ -168,12 +159,7 @@ class Dataset(Serializable):
         # Step 4: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = Dataset.construct_new_object(
-            id=id,
-            data=data,
-            tags=tags,
-            description=description,
-        )
+        result = Dataset(id=id, data=data, description=description, tags=tags)
         return result
 
     @staticmethod
@@ -193,15 +179,4 @@ class Dataset(Serializable):
         :rtype: GeneratedProtocolMessageType
 
         """
-        return Dataset_PB
-
-    def _data_object2proto(self) -> List[Message]:
-        return [d._object2proto() for d in self.data]
-
-    @staticmethod
-    def _data_proto2object(proto: List[Message]) -> List[Serializable]:
-        return [_deserialize(blob=p) for p in proto]
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
         return Dataset_PB

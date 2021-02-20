@@ -9,10 +9,12 @@ from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_
 from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
+from ...common.serde.serializable import bind_protobuf
 from ...common.uid import UID
 from .location import Location
 
 
+@bind_protobuf
 class SpecificLocation(ObjectWithID, Location):
     """This represents the location of a single Node object
     represented by a single UID. It may not have any functionality

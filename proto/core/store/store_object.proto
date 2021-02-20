@@ -12,7 +12,7 @@ message StoreGenericObject {
 
 message StorableObject {
   syft.core.common.UID id = 1;
-  string obj_type = 2;
+  string data_type = 2;
   string schematic_qualname = 3;
   google.protobuf.Any data = 4;
   string description = 5;

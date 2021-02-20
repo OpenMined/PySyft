@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from .....core.common.serde.serializable import bind_protobuf
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -35,6 +36,7 @@ from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
 
 
+@bind_protobuf
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -108,6 +110,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage_PB
 
 
+@bind_protobuf
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -203,7 +206,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
-                # has an All() class in it.
+                # has a VerifyAll in it.
                 contains_all_in_permissions = any(
                     key is VerifyAll for key in obj.search_permissions.keys()
                 )

@@ -12,6 +12,7 @@ from .....proto.core.node.common.action.get_enum_attribute_pb2 import (
     GetEnumAttributeAction as GetEnumAttributeAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -20,6 +21,7 @@ from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
 
 
+@bind_protobuf
 class EnumAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,

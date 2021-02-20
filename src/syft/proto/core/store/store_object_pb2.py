@@ -27,7 +27,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n#proto/core/store/store_object.proto\x12\x0fsyft.core.store\x1a%proto/core/common/common_object.proto\x1a\x19google/protobuf/any.proto"\x82\x01\n\x12StoreGenericObject\x12\x38\n\x0fstorable_object\x18\x01 \x01(\x0b\x32\x1f.syft.core.store.StorableObject\x12\x32\n\x0cstore_object\x18\x02 \x01(\x0b\x32\x1c.syft.core.store.StoreObject"\xde\x01\n\x0eStorableObject\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08obj_type\x18\x02 \x01(\t\x12\x1a\n\x12schematic_qualname\x18\x03 \x01(\t\x12"\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x14.google.protobuf.Any\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\x0c\n\x04tags\x18\x06 \x03(\t\x12\x18\n\x10read_permissions\x18\x07 \x01(\x0c\x12\x1a\n\x12search_permissions\x18\x08 \x01(\x0c"r\n\x0bStoreObject\x12-\n\tcontainer\x18\x01 \x01(\x0b\x32\x1a.syft.core.store.Container\x12\x34\n\rsearch_engine\x18\x02 \x01(\x0b\x32\x1d.syft.core.store.SearchEngine"\xb1\x01\n\tContainer\x12\x36\n\x0e\x64ict_container\x18\x01 \x01(\x0b\x32\x1e.syft.core.store.DictContainer\x12\x34\n\rsql_container\x18\x02 \x01(\x0b\x32\x1d.syft.core.store.SqlContainer\x12\x36\n\x0egrid_container\x18\x03 \x01(\x0b\x32\x1e.syft.core.store.GridContainer"\x0e\n\x0cSearchEngine"\xa0\x01\n\rDictContainer\x12\x45\n\x0c\x64ict_mapping\x18\x01 \x03(\x0b\x32/.syft.core.store.DictContainer.DictMappingEntry\x1aH\n\x10\x44ictMappingEntry\x12\x0b\n\x03key\x18\x01 \x01(\x03\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.google.protobuf.Any:\x02\x38\x01"\x0e\n\x0cSqlContainer"\x0f\n\rGridContainerb\x06proto3',
+    serialized_pb=b'\n#proto/core/store/store_object.proto\x12\x0fsyft.core.store\x1a%proto/core/common/common_object.proto\x1a\x19google/protobuf/any.proto"\x82\x01\n\x12StoreGenericObject\x12\x38\n\x0fstorable_object\x18\x01 \x01(\x0b\x32\x1f.syft.core.store.StorableObject\x12\x32\n\x0cstore_object\x18\x02 \x01(\x0b\x32\x1c.syft.core.store.StoreObject"\xdf\x01\n\x0eStorableObject\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x11\n\tdata_type\x18\x02 \x01(\t\x12\x1a\n\x12schematic_qualname\x18\x03 \x01(\t\x12"\n\x04\x64\x61ta\x18\x04 \x01(\x0b\x32\x14.google.protobuf.Any\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\x0c\n\x04tags\x18\x06 \x03(\t\x12\x18\n\x10read_permissions\x18\x07 \x01(\x0c\x12\x1a\n\x12search_permissions\x18\x08 \x01(\x0c"r\n\x0bStoreObject\x12-\n\tcontainer\x18\x01 \x01(\x0b\x32\x1a.syft.core.store.Container\x12\x34\n\rsearch_engine\x18\x02 \x01(\x0b\x32\x1d.syft.core.store.SearchEngine"\xb1\x01\n\tContainer\x12\x36\n\x0e\x64ict_container\x18\x01 \x01(\x0b\x32\x1e.syft.core.store.DictContainer\x12\x34\n\rsql_container\x18\x02 \x01(\x0b\x32\x1d.syft.core.store.SqlContainer\x12\x36\n\x0egrid_container\x18\x03 \x01(\x0b\x32\x1e.syft.core.store.GridContainer"\x0e\n\x0cSearchEngine"\xa0\x01\n\rDictContainer\x12\x45\n\x0c\x64ict_mapping\x18\x01 \x03(\x0b\x32/.syft.core.store.DictContainer.DictMappingEntry\x1aH\n\x10\x44ictMappingEntry\x12\x0b\n\x03key\x18\x01 \x01(\x03\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.google.protobuf.Any:\x02\x38\x01"\x0e\n\x0cSqlContainer"\x0f\n\rGridContainerb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         google_dot_protobuf_dot_any__pb2.DESCRIPTOR,
@@ -123,8 +123,8 @@ _STORABLEOBJECT = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="obj_type",
-            full_name="syft.core.store.StorableObject.obj_type",
+            name="data_type",
+            full_name="syft.core.store.StorableObject.data_type",
             index=1,
             number=2,
             type=9,
@@ -265,7 +265,7 @@ _STORABLEOBJECT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=256,
-    serialized_end=478,
+    serialized_end=479,
 )
 
 
@@ -324,8 +324,8 @@ _STOREOBJECT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=480,
-    serialized_end=594,
+    serialized_start=481,
+    serialized_end=595,
 )
 
 
@@ -403,8 +403,8 @@ _CONTAINER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=597,
-    serialized_end=774,
+    serialized_start=598,
+    serialized_end=775,
 )
 
 
@@ -424,8 +424,8 @@ _SEARCHENGINE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=776,
-    serialized_end=790,
+    serialized_start=777,
+    serialized_end=791,
 )
 
 
@@ -484,8 +484,8 @@ _DICTCONTAINER_DICTMAPPINGENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=881,
-    serialized_end=953,
+    serialized_start=882,
+    serialized_end=954,
 )
 
 _DICTCONTAINER = _descriptor.Descriptor(
@@ -526,8 +526,8 @@ _DICTCONTAINER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=793,
-    serialized_end=953,
+    serialized_start=794,
+    serialized_end=954,
 )
 
 
@@ -547,8 +547,8 @@ _SQLCONTAINER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=955,
-    serialized_end=969,
+    serialized_start=956,
+    serialized_end=970,
 )
 
 
@@ -568,8 +568,8 @@ _GRIDCONTAINER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=971,
-    serialized_end=986,
+    serialized_start=972,
+    serialized_end=987,
 )
 
 _STOREGENERICOBJECT.fields_by_name["storable_object"].message_type = _STORABLEOBJECT

@@ -19,6 +19,7 @@ from .....proto.core.node.common.action.get_set_property_pb2 import (
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -33,6 +34,7 @@ class PropertyActions(Enum):
     DEL = 3
 
 
+@bind_protobuf
 class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     def __init__(
         self,
