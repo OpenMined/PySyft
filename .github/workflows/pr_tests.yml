@@ -71,6 +71,7 @@ jobs:
     needs: [python-linting]
     strategy:
       max-parallel: 30
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
