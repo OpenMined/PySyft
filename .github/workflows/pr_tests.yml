@@ -131,8 +131,6 @@ jobs:
 
       - name: Install packages
         run: |
-          echo "attempting to install"
-          cat ./requirements.txt
           pip install -r requirements.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
           pip list
@@ -143,7 +141,6 @@ jobs:
           pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
 
       - name: Install supported library packages - Ignore Errors
-        if: startsWith(runner.os, 'Windows') != true
         run: |
           pip install requirements/supported_libs.txt
         timeout-minutes: 10
