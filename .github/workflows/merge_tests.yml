@@ -202,7 +202,7 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
 
       - name: Run torch test chunks Linux and MacOS
