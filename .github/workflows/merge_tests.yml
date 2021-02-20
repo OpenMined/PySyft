@@ -31,13 +31,12 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.4.0, 1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
         chunk: [1, 2, 3, 4, 5, 6, 7, 8]
         include:
           - os: ubuntu-latest
             python-version: 3.7
             torch-version: 1.4.0
-            chunk: [1, 2, 3, 4, 5, 6, 7, 8]
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
