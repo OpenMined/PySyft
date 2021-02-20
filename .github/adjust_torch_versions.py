@@ -1,5 +1,4 @@
 # stdlib
-import os
 import platform
 import re
 import sys
@@ -31,13 +30,13 @@ def main(path_req: str, torch_version: str) -> None:
             version = dep_versions[lib]
             if system != "Darwin":
                 version += "+cpu"  # linux and windows require +cpu
-            replace = f"{lib}=={version}{os.linesep}"
+            replace = f"{lib}=={version}\n"
 
         if lib == "torchcsprng" and sys.version_info >= (3, 9):
             replace = ""  # no torchcsprng for python 3.9 yet
 
         req = re.sub(
-            rf"{lib}[>=]*[\d\.]*{os.linesep}",
+            rf"{lib}[>=]*[\d\.]*\n",
             replace,
             req,
         )
