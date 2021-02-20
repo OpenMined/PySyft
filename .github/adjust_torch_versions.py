@@ -25,12 +25,13 @@ def main(path_req: str, torch_version: str) -> None:
 
     dep_versions = VERSIONS_LUT.get(torch_version, VERSIONS_NONE)
     dep_versions["torch"] = torch_version
-    if system != "Darwin":
-        dep_versions["torch"] += "+cpu"  # linux and windows require +cpu
     for lib in dep_versions:
         replace = ""
         if dep_versions[lib]:
-            replace = f"{lib}=={dep_versions[lib]}{os.linesep}"
+            version = dep_versions[lib]
+            if system != "Darwin":
+                version += "+cpu"  # linux and windows require +cpu
+            replace = f"{lib}=={version}{os.linesep}"
 
         if lib == "torchcsprng" and sys.version_info >= (3, 9):
             replace = ""  # no torchcsprng for python 3.9 yet
