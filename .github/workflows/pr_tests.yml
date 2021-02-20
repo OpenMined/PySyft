@@ -127,9 +127,12 @@ jobs:
       - name: Adjust PyTorch versions
         run: |
           python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          cat ./requirements.txt
 
       - name: Install packages
         run: |
+          echo "attempting to install"
+          cat ./requirements.txt
           pip install -r requirements.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
           pip list
