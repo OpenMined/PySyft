@@ -177,19 +177,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
-
       - name: Install aiortc native dependencies
         if: startsWith(runner.os, 'Linux') == true
         run: |
@@ -199,6 +186,22 @@ jobs:
       - name: Adjust PyTorch versions
         run: |
           python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          cat ./requirements.txt
+
+      - run: pip install "pip>=20.1"
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install packages
         run: |

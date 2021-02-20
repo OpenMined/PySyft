@@ -100,6 +100,11 @@ jobs:
 
       - run: pip install "pip>=20.1"
 
+      - name: Adjust PyTorch versions
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          cat ./requirements.txt
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -109,25 +114,14 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Scan for security issues
         run: |
           pip install bandit --default-timeout=60
           bandit -r src -ll
-
-      # - name: Install aiortc native dependencies
-      #   if: startsWith(runner.os, 'Linux') == true
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
-
-      - name: Adjust PyTorch versions
-        run: |
-          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
-          cat ./requirements.txt
 
       - name: Install packages
         run: |
