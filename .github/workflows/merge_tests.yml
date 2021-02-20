@@ -23,6 +23,7 @@ on:
       none:
         description: "Run Merge Tests Manually"
         required: false
+  pull_request: {}  # fixme: remove before merge
 
 jobs:
   python-tests-all:
@@ -37,6 +38,7 @@ jobs:
           - os: ubuntu-latest
             python-version: 3.7
             torch-version: 1.4.0
+            chunk: [1, 2, 3, 4, 5, 6, 7, 8]
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
@@ -86,24 +88,10 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           pip install -e .
 
-      - name: Run torch test chunks Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
+      - name: Run torch test chunk N
+        env:
+          TEST_CHUNKS: 8
+          TEST_CHUNK: ${{ matrix.chunk }}
         run: |
-          export TEST_CHUNKS=16
-          export TEST_CHUNK=${{ matrix.chunk }}
           echo "Running $TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
-          export TEST_CHUNK=$(( ${{ matrix.chunk }}+8 ))
-          echo "Running $TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
-
-      - name: Run torch test chunks Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          $Env:TEST_CHUNKS=16
-          $Env:TEST_CHUNK=${{ matrix.chunk }}
-          echo "Running $Env:TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
-          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+8
-          echo "Running $Env:TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark
