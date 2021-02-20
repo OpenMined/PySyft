@@ -45,7 +45,7 @@ pytest-cov
 pytest-xdist[psutil]
 requests
 sqlitedict
-torch>=1.4
+torch>=1.4.0
 torchvision>=0.5
 typing-extensions # backport to older python 3
 websockets
