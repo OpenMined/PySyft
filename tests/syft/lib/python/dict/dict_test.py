@@ -560,7 +560,7 @@ class DictTest(unittest.TestCase):
     @pytest.mark.xfail
     def test_mutating_iteration_delete_over_items(self):
         # TODO: proper iterators needed over the views, currently, we convert them to lists
-        # # change dict content during iteration
+        # change dict content during iteration
         d = Dict()
         d[0] = 0
         # python 3.8+ raise RuntimeError but older versions do not

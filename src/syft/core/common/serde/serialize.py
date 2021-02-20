@@ -47,7 +47,9 @@ def _serialize(
             is_serializable = obj.serializable_wrapper_type(value=obj)  # type: ignore
         else:
             traceback_and_raise(
-                Exception(f"Object {type(obj)} has no serializable_wrapper_type")
+                Exception(
+                    f"Object {type(obj)} is not serializable and has no serializable_wrapper_type"
+                )
             )
     else:
         is_serializable = obj

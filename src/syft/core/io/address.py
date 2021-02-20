@@ -15,6 +15,7 @@ from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.location import Location
 
@@ -24,6 +25,7 @@ class Unspecified(object):
         return "Unspecified"
 
 
+@bind_protobuf
 class Address(Serializable):
     name: Optional[str]
 

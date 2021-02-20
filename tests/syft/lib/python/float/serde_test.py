@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.float import Float
-from syft.lib.python.float import FloatWrapper
 from syft.proto.lib.python.float_pb2 import Float as Float_PB
 
 
@@ -31,8 +30,3 @@ def test_send() -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_float
-
-
-def test_protobuf():
-    assert Float.get_protobuf_schema()
-    assert FloatWrapper.get_wrapped_type() is Float

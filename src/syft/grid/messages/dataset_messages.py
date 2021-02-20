@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.dataset_messages_pb2 import (
@@ -45,6 +46,7 @@ from syft.proto.grid.messages.dataset_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -115,6 +117,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         return CreateDatasetMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateDatasetResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -186,6 +189,7 @@ class CreateDatasetResponse(ImmediateSyftMessageWithoutReply):
         return CreateDatasetResponse_PB
 
 
+@bind_protobuf
 @final
 class GetDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -256,6 +260,7 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
         return GetDatasetMessage_PB
 
 
+@bind_protobuf
 @final
 class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -327,6 +332,7 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetResponse_PB
 
 
+@bind_protobuf
 @final
 class GetDatasetsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -397,6 +403,7 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
         return GetDatasetsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -468,6 +475,7 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetsResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -538,6 +546,7 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
         return UpdateDatasetMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateDatasetResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -609,6 +618,7 @@ class UpdateDatasetResponse(ImmediateSyftMessageWithoutReply):
         return UpdateDatasetResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -679,6 +689,7 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
         return DeleteDatasetMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteDatasetResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

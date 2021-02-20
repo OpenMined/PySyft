@@ -5,7 +5,6 @@ from collections.abc import KeysView
 from collections.abc import ValuesView
 from typing import Any
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -16,11 +15,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
+from ...core.common.serde.serializable import bind_protobuf
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
-from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
@@ -30,6 +28,7 @@ from .util import downcast
 from .util import upcast
 
 
+@bind_protobuf
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
     # see https://github.com/python/cpython/blob/master/Lib/collections/__init__.py
@@ -232,46 +231,3 @@ class Dict(UserDict, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Dict_PB
-
-
-class DictWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Dict_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Dict_PB) -> "Dict":  # type: ignore
-        return Dict._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Dict_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Dict
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=Dict, name="serializable_wrapper_type", attr=DictWrapper)
