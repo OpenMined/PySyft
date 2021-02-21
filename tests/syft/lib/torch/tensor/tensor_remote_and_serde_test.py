@@ -60,7 +60,7 @@ def test_torch_serde() -> None:
     # But pretend we have .grad
     x.grad = th.randn_like(x)
 
-    blob = x.serialize()
+    blob = x._sy_serialize()
 
     x2 = sy.deserialize(blob=blob)
 

@@ -30,7 +30,7 @@ def test_association_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -49,7 +49,7 @@ def test_association_request_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -69,7 +69,7 @@ def test_receive_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -88,7 +88,7 @@ def test_receive_request_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -108,7 +108,7 @@ def test_respond_association_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -127,7 +127,7 @@ def test_respond_association_request_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -147,7 +147,7 @@ def test_delete_association_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -166,7 +166,7 @@ def test_delete_association_request_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -186,7 +186,7 @@ def test_get_association_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -210,7 +210,7 @@ def test_get_association_request_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -230,7 +230,7 @@ def test_get_all_association_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -270,7 +270,7 @@ def test_get_all_association_request_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

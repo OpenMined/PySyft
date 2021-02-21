@@ -33,7 +33,7 @@ def test_create_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -52,7 +52,7 @@ def test_create_tensor_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -72,7 +72,7 @@ def test_delete_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -91,7 +91,7 @@ def test_delete_tensor_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -117,7 +117,7 @@ def test_update_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -136,7 +136,7 @@ def test_update_tensor_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -156,7 +156,7 @@ def test_get_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -179,7 +179,7 @@ def test_get_tensor_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -199,7 +199,7 @@ def test_get_all_tensors_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -234,7 +234,7 @@ def test_get_all_tensors_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

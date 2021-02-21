@@ -24,7 +24,7 @@ def test_object_search_permissons_update_message_serde() -> None:
         address=bob_phone_client.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

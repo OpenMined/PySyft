@@ -9,7 +9,7 @@ def test_get_object_action_serde() -> None:
     msg = GetObjectAction(
         id_at_location=UID(), address=Address(), reply_to=Address(), msg_id=UID()
     )
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

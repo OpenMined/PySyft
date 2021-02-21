@@ -317,15 +317,3 @@ class Int(int, PyPrimitive):
     def conjugate(self) -> SyPrimitiveRet:
         res = super().conjugate()
         return PrimitiveFactory.generate_primitive(value=res)
-
-    # method signature override
-    def to_bytes(
-        self,
-        length: Optional[int] = None,
-        byteorder: Optional[str] = None,
-        signed: Optional[bool] = True,
-    ) -> bytes:
-        if length is not None and byteorder is not None and signed is not None:
-            return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
-        else:
-            return PyPrimitive.to_bytes(self)

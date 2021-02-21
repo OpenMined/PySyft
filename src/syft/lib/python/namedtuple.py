@@ -49,7 +49,7 @@ ValuesIndices = namedtuple("ValuesIndices", all_attrs)  # type: ignore
 
 
 def object2proto(obj: object) -> ValuesIndices_PB:
-    obj_type = full_name_with_name(klass=obj.serializable_wrapper_type)  # type: ignore
+    obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
     keys = get_keys(klass_name=obj_type)
 
     values = []

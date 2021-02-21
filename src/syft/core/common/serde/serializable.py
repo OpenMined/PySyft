@@ -167,29 +167,29 @@ class Serializable:
         """
         traceback_and_raise(NotImplementedError)
 
-    def to_proto(self) -> Message:
+    def _sy_to_proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return validate_type(self.serialize(to_proto=True), Message)
+        return validate_type(self._sy_serialize(to_proto=True), Message)
 
-    def proto(self) -> Message:
+    def _sy_proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return validate_type(self.serialize(to_proto=True), Message)
+        return validate_type(self._sy_serialize(to_proto=True), Message)
 
-    def to_bytes(self) -> bytes:
+    def _sy_to_bytes(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return validate_type(self.serialize(to_bytes=True), bytes)
+        return validate_type(self._sy_serialize(to_bytes=True), bytes)
 
     def binary(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
@@ -197,9 +197,9 @@ class Serializable:
         :return: a binary string
         :rtype: bytes
         """
-        return validate_type(self.serialize(to_bytes=True), bytes)
+        return validate_type(self._sy_serialize(to_bytes=True), bytes)
 
-    def serialize(
+    def _sy_serialize(
         self,
         to_proto: bool = True,
         to_bytes: bool = False,

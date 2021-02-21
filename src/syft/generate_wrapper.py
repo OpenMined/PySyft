@@ -1,10 +1,8 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
-from typing import Union
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
@@ -19,7 +17,7 @@ from .util import aggressive_set_attr
 module_type = type(syft)
 
 
-# this will overwrite the .serializable_wrapper_type with an auto generated
+# this will overwrite the ._sy_serializable_wrapper_type with an auto generated
 # wrapper which will basically just hold the object being wrapped.
 def GenerateWrapper(
     wrapped_type: type,
@@ -65,35 +63,16 @@ def GenerateWrapper(
     parent.__dict__[Wrapper.__name__] = Wrapper
 
     aggressive_set_attr(
-        obj=wrapped_type, name="serializable_wrapper_type", attr=Wrapper
+        obj=wrapped_type, name="_sy_serializable_wrapper_type", attr=Wrapper
     )
 
-    def serialize(  # type: ignore
-        self,
-        to_proto: bool = True,
-        to_bytes: bool = False,
-    ) -> Union[str, bytes, Message]:
-        return _serialize(
-            obj=self,
-            to_proto=to_proto,
-            to_bytes=to_bytes,
-        )
-
-    serialize_attr = "serialize"
-    if not hasattr(wrapped_type, serialize_attr):
-        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)
-    else:
-        serialize_attr = "sy_serialize"
-        aggressive_set_attr(obj=wrapped_type, name=serialize_attr, attr=serialize)
-
-    aggressive_set_attr(obj=wrapped_type, name="to_proto", attr=Serializable.to_proto)
-    aggressive_set_attr(obj=wrapped_type, name="proto", attr=Serializable.proto)
-    to_bytes_attr = "to_bytes"
-    # int has a to_bytes already, so we can use _to_bytes internally
-    if hasattr(wrapped_type, to_bytes_attr):
-        to_bytes_attr = "_to_bytes"
+    aggressive_set_attr(obj=wrapped_type, name="_sy_serialize", attr=_serialize)
     aggressive_set_attr(
-        obj=wrapped_type, name=to_bytes_attr, attr=Serializable.to_bytes
+        obj=wrapped_type, name="_sy_to_proto", attr=Serializable._sy_to_proto
+    )
+    aggressive_set_attr(obj=wrapped_type, name="_sy_proto", attr=Serializable._sy_proto)
+    aggressive_set_attr(
+        obj=wrapped_type, name="_sy_to_bytes", attr=Serializable._sy_to_bytes
     )
 
 

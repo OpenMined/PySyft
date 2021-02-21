@@ -33,7 +33,7 @@ def test_serde_storable_obj_2() -> None:
     description = "This is a dummy test"
     tags = ["dummy", "test"]
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
-    blob = obj.serialize()
+    blob = obj._sy_serialize()
     ds_obj = sy.deserialize(blob=blob)
     assert obj.id == ds_obj.id
     assert (obj.data == ds_obj.data).all()

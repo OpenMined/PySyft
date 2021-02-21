@@ -167,7 +167,7 @@ class UID(Serializable):
         :rtype: ProtoUID
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """

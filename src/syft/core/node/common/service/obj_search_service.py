@@ -58,14 +58,14 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         :rtype: ObjectSearchMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -136,14 +136,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ObjectSearchReplyMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchReplyMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            results=list(map(lambda x: x.serialize(), self.results)),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
+            results=list(map(lambda x: x._sy_serialize(), self.results)),
         )
 
     @staticmethod

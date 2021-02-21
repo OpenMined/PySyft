@@ -67,15 +67,15 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateDatasetMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateDatasetMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -139,13 +139,13 @@ class CreateDatasetResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateDatasetResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -210,15 +210,15 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetDatasetMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetDatasetMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -282,13 +282,13 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetDatasetResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -353,15 +353,15 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetDatasetsMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetDatasetsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -425,13 +425,13 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetDatasetsResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -496,15 +496,15 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateDatasetMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateDatasetMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -568,13 +568,13 @@ class UpdateDatasetResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateDatasetResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -639,15 +639,15 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteDatasetMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteDatasetMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -711,13 +711,13 @@ class DeleteDatasetResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteDatasetResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

@@ -55,15 +55,15 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         :rtype: GetObjectResponseMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        ser = self.obj.serialize()
+        ser = self.obj._sy_serialize()
 
         return GetObjectResponseMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             obj=ser,
         )
 
@@ -214,15 +214,15 @@ class GetObjectAction(ImmediateActionWithReply):
         :rtype: ObjectWithID_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetObjectAction_PB(
-            id_at_location=self.id_at_location.proto(),
-            msg_id=self.id.proto(),
-            address=self.address.proto(),
-            reply_to=self.reply_to.proto(),
+            id_at_location=self.id_at_location._sy_proto(),
+            msg_id=self.id._sy_proto(),
+            address=self.address._sy_proto(),
+            reply_to=self.reply_to._sy_proto(),
             delete_obj=self.delete_obj,
         )
 

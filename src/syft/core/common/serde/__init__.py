@@ -60,8 +60,8 @@ on the object for your convenience::
     print(my_object)
     # >>> <ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>
 
-    # by default, .serialize() will serialize it to a protobuf Message object
-    proto_obj = my_object.serialize()
+    # by default, ._sy_serialize() will serialize it to a protobuf Message object
+    proto_obj = my_object._sy_serialize()
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -91,9 +91,9 @@ Protobuf
 
 .. code::
 
-    proto_obj = obj.serialize(to_proto=True)
-    proto_obj = obj.to_proto()
-    proto_obj = obj.proto()
+    proto_obj = obj._sy_serialize(to_proto=True)
+    proto_obj = obj._sy_to_proto()
+    proto_obj = obj._sy_proto()
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -109,8 +109,8 @@ Binary
 
 .. code::
 
-    binary_obj = obj.serialize(to_bytes=True)
-    binary_obj = obj.to_bytes()
+    binary_obj = obj._sy_serialize(to_bytes=True)
+    binary_obj = obj._sy_to_bytes()
     binary_obj = obj.binary()
 
     # print(binary_obj)

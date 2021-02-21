@@ -44,9 +44,9 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> HeritageUpdateMessage_PB:
         return HeritageUpdateMessage_PB(
-            new_ancestry_address=self.new_ancestry_address.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            new_ancestry_address=self.new_ancestry_address._sy_serialize(),
+            address=self.address._sy_serialize(),
+            msg_id=self.id._sy_serialize(),
         )
 
     @staticmethod

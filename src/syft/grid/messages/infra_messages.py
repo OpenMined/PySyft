@@ -73,15 +73,15 @@ class CreateWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -145,13 +145,13 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -216,15 +216,15 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CheckWorkerDeploymentMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CheckWorkerDeploymentMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -288,13 +288,13 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CheckWorkerDeploymentResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -359,15 +359,15 @@ class GetWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -431,13 +431,13 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -502,15 +502,15 @@ class GetWorkersMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetWorkersMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkersMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -574,13 +574,13 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkersResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -645,15 +645,15 @@ class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -717,13 +717,13 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -788,15 +788,15 @@ class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -860,13 +860,13 @@ class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

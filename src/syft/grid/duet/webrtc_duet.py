@@ -134,7 +134,7 @@ class Duet(DomainClient):
                     name,
                     _,
                 ) = DomainClient.deserialize_client_metadata_from_node(
-                    metadata=self._client_metadata.serialize()
+                    metadata=self._client_metadata._sy_serialize()
                 )
 
                 # Create a SoloRoute

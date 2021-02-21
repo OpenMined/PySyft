@@ -137,20 +137,20 @@ class Address(Serializable):
         :rtype: Address_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Address_PB(
             name=self.name,
             has_network=self.network is not None,
-            network=self.network.serialize() if self.network is not None else None,
+            network=self.network._sy_serialize() if self.network is not None else None,
             has_domain=self.domain is not None,
-            domain=self.domain.serialize() if self.domain is not None else None,
+            domain=self.domain._sy_serialize() if self.domain is not None else None,
             has_device=self.device is not None,
-            device=self.device.serialize() if self.device is not None else None,
+            device=self.device._sy_serialize() if self.device is not None else None,
             has_vm=self.vm is not None,
-            vm=self.vm.serialize() if self.vm is not None else None,
+            vm=self.vm._sy_serialize() if self.vm is not None else None,
         )
 
     @staticmethod

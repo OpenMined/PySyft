@@ -119,11 +119,11 @@ class ObjectWithID(Serializable):
             a protobuf object that is the serialization of self.
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ObjectWithID_PB(id=self.id.serialize())
+        return ObjectWithID_PB(id=self.id._sy_serialize())
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":

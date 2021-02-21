@@ -17,7 +17,7 @@ def test_save_object_action_serde() -> None:
     storable = StorableObject(id=UID(), data=obj)
     msg = SaveObjectAction(obj=storable, address=addr)
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
 
     msg2 = sy.deserialize(blob=blob)
 

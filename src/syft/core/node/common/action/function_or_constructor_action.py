@@ -165,17 +165,17 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         :rtype: RunFunctionOrConstructorAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[x.serialize() for x in self.args],
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            args=[x._sy_serialize() for x in self.args],
+            kwargs={k: v._sy_serialize() for k, v in self.kwargs.items()},
+            id_at_location=self.id_at_location._sy_serialize(),
+            address=self.address._sy_serialize(),
+            msg_id=self.id._sy_serialize(),
         )
 
     @staticmethod

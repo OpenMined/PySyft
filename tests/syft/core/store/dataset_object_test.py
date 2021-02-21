@@ -255,7 +255,7 @@ def test_serde_storable_obj_2() -> None:
     tags = ["dummy", "dataset"]
     obj = Dataset(id=id, data=data, description=description, tags=tags)
 
-    blob = obj.serialize()
+    blob = obj._sy_serialize()
     ds_obj = sy.deserialize(blob=blob)
 
     assert obj.id == ds_obj.id

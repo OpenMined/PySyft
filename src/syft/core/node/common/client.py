@@ -282,7 +282,7 @@ class Client(AbstractNodeClient):
     def _object2proto(self) -> Client_PB:
         obj_type = get_fully_qualified_name(obj=self)
 
-        routes = [route.serialize() for route in self.routes]
+        routes = [route._sy_serialize() for route in self.routes]
 
         network = self.network._object2proto() if self.network is not None else None
 
@@ -294,7 +294,7 @@ class Client(AbstractNodeClient):
 
         client_pb = Client_PB(
             obj_type=obj_type,
-            id=self.id.serialize(),
+            id=self.id._sy_serialize(),
             name=self.name,
             routes=routes,
             has_network=self.network is not None,

@@ -213,19 +213,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=self._self.serialize(),
-            args=list(map(lambda x: x.serialize(), self.args)),
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            _self=self._self._sy_serialize(),
+            args=list(map(lambda x: x._sy_serialize(), self.args)),
+            kwargs={k: v._sy_serialize() for k, v in self.kwargs.items()},
+            id_at_location=self.id_at_location._sy_serialize(),
+            address=self.address._sy_serialize(),
+            msg_id=self.id._sy_serialize(),
         )
 
     @staticmethod

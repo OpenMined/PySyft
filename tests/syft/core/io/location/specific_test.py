@@ -86,9 +86,9 @@ def test_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = obj.to_proto()
+    blob = obj._sy_to_proto()
 
-    assert obj.serialize() == blob
+    assert obj._sy_serialize() == blob
 
 
 def test_default_deserialization() -> None:
@@ -97,7 +97,7 @@ def test_default_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize())
+    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize())
 
     obj2 = sy.deserialize(blob=blob)
     assert obj == obj2
@@ -109,11 +109,11 @@ def test_proto_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize(), name="Test")
+    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize(), name="Test")
 
-    assert obj.proto() == blob
-    assert obj.to_proto() == blob
-    assert obj.serialize(to_proto=True) == blob
+    assert obj._sy_proto() == blob
+    assert obj._sy_to_proto() == blob
+    assert obj._sy_serialize(to_proto=True) == blob
 
 
 def test_proto_deserialization() -> None:
@@ -122,7 +122,7 @@ def test_proto_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid)
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid.serialize())
+    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize())
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)
     assert obj == obj2
@@ -140,8 +140,8 @@ def test_binary_serialization() -> None:
     )
 
     assert obj.binary() == blob
-    assert obj.to_bytes() == blob
-    assert obj.serialize(to_bytes=True) == blob
+    assert obj._sy_to_bytes() == blob
+    assert obj._sy_serialize(to_bytes=True) == blob
 
 
 def test_binary_deserialization() -> None:

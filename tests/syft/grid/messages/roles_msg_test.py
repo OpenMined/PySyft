@@ -35,7 +35,7 @@ def test_create_role_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -54,7 +54,7 @@ def test_create_role_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -74,7 +74,7 @@ def test_delete_role_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -93,7 +93,7 @@ def test_delete_role_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -121,7 +121,7 @@ def test_update_role_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -140,7 +140,7 @@ def test_update_role_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -160,7 +160,7 @@ def test_get_role_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -187,7 +187,7 @@ def test_get_role_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -207,7 +207,7 @@ def test_get_all_roles_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -246,7 +246,7 @@ def test_get_all_roles_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

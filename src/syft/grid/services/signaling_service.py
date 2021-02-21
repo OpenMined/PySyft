@@ -78,16 +78,16 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: OfferPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return OfferPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -161,16 +161,16 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: AnswerPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return AnswerPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
-            reply_to=self.reply_to.serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -240,14 +240,14 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         :rtype: AnswerPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RegisterNewPeerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
+            reply_to=self.reply_to._sy_serialize(),
         )
 
     @staticmethod
@@ -316,13 +316,13 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingOfferMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return PeerSuccessfullyRegistered_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             peer_id=self.peer_id,
         )
 
@@ -400,15 +400,15 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingOfferMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SignalingOfferMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             payload=self.payload,
-            host_metadata=self.host_metadata.serialize(),
+            host_metadata=self.host_metadata._sy_serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -488,16 +488,16 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingAnswerMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return SignalingAnswerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
             payload=self.payload,
-            host_metadata=self.host_metadata.serialize(),
+            host_metadata=self.host_metadata._sy_serialize(),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -568,13 +568,13 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingRequestsNotFound_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SignalingRequestsNotFound_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
         )
 
     @staticmethod
@@ -641,13 +641,13 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         :rtype: InvalidLoopBackRequest_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return InvalidLoopBackRequest_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
         )
 
     @staticmethod
@@ -713,13 +713,13 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
         :rtype: CloseConnectionMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CloseConnectionMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
         )
 
     @staticmethod

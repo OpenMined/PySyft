@@ -41,12 +41,12 @@ class Metadata(Serializable):
         :rtype: Metadata_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Metadata_PB(
-            name=self.name, id=self.id.serialize(), node=self.node.serialize()
+            name=self.name, id=self.id._sy_serialize(), node=self.node._sy_serialize()
         )
 
     @staticmethod

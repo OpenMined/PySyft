@@ -14,7 +14,7 @@ def test_garbage_collection_object_action_serde() -> None:
 
     msg = GarbageCollectObjectAction(id_at_location=uid, address=addr)
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
 
     msg2 = sy.deserialize(blob=blob)
 

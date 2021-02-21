@@ -12,7 +12,7 @@ def test_torch_valuesindices_serde() -> None:
     values = y.values
     indices = y.indices
 
-    ser = y.serialize()
+    ser = y._sy_serialize()
     # horrible hack, we shouldnt be constructing these right now anyway
     params = [None] * 17
     params[0] = values

@@ -39,7 +39,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def _object2proto(self) -> SaveObjectAction_PB:
         obj = self.obj._object2proto()
-        addr = self.address.serialize()
+        addr = self.address._sy_serialize()
         return SaveObjectAction_PB(obj=obj, address=addr)
 
     @staticmethod

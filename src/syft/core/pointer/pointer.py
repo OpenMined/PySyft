@@ -245,15 +245,15 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=self.id_at_location.serialize(),
-            location=self.client.address.serialize(),
+            id_at_location=self.id_at_location._sy_serialize(),
+            location=self.client.address._sy_serialize(),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,

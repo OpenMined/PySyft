@@ -45,7 +45,7 @@ def test_signaling_offer_message_serde() -> None:
         host_peer=host_id,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     msg_metadata = bob_vm.get_metadata_for_client()
@@ -79,7 +79,7 @@ def test_signaling_answer_message_serde() -> None:
     )
     msg_metadata = bob_vm.get_metadata_for_client()
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
     msg2_metadata = msg2.host_metadata
 
@@ -110,7 +110,7 @@ def test_signaling_answer_pull_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -134,7 +134,7 @@ def test_signaling_offer_pull_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = msg._sy_serialize()
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

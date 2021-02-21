@@ -37,8 +37,8 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
 
     def _object2proto(self) -> GarbageCollectObjectAction_PB:
 
-        id_pb = self.id_at_location.serialize()
-        addr = self.address.serialize()
+        id_pb = self.id_at_location._sy_serialize()
+        addr = self.address._sy_serialize()
 
         return GarbageCollectObjectAction_PB(
             id_at_location=id_pb,

@@ -87,7 +87,7 @@ class SyftMessage(AbstractMessage):
 
         """
         debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
-        signed_message = signing_key.sign(self.serialize(to_bytes=True))
+        signed_message = signing_key.sign(self._sy_serialize(to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -168,7 +168,7 @@ class SignedMessage(SyftMessage):
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
-            msg_id=self.id.proto(),
+            msg_id=self.id._sy_proto(),
             obj_type=self.obj_type,
             signature=bytes(self.signature),
             verify_key=bytes(self.verify_key),

@@ -51,7 +51,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ExceptionMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use object._sy_serialize() or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -64,9 +64,9 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         fqn = ".".join(module_parts)
 
         return ExceptionMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            msg_id_causing_exception=self.msg_id_causing_exception.serialize(),
+            msg_id=self.id._sy_serialize(),
+            address=self.address._sy_serialize(),
+            msg_id_causing_exception=self.msg_id_causing_exception._sy_serialize(),
             exception_type=fqn,
             exception_msg=self.exception_msg,
         )

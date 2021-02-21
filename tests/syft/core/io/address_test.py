@@ -372,9 +372,9 @@ def test_default_serialization_and_deserialization() -> None:
         vm=SpecificLocation(id=an_id),
     )
 
-    blob = obj.to_proto()
+    blob = obj._sy_to_proto()
 
-    assert obj.serialize() == blob
+    assert obj._sy_serialize() == blob
     assert obj == sy.deserialize(blob=blob)
 
 
@@ -389,7 +389,7 @@ def test_partial_serialization_and_deserialization() -> None:
         vm=SpecificLocation(id=an_id),
     )
 
-    assert obj == sy.deserialize(blob=obj.serialize())
+    assert obj == sy.deserialize(blob=obj._sy_serialize())
 
     obj = Address(
         network=SpecificLocation(id=an_id),
@@ -398,7 +398,7 @@ def test_partial_serialization_and_deserialization() -> None:
         vm=SpecificLocation(id=an_id),
     )
 
-    blob = obj.to_proto()
+    blob = obj._sy_to_proto()
     assert obj == sy.deserialize(blob=blob)
 
     obj = Address(
@@ -408,7 +408,7 @@ def test_partial_serialization_and_deserialization() -> None:
         vm=SpecificLocation(id=an_id),
     )
 
-    blob = obj.to_proto()
+    blob = obj._sy_to_proto()
     assert obj == sy.deserialize(blob=blob)
 
     obj = Address(
@@ -418,7 +418,7 @@ def test_partial_serialization_and_deserialization() -> None:
         # vm=SpecificLocation(id=an_id)
     )
 
-    blob = obj.to_proto()
+    blob = obj._sy_to_proto()
     assert obj == sy.deserialize(blob=blob)
 
 
@@ -441,15 +441,15 @@ def test_proto_serialization() -> None:
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=loc.serialize(),
-        domain=loc.serialize(),
-        device=loc.serialize(),
-        vm=loc.serialize(),
+        network=loc._sy_serialize(),
+        domain=loc._sy_serialize(),
+        device=loc._sy_serialize(),
+        vm=loc._sy_serialize(),
     )
 
-    assert obj.proto() == blob
-    assert obj.to_proto() == blob
-    assert obj.serialize(to_proto=True) == blob
+    assert obj._sy_proto() == blob
+    assert obj._sy_to_proto() == blob
+    assert obj._sy_serialize(to_proto=True) == blob
 
 
 def test_proto_deserialization() -> None:
@@ -470,10 +470,10 @@ def test_proto_deserialization() -> None:
         has_domain=True,
         has_device=True,
         has_vm=True,
-        network=loc.serialize(),
-        domain=loc.serialize(),
-        device=loc.serialize(),
-        vm=loc.serialize(),
+        network=loc._sy_serialize(),
+        domain=loc._sy_serialize(),
+        device=loc._sy_serialize(),
+        vm=loc._sy_serialize(),
     )
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)

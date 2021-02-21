@@ -94,8 +94,8 @@ class StorableObject(AbstractStorableObject):
 
     @data.setter
     def data(self, value: Any) -> Any:
-        if hasattr(value, "serializable_wrapper_type"):
-            self._data = value.serializable_wrapper_type(value=value)
+        if hasattr(value, "_sy_serializable_wrapper_type"):
+            self._data = value._sy_serializable_wrapper_type(value=value)
         else:
             self._data = value
 
@@ -119,7 +119,7 @@ class StorableObject(AbstractStorableObject):
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = self.id.serialize()
+        id = self.id._sy_serialize()
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -146,14 +146,14 @@ class StorableObject(AbstractStorableObject):
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = permission_data.serialize(to_bytes=True)
+            proto.read_permissions = permission_data._sy_serialize(to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = permission_data.serialize(to_bytes=True)
+            proto.search_permissions = permission_data._sy_serialize(to_bytes=True)
 
         return proto
 

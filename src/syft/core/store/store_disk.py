@@ -56,7 +56,7 @@ class DiskObjectStore(ObjectStore):
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
         try:
-            blob = value.serialize(to_bytes=True)
+            blob = value._sy_serialize(to_bytes=True)
             self.db[str(key.value)] = blob
             self.db.commit(blocking=False)
         except Exception as e:
