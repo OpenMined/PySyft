@@ -65,7 +65,6 @@ class Globals(Module):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
-
         if isinstance(path, str):
             path = path.split(".")
 
