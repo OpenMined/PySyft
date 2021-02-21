@@ -14,12 +14,14 @@ class Property(ast.attribute.Attribute):
     def __init__(
         self,
         path_and_name: str,
+        parent,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
     ):
         super().__init__(
             path_and_name=path_and_name,
+            parent=parent,
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,

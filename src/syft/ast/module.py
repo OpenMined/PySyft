@@ -1,5 +1,6 @@
 # stdlib
 import inspect
+import sys
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -16,7 +17,6 @@ from ..logger import traceback_and_raise
 def is_static_method(host_object, attr):  # type: ignore
     value = getattr(host_object, attr)
 
-    # Host object must contain the method resolution order attribute (mro)
     if not hasattr(host_object, "__mro__"):
         return False
 
@@ -30,28 +30,30 @@ def is_static_method(host_object, attr):  # type: ignore
 
 
 class Module(ast.attribute.Attribute):
+
     """A module which contains other modules or callables."""
 
     def __init__(
         self,
         client: Optional[Any],
+        object_ref: Union[CallableT, ModuleType],
+        parent: Optional[ast.attribute.Attribute] = None,
         path_and_name: Optional[str] = None,
-        object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
     ):
-        """
-        Args:
-            client: The client for which all computation is being executed.
-            path_and_name: The path for the current node, e.g. `syft.lib.python.List`
-            object_ref: The actual python object for which the computation is being made.
-            return_type_name: The given action's return type name, with its full path, in string format.
-        """
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
+
+        if object_ref is None and self.name:
+            try:
+                self.object_ref = sys.modules[path_and_name]
+            except Exception as e:
+                self.object_ref = getattr(self._parent.object_ref, self.name)
 
     def add_attr(
         self,
@@ -59,14 +61,6 @@ class Module(ast.attribute.Attribute):
         attr: Optional[Union[Callable, CallableT]],
         is_static: bool = False,
     ) -> None:
-        """
-        Add an attribute to the current module.
-
-        Args:
-            attr_name: The name of the attribute, e.g. `List` of the path `syft.lib.python.List`.
-            attr: The attribute object.
-            is_static: The actual Python object for which the computation is being made.
-        """
         self.__setattr__(attr_name, attr)
 
         if is_static is True:
@@ -77,7 +71,7 @@ class Module(ast.attribute.Attribute):
         if attr is None:
             traceback_and_raise(ValueError("An attribute reference has to be passed."))
 
-        # If `add_attr` is called directly, we need to cache the path as well
+        # if add_attr is called directly we need to cache the path as well
         attr_ref = getattr(attr, "object_ref", None)
         path = getattr(attr, "path_and_name", None)
         if attr_ref not in self.lookup_cache and path is not None:
@@ -91,6 +85,8 @@ class Module(ast.attribute.Attribute):
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+
+        self.apply_node_changes()
 
         if obj_type is not None:
             if obj_type in self.lookup_cache:
@@ -140,6 +136,7 @@ class Module(ast.attribute.Attribute):
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
                         client=self.client,
+                        parent=self,
                     ),
                 )
             elif inspect.isclass(attr_ref):
@@ -148,6 +145,7 @@ class Module(ast.attribute.Attribute):
                     object_ref=attr_ref,
                     return_type_name=return_type_name,
                     client=self.client,
+                    parent=self,
                 )
                 self.add_attr(
                     attr_name=path[index],
@@ -164,6 +162,7 @@ class Module(ast.attribute.Attribute):
                         return_type_name=return_type_name,
                         client=self.client,
                         is_static=is_static,
+                        parent=self,
                     ),
                 )
             elif inspect.isdatadescriptor(attr_ref):
@@ -174,6 +173,7 @@ class Module(ast.attribute.Attribute):
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
                         client=self.client,
+                        parent=self,
                     ),
                 )
             elif index == len(path) - 1:
@@ -195,12 +195,16 @@ class Module(ast.attribute.Attribute):
         attr.add_path(path=path, index=index + 1, return_type_name=return_type_name)
 
     def __getattribute__(self, item: str) -> Any:
+        # super().apply_node_changes()
+
         target_object = super().__getattribute__(item)
         if isinstance(target_object, ast.static_attr.StaticAttribute):
             return target_object.get_remote_value()
         return target_object
 
     def __setattr__(self, key: str, value: Any) -> None:
+        # self.apply_node_changes()
+
         if hasattr(super(), "attrs"):
             attrs = super().__getattribute__("attrs")
             if key in attrs:
@@ -209,3 +213,9 @@ class Module(ast.attribute.Attribute):
                     return target_object.set_remote_value(value)
 
         return super().__setattr__(key, value)
+
+    def fetch_live_object(self) -> object:
+        try:
+            return sys.modules[self.path_and_name]
+        except Exception as e:
+            return getattr(self._parent.object_ref, self.name)

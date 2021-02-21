@@ -75,3 +75,12 @@ class IterWithoutLen:
             return result
         else:
             raise StopIteration
+
+
+class C:
+    def dummy_reloadable_func(self):
+        return 0
+
+    @staticmethod
+    def reload_func():
+        C.dummy_reloadable_func = lambda self: 1
