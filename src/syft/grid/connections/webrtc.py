@@ -345,7 +345,7 @@ class WebRTCConnection(BidirectionalConnection):
 
                 # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
-                data = msg._sy_to_bytes()
+                data = msg._sy_serialize(to_bytes=True)
                 data_len = len(data)
 
                 if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:
@@ -391,7 +391,9 @@ class WebRTCConnection(BidirectionalConnection):
             # Build Close Message to warn the other peer
             bye_msg = CloseConnectionMessage(address=Address())
 
-            self.channel.send(OrderedChunk(0, bye_msg._sy_to_bytes()).save())
+            self.channel.send(
+                OrderedChunk(0, bye_msg._sy_serialize(to_bytes=True)).save()  # type: ignore
+            )
 
             # Finish async tasks related with this connection
             self._finish_coroutines()

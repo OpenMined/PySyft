@@ -92,8 +92,8 @@ Protobuf
 .. code::
 
     proto_obj = obj._sy_serialize(to_proto=True)
-    proto_obj = obj._sy_to_proto()
-    proto_obj = obj._sy_proto()
+    proto_obj = obj._sy_serialize(to_proto=True)
+    proto_obj = obj._sy_serialize(to_proto=True)
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -110,8 +110,8 @@ Binary
 .. code::
 
     binary_obj = obj._sy_serialize(to_bytes=True)
-    binary_obj = obj._sy_to_bytes()
-    binary_obj = obj.binary()
+    binary_obj = obj._sy_serialize(to_bytes=True)
+    binary_obj = obj._sy_serialize(to_bytes=True)
 
     # print(binary_obj)
     # >>> b'{  "objType": "syft.core.common.object.ObjectWithID",

@@ -127,7 +127,7 @@ class Serializable:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as .binary(), etc) know how to convert the object into
+        implemented here (such as ._sy_serialize(to_bytes=True), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message
@@ -167,38 +167,6 @@ class Serializable:
         """
         traceback_and_raise(NotImplementedError)
 
-    def _sy_to_proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self._sy_serialize(to_proto=True), Message)
-
-    def _sy_proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self._sy_serialize(to_proto=True), Message)
-
-    def _sy_to_bytes(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self._sy_serialize(to_bytes=True), bytes)
-
-    def binary(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self._sy_serialize(to_bytes=True), bytes)
-
     def _sy_serialize(
         self,
         to_proto: bool = True,
@@ -237,15 +205,15 @@ class Serializable:
             blob: Message = DataMessage(
                 obj_type=get_fully_qualified_name(obj=self), content=serialized_data
             )
-            return blob.SerializeToString()
+            return validate_type(blob.SerializeToString(), bytes)
 
         elif to_proto:
-            return self._object2proto()
+            return validate_type(self._object2proto(), Message)
         else:
             traceback_and_raise(
                 Exception(
                     """You must specify at least one deserialization format using
-                            one of the arguments of the serialize() method such as:
+                            one of the arguments of the _sy_serialize() method such as:
                             to_proto, to_bytes."""
                 )
             )

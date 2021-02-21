@@ -168,7 +168,7 @@ class SignedMessage(SyftMessage):
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
-            msg_id=self.id._sy_proto(),
+            msg_id=self.id._sy_serialize(to_proto=True),
             obj_type=self.obj_type,
             signature=bytes(self.signature),
             verify_key=bytes(self.verify_key),

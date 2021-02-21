@@ -77,7 +77,7 @@ class HTTPConnection(ClientConnection):
         # Perform HTTP request using base_url as a root address
         r = requests.post(
             url=self.base_url,
-            data=msg.binary(),
+            data=msg._sy_serialize(to_bytes=True),
             headers={"Content-Type": "application/octet-stream"},
         )
 

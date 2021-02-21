@@ -90,7 +90,7 @@ def test_object_with_id_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = obj._sy_to_proto()
+    blob = obj._sy_serialize(to_proto=True)
 
     assert obj._sy_serialize() == blob
 
@@ -115,8 +115,8 @@ def test_object_with_id_proto_serialization() -> None:
 
     blob = ObjectWithID.get_protobuf_schema()(id=uid._sy_serialize())
 
-    assert obj._sy_proto() == blob
-    assert obj._sy_to_proto() == blob
+    assert obj._sy_serialize(to_proto=True) == blob
+    assert obj._sy_serialize(to_proto=True) == blob
     assert obj._sy_serialize(to_proto=True) == blob
 
 
@@ -143,8 +143,8 @@ def test_object_with_id_binary_serialization() -> None:
         + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
 
-    assert obj.binary() == blob
-    assert obj._sy_to_bytes() == blob
+    assert obj._sy_serialize(to_bytes=True) == blob
+    assert obj._sy_serialize(to_bytes=True) == blob
     assert obj._sy_serialize(to_bytes=True) == blob
 
 

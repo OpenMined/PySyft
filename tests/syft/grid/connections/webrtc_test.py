@@ -290,6 +290,6 @@ async def test_consumer_request() -> None:
     test_domain.root_verify_key = signing_key.verify_key
     signed_msg = msg.sign(signing_key=signing_key)
 
-    msg_bin = signed_msg._sy_to_bytes()
+    msg_bin = signed_msg._sy_serialize(to_bytes=True)
 
     await webrtc_node.consumer(msg=msg_bin)

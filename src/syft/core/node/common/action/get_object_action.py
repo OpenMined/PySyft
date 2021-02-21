@@ -219,10 +219,10 @@ class GetObjectAction(ImmediateActionWithReply):
             object.
         """
         return GetObjectAction_PB(
-            id_at_location=self.id_at_location._sy_proto(),
-            msg_id=self.id._sy_proto(),
-            address=self.address._sy_proto(),
-            reply_to=self.reply_to._sy_proto(),
+            id_at_location=self.id_at_location._sy_serialize(to_proto=True),
+            msg_id=self.id._sy_serialize(to_proto=True),
+            address=self.address._sy_serialize(to_proto=True),
+            reply_to=self.reply_to._sy_serialize(to_proto=True),
             delete_obj=self.delete_obj,
         )
 

@@ -130,8 +130,8 @@ def test_uid_proto_serialization() -> None:
 
     blob = _serialize(obj=uid)
 
-    assert uid._sy_proto() == blob
-    assert uid._sy_to_proto() == blob
+    assert uid._sy_serialize(to_proto=True) == blob
+    assert uid._sy_serialize(to_proto=True) == blob
     assert uid._sy_serialize(to_proto=True) == blob
 
 
@@ -154,8 +154,8 @@ def test_uid_binary_serialization() -> None:
         + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
 
-    assert uid.binary() == blob
-    assert uid._sy_to_bytes() == blob
+    assert uid._sy_serialize(to_bytes=True) == blob
+    assert uid._sy_serialize(to_bytes=True) == blob
     assert uid._sy_serialize(to_bytes=True) == blob
 
 

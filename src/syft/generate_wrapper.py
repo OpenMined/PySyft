@@ -67,13 +67,6 @@ def GenerateWrapper(
     )
 
     aggressive_set_attr(obj=wrapped_type, name="_sy_serialize", attr=_serialize)
-    aggressive_set_attr(
-        obj=wrapped_type, name="_sy_to_proto", attr=Serializable._sy_to_proto
-    )
-    aggressive_set_attr(obj=wrapped_type, name="_sy_proto", attr=Serializable._sy_proto)
-    aggressive_set_attr(
-        obj=wrapped_type, name="_sy_to_bytes", attr=Serializable._sy_to_bytes
-    )
 
 
 def GenerateProtobufWrapper(

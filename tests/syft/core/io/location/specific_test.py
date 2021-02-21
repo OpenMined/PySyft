@@ -86,7 +86,7 @@ def test_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = obj._sy_to_proto()
+    blob = obj._sy_serialize(to_proto=True)
 
     assert obj._sy_serialize() == blob
 
@@ -111,8 +111,8 @@ def test_proto_serialization() -> None:
 
     blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize(), name="Test")
 
-    assert obj._sy_proto() == blob
-    assert obj._sy_to_proto() == blob
+    assert obj._sy_serialize(to_proto=True) == blob
+    assert obj._sy_serialize(to_proto=True) == blob
     assert obj._sy_serialize(to_proto=True) == blob
 
 
@@ -139,8 +139,8 @@ def test_binary_serialization() -> None:
         + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
     )
 
-    assert obj.binary() == blob
-    assert obj._sy_to_bytes() == blob
+    assert obj._sy_serialize(to_bytes=True) == blob
+    assert obj._sy_serialize(to_bytes=True) == blob
     assert obj._sy_serialize(to_bytes=True) == blob
 
 
