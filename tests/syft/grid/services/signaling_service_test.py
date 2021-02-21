@@ -4,6 +4,7 @@ from typing import Tuple
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.common.message import SyftMessage
 from syft.core.io.address import Address
 from syft.core.node.common.node import Node
@@ -45,7 +46,7 @@ def test_signaling_offer_message_serde() -> None:
         host_peer=host_id,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     msg_metadata = bob_vm.get_metadata_for_client()
@@ -79,7 +80,7 @@ def test_signaling_answer_message_serde() -> None:
     )
     msg_metadata = bob_vm.get_metadata_for_client()
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
     msg2_metadata = msg2.host_metadata
 
@@ -110,7 +111,7 @@ def test_signaling_answer_pull_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -134,7 +135,7 @@ def test_signaling_offer_pull_request_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

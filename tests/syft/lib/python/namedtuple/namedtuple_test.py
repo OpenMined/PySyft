@@ -2,6 +2,7 @@
 import torch
 
 # syft absolute
+from syft import serialize
 from syft.core.common.serde.deserialize import _deserialize
 from syft.lib.python import ValuesIndices
 
@@ -12,7 +13,7 @@ def test_torch_valuesindices_serde() -> None:
     values = y.values
     indices = y.indices
 
-    ser = y._sy_serialize()
+    ser = serialize(y)
     # horrible hack, we shouldnt be constructing these right now anyway
     params = [None] * 17
     params[0] = values

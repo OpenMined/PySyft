@@ -57,7 +57,7 @@ class Location(Serializable):
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as ._sy_serialize(to_bytes=True), etc) know how to convert the object into
+        implemented here (such as serialize(, to_bytes=True), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message

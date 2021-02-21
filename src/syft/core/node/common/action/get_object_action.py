@@ -6,6 +6,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import serialize
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
@@ -55,15 +56,15 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         :rtype: GetObjectResponseMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        ser = self.obj._sy_serialize()
+        ser = serialize(self.obj)
 
         return GetObjectResponseMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             obj=ser,
         )
 
@@ -214,15 +215,15 @@ class GetObjectAction(ImmediateActionWithReply):
         :rtype: ObjectWithID_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetObjectAction_PB(
-            id_at_location=self.id_at_location._sy_serialize(to_proto=True),
-            msg_id=self.id._sy_serialize(to_proto=True),
-            address=self.address._sy_serialize(to_proto=True),
-            reply_to=self.reply_to._sy_serialize(to_proto=True),
+            id_at_location=serialize(self.id_at_location, to_proto=True),
+            msg_id=serialize(self.id, to_proto=True),
+            address=serialize(self.address, to_proto=True),
+            reply_to=serialize(self.reply_to, to_proto=True),
             delete_obj=self.delete_obj,
         )
 

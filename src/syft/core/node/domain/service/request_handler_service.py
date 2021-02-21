@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
+from ..... import serialize
 from .....lib.python import Dict
 from .....lib.python.util import downcast
 from .....lib.python.util import upcast
@@ -59,14 +60,14 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         :rtype: UpdateRequestHandlerMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return UpdateRequestHandlerMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             handler=downcast(value=self.handler)._object2proto(),
             keep=self.keep,
         )
@@ -133,14 +134,14 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
         :rtype: GetAllRequestHandlersMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAllRequestHandlersMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
-            reply_to=self.reply_to._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -208,7 +209,7 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
         :rtype: GetAllRequestHandlersResponseMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -220,8 +221,8 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
                 handler["created_time"] = str(handler["created_time"])
 
         return GetAllRequestHandlersResponseMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             handlers=list(map(lambda x: downcast(value=x)._object2proto(), handlers)),
         )
 

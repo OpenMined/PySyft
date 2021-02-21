@@ -5,6 +5,7 @@ from nacl.signing import VerifyKey
 # syft absolute
 import syft as sy
 from syft import ReprMessage
+from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.util import get_fully_qualified_name
 
@@ -71,7 +72,7 @@ def test_create_signed_message() -> None:
     assert len(sig_msg.signature) > 0
     assert sig_msg.verify_key == get_verify_key()
     assert sig_msg.message == msg
-    assert sig_msg.serialized_message == msg._sy_serialize(to_bytes=True)
+    assert sig_msg.serialized_message == serialize(msg, to_bytes=True)
 
 
 def test_deserialize_signed_message() -> None:
@@ -110,7 +111,7 @@ def test_serde_matches() -> None:
     assert type(sig_msg) == SignedImmediateSyftMessageWithoutReply
 
     # reserial should be same as original fixture
-    comp_blob = sig_msg._sy_serialize(to_bytes=True)
+    comp_blob = serialize(sig_msg, to_bytes=True)
     assert type(comp_blob) == bytes
     assert comp_blob == sig_msg_blob
 

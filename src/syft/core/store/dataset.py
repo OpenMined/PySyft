@@ -9,6 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft as sy
 
 # syft relative
+from ... import serialize
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
@@ -100,7 +101,7 @@ class Dataset(Serializable):
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = self.id._sy_serialize()
+        id = serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -129,14 +130,14 @@ class Dataset(Serializable):
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = permission_data._sy_serialize(to_bytes=True)
+            proto.read_permissions = serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = permission_data._sy_serialize(to_bytes=True)
+            proto.search_permissions = serialize(permission_data, to_bytes=True)
 
         return proto
 

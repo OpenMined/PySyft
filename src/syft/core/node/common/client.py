@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from .... import serialize
 from ....core.pointer.pointer import Pointer
 from ....lib import create_lib_ast
 from ....logger import critical
@@ -282,7 +283,7 @@ class Client(AbstractNodeClient):
     def _object2proto(self) -> Client_PB:
         obj_type = get_fully_qualified_name(obj=self)
 
-        routes = [route._sy_serialize() for route in self.routes]
+        routes = [serialize(route) for route in self.routes]
 
         network = self.network._object2proto() if self.network is not None else None
 
@@ -294,7 +295,7 @@ class Client(AbstractNodeClient):
 
         client_pb = Client_PB(
             obj_type=obj_type,
-            id=self.id._sy_serialize(),
+            id=serialize(self.id),
             name=self.name,
             routes=routes,
             has_network=self.network is not None,

@@ -6,6 +6,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import serialize
 from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
@@ -37,8 +38,8 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
 
     def _object2proto(self) -> GarbageCollectObjectAction_PB:
 
-        id_pb = self.id_at_location._sy_serialize()
-        addr = self.address._sy_serialize()
+        id_pb = serialize(self.id_at_location)
+        addr = serialize(self.address)
 
         return GarbageCollectObjectAction_PB(
             id_at_location=id_pb,

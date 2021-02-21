@@ -4,6 +4,7 @@ from typing import Dict
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.io.address import Address
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
@@ -28,7 +29,7 @@ def test_create_initial_setup_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -47,7 +48,7 @@ def test_create_initial_setup_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -67,7 +68,7 @@ def test_get_initial_setup_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -92,7 +93,7 @@ def test_delete_worker_response_serde() -> None:
         content=content,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

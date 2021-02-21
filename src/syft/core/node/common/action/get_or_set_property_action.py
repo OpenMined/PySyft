@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
+from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )
@@ -151,18 +152,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetOrSetPropertyAction_PB(
             path=self.path,
-            id_at_location=self.id_at_location._sy_serialize(),
-            args=list(map(lambda x: x._sy_serialize(), self.args)),
-            kwargs={k: v._sy_serialize() for k, v in self.kwargs.items()},
-            address=self.address._sy_serialize(),
-            _self=self._self._sy_serialize(),
-            msg_id=self.id._sy_serialize(),
+            id_at_location=serialize(self.id_at_location),
+            args=list(map(lambda x: serialize(x), self.args)),
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            address=serialize(self.address),
+            _self=serialize(self._self),
+            msg_id=serialize(self.id),
             action=self.action.value,
         )
 

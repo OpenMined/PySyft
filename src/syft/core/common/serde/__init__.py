@@ -60,8 +60,8 @@ on the object for your convenience::
     print(my_object)
     # >>> <ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>
 
-    # by default, ._sy_serialize() will serialize it to a protobuf Message object
-    proto_obj = my_object._sy_serialize()
+    # by default, serialize() will serialize it to a protobuf Message object
+    proto_obj = serialize(my_object)
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -91,9 +91,9 @@ Protobuf
 
 .. code::
 
-    proto_obj = obj._sy_serialize(to_proto=True)
-    proto_obj = obj._sy_serialize(to_proto=True)
-    proto_obj = obj._sy_serialize(to_proto=True)
+    proto_obj = serialize(obj, to_proto=True)
+    proto_obj = serialize(obj, to_proto=True)
+    proto_obj = serialize(obj, to_proto=True)
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -109,9 +109,9 @@ Binary
 
 .. code::
 
-    binary_obj = obj._sy_serialize(to_bytes=True)
-    binary_obj = obj._sy_serialize(to_bytes=True)
-    binary_obj = obj._sy_serialize(to_bytes=True)
+    binary_obj = serialize(obj, to_bytes=True)
+    binary_obj = serialize(obj, to_bytes=True)
+    binary_obj = serialize(obj, to_bytes=True)
 
     # print(binary_obj)
     # >>> b'{  "objType": "syft.core.common.object.ObjectWithID",

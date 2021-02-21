@@ -2,6 +2,7 @@
 import requests
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -77,7 +78,7 @@ class HTTPConnection(ClientConnection):
         # Perform HTTP request using base_url as a root address
         r = requests.post(
             url=self.base_url,
-            data=msg._sy_serialize(to_bytes=True),
+            data=serialize(msg, to_bytes=True),
             headers={"Content-Type": "application/octet-stream"},
         )
 

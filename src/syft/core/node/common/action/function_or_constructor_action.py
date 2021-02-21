@@ -12,6 +12,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
+from ..... import serialize
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
@@ -165,17 +166,17 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         :rtype: RunFunctionOrConstructorAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[x._sy_serialize() for x in self.args],
-            kwargs={k: v._sy_serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location._sy_serialize(),
-            address=self.address._sy_serialize(),
-            msg_id=self.id._sy_serialize(),
+            args=[serialize(x) for x in self.args],
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod

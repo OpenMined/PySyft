@@ -3,6 +3,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.common import UID
 from syft.core.store.storeable_object import StorableObject
 
@@ -33,7 +34,7 @@ def test_serde_storable_obj_2() -> None:
     description = "This is a dummy test"
     tags = ["dummy", "test"]
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
-    blob = obj._sy_serialize()
+    blob = serialize(obj)
     ds_obj = sy.deserialize(blob=blob)
     assert obj.id == ds_obj.id
     assert (obj.data == ds_obj.data).all()

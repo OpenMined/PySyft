@@ -29,7 +29,7 @@ def test_run_function_or_constructor_action_serde() -> None:
         msg_id=UID(),
     )
 
-    blob = msg._sy_serialize()
+    blob = sy.serialize(msg)
 
     msg2 = sy.deserialize(blob=blob)
 

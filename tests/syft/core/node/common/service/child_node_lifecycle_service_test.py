@@ -3,6 +3,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.node.common.service.child_node_lifecycle_service import (
     RegisterChildNodeMessage,
 )
@@ -24,7 +25,7 @@ def test_child_node_lifecycle_message_serde() -> None:
         address=bob_phone_client.address,
     )
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

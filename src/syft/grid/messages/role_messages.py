@@ -8,6 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
@@ -67,15 +68,15 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateRoleMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateRoleMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to._sy_serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -139,13 +140,13 @@ class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateRoleResponse_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -210,15 +211,15 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetRoleMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetRoleMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to._sy_serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -282,13 +283,13 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetRoleResponse_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -353,15 +354,15 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetRolesMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetRolesMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to._sy_serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -425,13 +426,13 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetRolesResponse_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -496,15 +497,15 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateRoleMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateRoleMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to._sy_serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -568,13 +569,13 @@ class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateRoleResponse_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -639,15 +640,15 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteRoleMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteRoleMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to._sy_serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -711,13 +712,13 @@ class DeleteRoleResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteRoleResponse_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

@@ -11,7 +11,6 @@ import syft
 # syft relative
 from .core.common.serde.serializable import Serializable
 from .core.common.serde.serializable import bind_protobuf
-from .core.common.serde.serialize import _serialize
 from .util import aggressive_set_attr
 
 module_type = type(syft)
@@ -65,8 +64,6 @@ def GenerateWrapper(
     aggressive_set_attr(
         obj=wrapped_type, name="_sy_serializable_wrapper_type", attr=Wrapper
     )
-
-    aggressive_set_attr(obj=wrapped_type, name="_sy_serialize", attr=_serialize)
 
 
 def GenerateProtobufWrapper(

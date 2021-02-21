@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ..... import serialize
 from .....logger import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,
@@ -46,14 +47,14 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ReprMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return ReprMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
         )
 
     @staticmethod

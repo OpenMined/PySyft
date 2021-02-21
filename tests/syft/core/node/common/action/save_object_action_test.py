@@ -3,6 +3,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location import SpecificLocation
@@ -17,7 +18,7 @@ def test_save_object_action_serde() -> None:
     storable = StorableObject(id=UID(), data=obj)
     msg = SaveObjectAction(obj=storable, address=addr)
 
-    blob = msg._sy_serialize()
+    blob = serialize(msg)
 
     msg2 = sy.deserialize(blob=blob)
 

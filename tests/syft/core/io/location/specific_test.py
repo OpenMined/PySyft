@@ -86,9 +86,9 @@ def test_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = obj._sy_serialize(to_proto=True)
+    blob = sy.serialize(obj, to_proto=True)
 
-    assert obj._sy_serialize() == blob
+    assert sy.serialize(obj) == blob
 
 
 def test_default_deserialization() -> None:
@@ -97,7 +97,7 @@ def test_default_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize())
+    blob = SpecificLocation.get_protobuf_schema()(id=sy.serialize(uid))
 
     obj2 = sy.deserialize(blob=blob)
     assert obj == obj2
@@ -109,11 +109,11 @@ def test_proto_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize(), name="Test")
+    blob = SpecificLocation.get_protobuf_schema()(id=sy.serialize(uid), name="Test")
 
-    assert obj._sy_serialize(to_proto=True) == blob
-    assert obj._sy_serialize(to_proto=True) == blob
-    assert obj._sy_serialize(to_proto=True) == blob
+    assert sy.serialize(obj, to_proto=True) == blob
+    assert sy.serialize(obj, to_proto=True) == blob
+    assert sy.serialize(obj, to_proto=True) == blob
 
 
 def test_proto_deserialization() -> None:
@@ -122,7 +122,7 @@ def test_proto_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid)
 
-    blob = SpecificLocation.get_protobuf_schema()(id=uid._sy_serialize())
+    blob = SpecificLocation.get_protobuf_schema()(id=sy.serialize(uid))
 
     obj2 = sy.deserialize(blob=blob, from_proto=True)
     assert obj == obj2
@@ -139,9 +139,9 @@ def test_binary_serialization() -> None:
         + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
     )
 
-    assert obj._sy_serialize(to_bytes=True) == blob
-    assert obj._sy_serialize(to_bytes=True) == blob
-    assert obj._sy_serialize(to_bytes=True) == blob
+    assert sy.serialize(obj, to_bytes=True) == blob
+    assert sy.serialize(obj, to_bytes=True) == blob
+    assert sy.serialize(obj, to_bytes=True) == blob
 
 
 def test_binary_deserialization() -> None:

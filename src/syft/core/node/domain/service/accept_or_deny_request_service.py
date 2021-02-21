@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ..... import serialize
 from .....logger import debug
 from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
@@ -58,15 +59,15 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         :rtype: AcceptOrDenyRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object._sy_serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return AcceptOrDenyRequestMessage_PB(
-            msg_id=self.id._sy_serialize(),
-            address=self.address._sy_serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             accept=self.accept,
-            request_id=self.request_id._sy_serialize(),
+            request_id=serialize(self.request_id),
         )
 
     @staticmethod
