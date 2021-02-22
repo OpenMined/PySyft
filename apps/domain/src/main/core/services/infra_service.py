@@ -15,7 +15,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 from syft.grid.client import connect
@@ -40,7 +39,6 @@ from syft.grid.messages.infra_messages import (
 )
 
 
-@syft_decorator(typechecking=True)
 def create_worker_msg(
     msg: CreateWorkerMessage,
     node: AbstractNode,
@@ -89,7 +87,6 @@ def create_worker_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def check_worker_deployment_msg(
     msg: CheckWorkerDeploymentMessage,
     node: AbstractNode,
@@ -114,7 +111,6 @@ def check_worker_deployment_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def get_worker_msg(
     msg: GetWorkerMessage,
     node: AbstractNode,
@@ -136,7 +132,6 @@ def get_worker_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def get_workers_msg(
     msg: GetWorkersMessage,
     node: AbstractNode,
@@ -170,7 +165,6 @@ def get_workers_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def del_worker_msg(
     msg: DeleteWorkerMessage,
     node: AbstractNode,
@@ -182,7 +176,6 @@ def del_worker_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def update_worker_msg(
     msg: UpdateWorkerMessage,
     node: AbstractNode,

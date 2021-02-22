@@ -75,6 +75,13 @@ class UserManager(DatabaseManager):
         else:
             return False
 
+    def can_upload_data(self, user_id: str) -> bool:
+        role = self.role(user_id=user_id)
+        if role:
+            return role.can_upload_data
+        else:
+            return False
+
     def can_triage_requests(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_triage_requests
 

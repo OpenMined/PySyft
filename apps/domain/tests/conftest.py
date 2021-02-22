@@ -27,8 +27,13 @@ def domain():
 
 @pytest.fixture(scope="function")
 def database(app):
-    test_db = db
-    test_db.init_app(app)
-    app.app_context().push()
-    test_db.create_all()
-    return test_db
+    # TODO: Testing db should be used
+    # but right now changes do not propagate
+    # outside test suite
+
+    # test_db = db
+    # test_db.init_app(app)
+    # app.app_context().push()
+    # test_db.create_all()
+    # return test_db
+    return db

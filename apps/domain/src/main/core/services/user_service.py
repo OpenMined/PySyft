@@ -15,7 +15,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 from syft.grid.messages.user_messages import (
@@ -44,7 +43,6 @@ from ..database.utils import model_to_json
 from ..database import expand_user_object
 
 
-@syft_decorator(typechecking=True)
 def create_user_msg(
     msg: CreateUserMessage,
     node: AbstractNode,
@@ -126,7 +124,6 @@ def create_user_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def update_user_msg(
     msg: UpdateUserMessage,
     node: AbstractNode,
@@ -207,7 +204,6 @@ def update_user_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_user_msg(
     msg: GetUserMessage,
     node: AbstractNode,
@@ -233,7 +229,6 @@ def get_user_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_all_users_msg(
     msg: GetUsersMessage,
     node: AbstractNode,
@@ -257,7 +252,6 @@ def get_all_users_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def del_user_msg(
     msg: DeleteUserMessage,
     node: AbstractNode,
@@ -287,7 +281,6 @@ def del_user_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def search_users_msg(
     msg: SearchUsersMessage,
     node: AbstractNode,

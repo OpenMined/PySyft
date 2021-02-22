@@ -15,7 +15,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.uid import UID
 from syft.core.node.common.action.save_object_action import SaveObjectAction
@@ -34,7 +33,6 @@ from syft.grid.messages.tensor_messages import (
 )
 
 
-@syft_decorator(typechecking=True)
 def create_tensor_msg(
     msg: CreateTensorMessage,
     node: AbstractNode,
@@ -79,7 +77,6 @@ def create_tensor_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def update_tensor_msg(
     msg: UpdateTensorMessage,
     node: AbstractNode,
@@ -121,7 +118,6 @@ def update_tensor_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def get_tensor_msg(
     msg: GetTensorMessage,
     node: AbstractNode,
@@ -151,7 +147,6 @@ def get_tensor_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def get_tensors_msg(
     msg: GetTensorsMessage,
     node: AbstractNode,
@@ -180,7 +175,6 @@ def get_tensors_msg(
         )
 
 
-@syft_decorator(typechecking=True)
 def del_tensor_msg(
     msg: DeleteTensorMessage,
     node: AbstractNode,

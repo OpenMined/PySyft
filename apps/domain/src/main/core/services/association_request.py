@@ -12,7 +12,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 from syft.grid.messages.association_messages import (
@@ -31,7 +30,6 @@ from syft.grid.messages.association_messages import (
 )
 
 
-@syft_decorator(typechecking=True)
 def send_association_request_msg(
     msg: SendAssociationRequestMessage,
 ) -> SendAssociationRequestResponse:
@@ -42,7 +40,6 @@ def send_association_request_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
 ) -> ReceiveAssociationRequestResponse:
@@ -53,7 +50,6 @@ def recv_association_request_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
 ) -> RespondAssociationRequestResponse:
@@ -64,7 +60,6 @@ def respond_association_request_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_association_request_msg(
     msg: GetAssociationRequestMessage,
 ) -> GetAssociationRequestResponse:
@@ -75,7 +70,6 @@ def get_association_request_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
 ) -> GetAssociationRequestsResponse:
@@ -86,7 +80,6 @@ def get_all_association_request_msg(
     )
 
 
-@syft_decorator(typechecking=True)
 def del_association_request_msg(
     msg: DeleteAssociationRequestMessage,
 ) -> DeleteAssociationRequestResponse:
