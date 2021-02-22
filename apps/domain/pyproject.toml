@@ -21,6 +21,7 @@ PyJWT = "^1.7.1"
 bcrypt = "^3.2.0"
 loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
+tenseal= "^0.3.0"
 syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_messages"}
 
 [tool.poetry.dev-dependencies]
