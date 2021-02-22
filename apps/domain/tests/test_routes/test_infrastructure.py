@@ -159,6 +159,7 @@ def test_create_worker(client, database, cleanup):
     result = client.post(
         "/dcfl/workers",
         json={
+            "name": "Research Environment",
             "address": "http://localhost:5000/",
             "memory": "32",
             "instance": "EC2",
@@ -195,18 +196,86 @@ def test_get_all_workers(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
+    result = client.post(
+        "/dcfl/workers",
+        json={
+            "name": "Train Environment",
+            "address": "http://localhost:5000/",
+            "memory": "32",
+            "instance": "EC2",
+            "gpu": "RTX3070",
+        },
+        headers=headers,
+    )
+    assert result.status_code == 200
+    assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 1
+    assert len(database.session.query(UserEnvironment).all()) == 1
+
+    result = client.post(
+        "/dcfl/workers",
+        json={
+            "name": "Test Environment",
+            "address": "http://localhost:7000/",
+            "memory": "64",
+            "instance": "EC2-large",
+            "gpu": "RTX3070",
+        },
+        headers=headers,
+    )
+    assert result.status_code == 200
+    assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 2
+    assert len(database.session.query(UserEnvironment).all()) == 2
+
+    result = client.post(
+        "/dcfl/workers",
+        json={
+            "name": "Private Environment",
+            "address": "http://localhost:4000/",
+            "memory": "16",
+            "instance": "EC2",
+            "gpu": "GTX",
+        },
+        headers=headers,
+    )
+    assert result.status_code == 200
+    assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 3
+    assert len(database.session.query(UserEnvironment).all()) == 3
+
     result = client.get(
         "/dcfl/workers",
         headers=headers,
     )
-    assert result.status_code == 200
     assert result.get_json() == {
-        "workers": [
-            {"id": "546513231a", "address": "159.156.128.165", "datasets": 25320},
-            {"id": "asfa16f5aa", "address": "138.142.125.125", "datasets": 2530},
-            {"id": "af61ea3a3f", "address": "19.16.98.146", "datasets": 2320},
-            {"id": "af4a51adas", "address": "15.59.18.165", "datasets": 5320},
-        ]
+        "Private Environment": {
+            "address": "http://localhost:4000/",
+            "gpu": "GTX",
+            "id": 3,
+            "instance": "EC2",
+            "memory": "16",
+            "name": "Private Environment",
+            "syft_address": None,
+        },
+        "Test Environment": {
+            "address": "http://localhost:7000/",
+            "gpu": "RTX3070",
+            "id": 2,
+            "instance": "EC2-large",
+            "memory": "64",
+            "name": "Test Environment",
+            "syft_address": None,
+        },
+        "Train Environment": {
+            "address": "http://localhost:5000/",
+            "gpu": "RTX3070",
+            "id": 1,
+            "instance": "EC2",
+            "memory": "32",
+            "name": "Train Environment",
+            "syft_address": None,
+        },
     }
 
 
@@ -223,14 +292,45 @@ def test_get_specific_worker(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    result = client.get(
-        "/dcfl/workers/9846165",
+    result = client.post(
+        "/dcfl/workers",
+        json={
+            "name": "Train Environment",
+            "address": "http://localhost:5000/",
+            "memory": "32",
+            "instance": "EC2",
+            "gpu": "RTX3070",
+        },
         headers=headers,
     )
     assert result.status_code == 200
-    assert result.get_json() == {
-        "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
-    }
+    assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 1
+    assert len(database.session.query(UserEnvironment).all()) == 1
+
+    result = client.post(
+        "/dcfl/workers",
+        json={
+            "name": "Test Environment",
+            "address": "http://localhost:7000/",
+            "memory": "64",
+            "instance": "EC2-large",
+            "gpu": "RTX3070",
+        },
+        headers=headers,
+    )
+    assert result.status_code == 200
+    assert result.get_json() == {"msg": "Worker created succesfully!"}
+    assert len(database.session.query(Environment).all()) == 2
+    assert len(database.session.query(UserEnvironment).all()) == 2
+
+    result = client.get(
+        "/dcfl/workers/2",
+        headers=headers,
+    )
+
+    assert result.get_json() ==  {'id': 2, 'name': 'Test Environment', 'address': 'http://localhost:7000/', 'syft_address': None, 'memory': '64', 'instance': 'EC2-large', 'gpu': 'RTX3070'}
+
 
 
 def test_delete_worker(client, database, cleanup):
