@@ -9,17 +9,24 @@ from syft.core.common.serde.deserialize import _deserialize
 
 from flask import request, Response
 import json
+from nacl.encoding import HexEncoder
 
 executor_running = False
 
 
+@root_route.route("/metadata", methods=["GET"])
+def metadata_route():
+    response_body = {
+        "metadata": node.get_metadata_for_client()
+        .serialize()
+        .SerializeToString()
+        .decode("ISO-8859-1"),
+    }
+    return Response(json.dumps(response_body), status=200, mimetype="application/json")
+
+
 @root_route.route("/pysyft", methods=["POST"])
 def root_route():
-    global executor_running
-    if not executor_running:
-        executor.submit(node.run_handlers_thread)
-        executor_running = True
-
     data = request.get_data()
     obj_msg = _deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
