@@ -8,10 +8,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
-from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.user_messages_pb2 import (
@@ -50,6 +50,7 @@ from syft.proto.grid.messages.user_messages_pb2 import (
 from syft.proto.grid.messages.user_messages_pb2 import (
     UpdateUserResponse as UpdateUserResponse_PB,
 )
+
 
 @bind_protobuf
 @final
@@ -120,6 +121,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         """
 
         return CreateUserMessage_PB
+
 
 @bind_protobuf
 @final
@@ -192,6 +194,7 @@ class CreateUserResponse(ImmediateSyftMessageWithoutReply):
 
         return CreateUserResponse_PB
 
+
 @bind_protobuf
 @final
 class GetUserMessage(ImmediateSyftMessageWithReply):
@@ -261,6 +264,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetUserMessage_PB
+
 
 @bind_protobuf
 @final
@@ -333,6 +337,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
 
         return GetUserResponse_PB
 
+
 @bind_protobuf
 @final
 class GetUsersMessage(ImmediateSyftMessageWithReply):
@@ -402,6 +407,7 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetUsersMessage_PB
+
 
 @bind_protobuf
 @final
@@ -474,6 +480,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
 
         return GetUsersResponse_PB
 
+
 @bind_protobuf
 @final
 class UpdateUserMessage(ImmediateSyftMessageWithReply):
@@ -543,6 +550,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         """
 
         return UpdateUserMessage_PB
+
 
 @bind_protobuf
 @final
@@ -615,6 +623,7 @@ class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
 
         return UpdateUserResponse_PB
 
+
 @bind_protobuf
 @final
 class DeleteUserMessage(ImmediateSyftMessageWithReply):
@@ -684,6 +693,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         """
 
         return DeleteUserMessage_PB
+
 
 @bind_protobuf
 @final
@@ -756,6 +766,7 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
 
         return DeleteUserResponse_PB
 
+
 @bind_protobuf
 @final
 class SearchUsersMessage(ImmediateSyftMessageWithReply):
@@ -825,6 +836,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         """
 
         return SearchUsersMessage_PB
+
 
 @bind_protobuf
 @final
