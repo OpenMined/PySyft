@@ -11,6 +11,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # syft relative
+from syft.core.common.group import VerifyAll
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
@@ -18,6 +19,7 @@ from syft.core.node.common.service.node_service import ImmediateNodeServiceWitho
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.uid import UID
 from syft.core.node.common.action.save_object_action import SaveObjectAction
+from syft.core.store.storeable_object import StorableObject
 
 from syft.grid.messages.tensor_messages import (
     CreateTensorMessage,
@@ -46,12 +48,18 @@ def create_tensor_msg(
 
         id_at_location = UID()
 
-        obj_msg = SaveObjectAction(
-            id_at_location=id_at_location,
-            obj=new_tensor,
-            address=node.address,
-            anyone_can_search_for_this=payload.get("searchable", False),
+        # Step 2: create message which contains object to send
+        storable = StorableObject(
+            id=id_at_location,
+            data=new_tensor,
+            tags=new_tensor.tags,
+            description=new_tensor.description,
+            search_permissions={VerifyAll(): None}
+            if payload.get("searchable", False)
+            else {},
         )
+
+        obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
         signed_message = obj_msg.sign(
             signing_key=SigningKey(
@@ -90,12 +98,18 @@ def update_tensor_msg(
 
         key = UID.from_string(value=payload["tensor_id"])
 
-        obj_msg = SaveObjectAction(
-            id_at_location=key,
-            obj=new_tensor,
-            address=node.address,
-            anyone_can_search_for_this=payload.get("searchable", False),
+        # Step 2: create message which contains object to send
+        storable = StorableObject(
+            id=key,
+            data=new_tensor,
+            tags=new_tensor.tags,
+            description=new_tensor.description,
+            search_permissions={VerifyAll(): None}
+            if payload.get("searchable", False)
+            else {},
         )
+
+        obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
         signed_message = obj_msg.sign(
             signing_key=SigningKey(
