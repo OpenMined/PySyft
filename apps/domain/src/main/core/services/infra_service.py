@@ -68,8 +68,8 @@ def create_worker_msg(
         # env_parameters["syft_address"] = (
         #    env_client.address.serialize().SerializeToString().decode("ISO-8859-1")
         # )
-        # new_env = node.environments.register(**env_parameters)
-        # node.environments.association(user_id=_current_user_id, env_id=new_env.id)
+        new_env = node.environments.register(**env_parameters)
+        node.environments.association(user_id=_current_user_id, env_id=new_env.id)
 
         # node.in_memory_client_registry[env_client.domain_id] = env_client
 
@@ -118,6 +118,17 @@ def get_worker_msg(
     try:
         # TODO:
         # final_msg = node.workers[msg.content["worker_id"]]
+        worker_id = msg.content.get('worker_id', None)
+        _current_user_id = msg.content.get("current_user", None)
+
+        env_ids = [ env.id for env in node.environments.get_environments(user=_current_user_id) ]
+        print(env_ids)
+
+        if int(worker_id) in env_ids:
+            print("Worker ID : ", worker_id)
+            _msg = model_to_json(node.environments.first(id=int(worker_id)))
+        else:
+            _msg = {}
 
         return GetWorkerResponse(
             address=msg.reply_to,
@@ -125,7 +136,7 @@ def get_worker_msg(
             content=_msg,
         )
     except Exception as e:
-        return CheckWorkerDeploymentMessage(
+        return GetWorkerResponse(
             address=msg.reply_to,
             status_code=500,
             content={"error": str(e)},
