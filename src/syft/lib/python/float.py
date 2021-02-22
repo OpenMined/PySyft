@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 
 # third party
@@ -10,14 +9,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
+from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.float_pb2 import Float as Float_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
+@bind_protobuf
 class Float(float, PyPrimitive):
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:
@@ -237,46 +236,3 @@ class Float(float, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Float_PB
-
-
-class FloatWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Float_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Float_PB) -> "Float":  # type: ignore
-        return Float._proto2object(proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Float_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Float
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=Float, name="serializable_wrapper_type", attr=FloatWrapper)

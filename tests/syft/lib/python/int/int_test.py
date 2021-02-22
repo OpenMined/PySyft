@@ -7,7 +7,6 @@ import pytest
 
 # syft absolute
 from syft.lib.python.int import Int
-from syft.lib.python.int import IntWrapper
 
 VALID_UNDERSCORE_LITERALS = [
     "0_0_0",
@@ -672,7 +671,3 @@ def test_bytes():
         Int.from_bytes(Int(-42).to_bytes(4, "big", signed=True), "big", signed=True)
         == -42
     )
-
-
-def test_wrapped_type():
-    assert IntWrapper.get_wrapped_type() is Int

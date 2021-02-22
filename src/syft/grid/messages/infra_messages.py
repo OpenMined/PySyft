@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.infra_messages_pb2 import (
@@ -51,6 +52,7 @@ from syft.proto.grid.messages.infra_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -121,6 +123,7 @@ class CreateWorkerMessage(ImmediateSyftMessageWithReply):
         return CreateWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -192,6 +195,7 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return CreateWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -262,6 +266,7 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         return CheckWorkerDeploymentMessage_PB
 
 
+@bind_protobuf
 @final
 class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -333,6 +338,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         return CheckWorkerDeploymentResponse_PB
 
 
+@bind_protobuf
 @final
 class GetWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -403,6 +409,7 @@ class GetWorkerMessage(ImmediateSyftMessageWithReply):
         return GetWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -474,6 +481,7 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class GetWorkersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -544,6 +552,7 @@ class GetWorkersMessage(ImmediateSyftMessageWithReply):
         return GetWorkersMessage_PB
 
 
+@bind_protobuf
 @final
 class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -615,6 +624,7 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkersResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -685,6 +695,7 @@ class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
         return UpdateWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -756,6 +767,7 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return UpdateWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -826,6 +838,7 @@ class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
         return DeleteWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

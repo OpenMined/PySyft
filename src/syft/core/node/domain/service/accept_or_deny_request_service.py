@@ -24,12 +24,14 @@ from .....util import key_emoji
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 
 
+@bind_protobuf
 @final
 class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
