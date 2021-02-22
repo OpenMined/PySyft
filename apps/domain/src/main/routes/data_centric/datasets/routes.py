@@ -1,205 +1,121 @@
-from ..blueprint import dcfl_blueprint as dcfl_route
+from json import dumps, loads
+
 from flask import request, Response
-import json
-
 from syft.core.node.common.service.repr_service import ReprMessage
-from ...auth import error_handler, token_required
+from syft.grid.messages.dataset_messages import CreateDatasetMessage
+from syft.grid.messages.dataset_messages import (
+    CreateDatasetMessage,
+    GetDatasetMessage,
+    GetDatasetsMessage,
+    UpdateDatasetMessage,
+    DeleteDatasetMessage,
+)
 
+from ...auth import error_handler, token_required, optional_token
+from main.core.task_handler import route_logic, task_handler
+from ..blueprint import dcfl_blueprint as dcfl_route
 from ....core.node import node
 
 
 @dcfl_route.route("/datasets", methods=["POST"])
-# @token_required
-def create_dataset():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def create_dataset(current_user):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["current_user"] = current_user
+    status_code, response_msg = error_handler(
+        route_logic, CreateDatasetMessage, current_user, content
+    )
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: CreateDataSetMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {"msg": "Dataset created succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["GET"])
-# @token_required
-def get_dataset(dataset_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def get_dataset(current_user, dataset_id):
+    content = {}
+    content["current_user"] = current_user
+    content["dataset_id"] = dataset_id
+    status_code, response_msg = error_handler(
+        route_logic, GetDatasetMessage, current_user, content
+    )
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: GetDataSetMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {
-        "dataset": {
-            "id": "5484626",
-            "tags": ["dataset-a"],
-            "description": "Dataset sample",
-        }
-    }
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/datasets", methods=["GET"])
-# @token_required
-def get_all_datasets():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def get_all_datasets(current_user):
+    content = {}
+    content["current_user"] = current_user
+    status_code, response_msg = error_handler(
+        route_logic, GetDatasetsMessage, current_user, content
+    )
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: GetDataSetsMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {
-        "datasets": [
-            {
-                "id": "35654sad6ada",
-                "tags": ["dataset-a"],
-                "description": "Dataset sample",
-            },
-            {
-                "id": "adfarf3f1af5",
-                "tags": ["dataset-b"],
-                "description": "Dataset sample",
-            },
-            {
-                "id": "fas4e6e1fas",
-                "tags": ["dataset-c"],
-                "description": "Dataset sample",
-            },
-        ]
-    }
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["PUT"])
-# @token_required
-def update_dataset(dataset_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def update_dataset(current_user, dataset_id):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
+    content["current_user"] = current_user
+    content["dataset_id"] = dataset_id
+    status_code, response_msg = error_handler(
+        route_logic, UpdateDatasetMessage, current_user, content
+    )
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: UpdateDataSetMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {"msg": "Dataset changed succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+    if status_code == 200:
+        status_code = 204
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/datasets/<dataset_id>", methods=["DELETE"])
-# @token_required
-def delete_dataset(dataset_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def delete_dataset(current_user, dataset_id):
+    # Get request body
+    content = {}
+    content["current_user"] = current_user
+    content["dataset_id"] = dataset_id
+    status_code, response_msg = error_handler(
+        route_logic, DeleteDatasetMessage, current_user, content
+    )
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: DeleteDataSetMessage
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
-
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {"msg": "Dataset deleted succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+    if status_code == 200:
+        status_code = 204
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )

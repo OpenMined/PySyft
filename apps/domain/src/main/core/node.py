@@ -20,9 +20,11 @@ from .services.setup_service import SetUpService
 from .services.tensor_service import RegisterTensorService
 from .services.role_service import RoleManagerService
 from .services.user_service import UserManagerService
+from .services.dataset_service import DatasetManagerService
 
 # Database Management
 from .database import db
+from .database.store_disk import DiskObjectStore
 from .manager.user_manager import UserManager
 from .manager.role_manager import RoleManager
 from .manager.group_manager import GroupManager
@@ -63,6 +65,7 @@ class GridDomain(Domain):
         self.users = UserManager(db)
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
+        self.disk_store = DiskObjectStore(db)
         self.environments = EnvironmentManager(db)
 
         # Grid Domain Services
@@ -72,6 +75,7 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(RegisterTensorService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
+        self.immediate_services_with_reply.append(DatasetManagerService)
         self._register_services()
 
     def login(self, email: str, password: str) -> Dict:
