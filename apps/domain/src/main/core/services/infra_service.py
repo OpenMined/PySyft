@@ -118,11 +118,12 @@ def get_worker_msg(
     try:
         # TODO:
         # final_msg = node.workers[msg.content["worker_id"]]
-        worker_id = msg.content.get('worker_id', None)
+        worker_id = msg.content.get("worker_id", None)
         _current_user_id = msg.content.get("current_user", None)
 
-        env_ids = [ env.id for env in node.environments.get_environments(user=_current_user_id) ]
-
+        env_ids = [
+            env.id for env in node.environments.get_environments(user=_current_user_id)
+        ]
 
         if int(worker_id) in env_ids:
             _msg = model_to_json(node.environments.first(id=int(worker_id)))

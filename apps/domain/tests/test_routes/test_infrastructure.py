@@ -329,8 +329,15 @@ def test_get_specific_worker(client, database, cleanup):
         headers=headers,
     )
 
-    assert result.get_json() ==  {'id': 2, 'name': 'Test Environment', 'address': 'http://localhost:7000/', 'syft_address': None, 'memory': '64', 'instance': 'EC2-large', 'gpu': 'RTX3070'}
-
+    assert result.get_json() == {
+        "id": 2,
+        "name": "Test Environment",
+        "address": "http://localhost:7000/",
+        "syft_address": None,
+        "memory": "64",
+        "instance": "EC2-large",
+        "gpu": "RTX3070",
+    }
 
 
 def test_delete_worker(client, database, cleanup):
