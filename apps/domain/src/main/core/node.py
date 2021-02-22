@@ -89,8 +89,9 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(DatasetManagerService)
         self._register_services()
 
-        thread = Thread(target=self.thread_run_handlers)
-        thread.start()
+        self.__handlers_flag = True
+        # thread = Thread(target=self.thread_run_handlers)
+        # thread.start()
 
     def login(self, email: str, password: str) -> Dict:
         user = self.users.login(email=email, password=password)
@@ -160,7 +161,7 @@ class GridDomain(Domain):
         return res_msg
 
     def thread_run_handlers(self) -> None:
-        while True:
+        while self.__handlers_flag:
             sleep(0.1)
             try:
                 self.clean_up_handlers()
@@ -178,6 +179,9 @@ class GridDomain(Domain):
                                     break
             except Exception as excp2:
                 print(str(excp2))
+
+    def close(self):
+        self.__handlers_flag = False
 
 
 node = GridDomain(name="om-domain")
