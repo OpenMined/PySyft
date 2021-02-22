@@ -17,7 +17,7 @@ from syft.core.node.common.service.node_service import ImmediateNodeServiceWithR
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
-from syft.grid.client import connect
+# from syft.grid.client import connect
 from syft.grid.connections.http_connection import HTTPConnection
 from syft.core.node.domain.client import DomainClient
 from ..database.utils import model_to_json
@@ -56,22 +56,22 @@ def create_worker_msg(
             for i in msg.content.keys()
             if i in list(Environment.__table__.columns.keys())
         }
-        env_client = connect(
-            url=msg.content["address"],  # Domain Address
-            conn_type=HTTPConnection,  # HTTP Connection Protocol
-            client_type=DomainClient,
-            user_key=SigningKey(
-                _current_user.private_key.encode("utf-8"), encoder=HexEncoder
-            ),
-        )
+        # env_client = connect(
+        #    url=msg.content["address"],  # Domain Address
+        #    conn_type=HTTPConnection,  # HTTP Connection Protocol
+        #    client_type=DomainClient,
+        #    user_key=SigningKey(
+        #        _current_user.private_key.encode("utf-8"), encoder=HexEncoder
+        #    ),
+        # )
 
-        env_parameters["syft_address"] = (
-            env_client.address.serialize().SerializeToString().decode("ISO-8859-1")
-        )
-        new_env = node.environments.register(**env_parameters)
-        node.environments.association(user_id=_current_user_id, env_id=new_env.id)
+        # env_parameters["syft_address"] = (
+        #    env_client.address.serialize().SerializeToString().decode("ISO-8859-1")
+        # )
+        # new_env = node.environments.register(**env_parameters)
+        # node.environments.association(user_id=_current_user_id, env_id=new_env.id)
 
-        node.in_memory_client_registry[env_client.domain_id] = env_client
+        # node.in_memory_client_registry[env_client.domain_id] = env_client
 
         final_msg = "Worker created succesfully!"
         return CreateWorkerResponse(
