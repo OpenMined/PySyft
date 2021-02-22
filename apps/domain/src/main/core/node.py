@@ -27,13 +27,20 @@ from .manager.user_manager import UserManager
 from .manager.role_manager import RoleManager
 from .manager.group_manager import GroupManager
 from .manager.environment_manager import EnvironmentManager
+from .manager.setup_manager import SetupManager
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from time import sleep
 
 import jwt
 from flask import current_app as app
+from threading import Thread
 
+import syft as sy
+import tenseal as ts
+
+sy.load_lib("tenseal")
 
 class GridDomain(Domain):
     def __init__(
@@ -64,6 +71,9 @@ class GridDomain(Domain):
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
         self.environments = EnvironmentManager(db)
+        self.setup = SetupManager(db)
+
+        self.env_clients = {}
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
@@ -73,6 +83,9 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self._register_services()
+
+        thread = Thread(target=self.thread_run_handlers)
+        thread.start()
 
     def login(self, email: str, password: str) -> Dict:
         user = self.users.login(email=email, password=password)
@@ -140,6 +153,26 @@ class GridDomain(Domain):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
             )
         return res_msg
+
+    def thread_run_handlers(self) -> None:
+        while True:
+            sleep(0.1)
+            try:
+                self.clean_up_handlers()
+                self.clean_up_requests()
+                if len(self.request_handlers) > 0:
+                    for request in self.requests:
+                        # check if we have previously already handled this in an earlier iter
+                        if request.id not in self.handled_requests:
+                            for handler in self.request_handlers:
+                                handled = self.check_handler(
+                                    handler=handler, request=request
+                                )
+                                if handled:
+                                    # we handled the request so we can exit the loop
+                                    break
+            except Exception as excp2:
+                print(str(excp2))
 
 
 node = GridDomain(name="om-domain")
