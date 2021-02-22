@@ -42,6 +42,20 @@ class Plan(Serializable):
     def execute(
         self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
     ) -> None:
+        """
+        1) For all pointers that were passed into the init as `inputs`, this method
+           replaces those pointers in self.actions by the pointers passed in as *args.
+        2) Executes the actions in self.actions one by one
+
+        *While this function requires `node` and `verify_key` as inputs, during remote
+        execution, passing these is handled in `RunClassMethodAction`*
+
+        *Note that this method will receive *args as pointers during execution. Normally,
+        pointers are resolved during `RunClassMethodAction.execute()`, but not for plans,
+        as they need to operate on the pointer to enable remapping of the inputs.*
+        Args:
+            *args: the new inputs for the plan, passed as pointers
+        """
         inputs = listify(args)
 
         # this is pretty cumbersome, we are searching through all actions to check

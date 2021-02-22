@@ -16,6 +16,14 @@ from . import plan_wrapper  # noqa: 401
 
 
 def create_plan_ast(client: TypeAny = None) -> Globals:
+    """Adds plan classes to the ast
+
+    Args:
+        client: client. Defaults to None.
+
+    Returns:
+        Globals: plan ast
+    """
     ast = Globals(client)
 
     modules = [
