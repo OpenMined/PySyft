@@ -7,6 +7,8 @@ from ..database.environment.environment import Environment
 
 # third party
 from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
@@ -15,6 +17,11 @@ from syft.core.node.common.service.node_service import ImmediateNodeServiceWithR
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.decorators.syft_decorator_impl import syft_decorator
 from syft.core.common.message import ImmediateSyftMessageWithReply
+
+from syft.grid.client import connect
+from syft.grid.connections.http_connection import HTTPConnection
+from syft.core.node.domain.client import DomainClient
+from ..database.utils import model_to_json
 
 from syft.grid.messages.infra_messages import (
     CreateWorkerMessage,
@@ -43,17 +50,30 @@ def create_worker_msg(
         # 1 - Deploy a Worker into the cloud using the parameters in msg.content
         # 2 - Save worker adress/metadata at node.workers
 
-        current_user_id = msg.content.get("current_user", None)
+        _current_user_id = msg.content.get("current_user", None)
+        _current_user = node.users.first(id=_current_user_id)
 
         env_parameters = {
             i: msg.content[i]
             for i in msg.content.keys()
             if i in list(Environment.__table__.columns.keys())
         }
-        print("My env parameters: ", env_parameters)
-        new_env = node.environments.register(**env_parameters)
+        env_client = connect(
+            url=msg.content["address"],  # Domain Address
+            conn_type=HTTPConnection,  # HTTP Connection Protocol
+            client_type=DomainClient,
+            user_key=SigningKey(
+                _current_user.private_key.encode("utf-8"), encoder=HexEncoder
+            ),
+        )
 
-        node.environments.association(user_id=current_user_id, env_id=new_env.id)
+        env_parameters["syft_address"] = (
+            env_client.address.serialize().SerializeToString().decode("ISO-8859-1")
+        )
+        new_env = node.environments.register(**env_parameters)
+        node.environments.association(user_id=_current_user_id, env_id=new_env.id)
+
+        node.in_memory_client_registry[env_client.domain_id] = env_client
 
         final_msg = "Worker created succesfully!"
         return CreateWorkerResponse(
@@ -103,15 +123,10 @@ def get_worker_msg(
         # TODO:
         # final_msg = node.workers[msg.content["worker_id"]]
 
-        final_msg = {
-            "worker": {"id": "9846165", "address": "159.156.128.165", "datasets": 25320}
-        }
-        final_status = True
-
         return GetWorkerResponse(
             address=msg.reply_to,
             status_code=200,
-            content=final_msg,
+            content=_msg,
         )
     except Exception as e:
         return CheckWorkerDeploymentMessage(
@@ -130,20 +145,22 @@ def get_workers_msg(
         # TODO:
         # final_msg = node.workers
 
-        final_msg = {
-            "workers": [
-                {"id": "546513231a", "address": "159.156.128.165", "datasets": 25320},
-                {"id": "asfa16f5aa", "address": "138.142.125.125", "datasets": 2530},
-                {"id": "af61ea3a3f", "address": "19.16.98.146", "datasets": 2320},
-                {"id": "af4a51adas", "address": "15.59.18.165", "datasets": 5320},
-            ]
+        _current_user_id = msg.content.get("current_user", None)
+        _current_user = node.users.first(id=_current_user_id)
+
+        envs = node.environments.get_environments(user=_current_user_id)
+
+        _msg = {
+            node.environments.first(id=env.id).name: model_to_json(
+                node.environments.first(id=env.id)
+            )
+            for env in envs
         }
-        final_status = True
 
         return GetWorkersResponse(
             address=msg.reply_to,
             status_code=200,
-            content=final_msg,
+            content=_msg,
         )
     except Exception as e:
         return GetWorkersResponse(
