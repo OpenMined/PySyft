@@ -21,6 +21,13 @@ class EnvironmentManager(DatabaseManager):
     def association(self, user_id: str, env_id: str):
         new_association_obj = self._association_schema(user=user_id, environment=env_id)
         self.db.session.add(new_association_obj)
+        self.db.session.commit()
+
+    def get_environments(self, **kwargs):
+        objects = (
+            self.db.session.query(self._association_schema).filter_by(**kwargs).all()
+        )
+        return objects
 
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)

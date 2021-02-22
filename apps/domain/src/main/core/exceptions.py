@@ -31,6 +31,12 @@ class EnvironmentNotFoundError(PyGridError):
         super().__init__(message)
 
 
+class SetupNotFoundError(PyGridError):
+    def __init__(self):
+        message = "Setup not found!"
+        super().__init__(message)
+
+
 class GroupNotFoundError(PyGridError):
     def __init__(self):
         message = "Group ID not found!"
