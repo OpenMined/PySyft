@@ -8,6 +8,7 @@ from ..database import BaseModel, db
 class DatabaseManager:
     def register(self, **kwargs) -> BaseModel:
         """Register e  new object into the database.
+
         Args:
             parameters : List of object parameters.
         Returns:
@@ -39,6 +40,7 @@ class DatabaseManager:
 
     def delete(self, **kwargs):
         """Delete an object from the database.
+
         Args:
             parameters: Parameters used to filter the object.
         """
