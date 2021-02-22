@@ -44,6 +44,7 @@ import tenseal as ts
 
 sy.load_lib("tenseal")
 
+
 class GridDomain(Domain):
     def __init__(
         self,
