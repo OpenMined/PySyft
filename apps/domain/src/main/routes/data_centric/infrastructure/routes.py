@@ -416,7 +416,7 @@ def create_node(current_user):
 
 @dcfl_route.route("/workers/<worker_id>", methods=["GET"])
 @token_required
-def get_node(current_user, worker_id):
+def get_worker(current_user, worker_id):
     # Get request body
     content = request.get_json()
     if not content:
