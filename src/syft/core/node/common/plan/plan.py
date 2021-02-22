@@ -18,12 +18,14 @@ from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
 # syft relative
+from ....common.serde.serializable import bind_protobuf
 from ...abstract.node import AbstractNode
 from ..util import listify
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
+@bind_protobuf
 class Plan(Serializable):
     """
     A plan is a collection of actions, plus some variable inputs, that together form a computation graph.

@@ -1,7 +1,16 @@
+# stdlib
+from typing import Any
+from typing import Type
+from typing import Union
+
 # third party
 from nacl.signing import SigningKey
 
 # syft relative
+from ...core.common.message import ImmediateSyftMessageWithReply
+from ...core.common.message import ImmediateSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.io.address import Address
 from ...core.io.route import SoloRoute
@@ -10,7 +19,9 @@ from ..services.signaling_service import RegisterNewPeerMessage
 
 
 class SignalingClient(object):
-    def __init__(self, url: str, conn_type: type, client_type: NetworkClient) -> None:
+    def __init__(
+        self, url: str, conn_type: type, client_type: Type[NetworkClient]
+    ) -> None:
         # Load an Signing Key instance
         signing_key = SigningKey.generate()
         verify_key = signing_key.verify_key
@@ -30,7 +41,7 @@ class SignalingClient(object):
         route = SoloRoute(destination=spec_location, connection=conn)
 
         # Create a new signaling client using the selected client type
-        signaling_client = client_type(  # type: ignore
+        signaling_client = client_type(
             network=spec_location,
             name=name,
             routes=[route],
@@ -51,13 +62,21 @@ class SignalingClient(object):
                 address=self.__client.address, reply_to=self.__client.address
             )
         )
-        self.duet_id = _response.peer_id
+        self.duet_id = _response.peer_id  # type: ignore
 
-    def send_immediate_msg_with_reply(self, msg: SyftMessage) -> SyftMessage:
+    def send_immediate_msg_with_reply(
+        self,
+        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
+    ) -> SyftMessage:
         return self.__client.send_immediate_msg_with_reply(msg=msg)
 
-    def send_immediate_msg_without_reply(self, msg: SyftMessage) -> None:
+    def send_immediate_msg_without_reply(
+        self,
+        msg: Union[
+            SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
+        ],
+    ) -> None:
         self.__client.send_immediate_msg_without_reply(msg=msg)
 
-    def send_eventual_msg_without_reply(self, msg: SyftMessage) -> None:
+    def send_eventual_msg_without_reply(self, msg: Any) -> None:
         self.__client.send_eventual_msg_without_reply(msg=msg)

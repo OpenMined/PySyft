@@ -15,6 +15,7 @@ from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 
@@ -23,6 +24,7 @@ class UnknownPrivateException(Exception):
     pass
 
 
+@bind_protobuf
 @final
 class ExceptionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(

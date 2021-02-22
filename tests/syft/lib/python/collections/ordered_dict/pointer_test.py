@@ -64,6 +64,7 @@ objects = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())
 def test_pointer_objectives(test_objects, func):

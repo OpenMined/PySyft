@@ -10,6 +10,9 @@ from typing import Callable
 from typing import List
 from typing import Tuple
 
+# third party
+import pytest
+
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
 from .process_test import SyftTestProcess
@@ -35,6 +38,7 @@ registered_tests: List[Tuple[str, Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
 
+@pytest.mark.slow
 def test_duet() -> None:
     # let the flask server init:
     sleep(3)

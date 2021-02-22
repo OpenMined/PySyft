@@ -30,6 +30,18 @@ class SyNet(sy.Module):
         return self.fc1(x)
 
 
+class SyNetEmpty(sy.Module):
+    """
+    Simple test model
+    """
+
+    def __init__(self) -> None:
+        super(SyNetEmpty, self).__init__(torch_ref=torch)
+
+    def forward(self, x: torch.Tensor) -> Any:
+        return 0
+
+
 @pytest.fixture(scope="function")
 def alice() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="alice")
@@ -41,12 +53,25 @@ def model() -> SyNet:
 
 
 @pytest.fixture(scope="function")
+def modelEmpty() -> SyNetEmpty:
+    return SyNetEmpty()
+
+
+@pytest.fixture(scope="function")
 def dataloader() -> Tuple[torch.Tensor, torch.Tensor]:
     return torch.randn(size=(1, IN_DIM)), torch.randn(size=(1, OUT_DIM))
 
 
 def test_repr_to_kwargs() -> None:
     assert sy.lib.util.full_name_with_qualname(klass=torch.Tensor) == "torch.Tensor"
+    assert sy.lib.torch.module.repr_to_kwargs(
+        "1, 32, kernel_size=(3, 3), stride=(1, 1)"
+    ) == ([1, 32], {"kernel_size": (3, 3), "stride": (1, 1)})
+    assert sy.lib.torch.module.repr_to_kwargs("1, 32") == ([1, 32], {})
+    assert sy.lib.torch.module.repr_to_kwargs("kernel_size=(3, 3), stride=(1, 1)") == (
+        [],
+        {"kernel_size": (3, 3), "stride": (1, 1)},
+    )
 
 
 def test_module_setup(alice: sy.VirtualMachine, model: SyNet) -> None:
@@ -75,6 +100,12 @@ def test_module_modules(model: SyNet) -> None:
     assert modules["fc1"].in_features == IN_DIM
 
 
+def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
+    modules = modelEmpty.modules
+    assert len(modules.items()) == 0
+
+
+@pytest.mark.slow
 def test_module_parameteres(alice: sy.VirtualMachine, model: SyNet) -> None:
     model_ptr = model.send(alice.get_root_client())
 
@@ -106,6 +137,11 @@ def test_module_state_dict(model: SyNet) -> None:
         assert k in new_state
         assert torch.all(torch.eq(new_state[k], state[k]))
 
+    new_model.is_local = False
+
+    assert new_model.load_state_dict(state) is None
+    assert new_model.state_dict() is None
+
 
 def test_module_load_save(model: SyNet) -> None:
     state = model.state_dict()
@@ -119,9 +155,15 @@ def test_module_load_save(model: SyNet) -> None:
     path = folder / str(time.time())
     model.save(path)
 
+    model.is_local = False
+    assert model.save(path) is None
+
     new_model = SyNet()
     new_model.load(path)
     new_state = new_model.state_dict()
+
+    new_model.is_local = False
+    assert new_model.load(path) is None
 
     try:
         os.remove(path)
@@ -148,6 +190,7 @@ def test_module_gradient_sanity(
     assert model.parameters()[-1].grad is not None
 
 
+@pytest.mark.slow
 def test_module_send_get(
     alice: sy.VirtualMachine,
     model: SyNet,
@@ -179,3 +222,17 @@ def test_module_send_get(
 
     for idx, param in enumerate(direct_param):
         assert param.tolist() == model_parameter[idx].tolist()
+
+    assert model.get() is None
+
+    model.is_local = False
+    assert model.send(alice_client) is None
+
+
+@pytest.mark.slow
+def test_debug_sum_layers(alice: sy.VirtualMachine, model: SyNet) -> None:
+    assert model.debug_sum_layers() is None
+    alice_client = alice.get_root_client()
+    model_ptr = model.send(alice_client)
+
+    assert model_ptr.debug_sum_layers() is None
