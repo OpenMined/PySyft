@@ -14,7 +14,7 @@ class Property(ast.attribute.Attribute):
     def __init__(
         self,
         path_and_name: str,
-        parent,
+        parent: ast.attribute.Attribute,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,

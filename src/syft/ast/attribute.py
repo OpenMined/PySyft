@@ -23,7 +23,7 @@ class Attribute:
         "attrs",
         "return_type_name",
         "client",
-        "_parent"
+        "_parent",
     ]
 
     lookup_cache: Dict[Any, Any] = {}
@@ -200,8 +200,8 @@ class Attribute:
         """
         traceback_and_raise(NotImplementedError)
 
-    def fetch_live_object(self) -> object:
-        return getattr(self._parent.object_ref, self.name)
+    def fetch_live_object(self) -> Any:
+        return getattr(self.parent.object_ref, self.name)
 
     def object_change(self) -> bool:
         return id(self.fetch_live_object()) != id(self.object_ref)
@@ -209,7 +209,7 @@ class Attribute:
     def reconstruct_node(self) -> None:
         self.object_ref = self.fetch_live_object()
 
-    def apply_node_changes(self):
+    def apply_node_changes(self) -> None:
         if self._parent and self.object_change():
             self.reconstruct_node()
 

@@ -58,9 +58,9 @@ class Module(ast.attribute.Attribute):
 
         if object_ref is None and self.name:
             try:
-                self.object_ref = sys.modules[path_and_name]
-            except Exception as e:
-                self.object_ref = getattr(self._parent.object_ref, self.name)
+                self.object_ref = sys.modules[path_and_name if path_and_name else ""]
+            except Exception:
+                self.object_ref = getattr(self.parent.object_ref, self.name)
 
     def add_attr(
         self,
@@ -231,6 +231,6 @@ class Module(ast.attribute.Attribute):
 
     def fetch_live_object(self) -> object:
         try:
-            return sys.modules[self.path_and_name]
-        except Exception as e:
-            return getattr(self._parent.object_ref, self.name)
+            return sys.modules[self.path_and_name if self.path_and_name else ""]
+        except Exception:
+            return getattr(self.parent.object_ref, self.name)

@@ -78,9 +78,18 @@ class IterWithoutLen:
 
 
 class C:
-    def dummy_reloadable_func(self):
+    def dummy_reloadable_func(self) -> int:
         return 0
 
     @staticmethod
-    def reload_func():
-        C.dummy_reloadable_func = lambda self: 1
+    def type_reload_func() -> None:
+        C.dummy_reloadable_func = C.func_1  # type: ignore
+
+    def obj_reload_func(self) -> None:
+        self.dummy_reloadable_func = self.func_2  # type: ignore
+
+    def func_1(self) -> int:
+        return 1
+
+    def func_2(self) -> int:
+        return 2

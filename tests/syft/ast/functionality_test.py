@@ -5,11 +5,12 @@ into our AST and use them.
 # stdlib
 from functools import partial
 from importlib import reload
+import sys
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union as TypeUnion
-import sys
+
 # third party
 import pytest
 
@@ -37,8 +38,8 @@ module_test_methods = [
     ("module_test.A.static_attr", "syft.lib.python.Int"),
     ("module_test.B.Car", "module_test.B"),
     ("module_test.C", "module_test.C"),
-    ("module_test.C", "module_test.C"),
-    ("module_test.C.reload_func", "syft.lib.python._SyNone"),
+    ("module_test.C.type_reload_func", "syft.lib.python._SyNone"),
+    ("module_test.C.obj_reload_func", "syft.lib.python._SyNone"),
     ("module_test.C.dummy_reloadable_func", "syft.lib.python.Int"),
     ("module_test.global_value", "syft.lib.python.Int"),
     ("module_test.global_function", "syft.lib.python.Int"),
@@ -242,9 +243,17 @@ def test_enum(custom_client: Client) -> None:
     assert result == result_ptr.get()
 
 
-def test_dynamic_ast(custom_client: Client) -> None:
-    custom_client.module_test.C.reload_func()
+def test_dynamic_ast_type(custom_client: Client) -> None:
+    custom_client.module_test.C.type_reload_func()
     obj_ptr = custom_client.module_test.C()
     result_ptr = obj_ptr.dummy_reloadable_func()
 
     assert result_ptr.get() == 1
+
+
+def test_dynamic_ast_obj(custom_client: Client) -> None:
+    obj_ptr = custom_client.module_test.C()
+    obj_ptr.obj_reload_func()
+    result_ptr = obj_ptr.dummy_reloadable_func()
+
+    assert result_ptr.get() == 2

@@ -98,5 +98,5 @@ class Globals(Module):
         # make sure to get any future updates
         self.registered_clients[client.id] = client
 
-    def apply_node_changes(self):
+    def apply_node_changes(self) -> None:
         pass

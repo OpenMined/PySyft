@@ -47,7 +47,7 @@ class Callable(ast.attribute.Attribute):
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,
-            parent=parent
+            parent=parent,
         )
 
         self.is_static = is_static
@@ -157,5 +157,5 @@ class Callable(ast.attribute.Attribute):
             object_ref=attr_ref,
             return_type_name=return_type_name,
             client=self.client,
-            parent=self
+            parent=self,
         )
