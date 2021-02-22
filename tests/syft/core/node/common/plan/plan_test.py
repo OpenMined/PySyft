@@ -80,9 +80,7 @@ def test_plan_serialization() -> None:
         address=Address(),
         action=StaticAttributeAction.GET,
     )
-    a8 = SaveObjectAction(
-        id_at_location=UID(), obj=StorableObject(id=UID(), data=t), address=Address()
-    )
+    a8 = SaveObjectAction(obj=StorableObject(id=UID(), data=t), address=Address())
 
     # define plan
     plan = Plan([a1, a2, a3, a4, a5, a6, a7, a8])
