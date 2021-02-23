@@ -12,7 +12,7 @@ from . import device  # noqa: 401
 from . import parameter  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
-from ...logger import critical
+from ...logger import info
 from .allowlist import allowlist
 
 TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
@@ -64,7 +64,7 @@ def create_torch_ast(client: Any = None) -> Globals:
                     path=method, framework_reference=torch, return_type_name=return_type
                 )
         else:
-            critical(f"Skipping {method} not supported in {TORCH_VERSION}")
+            info(f"Skipping {method} not supported in {TORCH_VERSION}")
 
     for klass in ast.classes:
         klass.create_pointer_class()
