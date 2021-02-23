@@ -3,12 +3,13 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+
+# syft absolute
+from syft.core.plan.plan import Plan
 
 # syft relative
 from ..... import lib
@@ -48,7 +49,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Union[Tuple[Any, ...], List[Any]],
+        args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -161,7 +162,18 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                    result = method(
+                        resolved_self.data,
+                        node,
+                        verify_key,
+                        *self.args,
+                        **upcasted_kwargs,
+                    )
+                else:
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -247,7 +259,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction(
             path=proto.path,
             _self=_deserialize(blob=proto._self),
-            args=tuple(map(lambda x: _deserialize(blob=x), proto.args)),
+            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
@@ -273,3 +285,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments, and possibly the _self of the function"""
+        if self._self.id_at_location == current_input.id_at_location:
+            self._self = new_input
+        else:
+            for i, arg in enumerate(self.args):
+                if arg.id_at_location == current_input.id_at_location:
+                    self.args[i] = new_input
