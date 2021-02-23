@@ -41,7 +41,7 @@ class Plan(Serializable):
         self.actions = actions
         self.inputs: List[Pointer] = listify(inputs)
 
-    def execute(
+    def __call__(
         self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
     ) -> None:
         """

@@ -3,6 +3,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft import Plan
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.node.common.action.common import Action
@@ -26,7 +27,6 @@ from syft.core.node.common.action.get_or_set_static_attribute_action import (
 )
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
-from syft.core.node.common.plan.plan import Plan
 from syft.core.store.storeable_object import StorableObject
 
 
@@ -132,7 +132,7 @@ def test_plan_execution() -> None:
 
     plan_pointer = plan.send(alice_client)
 
-    plan_pointer.execute()
+    plan_pointer()
 
     expected_tensor1 = th.tensor([5, 7, 9])
     expected_tensor2 = th.tensor([12, 15, 18])
@@ -202,7 +202,7 @@ def test_plan_batched_execution() -> None:
     ]
 
     for x, y in zip(x_batches, y_batches):
-        plan_pointer.execute(x, y)
+        plan_pointer(x, y)
 
         # checks if (model(x) == y) == [True, True]
         assert all(result_tensor_pointer3.get())

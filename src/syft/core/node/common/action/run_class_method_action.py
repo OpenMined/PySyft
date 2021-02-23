@@ -159,7 +159,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
                     )
             else:
-                if isinstance(resolved_self.data, Plan) and method_name == "execute":
+                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
                     result = method(
                         resolved_self.data,
                         node,
