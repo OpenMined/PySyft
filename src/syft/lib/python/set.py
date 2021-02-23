@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Iterable
-from typing import List as TypeList
 from typing import Optional
 
 # third party
@@ -10,16 +9,16 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft relative
 from ... import deserialize
 from ... import serialize
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID
-from ...core.store.storeable_object import StorableObject
 from ...proto.lib.python.set_pb2 import Set as Set_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import downcast
 
 
+@bind_protobuf
 class Set(set, PyPrimitive):
     def __init__(self, iterable: Iterable, _id: Optional[UID] = None):
         super().__init__(iterable)
@@ -168,13 +167,13 @@ class Set(set, PyPrimitive):
     def _object2proto(self) -> Set_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
-        data = [serialize(obj=element) for element in downcasted]
+        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return Set_PB(id=id_, data=data)
 
     @staticmethod
     def _proto2object(proto: Set_PB) -> "Set":
         id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element) for element in proto.data]
+        value = [deserialize(blob=element, from_bytes=True) for element in proto.data]
         new_list = Set(value)
         new_list._id = id_
         return new_list
@@ -182,47 +181,3 @@ class Set(set, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Set_PB
-
-
-class ListWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Set_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Set_PB) -> "Set":  # type: ignore
-
-        return Set._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Set_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Set
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[TypeList[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=Set, name="serializable_wrapper_type", attr=ListWrapper)

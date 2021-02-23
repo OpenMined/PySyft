@@ -11,6 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.request_messages_pb2 import (
@@ -45,6 +46,7 @@ from syft.proto.grid.messages.request_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -115,6 +117,7 @@ class CreateRequestMessage(ImmediateSyftMessageWithReply):
         return CreateRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -186,6 +189,7 @@ class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
         return CreateRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -256,6 +260,7 @@ class GetRequestMessage(ImmediateSyftMessageWithReply):
         return GetRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class GetRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -327,6 +332,7 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -397,6 +403,7 @@ class GetRequestsMessage(ImmediateSyftMessageWithReply):
         return GetRequestsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -468,6 +475,7 @@ class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetRequestsResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -538,6 +546,7 @@ class UpdateRequestMessage(ImmediateSyftMessageWithReply):
         return UpdateRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -609,6 +618,7 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
         return UpdateRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -679,6 +689,7 @@ class DeleteRequestMessage(ImmediateSyftMessageWithReply):
         return DeleteRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

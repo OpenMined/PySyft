@@ -19,12 +19,14 @@ from .....proto.core.node.domain.service.request_answer_response_pb2 import (
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from .request_message import RequestStatus
 
 
+@bind_protobuf
 class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     __slots__ = ["request_id"]
 
@@ -52,6 +54,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
         return RequestAnswerMessage_PB
 
 
+@bind_protobuf
 class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["status", "request_id"]
