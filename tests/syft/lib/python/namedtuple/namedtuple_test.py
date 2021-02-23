@@ -33,7 +33,7 @@ def test_torch_qr_serde() -> None:
     values = y.Q
     indices = y.R
 
-    ser = y.serialize()
+    ser = serialize(y)
     # horrible hack, we shouldnt be constructing these right now anyway
     params = [None] * 17
     params[8] = values
