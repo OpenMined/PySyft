@@ -208,7 +208,7 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.dev.txt --default-timeout=60
           pip install -e .
 
       - name: Run torch test chunks Linux and MacOS

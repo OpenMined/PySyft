@@ -59,7 +59,7 @@ jobs:
       - name: Run lint checks
         run: |
           set -e
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.dev.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
       - name: Run darglint via flake8 - Ignore Errors
@@ -136,7 +136,7 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.dev.txt --default-timeout=60
           pip install -e . --default-timeout=60
           pip list
 
@@ -207,7 +207,7 @@ jobs:
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.dev.txt --default-timeout=60
           pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto
@@ -219,7 +219,7 @@ jobs:
 
       - name: Run notebook Duet examples
         run: |
-          pip install -r requirements.txt --default-timeout=60
+          pip install -r requirements.dev.txt --default-timeout=60
           pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
           cd tests/syft/notebooks/ && pytest . -n 1

@@ -1,0 +1,17 @@
+-r ./requirements.txt
+
+bandit
+black
+darglint
+doc8
+flake8
+flake8-kwarger @ git+https://github.com/madhavajay/flake8-kwarger
+isort
+nbconvert
+nbformat
+pyscaffold[all]
+pytest
+pytest-asyncio
+pytest-benchmark
+pytest-cov
+pytest-xdist[psutil]
