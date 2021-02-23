@@ -12,15 +12,16 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 from syft.core.common.object import Serializable
+from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.action.common import Action
+from syft.core.node.common.util import listify
 from syft.core.pointer.pointer import Pointer
 from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
 from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
-# syft relative
-from ....common.serde.serializable import bind_protobuf
-from ...abstract.node import AbstractNode
-from ..util import listify
+# from ...abstract.node import AbstractNode
+# from ..util import listify
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 

@@ -8,6 +8,9 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+from syft.core.plan.plan import Plan
+
 # syft relative
 from ..... import lib
 from .....logger import critical
@@ -22,7 +25,6 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
-from ..plan.plan import Plan
 from .common import ImmediateActionWithoutReply
 
 

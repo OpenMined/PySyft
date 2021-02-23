@@ -8,7 +8,7 @@ from syft.ast import add_classes
 from syft.ast import add_methods
 from syft.ast import add_modules
 from syft.ast.globals import Globals
-from syft.core.node.common.plan.plan import Plan
+from syft.core.plan.plan import Plan
 
 
 def create_plan_ast(client: TypeAny = None) -> Globals:

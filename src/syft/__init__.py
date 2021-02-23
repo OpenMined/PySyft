@@ -49,7 +49,6 @@ from syft.core.common import event_loop  # noqa: F401
 # Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from syft.core.node.common.plan.plan import Plan  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
 from syft.core.node.device.device import Device  # noqa: F401
 from syft.core.node.device.device import DeviceClient  # noqa: F401
@@ -61,6 +60,7 @@ from syft.core.node.network.network import NetworkClient  # noqa: F401
 # Convenience Constructors
 from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
+from syft.core.plan.plan import Plan  # noqa: F401
 
 # Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401
