@@ -5,12 +5,10 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
 from ....logger import traceback_and_raise
 from .serializable import Serializable
 
 
-@syft_decorator(typechecking=True)
 def _serialize(
     obj: object,
     to_proto: bool = True,
@@ -49,7 +47,9 @@ def _serialize(
             is_serializable = obj.serializable_wrapper_type(value=obj)  # type: ignore
         else:
             traceback_and_raise(
-                Exception(f"Object {type(obj)} has no serializable_wrapper_type")
+                Exception(
+                    f"Object {type(obj)} is not serializable and has no serializable_wrapper_type"
+                )
             )
     else:
         is_serializable = obj

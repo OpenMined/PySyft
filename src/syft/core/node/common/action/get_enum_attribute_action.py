@@ -8,11 +8,11 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.get_enum_attribute_pb2 import (
     GetEnumAttributeAction as GetEnumAttributeAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -21,6 +21,7 @@ from .common import ImmediateActionWithoutReply
 from .run_class_method_action import RunClassMethodAction
 
 
+@bind_protobuf
 class EnumAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -52,7 +53,6 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetEnumAttributeAction_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

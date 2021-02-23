@@ -12,6 +12,7 @@ import requests
 
 # syft relative
 from ...core.common.environment import is_jupyter
+from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
 from ...logger import info
 from ...logger import traceback_and_raise
@@ -151,7 +152,7 @@ def duet(
     network_url: str = "",
     loopback: bool = False,
     db_path: Optional[str] = None,
-) -> WebRTCDuet:
+) -> Client:
     if target_id is not None:
         return join_duet(
             target_id=target_id, loopback=loopback, network_url=network_url
@@ -168,7 +169,7 @@ def launch_duet(
     loopback: bool = False,
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
-) -> WebRTCDuet:
+) -> Client:
     if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
@@ -220,7 +221,7 @@ def launch_duet(
     info(print=True)
     info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     #     return duet, my_domain.get_root_client()
-    out_duet = my_domain.get_root_client()
+    out_duet: Client = my_domain.get_root_client()
 
     if logging:
         begin_duet_logger(my_domain=my_domain)

@@ -8,17 +8,16 @@ from typing import Tuple as TypeTuple
 import tenseal as ts
 
 # syft relative
+from . import bfv_vector  # noqa: 401
+from . import ckks_tensor  # noqa: 401
+from . import ckks_vector  # noqa: 401
+from . import context  # noqa: 401
+from . import plain_tensor  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
-from .bfv_vector import BFVVectorWrapper  # noqa: 401
-from .ckks_tensor import CKKSTensorWrapper  # noqa: 401
-from .ckks_vector import CKKSVectorWrapper  # noqa: 401
-from .context import ContextWrapper  # noqa: 401
-from .context import SchemeTypeWrapper  # noqa: 401
-from .plain_tensor import PlainTensorWrapper  # noqa: 401
 
 LIB_NAME = "tenseal"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -166,7 +165,6 @@ def create_ast(client: TypeAny) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
 
     return ast

@@ -30,7 +30,11 @@ def duet() -> Any:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_send(context: Any) -> None:
-    """Test sending a TenSEAL context"""
+    """Test sending a TenSEAL context
+
+    Args:
+        context: TenSEAL context to test
+    """
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
@@ -44,7 +48,11 @@ def test_context_send(context: Any) -> None:
 @pytest.mark.vendor(lib="tenseal")
 @pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
 def test_scheme_send(scheme: Any) -> None:
-    """Test sending a TenSEAL scheme"""
+    """Test sending a TenSEAL scheme
+
+    Args:
+        scheme: TenSEAL scheme to test
+    """
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_client()
 
@@ -74,9 +82,9 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
     ctx_ptr = context.send(duet, searchable=True)
     enc_v1_ptr = enc_v1.send(duet, searchable=True)
 
-    assert not ctx_ptr.is_private().get()
+    assert ctx_ptr.is_private().get()
     assert not ctx_ptr.has_galois_keys().get()
-    assert not ctx_ptr.has_secret_key().get()
+    assert ctx_ptr.has_secret_key().get()
     assert ctx_ptr.has_public_key().get()
     assert ctx_ptr.has_relin_keys().get()
 

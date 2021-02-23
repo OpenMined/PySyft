@@ -10,11 +10,11 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.action.get_set_static_attribute_pb2 import (
     GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -28,6 +28,7 @@ class StaticAttributeAction(Enum):
     GET = 2
 
 
+@bind_protobuf
 class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -89,7 +90,6 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetSetStaticAttributeAction_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

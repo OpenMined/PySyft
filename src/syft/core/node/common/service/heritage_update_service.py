@@ -13,7 +13,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators import syft_decorator
 from .....logger import debug
 from .....logger import traceback
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
@@ -21,6 +20,7 @@ from .....proto.core.node.common.service.heritage_update_service_pb2 import (
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -31,6 +31,7 @@ from .node_service import ImmediateNodeServiceWithoutReply
 # at the end of the name
 
 
+@bind_protobuf
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -41,7 +42,6 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.new_ancestry_address = new_ancestry_address
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> HeritageUpdateMessage_PB:
         return HeritageUpdateMessage_PB(
             new_ancestry_address=self.new_ancestry_address.serialize(),
@@ -65,7 +65,6 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(root_only=True)
-    @syft_decorator(typechecking=True)
     def process(
         node: AbstractNode, msg: HeritageUpdateMessage, verify_key: VerifyKey
     ) -> None:
@@ -99,6 +98,5 @@ class HeritageUpdateService(ImmediateNodeServiceWithoutReply):
                 traceback(e)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [HeritageUpdateMessage]

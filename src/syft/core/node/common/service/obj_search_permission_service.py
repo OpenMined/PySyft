@@ -15,13 +15,13 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
 from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -30,6 +30,7 @@ from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
 
 
+@bind_protobuf
 @final
 class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -46,7 +47,6 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         self.target_verify_key = target_verify_key
         self.target_object_id = target_object_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ObjectSearchPermissionUpdateMessage_PB:
         """Returns a protobuf serialization of self.
 

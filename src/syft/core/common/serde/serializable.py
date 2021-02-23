@@ -1,7 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -9,51 +7,28 @@ from typing import Union
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# Fixes python3.6
-# however, API changed between versions so typing_extensions smooths this over:
-# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
-from typing_extensions import GenericMeta as GenericM  # type: ignore
-
 # syft relative
-from ....decorators import syft_decorator
 from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import random_name
+from ....util import validate_type
 
 
-# GenericMeta Fixes python 3.6
-# After python 3.7+ there is no GenericMeta only Generic and this becomes "type"
-# python 3.6 print(typing_extensions.GenericMeta) = <class 'typing.GenericMeta'>
-# python 3.7 print(typing_extensions.GenericMeta) = <class 'type'>
-class MetaSerializable(GenericM):
+def bind_protobuf(cls: Any) -> Any:
+    protobuf_schema = cls.get_protobuf_schema()
+    # If protobuf already has schema2type, means it's related to multiple types.
+    # Set it's schema2type to None, becuase we can't take use of it anymore.
+    if hasattr(protobuf_schema, "schema2type"):
+        protobuf_schema.schema2type = None
+    else:
+        protobuf_schema.schema2type = cls
 
-    """When we go to deserialize a JSON protobuf object, the JSON protobuf
-    wrapper will return a python protobuf object corresponding to a subclass
-    of Serializable. However, in order to be able to take the next step, we need
-    an instance of the Serializable subclass. In order to create this instance,
-    we cache/monkeypatch it onto the protobuf class it corresponds to.
-
-    Since this could be a dangerous thing to do (because developers of new objects
-    in Syft could forget to add the schema2type attribute) we do it automatically
-    for all subclasses of Serializable via this metaclass. This way, nobody has
-    to worry about remembering to implement this flag."""
-
-    def __new__(
-        cls: Type, name: str, bases: Tuple[Type, ...], dct: Dict[str, Any]
-    ) -> "MetaSerializable":
-        x = super().__new__(cls, name, bases, dct)
-        try:
-            protobuf_schema = dct["get_protobuf_schema"].__get__("")()
-            if protobuf_schema is not None:
-                protobuf_schema.schema2type = x
-        except (KeyError, NotImplementedError):
-            ""
-        return x
+    return cls
 
 
-class Serializable(metaclass=MetaSerializable):
+class Serializable:
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it
     subclass from this class. You must then do the following in order for the
@@ -148,9 +123,7 @@ class Serializable(metaclass=MetaSerializable):
         """
         traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def _object2proto() -> Message:
+    def _object2proto(self) -> Message:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
@@ -162,6 +135,7 @@ class Serializable(metaclass=MetaSerializable):
         """
 
         traceback_and_raise(NotImplementedError)
+        raise NotImplementedError
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -193,43 +167,38 @@ class Serializable(metaclass=MetaSerializable):
         """
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def to_proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return self.serialize(to_proto=True)
+        return validate_type(self.serialize(to_proto=True), Message)
 
-    @syft_decorator(typechecking=True)
     def proto(self) -> Message:
         """A convenience method to convert any subclass of Serializable into a protobuf object.
 
         :return: a protobuf message
         :rtype: Message
         """
-        return self.serialize(to_proto=True)
+        return validate_type(self.serialize(to_proto=True), Message)
 
-    @syft_decorator(typechecking=True)
     def to_bytes(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_bytes=True)
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
-    @syft_decorator(typechecking=True)
     def binary(self) -> bytes:
         """A convenience method to convert any subclass of Serializable into a binary object.
 
         :return: a binary string
         :rtype: bytes
         """
-        return self.serialize(to_bytes=True)
+        return validate_type(self.serialize(to_bytes=True), bytes)
 
-    @syft_decorator(typechecking=True)
     def serialize(
         self,
         to_proto: bool = True,
@@ -264,14 +233,14 @@ class Serializable(metaclass=MetaSerializable):
             debug(f"Serializing {type(self)}")
             # indent=None means no white space or \n in the serialized version
             # this is compatible with json.dumps(x, indent=None)
-            blob = self._object2proto().SerializeToString()
-            blob = DataMessage(
-                obj_type=get_fully_qualified_name(obj=self), content=blob
+            serialized_data = self._object2proto().SerializeToString()
+            blob: Message = DataMessage(
+                obj_type=get_fully_qualified_name(obj=self), content=serialized_data
             )
             return blob.SerializeToString()
 
         elif to_proto:
-            return type(self)._object2proto(self)
+            return self._object2proto()
         else:
             traceback_and_raise(
                 Exception(

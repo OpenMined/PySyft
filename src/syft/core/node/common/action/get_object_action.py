@@ -6,19 +6,20 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectAction as GetObjectAction_PB,
 )
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
-from .....proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -27,6 +28,7 @@ from ..service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
 
 
+@bind_protobuf
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
     GetObjectResponseMessages are the type of messages that are sent in reponse to a
@@ -42,7 +44,6 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -58,25 +59,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-
         ser = self.obj.serialize()
-
-        # TODO: Fix this hack
-        # we need to check if the serialize chain creates a storable if not
-        # we need to go use the serializable_wrapper_type
-        # this is because klasses have a different def serialize to normal serializables
-        # which checks for the serializable_wrapper_type and uses it
-        if not isinstance(ser, StorableObject_PB):
-            if hasattr(self.obj, "serializable_wrapper_type"):
-                obj = self.obj.serializable_wrapper_type(value=self.obj)  # type: ignore
-                if hasattr(obj, "sy_serialize"):
-                    ser = obj.sy_serialize()
-                else:
-                    ser = obj.serialize()
-            else:
-                traceback_and_raise(
-                    Exception(f"Cannot send {type(self.obj)} as StorableObject")
-                )
 
         return GetObjectResponseMessage_PB(
             msg_id=self.id.serialize(),
@@ -98,12 +81,23 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return GetObjectResponseMessage(
             obj=_deserialize(blob=proto.obj),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
+
+    @property
+    def data(self) -> object:
+        data = self.obj.data
+        try:
+            data.tags = self.obj.tags
+            data.description = self.obj.description
+        except AttributeError:
+            warning(
+                f"'tags' and 'description' can't be attached to {type(data)} object."
+            )
+        return data
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -126,6 +120,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         return GetObjectResponseMessage_PB
 
 
+@bind_protobuf
 class GetObjectAction(ImmediateActionWithReply):
     """
     This kind of action is used when a Node wants to get an object located on another Node.
@@ -157,7 +152,7 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storeable_object = node.store[self.id_at_location]
+                storable_object = node.store[self.id_at_location]
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
@@ -169,7 +164,7 @@ class GetObjectAction(ImmediateActionWithReply):
             # if you are not the root user check if your verify_key has read_permission
             if (
                 verify_key != node.root_verify_key
-                and verify_key not in storeable_object.read_permissions
+                and verify_key not in storable_object.read_permissions
             ):
                 log = (
                     f"You do not have permission to .get() Object with ID: {self.id_at_location}"
@@ -177,7 +172,8 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = storeable_object.data
+            obj = validate_type(storable_object.clean_copy(), StorableObject)
+
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
             if self.delete_obj:
@@ -197,7 +193,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 debug(f"Copying Object with ID {self.id_at_location} in store.")
 
             debug(
-                f"Returning Object with ID: {self.id_at_location} {type(storeable_object.data)}"
+                f"Returning Object with ID: {self.id_at_location} {type(storable_object.data)}"
             )
             return msg
         except Exception as e:
@@ -207,7 +203,6 @@ class GetObjectAction(ImmediateActionWithReply):
     def pprint(self) -> str:
         return f"GetObjectAction({self.id_at_location})"
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetObjectAction_PB:
         """Returns a protobuf serialization of self.
 

@@ -10,35 +10,40 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# third party
-from google.protobuf.message import Message
-
 # syft relative
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
-from ..core.common.serde.serializable import Serializable
-from ..core.common.serde.serialize import _serialize
+from ..core.common.group import VerifyAll
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
+from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
+from ..logger import warning
 from ..util import aggressive_set_attr
+from ..util import inherit_tags
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
-    """It might seem hugely un-necessary to have these methods nested in this way.
-    However, it has to do with ensuring that the scope of attr_path_and_name is local
-    and not global. If we do not put a get_run_class_method around run_class_method then
-    each run_class_method will end up referencing the same attr_path_and_name variable
-    and all methods will actually end up calling the same method. However, if we return
-    the function object itself then it includes the current attr_path_and_name as an internal
-    variable and when we call get_run_class_method multiple times it returns genuinely
-    different methods each time with a different internal attr_path_and_name variable."""
+    """
+    It might seem hugely un-necessary to have these methods nested in this way.
+    However, it has to do with ensuring that the scope of `attr_path_and_name` is local
+    and not global.
+
+    If we do not put a `get_run_class_method` around `run_class_method` then
+    each `run_class_method` will end up referencing the same `attr_path_and_name` variable
+    and all methods will actually end up calling the same method.
+
+    If, instead, we return the function object itself then it includes
+    the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
+    multiple times it returns genuinely different methods each time with a different
+    internal `attr_path_and_name` variable.
+    """
 
     def run_class_method(
         __self: Any,
@@ -79,6 +84,13 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
         return result
 
     return run_class_method
@@ -122,6 +134,14 @@ def generate_class_property_function(
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
+        if action == PropertyActions.GET:
+            inherit_tags(
+                attr_path_and_name=attr_path_and_name,
+                result=result,
+                self_obj=__self,
+                args=args,
+                kwargs=kwargs,
+            )
         return result
 
     return class_property_function
@@ -198,6 +218,20 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 
     attrs["len"] = len_func
     attrs[attr_name] = wrap_len(len_func)
+
+
+def attach_tags(obj: object, tags: List[str]) -> None:
+    try:
+        obj.tags = sorted(set(tags), key=tags.index)  # type: ignore
+    except AttributeError:
+        warning(f"can't attach new attribute `tags` to {type(obj)} object.")
+
+
+def attach_description(obj: object, description: str) -> None:
+    try:
+        obj.description = description  # type: ignore
+    except AttributeError:
+        warning(f"can't attach new attribute `description` to {type(obj)} object.")
 
 
 class Class(Callable):
@@ -280,33 +314,23 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
         ) -> Pointer:
-            # if self is proto, change self to it's wrapper object
-            which_obj = self
-            if "ProtobufWrapper" in self.serializable_wrapper_type.__name__:
-                # which_obj should be of the same type as what self._data_proto2object returns
-                which_obj = self.serializable_wrapper_type(value=self)
+            if not hasattr(self, "id"):
+                try:
+                    self.id = UID()
+                except AttributeError:
+                    pass
 
-            if "CTypeWrapper" in self.serializable_wrapper_type.__name__:
-                # which_obj should be of the same type as what self._data_proto2object returns
-                which_obj = self.serializable_wrapper_type(value=self)
-
-            id_ = getattr(self, "id", None)
-            if id_ is None:
-                id_ = UID()
-                which_obj.id = id_
-
-            tags = tags if tags else []
-            tags = sorted(set(tags), key=tags.index)  # keep order of original
-            obj_tags = getattr(which_obj, "tags", [])
             # if `tags` is passed in, use it; else, use obj_tags
+            obj_tags = getattr(self, "tags", [])
+            tags = tags if tags else []
             tags = tags if tags else obj_tags
 
-            obj_description = getattr(which_obj, "description", "")
             # if `description` is passed in, use it; else, use obj_description
+            obj_description = getattr(self, "description", "")
             description = description if description else obj_description
 
-            which_obj.tags = tags
-            which_obj.description = description
+            attach_tags(self, tags)
+            attach_description(self, description)
 
             id_at_location = UID()
 
@@ -322,12 +346,14 @@ class Class(Callable):
                 ptr.gc_enabled = False
 
             # Step 2: create message which contains object to send
-            obj_msg = SaveObjectAction(
-                id_at_location=ptr.id_at_location,
-                obj=which_obj,
-                address=client.address,
-                anyone_can_search_for_this=searchable,
+            storable = StorableObject(
+                id=ptr.id_at_location,
+                data=self,
+                tags=tags,
+                description=description,
+                search_permissions={VerifyAll(): None} if searchable else {},
             )
+            obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)
@@ -339,54 +365,15 @@ class Class(Callable):
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
-            self.tags = sorted(set(tags), key=tags.index)  # keep order of original
+            attach_tags(self, tags)  # type: ignore
             return self
 
         def describe(self: Any, description: str) -> object:
-            self.description = description
-            # QUESTION: Is this supposed to return self?
-            # WHY? Chaining?
+            attach_description(self, description)
             return self
 
         aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
         aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
-
-    def create_serialization_methods(outer_self) -> None:
-        def serialize(  # type: ignore
-            self,
-            to_proto: bool = True,
-            to_bytes: bool = False,
-        ) -> Union[str, bytes, Message]:
-            return _serialize(
-                obj=self,
-                to_proto=to_proto,
-                to_bytes=to_bytes,
-            )
-
-        serialize_attr = "serialize"
-        if not hasattr(outer_self.object_ref, serialize_attr):
-            aggressive_set_attr(
-                obj=outer_self.object_ref, name=serialize_attr, attr=serialize
-            )
-        else:
-            serialize_attr = "sy_serialize"
-            aggressive_set_attr(
-                obj=outer_self.object_ref, name=serialize_attr, attr=serialize
-            )
-
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name="to_proto", attr=Serializable.to_proto
-        )
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name="proto", attr=Serializable.proto
-        )
-        to_bytes_attr = "to_bytes"
-        # int has a to_bytes already, so we can use _to_bytes internally
-        if hasattr(outer_self.object_ref, to_bytes_attr):
-            to_bytes_attr = "_to_bytes"
-        aggressive_set_attr(
-            obj=outer_self.object_ref, name=to_bytes_attr, attr=Serializable.to_bytes
-        )
 
     def add_path(
         self,
@@ -457,12 +444,15 @@ class Class(Callable):
                 return target_object_ptr
 
             return target_object
-        except Exception as e:
-            critical(
+        except AttributeError as e:
+            warning(
                 "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
+                "StaticAttribute, be sure they have been added to the AST. Falling back on "
                 "__getattr__ to search in self.attrs for the requested field."
             )
+            raise e
+        except Exception as e:
+            critical(f"__getattribute__ failed with {type(e).__name__}")
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:

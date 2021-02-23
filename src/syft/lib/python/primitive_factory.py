@@ -11,7 +11,6 @@ from typing import Union
 # syft relative
 from .. import python
 from ...core.common import UID
-from ...decorators import syft_decorator
 from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
 
@@ -54,7 +53,6 @@ PrimitiveType = Union[
 ]
 
 
-@syft_decorator(typechecking=True)
 def isprimitive(value: Any) -> bool:
     if not issubclass(type(value), PyPrimitive) and type(value) in primitives:
         return True
@@ -66,14 +64,11 @@ class PrimitiveFactory(ABC):
         traceback_and_raise(NotImplementedError)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def generate_primitive(
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
-    ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
-        # syft relative
-
+    ) -> Any:
         if isinstance(value, PyPrimitive):
             return value
 
