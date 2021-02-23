@@ -50,7 +50,9 @@ ValuesIndices = namedtuple("ValuesIndices", all_attrs)  # type: ignore
 
 def object2proto(obj: object) -> ValuesIndices_PB:
     obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
-    keys = get_keys(klass_name=obj_type)
+    torch_type = full_name_with_name(klass=type(obj))
+
+    keys = get_keys(klass_name=torch_type)
 
     values = []
     for key in keys:
@@ -154,7 +156,9 @@ def make_namedtuple(
     module_parts = obj_type.split(".")
     klass = module_parts.pop().replace("Wrapper", "")
     module_name = ".".join(module_parts[2:])
-    keys = get_keys(klass_name=obj_type)
+    torch_type = f"{module_name}.{klass}"
+
+    keys = get_keys(klass_name=torch_type)
     tuple_klass = namedtuple(  # type: ignore
         klass, (*keys, "tags", "description", "id")
     )
