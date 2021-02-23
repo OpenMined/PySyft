@@ -1,5 +1,4 @@
 # stdlib
-import pydoc
 from typing import Any
 from typing import List
 from typing import Optional
@@ -169,9 +168,6 @@ class StorableObject(AbstractStorableObject):
         # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
-        pydoc.locate(
-            proto.data_type
-        )  # Hi Madhava/Tudor, try comment/uncomment this line. -- From XTY.
         data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
 
         # Step 3: get the protobuf type we deserialize for .data
