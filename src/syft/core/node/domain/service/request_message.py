@@ -20,6 +20,7 @@ from .....proto.core.node.domain.service.request_message_pb2 import (
 )
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ....node.common.client import Client
 from ....node.common.node import DuplicateRequestException
@@ -35,6 +36,7 @@ class RequestStatus(Enum):
     Accepted = 3
 
 
+@bind_protobuf
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["name", "request_description", "request_id"]

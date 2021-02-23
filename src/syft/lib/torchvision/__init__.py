@@ -51,6 +51,5 @@ def create_torchvision_ast(client: Any = None) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
     return ast

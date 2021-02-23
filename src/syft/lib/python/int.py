@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 
 # third party
@@ -10,14 +9,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
+from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.int_pb2 import Int as Int_PB
-from ...util import aggressive_set_attr
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
+@bind_protobuf
 class Int(int, PyPrimitive):
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
@@ -327,53 +326,6 @@ class Int(int, PyPrimitive):
         signed: Optional[bool] = True,
     ) -> bytes:
         if length is not None and byteorder is not None and signed is not None:
-            return super().to_bytes(length=length, byteorder=byteorder, signed=signed)
+            return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
         else:
-            # get our serializable method
-            _to_bytes = getattr(self, "_to_bytes", None)
-            if _to_bytes is not None:
-                return _to_bytes.__call__()
-        return b""
-
-
-class IntWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Int_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Int_PB) -> "Int":  # type: ignore
-        return Int._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Int_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Int
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=Int, name="serializable_wrapper_type", attr=IntWrapper)
+            return PyPrimitive.to_bytes(self)

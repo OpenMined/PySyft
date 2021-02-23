@@ -19,6 +19,7 @@ from .....proto.core.node.common.action.run_class_method_pb2 import (
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -26,6 +27,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
+@bind_protobuf
 class RunClassMethodAction(ImmediateActionWithoutReply):
     """
     When executing a RunClassMethodAction, a :class:`Node` will run a method defined

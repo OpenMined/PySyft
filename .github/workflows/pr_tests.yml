@@ -62,10 +62,10 @@ jobs:
           pip install -r requirements.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
-      - name: Run darglint - Ignore Errors
+      - name: Run darglint via flake8 - Ignore Errors
         continue-on-error: true
         run: |
-          darglint src tests
+          flake8 src tests
 
   python-tests-fast:
     needs: [python-linting]

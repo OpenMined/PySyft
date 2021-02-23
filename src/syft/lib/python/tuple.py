@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -11,9 +10,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
+from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
-from ...util import aggressive_set_attr
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
@@ -27,6 +25,7 @@ class TupleIterator(Iterator):
     pass
 
 
+@bind_protobuf
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args: Any):
         self._id = UID()
@@ -103,7 +102,10 @@ class Tuple(tuple, PyPrimitive):
     @staticmethod
     def _proto2object(proto: Tuple_PB) -> "Tuple":
         id_: UID = deserialize(blob=proto.id)
-        value = [upcast((deserialize(blob=element))) for element in proto.data]
+        value = [
+            upcast((deserialize(blob=element, from_bytes=True)))
+            for element in proto.data
+        ]
         new_list = Tuple(value)
         new_list._id = id_
         return new_list
@@ -111,52 +113,9 @@ class Tuple(tuple, PyPrimitive):
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
-        data = [serialize(obj=element) for element in downcasted]
+        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Tuple_PB
-
-
-class TupleWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> Tuple_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: Tuple_PB) -> "Tuple":  # type: ignore
-        return Tuple._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tuple_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return Tuple
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=Tuple, name="serializable_wrapper_type", attr=TupleWrapper)
