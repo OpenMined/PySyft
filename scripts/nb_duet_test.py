@@ -47,8 +47,8 @@ except BaseException as e:
 
 
 for path in list(Path("examples/homomorphic-encryption").rglob("*.ipynb")) + list(
-    Path("examples/duet/dcgan").rglob("*.ipynb")
-):
+        Path("examples/duet/dcgan").rglob("*.ipynb")) + list(
+        Path("examples/duet/super_resolution").rglob("*.ipynb")):
     if ".ipynb_checkpoints" in str(path):
         continue
 
