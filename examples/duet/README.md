@@ -22,12 +22,12 @@ Duet is the latest part of the Syft family and is designed to provide you with a
 We support **Linux**, **MacOS** and **Windows** and the following Python and PyTorch versions.
 Other Deep Learning and Data Science libraries are coming very soon.
 
-Python | Torch 1.4 | Torch 1.5 | Torch 1.6 | Torch 1.7
---- | --- | --- | --- | ---
-3.6 | ✅ | ✅ | ✅ | ✅
-3.7 | ✅ | ✅ | ✅ | ✅
-3.8 | ✅ | ✅ | ✅ | ✅
-3.9 | 🔜 | 🔜 | 🔜 | 🔜
+| Python | Torch 1.4 | Torch 1.5 | Torch 1.6 | Torch 1.7 |
+| ------ | --------- | --------- | --------- | --------- |
+| 3.6    | ✅         | ✅         | ✅         | ✅         |
+| 3.7    | ✅         | ✅         | ✅         | ✅         |
+| 3.8    | ✅         | ✅         | ✅         | ✅         |
+| 3.9    | 🔜         | 🔜         | 🔜         | 🔜         |
 
 ## Setup 🐍
 ```bash
@@ -176,14 +176,14 @@ The following examples were taken from the official [PyTorch examples](https://g
 
 Each example is split into two notebooks, one for the data owner who wishes to protect their valuable and private training data and one for the data scientist who has some problem they wish to solve and a test set they can use to determine if the data owner's data will help. Together they are able to collaborate over two notebooks to construct and train models, evaluate and share metrics upon request and do inference on a test or individual data items.
 
-Example | Data Owner | Data Scientist
---- | --- | ---
-*Image classification (MNIST) using Convnets* | 📕 [Data Owner Notebook](./mnist/MNIST_Syft_Data_Owner.ipynb) | 📘 [Data Scientist Notebook](./mnist/MNIST_Syft_Data_Scientist.ipynb)
-*Word level Language Modeling using LSTM RNNs* | Coming Soon | Coming Soon
-*Implement the Neural Style Transfer algorithm on images* | Coming Soon | Coming Soon
-*Variational Auto-Encoders* | Coming Soon | Coming Soon
-*Training a CartPole to balance in OpenAI Gym with actor-critic* | Coming Soon | Coming Soon
-*Time sequence prediction - use an LSTM to learn Sine waves* | Coming Soon | Coming Soon
-*Superresolution using an efficient sub-pixel CNNs* | Coming Soon | Coming Soon
-*SNLI with GloVe vectors, LSTMs, and torchtext* | Coming Soon | Coming Soon
-*Generative Adversarial Networks (DCGAN)* | Coming Soon | Coming Soon
+| Example                                                          | Data Owner                                                                        | Data Scientist                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| *Image classification (MNIST) using Convnets*                    | 📕 [Data Owner Notebook](./mnist/MNIST_Syft_Data_Owner.ipynb)                      | 📘 [Data Scientist Notebook](./mnist/MNIST_Syft_Data_Scientist.ipynb)                      |
+| *Word level Language Modeling using LSTM RNNs*                   | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Implement the Neural Style Transfer algorithm on images*        | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Variational Auto-Encoders*                                      | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Training a CartPole to balance in OpenAI Gym with actor-critic* | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Time sequence prediction - use an LSTM to learn Sine waves*     | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Superresolution using an efficient sub-pixel CNNs*              | 📕 [Data Owner Notebook](./super_resolution/SuperResolution_Syft_Data_Owner.ipynb) | 📘 [Data Scientist Notebook](./super_resolution/SuperResolution_Syft_Data_Scientist.ipynb) |
+| *SNLI with GloVe vectors, LSTMs, and torchtext*                  | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Generative Adversarial Networks (DCGAN)*                        | 📕 [Data Owner Notebook](./dcgan/DCGAN_Syft_Data_Owner.ipynb)                      | 📘 [Data Scientist Notebook](./dcgan/DCGAN_Syft_Data_Scientist.ipynb)                      |

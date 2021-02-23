@@ -5,7 +5,11 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
+from ....logger import debug
 from ....logger import traceback_and_raise
+from ....proto.util.data_message_pb2 import DataMessage
+from ....util import get_fully_qualified_name
+from ....util import validate_type
 from .serializable import Serializable
 
 
@@ -43,21 +47,34 @@ def _serialize(
 
     is_serializable: Serializable
     if not isinstance(obj, Serializable):
-        if hasattr(obj, "serializable_wrapper_type"):
-            is_serializable = obj.serializable_wrapper_type(value=obj)  # type: ignore
+        if hasattr(obj, "_sy_serializable_wrapper_type"):
+            is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
         else:
             traceback_and_raise(
                 Exception(
-                    f"Object {type(obj)} is not serializable and has no serializable_wrapper_type"
+                    f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
                 )
             )
     else:
         is_serializable = obj
 
-    serialize_method = getattr(is_serializable, "sy_serialize", None)
-    if serialize_method is None:
-        serialize_method = getattr(is_serializable, "serialize", None)
-    if serialize_method is None:
-        raise Exception(f"Object {type(obj)} has no serialize method")
-
-    return serialize_method(to_proto=to_proto, to_bytes=to_bytes)
+    if to_bytes:
+        debug(f"Serializing {type(is_serializable)}")
+        # indent=None means no white space or \n in the serialized version
+        # this is compatible with json.dumps(x, indent=None)
+        serialized_data = is_serializable._object2proto().SerializeToString()
+        blob: Message = DataMessage(
+            obj_type=get_fully_qualified_name(obj=is_serializable),
+            content=serialized_data,
+        )
+        return validate_type(blob.SerializeToString(), bytes)
+    elif to_proto:
+        return validate_type(is_serializable._object2proto(), Message)
+    else:
+        traceback_and_raise(
+            Exception(
+                """You must specify at least one deserialization format using
+                        one of the arguments of the serialize() method such as:
+                        to_proto, to_bytes."""
+            )
+        )

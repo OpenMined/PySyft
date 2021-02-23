@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ...core.common.object import ObjectWithID
+from ...core.common.serde.serialize import _serialize as serialize
 from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...logger import debug
@@ -87,7 +88,7 @@ class SyftMessage(AbstractMessage):
 
         """
         debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
-        signed_message = signing_key.sign(self.serialize(to_bytes=True))
+        signed_message = signing_key.sign(serialize(self, to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -168,7 +169,7 @@ class SignedMessage(SyftMessage):
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
-            msg_id=self.id.proto(),
+            msg_id=serialize(self.id, to_proto=True),
             obj_type=self.obj_type,
             signature=bytes(self.signature),
             verify_key=bytes(self.verify_key),

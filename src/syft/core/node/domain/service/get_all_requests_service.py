@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
+from ..... import serialize
 from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
@@ -43,14 +44,14 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         :rtype: GetAllRequestsMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAllRequestsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -117,14 +118,14 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ReprMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAllRequestsResponseMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            requests=list(map(lambda x: x.serialize(), self.requests)),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            requests=list(map(lambda x: serialize(x), self.requests)),
         )
 
     @staticmethod
