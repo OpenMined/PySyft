@@ -882,7 +882,7 @@ python-versions = "*"
 
 [[package]]
 name = "syft"
-version = "0.3.0.post0.dev415+ge01886b8"
+version = "0.3.0.post0.dev420+g6b35c63db"
 description = "Add a short description here!"
 category = "main"
 optional = false
@@ -914,8 +914,8 @@ testing = ["dataclasses", "flask", "pandas", "protobuf", "pynacl", "pytest", "py
 [package.source]
 type = "git"
 url = "https://github.com/OpenMined/PySyft"
-reference = "dev"
-resolved_reference = "e01886b8723f7d4e2fe06e3aaaf82b5f964e8230"
+reference = "pygrid_client"
+resolved_reference = "6b35c63db376d3bded5685543e15405e1d1f5fb6"
 
 [[package]]
 name = "tenseal"
@@ -1095,7 +1095,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "fdc2d6c9e69c918016c3bd02ac3c2701fcd25d9df8e875405066df2a255c3c27"
+content-hash = "7308d08977a6a190a93523ad1b4086cb8b84fe59389b18426d3b3e4c9602d551"
 
 [metadata.files]
 aioice = [
