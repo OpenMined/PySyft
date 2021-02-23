@@ -11,11 +11,13 @@ from syft.core.common.serde.deserialize import _deserialize
 from flask import request, Response
 import json
 
+
 @root_route.route("/", methods=["POST"])
 def index_route():
-    return Response(json.dumps(
-        {"msg": "Open Grid Worker"}
-    ), status=200, mimetype="application/json")
+    return Response(
+        json.dumps({"msg": "Open Grid Worker"}), status=200, mimetype="application/json"
+    )
+
 
 @root_route.route("/pysyft", methods=["POST"])
 def pysyft_route():
