@@ -11,6 +11,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft absolute
+from syft import serialize
 from syft.core.common.object import Serializable
 from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.node.abstract.node import AbstractNode
@@ -117,7 +118,7 @@ class Plan(Serializable):
         actions_pb = [
             Action_PB(
                 obj_type=".".join([action.__module__, action.__class__.__name__]),
-                **{camel_to_snake(action.__class__.__name__): action.serialize()}
+                **{camel_to_snake(action.__class__.__name__): serialize(action)}
             )
             for action in self.actions
         ]

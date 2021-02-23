@@ -4,6 +4,7 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft import Plan
+from syft import serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.node.common.action.common import Action
@@ -86,7 +87,7 @@ def test_plan_serialization() -> None:
     plan = Plan([a1, a2, a3, a4, a5, a6, a7, a8])
 
     # serialize / deserialize
-    blob = plan.serialize()
+    blob = serialize(plan)
     plan_reconstructed = sy.deserialize(blob=blob)
 
     # test
