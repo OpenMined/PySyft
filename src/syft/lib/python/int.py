@@ -297,6 +297,14 @@ class Int(int, PyPrimitive):
         res = super().denominator
         return PrimitiveFactory.generate_primitive(value=res)
 
+    def to_bytes(
+        self,
+        length: int,
+        byteorder: str,
+        signed: bool = False,
+    ) -> bytes:
+        return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
+
     @staticmethod
     def from_bytes(bytes: Any, byteorder: str, *, signed: Any = True) -> SyPrimitiveRet:
         res = int.from_bytes(bytes, byteorder, signed=signed)
