@@ -177,6 +177,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # - name: Install aiortc native dependencies
+      #   if: startsWith(runner.os, 'Linux') == true
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
+
+      - name: Adjust PyTorch versions
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          cat ./requirements.txt
+
+      - run: pip install "pip>=20.1"
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -186,29 +199,13 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
-
-      - name: Install aiortc native dependencies
-        if: startsWith(runner.os, 'Linux') == true
-        run: |
-          sudo apt-get update
-          sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
-
-      - name: Install PyTorch Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
-        run: |
-          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
-
-      - name: Install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
 
       - name: Run torch test chunks Linux and MacOS
