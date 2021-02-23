@@ -6,6 +6,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import serialize
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
@@ -39,7 +40,7 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def _object2proto(self) -> SaveObjectAction_PB:
         obj = self.obj._object2proto()
-        addr = self.address.serialize()
+        addr = serialize(self.address)
         return SaveObjectAction_PB(obj=obj, address=addr)
 
     @staticmethod

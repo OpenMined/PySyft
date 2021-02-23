@@ -264,15 +264,3 @@ class Bool(int, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Bool_PB
-
-    # method signature override
-    def to_bytes(
-        self,
-        length: Optional[int] = None,
-        byteorder: Optional[str] = None,
-        signed: Optional[bool] = True,
-    ) -> bytes:
-        if length is not None and byteorder is not None and signed is not None:
-            return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
-        else:
-            return PyPrimitive.to_bytes(self)

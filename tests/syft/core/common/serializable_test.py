@@ -12,7 +12,7 @@ from syft.core.common.serde.serialize import _serialize
 
 def test_object_with_no_serialize_wrapper() -> None:
     """
-    Test if an object that is Serializable but does not implement the serializable_wrapper_type
+    Test if an object that is Serializable but does not implement the _sy_serializable_wrapper_type
     throws an exception when trying to serialize.
     """
 

@@ -15,6 +15,7 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
+from syft import serialize
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
 from syft.grid.connections.webrtc import DC_CHUNK_START_SIGN
@@ -290,6 +291,6 @@ async def test_consumer_request() -> None:
     test_domain.root_verify_key = signing_key.verify_key
     signed_msg = msg.sign(signing_key=signing_key)
 
-    msg_bin = signed_msg.to_bytes()
+    msg_bin = serialize(signed_msg, to_bytes=True)
 
     await webrtc_node.consumer(msg=msg_bin)

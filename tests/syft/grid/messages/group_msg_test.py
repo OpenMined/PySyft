@@ -4,6 +4,7 @@ from typing import Dict
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.io.address import Address
 from syft.grid.messages.group_messages import CreateGroupMessage
 from syft.grid.messages.group_messages import CreateGroupResponse
@@ -36,7 +37,7 @@ def test_create_group_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -55,7 +56,7 @@ def test_create_group_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -75,7 +76,7 @@ def test_delete_group_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -94,7 +95,7 @@ def test_delete_group_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -123,7 +124,7 @@ def test_update_group_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -142,7 +143,7 @@ def test_update_group_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -162,7 +163,7 @@ def test_get_group_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -191,7 +192,7 @@ def test_get_group_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -211,7 +212,7 @@ def test_get_all_groups_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -252,7 +253,7 @@ def test_get_all_groups_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
