@@ -14,7 +14,7 @@ class BaseModel(db.Model, AllFeaturesMixin):
 
 from .roles.roles import Role, create_role
 from .users.user import User, create_user
-from .utils import model_to_json
+from .utils import model_to_json, expand_user_object
 
 
 def set_database_config(app, test_config=None, verbose=False):
@@ -50,28 +50,58 @@ def set_database_config(app, test_config=None, verbose=False):
             if test_config.get("SQLALCHEMY_TRACK_MODIFICATIONS")
             else False
         )
+    app.config["SQLALCHEMY_BINDS"] = {"bin_store": "sqlite:////tmp/binstore.db"}
     app.config["VERBOSE"] = verbose
     db.init_app(app)
 
 
 def seed_db():
-    """Adds Administrator and Owner Roles to database."""
     global db
-    new_user = Role(
-        name="Administrator",
+
+    new_role = Role(
+        name="User",
+        can_triage_requests=False,
         can_edit_settings=False,
         can_create_users=False,
+        can_create_groups=False,
         can_edit_roles=False,
-        can_manage_nodes=False,
+        can_manage_infrastructure=False,
+        can_upload_data=False,
     )
-    db.session.add(new_user)
-    new_user = Role(
-        name="Owner",
+    db.session.add(new_role)
+
+    new_role = Role(
+        name="Compliance Officer",
+        can_triage_requests=True,
+        can_edit_settings=False,
+        can_create_users=False,
+        can_create_groups=False,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+        can_upload_data=False,
+    )
+    db.session.add(new_role)
+
+    new_role = Role(
+        name="Administrator",
+        can_triage_requests=True,
         can_edit_settings=True,
         can_create_users=True,
-        can_edit_roles=True,
-        can_manage_nodes=True,
+        can_create_groups=True,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+        can_upload_data=True,
     )
-    db.session.add(new_user)
+    db.session.add(new_role)
 
-    db.session.commit()
+    new_role = Role(
+        name="Owner",
+        can_triage_requests=True,
+        can_edit_settings=True,
+        can_create_users=True,
+        can_create_groups=True,
+        can_edit_roles=True,
+        can_manage_infrastructure=True,
+        can_upload_data=True,
+    )
+    db.session.add(new_role)

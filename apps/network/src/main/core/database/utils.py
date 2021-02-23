@@ -1,5 +1,4 @@
 from . import db
-from .users.user import User
 from .roles.roles import Role
 
 
@@ -14,13 +13,6 @@ def model_to_json(model):
 
 
 def expand_user_object(user):
-    def get_group(user_group):
-        query = db.session().query
-        group = user_group.group
-        group = query(Group).get(group)
-        group = model_to_json(group)
-        return group
-
     query = db.session().query
     user = model_to_json(user)
     user["role"] = query(Role).get(user["role"])
