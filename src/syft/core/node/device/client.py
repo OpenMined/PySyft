@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
+from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -21,7 +21,6 @@ class DeviceClient(Client):
 
     device: SpecificLocation  # redefine the type of self.device to not be optional
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -75,7 +74,7 @@ class DeviceClient(Client):
 
     @property
     def vm(self) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself, this property will return the Location of that vm
         if it is known by the client."""
 
@@ -83,14 +82,16 @@ class DeviceClient(Client):
 
     @vm.setter
     def vm(self, new_vm: Location) -> Optional[Location]:
-        """This client points to an node, if that node lives within a vm
+        """This client points to a node, if that node lives within a vm
         or is a vm itself and we learn the Location of that vm, this setter
         allows us to save the Location of that vm for use later. We use a getter
         (@property) and setter (@set) explicitly because we want all clients
         to efficiently save an address object for use when sending messages to their
         target. That address object will include this information if it is available"""
 
-        raise Exception("This client points to a Device, you don't need a VM Location.")
+        traceback_and_raise(
+            Exception("This client points to a Device, you don't need a VM Location.")
+        )
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.device}>"

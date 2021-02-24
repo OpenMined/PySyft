@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+// CREATE User
+message CreateUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateUserResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET User
+message GetUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetUserResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET ALL Users
+message GetUsersMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetUsersResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Delete User
+message DeleteUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteUserResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// UPDATE User
+message UpdateUserMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateUserResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Search Users
+message SearchUsersMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SearchUsersResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}

@@ -1,5 +1,6 @@
 # stdlib
 from abc import ABC
+from collections import OrderedDict
 from collections import UserDict
 from collections import UserList
 from collections import UserString
@@ -10,7 +11,7 @@ from typing import Union
 # syft relative
 from .. import python
 from ...core.common import UID
-from ...decorators import syft_decorator
+from ...logger import traceback_and_raise
 from .primitive_interface import PyPrimitive
 
 NoneType = type(None)
@@ -23,12 +24,14 @@ primitives = [
     int,
     list,
     tuple,
+    set,
     None,
     NoneType,
     str,
     UserDict,
     UserList,
     UserString,
+    OrderedDict,
 ]
 
 PrimitiveType = Union[
@@ -39,16 +42,17 @@ PrimitiveType = Union[
     int,
     tuple,
     list,
+    set,
     None,
     NoneType,
     str,
     UserDict,
     UserList,
     UserString,
+    OrderedDict,
 ]
 
 
-@syft_decorator(typechecking=True)
 def isprimitive(value: Any) -> bool:
     if not issubclass(type(value), PyPrimitive) and type(value) in primitives:
         return True
@@ -57,21 +61,15 @@ def isprimitive(value: Any) -> bool:
 
 class PrimitiveFactory(ABC):
     def upcast(self) -> Union[int, float, bool, complex, list, str, None]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def generate_primitive(
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
-    ) -> Union[PyPrimitive, type(NotImplemented)]:  # type: ignore
-        # syft relative
-
+    ) -> Any:
         if isinstance(value, PyPrimitive):
-            return value
-
-        if value is ...:
             return value
 
         if isinstance(value, bool):
@@ -88,6 +86,9 @@ class PrimitiveFactory(ABC):
 
         if isinstance(value, tuple):
             return python.Tuple(value)
+
+        if isinstance(value, set):
+            return python.Set(value)
 
         if type(value) in [list, UserList]:
             if not recurse:
@@ -107,12 +108,18 @@ class PrimitiveFactory(ABC):
                             new_list.append(val)
                 return python.List(value=new_list, id=id)
 
-        if type(value) in [dict, UserDict]:
+        if type(value) in [dict, UserDict, OrderedDict]:
+            constructor = (
+                python.collections.OrderedDict
+                if type(value) is OrderedDict
+                else python.Dict
+            )
+
             if not recurse:
-                new_dict = python.Dict(value)
+                new_dict = constructor(value)
             else:
                 # allow recursive primitive downcasting
-                new_dict = python.Dict()
+                new_dict = constructor()
                 if value is not None:
                     items = getattr(value, "items", None)
                     if items is not None:

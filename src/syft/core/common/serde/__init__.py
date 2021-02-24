@@ -29,7 +29,7 @@ to build these things ourselves.
 
 .. note:: DO NOT attempt to create your own serialization by
     creating strings out of objects yourself. Not only will this almost
-    certainly be slower than using a technology like protobuf,
+    certainly, be slower than using technology like protobuf,
     but you will require everyone to re-implement your serialization
     techniques in every language which needs to support your object
     AND you run the risk of introducing dangerous SECURITY FLAWS.
@@ -48,7 +48,7 @@ on the object for your convenience::
 
     # ObjectWithID is the simplest object in the Syft ecosystem
     # It's the parent class of many other classes. As the name
-    # implies, it's literally just an object with an ID.
+    # implies it's literally just an object with an ID.
     # We'll use it to show serialization, but you can use the
     # same approach with any serializable object in the Syft
     # ecosystem.
@@ -60,8 +60,8 @@ on the object for your convenience::
     print(my_object)
     # >>> <ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>
 
-    # by default, .serialize() will serialize it to a protobuf Message object
-    proto_obj = my_object.serialize()
+    # by default, serialize() will serialize it to a protobuf Message object
+    proto_obj = serialize(my_object)
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -78,7 +78,7 @@ on the object for your convenience::
 
 However, perhaps the best thing about protobuf is that it can easily
 be turned into a wide variety of very portable representations. We have
-convenience functions for 4 popular represenations: protobuf, json, binary,
+convenience functions for 4 popular representations: protobuf, json, binary,
 and hex. Setup::
 
     import syft as sy
@@ -91,9 +91,9 @@ Protobuf
 
 .. code::
 
-    proto_obj = obj.serialize(to_proto=True)
-    proto_obj = obj.to_proto()
-    proto_obj = obj.proto()
+    proto_obj = serialize(obj, to_proto=True)
+    proto_obj = serialize(obj, to_proto=True)
+    proto_obj = serialize(obj, to_proto=True)
 
     print(proto_obj)
     # >>> obj_type: "syft.core.common.object.ObjectWithID"
@@ -109,9 +109,9 @@ Binary
 
 .. code::
 
-    binary_obj = obj.serialize(to_bytes=True)
-    binary_obj = obj.to_bytes()
-    binary_obj = obj.binary()
+    binary_obj = serialize(obj, to_bytes=True)
+    binary_obj = serialize(obj, to_bytes=True)
+    binary_obj = serialize(obj, to_bytes=True)
 
     # print(binary_obj)
     # >>> b'{  "objType": "syft.core.common.object.ObjectWithID",

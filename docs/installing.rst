@@ -60,9 +60,9 @@ are running one of these versions. Run the following:
     > python --version
     Python 3.8.1
 
-If the version printed underneath your command is less than 3.6, then you MUST use
-anaconda in the next step (which is recommended anyway). Technically, you could try to
-upgrade your version of python but fair warning... e're be dragons.
+If the version printed underneath your command is less than 3.6, then you MUST use anaconda
+in the next step (which is recommended). Technically, you could try to upgrade your
+version of python but fair warning (e're be dragons)...
 
 
 Step 3 - Setup Environment
@@ -112,7 +112,7 @@ and you'll be fine.
 Step 3.2 - Create conda Env
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Now, we want to create a conda virtual environment with the latest verison of Python
+Now, we want to create a conda virtual environment with the latest version of Python
 supported by syft which, at the time of writing, is 3.8.
 
 .. code:: console
@@ -147,7 +147,7 @@ you can now install the dependencies that PySyft relies on using the following c
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make
 sure you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or
@@ -194,7 +194,7 @@ installation is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 
@@ -250,8 +250,8 @@ are running one of these versions. Run the following:
     Python 3.8.1
 
 If the version printed underneath your command is less than 3.6, then you MUST use anaconda
-in the next step (which is recommended anyway). Technically, you could try to upgrade your
-version of python but fair warning... e're be dragons.
+in the next step (which is recommended). Technically, you could try to upgrade your
+version of python but fair warning (e're be dragons)...
 
 Step 3 - Setup Environment
 --------------------------
@@ -298,7 +298,7 @@ and you'll be fine.
 Step 3.2 - Create conda Env
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Now, we want to create a conda virtual environment with the latest verison of Python supported
+Now, we want to create a conda virtual environment with the latest version of Python supported
 by syft which, at the time of writing, is 3.8.
 
 .. code:: console
@@ -330,7 +330,7 @@ now install the dependencies that PySyft relies on using the following command:
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make sure
 you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or later. Open
@@ -376,7 +376,7 @@ is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 
@@ -449,8 +449,8 @@ are running one of these versions. Run the following:
     Python 3.8.1
 
 If the version printed underneath your command is less than 3.6, then you MUST use anaconda
-in the next step (which is recommended anyway). Technically, you could try to upgrade your
-version of python but fair warning... e're be dragons.
+in the next step (which is recommended). Technically, you could try to upgrade your
+version of python but fair warning (e're be dragons)...
 
 Step 5 - Setup Environment
 --------------------------
@@ -497,7 +497,7 @@ and you'll be fine.
 Step 5.2 - Create conda Env
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Now, we want to create a conda virtual environment with the latest verison of Python supported
+Now, we want to create a conda virtual environment with the latest version of Python supported
 by syft which, at the time of writing, is 3.8.
 
 .. code:: console
@@ -529,7 +529,7 @@ now install the dependencies that PySyft relies on using the following command:
 
 .. code:: console
 
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 This should install all the libraries you need for PySyft. Just in case, let's make sure
 you have a compatible version of PyTorch. Your PyTorch version should be 1.3 or later. Open
@@ -577,7 +577,7 @@ installation is happy), run the following.
 
 .. code:: python
 
-    pytest -k "not test_all_allowlisted_tensor_methods_work_remotely_on_all_types"
+    pytest -m fast -n auto
 
 (If you don't have pytest installed, run "pip install pytest")
 
@@ -591,4 +591,3 @@ If you'd like to run the full test suite, you may do so by running the following
     python setup.py test
 
 Congratulations! You have just installed PySyft on Windows!
-

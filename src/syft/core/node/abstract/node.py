@@ -10,7 +10,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators import syft_decorator
+from ....logger import traceback_and_raise
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
@@ -27,13 +27,14 @@ class AbstractNode(Address):
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
     guest_verify_key_registry: Set[VerifyKey]
+    admin_verify_key_registry: Set[VerifyKey]
+    cpl_ofcr_verify_key_registry: Set[VerifyKey]
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
     signaling_msgs: Dict[Any, Any]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,
@@ -48,32 +49,32 @@ class AbstractNode(Address):
 
     store: ObjectStore
     requests: List
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     """"""
 
     @property
     def known_child_nodes(self) -> List[Any]:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def keys(self) -> str:
@@ -93,7 +94,7 @@ class AbstractNode(Address):
 
 
 class AbstractNodeClient(Address):
-    lib_ast: Any  # Cant import Globals (circular reference)
+    lib_ast: Any  # Can't import Globals (circular reference)
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     """"""
@@ -101,4 +102,7 @@ class AbstractNodeClient(Address):
     @property
     def id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
+        traceback_and_raise(NotImplementedError)
+
+    def send_immediate_msg_without_reply(self, msg: Any) -> Any:
         raise NotImplementedError

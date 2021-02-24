@@ -90,15 +90,18 @@ objects = [
 @pytest.mark.parametrize("func", inputs.keys())
 def test_pointer_objectives(test_objects, func):
     py_obj, sy_obj, remote_sy_obj = test_objects
+    possible_inputs = inputs[func]
 
     if not hasattr(py_obj, func):
         return
 
     py_method = getattr(py_obj, func)
     sy_method = getattr(sy_obj, func)
-    remote_sy_method = getattr(remote_sy_obj, func)
 
-    possible_inputs = inputs[func]
+    if func == "__len__":
+        func = "len"
+
+    remote_sy_method = getattr(remote_sy_obj, func)
 
     for possible_input in possible_inputs:
         try:

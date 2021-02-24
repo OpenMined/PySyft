@@ -68,20 +68,24 @@ mapping = {0: generate_0, 1: generate_1}
 objects = [0, 1]
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())
 def test_pointer_objectives(test_objects, func):
     py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
+    possible_inputs = inputs[func]
 
     if not hasattr(py_obj, func):
         return
 
     py_method = getattr(py_obj, func)
     sy_method = getattr(sy_obj, func)
-    remote_sy_method = getattr(remote_sy_obj, func)
 
-    possible_inputs = inputs[func]
+    if func == "__len__":
+        func = "len"
+
+    remote_sy_method = getattr(remote_sy_obj, func)
 
     for possible_input in possible_inputs:
         try:
@@ -111,8 +115,8 @@ def test_pointer_objectives(test_objects, func):
 
         assert py_obj == sy_obj
         # TODO add this as well when the store logic will work
-        # get_permission(remote_sy_obj)
-        # assert sy_obj == remote_sy_obj.get()
+        get_permission(remote_sy_obj)
+        assert sy_obj == remote_sy_obj.get()
 
 
 @pytest.mark.slow
@@ -122,6 +126,8 @@ def test_iterator(test_objects):
 
     py_iter = iter(py_obj)
     sy_iter = iter(sy_obj)
+
+    remote_sy_obj.set_request_config({})
     rsy_iter = iter(remote_sy_obj)
 
     for i in range(len(py_obj)):

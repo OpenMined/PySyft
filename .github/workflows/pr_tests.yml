@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - dev
+      - "0.4"
     paths:
       - "**.py"
       - "setup.cfg"
@@ -31,20 +32,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: Cache packages
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -53,21 +52,43 @@ jobs:
 
       - uses: pre-commit/action@v2.0.0
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
       - name: Run lint checks
         run: |
           set -e
-          pip install -r requirements.txt
+          pip install -r requirements.dev.txt --default-timeout=60
           ./scripts/build_proto.sh
           pre-commit run --all-files
+      - name: Run darglint via flake8 - Ignore Errors
+        continue-on-error: true
+        run: |
+          flake8 src tests
 
   python-tests-fast:
     needs: [python-linting]
     strategy:
-      max-parallel: 24
+      max-parallel: 30
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: [3.8, 3.7, 3.6]
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.6, 3.7, 3.8]
         torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
+        include:
+          - os: ubuntu-latest
+            python-version: 3.7
+            torch-version: 1.4.0
+          # - os: windows-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          # - os: ubuntu-20.04
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
+          # - os: macos-latest
+          #   python-version: 3.9
+          #   torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -78,85 +99,68 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - run: pip install "pip>=20.1"
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Windows')
-        with:
-          path: '%LOCALAPPDATA%\pip\Cache'
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Adjust PyTorch versions
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          cat ./requirements.txt
 
-      - name: Cache packages
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Scan for security issues
         run: |
-          pip install bandit
+          pip install bandit --default-timeout=60
           bandit -r src -ll
 
-      - name: Install PyTorch Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
+      - name: Install packages
         run: |
-          if [ $TORCH_VERSION = "1.5.0" ]
-          then
-              TORCHVISION_VERSION="0.6.0"
-          elif [ $TORCH_VERSION = "1.5.1" ]
-          then
-              TORCHVISION_VERSION="0.6.1"
-          elif [ $TORCH_VERSION = "1.6.0" ]
-          then
-              TORCHVISION_VERSION="0.7"
-          elif [ $TORCH_VERSION = "1.7.0" ]
-          then
-              TORCHVISION_VERSION="0.8.1"
-          fi
-          pip install torch==${TORCH_VERSION}
-          pip install torchvision==${TORCHVISION_VERSION}
-
-      - name: Install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
-        env:
-          TORCH_VERSION: ${{ matrix.torch-version }}
-        run: |
-          If ($env:TORCH_VERSION -eq "1.5.0") {
-              $env:TORCHVISION_VERSION="0.6.0"
-          } Elseif ( $env:TORCH_VERSION -eq "1.5.1" ) {
-              $env:TORCHVISION_VERSION="0.6.1"
-          } Elseif ($env:TORCH_VERSION -eq "1.6.0") {
-              $env:TORCHVISION_VERSION="0.7"
-          } Elseif ($env:TORCH_VERSION -eq "1.7.0") {
-              $env:TORCHVISION_VERSION="0.8.1"
-          }
-          pip install torch==$env:TORCH_VERSION+cpu torchvision==$env:TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: Run normal tests without coverage
-        run: |
-          pip install -r requirements.txt
+          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
-          pip freeze | grep torch
-          pytest -m fast --cov-fail-under 80 -n auto
+          pip list
+        timeout-minutes: 20
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
+
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
+        run: |
+          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+
+      - name: Install supported library packages Windows - Ignore Errors
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          foreach ($i in cat requirements/supported_libs.txt) {
+            pip install $i --default-timeout=60
+          }
+
+      - name: Run supported library tests
+        run: |
+          pip list
+          pytest -m libs -n auto -k "not tenseal"
+          pytest -m libs -n 1 -k "tenseal"
 
   python-nb-examples:
     needs: [python-linting]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 1
       matrix:
         python-version: [3.8]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -166,24 +170,86 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        if: startsWith(runner.os, 'Linux')
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - run: pip install "pip>=20.1"
 
-      - name: Cache packages
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
         uses: actions/cache@v2
-        id: cache-reqs
         with:
-          path: ~/.eggs
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Run notebook API examples
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.txt
-          pip install -e .
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
-          pytest examples/api --cov-fail-under 0 -n auto
+          pytest examples/api -n auto
+
+      - name: Install supported library packages
+        run: |
+          pip install -r requirements/supported_libs.txt
+        timeout-minutes: 10
+        continue-on-error: true
+
+      - name: Run notebook Duet examples
+        run: |
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          python ./scripts/nb_duet_test.py
+          cd tests/syft/notebooks/ && pytest . -n 1
+
+  pygrid-unit-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 3
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: pip install "pip>=20.1"
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "OpenMined/PyGrid"
+          ref: "pygrid_0.4.0"
+          path: "pygrid"
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          pip install -e . --default-timeout=60
+          pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      --default-timeout=60
+          pytest ./pygrid/apps/domain/tests
+          pytest ./pygrid/apps/network/tests
+          pytest ./pygrid/apps/worker/tests

@@ -9,13 +9,15 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
 from ....lib.python import String
+from ....logger import critical
+from ....logger import debug
+from ....logger import info
+from ....logger import traceback
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -45,7 +47,6 @@ class Domain(Node):
     client_type = DomainClient
     child_type_client_type = DeviceClient
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -88,7 +89,7 @@ class Domain(Node):
         # TODO: add default compute type
 
         self._register_services()
-        self.request_handlers: List[Dict[str, Any]] = []
+        self.request_handlers: List[Dict[Union[str, String], Any]] = []
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
@@ -104,20 +105,17 @@ class Domain(Node):
     def id(self) -> UID:
         return self.domain.id
 
-    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
             return msg.address.domain_id == self.id and msg.address.device is None
         except Exception as excp3:
-            error = (
+            critical(
                 f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
             )
-            print(error)
             return False
 
-    @syft_decorator(typechecking=True)
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client
     ) -> bool:
@@ -133,7 +131,6 @@ class Domain(Node):
 
         return False
 
-    @syft_decorator(typechecking=True)
     def get_request_status(self, message_request_id: UID) -> RequestStatus:
         # is it still pending
         for req in self.requests:
@@ -156,7 +153,6 @@ class Domain(Node):
         # must have been rejected
         return RequestStatus.Rejected
 
-    @syft_decorator(typechecking=True)
     def _get_object(self, request: RequestMessage) -> Optional[Any]:
         try:
             obj_msg = GetObjectAction(
@@ -175,7 +171,7 @@ class Domain(Node):
                 if obj is not None:
                     return obj
         except Exception as excp1:
-            logger.critical(f"Exception getting object for {request}. {excp1}")
+            critical(f"Exception getting object for {request}. {excp1}")
         return None
 
     def _count_elements(self, obj: object) -> Tuple[bool, int]:
@@ -190,12 +186,12 @@ class Domain(Node):
         return (allowed, elements)
 
     def _accept(self, request: RequestMessage) -> None:
-        logger.debug(f"Calling accept on request: {request.id}")
+        debug(f"Calling accept on request: {request.id}")
         request.destination_node_if_available = self
         request.accept()
 
     def _deny(self, request: RequestMessage) -> None:
-        logger.debug(f"Calling deny on request: {request.id}")
+        debug(f"Calling deny on request: {request.id}")
         request.destination_node_if_available = self
         request.deny()
 
@@ -214,24 +210,22 @@ class Domain(Node):
 
         return False
 
-    @syft_decorator(typechecking=True)
     def check_handler(
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
-        logger.debug(
-            f"HANDLER Check handler {handler} against {request.name} {request.request_id}"
-        )
-        name = handler.get("name", None)
+        debug(f"HANDLER Check handler {handler} against {request.request_id}")
+
+        tags = handler.get("tags", [])
+
         action = handler.get("action", None)
         print_local = handler.get("print_local", None)
         log_local = handler.get("log_local", None)
         element_quota = handler.get("element_quota", None)
 
-        if name is not None and name != request.name.strip().lower():
-            # valid name doesnt match so ignore this handler
-            logger.debug(
-                f"HANDLER Ignoring request handler {handler} against {request}"
-            )
+        # We match a handler and a request when they have a same set of tags,
+        # or if handler["tags"]=[], it matches with any request.
+        if tags != [] and not set(request.object_tags) == set(tags):
+            debug(f"HANDLER Ignoring request handler {handler} against {request}")
             return False
 
         # if we have any of these three rules we will need to get the object to
@@ -239,7 +233,7 @@ class Domain(Node):
         obj = None
         if print_local or log_local or element_quota:
             obj = self._get_object(request=request)
-            logger.debug(f"> HANDLER Got object {obj} for checking")
+            debug(f"> HANDLER Got object {obj} for checking")
 
         # we only want to accept or deny once
         handled = False
@@ -247,7 +241,7 @@ class Domain(Node):
         # check quota and reject first
         if element_quota is not None:
             if not self._try_deduct_quota(handler=handler, obj=obj):
-                logger.debug(
+                debug(
                     f"> HANDLER Rejecting {request} element_quota={handler['element_quota']}"
                 )
                 self._deny(request=request)
@@ -256,7 +250,7 @@ class Domain(Node):
         # if not rejected based on quota keep checking
         if not handled:
             if action == "accept":
-                logger.debug(f"Check accept {handler} against {request}")
+                debug(f"Check accept {handler} against {request}")
                 self._accept(request=request)
                 handled = True
             elif action == "deny":
@@ -265,17 +259,17 @@ class Domain(Node):
 
         # print or log rules can execute multiple times so no complex logic here
         if print_local or log_local:
-            log = f"> HANDLER Request {request.name}:"
+            log = f"> HANDLER Request {request.request_id}:"
             if len(request.request_description) > 0:
                 log += f" {request.request_description}"
             log += f"\nValue: {obj}"
 
             # if these are enabled output them
             if print_local:
-                print(log)
+                critical(log)
 
             if log_local:
-                logger.info(log)
+                info(log)
 
         # block the loop from handling this again, until the cleanup removes it
         # after a period of timeout
@@ -314,9 +308,7 @@ class Domain(Node):
         for request in self.requests:
             if request.timeout_secs is not None and request.timeout_secs > -1:
                 if request.arrival_time is None:
-                    logger.critical(
-                        f"HANDLER Request has no arrival time. {request.id}"
-                    )
+                    critical(f"HANDLER Request has no arrival time. {request.id}")
                     request.set_arrival_time(arrival_time=time.time())
                 arrival_time = getattr(request, "arrival_time", float(now))
                 if now - arrival_time > request.timeout_secs:
@@ -326,12 +318,10 @@ class Domain(Node):
 
         self.requests = alive_requests
 
-    @syft_decorator(typechecking=True)
     async def run_handlers(self) -> None:
         while True:
             await asyncio.sleep(0.01)
             try:
-                # logger.debug("running HANDLER")
                 self.clean_up_handlers()
                 self.clean_up_requests()
                 if len(self.request_handlers) > 0:
@@ -346,5 +336,4 @@ class Domain(Node):
                                     # we handled the request so we can exit the loop
                                     break
             except Exception as excp2:
-                # logger.critical(f"HANDLER loop exception. {lol}")
-                print("HANDLER Exception in the while loop!!", excp2)
+                traceback(excp2)

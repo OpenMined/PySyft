@@ -1,5 +1,5 @@
 """In this class, we support the functionality necessary to support
-virtual network connections between node in the Syft ecosystem.
+virtual network connections between the nodes in the Syft ecosystem.
 Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
@@ -9,7 +9,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft relative
-from ...decorators import syft_decorator
 from ...proto.core.io.connection_pb2 import (
     VirtualClientConnection as VirtualClientConnection_PB,
 )
@@ -27,29 +26,24 @@ from .connection import ServerConnection
 
 @final
 class VirtualServerConnection(ServerConnection):
-    @syft_decorator(typechecking=True)
     def __init__(self, node: AbstractNode):
         self.node = node
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.node.recv_immediate_msg_with_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
         self.node.recv_immediate_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         self.node.recv_eventual_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> VirtualServerConnection_PB:
         return VirtualServerConnection_PB(node=self.node._object2proto())
 
@@ -67,7 +61,6 @@ class VirtualServerConnection(ServerConnection):
 
 @final
 class VirtualClientConnection(ClientConnection):
-    @syft_decorator(typechecking=True)
     def __init__(self, server: VirtualServerConnection):
         self.server = server
 
@@ -76,19 +69,16 @@ class VirtualClientConnection(ClientConnection):
     ) -> None:
         self.server.recv_immediate_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.server.recv_immediate_msg_with_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
         return self.server.recv_eventual_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> VirtualClientConnection_PB:
         return VirtualClientConnection_PB(server=self.server._object2proto())
 
@@ -103,7 +93,6 @@ class VirtualClientConnection(ClientConnection):
         return VirtualClientConnection_PB
 
 
-@syft_decorator(typechecking=True)
 def create_virtual_connection(node: AbstractNode) -> VirtualClientConnection:
 
     server = VirtualServerConnection(node=node)

@@ -25,8 +25,8 @@ class UnionGenerator(type, metaclass=IndexableTrait):
     in the current module the FloatIntUnion type that will have no functions added
     to the type itself until the AST is finished to be generated. If new types of
     unions have to be generated afterwards:
-        1. you might be using the ast in a wrong way.
-        2. if you know what you are doing, you have to regenarate the ast.
+    1. you might be using the ast in a wrong way.
+    2. if you know what you are doing, you have to regenerate the ast.
     """
 
     SUFFIX_UNION = "Union"
@@ -52,12 +52,12 @@ class UnionGenerator(type, metaclass=IndexableTrait):
             return name
 
         target_type = UnionGenerator(name, tuple(), {})
-        union_cache.add(name)
 
         # adding the type and it's union types to a lazy dict that will be solved
         # when the ast is created.
         lazy_pairing[target_type] = union_types
         qualname = target_type.__qualname__
+        union_cache.add(qualname)
         return qualname
 
 

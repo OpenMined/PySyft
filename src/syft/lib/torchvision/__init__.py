@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import Union
 
@@ -8,6 +9,7 @@ import torchvision as tv
 
 # syft relative
 from ...ast.globals import Globals
+from ...logger import critical
 from .allowlist import allowlist
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
@@ -27,8 +29,8 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def create_torchvision_ast() -> Globals:
-    ast = Globals()
+def create_torchvision_ast(client: Any = None) -> Globals:
+    ast = Globals(client)
 
     # most methods work in all versions and have a single return type
     # for the more complicated ones we pass a dict with keys like return_type and
@@ -42,13 +44,12 @@ def create_torchvision_ast() -> Globals:
                 return_type_name=return_type,
             )
         else:
-            print(
+            critical(
                 f"Skipping torchvision.{method} not supported in {TORCHVISION_VERSION}"
             )
 
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
     return ast

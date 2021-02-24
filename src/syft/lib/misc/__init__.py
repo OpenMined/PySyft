@@ -13,6 +13,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast import globals
+from ...logger import traceback_and_raise
 from .union import lazy_pairing
 
 
@@ -20,13 +21,13 @@ def get_allowed_functions(
     lib_ast: globals.Globals, union_types: TypeList[str]
 ) -> Dict[str, bool]:
     """
-    This function generates the set of functions that can go into a union type.
+    This function generates a set of functions that can go into a union type.
 
     A function has to meet the following requirements to be present on a union type:
         1. If it's present on all Class attributes associated with the union types
         on the ast, add it.
         2. If it's not present on all Class attributes associated with the union
-        types, check if the exist on the original type functions list. If they
+        types, check if they exist on the original type functions list. If they
         do exist, drop it, if not, add it.
 
     Args:
@@ -35,7 +36,7 @@ def get_allowed_functions(
 
     Returns:
         allowed_functions (dict): The keys of the dict are function names (str)
-        and the values are Bool (if the are allowed or not).
+        and the values are Bool (if they are allowed or not).
     """
 
     allowed_functions: Dict[str, bool] = defaultdict(lambda: True)
@@ -67,8 +68,10 @@ def get_allowed_functions(
     return allowed_functions
 
 
-def create_union_ast(lib_ast: globals.Globals) -> globals.Globals:
-    ast = globals.Globals()
+def create_union_ast(
+    lib_ast: globals.Globals, client: TypeAny = None
+) -> globals.Globals:
+    ast = globals.Globals(client)
 
     modules = ["syft", "syft.lib", "syft.lib.misc", "syft.lib.misc.union"]
 
@@ -96,8 +99,10 @@ def create_union_ast(lib_ast: globals.Globals) -> globals.Globals:
                     if func:
                         return func(*args, **kwargs)
                     else:
-                        raise ValueError(
-                            f"Can't call {target_method} on {klass} with the instance type of {type(self)}"
+                        traceback_and_raise(
+                            ValueError(
+                                f"Can't call {target_method} on {klass} with the instance type of {type(self)}"
+                            )
                         )
 
                 return func
@@ -118,7 +123,6 @@ def create_union_ast(lib_ast: globals.Globals) -> globals.Globals:
     for ast_klass in ast.classes:
         ast_klass.create_pointer_class()
         ast_klass.create_send_method()
-        ast_klass.create_serialization_methods()
         ast_klass.create_storable_object_attr_convenience_methods()
 
     return ast

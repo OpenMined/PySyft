@@ -8,8 +8,8 @@ connection with high-quality Real-time Communication using private addresses.
 The most common example showing how it can be used is the notebook demo example:
 
 Two different jupyter / collab notebooks in different machines using private addresses
-behind routers, proxies and firewalls can connect to each other using a full-duplex
-channel in order to perform machine learning and data science tasks, working as a client
+behind routers, proxies and firewalls can connect using a full-duplex channel
+to perform machine learning and data science tasks, working as a client
 and server at the same time.
 
 PS 1: You need a signaling server running somewhere.
@@ -32,15 +32,16 @@ import asyncio
 from typing import Optional
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 
 # syft relative
+from ... import serialize
 from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
 from ...core.node.domain.domain import Domain
-from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import error
+from ...logger import traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
 from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage
@@ -134,7 +135,7 @@ class Duet(DomainClient):
                     name,
                     _,
                 ) = DomainClient.deserialize_client_metadata_from_node(
-                    metadata=self._client_metadata.serialize()
+                    metadata=serialize(self._client_metadata)
                 )
 
                 # Create a SoloRoute
@@ -153,15 +154,14 @@ class Duet(DomainClient):
             # The exception has been caught and saved in self._exception
             else:
                 # NOTE: Maybe we should create a custom exception type.
-                raise Exception(
-                    f"Something went wrong during the Duet init process. {self._exception}"
+                traceback_and_raise(
+                    Exception(
+                        f"Something went wrong during the Duet init process. {self._exception}"
+                    )
                 )
         except Exception as e:
-            log = f"Got an exception in Duet. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def notify(self) -> None:
         try:
             # Enqueue Pull/Push async tasks
@@ -177,14 +177,11 @@ class Duet(DomainClient):
             for task in pending:
                 task.cancel()
         except Exception as e:
-            log = f"Got an exception in Duet notify. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
     def close(self) -> None:
         self.connection.close()
 
-    @syft_decorator(typechecking=True)
     async def push(self) -> None:
         # This task is responsible for pushing offer/answer messages.
         try:
@@ -198,13 +195,12 @@ class Duet(DomainClient):
                 self.signaling_client.send_immediate_msg_without_reply(msg=msg)
         except Exception as e:
             log = f"Got an exception in Duet push. {e}"
-            logger.error(log)
+            error(log)
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
             self._available = False
             self._exception: Exception = e
 
-    @syft_decorator(typechecking=True)
     async def pull(self) -> None:
         try:
             while self._available:
@@ -213,23 +209,22 @@ class Duet(DomainClient):
                 # computing time to the next task.
                 msg = await self._pull_msg_queue.get()
 
-                # If self.push_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)
+                # If self.pull_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)
                 # send it to the signaling server.
                 _response = self.signaling_client.send_immediate_msg_with_reply(msg=msg)
 
-                task = None
                 # If Signaling Offer Message was found
                 if isinstance(_response, SignalingOfferMessage):
-                    task = self._send_answer
-
+                    await self._send_answer(msg=_response)
                 # If Signaling Answer Message was found
                 elif isinstance(_response, SignalingAnswerMessage):
-                    task = self._ack
-
+                    await self._ack(msg=_response)
                 # If LoopBack Message it was a loopback request
                 elif isinstance(_response, InvalidLoopBackRequest):
-                    raise Exception(
-                        "You can't perform p2p connection using your current node address as a destination peer."
+                    traceback_and_raise(
+                        Exception(
+                            "You can't perform p2p connection using your current node address as a destination peer."
+                        )
                     )
 
                 # If Signaling Message weren't found
@@ -237,23 +232,18 @@ class Duet(DomainClient):
                     # Just enqueue the request to be processed later.
                     self._pull_msg_queue.put_nowait(msg)
 
-                # If we have tasks to execute
-                if task:
-                    # Execute task using the received message.
-                    await task(msg=_response)
-
                 # Checks if the signaling process is over.
                 self._available = self._update_availability()
                 await asyncio.sleep(0.5)
+
         except Exception as e:
             log = f"Got an exception in Duet pull. {e}"
-            logger.error(log)
+            error(log)
             # If any exception raises, set the self._available flag to False
             # in order to finish gracefully all the async tasks and save the exception.
             self._available = False
             self._exception = e
 
-    @syft_decorator(typechecking=True)
     def send_offer(self, target_id: str) -> None:
         """Starts a new signaling process by creating a new
         offer message and pushing it to the Signaling Server."""
@@ -284,11 +274,8 @@ class Duet(DomainClient):
                 )
             )
         except Exception as e:
-            log = f"Got an exception in Duet send_offer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _send_answer(self, msg: SignalingOfferMessage) -> None:
         """Process SignalingOfferMessage and create a new
         SignalingAnswerMessage as a response"""
@@ -313,11 +300,8 @@ class Duet(DomainClient):
             # Enqueue it in the push msg queue to be sent to the signaling server.
             await self._push_msg_queue.put(signaling_answer)
         except Exception as e:
-            log = f"Got an exception in Duet _send_answer. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     async def _ack(self, msg: SignalingAnswerMessage) -> None:
         """Last signaling message, stores remote Node
         metadata and updates target's remote address"""
@@ -329,11 +313,8 @@ class Duet(DomainClient):
             # Process received offer message updating target's remote address
             await self.connection._process_answer(payload=msg.payload)
         except Exception as e:
-            log = f"Got an exception in Duet _ack. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def _update_availability(self) -> bool:
         """Method used to check if the signaling process is over.
         :return: Boolean flag, True if it's NOT over, and False if it's over.
@@ -345,6 +326,4 @@ class Duet(DomainClient):
                 and self.connection.peer_connection is not None
             )
         except Exception as e:
-            log = f"Got an exception in Duet _update_availability. {e}"
-            logger.error(log)
-            raise e
+            traceback_and_raise(e)

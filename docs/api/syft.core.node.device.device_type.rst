@@ -17,14 +17,6 @@ Subpackages
 Submodules
 ----------
 
-syft.core.node.device.device\_type.apple module
------------------------------------------------
-
-.. automodule:: syft.core.node.device.device_type.apple
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.node.device.device\_type.device\_type module
 ------------------------------------------------------
 
@@ -40,4 +32,3 @@ syft.core.node.device.device\_type.unknown module
    :members:
    :undoc-members:
    :show-inheritance:
-

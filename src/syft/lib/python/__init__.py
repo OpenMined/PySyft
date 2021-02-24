@@ -1,21 +1,27 @@
+# stdlib
+from typing import Optional
+
 # syft relative
+from . import collections
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...core.node.abstract.node import AbstractNodeClient
+from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
-from .dict import DictWrapper
 from .float import Float
 from .int import Int
+from .iterator import Iterator
 from .list import List
 from .namedtuple import ValuesIndices
-from .namedtuple import ValuesIndicesWrapper
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .set import Set
 from .string import String
 from .tuple import Tuple
 
@@ -23,7 +29,6 @@ for syft_type in [
     Bool,
     Complex,
     Dict,
-    DictWrapper,
     Float,
     Int,
     SyNone,
@@ -33,19 +38,14 @@ for syft_type in [
     String,
     Tuple,
     ValuesIndices,
-    ValuesIndicesWrapper,
 ]:
     syft_type.__module__ = __name__
 
 
-def create_python_ast() -> Globals:
-    ast = Globals()
+def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
+    ast = Globals(client)
 
-    modules = [
-        "syft",
-        "syft.lib",
-        "syft.lib.python",
-    ]
+    modules = ["syft", "syft.lib", "syft.lib.python", "syft.lib.python.collections"]
     classes = [
         ("syft.lib.python.Bool", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Complex", "syft.lib.python.Complex", Complex),
@@ -58,6 +58,13 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
+        ("syft.lib.python.Iterator", "syft.lib.python.Iterator", Iterator),
+        ("syft.lib.python.Set", "syft.lib.python.Set", Set),
+        (
+            "syft.lib.python.collections.OrderedDict",
+            "syft.lib.python.collections.OrderedDict",
+            collections.OrderedDict,
+        ),
         (
             "syft.lib.python.ValuesIndices",
             "syft.lib.python.ValuesIndices",
@@ -69,7 +76,7 @@ def create_python_ast() -> Globals:
         # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any"),
-        ("syft.lib.python.List.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.List.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.List.__add__", "syft.lib.python.List"),
         ("syft.lib.python.List.append", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.__gt__", "syft.lib.python.Bool"),
@@ -100,7 +107,7 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.List.insert", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.clear", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.extend", "syft.lib.python._SyNone"),
-        ("syft.lib.python.List.__reversed__", "syft.lib.python.Any"),
+        ("syft.lib.python.List.__reversed__", "syft.lib.python.Iterator"),
         ("syft.lib.python.List.__delitem__", "syft.lib.python._SyNone"),
         # Bool methods - quite there
         ("syft.lib.python.Bool.__abs__", "syft.lib.python.Int"),
@@ -192,6 +199,8 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Float.__ipow__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__pos__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.conjugate", "syft.lib.python.Float"),
+        ("syft.lib.python.Float.imag", "syft.lib.python.Int"),
+        ("syft.lib.python.Float.real", "syft.lib.python.Float"),
         # String Methods
         ("syft.lib.python.String.__add__", "syft.lib.python.String"),
         ("syft.lib.python.String.__contains__", "syft.lib.python.Bool"),
@@ -371,6 +380,51 @@ def create_python_ast() -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
+        (
+            "syft.lib.python.Iterator.__next__",
+            UnionGenerator[
+                "syft.lib.python.Int",
+                "syft.lib.python.Float",
+                "syft.lib.python.String",
+                "torch.nn.Parameter",
+                "torch.Tensor",
+            ],
+        ),  # temp until casting
+        ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__eq__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__ge__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__gt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__iand__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__ior__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__isub__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__ixor__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__le__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__len__", "syft.lib.python.Int"),
+        ("syft.lib.python.Set.__lt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__ne__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.__or__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__sub__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.__xor__", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.add", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.clear", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.difference", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.difference_update", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.discard", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.intersection", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.intersection_update", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.isdisjoint", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.issuperset", "syft.lib.python.Bool"),
+        ("syft.lib.python.Set.pop", "syft.lib.python._SyNone"),
+        ("syft.lib.python.Set.remove", "syft.lib.python._SyNone"),
+        (
+            "syft.lib.python.Set.symmetric_difference_update",
+            "syft.lib.python._SyNone",
+        ),
+        ("syft.lib.python.Set.symmetric_difference", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.union", "syft.lib.python.Set"),
+        ("syft.lib.python.Set.update", "syft.lib.python._SyNone"),
         # ValueIndicies
         (
             "syft.lib.python.ValuesIndices.values",
@@ -432,6 +486,84 @@ def create_python_ast() -> Globals:
             "syft.lib.python.ValuesIndices.V",
             "torch.Tensor",
         ),
+        (
+            "syft.lib.python.collections.OrderedDict.__contains__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__delitem__",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__eq__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__ge__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__getitem__",
+            "syft.lib.python.Any",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__gt__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__le__",
+            "syft.lib.python.Bool",
+        ),
+        ("syft.lib.python.collections.OrderedDict.__len__", "syft.lib.python.Int"),
+        (
+            "syft.lib.python.collections.OrderedDict.__lt__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__ne__",
+            "syft.lib.python.Bool",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.__setitem__",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.clear",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.copy",
+            "syft.lib.python.collections.OrderedDict",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.fromkeys",
+            "syft.lib.python.collections.OrderedDict",
+        ),
+        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
+        ("syft.lib.python.collections.OrderedDict.keys", "syft.lib.python.List"),
+        (
+            "syft.lib.python.collections.OrderedDict.move_to_end",
+            "syft.lib.python._SyNone",
+        ),
+        ("syft.lib.python.collections.OrderedDict.pop", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.OrderedDict.popitem", "syft.lib.python.Any"),
+        (
+            "syft.lib.python.collections.OrderedDict.setdefault",
+            "syft.lib.python.Any",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.update",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.lib.python.collections.OrderedDict.values",
+            "syft.lib.python.List",
+        ),
+        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
+        (
+            "syft.lib.python.collections.OrderedDict.dict_get",
+            "syft.lib.python.Any",
+        ),
     ]
 
     add_modules(ast, modules)
@@ -441,7 +573,6 @@ def create_python_ast() -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
