@@ -35,6 +35,7 @@ from typing import Optional
 from nacl.signing import SigningKey
 
 # syft relative
+from ... import serialize
 from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
 from ...core.node.domain.client import DomainClient
@@ -134,7 +135,7 @@ class Duet(DomainClient):
                     name,
                     _,
                 ) = DomainClient.deserialize_client_metadata_from_node(
-                    metadata=self._client_metadata.serialize()
+                    metadata=serialize(self._client_metadata)
                 )
 
                 # Create a SoloRoute

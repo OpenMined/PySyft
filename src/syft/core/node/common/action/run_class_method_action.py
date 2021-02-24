@@ -4,15 +4,17 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+from syft.core.plan.plan import Plan
+
 # syft relative
 from ..... import lib
+from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -49,7 +51,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Union[Tuple[Any, ...], List[Any]],
+        args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -150,17 +152,26 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
 
-            target_method = getattr(resolved_self.data, method_name, None)
-
-            if id(target_method) != id(method):
-                warning(
-                    f"Method {method_name} overwritten on object {resolved_self.data}"
+            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                result = method(
+                    resolved_self.data,
+                    node,
+                    verify_key,
+                    *self.args,
+                    **upcasted_kwargs,
                 )
-                method = target_method
             else:
-                method = functools.partial(method, resolved_self.data)
+                target_method = getattr(resolved_self.data, method_name, None)
 
-            result = method(*upcasted_args, **upcasted_kwargs)
+                if id(target_method) != id(method):
+                    warning(
+                        f"Method {method_name} overwritten on object {resolved_self.data}"
+                    )
+                    method = target_method
+                else:
+                    method = functools.partial(method, resolved_self.data)
+
+                result = method(*upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -213,19 +224,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=self._self.serialize(),
-            args=list(map(lambda x: x.serialize(), self.args)),
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            _self=serialize(self._self),
+            args=list(map(lambda x: serialize(x), self.args)),
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -246,7 +257,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction(
             path=proto.path,
             _self=_deserialize(blob=proto._self),
-            args=tuple(map(lambda x: _deserialize(blob=x), proto.args)),
+            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
@@ -272,3 +283,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments, and possibly the _self of the function"""
+        if self._self.id_at_location == current_input.id_at_location:
+            self._self = new_input
+        else:
+            for i, arg in enumerate(self.args):
+                if arg.id_at_location == current_input.id_at_location:
+                    self.args[i] = new_input
