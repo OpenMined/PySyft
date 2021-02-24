@@ -27,7 +27,7 @@ on:
 jobs:
   python-tests-all:
     strategy:
-      max-parallel: 270
+      max-parallel: 144
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
@@ -185,10 +185,12 @@ jobs:
 
       - name: Adjust PyTorch versions
         run: |
-          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.txt
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache

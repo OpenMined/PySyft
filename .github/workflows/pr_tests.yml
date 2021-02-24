@@ -32,6 +32,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -50,18 +54,14 @@ jobs:
         with:
           version: "3.x"
 
-      - uses: pre-commit/action@v2.0.0
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Run lint checks
+      - name: Build Protos
         run: |
           set -e
           pip install -r requirements.dev.txt --default-timeout=60
           ./scripts/build_proto.sh
-          pre-commit run --all-files
+
+      - uses: pre-commit/action@v2.0.0
+
       - name: Run darglint via flake8 - Ignore Errors
         continue-on-error: true
         run: |
@@ -99,11 +99,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Adjust PyTorch versions
         run: |
-          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.txt
 
       - name: Get pip cache dir
@@ -121,7 +123,6 @@ jobs:
 
       - name: Scan for security issues
         run: |
-          pip install bandit --default-timeout=60
           bandit -r src -ll
 
       - name: Install packages
@@ -170,7 +171,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -185,11 +188,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -e .
+          pip list
+        timeout-minutes: 20
+
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
@@ -197,12 +205,9 @@ jobs:
         run: |
           pip install -r requirements/supported_libs.txt
         timeout-minutes: 10
-        continue-on-error: true
 
       - name: Run notebook Duet examples
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
           cd tests/syft/notebooks/ && pytest . -n 1
 
@@ -222,7 +227,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
