@@ -38,10 +38,13 @@ from syft.grid.messages.infra_messages import (
     DeleteWorkerResponse,
 )
 
+from ..exceptions import AuthorizationError
+
 
 def create_worker_msg(
     msg: CreateWorkerMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> CreateWorkerResponse:
     try:
         # TODO:
@@ -49,8 +52,15 @@ def create_worker_msg(
         # 2 - Save worker adress/metadata at node.workers
 
         _current_user_id = msg.content.get("current_user", None)
-        _current_user = node.users.first(id=_current_user_id)
 
+        users = node.users
+
+        if not _current_user_id:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+
+        _current_user = node.users.first(id=_current_user_id)
         env_parameters = {
             i: msg.content[i]
             for i in msg.content.keys()
@@ -90,6 +100,7 @@ def create_worker_msg(
 def check_worker_deployment_msg(
     msg: CheckWorkerDeploymentMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> CheckWorkerDeploymentResponse:
     try:
         # TODO:
@@ -114,6 +125,7 @@ def check_worker_deployment_msg(
 def get_worker_msg(
     msg: GetWorkerMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetWorkerResponse:
     try:
         # TODO:
@@ -121,6 +133,12 @@ def get_worker_msg(
         worker_id = msg.content.get("worker_id", None)
         _current_user_id = msg.content.get("current_user", None)
 
+        users = node.users
+
+        if not _current_user_id:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
         env_ids = [
             env.id for env in node.environments.get_environments(user=_current_user_id)
         ]
@@ -146,12 +164,23 @@ def get_worker_msg(
 def get_workers_msg(
     msg: GetWorkersMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetWorkersResponse:
     try:
         # TODO:
         # final_msg = node.workers
+        try:
+            _current_user_id = msg.content.get("current_user", None)
+        except Exception:
+            _current_user_id = None
 
-        _current_user_id = msg.content.get("current_user", None)
+        users = node.users
+
+        if not _current_user_id:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+
         _current_user = node.users.first(id=_current_user_id)
 
         envs = node.environments.get_environments(user=_current_user_id)
@@ -179,7 +208,37 @@ def get_workers_msg(
 def del_worker_msg(
     msg: DeleteWorkerMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> DeleteWorkerResponse:
+    # Get Payload Content
+    _worker_id = msg.content.get("worker_id", None)
+    _current_user_id = msg.content.get("current_user", None)
+
+    users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
+    _current_user = users.first(id=_current_user_id)
+
+    # Owner / Admin
+    if users.can_manage_infrastructure(user_id=_current_user_id):
+        node.environments.delete_associations(environment_id=_worker_id)
+        node.environments.delete(id=_worker_id)
+    else:  # Env Owner
+        envs = [
+            int(env.id)
+            for env in node.environments.get_environments(user=_current_user_id)
+        ]
+        if int(_worker_id) in envs:
+            node.environments.delete_associations(environment_id=_worker_id)
+            node.environments.delete(id=_worker_id)
+        else:
+            raise AuthorizationError(
+                "You're not allowed to delete this environment information!"
+            )
+
     return DeleteWorkerResponse(
         address=msg.reply_to,
         status_code=200,
@@ -190,7 +249,40 @@ def del_worker_msg(
 def update_worker_msg(
     msg: UpdateWorkerMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> UpdateWorkerResponse:
+    # Get Payload Content
+    _worker_id = msg.content.get("worker_id", None)
+    _current_user_id = msg.content.get("current_user", None)
+
+    env_parameters = {
+        i: msg.content[i]
+        for i in msg.content.keys()
+        if i in list(Environment.__table__.columns.keys())
+    }
+
+    users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
+    _current_user = users.first(id=_current_user_id)
+
+    # Owner / Admin
+    if users.can_manage_infrastructure(user_id=_current_user_id):
+        node.environments.modify({"id": _worker_id}, env_parameters)
+    else:  # Env Owner
+        envs = [
+            int(env.id)
+            for env in node.environments.get_environments(user=_current_user_id)
+        ]
+        if int(_worker_id) in envs:
+            node.environments.modify({"id": _worker_id}, env_parameters)
+        else:
+            raise AuthorizationError(
+                "You're not allowed to update this environment information!"
+            )
     return UpdateWorkerResponse(
         address=msg.reply_to,
         status_code=200,
@@ -231,7 +323,7 @@ class DomainInfrastructureService(ImmediateNodeServiceWithReply):
         DeleteWorkerResponse,
     ]:
         return DomainInfrastructureService.msg_handler_map[type(msg)](
-            msg=msg, node=node
+            msg=msg, node=node, verify_key=verify_key
         )
 
     @staticmethod
