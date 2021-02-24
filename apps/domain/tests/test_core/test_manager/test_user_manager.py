@@ -168,6 +168,7 @@ def test_signup(database, cleanup):
         password="qrjhsiofjadasd",
         role=user_role_obj.id,
         private_key="aghuehffadawe",
+        verify_key="aufhyfaeiiead",
     )
 
     user = users.query(email="testing@email.com")[0]
@@ -190,6 +191,7 @@ def test_login(database, cleanup):
         password="qrjhsiofjadasd",
         role=user_role_obj.id,
         private_key="aghuehffadawe",
+        verify_key="aiehufaefhuada",
     )
 
     # Success
