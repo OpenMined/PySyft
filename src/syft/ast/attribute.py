@@ -23,6 +23,7 @@ class Attribute:
         "attrs",
         "return_type_name",
         "client",
+        "_parent",
     ]
 
     lookup_cache: Dict[Any, Any] = {}
@@ -33,6 +34,7 @@ class Attribute:
         path_and_name: Optional[str] = None,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
+        parent: Optional["Attribute"] = None,
     ):
         """
         Base constructor for all AST nodes.
@@ -51,6 +53,7 @@ class Attribute:
         # The `attrs` are the nodes that have the current node as a parent node
         # maps from the name on the path ot the actual attribute.
         self.attrs: Dict[str, "Attribute"] = {}
+        self._parent: Optional["Attribute"] = parent
 
     def __call__(
         self,
@@ -196,3 +199,23 @@ class Attribute:
                 itself, not on an existing pointer.
         """
         traceback_and_raise(NotImplementedError)
+
+    def fetch_live_object(self) -> Any:
+        return getattr(self.parent.object_ref, self.name)
+
+    def object_change(self) -> bool:
+        return id(self.fetch_live_object()) != id(self.object_ref)
+
+    def reconstruct_node(self) -> None:
+        self.object_ref = self.fetch_live_object()
+
+    def apply_node_changes(self) -> None:
+        if self._parent and self.object_change():
+            self.reconstruct_node()
+
+    @property
+    def parent(self) -> "Attribute":
+        if self._parent:
+            return self._parent
+
+        raise AttributeError(f"Node {self} in the AST has not parent attribute set!")

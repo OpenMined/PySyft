@@ -238,6 +238,7 @@ class Class(Callable):
     def __init__(
         self,
         path_and_name: str,
+        parent: ast.attribute.Attribute,
         object_ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
         client: Optional[Any],
@@ -247,6 +248,7 @@ class Class(Callable):
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
         if self.path_and_name is not None:
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
@@ -420,6 +422,7 @@ class Class(Callable):
                 object_ref=attr_ref,
                 return_type_name=return_type_name,
                 client=self.client,
+                parent=self,
             )
         elif not callable(attr_ref):
             static_attribute = ast.static_attr.StaticAttribute(
@@ -432,6 +435,8 @@ class Class(Callable):
             self.attrs[_path[index]] = static_attribute
 
     def __getattribute__(self, item: str) -> Any:
+        # self.apply_node_changes()
+
         try:
             target_object = super().__getattribute__(item)
 
@@ -444,15 +449,12 @@ class Class(Callable):
                 return target_object_ptr
 
             return target_object
-        except AttributeError as e:
-            warning(
+        except Exception as e:
+            critical(
                 "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on "
+                "StaticAttribute, be sure they have been added to the AST. Falling back on"
                 "__getattr__ to search in self.attrs for the requested field."
             )
-            raise e
-        except Exception as e:
-            critical(f"__getattribute__ failed with {type(e).__name__}")
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
@@ -467,6 +469,8 @@ class Class(Callable):
         return attrs[item]
 
     def __setattr__(self, key: str, value: Any) -> None:
+        # self.apply_node_changes()
+
         if hasattr(super(), "attrs"):
             attrs = super().__getattribute__("attrs")
             if key in attrs:

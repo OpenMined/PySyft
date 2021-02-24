@@ -10,19 +10,16 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft import serialize
-from syft.core.common.object import Serializable
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.action.common import Action
-from syft.core.node.common.util import listify
-from syft.core.pointer.pointer import Pointer
-from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
-from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
-
-# from ...abstract.node import AbstractNode
-# from ..util import listify
+# syft relative
+from ... import serialize
+from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
+from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
+from ..common.object import Serializable
+from ..common.serde.serializable import bind_protobuf
+from ..node.abstract.node import AbstractNode
+from ..node.common.action.common import Action
+from ..node.common.util import listify
+from ..pointer.pointer import Pointer
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -68,7 +65,7 @@ class Plan(Serializable):
         for i, (current_input, new_input) in enumerate(zip(self.inputs, inputs)):
             for a in self.actions:
                 if hasattr(a, "remap_input"):
-                    a.remap_input(current_input, new_input)
+                    a.remap_input(current_input, new_input)  # type: ignore
 
             # redefine the inputs of the plan
             self.inputs[i] = new_input
