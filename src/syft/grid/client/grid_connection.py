@@ -8,11 +8,7 @@ from typing import Tuple
 import requests
 
 # syft relative
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
-from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
-from ...core.common.serde.deserialize import _deserialize
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ..connections.http_connection import HTTPConnection
 
@@ -88,4 +84,4 @@ class GridHTTPConnection(HTTPConnection):
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(metadata)
 
-        return (metadata_pb, content["key"])
+        return metadata_pb
