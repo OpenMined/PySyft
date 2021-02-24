@@ -77,7 +77,7 @@ def _deserialize(
         if obj_type is None:
             traceback_and_raise(deserialization_error)
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
-        obj_type = getattr(obj_type, "serializable_wrapper_type", obj_type)
+        obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
 
     if not isinstance(obj_type, type):
         traceback_and_raise(deserialization_error)

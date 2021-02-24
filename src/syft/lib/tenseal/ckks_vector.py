@@ -11,7 +11,7 @@ from ..util import full_name_with_name
 
 def object2proto(obj: object) -> TenSEALVector_PB:
     proto = TenSEALVector_PB()
-    proto.obj_type = full_name_with_name(klass=obj.serializable_wrapper_type)  # type: ignore
+    proto.obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
     proto.vector = obj.serialize()  # type: ignore
 
     return proto

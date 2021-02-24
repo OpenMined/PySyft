@@ -16,7 +16,7 @@ from ..util import full_name_with_name
 
 def context_object2proto(obj: object) -> VendorBytes_PB:
     proto = VendorBytes_PB()
-    proto.obj_type = full_name_with_name(klass=obj.serializable_wrapper_type)  # type: ignore
+    proto.obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
     proto.vendor_lib = "tenseal"
     proto.vendor_lib_version = ts.__version__
     proto.content = obj.serialize(save_secret_key=True)  # type: ignore

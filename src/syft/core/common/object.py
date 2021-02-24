@@ -11,6 +11,7 @@ from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize as serialize
 from .uid import UID
 
 
@@ -119,11 +120,11 @@ class ObjectWithID(Serializable):
             a protobuf object that is the serialization of self.
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ObjectWithID_PB(id=self.id.serialize())
+        return ObjectWithID_PB(id=serialize(self.id))
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":

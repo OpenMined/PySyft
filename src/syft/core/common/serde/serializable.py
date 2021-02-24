@@ -1,19 +1,14 @@
 # stdlib
 from typing import Any
 from typing import Type
-from typing import Union
 
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....logger import debug
 from ....logger import traceback_and_raise
-from ....proto.util.data_message_pb2 import DataMessage
-from ....util import get_fully_qualified_name
 from ....util import random_name
-from ....util import validate_type
 
 
 def bind_protobuf(cls: Any) -> Any:
@@ -127,7 +122,7 @@ class Serializable:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as .binary(), etc) know how to convert the object into
+        implemented here (such as serialize(, to_bytes=True), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message
@@ -166,89 +161,6 @@ class Serializable:
         :rtype: type
         """
         traceback_and_raise(NotImplementedError)
-
-    def to_proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self.serialize(to_proto=True), Message)
-
-    def proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self.serialize(to_proto=True), Message)
-
-    def to_bytes(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self.serialize(to_bytes=True), bytes)
-
-    def binary(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self.serialize(to_bytes=True), bytes)
-
-    def serialize(
-        self,
-        to_proto: bool = True,
-        to_bytes: bool = False,
-    ) -> Union[str, bytes, Message]:
-        """Serialize the object according to the parameters.
-
-        This is the primary serialization method, which processes the above
-        flags in a particular order. In general, it is not expected that people
-        will set multiple to_<type> flags to True at the same time. We don't
-        currently have logic which prevents this, because this may affect
-        runtime performance, but if several flags are True, then we will simply
-        take return the type of latest supported flag from the following list:
-
-            - proto
-            - json
-            - binary
-            - hex
-
-        TODO: we could also add "dict" to this list but it's not clear if it would be used.
-
-        :param to_proto: set this flag to TRUE if you want to return a protobuf object
-        :type to_proto: bool
-        :param to_bytes: set this flag to TRUE if you want to return a binary object
-        :type to_bytes: bool
-        :return: a serialized form of the object on which serialize() is called.
-        :rtype: Union[str, bytes, Message]
-
-        """
-
-        if to_bytes:
-            debug(f"Serializing {type(self)}")
-            # indent=None means no white space or \n in the serialized version
-            # this is compatible with json.dumps(x, indent=None)
-            serialized_data = self._object2proto().SerializeToString()
-            blob: Message = DataMessage(
-                obj_type=get_fully_qualified_name(obj=self), content=serialized_data
-            )
-            return blob.SerializeToString()
-
-        elif to_proto:
-            return self._object2proto()
-        else:
-            traceback_and_raise(
-                Exception(
-                    """You must specify at least one deserialization format using
-                            one of the arguments of the serialize() method such as:
-                            to_proto, to_bytes."""
-                )
-            )
 
     @staticmethod
     def random_name() -> str:
