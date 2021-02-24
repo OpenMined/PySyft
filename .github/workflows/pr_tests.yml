@@ -63,11 +63,11 @@ jobs:
 
       - uses: pre-commit/action@v2.0.0
 
-      - name: Run darglint via flake8 - Ignore Errors
-        continue-on-error: true
-        run: |
-          pip install darglint flake8
-          flake8 src tests
+      # - name: Run darglint via flake8 - Ignore Errors
+      #   continue-on-error: true
+      #   run: |
+      #     pip install darglint flake8
+      #     flake8 src tests
 
   python-tests-fast:
     needs: [python-linting]
