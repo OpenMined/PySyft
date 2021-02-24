@@ -1,3 +1,5 @@
+-r ./requirements.torch.txt
+
 aiortc
 dataclasses # backport to python 3.6
 dpcontracts
@@ -12,9 +14,6 @@ protobuf
 PyNaCl
 requests
 sqlitedict
-torch>=1.4.0
-torchcsprng
-torchvision>=0.5
 typeguard
 typing-extensions # backport to older python 3
 websockets
