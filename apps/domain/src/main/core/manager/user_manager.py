@@ -18,12 +18,15 @@ class UserManager(DatabaseManager):
         self.roles = RoleManager(database)
         self.db = database
 
-    def signup(self, email: str, password: str, role: int, private_key: str):
+    def signup(
+        self, email: str, password: str, role: int, private_key: str, verify_key: str
+    ):
         salt, hashed = self.__salt_and_hash_password(password, 12)
         return self.register(
             email=email,
             role=role,
             private_key=private_key,
+            verify_key=verify_key,
             hashed_password=hashed,
             salt=salt,
         )
@@ -84,6 +87,9 @@ class UserManager(DatabaseManager):
 
     def can_triage_requests(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_triage_requests
+
+    def can_manage_infrastructure(self, user_id: str) -> bool:
+        return self.role(user_id=user_id).can_manage_infrastructure
 
     def role(self, user_id: int):
         try:
