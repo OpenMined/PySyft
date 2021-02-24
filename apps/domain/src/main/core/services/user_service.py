@@ -37,7 +37,6 @@ from ..exceptions import (
     RoleNotFoundError,
     AuthorizationError,
     UserNotFoundError,
-    AuthorizationError,
 )
 from ..database.utils import model_to_json
 from ..database import expand_user_object
@@ -46,6 +45,7 @@ from ..database import expand_user_object
 def create_user_msg(
     msg: CreateUserMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> CreateUserResponse:
 
     # Get Payload Content
@@ -56,6 +56,14 @@ def create_user_msg(
 
     users = node.users
 
+    if not _current_user_id:
+        try:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+        except Exception:
+            pass
+
     _admin_role = node.roles.first(name="Owner")
 
     # Check if email/password fields are empty
@@ -64,17 +72,30 @@ def create_user_msg(
             message="Invalid request payload, empty fields (email/password)!"
         )
 
+    # Check if this email was already registered
+    try:
+        users.first(email=_email)
+        raise AuthorizationError(
+            message="You can't create a new User using this email!"
+        )
+    except UserNotFoundError:
+        pass
+
     # 1 - Owner Type
     # Create Owner type User (First user to be registered)
     # This user type will use node root key
     def create_owner_user():
         # Use Domain Root Key
         _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
+        _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode(
+            "utf-8"
+        )
         _user = users.signup(
             email=_email,
             password=_password,
             role=_admin_role.id,
             private_key=_node_private_key,
+            verify_key=_verify_key,
         )
         return _user
 
@@ -90,6 +111,9 @@ def create_user_msg(
                 password=_password,
                 role=node.roles.first(name=_role).id,
                 private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
+                    "utf-8"
+                ),
             )
         # If purposed role is Owner
         else:
@@ -107,6 +131,9 @@ def create_user_msg(
             password=_password,
             role=node.roles.first(name="User").id,
             private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
+            verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
+                "utf-8"
+            ),
         )
 
     # Main logic
@@ -127,6 +154,7 @@ def create_user_msg(
 def update_user_msg(
     msg: UpdateUserMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> UpdateUserResponse:
 
     # Get Payload Content
@@ -138,6 +166,11 @@ def update_user_msg(
     _groups = msg.content.get("groups", None)
 
     users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     _valid_parameters = _email or _password or _role or _groups
     _allowed = int(_user_id) == int(_current_user_id) or users.can_create_users(
@@ -207,12 +240,17 @@ def update_user_msg(
 def get_user_msg(
     msg: GetUserMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetUserResponse:
     # Get Payload Content
     _user_id = msg.content.get("user_id", None)
     _current_user_id = msg.content.get("current_user", None)
 
     users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     _allowed = users.can_triage_requests(user_id=_current_user_id)
 
@@ -232,10 +270,20 @@ def get_user_msg(
 def get_all_users_msg(
     msg: GetUsersMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetUsersResponse:
     # Get Payload Content
-    _current_user_id = msg.content.get("current_user", None)
+    try:
+        _current_user_id = msg.content.get("current_user", None)
+    except Exception:
+        _current_user_id = None
+
     users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     _allowed = users.can_triage_requests(user_id=_current_user_id)
 
@@ -255,6 +303,7 @@ def get_all_users_msg(
 def del_user_msg(
     msg: DeleteUserMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> DeleteUserResponse:
 
     # Get Payload Content
@@ -262,13 +311,16 @@ def del_user_msg(
     _current_user_id = msg.content.get("current_user", None)
 
     users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     _allowed = (
         users.can_create_users(user_id=_current_user_id)
         and users.first(id=_user_id)
         and users.role(user_id=_user_id).name != "Owner"
     )
-    print("Allow: ", _allowed)
     if _allowed:
         node.users.delete(id=_user_id)
     else:
@@ -284,10 +336,16 @@ def del_user_msg(
 def search_users_msg(
     msg: SearchUsersMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> SearchUsersResponse:
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     users = node.users
+    users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     user_parameters = {
         "email": msg.content.get("email", None),
@@ -361,7 +419,9 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         DeleteUserResponse,
         SearchUsersResponse,
     ]:
-        return UserManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
+        return UserManagerService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
