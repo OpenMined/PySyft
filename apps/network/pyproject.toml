@@ -13,12 +13,12 @@ Flask = "^1.1.1"
 Flask-Sockets = "^0.2.1"
 numpy = "^1.18.5"
 sqlitedict = "^1.6.0"
-syft = "0.3.0"
-flask-lambda = "^0.0.4"
 Flask-Migrate = "^2.5.3"
 SQLAlchemy-Utils = "^0.36.8"
 PyJWT = "^1.7.1"
 sqlalchemy-mixins = "^1.2.1"
+syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_client"}
+
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
