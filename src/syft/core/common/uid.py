@@ -8,11 +8,14 @@ from uuid import UUID as uuid_type
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...decorators import syft_decorator
+from ...logger import critical
+from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 class UID(Serializable):
     """A unique ID for every Syft object.
 
@@ -32,7 +35,6 @@ class UID(Serializable):
 
     value: uuid_type
 
-    @syft_decorator(typechecking=True)
     def __init__(self, value: Optional[uuid_type] = None):
         """Initializes the internal id using the uuid package.
 
@@ -68,15 +70,13 @@ class UID(Serializable):
         self.value = value
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def from_string(value: str) -> "UID":
         try:
             return UID(value=uuid.UUID(value))
         except Exception as e:
-            print(f"Unable to convert {value} to UUID. {e}")
-            raise e
+            critical(f"Unable to convert {value} to UUID. {e}")
+            traceback_and_raise(e)
 
-    @syft_decorator(typechecking=True)
     def __hash__(self) -> int:
         """Hashes the UID for use in dictionaries and sets
 
@@ -99,7 +99,6 @@ class UID(Serializable):
 
         return self.value.int
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> bool:
         """Checks to see if two UIDs are the same using the internal object
 
@@ -109,7 +108,7 @@ class UID(Serializable):
 
         :param other: this is the other ID to be compared with
         :type other: Any (note this must be Any or __eq__ fails on other types)
-        :return: returns True/False based on whether the objcts are the same
+        :return: returns True/False based on whether the objects are the same
         :rtype: bool
         """
 
@@ -118,7 +117,6 @@ class UID(Serializable):
         except Exception:
             return False
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         """Returns a human-readable version of the ID
 
@@ -129,7 +127,6 @@ class UID(Serializable):
         no_dash = str(self.value).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
 
-    @syft_decorator(typechecking=True)
     def char_emoji(self, hex_chars: str) -> str:
         base = ord("\U0001F642")
         hex_base = ord("0")
@@ -139,7 +136,6 @@ class UID(Serializable):
             code += offset - hex_base
         return chr(base + code)
 
-    @syft_decorator(typechecking=True)
     def string_emoji(self, string: str, length: int, chunk: int) -> str:
         output = []
         part = string[-length:]
@@ -148,11 +144,9 @@ class UID(Serializable):
             output.append(self.char_emoji(hex_chars=end))
         return "".join(output)
 
-    @syft_decorator(typechecking=True)
     def emoji(self) -> str:
         return f"<UID:{self.string_emoji(string=str(self.value), length=8, chunk=4)}>"
 
-    @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
         """Returns a SHORT human-readable version of the ID
 
@@ -162,7 +156,6 @@ class UID(Serializable):
 
         return f"..{str(self.value)[-5:]}"
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> UID_PB:
         """Returns a protobuf serialization of self.
 
@@ -174,7 +167,7 @@ class UID(Serializable):
         :rtype: ProtoUID
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -182,7 +175,6 @@ class UID(Serializable):
         return UID_PB(value=self.value.bytes)
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: UID_PB) -> "UID":
         """Creates a UID from a protobuf
 

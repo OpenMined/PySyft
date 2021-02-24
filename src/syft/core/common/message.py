@@ -7,19 +7,22 @@ from typing import TypeVar
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
 from ...core.common.object import ObjectWithID
+from ...core.common.serde.serialize import _serialize as serialize
 from ...core.common.uid import UID
 from ...core.io.address import Address
-from ...decorators.syft_decorator_impl import syft_decorator
+from ...logger import debug
+from ...logger import traceback_and_raise
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
+from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import bind_protobuf
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")
@@ -50,14 +53,14 @@ class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
         init_reason = "Creating"
         if "signed" in self.class_name.lower():
             init_reason += " Signed"
-        logger.debug(f"> {init_reason} {self.pprint} {self.id.emoji()}")
+        debug(f"> {init_reason} {self.pprint} {self.id.emoji()}")
 
 
 class SyftMessage(AbstractMessage):
     """
-    SyftMessages are an abstraction that represent information that is sent between a :class:`Client`
+    SyftMessages are an abstraction that represents information that is sent between a :class:`Client`
     and a :class:`Node`. In Syft's decentralized setup, we can easily see why SyftMessages are so important.
-    This class cannot be used as is: to get some useful objects, we need to derive from it. For instance,
+    This class cannot be used as-is: to get some useful objects, we need to derive from it. For instance,
     :class:`Action`s inherit from :class:`SyftMessage`.
     There are many types of SyftMessage which boil down to whether or not they are Sync or Async,
     and whether or not they expect a response.
@@ -84,10 +87,8 @@ class SyftMessage(AbstractMessage):
             A :class:`SignedMessage`
 
         """
-        logger.debug(
-            f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}"
-        )
-        signed_message = signing_key.sign(self.serialize(to_bytes=True))
+        debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+        signed_message = signing_key.sign(serialize(self, to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -102,11 +103,12 @@ class SyftMessage(AbstractMessage):
         )
 
 
+@bind_protobuf
 class SignedMessage(SyftMessage):
     """
     SignedMessages are :class:`SyftMessage`s that have been signed by someone.
     In addition to what has a :class:`SyftMessage`, they have a signature, a verify key
-    and a :meth:`is_valid` property that are here to check that the message was really
+    and a :meth:`is_valid` property that is here to check that the message was really
     signed and sent by the verify key owner.
 
     Attributes:
@@ -134,15 +136,24 @@ class SignedMessage(SyftMessage):
         self.signature = signature
         self.verify_key = verify_key
         self.serialized_message = message
-        self.cached_deseralized_message = None
+        self.cached_deseralized_message: Optional[SyftMessage] = None
 
     @property
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
-            self.cached_deseralized_message = _deserialize(
-                blob=self.serialized_message, from_bytes=True
+            _syft_msg = validate_type(
+                _deserialize(blob=self.serialized_message, from_bytes=True), SyftMessage
             )
-        return self.cached_deseralized_message  # type: ignore
+            self.cached_deseralized_message = _syft_msg
+
+        if self.cached_deseralized_message is None:
+            traceback_and_raise(
+                ValueError(
+                    f"Can't deserialize message {self} with address " f"{self.address}"
+                )
+            )
+
+        return self.cached_deseralized_message
 
     @property
     def is_valid(self) -> bool:
@@ -153,13 +164,12 @@ class SignedMessage(SyftMessage):
 
         return True
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignedMessage_PB:
-        logger.debug(f"> {self.icon} -> Proto 🔢 {self.id}")
+        debug(f"> {self.icon} -> Proto 🔢 {self.id}")
 
         # obj_type will be the final subclass callee for example ReprMessage
         return SignedMessage_PB(
-            msg_id=self.id.proto(),
+            msg_id=serialize(self.id, to_proto=True),
             obj_type=self.obj_type,
             signature=bytes(self.signature),
             verify_key=bytes(self.verify_key),
@@ -167,10 +177,12 @@ class SignedMessage(SyftMessage):
         )
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
         # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = _deserialize(blob=proto.message, from_bytes=True)
+        sub_message = validate_type(
+            _deserialize(blob=proto.message, from_bytes=True), SyftMessage
+        )
+
         address = sub_message.address
 
         # proto.obj_type is final subclass callee for example ReprMessage
@@ -192,12 +204,14 @@ class SignedMessage(SyftMessage):
         icon = "🤷🏾‍♀️"
         if hasattr(obj, "icon"):
             icon = obj.icon
-        logger.debug(f"> {icon} <- 🔢 Proto")
+        debug(f"> {icon} <- 🔢 Proto")
 
         if type(obj) != obj_type.signed_type:
-            raise TypeError(
-                "Deserializing SignedMessage. "
-                + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
+            traceback_and_raise(
+                TypeError(
+                    "Deserializing SignedMessage. "
+                    + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
+                )
             )
 
         return obj

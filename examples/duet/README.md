@@ -22,12 +22,12 @@ Duet is the latest part of the Syft family and is designed to provide you with a
 We support **Linux**, **MacOS** and **Windows** and the following Python and PyTorch versions.
 Other Deep Learning and Data Science libraries are coming very soon.
 
-Python | Torch 1.5 | Torch 1.6 | Torch 1.7
---- | --- | --- | ---
-3.6 | ✅ | ✅ | ✅
-3.7 | ✅ | ✅ | ✅
-3.8 | ✅ | ✅ | ✅
-3.9 | 🔜 | 🔜 | 🔜
+| Python | Torch 1.4 | Torch 1.5 | Torch 1.6 | Torch 1.7 |
+| ------ | --------- | --------- | --------- | --------- |
+| 3.6    | ✅         | ✅         | ✅         | ✅         |
+| 3.7    | ✅         | ✅         | ✅         | ✅         |
+| 3.8    | ✅         | ✅         | ✅         | ✅         |
+| 3.9    | 🔜         | 🔜         | 🔜         | 🔜         |
 
 ## Setup 🐍
 ```bash
@@ -56,12 +56,13 @@ It will give you back a code to send to your Data Owner partner so they can link
 
 ### Host a Network
 The connections are Peer-to-peer but to work around NAT / Firewalls we use WebRTC and STUN.
-This requires an initial connection to our OpenGrid server, however after connection, traffic is only sent directly between you and your Duet partner. If you have issues with the builtin
+This requires an initial connection to our OpenGrid server, however, after the connection, traffic is only sent directly between you and your Duet partner. If you have issues with the builtin
 session matcher, or simply want to run your own, you can do so with the `syft-network` command:
 ```
 $ syft-network
 ```
 Then simply update your `sy.duet()` commands with the keyword arg: `network_url=http://localhost:5000`
+You can also start `syft-network` in IPV6 mode `syft-network IPV6` or by exporting the environment variable `IP_MODE=IPV6`
 
 ## Quick Start 📖
 ### torch.Tensor
@@ -105,7 +106,7 @@ retrieved, you can either use the `delete_obj` param to toggle this or simply us
 `pointer.get_copy()` convenience method.
 
 ### duet.requests
-On the Data Owners side you can use the `duet.requests` API to view, accept, reject and
+On the Data Owners side, you can use the `duet.requests` API to view, accept, reject and
 create auto-responder handlers for requests.
 - `duet.requests.pandas`
 This will show a pandas table of the current pending requests.
@@ -113,10 +114,10 @@ This will show a pandas table of the current pending requests.
 This will get the request at the specific index after which you can choose to `req.accept()`
 or `req.deny()`.
 - `duet.requests.add_handler()`
-This method provides an API for setting up request handlers which will auto respond to
+This method provides an API for setting up request handlers which will auto-respond to
 your Duet partners requests. You can use keyword parameters like `name`, `action`,
 `timeout_secs`, `element_quota`, `print_local`, `log_local` to do interesting things like
-setting up a handler to reject all requests for training loss, while printing the results
+setting up a handler to reject all requests for training loss while printing the results
 in your notebook. Or providing a limited `element_quota` for a particular request name
 so that you can be sure only a small amount of data can be viewed by your partner.
 - `duet.requests.handlers`
@@ -148,7 +149,7 @@ sy.Module will keep track of the layers and allow you to call `.send()` and `.ge
 on your model at any time. To allow this to work make sure that inside your class
 definition you always use the passed in `torch_ref` so that sy.Module can switch this
 depending on the context in which the model is running. If you want to know where your
-current model variable is use `model.is_local` to check.
+current model variable is used `model.is_local` to check.
 
 ### Save and Load
 You can save and load your sy.Modules just the same way you would with a torch model
@@ -167,23 +168,22 @@ model trained on data hosted by your Data Owner partner.
 
 ### PyTorch API
 We currently support most of the operations and layers within PyTorch 1.5 - 1.7.
-However there are some ops which are either insecure or not appropriate for Duet,
+However, there are some ops which are either insecure or not appropriate for Duet
 or are still in a state of development.
 
 ## Example Notebooks 📚
 The following examples were taken from the official [PyTorch examples](https://github.com/pytorch/examples) repo.
 
-Each example is split into two notebooks, one for the data owner who wishes to protect their valuable and private training data and one for the data scientist who has some problem they wish to solve and a test set they can use to determine if the data owner's data will help. Together they are able to collaborate over two notebooks to construct and train models, evaluate and share metrics upon request and do inference on test or individual data items.
+Each example is split into two notebooks, one for the data owner who wishes to protect their valuable and private training data and one for the data scientist who has some problem they wish to solve and a test set they can use to determine if the data owner's data will help. Together they are able to collaborate over two notebooks to construct and train models, evaluate and share metrics upon request and do inference on a test or individual data items.
 
-Example | Data Owner | Data Scientist
---- | --- | ---
-*Image classification (MNIST) using Convnets* | 📕 [Data Owner Notebook](./mnist/MNIST_Syft_Data_Owner.ipynb) | 📘 [Data Scientist Notebook](./mnist/MNIST_Syft_Data_Scientist.ipynb)
-*Word level Language Modeling using LSTM RNNs* | Coming Soon | Coming Soon
-*Implement the Neural Style Transfer algorithm on images* | Coming Soon | Coming Soon
-*Variational Auto-Encoders* | Coming Soon | Coming Soon
-*Training a CartPole to balance in OpenAI Gym with actor-critic* | Coming Soon | Coming Soon
-*Time sequence prediction - use an LSTM to learn Sine waves* | Coming Soon | Coming Soon
-*Superresolution using an efficient sub-pixel CNNs* | Coming Soon | Coming Soon
-*SNLI with GloVe vectors, LSTMs, and torchtext* | Coming Soon | Coming Soon
-*Generative Adversarial Networks (DCGAN)* | Coming Soon | Coming Soon
-
+| Example                                                          | Data Owner                                                                        | Data Scientist                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| *Image classification (MNIST) using Convnets*                    | 📕 [Data Owner Notebook](./mnist/MNIST_Syft_Data_Owner.ipynb)                      | 📘 [Data Scientist Notebook](./mnist/MNIST_Syft_Data_Scientist.ipynb)                      |
+| *Word level Language Modeling using LSTM RNNs*                   | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Implement the Neural Style Transfer algorithm on images*        | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Variational Auto-Encoders*                                      | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Training a CartPole to balance in OpenAI Gym with actor-critic* | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Time sequence prediction - use an LSTM to learn Sine waves*     | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Superresolution using an efficient sub-pixel CNNs*              | 📕 [Data Owner Notebook](./super_resolution/SuperResolution_Syft_Data_Owner.ipynb) | 📘 [Data Scientist Notebook](./super_resolution/SuperResolution_Syft_Data_Scientist.ipynb) |
+| *SNLI with GloVe vectors, LSTMs, and torchtext*                  | Coming Soon                                                                       | Coming Soon                                                                               |
+| *Generative Adversarial Networks (DCGAN)*                        | 📕 [Data Owner Notebook](./dcgan/DCGAN_Syft_Data_Owner.ipynb)                      | 📘 [Data Scientist Notebook](./dcgan/DCGAN_Syft_Data_Scientist.ipynb)                      |

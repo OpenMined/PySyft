@@ -99,7 +99,7 @@ for epoch in range(args.epochs):
         n_total += batch.batch_size
         train_acc = 100.0 * n_correct / n_total
 
-        # calculate loss of the network output with respect to training labels
+        # calculate the loss of the network output with respect to training labels
         loss = criterion(answer, batch.label)
 
         # backpropagate and update optimizer learning rate

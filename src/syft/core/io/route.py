@@ -71,8 +71,8 @@ the network for a good route to a remote worker which allows for
 things like network speed to be interrogated in the creation of
 a route.
 
-While in theory this data-structure could allow for very sophisticated
-network analysis, in the beginning it will mostly exist to choose
+While in theory, this data-structure could allow for very sophisticated
+network analysis, in the beginning, it will mostly exist to choose
 between Pub-sub, Request-Response, and Streaming options. In the
 long run it will allow us to design routes which explicitly
 avoid the most costly network bottlenecks. For example, if Grid is
@@ -89,10 +89,10 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft relative
-from ...decorators import syft_decorator
+from ...logger import debug
+from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
@@ -107,8 +107,8 @@ from .virtual import VirtualClientConnection
 
 class RouteSchema(ObjectWithID):
     """An object which contains the IDs of the origin node and
-    set of destination node. Multiple routes can subscribe
-    to the same RouteSchema and routing logic is thus split into
+    set of the destination node. Multiple routes can subscribe
+    to the same RouteSchema and routing, logic is thus split into
     two groups of functionality:
 
     1) Discovering new routes
@@ -138,17 +138,17 @@ class Route(ObjectWithID):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
 
 class SoloRoute(Route):
@@ -163,7 +163,7 @@ class SoloRoute(Route):
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        logger.debug(f"> Routing {msg.pprint} via {self.pprint}")
+        debug(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(
@@ -176,7 +176,6 @@ class SoloRoute(Route):
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SoloRoute_PB:
         return SoloRoute_PB(
             destination=self.schema.destination._object2proto(),

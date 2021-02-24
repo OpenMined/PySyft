@@ -2,17 +2,12 @@
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import NewType
 from typing import Tuple
 from typing import Union
 
 # syft relative
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
-from .primitive_interface import PyPrimitive
-
-NotImplementedType = NewType("NotImplementedType", type(NotImplemented))  # type: ignore
-SyPrimitiveRet = NewType("SyPrimitiveRet", Union[PyPrimitive, NotImplementedType])  # type: ignore
 
 
 def downcast(value: Any, recurse: bool = True) -> Any:

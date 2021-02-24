@@ -8,7 +8,8 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import deserialize
-from .....decorators import syft_decorator
+from ..... import serialize
+from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
     GetAllRequestsMessage as GetAllRequestsMessage_PB,
 )
@@ -18,19 +19,20 @@ from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_message import RequestMessage
 
 
+@bind_protobuf
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestsMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -42,14 +44,14 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         :rtype: GetAllRequestsMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAllRequestsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -94,6 +96,7 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAllRequestsMessage_PB
 
 
+@bind_protobuf
 class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -104,7 +107,6 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.requests = requests
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetAllRequestsResponseMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -116,14 +118,14 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ReprMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAllRequestsResponseMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            requests=list(map(lambda x: x.serialize(), self.requests)),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            requests=list(map(lambda x: serialize(x), self.requests)),
         )
 
     @staticmethod
@@ -172,15 +174,22 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
 
 class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         return [GetAllRequestsMessage]
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def process(
-        node: AbstractNode, msg: GetAllRequestsMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: GetAllRequestsMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestsResponseMessage:
+
+        if verify_key is None:
+            traceback_and_raise(
+                ValueError(
+                    "Can't process Request service without a given " "verification key"
+                )
+            )
 
         if verify_key == node.root_verify_key:
             return GetAllRequestsResponseMessage(

@@ -3,26 +3,31 @@ import json
 import os
 from pathlib import Path
 import sys
-import tempfile
-import time
 from typing import Any
 from typing import Generator
 from typing import Optional
 
 # third party
-import nest_asyncio
 import requests
 
 # syft relative
+from ...core.common.environment import is_jupyter
+from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
+from ...logger import info
+from ...logger import traceback_and_raise
+from .bcolors import bcolors
+from .exchange_ids import DuetCredentialExchanger
+from .exchange_ids import OpenGridTokenFileExchanger
+from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
-try:
-    nest_asyncio.apply()
-except RuntimeError as e:
-    # this happens when pytest-xdist parallel threaded tests are run on some systems
-    print("Nothing to patch", e)
+if is_jupyter:
+    # third party
+    from IPython.core.display import Image
+    from IPython.core.display import display
+
 
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
@@ -31,31 +36,19 @@ ADDR_REPOSITORY = (
 LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
 
 
-try:
-    # third party
-    from IPython.core.display import Image
-    from IPython.core.display import display
-
-    jupyter = True
-except ImportError:
-    jupyter = False
-
-
-# for local debugging
-def get_loopback_path() -> str:
-    loopback_file = "duet_loopback.json"
-    return str(Path(tempfile.gettempdir()) / loopback_file)
+def generate_donation_msg(name: str) -> str:
+    donate_url = "https://github.com/sponsors/OpenMined"
+    donate_msg = (
+        f"\n    > ❤️ {bcolors.FAIL}Love{bcolors.ENDC} {bcolors.OKGREEN}{name}{bcolors.ENDC}? "
+        + f"{bcolors.WARNING}Please{bcolors.ENDC} {bcolors.OKBLUE}consider{bcolors.ENDC} "
+        + f"{bcolors.HEADER}supporting{bcolors.ENDC} {bcolors.FAIL}our{bcolors.ENDC} "
+        + f"{bcolors.WARNING}community!{bcolors.ENDC}"
+        + f"\n    > {donate_url}"
+    )
+    return donate_msg
 
 
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
+DUET_DONATE_MSG = generate_donation_msg(name="Duet")
 
 
 def get_available_network() -> str:
@@ -66,13 +59,12 @@ def get_available_network() -> str:
             return addr
         except Exception:
             continue
-    raise Exception("Couldn't find any available network.")
+    traceback_and_raise(Exception("Couldn't find any available network."))
 
 
 def begin_duet_logger(my_domain: Domain) -> None:
     # stdlib
     from contextlib import contextmanager
-    import sys
     import threading
     import time
 
@@ -83,7 +75,6 @@ def begin_duet_logger(my_domain: Domain) -> None:
     @contextmanager
     def set_stdout_parent(parent: Any) -> Generator:
         """a context manager for setting a particular parent for sys.stdout
-
         the parent determines the destination cell of output
         """
         save_parent = sys.stdout.parent_header  # type: ignore
@@ -110,6 +101,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     n_objects = len(my_domain.store)
                     n_requests = len(my_domain.requests)
                     n_messages = my_domain.message_counter
+                    n_request_handlers = len(my_domain.request_handlers)
 
                     blink_on = (int(iterator / 5) % 2) == 0
 
@@ -143,9 +135,11 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + right_blink
                         + "  Messages: "
                         + str(n_messages)
+                        + "  Request Handlers: "
+                        + str(n_request_handlers)
                     )
                     out += "                                "
-                    sys.stdout.write("\r" + out)
+                    info("\r" + out, end="\r", print=True)
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):
@@ -158,7 +152,7 @@ def duet(
     network_url: str = "",
     loopback: bool = False,
     db_path: Optional[str] = None,
-) -> WebRTCDuet:
+) -> Client:
     if target_id is not None:
         return join_duet(
             target_id=target_id, loopback=loopback, network_url=network_url
@@ -173,9 +167,10 @@ def launch_duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
+    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
-) -> WebRTCDuet:
-    if os.path.isfile(LOGO_URL) and jupyter:
+) -> Client:
+    if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
                 LOGO_URL,
@@ -183,95 +178,39 @@ def launch_duet(
                 unconfined=True,
             )
         )
-    print("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n")
-    sys.stdout.write(
-        "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-        ":"
-        + "\033[1m"
-        + " Duet is an experimental feature currently in beta.\n"
-        + "♫♫♫ >             Use at your own risk.\n"
+    info("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n", print=True)
+    info(
+        "♫♫♫ >\033[93m"
+        + " DISCLAIMER"
         + "\033[0m"
+        + ": "
+        + "\033[1m"
+        + "Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ > Use at your own risk.\n"
+        + "\033[0m",
+        print=True,
     )
 
-    print("♫♫♫ >")
+    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    print("♫♫♫ > " + str(network_url))
-    print("♫♫♫ >")
-    sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    info("♫♫♫ > " + str(network_url), print=True)
+    info("♫♫♫ >", print=True)
+    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
 
     signaling_client = register(url=network_url)
 
-    print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
-
-    #     print("♫♫♫ >")
-    #     print("♫♫♫ > Your Duet Id: " + signaling_client.duet_id)
-
-    print("♫♫♫ >")
-    print(
-        "♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 1:"
-        + bcolors.ENDC
-        + " Send the following code to your Duet Partner!"
-    )
-    #         print(f"♫♫♫ > Duet Node ID:{domain.id.value}")
-
-    print("\nimport syft as sy")
-    print(
-        'duet = sy.duet("'
-        + bcolors.BOLD
-        + signaling_client.duet_id
-        + bcolors.ENDC
-        + '")'
-    )
-
-    # use a local file to automatically exchange duet ids
-    if loopback is True:
-        loopback_config = {}
-        loopback_config["server_id"] = signaling_client.duet_id
-        with open(get_loopback_path(), "w") as f:
-            f.write(json.dumps(loopback_config))
+    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
     my_domain = Domain(name="Launcher", db_path=db_path)
 
-    print(
-        "\n♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 2:"
-        + bcolors.ENDC
-        + " Running the code above will print out a 'Client ID'."
-    )
-    print("♫♫♫ >         Have your duet partner send it to you and enter it below!")
-    print()
-    if loopback is False:
-        while True:
-            target_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
-            if len(target_id) == 32:
-                break
-            else:
-                print("    > Error: Invalid Client ID. Please try again.")
+    if loopback:
+        credential_exchanger = OpenGridTokenFileExchanger()
+    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
 
-    else:
-        target_id = ""
-        print(
-            "Running loopback mode. Use sy.join_duet(loopback=True) on the other side."
-        )
-        while target_id == "":
-            try:
-                with open(get_loopback_path(), "r") as f:
-                    loopback_config = json.loads(f.read())
-                    if "client_id" in loopback_config:
-                        target_id = str(loopback_config["client_id"])
-                    else:
-                        time.sleep(0.5)
-            except Exception as e:
-                print(e)
-                break
-
-    print("♫♫♫ > Connecting...")
+    info("♫♫♫ > Connecting...", print=True)
 
     _ = WebRTCDuet(
         node=my_domain,
@@ -279,14 +218,14 @@ def launch_duet(
         signaling_client=signaling_client,
         offer=True,
     )
-    print()
-    print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    info(print=True)
+    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     #     return duet, my_domain.get_root_client()
-    out_duet = my_domain.get_root_client()
+    out_duet: Client = my_domain.get_root_client()
 
     if logging:
         begin_duet_logger(my_domain=my_domain)
-    print()
+    info(print=True)
 
     return out_duet
 
@@ -295,8 +234,9 @@ def join_duet(
     target_id: str = "",
     network_url: str = "",
     loopback: bool = False,
+    credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
 ) -> WebRTCDuet:
-    if os.path.isfile(LOGO_URL) and jupyter:
+    if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
                 LOGO_URL,
@@ -304,75 +244,43 @@ def join_duet(
                 unconfined=True,
             )
         )
-    if target_id == "" and loopback is False:
-        cmd = 'join_duet("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")'
-        raise Exception(f"You must enter a Duet Server ID like this: {cmd}")
-    print("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n")
-    sys.stdout.write(
-        "♫♫♫ >\033[93m" + " DISCLAIMER" + "\033[0m"
-        ":"
-        + "\033[1m"
-        + " Duet is an experimental feature currently in beta.\n"
-        + "♫♫♫ >             Use at your own risk.\n"
-        + "\n♫♫♫ > \n"
+    info("🎤  🎸  ♪♪♪ Joining Duet ♫♫♫  🎻  🎹\n", print=True)
+    info(
+        "♫♫♫ >\033[93m"
+        + " DISCLAIMER"
         + "\033[0m"
+        + ": "
+        + "\033[1m"
+        + "Duet is an experimental feature currently in beta.\n"
+        + "♫♫♫ > Use at your own risk.\n"
+        + "\033[0m",
+        print=True,
     )
 
-    print("♫♫♫ >")
+    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
-    print("♫♫♫ > Punching through firewall to OpenGrid Network Node at:")
-    print("♫♫♫ > " + str(network_url))
-    print("♫♫♫ >")
-    sys.stdout.write("♫♫♫ > ...waiting for response from OpenGrid Network... ")
+    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    info("♫♫♫ > " + str(network_url), print=True)
+    info("♫♫♫ >", print=True)
+    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
 
     signaling_client = register(url=network_url)
 
-    print(bcolors.OKGREEN + "DONE!" + bcolors.ENDC)
+    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
     my_domain = Domain(name="Joiner")
-    print()
-    print(
-        "♫♫♫ > Duet Client ID: "
-        + bcolors.BOLD
-        + signaling_client.duet_id
-        + bcolors.ENDC
-    )
-    print()
-    print(
-        "♫♫♫ > "
-        + bcolors.HEADER
-        + "STEP 1:"
-        + bcolors.ENDC
-        + " Send the Duet Client ID to your duet partner!"
-    )
-    print()
-    print("♫♫♫ > ...waiting for partner to connect...")
+
     if loopback:
-        loopback_config = {}
-        target_id = ""
-        while target_id == "":
-            try:
-                with open(get_loopback_path(), "r") as f:
-                    loopback_config = json.loads(f.read())
-                    # only continue once the server has overwritten the file
-                    # with only its new server_id
-                    if (
-                        "server_id" in loopback_config
-                        and "client_id" not in loopback_config
-                    ):
-                        target_id = str(loopback_config["server_id"])
-                    else:
-                        time.sleep(0.5)
-            except Exception as e:
-                print(e)
-                break
+        credential_exchanger = OpenGridTokenFileExchanger()
+    else:
+        # we have target_id so we set it using set_responder_id
+        credential_exchanger.set_responder_id(target_id)
 
-        loopback_config["client_id"] = signaling_client.duet_id
-
-        with open(get_loopback_path(), "w") as f:
-            f.write(json.dumps(loopback_config))
+    target_id = credential_exchanger.set_role(join=True).run(
+        credential=signaling_client.duet_id
+    )
 
     duet = WebRTCDuet(
         node=my_domain,
@@ -380,8 +288,8 @@ def join_duet(
         signaling_client=signaling_client,
         offer=False,
     )
-    print()
-    print("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC)
+    info(print=True)
+    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
 
     return duet

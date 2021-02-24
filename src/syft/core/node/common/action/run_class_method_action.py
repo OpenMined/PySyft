@@ -3,21 +3,25 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
+
+# syft absolute
+from syft.core.plan.plan import Plan
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
+from .....logger import critical
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -25,6 +29,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
+@bind_protobuf
 class RunClassMethodAction(ImmediateActionWithoutReply):
     """
     When executing a RunClassMethodAction, a :class:`Node` will run a method defined
@@ -44,18 +49,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Union[Tuple[Any, ...], List[Any]],
+        args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
         msg_id: Optional[UID] = None,
+        is_static: Optional[bool] = False,
     ):
         self.path = path
         self._self = _self
         self.args = args
         self.kwargs = kwargs
         self.id_at_location = id_at_location
-
+        self.is_static = is_static
         # logging needs .path to exist before calling
         # this which is why i've put this super().__init__ down here
         super().__init__(address=address, msg_id=msg_id)
@@ -91,55 +97,83 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         ):
             mutating_internal = True
 
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
-        if resolved_self is None:
-            logger.critical(
-                f"execute_action on {self.path} failed due to missing object"
-                + f" at: {self._self.id_at_location}"
-            )
-            return
+        resolved_self = None
+        if not self.is_static:
+            resolved_self = node.store.get_object(key=self._self.id_at_location)
 
-        result_read_permissions = resolved_self.read_permissions
+            if resolved_self is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {self._self.id_at_location}"
+                )
+                return
+            result_read_permissions = resolved_self.read_permissions
+        else:
+            result_read_permissions = {}
 
         resolved_args = list()
+        tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
+            tag_args.append(r_arg)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
+            tag_kwargs[arg_name] = r_arg
 
-        if type(method).__name__ in ["getset_descriptor", "_tuplegetter"]:
-            # we have a detached class property so we need the __get__ descriptor
-            upcast_attr = getattr(resolved_self.data, "upcast", None)
-            data = resolved_self.data
-            if upcast_attr is not None:
-                data = upcast_attr()
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-            result = method.__get__(data)
+        if self.is_static:
+            result = method(*upcasted_args, **upcasted_kwargs)
         else:
-            # we have a callable
-            # upcast our args in case the method only accepts the original types
-            (
-                upcasted_args,
-                upcasted_kwargs,
-            ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
-            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+            if resolved_self is None:
+                traceback_and_raise(
+                    ValueError(f"Method {method} called, but self is None.")
+                )
 
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-
-        # to avoid circular imports
+            # in opacus the step method in torch gets monkey patched on .attach
+            # this means we can't use the original AST method reference and need to
+            # get it again from the actual object so for now lets allow the following
+            # two methods to be resolved at execution time
+            method_name = self.path.split(".")[-1]
+            if method_name in ["step", "zero_grad"]:
+                # TODO: Remove this Opacus workaround
+                try:
+                    method = getattr(resolved_self.data, method_name, None)
+                    result = method(*upcasted_args, **upcasted_kwargs)
+                except Exception as e:
+                    critical(
+                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
+                    )
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
+            else:
+                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                    result = method(
+                        resolved_self.data,
+                        node,
+                        verify_key,
+                        *self.args,
+                        **upcasted_kwargs,
+                    )
+                else:
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -159,17 +193,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     assert result.id == self.id_at_location
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
-                    raise Exception(err)
-
-        # QUESTION: There seems to be return value tensors that have no id
-        # and get auto wrapped? So is this code not correct?
-        # else:
-        #     # TODO: Add tests, this could happen if the isprimitive fails due to an
-        #     # unsupported type
-        #     raise Exception(f"Result has no ID. {result}")
+                    traceback_and_raise(Exception(err))
 
         if mutating_internal:
-            resolved_self.read_permissions = result_read_permissions
+            if isinstance(resolved_self, StorableObject):
+                resolved_self.read_permissions = result_read_permissions
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
@@ -177,9 +205,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
+        inherit_tags(
+            attr_path_and_name=self.path,
+            result=result,
+            self_obj=resolved_self,
+            args=tag_args,
+            kwargs=tag_kwargs,
+        )
+
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.
 
@@ -191,19 +226,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=self._self.serialize(),
-            args=list(map(lambda x: x.serialize(), self.args)),
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            _self=serialize(self._self),
+            args=list(map(lambda x: serialize(x), self.args)),
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -224,7 +259,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction(
             path=proto.path,
             _self=_deserialize(blob=proto._self),
-            args=tuple(map(lambda x: _deserialize(blob=x), proto.args)),
+            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
@@ -250,3 +285,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments, and possibly the _self of the function"""
+        if self._self.id_at_location == current_input.id_at_location:
+            self._self = new_input
+        else:
+            for i, arg in enumerate(self.args):
+                if arg.id_at_location == current_input.id_at_location:
+                    self.args[i] = new_input

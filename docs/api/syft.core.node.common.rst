@@ -26,6 +26,14 @@ syft.core.node.common.client module
    :undoc-members:
    :show-inheritance:
 
+syft.core.node.common.metadata module
+-------------------------------------
+
+.. automodule:: syft.core.node.common.metadata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.node.common.node module
 ---------------------------------
 
@@ -33,4 +41,3 @@ syft.core.node.common.node module
    :members:
    :undoc-members:
    :show-inheritance:
-

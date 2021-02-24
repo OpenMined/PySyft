@@ -33,14 +33,6 @@ syft.core.io.connection module
    :undoc-members:
    :show-inheritance:
 
-syft.core.io.hop module
------------------------
-
-.. automodule:: syft.core.io.hop
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 syft.core.io.route module
 -------------------------
 
@@ -56,4 +48,3 @@ syft.core.io.virtual module
    :members:
    :undoc-members:
    :show-inheritance:
-
