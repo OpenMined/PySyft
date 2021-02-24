@@ -75,20 +75,20 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        include:
-          - os: ubuntu-latest
-            python-version: 3.7
-            torch-version: 1.4.0
-          # - os: windows-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: ubuntu-20.04
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: macos-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
+        torch-version: [1.6.0, 1.7.0]
+        # include:
+        # - os: ubuntu-latest
+        #   python-version: 3.7
+        #   torch-version: 1.4.0
+        # - os: windows-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: ubuntu-20.04
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: macos-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
