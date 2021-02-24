@@ -71,7 +71,6 @@ jobs:
     needs: [python-linting]
     strategy:
       max-parallel: 30
-      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
@@ -121,16 +120,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Scan for security issues
-        run: |
-          bandit -r src -ll
-
       - name: Install packages
         run: |
           pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
           pip install -e .
           pip list
         timeout-minutes: 20
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src -ll
 
       - name: Run normal tests
         run: |
