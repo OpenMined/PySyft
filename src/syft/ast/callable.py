@@ -27,6 +27,7 @@ class Callable(ast.attribute.Attribute):
     def __init__(
         self,
         path_and_name: str,
+        parent: ast.attribute.Attribute,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[AbstractNodeClient] = None,
@@ -46,6 +47,7 @@ class Callable(ast.attribute.Attribute):
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
 
         self.is_static = is_static
@@ -63,6 +65,8 @@ class Callable(ast.attribute.Attribute):
 
         2. If the client is not set, then the `__call__` is used as a query on the ast.
         """
+        self.apply_node_changes()
+
         if self.client is not None:
             return_tensor_type_pointer_type = self.client.lib_ast.query(
                 path=self.return_type_name
@@ -153,4 +157,5 @@ class Callable(ast.attribute.Attribute):
             object_ref=attr_ref,
             return_type_name=return_type_name,
             client=self.client,
+            parent=self,
         )

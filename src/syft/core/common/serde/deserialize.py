@@ -1,5 +1,4 @@
 # stdlib
-import pydoc
 from typing import Any
 from typing import Union
 
@@ -77,7 +76,7 @@ def _deserialize(
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
             traceback_and_raise(deserialization_error)
-        obj_type = pydoc.locate(obj_type)  # type: ignore
+        obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
 
     if not isinstance(obj_type, type):

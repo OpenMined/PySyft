@@ -30,11 +30,11 @@ class EnumAttribute(ast.attribute.Attribute):
             return_type_name: The return type name of the given action as a string with its the full path.
             client: The client for which all computation is being executed.
         """
-        self.parent = parent
         super().__init__(
             path_and_name=path_and_name,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
 
     def get_remote_enum_attribute(self) -> AbstractPointer:
