@@ -183,11 +183,6 @@ jobs:
       #     sudo apt-get update
       #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
 
-      - name: Adjust PyTorch versions
-        run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.txt
-
       - name: Upgrade pip
         run: |
           pip install --upgrade --user pip
@@ -205,9 +200,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.dev.txt
           pip install -e .
 
       - name: Run torch test chunks Linux and MacOS

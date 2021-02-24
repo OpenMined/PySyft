@@ -35,7 +35,6 @@ jobs:
       - name: Upgrade pip
         run: |
           pip install --upgrade --user pip
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T G2TRk4oLOam3SN2w00qN2f C9OlRjfjxr6BuoHUshUJf6 au.relay.tunshell.com
 
       - name: Get pip cache dir
         id: pip-cache
@@ -58,7 +57,8 @@ jobs:
       - name: Build Protos
         run: |
           set -e
-          pip install -r requirements.dev.txt --default-timeout=60
+
+          pip install black isort
           ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v2.0.0
@@ -66,6 +66,7 @@ jobs:
       - name: Run darglint via flake8 - Ignore Errors
         continue-on-error: true
         run: |
+          pip install darglint flake8
           flake8 src tests
 
   python-tests-fast:
@@ -103,11 +104,6 @@ jobs:
         run: |
           pip install --upgrade --user pip
 
-      - name: Adjust PyTorch versions
-        run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.txt
-
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -121,9 +117,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.dev.txt
           pip install -e .
           pip list
         timeout-minutes: 20
@@ -161,6 +163,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
+        torch-version: [1.7.0]
         os: [ubuntu-latest, macos-latest]
 
     steps:
@@ -188,9 +191,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.dev.txt
           pip install -e .
           pip list
         timeout-minutes: 20
@@ -218,6 +227,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
+        torch-version: [1.7.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -249,6 +259,12 @@ jobs:
           repository: "OpenMined/PyGrid"
           ref: "pygrid_0.4.0"
           path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Test PyGrid
         continue-on-error: true
