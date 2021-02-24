@@ -9,6 +9,7 @@ class User(BaseModel):
     hashed_password = db.Column(db.String(512))
     salt = db.Column(db.String(255))
     private_key = db.Column(db.String(2048))
+    verify_key = db.Column(db.String(2048))
     role = db.Column(db.Integer, db.ForeignKey("role.id"))
 
     def __str__(self):
