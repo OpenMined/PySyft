@@ -29,6 +29,18 @@ class EnvironmentManager(DatabaseManager):
         )
         return objects
 
+    def delete_associations(self, environment_id):
+        # Delete User environment Association
+        associations = (
+            self.db.session.query(self._association_schema)
+            .filter_by(environment=environment_id)
+            .all()
+        )
+        for association in associations:
+            self.db.session.delete(association)
+
+        self.db.session.commit()
+
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)
         if not result:
