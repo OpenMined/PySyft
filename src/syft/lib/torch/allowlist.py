@@ -2520,7 +2520,7 @@ allowlist["torch.nn.LPPool2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LPPool2d.extra_repr"] = "syft.lib.python.String"
 
 allowlist["torch.nn.LSTM"] = "torch.nn.LSTM"
-allowlist["torch.nn.LSTM.__call__"] = "syft.lib.python.List"
+allowlist["torch.nn.LSTM.__call__"] = "syft.lib.python.Tuple"
 allowlist["torch.nn.LSTM.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.LSTM.train"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.cuda"] = "torch.nn.LSTM"
