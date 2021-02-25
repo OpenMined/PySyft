@@ -12,6 +12,7 @@ from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.user_messages_pb2 import (
@@ -52,6 +53,7 @@ from syft.proto.grid.messages.user_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -122,6 +124,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         return CreateUserMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -193,6 +196,7 @@ class CreateUserResponse(ImmediateSyftMessageWithoutReply):
         return CreateUserResponse_PB
 
 
+@bind_protobuf
 @final
 class GetUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -263,6 +267,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         return GetUserMessage_PB
 
 
+@bind_protobuf
 @final
 class GetUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -334,6 +339,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse_PB
 
 
+@bind_protobuf
 @final
 class GetUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -404,6 +410,7 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         return GetUsersMessage_PB
 
 
+@bind_protobuf
 @final
 class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -475,6 +482,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -545,6 +553,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         return UpdateUserMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -616,6 +625,7 @@ class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
         return UpdateUserResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -686,6 +696,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         return DeleteUserMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -757,6 +768,7 @@ class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
         return DeleteUserResponse_PB
 
 
+@bind_protobuf
 @final
 class SearchUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -827,6 +839,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         return SearchUsersMessage_PB
 
 
+@bind_protobuf
 @final
 class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
