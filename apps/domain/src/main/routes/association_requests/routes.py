@@ -19,7 +19,7 @@ from ...core.task_handler import route_logic
 @token_required
 def send_association_request(current_user):
     # Get request body
-    content = request.get_json() 
+    content = request.get_json()
     if not content:
         content = {}
 

@@ -55,6 +55,7 @@ def cleanup(database):
     except:
         database.session.rollback()
 
+
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_send_association_request(client, database, cleanup):
     new_role = create_role(*admin_role)
@@ -76,6 +77,7 @@ def test_send_association_request(client, database, cleanup):
     )
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request sent!"}
+
 
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_receive_association_request(client, database, cleanup):
@@ -99,6 +101,7 @@ def test_receive_association_request(client, database, cleanup):
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request received!"}
 
+
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_reply_association_request(client, database, cleanup):
     new_role = create_role(*admin_role)
@@ -120,6 +123,7 @@ def test_reply_association_request(client, database, cleanup):
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Association request was replied!"}
 
+
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_get_all_association_requests(client, database, cleanup):
     new_role = create_role(*admin_role)
@@ -138,6 +142,7 @@ def test_get_all_association_requests(client, database, cleanup):
     assert result.get_json() == {
         "association-requests": ["Network A", "Network B", "Network C"]
     }
+
 
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_get_specific_association_requests(client, database, cleanup):
@@ -160,6 +165,7 @@ def test_get_specific_association_requests(client, database, cleanup):
             "address": "156.89.33.200",
         }
     }
+
 
 @pytest.mark.skip(reason="changes in association requets still in progress")
 def test_delete_association_requests(client, database, cleanup):
