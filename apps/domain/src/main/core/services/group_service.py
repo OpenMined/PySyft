@@ -6,6 +6,7 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
@@ -28,114 +29,108 @@ from syft.grid.messages.group_messages import (
 )
 
 from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError, GroupNotFoundError, MissingRequestKeyError
 
 
 def create_group_msg(
     msg: CreateGroupMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> CreateGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
     _group_name = msg.content.get("name", None)
-    _users = msg.content.get("name", None)
+    _users = msg.content.get("users", None)
 
-    _success = True
-    _msg_field = "msg"
-    _msg = ""
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Checks
-    _is_allowed = node.users.role(user_id=_current_user_id).can_create_groups
+    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
 
     if not _group_name:
-        _success = False
-        _msg = "Invalid group name!"
+        raise MissingRequestKeyError("Invalid group name!")
     elif _is_allowed:
         node.groups.create(group_name=_group_name, users=_users)
     else:
-        _success = False
-        _msg = "You're not allowed to create groups!"
-
-    if _success:
-        _msg = "Group created successfully!"
-    else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to create groups!")
 
     return CreateGroupResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"msg": "Group created successfully!"},
     )
 
 
 def update_group_msg(
     msg: UpdateGroupMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> UpdateGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
     _group_id = msg.content.get("group_id", None)
     _group_name = msg.content.get("name", None)
     _users = msg.content.get("users", None)
 
-    _success = True
-    _msg_field = ""
-    _msg = ""
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Checks
-    _is_allowed = node.users.role(user_id=_current_user_id).can_edit_groups
+    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
 
     if not node.groups.contain(id=_group_id):
-        _success = False
-        _msg = "Group ID not found!"
+        raise GroupNotFoundError("Group ID not found!")
     elif _is_allowed:
         node.groups.update(group_id=_group_id, group_name=_group_name, users=_users)
     else:
-        _success = False
-        _msg = "You're not allowed to get this group!"
-
-    if _success:
-        _msg_field = "msg"
-        _msg = "Group updated successfully!"
-    else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to get this group!")
 
     return UpdateGroupResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"msg": "Group updated successfully!"},
     )
 
 
 def get_group_msg(
     msg: GetGroupMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
     _group_id = msg.content.get("group_id", None)
 
-    _success = True
-    _msg_field = ""
-    _msg = ""
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Checks
-    _is_allowed = node.users.role(user_id=_current_user_id).can_triage_requests
+    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
 
     if not node.groups.contain(id=_group_id):
-        _success = False
-        _msg = "Group ID not found!"
+        raise GroupNotFoundError("Group ID not found!")
     elif _is_allowed:
         _group = node.groups.first(id=_group_id)
     else:
-        _success = False
-        _msg = "You're not allowed to get this group!"
+        raise AuthorizationError("You're not allowed to get this group!")
 
-    if _success:
-        _msg = model_to_json(_group)
-        _msg_field = "group"
-    else:
-        _msg_field = "error"
+    _msg = model_to_json(_group)
+    _msg["users"] = node.groups.get_users(group_id=_group_id)
+    _msg_field = "group"
 
     return GetGroupResponse(
         address=msg.reply_to,
-        success=_success,
+        status_code=200,
         content={_msg_field: _msg},
     )
 
@@ -143,27 +138,33 @@ def get_group_msg(
 def get_all_groups_msg(
     msg: GetGroupsMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetGroupsResponse:
-    _current_user_id = msg.content.get("current_user", None)
 
-    _success = True
-    _msg_field = ""
-    _msg = ""
+    try:
+        _current_user_id = msg.content.get("current_user", None)
+    except Exception:
+        _current_user_id = None
+
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Checks
-    _is_allowed = node.users.role(user_id=_current_user_id).can_triage_requests
-
+    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
     if _is_allowed:
         _groups = node.groups.all()
     else:
-        _success = False
-        _msg = "You're not allowed to get the groups!"
+        raise AuthorizationError("You're not allowed to get the groups!")
 
-    if _success:
-        _msg = {group.id: model_to_json(group) for group in _groups}
-        _msg_field = "groups"
-    else:
-        _msg_field = "error"
+    _msg = {group.id: model_to_json(group) for group in _groups}
+    for group_id in _msg.keys():
+        _msg[group_id]["users"] = node.groups.get_users(group_id=group_id)
+
+    _msg_field = "groups"
 
     return GetGroupsResponse(
         address=msg.reply_to,
@@ -175,36 +176,33 @@ def get_all_groups_msg(
 def del_group_msg(
     msg: DeleteGroupMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> DeleteGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
     _group_id = msg.content.get("group_id", None)
 
-    _success = True
-    _msg_field = ""
-    _msg = ""
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Checks
-    _is_allowed = node.users.role(user_id=_current_user_id).can_edit_groups
+    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
 
     if not node.groups.contain(id=_group_id):
-        _success = False
-        _msg = "Group ID not found!"
+        raise GroupNotFoundError("Group ID not found!")
     elif _is_allowed:
+        node.groups.delete_association(group=_group_id)
         node.groups.delete(id=_group_id)
     else:
-        _success = False
-        _msg = "You're not allowed to delete this group!"
-
-    if _success:
-        _msg = "User deleted successfully!"
-        _msg_field = "msg"
-    else:
-        _msg_field = "error"
+        raise AuthorizationError("You're not allowed to delete this group!")
 
     return DeleteGroupResponse(
         address=msg.reply_to,
-        success=_success,
-        content={_msg_field: _msg},
+        status_code=200,
+        content={"msg": "User deleted successfully!"},
     )
 
 
@@ -237,7 +235,9 @@ class GroupManagerService(ImmediateNodeServiceWithReply):
         GetGroupsResponse,
         DeleteGroupResponse,
     ]:
-        return GroupManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
+        return GroupManagerService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
