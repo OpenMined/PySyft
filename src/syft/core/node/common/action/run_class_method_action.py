@@ -146,10 +146,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
 
             if isinstance(resolved_self.data, Plan) and method_name == "__call__":
