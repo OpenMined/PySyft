@@ -1,5 +1,4 @@
 # stdlib
-import pydoc
 from typing import Any
 from typing import List
 from typing import Optional
@@ -14,6 +13,7 @@ import syft as sy
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
+from ...util import index_syft_by_module_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
@@ -94,8 +94,8 @@ class StorableObject(AbstractStorableObject):
 
     @data.setter
     def data(self, value: Any) -> Any:
-        if hasattr(value, "serializable_wrapper_type"):
-            self._data = value.serializable_wrapper_type(value=value)
+        if hasattr(value, "_sy_serializable_wrapper_type"):
+            self._data = value._sy_serializable_wrapper_type(value=value)
         else:
             self._data = value
 
@@ -119,7 +119,7 @@ class StorableObject(AbstractStorableObject):
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = self.id.serialize()
+        id = sy.serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -146,14 +146,14 @@ class StorableObject(AbstractStorableObject):
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = permission_data.serialize(to_bytes=True)
+            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = permission_data.serialize(to_bytes=True)
+            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
 
         return proto
 
@@ -168,7 +168,7 @@ class StorableObject(AbstractStorableObject):
         # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
         # PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
-        data_type = pydoc.locate(proto.data_type)
+        data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
 
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = data_type.get_protobuf_schema()  # type: ignore

@@ -63,7 +63,7 @@ def test_parameter_serde() -> None:
     # Setting grad manually to check it is passed through serialization
     param.grad = th.randn_like(param)
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 
@@ -86,7 +86,7 @@ def test_linear_grad_serde() -> None:
     # out.backward()
     # assert param.grad is not None
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 

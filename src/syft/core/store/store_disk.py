@@ -9,6 +9,7 @@ from sqlitedict import SqliteDict
 from typing_extensions import Final
 
 # syft relative
+from ... import serialize
 from ...logger import critical
 from ...logger import trace
 from ...logger import traceback_and_raise
@@ -56,7 +57,7 @@ class DiskObjectStore(ObjectStore):
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
         try:
-            blob = value.serialize(to_bytes=True)
+            blob = serialize(value, to_bytes=True)
             self.db[str(key.value)] = blob
             self.db.commit(blocking=False)
         except Exception as e:

@@ -94,6 +94,7 @@ from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
 
 # syft relative
+from ... import serialize
 from ...core.common.event_loop import loop
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
@@ -345,7 +346,7 @@ class WebRTCConnection(BidirectionalConnection):
 
                 # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
-                data = msg.to_bytes()
+                data = serialize(msg, to_bytes=True)
                 data_len = len(data)
 
                 if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:
@@ -391,7 +392,7 @@ class WebRTCConnection(BidirectionalConnection):
             # Build Close Message to warn the other peer
             bye_msg = CloseConnectionMessage(address=Address())
 
-            self.channel.send(OrderedChunk(0, bye_msg.to_bytes()).save())
+            self.channel.send(OrderedChunk(0, serialize(bye_msg, to_bytes=True)).save())
 
             # Finish async tasks related with this connection
             self._finish_coroutines()
