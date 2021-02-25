@@ -41,8 +41,14 @@ class GroupManager(DatabaseManager):
             self.modify(query={"id": group_id}, values={"name": group_name})
 
         if users:
-            self._delete_associations(group=group_id)
+            self.delete_association(group=group_id)
             self._attach_users(group_id=group_id, users=users)
+
+    def get_users(self, group_id: str):
+        _associations = self.db.session.query(self._association_schema).filter_by(
+            group=group_id
+        )
+        return [assoc.user for assoc in _associations]
 
     def contain_association(self, **kwargs):
         result = (
@@ -55,7 +61,7 @@ class GroupManager(DatabaseManager):
 
     def update_user_association(self, user_id, groups):
         # Delete all previous group associations with this user_id
-        self._delete_associations(user=user_id)
+        self.delete_association(user=user_id)
         # Create new ones
         for group_id in groups:
             # Check if group exists
@@ -76,7 +82,7 @@ class GroupManager(DatabaseManager):
 
         self.db.session.commit()
 
-    def _delete_associations(self, **kwargs):
+    def delete_association(self, **kwargs):
         objects_to_delete = (
             self.db.session.query(self._association_schema).filter_by(**kwargs).all()
         )
