@@ -6,6 +6,7 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
+from requests import post
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
@@ -29,20 +30,111 @@ from syft.grid.messages.association_messages import (
     RespondAssociationRequestResponse,
 )
 
+from ..exceptions import (
+    MissingRequestKeyError,
+    AuthorizationError,
+    UserNotFoundError,
+)
+from ..database.utils import model_to_json
+from ..database import expand_user_object
+
 
 def send_association_request_msg(
     msg: SendAssociationRequestMessage,
+    node: AbstractNode,
 ) -> SendAssociationRequestResponse:
+
+    # Get Payload Content
+    name = msg.content.get("name", None)
+    address = msg.content.get("address", None)
+    current_user_id = msg.content.get("current_user", None)
+    sender_address = msg.content.get("sender_address", None)
+
+    # Check if name/address fields are empty
+    missing_paramaters = not name or not address
+    if missing_paramaters:
+        raise MissingRequestKeyError(
+            message="Invalid request payload, empty fields (name/adress)!"
+        )
+
+    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+
+    if allowed:
+        association_requests = node.association_requests
+        association_request_obj = association_requests.create_association_request(
+            name, address
+        )
+        handshake_value = association_request_obj.handshake_value
+
+        # Create POST request to the address recived in the body
+        payload = {"name": name, "address": sender_address, "handshake": handshake_value}
+        header = {"token": msg.content.get('token', None)}
+        url = address + "/association-requests/receive"
+
+        response = post(url=url, json=payload, headers=header)
+        response_message = (
+            "Association request sent!"
+            if response.status_code == 200
+            else "Association request could not be sent! Please, try again."
+        )
+
+    else:
+        raise AuthorizationError("You're not allowed to create an Association Request!")
+
     return SendAssociationRequestResponse(
         address=msg.reply_to,
-        status_code=200,
-        content={"msg": "Association request sent!"},
+        status_code=response.status_code,
+        content={"msg": response_message},
     )
 
 
 def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
+    node: AbstractNode,
 ) -> ReceiveAssociationRequestResponse:
+
+    # Get Payload Content
+    address = msg.content.get("address", None)
+    current_user_id = msg.content.get("current_user", None)
+    handshake_value = msg.content.get("handshake", None)
+
+    # Check if name/address fields are empty
+    missing_paramaters = not address or not handshake_value
+    if missing_paramaters:
+        raise MissingRequestKeyError(
+            message="Invalid request payload, empty fields (adress/handhsake)!"
+        )
+
+    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+
+    if allowed:
+        association_requests = node.association_requests
+        has_handshake = association_requests.contain(handshake_value=handshake_value)
+
+        # Create a new Association Request if the handshake value doesn't exist in the database
+        if not has_handshake:
+            name = msg.content.get("name", None)
+
+            if not name:
+                raise MissingRequestKeyError(
+                    message="Invalid request payload, empty fields (name)!"
+                )
+
+            association_requests.create_association_request(name, address)
+
+        else:
+            value = msg.content.get("value", None)
+
+            # Set the status of the Association Request according to the "value" field recived
+            if value:
+                association_requests.set(handshake_value, value)
+            else:
+                raise MissingRequestKeyError(
+                    message="Invalid request payload, empty field (value)!"
+                )
+
+    else:
+        raise AuthorizationError("You're not allowed to create an Association Request!")
     return ReceiveAssociationRequestResponse(
         address=msg.reply_to,
         status_code=200,
@@ -52,37 +144,127 @@ def recv_association_request_msg(
 
 def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
+    node: AbstractNode,
 ) -> RespondAssociationRequestResponse:
+
+    # Get Payload Content
+    address = msg.content.get("address", None)
+    current_user_id = msg.content.get("current_user", None)
+    handshake_value = msg.content.get("handshake", None)
+    value = msg.content.get("value", None)
+    sender_address = msg.content.get("sender_address", None)
+
+    # Check if handshake/address/value fields are empty
+    missing_paramaters = not address or not handshake_value or not value
+    if missing_paramaters:
+        raise MissingRequestKeyError(
+            message="Invalid request payload, empty fields (adress/handshake/value)!"
+        )
+
+    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+
+    if allowed:
+        # Set the status of the Association Request according to the "value" field recived
+        association_requests = node.association_requests
+        association_requests.set(handshake_value, value)
+
+        # Create POST request to the address recived in the body
+        payload = {"address": sender_address, "handshake": handshake_value, "value": value}
+        header = {"token": msg.content.get('token', None)}
+        url = address + "/association-requests/receive"
+
+        response = post(url=url, json=payload, headers=header)
+        response_message = (
+            "Association request replied!"
+            if response.status_code == 200
+            else "Association request could not be replied! Please, try again."
+        )
+
+    else:
+        raise AuthorizationError("You're not allowed to create an Association Request!")
     return RespondAssociationRequestResponse(
         address=msg.reply_to,
-        status_code=200,
-        content={"msg": "Association request was replied!"},
+        status_code=response.status_code,
+        content={"msg": response_message},
     )
 
 
 def get_association_request_msg(
-    msg: GetAssociationRequestMessage,
+    msg: GetAssociationRequestMessage, node: AbstractNode
 ) -> GetAssociationRequestResponse:
+
+    # Get Payload Content
+    association_request_id = msg.content.get("association_request_id", None)
+    current_user_id = msg.content.get("current_user", None)
+
+    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+
+    if allowed:
+        association_requests = node.association_requests
+        association_request = association_requests.first(id=association_request_id)
+        association_request_json = model_to_json(association_request)
+    else:
+        raise AuthorizationError(
+            "You're not allowed to get Association Request information!"
+        )
+
     return GetAssociationRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"association-request": {"ID": "51613546", "address": "156.89.33.200"}},
+        content={"association-request": association_request_json},
     )
 
 
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
+    node: AbstractNode,
 ) -> GetAssociationRequestsResponse:
+
+    # Get Payload Content
+    current_user_id = msg.content.get("current_user", None)
+
+    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+
+    if allowed:
+        association_requests = node.association_requests
+        association_requests = association_requests.all()
+        association_requests_json = {
+            association_request.id: model_to_json(association_request)
+            for association_request in association_requests
+        }
+    else:
+        raise AuthorizationError(
+            "You're not allowed to get Association Request information!"
+        )
+
     return GetAssociationRequestsResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"association-requests": ["Network A", "Network B", "Network C"]},
+        content={"association-requests": association_requests_json},
     )
 
 
 def del_association_request_msg(
     msg: DeleteAssociationRequestMessage,
+    node: AbstractNode,
 ) -> DeleteAssociationRequestResponse:
+
+    # Get Payload Content
+    association_request_id = msg.content.get("association_request_id", None)
+    current_user_id = msg.content.get("current_user", None)
+
+    allowed = node.users.can_manage_infrastructure(
+        user_id=current_user_id
+    ) and node.association_requests.contain(id=association_request_id)
+
+    if allowed:
+        association_requests = node.association_requests
+        association_requests.delete(id=association_request_id)
+    else:
+        raise AuthorizationError(
+            "You're not allowed to delet this Association Request information!"
+        )
+
     return DeleteAssociationRequestResponse(
         address=msg.reply_to,
         status_code=200,
@@ -118,7 +300,7 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         GetAssociationRequestResponse,
         DeleteAssociationRequestResponse,
     ]:
-        return AssociationRequestService.msg_handler_map[type(msg)](msg=msg)
+        return AssociationRequestService.msg_handler_map[type(msg)](msg=msg, node=node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:

@@ -30,6 +30,7 @@ from .manager.role_manager import RoleManager
 from .manager.group_manager import GroupManager
 from .manager.environment_manager import EnvironmentManager
 from .manager.setup_manager import SetupManager
+from .manager.association_request_manager import AssociationRequestManager
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -76,6 +77,7 @@ class GridDomain(Domain):
         self.disk_store = DiskObjectStore(db)
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
+        self.association_requests = AssociationRequestManager(db)
 
         self.env_clients = {}
 

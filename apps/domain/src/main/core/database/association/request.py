@@ -11,6 +11,7 @@ class AssociationRequest(BaseModel):
         address (String) : Organization / Domain Address.
         accepted (Bool) :  If request was accepted or not.
         pending (Bool) : If association request is pending.
+        handshake_value (String) : Association request unique identifier 
     """
 
     __tablename__ = "association_request"
@@ -21,6 +22,7 @@ class AssociationRequest(BaseModel):
     address = db.Column(db.String(255))
     accepted = db.Column(db.Boolean(), default=False)
     pending = db.Column(db.Boolean(), default=True)
+    handshake_value = db.Column(db.String(255))
 
     def __str__(self):
         return f"< Association Request id : {self.id}, Name: {self.name}, Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"

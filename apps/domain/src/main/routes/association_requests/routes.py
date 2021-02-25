@@ -19,9 +19,17 @@ from ...core.task_handler import route_logic
 @token_required
 def send_association_request(current_user):
     # Get request body
-    content = request.get_json()
+    content = request.get_json() 
     if not content:
         content = {}
+
+    # ADD token parameter
+    token = request.headers.get("token", None)
+    content["token"] = token
+
+    # ADD sender address parameter
+    sender_address = "http://{}".format(request.host)
+    content["sender_address"] = sender_address
 
     status_code, response_msg = error_handler(
         route_logic, SendAssociationRequestMessage, current_user, content
@@ -64,6 +72,14 @@ def reply_association_request(current_user):
     content = request.get_json()
     if not content:
         content = {}
+
+    # ADD token parameter
+    token = request.headers.get("token", None)
+    content["token"] = token
+
+    # ADD sender address parameter
+    sender_address = "http://{}".format(request.host)
+    content["sender_address"] = sender_address
 
     status_code, response_msg = error_handler(
         route_logic, RespondAssociationRequestMessage, current_user, content
