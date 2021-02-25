@@ -8,9 +8,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.group_messages_pb2 import (
@@ -45,6 +47,7 @@ from syft.proto.grid.messages.group_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -65,15 +68,15 @@ class CreateGroupMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateGroupMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateGroupMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -115,6 +118,7 @@ class CreateGroupMessage(ImmediateSyftMessageWithReply):
         return CreateGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -136,13 +140,13 @@ class CreateGroupResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateGroupResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -186,6 +190,7 @@ class CreateGroupResponse(ImmediateSyftMessageWithoutReply):
         return CreateGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class GetGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -206,15 +211,15 @@ class GetGroupMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetGroupMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetGroupMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -256,6 +261,7 @@ class GetGroupMessage(ImmediateSyftMessageWithReply):
         return GetGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class GetGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -277,13 +283,13 @@ class GetGroupResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetGroupResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -327,6 +333,7 @@ class GetGroupResponse(ImmediateSyftMessageWithoutReply):
         return GetGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class GetGroupsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -347,15 +354,15 @@ class GetGroupsMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetGroupsMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetGroupsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -397,6 +404,7 @@ class GetGroupsMessage(ImmediateSyftMessageWithReply):
         return GetGroupsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -418,13 +426,13 @@ class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetGroupsResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -468,6 +476,7 @@ class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
         return GetGroupsResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -488,15 +497,15 @@ class UpdateGroupMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateGroupMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateGroupMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -538,6 +547,7 @@ class UpdateGroupMessage(ImmediateSyftMessageWithReply):
         return UpdateGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -559,13 +569,13 @@ class UpdateGroupResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateGroupResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -609,6 +619,7 @@ class UpdateGroupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateGroupResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteGroupMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -629,15 +640,15 @@ class DeleteGroupMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteGroupMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteGroupMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -679,6 +690,7 @@ class DeleteGroupMessage(ImmediateSyftMessageWithReply):
         return DeleteGroupMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteGroupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -700,13 +712,13 @@ class DeleteGroupResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteGroupResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

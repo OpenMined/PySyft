@@ -1,7 +1,6 @@
 # stdlib
 from collections import UserString
 from typing import Any
-from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Union
@@ -13,15 +12,15 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.store.storeable_object import StorableObject
+from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.string_pb2 import String as String_PB
-from ...util import aggressive_set_attr
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
+@bind_protobuf
 class String(UserString, PyPrimitive):
     def __init__(self, value: Any = None, id: Optional[UID] = None):
         if value is None:
@@ -399,46 +398,3 @@ class String(UserString, PyPrimitive):
     # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
     def __rmod__(self, template: Union[PyPrimitive, str]) -> PyPrimitive:
         return self.__class__(str(template) % self)
-
-
-class StringWrapper(StorableObject):
-    def __init__(self, value: object):
-        super().__init__(
-            data=value,
-            id=getattr(value, "id", UID()),
-            tags=getattr(value, "tags", []),
-            description=getattr(value, "description", ""),
-        )
-        self.value = value
-
-    def _data_object2proto(self) -> String_PB:
-        _object2proto = getattr(self.data, "_object2proto", None)
-        if _object2proto:
-            return _object2proto()
-
-    @staticmethod
-    def _data_proto2object(proto: String_PB) -> "String":  # type: ignore
-        return String._proto2object(proto=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return String_PB
-
-    @staticmethod
-    def get_wrapped_type() -> type:
-        return String
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: StorableObject,
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> StorableObject:
-        setattr(data, "_id", id)
-        data.tags = tags
-        data.description = description
-        return data
-
-
-aggressive_set_attr(obj=String, name="serializable_wrapper_type", attr=StringWrapper)

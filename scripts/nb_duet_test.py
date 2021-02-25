@@ -46,7 +46,11 @@ except BaseException as e:
     print("os.mkdir failed ", e)
 
 
-for path in Path("examples/homomorphic-encryption").rglob("*.ipynb"):
+for path in (
+    list(Path("examples/homomorphic-encryption").rglob("*.ipynb"))
+    + list(Path("examples/duet/dcgan").rglob("*.ipynb"))
+    + list(Path("examples/duet/super_resolution").rglob("*.ipynb"))
+):
     if ".ipynb_checkpoints" in str(path):
         continue
 

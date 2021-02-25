@@ -1,3 +1,4 @@
+# flake8: noqa
 """
 File copied from cpython test suite:
 https://github.com/python/cpython/blob/3.8/Lib/test/string_tests.py
@@ -2919,6 +2920,7 @@ def test_slice():
     checkraises(TypeError, python.String("abc"), "__getitem__", python.String("def"))
 
 
+@pytest.mark.slow
 def test_extended_getslice():
     # Test extended slicing by comparing with list slicing.
     s = string.ascii_letters + string.digits

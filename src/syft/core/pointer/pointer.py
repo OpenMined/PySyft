@@ -103,6 +103,7 @@ from ...logger import error
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -117,6 +118,7 @@ from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
+@bind_protobuf
 class Pointer(AbstractPointer):
     """
     The pointer is the handler when interacting with remote data.
@@ -170,18 +172,7 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
-
-        obj = response.obj
-
-        if type(obj).__name__.endswith("ProtobufWrapper"):
-            # for ProtobufWrapper's we want to actually vend the real Proto since
-            # that is what was originally sent in with .send
-            return obj.data
-
-        if type(obj).__name__.endswith("CTypeWrapper"):
-            return obj.data
-
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
@@ -254,15 +245,15 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=self.id_at_location.serialize(),
-            location=self.client.address.serialize(),
+            id_at_location=sy.serialize(self.id_at_location),
+            location=sy.serialize(self.client.address),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,

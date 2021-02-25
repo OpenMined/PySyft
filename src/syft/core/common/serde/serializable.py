@@ -1,59 +1,29 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import Tuple
 from typing import Type
-from typing import Union
 
 # third party
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# Fixes python3.6
-# however, API changed between versions so typing_extensions smooths this over:
-# https://cirq.readthedocs.io/en/stable/_modules/typing_extensions.html
-from typing_extensions import GenericMeta as GenericM  # type: ignore
-
 # syft relative
-from ....logger import debug
 from ....logger import traceback_and_raise
-from ....proto.util.data_message_pb2 import DataMessage
-from ....util import get_fully_qualified_name
 from ....util import random_name
-from ....util import validate_type
 
 
-# GenericMeta Fixes python 3.6
-# After python 3.7+ there is no GenericMeta only Generic and this becomes "type"
-# python 3.6 print(typing_extensions.GenericMeta) = <class 'typing.GenericMeta'>
-# python 3.7 print(typing_extensions.GenericMeta) = <class 'type'>
-class MetaSerializable(GenericM):
+def bind_protobuf(cls: Any) -> Any:
+    protobuf_schema = cls.get_protobuf_schema()
+    # If protobuf already has schema2type, means it's related to multiple types.
+    # Set it's schema2type to None, becuase we can't take use of it anymore.
+    if hasattr(protobuf_schema, "schema2type"):
+        protobuf_schema.schema2type = None
+    else:
+        protobuf_schema.schema2type = cls
 
-    """When we go to deserialize a JSON protobuf object, the JSON protobuf
-    wrapper will return a python protobuf object corresponding to a subclass
-    of Serializable. However, in order to be able to take the next step, we need
-    an instance of the Serializable subclass. In order to create this instance,
-    we cache/monkeypatch it onto the protobuf class it corresponds to.
-
-    Since this could be a dangerous thing to do (because developers of new objects
-    in Syft could forget to add the schema2type attribute) we do it automatically
-    for all subclasses of Serializable via this metaclass. This way, nobody has
-    to worry about remembering to implement this flag."""
-
-    def __new__(
-        cls: Type, name: str, bases: Tuple[Type, ...], dct: Dict[str, Any]
-    ) -> "MetaSerializable":
-        x = super().__new__(cls, name, bases, dct)
-        try:
-            protobuf_schema = dct["get_protobuf_schema"].__get__("")()
-            if protobuf_schema is not None:
-                protobuf_schema.schema2type = x
-        except (KeyError, NotImplementedError):
-            ""
-        return x
+    return cls
 
 
-class Serializable(metaclass=MetaSerializable):
+class Serializable:
     """When we want a custom object to be serializable within the Syft ecosystem
     (as outline in the tutorial above), the first thing we need to do is have it
     subclass from this class. You must then do the following in order for the
@@ -152,7 +122,7 @@ class Serializable(metaclass=MetaSerializable):
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as .binary(), etc) know how to convert the object into
+        implemented here (such as serialize(, to_bytes=True), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message
@@ -191,89 +161,6 @@ class Serializable(metaclass=MetaSerializable):
         :rtype: type
         """
         traceback_and_raise(NotImplementedError)
-
-    def to_proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self.serialize(to_proto=True), Message)
-
-    def proto(self) -> Message:
-        """A convenience method to convert any subclass of Serializable into a protobuf object.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-        return validate_type(self.serialize(to_proto=True), Message)
-
-    def to_bytes(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self.serialize(to_bytes=True), bytes)
-
-    def binary(self) -> bytes:
-        """A convenience method to convert any subclass of Serializable into a binary object.
-
-        :return: a binary string
-        :rtype: bytes
-        """
-        return validate_type(self.serialize(to_bytes=True), bytes)
-
-    def serialize(
-        self,
-        to_proto: bool = True,
-        to_bytes: bool = False,
-    ) -> Union[str, bytes, Message]:
-        """Serialize the object according to the parameters.
-
-        This is the primary serialization method, which processes the above
-        flags in a particular order. In general, it is not expected that people
-        will set multiple to_<type> flags to True at the same time. We don't
-        currently have logic which prevents this, because this may affect
-        runtime performance, but if several flags are True, then we will simply
-        take return the type of latest supported flag from the following list:
-
-            - proto
-            - json
-            - binary
-            - hex
-
-        TODO: we could also add "dict" to this list but it's not clear if it would be used.
-
-        :param to_proto: set this flag to TRUE if you want to return a protobuf object
-        :type to_proto: bool
-        :param to_bytes: set this flag to TRUE if you want to return a binary object
-        :type to_bytes: bool
-        :return: a serialized form of the object on which serialize() is called.
-        :rtype: Union[str, bytes, Message]
-
-        """
-
-        if to_bytes:
-            debug(f"Serializing {type(self)}")
-            # indent=None means no white space or \n in the serialized version
-            # this is compatible with json.dumps(x, indent=None)
-            serialized_data = self._object2proto().SerializeToString()
-            blob: Message = DataMessage(
-                obj_type=get_fully_qualified_name(obj=self), content=serialized_data
-            )
-            return blob.SerializeToString()
-
-        elif to_proto:
-            return self._object2proto()
-        else:
-            traceback_and_raise(
-                Exception(
-                    """You must specify at least one deserialization format using
-                            one of the arguments of the serialize() method such as:
-                            to_proto, to_bytes."""
-                )
-            )
 
     @staticmethod
     def random_name() -> str:

@@ -68,6 +68,7 @@ mapping = {0: generate_0, 1: generate_1}
 objects = [0, 1]
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())
@@ -114,8 +115,8 @@ def test_pointer_objectives(test_objects, func):
 
         assert py_obj == sy_obj
         # TODO add this as well when the store logic will work
-        # get_permission(remote_sy_obj)
-        # assert sy_obj == remote_sy_obj.get()
+        get_permission(remote_sy_obj)
+        assert sy_obj == remote_sy_obj.get()
 
 
 @pytest.mark.slow

@@ -12,8 +12,10 @@ from ...logger import critical
 from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 
 
+@bind_protobuf
 class UID(Serializable):
     """A unique ID for every Syft object.
 
@@ -165,7 +167,7 @@ class UID(Serializable):
         :rtype: ProtoUID
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """

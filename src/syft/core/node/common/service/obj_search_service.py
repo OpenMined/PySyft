@@ -15,6 +15,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ..... import serialize
+from .....core.common.serde.serializable import bind_protobuf
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -35,6 +37,7 @@ from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
 
 
+@bind_protobuf
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -56,14 +59,14 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         :rtype: ObjectSearchMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -108,6 +111,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage_PB
 
 
+@bind_protobuf
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -133,14 +137,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ObjectSearchReplyMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchReplyMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            results=list(map(lambda x: x.serialize(), self.results)),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            results=list(map(lambda x: serialize(x), self.results)),
         )
 
     @staticmethod
@@ -203,7 +207,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
         try:
             for obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
-                # has an All() class in it.
+                # has a VerifyAll in it.
                 contains_all_in_permissions = any(
                     key is VerifyAll for key in obj.search_permissions.keys()
                 )

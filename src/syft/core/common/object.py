@@ -10,9 +10,12 @@ from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_
 from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize as serialize
 from .uid import UID
 
 
+@bind_protobuf
 class ObjectWithID(Serializable):
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
@@ -37,9 +40,8 @@ class ObjectWithID(Serializable):
         primary purpose of this class. It also sets the 'as_wrapper' flag
         for the 'Serializable' superclass.
 
-        :param id: an override which can be used to set an ID for this object
-            manually. This is probably only used for deserialization.
-        :type id: UID
+        Args:
+            id: an override which can be used to set an ID for this object
 
         """
 
@@ -58,8 +60,8 @@ class ObjectWithID(Serializable):
         developers of Syft from modifying .id attributes after an object
         has been initialized.
 
-        :return: returns the unique id of the object
-        :rtype: UID
+        Returns:
+            returns the unique id of the object
         """
         return self._id
 
@@ -70,10 +72,11 @@ class ObjectWithID(Serializable):
         comparing whether they have the same .id objects. These objects
         come with their own __eq__ function which we assume to be correct.
 
-        :param other: this is the other ObjectWithIDs to be compared with
-        :type other: Any (note this must be Any or __eq__ fails on other types)
-        :return: returns True/False based on whether the objects are the same
-        :rtype: bool
+        Args:
+            other: this is the other ObjectWithIDs to be compared with
+
+        Returns:
+            True/False based on whether the objects are the same
         """
 
         try:
@@ -82,40 +85,46 @@ class ObjectWithID(Serializable):
             return False
 
     def __repr__(self) -> str:
-        """Returns a human-readable version of the ObjectWithID
-
+        """
         Return a human-readable representation of the ObjectWithID with brackets
         so that it can be easily spotted when nested inside of the human-
-        readable representations of other objects."""
+        readable representations of other objects.
+
+        Returns:
+            a human-readable version of the ObjectWithID
+
+        """
 
         no_dash = str(self.id.value).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
 
     def repr_short(self) -> str:
-        """Returns a SHORT human-readable version of SpecificLocation
-
+        """
         Return a SHORT human-readable version of the ID which
         makes it print nicer when embedded (often alongside other
-        UID objects) within other object __repr__ methods."""
+        UID objects) within other object __repr__ methods.
+
+        Returns:
+            a SHORT human-readable version of SpecificLocation
+        """
 
         return f"<{type(self).__name__}:{self.id.repr_short()}>"
 
     def _object2proto(self) -> ObjectWithID_PB:
-        """Returns a protobuf serialization of self.
-
+        """
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
 
-        :return: returns a protobuf object
-        :rtype: ObjectWithID_PB
+        Returns:
+            a protobuf object that is the serialization of self.
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return ObjectWithID_PB(id=self.id.serialize())
+        return ObjectWithID_PB(id=serialize(self.id))
 
     @staticmethod
     def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
@@ -124,8 +133,11 @@ class ObjectWithID(Serializable):
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of ObjectWithID
-        :rtype: ObjectWithID
+        Args:
+            proto: a protobuf object that we wish to convert to instance of this class
+
+        Returns:
+            an instance of ObjectWithID
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
@@ -147,8 +159,8 @@ class ObjectWithID(Serializable):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for details.
 
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+        Returns:
+            the type of protobuf object which corresponds to this class.
 
         """
 

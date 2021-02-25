@@ -5,14 +5,17 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
+from .... import serialize
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import validate_type
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import Serializable
+from ...common.serde.serializable import bind_protobuf
 from ...common.uid import UID
 from ...io.location import Location
 
 
+@bind_protobuf
 class Metadata(Serializable):
     def __init__(
         self,
@@ -39,12 +42,12 @@ class Metadata(Serializable):
         :rtype: Metadata_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Metadata_PB(
-            name=self.name, id=self.id.serialize(), node=self.node.serialize()
+            name=self.name, id=serialize(self.id), node=serialize(self.node)
         )
 
     @staticmethod

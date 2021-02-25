@@ -8,9 +8,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.infra_messages_pb2 import (
@@ -51,6 +53,7 @@ from syft.proto.grid.messages.infra_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -71,15 +74,15 @@ class CreateWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -121,6 +124,7 @@ class CreateWorkerMessage(ImmediateSyftMessageWithReply):
         return CreateWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -142,13 +146,13 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -192,6 +196,7 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return CreateWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -212,15 +217,15 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CheckWorkerDeploymentMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CheckWorkerDeploymentMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -262,6 +267,7 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         return CheckWorkerDeploymentMessage_PB
 
 
+@bind_protobuf
 @final
 class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -283,13 +289,13 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CheckWorkerDeploymentResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -333,6 +339,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         return CheckWorkerDeploymentResponse_PB
 
 
+@bind_protobuf
 @final
 class GetWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -353,15 +360,15 @@ class GetWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -403,6 +410,7 @@ class GetWorkerMessage(ImmediateSyftMessageWithReply):
         return GetWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -424,13 +432,13 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -474,6 +482,7 @@ class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class GetWorkersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -494,15 +503,15 @@ class GetWorkersMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetWorkersMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkersMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -544,6 +553,7 @@ class GetWorkersMessage(ImmediateSyftMessageWithReply):
         return GetWorkersMessage_PB
 
 
+@bind_protobuf
 @final
 class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -565,13 +575,13 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetWorkersResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -615,6 +625,7 @@ class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
         return GetWorkersResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -635,15 +646,15 @@ class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -685,6 +696,7 @@ class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
         return UpdateWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -706,13 +718,13 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -756,6 +768,7 @@ class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
         return UpdateWorkerResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -776,15 +789,15 @@ class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteWorkerMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteWorkerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -826,6 +839,7 @@ class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
         return DeleteWorkerMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -847,13 +861,13 @@ class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteWorkerResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
