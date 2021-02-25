@@ -123,7 +123,6 @@ def create_union_ast(
     for ast_klass in ast.classes:
         ast_klass.create_pointer_class()
         ast_klass.create_send_method()
-        ast_klass.create_serialization_methods()
         ast_klass.create_storable_object_attr_convenience_methods()
 
     return ast

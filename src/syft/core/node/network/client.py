@@ -8,7 +8,6 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from ....decorators import syft_decorator
 from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
@@ -22,7 +21,6 @@ class NetworkClient(Client):
 
     network: SpecificLocation  # redefine the type of self.vm to not be optional
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -118,6 +116,5 @@ class NetworkClient(Client):
             Exception("This client points to a network, you don't need a VM Location.")
         )
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"

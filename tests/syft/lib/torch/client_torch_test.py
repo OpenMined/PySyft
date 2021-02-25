@@ -3,12 +3,14 @@ from typing import List as TypeList
 from typing import Type as TypeType
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.slow
 def test_torch_function() -> None:
     bob = sy.VirtualMachine(name="Bob")
     client = bob.get_client()

@@ -1,3 +1,4 @@
+# flake8: noqa
 """
 Tests copied from cpython test suite:
 https://github.com/python/cpython/blob/3.8/Lib/test/test_dict.py
@@ -13,6 +14,7 @@ import string
 import sys
 from test import support
 import unittest
+import weakref
 
 # third party
 import pytest
@@ -81,16 +83,16 @@ class DictTest(unittest.TestCase):
         self.assertRaises(TypeError, d.values, None)
         self.assertEqual(repr(dict(a=1).values()), "dict_values([1])")
 
+    @pytest.mark.xfail
     def test_items(self):
         # TODO: support this when we have sets:
-        pass
-        # d = Dict()
-        # self.assertEqual(set(d.items()), set())
-        #
-        # d = Dict({1: 2})
-        # self.assertEqual(set(d.items()), {(1, 2)})
-        # self.assertRaises(TypeError, d.items, None)
-        # self.assertEqual(repr(dict(a=1).items()), "dict_items([('a', 1)])")
+        d = Dict()
+        self.assertEqual(set(d.items()), set())
+
+        d = Dict({1: 2})
+        self.assertEqual(set(d.items()), {(1, 2)})
+        self.assertRaises(TypeError, d.items, None)
+        self.assertEqual(repr(dict(a=1).items()), "dict_items([('a', 1)])")
 
     def test_contains(self):
         d = Dict()
@@ -481,9 +483,9 @@ class DictTest(unittest.TestCase):
                     b = a.copy()
                 for i in range(size):
                     ka, va = ta = a.popitem()
-                    self.assertEqual(va, int(ka))
+                    self.assertEqual(va, ka.__int__())
                     kb, vb = tb = b.popitem()
-                    self.assertEqual(vb, int(kb))
+                    self.assertEqual(vb, kb.__int__())
                     self.assertFalse(copymode < 0 and ta != tb)
                 self.assertFalse(a)
                 self.assertFalse(b)
@@ -556,46 +558,46 @@ class DictTest(unittest.TestCase):
                     del d[0]
                     d[0] = 0
 
+    @pytest.mark.xfail
     def test_mutating_iteration_delete_over_items(self):
         # TODO: proper iterators needed over the views, currently, we convert them to lists
-        pass
-        # # change dict content during iteration
-        # d = Dict()
-        # d[0] = 0
-        # # python 3.8+ raise RuntimeError but older versions do not
-        # if sys.version_info >= (3, 8):
-        #     with self.assertRaises(RuntimeError):
-        #         for i in d.items():
-        #             del d[0]
-        #             d[0] = 0
+        # change dict content during iteration
+        d = Dict()
+        d[0] = 0
+        # python 3.8+ raise RuntimeError but older versions do not
+        if sys.version_info >= (3, 8):
+            with self.assertRaises(RuntimeError):
+                for i in d.items():
+                    del d[0]
+                    d[0] = 0
 
+    @pytest.mark.xfail
     def test_mutating_lookup(self):
         # changing dict during a lookup (issue #14417)
         # TODO: investigate this at some point
-        pass
-        # class NastyKey:
-        #     mutate_dict = None
-        #
-        #     def __init__(self, value):
-        #         self.value = value
-        #
-        #     def __hash__(self):
-        #         # hash collision!
-        #         return 1
-        #
-        #     def __eq__(self, other):
-        #         if NastyKey.mutate_dict:
-        #             mydict, key = NastyKey.mutate_dict
-        #             NastyKey.mutate_dict = None
-        #             del mydict[key]
-        #         return self.value == other.value
-        #
-        # key1 = NastyKey(1)
-        # key2 = NastyKey(2)
-        # d = Dict({key1: 1})
-        # NastyKey.mutate_dict = (d, key1)
-        # d[key2] = 2
-        # self.assertEqual(d, {key2: 2})
+        class NastyKey:
+            mutate_dict = None
+
+            def __init__(self, value):
+                self.value = value
+
+            def __hash__(self):
+                # hash collision!
+                return 1
+
+            def __eq__(self, other):
+                if NastyKey.mutate_dict:
+                    mydict, key = NastyKey.mutate_dict
+                    NastyKey.mutate_dict = None
+                    del mydict[key]
+                return self.value == other.value
+
+        key1 = NastyKey(1)
+        key2 = NastyKey(2)
+        d = Dict({key1: 1})
+        NastyKey.mutate_dict = (d, key1)
+        d[key2] = 2
+        self.assertEqual(d, {key2: 2})
 
     def test_repr(self):
         d = Dict()
@@ -622,155 +624,156 @@ class DictTest(unittest.TestCase):
             d = Dict({1: d})
         self.assertRaises(RecursionError, repr, d)
 
+    @pytest.mark.xfail
     def test_eq(self):
         self.assertEqual(Dict(), {})
         self.assertEqual(Dict({1: 2}), {1: 2})
 
         # TODO, when we have full set and iter support, make this pass as well
-        pass
-        # class Exc(Exception):
-        #     pass
-        #
-        # class BadCmp(object):
-        #     def __eq__(self, other):
-        #         raise Exc()
-        #
-        #     def __hash__(self):
-        #         return 1
-        #
-        # d1 = Dict({BadCmp(): 1})
-        # d2 = Dict({1: 1})
-        #
-        # with self.assertRaises(Exc):
-        #     d1 == d2
+        class Exc(Exception):
+            pass
 
+        class BadCmp(object):
+            def __eq__(self, other):
+                raise Exc()
+
+            def __hash__(self):
+                return 1
+
+        d1 = Dict({BadCmp(): 1})
+        d2 = Dict({1: 1})
+
+        with self.assertRaises(Exc):
+            d1 == d2
+
+    @pytest.mark.xfail
     def test_keys_contained(self):
         self.helper_keys_contained(lambda x: x.keys())
         self.helper_keys_contained(lambda x: x.items())
 
+    @pytest.mark.xfail
     def helper_keys_contained(self, fn):
         # TODO add this when we have set support
-        pass
         # Test rich comparisons against dict key views, which should behave the
         # same as sets.
-        # empty = fn(Dict())
-        # empty2 = fn(Dict())
-        # smaller = fn(Dict({1: 1, 2: 2}))
-        # larger = fn(Dict({1: 1, 2: 2, 3: 3}))
-        # larger2 = fn(Dict({1: 1, 2: 2, 3: 3}))
-        # larger3 = fn(Dict({4: 1, 2: 2, 3: 3}))
-        #
-        # self.assertTrue(smaller < larger)
-        # self.assertTrue(smaller <= larger)
-        # self.assertTrue(larger > smaller)
-        # self.assertTrue(larger >= smaller)
-        #
-        # self.assertFalse(smaller >= larger)
-        # self.assertFalse(smaller > larger)
-        # self.assertFalse(larger <= smaller)
-        # self.assertFalse(larger < smaller)
-        #
-        # self.assertFalse(smaller < larger3)
-        # self.assertFalse(smaller <= larger3)
-        # self.assertFalse(larger3 > smaller)
-        # self.assertFalse(larger3 >= smaller)
-        #
-        # # Inequality strictness
-        # self.assertTrue(larger2 >= larger)
-        # self.assertTrue(larger2 <= larger)
-        # self.assertFalse(larger2 > larger)
-        # self.assertFalse(larger2 < larger)
-        #
-        # self.assertTrue(larger == larger2)
-        # self.assertTrue(smaller != larger)
-        #
-        # # There is an optimization on the zero-element case.
-        # self.assertTrue(empty == empty2)
-        # self.assertFalse(empty != empty2)
-        # self.assertFalse(empty == smaller)
-        # self.assertTrue(empty != smaller)
-        #
-        # # With the same size, an elementwise compare happens
-        # self.assertTrue(larger != larger3)
-        # self.assertFalse(larger == larger3)
+        empty = fn(Dict())
+        empty2 = fn(Dict())
+        smaller = fn(Dict({1: 1, 2: 2}))
+        larger = fn(Dict({1: 1, 2: 2, 3: 3}))
+        larger2 = fn(Dict({1: 1, 2: 2, 3: 3}))
+        larger3 = fn(Dict({4: 1, 2: 2, 3: 3}))
 
+        self.assertTrue(smaller < larger)
+        self.assertTrue(smaller <= larger)
+        self.assertTrue(larger > smaller)
+        self.assertTrue(larger >= smaller)
+
+        self.assertFalse(smaller >= larger)
+        self.assertFalse(smaller > larger)
+        self.assertFalse(larger <= smaller)
+        self.assertFalse(larger < smaller)
+
+        self.assertFalse(smaller < larger3)
+        self.assertFalse(smaller <= larger3)
+        self.assertFalse(larger3 > smaller)
+        self.assertFalse(larger3 >= smaller)
+
+        # Inequality strictness
+        self.assertTrue(larger2 >= larger)
+        self.assertTrue(larger2 <= larger)
+        self.assertFalse(larger2 > larger)
+        self.assertFalse(larger2 < larger)
+
+        self.assertTrue(larger == larger2)
+        self.assertTrue(smaller != larger)
+
+        # There is an optimization on the zero-element case.
+        self.assertTrue(empty == empty2)
+        self.assertFalse(empty != empty2)
+        self.assertFalse(empty == smaller)
+        self.assertTrue(empty != smaller)
+
+        # With the same size, an elementwise compare happens
+        self.assertTrue(larger != larger3)
+        self.assertFalse(larger == larger3)
+
+    @pytest.mark.xfail
     def test_errors_in_view_containment_check(self):
         # TODO: add support for custom objects
-        # class C:
-        #     def __eq__(self, other):
-        #         raise RuntimeError
-        #
-        # d1 = Dict({1: C()})
-        # d2 = Dict({1: C()})
-        # with self.assertRaises(RuntimeError):
-        #     d1.items() == d2.items()
-        # with self.assertRaises(RuntimeError):
-        #     d1.items() != d2.items()
-        # with self.assertRaises(RuntimeError):
-        #     d1.items() <= d2.items()
-        # with self.assertRaises(RuntimeError):
-        #     d1.items() >= d2.items()
-        #
-        # d3 = Dict({1: C(), 2: C()})
-        # with self.assertRaises(RuntimeError):
-        #     d2.items() < d3.items()
-        # with self.assertRaises(RuntimeError):
-        #     d3.items() > d2.items()
-        pass
+        class C:
+            def __eq__(self, other):
+                raise RuntimeError
 
+        d1 = Dict({1: C()})
+        d2 = Dict({1: C()})
+        with self.assertRaises(RuntimeError):
+            d1.items() == d2.items()
+        with self.assertRaises(RuntimeError):
+            d1.items() != d2.items()
+        with self.assertRaises(RuntimeError):
+            d1.items() <= d2.items()
+        with self.assertRaises(RuntimeError):
+            d1.items() >= d2.items()
+
+        d3 = Dict({1: C(), 2: C()})
+        with self.assertRaises(RuntimeError):
+            d2.items() < d3.items()
+        with self.assertRaises(RuntimeError):
+            d3.items() > d2.items()
+
+    @pytest.mark.xfail
     def test_dictview_set_operations_on_keys(self):
         # TODO add support for sets
-        pass
-        # k1 = Dict({1: 1, 2: 2}).keys()
-        # k2 = Dict({1: 1, 2: 2, 3: 3}).keys()
-        # k3 = Dict({4: 4}).keys()
-        #
-        # self.assertEqual(k1 - k2, set())
-        # self.assertEqual(k1 - k3, {1, 2})
-        # self.assertEqual(k2 - k1, {3})
-        # self.assertEqual(k3 - k1, {4})
-        # self.assertEqual(k1 & k2, {1, 2})
-        # self.assertEqual(k1 & k3, set())
-        # self.assertEqual(k1 | k2, {1, 2, 3})
-        # self.assertEqual(k1 ^ k2, {3})
-        # self.assertEqual(k1 ^ k3, {1, 2, 4})
+        k1 = Dict({1: 1, 2: 2}).keys()
+        k2 = Dict({1: 1, 2: 2, 3: 3}).keys()
+        k3 = Dict({4: 4}).keys()
 
+        self.assertEqual(k1 - k2, set())
+        self.assertEqual(k1 - k3, {1, 2})
+        self.assertEqual(k2 - k1, {3})
+        self.assertEqual(k3 - k1, {4})
+        self.assertEqual(k1 & k2, {1, 2})
+        self.assertEqual(k1 & k3, set())
+        self.assertEqual(k1 | k2, {1, 2, 3})
+        self.assertEqual(k1 ^ k2, {3})
+        self.assertEqual(k1 ^ k3, {1, 2, 4})
+
+    @pytest.mark.xfail
     def test_dictview_set_operations_on_items(self):
         # TODO add support for sets
-        pass
-        # k1 = Dict({1: 1, 2: 2}).items()
-        # k2 = Dict({1: 1, 2: 2, 3: 3}).items()
-        # k3 = Dict({4: 4}).items()
-        #
-        # self.assertEqual(k1 - k2, set())
-        # self.assertEqual(k1 - k3, {(1, 1), (2, 2)})
-        # self.assertEqual(k2 - k1, {(3, 3)})
-        # self.assertEqual(k3 - k1, {(4, 4)})
-        # self.assertEqual(k1 & k2, {(1, 1), (2, 2)})
-        # self.assertEqual(k1 & k3, set())
-        # self.assertEqual(k1 | k2, {(1, 1), (2, 2), (3, 3)})
-        # self.assertEqual(k1 ^ k2, {(3, 3)})
-        # self.assertEqual(k1 ^ k3, {(1, 1), (2, 2), (4, 4)})
+        k1 = Dict({1: 1, 2: 2}).items()
+        k2 = Dict({1: 1, 2: 2, 3: 3}).items()
+        k3 = Dict({4: 4}).items()
 
+        self.assertEqual(k1 - k2, set())
+        self.assertEqual(k1 - k3, {(1, 1), (2, 2)})
+        self.assertEqual(k2 - k1, {(3, 3)})
+        self.assertEqual(k3 - k1, {(4, 4)})
+        self.assertEqual(k1 & k2, {(1, 1), (2, 2)})
+        self.assertEqual(k1 & k3, set())
+        self.assertEqual(k1 | k2, {(1, 1), (2, 2), (3, 3)})
+        self.assertEqual(k1 ^ k2, {(3, 3)})
+        self.assertEqual(k1 ^ k3, {(1, 1), (2, 2), (4, 4)})
+
+    @pytest.mark.xfail
     def test_dictview_mixed_set_operations(self):
         # TODO add support for sets
-        pass
         # Just a few for .keys()
-        # self.assertTrue(Dict({1: 1}).keys() == {1})
-        # self.assertEqual(Dict({1: 1}).keys() | {2}, {1, 2})
-        # # And a few for .items()
-        # self.assertTrue(Dict({1: 1}).items() == {(1, 1)})
-        #
-        # # This test has been changed to reflect the behavior of UserDict
-        # self.assertTrue(Dict({(1, 1)}) == {1: 1})
-        #
-        # # UserDict does not support init with set items like:
-        # # UserDict({2}) so neither do we with Dict
-        # with pytest.raises(TypeError):
-        #     self.assertEqual(Dict({2}) | Dict({1: 1}).keys(), {1, 2})
-        #     self.assertTrue(Dict({1}) == {1: 1}.keys())
-        #     self.assertEqual(Dict({2}) | Dict({1: 1}).items(), {(1, 1), 2})
-        #     self.assertEqual(Dict({1: 1}).items() | Dict({2}), {(1, 1), 2})
+        self.assertTrue(Dict({1: 1}).keys() == {1})
+        self.assertEqual(Dict({1: 1}).keys() | {2}, {1, 2})
+        # And a few for .items()
+        self.assertTrue(Dict({1: 1}).items() == {(1, 1)})
+
+        # This test has been changed to reflect the behavior of UserDict
+        self.assertTrue(Dict({(1, 1)}) == {1: 1})
+
+        # UserDict does not support init with set items like:
+        # UserDict({2}) so neither do we with Dict
+        with pytest.raises(TypeError):
+            self.assertEqual(Dict({2}) | Dict({1: 1}).keys(), {1, 2})
+            self.assertTrue(Dict({1}) == {1: 1}.keys())
+            self.assertEqual(Dict({2}) | Dict({1: 1}).items(), {(1, 1), 2})
+            self.assertEqual(Dict({1: 1}).items() | Dict({2}), {(1, 1), 2})
 
     def test_missing(self):
         # Make sure dict doesn't have a __missing__ method
@@ -915,25 +918,25 @@ class DictTest(unittest.TestCase):
             )
             d.clear()
 
+    @pytest.mark.xfail
     @pytest.mark.slow
     def test_container_iterator(self):
         # TODO: make this pass
-        pass
         # # Bug #3680: tp_traverse was not implemented for dictiter and
         # # dictview objects.
-        # class C(object):
-        #     pass
-        #
-        # views = (Dict.items, Dict.values, Dict.keys)
-        # for v in views:
-        #     obj = C()
-        #     ref = weakref.ref(obj)
-        #     container = {obj: 1}
-        #     obj.v = v(container)
-        #     obj.x = iter(obj.v)
-        #     del obj, container
-        #     gc.collect()
-        #     self.assertIs(ref(), None, "Cycle was not collected")
+        class C(object):
+            pass
+
+        views = (Dict.items, Dict.values, Dict.keys)
+        for v in views:
+            obj = C()
+            ref = weakref.ref(obj)
+            container = {obj: 1}
+            obj.v = v(container)
+            obj.x = iter(obj.v)
+            del obj, container
+            gc.collect()
+            self.assertIs(ref(), None, "Cycle was not collected")
 
     def _not_tracked(self, t):
         # Nested containers can take several collections to untrack
@@ -1432,21 +1435,20 @@ class DictTest(unittest.TestCase):
         pair = [X(), 123]
         Dict([pair])
 
+    @pytest.mark.xfail
     def test_oob_indexing_dictiter_iternextitem(self):
-        # TODO: investigate this
-        pass
-        # class X(int):
-        #     def __del__(self):
-        #         d.clear()
-        #
-        # d = Dict({i: X(i) for i in range(8)})
-        #
-        # def iter_and_mutate():
-        #     for result in d.items():
-        #         if result[0] == 2:
-        #             d[2] = None  # free d[2] --> X(2).__del__ was called
-        #
-        # self.assertRaises(RuntimeError, iter_and_mutate)
+        class X(int):
+            def __del__(self):
+                d.clear()
+
+        d = Dict({i: X(i) for i in range(8)})
+
+        def iter_and_mutate():
+            for result in d.items():
+                if result[0] == 2:
+                    d[2] = None  # free d[2] --> X(2).__del__ was called
+
+        self.assertRaises(RuntimeError, iter_and_mutate)
 
     def test_reversed(self):
         d = Dict({"a": 1, "b": 2, "foo": 0, "c": 3, "d": 4})
@@ -1474,20 +1476,22 @@ class DictTest(unittest.TestCase):
             self.assertEqual(list(reversed(dict().values())), [])
             self.assertEqual(list(reversed(dict().keys())), [])
 
-    # def test_reverse_iterator_for_shared_shared_dicts(self):
-    #     # UserDict doesnt support reversed and this causes infinite recursion
-    #     # we will just disable this test
-    #     class A:
-    #         def __init__(self, x, y):
-    #             if x:
-    #                 self.x = x
-    #             if y:
-    #                 self.y = y
+    @pytest.mark.xfail
+    def test_reverse_iterator_for_shared_shared_dicts(self):
+        # UserDict doesnt support reversed and this causes infinite recursion
+        # we will just disable this test
+        class A:
+            def __init__(self, x, y):
+                if x:
+                    self.x = x
+                if y:
+                    self.y = y
 
-    #     self.assertEqual(list(reversed(A(1, 2).__dict__)), ["y", "x"])
-    #     self.assertEqual(list(reversed(A(1, 0).__dict__)), ["x"])
-    #     self.assertEqual(list(reversed(A(0, 1).__dict__)), ["y"])
+        self.assertEqual(list(reversed(A(1, 2).__dict__)), ["y", "x"])
+        self.assertEqual(list(reversed(A(1, 0).__dict__)), ["x"])
+        self.assertEqual(list(reversed(A(0, 1).__dict__)), ["y"])
 
+    @pytest.mark.xfail
     def test_dict_copy_order(self):
         # bpo-34320
         od = collections.OrderedDict([("a", 1), ("b", 2)])
@@ -1508,14 +1512,14 @@ class DictTest(unittest.TestCase):
 
         # UserDict doesnt support reversed and this causes infinite recursion
         # we will just disable this test
-        # class CustomReversedDict(dict):
-        #     def keys(self):
-        #         return reversed(list(dict.keys(self)))
+        class CustomReversedDict(dict):
+            def keys(self):
+                return reversed(list(dict.keys(self)))
 
-        #     __iter__ = keys
+            __iter__ = keys
 
-        #     def items(self):
-        #         return reversed(dict.items(self))
+            def items(self):
+                return reversed(dict.items(self))
 
-        # d = CustomReversedDict(pairs)
-        # self.assertEqual(pairs[::-1], list(dict(d).items()))
+        d = CustomReversedDict(pairs)
+        self.assertEqual(pairs[::-1], list(dict(d).items()))

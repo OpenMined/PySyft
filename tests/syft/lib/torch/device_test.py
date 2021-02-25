@@ -19,6 +19,7 @@ def test_device() -> None:
 
 def test_device_init() -> None:
     bob = sy.VirtualMachine(name="Bob")
+    assert bob.name == "Bob"
     client = bob.get_client()
     torch = client.torch
 
@@ -30,6 +31,7 @@ def test_device_init() -> None:
     assert isinstance(device_pointer.id_at_location, UID)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("type_str", ["cpu", "cuda"])
 @pytest.mark.parametrize("index", [None, 0])
 def test_device_serde(type_str: str, index: Any) -> None:

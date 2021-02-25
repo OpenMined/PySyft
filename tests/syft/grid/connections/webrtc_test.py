@@ -11,18 +11,17 @@ from aiortc import RTCPeerConnection
 from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from nacl.signing import SigningKey
-import nest_asyncio
 import pytest
+from pytest import MonkeyPatch
 
 # syft absolute
+from syft import serialize
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
-from syft.grid.connections.webrtc import DC_CHUNK_END_SIGN
 from syft.grid.connections.webrtc import DC_CHUNK_START_SIGN
 from syft.grid.connections.webrtc import DC_MAX_CHUNK_SIZE
+from syft.grid.connections.webrtc import OrderedChunk
 from syft.grid.connections.webrtc import WebRTCConnection
-
-# from pytest import MonkeyPatch
 
 
 class AsyncMock(Mock):
@@ -40,9 +39,7 @@ def get_signing_key() -> SigningKey:
 
 
 @pytest.mark.asyncio
-def test_init() -> None:
-    nest_asyncio.apply()
-
+async def test_init() -> None:
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     assert webrtc is not None
@@ -54,23 +51,15 @@ def test_init() -> None:
     assert not webrtc._client_address
 
 
-# TODO: Fix with new traceback_and_raise method
-# @pytest.mark.asyncio
-# async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
-#     nest_asyncio.apply()
-
-#     with patch(
-#         "syft.grid.connections.webrtc.logger", side_effect=RuntimeError()
-#     ) as mock_logger:
-#         with patch(
-#             "syft.grid.connections.webrtc.RTCPeerConnection", side_effect=Exception()
-#         ):
-#             with pytest.raises(Exception):
-#                 domain = Domain(name="test")
-#                 WebRTCConnection(node=domain)
-
-#             expected_log = "Got an exception in WebRTCConnection __init__. "
-#             assert mock_logger.error.call_args[0][0] == expected_log
+@pytest.mark.asyncio
+async def test_init_raise_exception(monkeypatch: MonkeyPatch) -> None:
+    with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCPeerConnection", side_effect=Exception()
+        ):
+            domain = Domain(name="test")
+            WebRTCConnection(node=domain)
+            assert mock_logger.assert_called
 
 
 # --------------------- METHODS ---------------------
@@ -78,8 +67,6 @@ def test_init() -> None:
 
 @pytest.mark.asyncio
 async def test_set_offer_raise_exception() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -91,21 +78,19 @@ async def test_set_offer_raise_exception() -> None:
             await webrtc._set_offer()
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_sets_channel() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
     assert isinstance(webrtc.channel, RTCDataChannel)
-    assert webrtc.channel.bufferedAmountLowThreshold == 16 * DC_MAX_CHUNK_SIZE
+    assert webrtc.channel.bufferedAmountLowThreshold == 4 * DC_MAX_CHUNK_SIZE
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_on_open() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -122,10 +107,9 @@ async def test_set_offer_on_open() -> None:
         assert producer_mock.call_count == 1
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_offer_on_message() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -138,40 +122,32 @@ async def test_set_offer_on_message() -> None:
         "syft.grid.connections.webrtc.WebRTCConnection.consumer",
         return_value=coro_mock(),
     ) as consumer_mock:
-        await on_message(DC_CHUNK_START_SIGN)
+        await on_message(OrderedChunk(1, DC_CHUNK_START_SIGN).save())
         assert consumer_mock.call_count == 0
 
-        await on_message(b"a")
-        assert consumer_mock.call_count == 0
-
-        await on_message(DC_CHUNK_END_SIGN)
+        await on_message(OrderedChunk(0, b"a").save())
         assert consumer_mock.call_count == 1
 
 
-# TODO: Fix with new traceback_and_raise method
-# @pytest.mark.asyncio
-# async def test_set_answer_raise_exception() -> None:
-#     nest_asyncio.apply()
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_set_answer_raise_exception() -> None:
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
+    offer_payload = await webrtc._set_offer()
 
-#     domain = Domain(name="test")
-#     webrtc = WebRTCConnection(node=domain)
-#     offer_payload = await webrtc._set_offer()
-
-#     # FIXME: Nahua is not happy with this test because it "indirectly" triggered exception
-#     with patch("syft.grid.connections.webrtc.logger") as mock_logger:
-#         with pytest.raises(Exception):
-#             # This would fail because 'have-local-offer' is applied
-#             await webrtc._set_answer(payload=offer_payload)
-#         assert mock_logger.error
-
-#         expected_log = "Got an exception in WebRTCConnection _set_answer."
-#         assert expected_log in mock_logger.error.call_args[0][0]
+    # FIXME: Nahua is not happy with this test because it "indirectly" triggered exception
+    # https://github.com/OpenMined/PySyft/issues/5126
+    with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
+        with pytest.raises(Exception):
+            # This would fail because 'have-local-offer' is applied
+            await webrtc._set_answer(payload=offer_payload)
+        assert mock_logger.called
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_answer_on_datachannel() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
@@ -192,10 +168,9 @@ async def test_set_answer_on_datachannel() -> None:
         assert producer_mock.call_count == 1
 
 
+@pytest.mark.slow
 @pytest.mark.asyncio
 async def test_set_answer_on_message() -> None:
-    nest_asyncio.apply()
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     offer_payload = await webrtc._set_offer()
@@ -217,58 +192,42 @@ async def test_set_answer_on_message() -> None:
         channel_methods = list(answer_webrtc.channel._events.values())
         on_message = list(channel_methods[1].values())[0]
 
-        await on_message(message=DC_CHUNK_START_SIGN)
+        await on_message(OrderedChunk(1, DC_CHUNK_START_SIGN).save())
         assert consumer_mock.call_count == 0
 
-        await on_message(message=b"a")
-        assert consumer_mock.call_count == 0
-
-        await on_message(message=DC_CHUNK_END_SIGN)
+        await on_message(OrderedChunk(0, b"a").save())
         assert consumer_mock.call_count == 1
 
 
-# TODO: Fix with new traceback_and_raise method
-# @pytest.mark.asyncio
-# async def test_finish_coroutines_raise_exception() -> None:
-#     nest_asyncio.apply()
+@pytest.mark.asyncio
+async def test_finish_coroutines_raise_exception() -> None:
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
 
-#     domain = Domain(name="test")
-#     webrtc = WebRTCConnection(node=domain)
-
-#     with patch("syft.grid.connections.webrtc.logger") as mock_logger:
-#         with patch(
-#             "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
-#         ):
-#             with pytest.raises(Exception):
-#                 webrtc._finish_coroutines()
-
-#             expected_log = "Got an exception in WebRTCConnection _finish_coroutines."
-#             assert expected_log in mock_logger.error.call_args[0][0]
-
-
-# TODO: Fix with new traceback_and_raise method
-# @pytest.mark.asyncio
-# async def test_close_raise_exception() -> None:
-#     nest_asyncio.apply()
-
-#     domain = Domain(name="test")
-#     webrtc = WebRTCConnection(node=domain)
-
-#     with patch("syft.grid.connections.webrtc.logger") as mock_logger:
-#         with patch(
-#             "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
-#         ):
-#             with pytest.raises(Exception):
-#                 webrtc.close()
-
-#             expected_log = "Got an exception in WebRTCConnection close."
-#             assert expected_log in mock_logger.error.call_args[0][0]
+    with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
+        ):
+            webrtc._finish_coroutines()
+            assert mock_logger.called
 
 
 @pytest.mark.asyncio
-async def test_close() -> None:
-    nest_asyncio.apply()
+async def test_close_raise_exception() -> None:
+    domain = Domain(name="test")
+    webrtc = WebRTCConnection(node=domain)
 
+    with patch("syft.grid.connections.webrtc.traceback_and_raise") as mock_logger:
+        with patch(
+            "syft.grid.connections.webrtc.RTCDataChannel.close", side_effect=Exception()
+        ):
+            webrtc.close()
+            assert mock_logger.called
+
+
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_close() -> None:
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
     await webrtc._set_offer()
@@ -295,7 +254,6 @@ def test_init_without_event_loop() -> None:
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_signaling_process() -> None:
-
     domain = Domain(name="test")
     webrtc = WebRTCConnection(node=domain)
 
@@ -324,7 +282,6 @@ async def test_signaling_process() -> None:
 
 @pytest.mark.asyncio
 async def test_consumer_request() -> None:
-
     test_domain = Domain(name="test")
 
     webrtc_node = WebRTCConnection(node=test_domain)
@@ -334,6 +291,6 @@ async def test_consumer_request() -> None:
     test_domain.root_verify_key = signing_key.verify_key
     signed_msg = msg.sign(signing_key=signing_key)
 
-    msg_bin = signed_msg.to_bytes()
+    msg_bin = serialize(signed_msg, to_bytes=True)
 
     await webrtc_node.consumer(msg=msg_bin)

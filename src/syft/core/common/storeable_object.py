@@ -1,3 +1,7 @@
+# stdlib
+from typing import List
+from typing import Optional
+
 # syft relative
 from .serde.serializable import Serializable
 from .uid import UID
@@ -7,6 +11,7 @@ class AbstractStorableObject(Serializable):
 
     data: object
     id: UID
+    search_permissions: dict
 
     @property
     def icon(self) -> str:
@@ -20,3 +25,15 @@ class AbstractStorableObject(Serializable):
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    @property
+    def object_type(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def tags(self) -> Optional[List[str]]:
+        raise NotImplementedError
+
+    @property
+    def description(self) -> Optional[str]:
+        raise NotImplementedError

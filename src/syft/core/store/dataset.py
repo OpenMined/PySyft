@@ -3,23 +3,23 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 
 # syft absolute
 import syft as sy
 
 # syft relative
-from ...decorators import syft_decorator
+from ... import serialize
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
+@bind_protobuf
 class Dataset(Serializable):
     """
     Dataset is a wrapper over a collection of Serializable objects.
@@ -41,19 +41,18 @@ class Dataset(Serializable):
 
     """
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         id: UID,
         data: List[StorableObject],
-        description: str = "",
+        description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
-        self._description: str = description
+        self._description: str = description if description else ""
         self._tags: List[str] = tags if tags else []
 
         # the dict key of "verify key" objects corresponding to people
@@ -82,47 +81,32 @@ class Dataset(Serializable):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: List[StorableObject],
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "Dataset":
-        return Dataset(id=id, data=data, description=description, tags=tags)
-
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
 
-    @syft_decorator(typechecking=True)
     def __contains__(self, _id: UID) -> bool:
         return _id in [el.id for el in self.data]
 
-    @syft_decorator(typechecking=True)
     def keys(self) -> List[UID]:
         return [el.id for el in self.data]
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __getitem__(self, _id: UID) -> List[StorableObject]:
         return [el for el in self.data if el.id == _id]
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __delitem__(self, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Dataset_PB:
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = self.id.serialize()
+        id = serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
         proto.obj_type = get_fully_qualified_name(obj=self)
 
-        # import pdb; pdb.set_trace()
         # Step 3: Serialize data to protobuf and pack into proto
         if hasattr(self, "data"):
             if self.data is not None:
@@ -146,23 +130,25 @@ class Dataset(Serializable):
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = permission_data.serialize(to_bytes=True)
+            proto.read_permissions = serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = permission_data.serialize(to_bytes=True)
+            proto.search_permissions = serialize(permission_data, to_bytes=True)
 
         return proto
 
     @staticmethod
-    @syft_decorator(typechecking=True)
-    def _proto2object(proto: Dataset_PB) -> object:
+    def _proto2object(proto: Dataset_PB) -> Serializable:
 
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
+
+        if not isinstance(id, UID):
+            raise ValueError("TODO")
 
         # Step 2: Deserialize data from protobuf
         data = list(proto.data) if proto.data else []
@@ -174,41 +160,7 @@ class Dataset(Serializable):
         # Step 4: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = Dataset.construct_new_object(
-            id=id,
-            data=data,
-            tags=tags,
-            description=description,
-        )
-
-        # just a backup
-        try:
-            result.tags = tags
-            result.description = description
-
-            # default to empty
-            result.read_permissions = {}
-            result.search_permissions = {}
-
-            # Step 7: get the read permissions
-            if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-                result.read_permissions = _deserialize(
-                    blob=proto.read_permissions, from_bytes=True
-                )
-
-            # Step 8: get the search permissions
-            if (
-                proto.search_permissions is not None
-                and len(proto.search_permissions) > 0
-            ):
-                result.search_permissions = _deserialize(
-                    blob=proto.search_permissions, from_bytes=True
-                )
-        except Exception as e:
-            # torch.return_types.* namedtuple cant setattr
-            log = f"Dataset {type(result)} cant set attributes {e}"
-            logger.error(log)
-
+        result = Dataset(id=id, data=data, description=description, tags=tags)
         return result
 
     @staticmethod
@@ -228,15 +180,4 @@ class Dataset(Serializable):
         :rtype: GeneratedProtocolMessageType
 
         """
-        return Dataset_PB
-
-    def _data_object2proto(self) -> List[Message]:
-        return [d._object2proto() for d in self.data]
-
-    @staticmethod
-    def _data_proto2object(proto: List[Message]) -> List[Serializable]:
-        return [_deserialize(blob=p) for p in proto]
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
         return Dataset_PB

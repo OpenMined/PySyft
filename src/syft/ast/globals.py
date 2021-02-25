@@ -10,6 +10,7 @@ from typing import Union
 # syft relative
 from ..core.common.uid import UID
 from ..logger import traceback_and_raise
+from .attribute import Attribute
 from .callable import Callable
 from .module import Module
 
@@ -20,12 +21,30 @@ class Globals(Module):
     registered_clients: Dict[UID, Any] = {}
     loaded_lib_constructors: Dict[str, CallableT] = {}
 
+    def __init__(
+        self,
+        client: Optional[Any],
+        object_ref: Optional[Union[CallableT, ModuleType]] = None,
+        parent: Optional[Attribute] = None,
+        path_and_name: Optional[str] = None,
+        return_type_name: Optional[str] = None,
+    ):
+        super().__init__(
+            client=client,
+            object_ref=object_ref,
+            parent=parent,
+            path_and_name=path_and_name,
+            return_type_name=return_type_name,
+        )
+
     def __call__(
         self,
         path: Union[List[str], str],
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+
+        self.apply_node_changes()
 
         _path: List[str] = (
             path.split(".") if isinstance(path, str) else path if path else []
@@ -65,6 +84,7 @@ class Globals(Module):
                 object_ref=framework_reference,
                 return_type_name=return_type_name,
                 client=self.client,
+                parent=self,
             )
 
         attr = self.attrs[framework_name]
@@ -77,3 +97,6 @@ class Globals(Module):
 
         # make sure to get any future updates
         self.registered_clients[client.id] = client
+
+    def apply_node_changes(self) -> None:
+        pass

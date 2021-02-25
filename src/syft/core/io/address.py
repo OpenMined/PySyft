@@ -9,13 +9,14 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.location import Location
 
@@ -25,10 +26,10 @@ class Unspecified(object):
         return "Unspecified"
 
 
+@bind_protobuf
 class Address(Serializable):
     name: Optional[str]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,
@@ -103,7 +104,6 @@ class Address(Serializable):
     def post_init(self) -> None:
         debug(f"> Creating {self.pprint}")
 
-    @syft_decorator(typechecking=True)
     def key_emoji(self, key: Union[bytes, SigningKey, VerifyKey]) -> str:
         return key_emoji_util(key=key)
 
@@ -127,7 +127,6 @@ class Address(Serializable):
 
         return address
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Address_PB:
         """Returns a protobuf serialization of self.
 
@@ -139,20 +138,20 @@ class Address(Serializable):
         :rtype: Address_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Address_PB(
             name=self.name,
             has_network=self.network is not None,
-            network=self.network.serialize() if self.network is not None else None,
+            network=serialize(self.network) if self.network is not None else None,
             has_domain=self.domain is not None,
-            domain=self.domain.serialize() if self.domain is not None else None,
+            domain=serialize(self.domain) if self.domain is not None else None,
             has_device=self.device is not None,
-            device=self.device.serialize() if self.device is not None else None,
+            device=serialize(self.device) if self.device is not None else None,
             has_vm=self.vm is not None,
-            vm=self.vm.serialize() if self.vm is not None else None,
+            vm=serialize(self.vm) if self.vm is not None else None,
         )
 
     @staticmethod
@@ -169,7 +168,6 @@ class Address(Serializable):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return Address(
             name=proto.name,
             network=_deserialize(blob=proto.network) if proto.has_network else None,
@@ -327,7 +325,6 @@ class Address(Serializable):
 
         traceback_and_raise(Exception("Address has no valid parts"))
 
-    @syft_decorator(typechecking=True, prohibit_args=False)
     def __eq__(self, other: Any) -> bool:
         """Returns whether two Address objects refer to the same set of locations
 

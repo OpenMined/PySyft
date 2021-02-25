@@ -10,11 +10,12 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
 from .....proto.core.node.common.action.get_set_static_attribute_pb2 import (
     GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -28,6 +29,7 @@ class StaticAttributeAction(Enum):
     GET = 2
 
 
+@bind_protobuf
 class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -89,7 +91,6 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetSetStaticAttributeAction_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -98,7 +99,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -107,18 +108,18 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         if self.set_arg is not None:
             return GetSetStaticAttributeAction_PB(
                 path=self.path,
-                id_at_location=self.id_at_location.serialize(),
-                address=self.address.serialize(),
-                msg_id=self.id.serialize(),
+                id_at_location=serialize(self.id_at_location),
+                address=serialize(self.address),
+                msg_id=serialize(self.id),
                 action=self.action.value,
-                set_arg=self.set_arg.serialize(),
+                set_arg=serialize(self.set_arg),
             )
         else:
             return GetSetStaticAttributeAction_PB(
                 path=self.path,
-                id_at_location=self.id_at_location.serialize(),
-                address=self.address.serialize(),
-                msg_id=self.id.serialize(),
+                id_at_location=serialize(self.id_at_location),
+                address=serialize(self.address),
+                msg_id=serialize(self.id),
                 action=self.action.value,
             )
 

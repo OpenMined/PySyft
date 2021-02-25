@@ -10,6 +10,7 @@ import syft as sy
 from syft.core.node.common.service.auth import AuthorizationException
 
 
+@pytest.mark.slow
 def test_torch_remote_tensor_register() -> None:
     """ Test if sending a tensor will be registered on the remote worker. """
 
@@ -59,13 +60,14 @@ def test_torch_serde() -> None:
     # But pretend we have .grad
     x.grad = th.randn_like(x)
 
-    blob = x.serialize()
+    blob = sy.serialize(x)
 
     x2 = sy.deserialize(blob=blob)
 
     assert (x == x2).all()
 
 
+@pytest.mark.slow
 def test_torch_no_read_permissions() -> None:
 
     bob = sy.VirtualMachine(name="bob")
@@ -118,23 +120,3 @@ def test_torch_garbage_collect() -> None:
     gc.collect()
 
     assert len(alice.store) == 0
-
-
-def test_torch_garbage_method_creates_pointer() -> None:
-    """
-    Test if sending a tensor and then deleting the pointer removes the object
-    from the remote worker.
-    """
-
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
-    x = th.tensor([-1, 0, 1, 2, 3, 4])
-    x_ptr = x.send(alice_client)
-
-    assert len(alice.store) == 1
-
-    gc.disable()
-    x_ptr + 2
-
-    assert len(alice.store) == 3

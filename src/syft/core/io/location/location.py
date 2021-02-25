@@ -6,7 +6,6 @@ from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....decorators.syft_decorator_impl import syft_decorator
 from ....logger import traceback_and_raise
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID
@@ -27,7 +26,6 @@ class Location(Serializable):
     def id(self) -> UID:
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def repr_short(self) -> str:
         """Returns a SHORT human-readable version of the ID
 
@@ -55,13 +53,11 @@ class Location(Serializable):
         """
         traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    @syft_decorator(typechecking=True)
-    def _object2proto() -> Message:
+    def _object2proto(self) -> Message:
         """This methods converts self into a protobuf object
 
         This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as .binary(), etc) know how to convert the object into
+        implemented here (such as serialize(, to_bytes=True), etc) know how to convert the object into
         a protobuf object before further converting it into the requested format.
 
         :return: a protobuf message
