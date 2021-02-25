@@ -21,6 +21,7 @@ from .services.tensor_service import RegisterTensorService
 from .services.role_service import RoleManagerService
 from .services.user_service import UserManagerService
 from .services.dataset_service import DatasetManagerService
+from .services.group_service import GroupManagerService
 
 # Database Management
 from .database import db
@@ -89,6 +90,7 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
+        self.immediate_services_with_reply.append(GroupManagerService)
         self._register_services()
 
         self.__handlers_flag = True
