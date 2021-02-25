@@ -61,6 +61,7 @@ class MissingRequestKeyError(PyGridError):
             message = "Missing request key!"
         super().__init__(message)
 
+
 class AssociationRequestError(PyGridError):
     def __init__(self):
         message = "Association Request ID not found!"

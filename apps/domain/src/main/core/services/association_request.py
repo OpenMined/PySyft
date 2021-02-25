@@ -67,8 +67,12 @@ def send_association_request_msg(
         handshake_value = association_request_obj.handshake_value
 
         # Create POST request to the address recived in the body
-        payload = {"name": name, "address": sender_address, "handshake": handshake_value}
-        header = {"token": msg.content.get('token', None)}
+        payload = {
+            "name": name,
+            "address": sender_address,
+            "handshake": handshake_value,
+        }
+        header = {"token": msg.content.get("token", None)}
         url = address + "/association-requests/receive"
 
         response = post(url=url, json=payload, headers=header)
@@ -169,8 +173,12 @@ def respond_association_request_msg(
         association_requests.set(handshake_value, value)
 
         # Create POST request to the address recived in the body
-        payload = {"address": sender_address, "handshake": handshake_value, "value": value}
-        header = {"token": msg.content.get('token', None)}
+        payload = {
+            "address": sender_address,
+            "handshake": handshake_value,
+            "value": value,
+        }
+        header = {"token": msg.content.get("token", None)}
         url = address + "/association-requests/receive"
 
         response = post(url=url, json=payload, headers=header)

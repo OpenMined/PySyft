@@ -11,7 +11,7 @@ class AssociationRequest(BaseModel):
         address (String) : Organization / Domain Address.
         accepted (Bool) :  If request was accepted or not.
         pending (Bool) : If association request is pending.
-        handshake_value (String) : Association request unique identifier 
+        handshake_value (String) : Association request unique identifier
     """
 
     __tablename__ = "association_request"
