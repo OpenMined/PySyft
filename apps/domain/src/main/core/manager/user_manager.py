@@ -91,6 +91,9 @@ class UserManager(DatabaseManager):
     def can_manage_infrastructure(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_manage_infrastructure
 
+    def can_create_groups(self, user_id: str) -> bool:
+        return self.role(user_id=user_id).can_create_groups
+
     def role(self, user_id: int):
         try:
             user = self.first(id=user_id)
