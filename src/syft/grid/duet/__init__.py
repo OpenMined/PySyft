@@ -14,6 +14,7 @@ import requests
 from ...core.common.environment import is_jupyter
 from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
+from ...logger import error
 from ...logger import info
 from ...logger import traceback_and_raise
 from .bcolors import bcolors
@@ -57,7 +58,8 @@ def get_available_network() -> str:
         try:
             requests.get(addr + "/metadata")
             return addr
-        except Exception:
+        except Exception as e:
+            error(f"Failed request addr: {e}")
             continue
     traceback_and_raise(Exception("Couldn't find any available network."))
 
