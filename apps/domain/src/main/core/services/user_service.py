@@ -289,7 +289,7 @@ def get_all_users_msg(
 
     if _allowed:
         users = users.all()
-        _msg = {user.id: model_to_json(user) for user in users}
+        _msg = [model_to_json(user) for user in users]
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
