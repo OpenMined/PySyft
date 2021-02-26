@@ -5,7 +5,9 @@ from typing import Tuple as TypeTuple
 
 # third party
 import pytorch_lightning
-from pytorch_lightning import Trainer, LightningModule, LightningDataModule
+from pytorch_lightning import LightningDataModule
+from pytorch_lightning import LightningModule
+from pytorch_lightning import Trainer
 
 # syft relative
 from ...ast.globals import Globals
@@ -82,7 +84,7 @@ def create_pytorch_lightning_ast() -> Globals:
             "pytorch_lightning.core.lightning.LightningModule",
             "pytorch_lightning.core.lightning.LightningModule",
             LightningModule,
-        )
+        ),
     ]
 
     methods = [

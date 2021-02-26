@@ -1,13 +1,17 @@
+# syft absolute
 import syft as sy
+
 sy.logger.remove()
-from pytorch_lightning import Trainer, LightningModule
+# third party
+from pytorch_lightning import LightningModule
+from pytorch_lightning import Trainer
 import torch
 import torchvision
-
 
 alice = sy.VirtualMachine(name="alice")
 duet = alice.get_root_client()
 sy.client_cache["duet"] = duet
+
 
 class SyNet(sy.Module):
     def __init__(self, torch_ref):
@@ -33,6 +37,7 @@ class SyNet(sy.Module):
         x = self.fc2(x)
         output = self.torch_ref.nn.functional.log_softmax(x, dim=1)
         return output
+
 
 class Model(LightningModule):
     def __init__(self, local_torch, download_back=False, set_to_local=False):
@@ -111,28 +116,32 @@ class Model(LightningModule):
 
     def train_dataloader(self):
         transforms = self.get_transforms()
-        train_data_ptr = self.torchvision.datasets.MNIST('../data', train=True, download=True,
-                                                         transform=transforms)
-        train_loader_ptr = self.torch.utils.data.DataLoader(train_data_ptr, batch_size=1)
+        train_data_ptr = self.torchvision.datasets.MNIST(
+            "../data", train=True, download=True, transform=transforms
+        )
+        train_loader_ptr = self.torch.utils.data.DataLoader(
+            train_data_ptr, batch_size=1
+        )
         return train_loader_ptr
 
     def test_dataloader(self):
         transforms = self.get_transforms()
-        test_data = self.torchvision.datasets.MNIST('../data', train=False, download=True,
-                                                    transform=transforms)
+        test_data = self.torchvision.datasets.MNIST(
+            "../data", train=False, download=True, transform=transforms
+        )
         test_loader = self.torch.utils.data.DataLoader(test_data, batch_size=1)
         return test_loader
+
 
 model = Model(torch, download_back=False)
 model.send_model()
 
 trainer = Trainer(
-    default_root_dir='./tmp_data',
+    default_root_dir="./tmp_data",
     max_epochs=15,
+    accumulate_grad_batches=True,
     limit_train_batches=4,
     limit_test_batches=4,
-    accelerator="ddp_cpu",
-    num_processes=2
 )
 
 # trainer.test(model)
