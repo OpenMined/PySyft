@@ -151,7 +151,7 @@ def get_worker_msg(
         return GetWorkerResponse(
             address=msg.reply_to,
             status_code=200,
-            content=_msg,
+            content={"worker": _msg},
         )
     except Exception as e:
         return GetWorkerResponse(
@@ -185,17 +185,12 @@ def get_workers_msg(
 
         envs = node.environments.get_environments(user=_current_user_id)
 
-        _msg = {
-            node.environments.first(id=env.id).name: model_to_json(
-                node.environments.first(id=env.id)
-            )
-            for env in envs
-        }
+        _msg = [model_to_json(node.environments.first(id=env.id)) for env in envs]
 
         return GetWorkersResponse(
             address=msg.reply_to,
             status_code=200,
-            content=_msg,
+            content={"workers": _msg},
         )
     except Exception as e:
         return GetWorkersResponse(
