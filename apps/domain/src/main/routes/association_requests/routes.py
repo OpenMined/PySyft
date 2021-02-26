@@ -45,15 +45,14 @@ def send_association_request(current_user):
 
 
 @association_request_route.route("/receive", methods=["POST"])
-@token_required
-def recv_association_request(current_user):
+def recv_association_request():
     # Get request body
     content = request.get_json()
     if not content:
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, ReceiveAssociationRequestMessage, current_user, content
+        route_logic, ReceiveAssociationRequestMessage, None, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
