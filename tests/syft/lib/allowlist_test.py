@@ -395,6 +395,9 @@ if TEST_CHUNKS > 1:
     end_offset = start_offset + chunk_size
     TEST_DATA = TEST_DATA[start_offset:end_offset]
 
+alice = sy.VirtualMachine(name="alice")
+alice_client = alice.get_client()
+
 
 @pytest.mark.torch
 @pytest.mark.parametrize(
@@ -428,9 +431,8 @@ def test_all_allowlisted_tensor_methods(
     }
 
     try:
-        # Step 1: Create the alice client
-        alice = sy.VirtualMachine(name="alice")
-        alice_client = alice.get_client()
+        # Step 1: Clear store
+        alice.store.clear()
 
         # Step 2: Decide which type we're testing
         t_type = TORCH_STR_DTYPE[tensor_type]
