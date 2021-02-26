@@ -160,16 +160,16 @@ def get_all_groups_msg(
     else:
         raise AuthorizationError("You're not allowed to get the groups!")
 
-    _msg = {group.id: model_to_json(group) for group in _groups}
-    for group_id in _msg.keys():
-        _msg[group_id]["users"] = node.groups.get_users(group_id=group_id)
+    _groups = [model_to_json(group) for group in _groups]
+    for group in _groups:
+        group["users"] = node.groups.get_users(group_id=group["id"])
 
     _msg_field = "groups"
 
     return GetGroupsResponse(
         address=msg.reply_to,
         status_code=200,
-        content={_msg_field: _msg},
+        content={_msg_field: _groups},
     )
 
 
