@@ -1,8 +1,12 @@
 # stdlib
-from functools import partial
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
+from typing import Tuple
+from typing import Type
 from typing import Union
+from typing import cast
 
 # third party
 import numpy as np
@@ -14,17 +18,54 @@ from syft.lib.tensor.tensorbase_util import call_func_and_wrap_result
 Num = Union[int, float]
 
 
-class ChildDelegatorTensor:
-    def __getattr__(self, name: str) -> Any:
-        func_or_attr = getattr(self.child, name)
-        if callable(func_or_attr):
-            return partial(call_func_and_wrap_result, func_or_attr, self.__class__)
-        else:
-            var = func_or_attr
-            return var
+TENSOR_FORWARD_PROPERTIES = {"shape", "data"}
+
+TENSOR_FORWARD_METHODS = {"squeeze", "unsqueeze", "transpose"}
 
 
-class DataTensor(ChildDelegatorTensor):
+class ChildDelegatorTensor(type):
+    @staticmethod
+    def add_dummy_method(method_name: str) -> Callable[..., Callable[..., Any]]:
+        def dummy_method(_self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> Any:
+            method = getattr(_self.child, method_name)
+            res = call_func_and_wrap_result(method, _self.__class__, *args, **kwargs)
+            return res
+
+        return dummy_method
+
+    @staticmethod
+    def add_dummy_property(property_name: str) -> Any:
+        def property_getter(_self: Any) -> Any:
+            prop = getattr(_self.child, property_name)
+            return prop
+
+        def property_setter(_self: Any, new_val: Any) -> None:
+            setattr(_self.child, property_name, new_val)
+
+        return property(property_getter, property_setter)
+
+    def __new__(
+        cls: Type["ChildDelegatorTensor"],
+        name: str,
+        bases: Tuple[Any],
+        dic: Dict[Any, Any],
+    ) -> "ChildDelegatorTensor":
+        for method in TENSOR_FORWARD_METHODS:
+            if method in dic:
+                raise ValueError(f"Attribute {method} already exists in {name}")
+            dic[method] = ChildDelegatorTensor.add_dummy_method(method)
+
+        for prop in TENSOR_FORWARD_PROPERTIES:
+            if prop in dic:
+                raise ValueError(f"Attribute {prop} already exists in {name}")
+            dic[prop] = ChildDelegatorTensor.add_dummy_property(prop)
+
+        res = super().__new__(cls, name, bases, dic)
+        res = cast(ChildDelegatorTensor, res)
+        return res
+
+
+class DataTensor(metaclass=ChildDelegatorTensor):
     def __init__(self, child: Union[torch.FloatTensor, torch.IntTensor]) -> None:
         self.child = child
 
@@ -44,7 +85,7 @@ class DataTensor(ChildDelegatorTensor):
         return DataTensor(child=self.child @ other.child)
 
 
-class FloatTensor(ChildDelegatorTensor):
+class FloatTensor(metaclass=ChildDelegatorTensor):
     def __init__(self, child: DataTensor) -> None:
         self.child = child
 
@@ -64,7 +105,7 @@ class FloatTensor(ChildDelegatorTensor):
         return FloatTensor(child=self.child @ other.child)
 
 
-class IntegerTensor(ChildDelegatorTensor):
+class IntegerTensor(metaclass=ChildDelegatorTensor):
     def __init__(self, child: DataTensor) -> None:
         self.child = child
 
@@ -88,11 +129,14 @@ class IntegerTensor(ChildDelegatorTensor):
         return IntegerTensor(child=self.child @ other.child)
 
 
-class SyftTensor(ChildDelegatorTensor):
+class SyftTensor(metaclass=ChildDelegatorTensor):
     def __init__(self, child: Union[FloatTensor, IntegerTensor]) -> None:
         self.child = child
 
     def __add__(self, other: "SyftTensor") -> "SyftTensor":
+        if not isinstance(other, SyftTensor):
+            raise ValueError("Need to use a SyftTensor")
+
         if isinstance(self.child, FloatTensor) and isinstance(other.child, FloatTensor):
             return SyftTensor(child=self.child + other.child)
         elif isinstance(self.child, IntegerTensor) and isinstance(
@@ -103,6 +147,9 @@ class SyftTensor(ChildDelegatorTensor):
             raise ValueError()
 
     def __sub__(self, other: "SyftTensor") -> "SyftTensor":
+        if not isinstance(other, SyftTensor):
+            raise ValueError("Need to use a SyftTensor")
+
         if isinstance(self.child, FloatTensor) and isinstance(other.child, FloatTensor):
             return SyftTensor(child=self.child - other.child)
         elif isinstance(self.child, IntegerTensor) and isinstance(
@@ -113,6 +160,9 @@ class SyftTensor(ChildDelegatorTensor):
             raise ValueError()
 
     def __mul__(self, other: "SyftTensor") -> "SyftTensor":
+        if not isinstance(other, SyftTensor):
+            raise ValueError("Need to use a SyftTensor")
+
         if isinstance(self.child, FloatTensor) and isinstance(other.child, FloatTensor):
             return SyftTensor(child=self.child * other.child)
         elif isinstance(self.child, IntegerTensor) and isinstance(
@@ -131,16 +181,13 @@ class SyftTensor(ChildDelegatorTensor):
             raise ValueError()
 
     def __matmul__(self, other: "SyftTensor") -> "SyftTensor":
-        if (
-            isinstance(self.child, FloatTensor)
-            and isinstance(other, SyftTensor)
-            and isinstance(other.child, FloatTensor)
-        ):
+        if not isinstance(other, SyftTensor):
+            raise ValueError("Need to use a SyftTensor")
+
+        if isinstance(self.child, FloatTensor) and isinstance(other.child, FloatTensor):
             return SyftTensor(child=self.child @ other.child)
-        if (
-            isinstance(self.child, IntegerTensor)
-            and isinstance(other, SyftTensor)
-            and isinstance(other.child, IntegerTensor)
+        if isinstance(self.child, IntegerTensor) and isinstance(
+            other.child, IntegerTensor
         ):
             return SyftTensor(child=self.child @ other.child)
         else:

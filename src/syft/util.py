@@ -58,7 +58,7 @@ def get_subclasses(obj_type: type) -> List[type]:
 
     """
 
-    classes = list()
+    classes = []
     for sc in obj_type.__subclasses__():
         classes.append(sc)
         classes += get_subclasses(obj_type=sc)
@@ -562,9 +562,9 @@ def inherit_tags(
     args: Union[tuple, list],
     kwargs: dict,
 ) -> None:
-    tags = []
+    tags: List[Any] = []
     if self_obj is not None and hasattr(self_obj, "tags"):
-        tags.extend([tag for tag in self_obj.tags])  # type: ignore
+        tags.extend((tag for tag in self_obj.tags))  # type: ignore
 
     for arg in args:
         if hasattr(arg, "tags"):
