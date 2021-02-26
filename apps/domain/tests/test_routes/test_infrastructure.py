@@ -249,33 +249,35 @@ def test_get_all_workers(client, database, cleanup):
         headers=headers,
     )
     assert result.get_json() == {
-        "Private Environment": {
-            "address": "http://localhost:4000/",
-            "gpu": "GTX",
-            "id": 3,
-            "instance": "EC2",
-            "memory": "16",
-            "name": "Private Environment",
-            "syft_address": None,
-        },
-        "Test Environment": {
-            "address": "http://localhost:7000/",
-            "gpu": "RTX3070",
-            "id": 2,
-            "instance": "EC2-large",
-            "memory": "64",
-            "name": "Test Environment",
-            "syft_address": None,
-        },
-        "Train Environment": {
-            "address": "http://localhost:5000/",
-            "gpu": "RTX3070",
-            "id": 1,
-            "instance": "EC2",
-            "memory": "32",
-            "name": "Train Environment",
-            "syft_address": None,
-        },
+        "workers": [
+            {
+                "id": 1,
+                "name": "Train Environment",
+                "address": "http://localhost:5000/",
+                "syft_address": None,
+                "memory": "32",
+                "instance": "EC2",
+                "gpu": "RTX3070",
+            },
+            {
+                "id": 2,
+                "name": "Test Environment",
+                "address": "http://localhost:7000/",
+                "syft_address": None,
+                "memory": "64",
+                "instance": "EC2-large",
+                "gpu": "RTX3070",
+            },
+            {
+                "id": 3,
+                "name": "Private Environment",
+                "address": "http://localhost:4000/",
+                "syft_address": None,
+                "memory": "16",
+                "instance": "EC2",
+                "gpu": "GTX",
+            },
+        ]
     }
 
 
@@ -330,13 +332,15 @@ def test_get_specific_worker(client, database, cleanup):
     )
 
     assert result.get_json() == {
-        "id": 2,
-        "name": "Test Environment",
-        "address": "http://localhost:7000/",
-        "syft_address": None,
-        "memory": "64",
-        "instance": "EC2-large",
-        "gpu": "RTX3070",
+        "worker": {
+            "id": 2,
+            "name": "Test Environment",
+            "address": "http://localhost:7000/",
+            "syft_address": None,
+            "memory": "64",
+            "instance": "EC2-large",
+            "gpu": "RTX3070",
+        }
     }
 
 

@@ -253,8 +253,8 @@ def test_get_users_success(client, database, cleanup):
 
     assert result.status_code == 200
     assert len(result.get_json()["users"]) == 2
-    assert result.get_json()["users"]["1"]["id"] == 1
-    assert result.get_json()["users"]["2"]["id"] == 2
+    assert result.get_json()["users"][0]["id"] == 1
+    assert result.get_json()["users"][1]["id"] == 2
 
 
 def test_get_users_unauthorized(client, database, cleanup):

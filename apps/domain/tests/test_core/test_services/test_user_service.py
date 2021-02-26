@@ -407,17 +407,17 @@ def test_get_all_users_with_permission(database, domain, cleanup):
     assert response.status_code == 200
     assert len(response.content["users"]) == 3
 
-    retrieved_user = response.content["users"]["1"]
+    retrieved_user = response.content["users"][0]
     assert retrieved_user["email"] == "owner@gmail.com"
     assert retrieved_user["id"] == 1
     assert retrieved_user["role"] == 1
 
-    retrieved_user = response.content["users"]["2"]
+    retrieved_user = response.content["users"][1]
     assert retrieved_user["email"] == "stduser@gmail.com"
     assert retrieved_user["id"] == 2
     assert retrieved_user["role"] == 2
 
-    retrieved_user = response.content["users"]["3"]
+    retrieved_user = response.content["users"][2]
     assert retrieved_user["email"] == "admin_user@gmail.com"
     assert retrieved_user["id"] == 3
     assert retrieved_user["role"] == 3
