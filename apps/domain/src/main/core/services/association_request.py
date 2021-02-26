@@ -43,7 +43,6 @@ def send_association_request_msg(
     msg: SendAssociationRequestMessage,
     node: AbstractNode,
 ) -> SendAssociationRequestResponse:
-
     # Get Payload Content
     name = msg.content.get("name", None)
     address = msg.content.get("address", None)
@@ -72,10 +71,9 @@ def send_association_request_msg(
             "address": sender_address,
             "handshake": handshake_value,
         }
-        header = {"token": msg.content.get("token", None)}
         url = address + "/association-requests/receive"
 
-        response = post(url=url, json=payload, headers=header)
+        response = post(url=url, json=payload)
         response_message = (
             "Association request sent!"
             if response.status_code == 200
@@ -96,10 +94,8 @@ def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
     node: AbstractNode,
 ) -> ReceiveAssociationRequestResponse:
-
     # Get Payload Content
     address = msg.content.get("address", None)
-    current_user_id = msg.content.get("current_user", None)
     handshake_value = msg.content.get("handshake", None)
 
     # Check if name/address fields are empty
@@ -109,36 +105,31 @@ def recv_association_request_msg(
             message="Invalid request payload, empty fields (adress/handhsake)!"
         )
 
-    allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
+    association_requests = node.association_requests
+    has_handshake = association_requests.contain(handshake_value=handshake_value)
 
-    if allowed:
-        association_requests = node.association_requests
-        has_handshake = association_requests.contain(handshake_value=handshake_value)
+    # Create a new Association Request if the handshake value doesn't exist in the database
+    if not has_handshake:
+        name = msg.content.get("name", None)
 
-        # Create a new Association Request if the handshake value doesn't exist in the database
-        if not has_handshake:
-            name = msg.content.get("name", None)
+        if not name:
+            raise MissingRequestKeyError(
+                message="Invalid request payload, empty fields (name)!"
+            )
 
-            if not name:
-                raise MissingRequestKeyError(
-                    message="Invalid request payload, empty fields (name)!"
-                )
-
-            association_requests.create_association_request(name, address)
-
-        else:
-            value = msg.content.get("value", None)
-
-            # Set the status of the Association Request according to the "value" field recived
-            if value:
-                association_requests.set(handshake_value, value)
-            else:
-                raise MissingRequestKeyError(
-                    message="Invalid request payload, empty field (value)!"
-                )
+        association_requests.create_association_request(name, address)
 
     else:
-        raise AuthorizationError("You're not allowed to create an Association Request!")
+        value = msg.content.get("value", None)
+
+        # Set the status of the Association Request according to the "value" field recived
+        if value:
+            association_requests.set(handshake_value, value)
+        else:
+            raise MissingRequestKeyError(
+                message="Invalid request payload, empty field (value)!"
+            )
+
     return ReceiveAssociationRequestResponse(
         address=msg.reply_to,
         status_code=200,
@@ -178,16 +169,14 @@ def respond_association_request_msg(
             "handshake": handshake_value,
             "value": value,
         }
-        header = {"token": msg.content.get("token", None)}
         url = address + "/association-requests/receive"
 
-        response = post(url=url, json=payload, headers=header)
+        response = post(url=url, json=payload)
         response_message = (
             "Association request replied!"
             if response.status_code == 200
             else "Association request could not be replied! Please, try again."
         )
-
     else:
         raise AuthorizationError("You're not allowed to create an Association Request!")
     return RespondAssociationRequestResponse(
