@@ -26,10 +26,11 @@ from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from ..messages.setup_messages import CreateInitialSetUpMessage
 from ..messages.setup_messages import GetSetUpMessage
-from .service_request.group_request import GroupServiceRequest
-from .service_request.role_request import RoleServiceRequest
-from .service_request.user_request import UserServiceRequest
-from .service_request.worker_request import WorkerServiceRequest
+from .request_api.association_api import AssociationRequestAPI
+from .request_api.group_api import GroupRequestAPI
+from .request_api.role_api import RoleRequestAPI
+from .request_api.user_api import UserRequestAPI
+from .request_api.worker_api import WorkerRequestAPI
 
 
 def connect(
@@ -83,10 +84,13 @@ def connect(
                 signing_key=user_key,
             )
 
-            self.groups = GroupServiceRequest(send=self.__perform_grid_request)
-            self.users = UserServiceRequest(send=self.__perform_grid_request)
-            self.roles = RoleServiceRequest(send=self.__perform_grid_request)
-            self.workers = WorkerServiceRequest(send=self.__perform_grid_request)
+            self.groups = GroupRequestAPI(send=self.__perform_grid_request)
+            self.users = UserRequestAPI(send=self.__perform_grid_request)
+            self.roles = RoleRequestAPI(send=self.__perform_grid_request)
+            self.workers = WorkerRequestAPI(send=self.__perform_grid_request)
+            self.association_requests = AssociationRequestAPI(
+                send=self.__perform_grid_request
+            )
 
         def proxy(self, vm_address: Address) -> None:
             self.proxy_address = vm_address
@@ -108,9 +112,10 @@ def connect(
                 SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply
             ],
             route_index: int = 0,
+            address: Address = None,
         ) -> SyftMessage:
 
-            if self.proxy_address:
+            if address:
                 msg.address = self.proxy_address
 
             return super(GridClient, self).send_immediate_msg_with_reply(
@@ -123,8 +128,9 @@ def connect(
                 SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
             ],
             route_index: int = 0,
+            address: Address = None,
         ) -> None:
-            if self.proxy_address:
+            if address:
                 msg.address = self.proxy_address
 
             return super(GridClient, self).send_immediate_msg_without_reply(
@@ -132,9 +138,12 @@ def connect(
             )
 
         def send_eventual_msg_without_reply(
-            self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
+            self,
+            msg: EventualSyftMessageWithoutReply,
+            route_index: int = 0,
+            address: Address = None,
         ) -> None:
-            if self.proxy_address:
+            if address:
                 msg.address = self.proxy_address
 
             return super(GridClient, self).send_eventual_msg_without_reply(
