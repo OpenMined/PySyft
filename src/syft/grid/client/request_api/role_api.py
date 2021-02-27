@@ -4,10 +4,10 @@ from ...messages.role_messages import DeleteRoleMessage
 from ...messages.role_messages import GetRoleMessage
 from ...messages.role_messages import GetRolesMessage
 from ...messages.role_messages import UpdateRoleMessage
-from .service_request import GridServiceRequest
+from .request_api import GridRequestAPI
 
 
-class RoleServiceRequest(GridServiceRequest):
+class RoleRequestAPI(GridRequestAPI):
     response_key = "role"
 
     def __init__(self, send):
@@ -18,5 +18,11 @@ class RoleServiceRequest(GridServiceRequest):
             update_msg=UpdateRoleMessage,
             delete_msg=DeleteRoleMessage,
             send=send,
-            response_key=RoleServiceRequest.response_key,
+            response_key=RoleRequestAPI.response_key,
         )
+
+    def __getitem__(self, key):
+        return self.get(role_id=key)
+
+    def __delitem__(self, key):
+        self.delete(role_id=key)

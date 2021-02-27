@@ -11,10 +11,10 @@ from ...messages.group_messages import DeleteGroupMessage
 from ...messages.group_messages import GetGroupMessage
 from ...messages.group_messages import GetGroupsMessage
 from ...messages.group_messages import UpdateGroupMessage
-from .service_request import GridServiceRequest
+from .request_api import GridRequestAPI
 
 
-class GroupServiceRequest(GridServiceRequest):
+class GroupRequestAPI(GridRequestAPI):
     response_key = "group"
 
     def __init__(self, send):
@@ -25,5 +25,11 @@ class GroupServiceRequest(GridServiceRequest):
             update_msg=UpdateGroupMessage,
             delete_msg=DeleteGroupMessage,
             send=send,
-            response_key=GroupServiceRequest.response_key,
+            response_key=GroupRequestAPI.response_key,
         )
+
+    def __getitem__(self, key):
+        return self.get(group_id=key)
+
+    def __delitem__(self, key):
+        self.delete(group_id=key)

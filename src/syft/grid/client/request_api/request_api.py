@@ -11,7 +11,7 @@ from pandas import DataFrame
 from ....core.common.message import SyftMessage
 
 
-class GridServiceRequest:
+class GridRequestAPI:
     def __init__(
         self,
         create_msg,
@@ -30,6 +30,10 @@ class GridServiceRequest:
         self.__send = send
         self.__response_key = response_key
 
+    @property
+    def send_method(self):
+        return self.__send
+
     def create(self, **kwargs):
         return self.__send(grid_msg=self.__create_message, content=kwargs)
 
@@ -39,7 +43,7 @@ class GridServiceRequest:
     def all(self, pandas: bool = False):
         result = self.__send(grid_msg=self.__get_all_message)
         if pandas:
-            return self.to_dataframe(result)
+            return DataFrame(result)
         else:
             return result
 
@@ -49,14 +53,9 @@ class GridServiceRequest:
     def delete(self, **kwargs):
         return self.__send(grid_msg=self.__delete_message, content=kwargs)
 
-    def to_dataframe(self, result: Dict[Any, Any]):
-        return DataFrame(result.get(self.__response_key + "s", []))
-
     def to_obj(self, result: Dict[Any, Any]):
-        _user = result.get(self.__response_key, None)
-
-        if _user:
+        if result:
             _class_name = self.__response_key.capitalize()
-            _user = type(_class_name, (object,), _user)()
+            result = type(_class_name, (object,), result)()
 
-        return _user
+        return result

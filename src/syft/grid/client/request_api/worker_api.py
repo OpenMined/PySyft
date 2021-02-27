@@ -11,10 +11,10 @@ from ...messages.infra_messages import DeleteWorkerMessage
 from ...messages.infra_messages import GetWorkerMessage
 from ...messages.infra_messages import GetWorkersMessage
 from ...messages.infra_messages import UpdateWorkerMessage
-from .service_request import GridServiceRequest
+from .request_api import GridRequestAPI
 
 
-class WorkerServiceRequest(GridServiceRequest):
+class WorkerRequestAPI(GridRequestAPI):
     response_key = "worker"
 
     def __init__(self, send):
@@ -25,5 +25,11 @@ class WorkerServiceRequest(GridServiceRequest):
             update_msg=UpdateWorkerMessage,
             delete_msg=DeleteWorkerMessage,
             send=send,
-            response_key=WorkerServiceRequest.response_key,
+            response_key=WorkerRequestAPI.response_key,
         )
+
+    def __getitem__(self, key):
+        return self.get(worker_id=key)
+
+    def __delitem__(self, key):
+        self.delete(worker_id=key)

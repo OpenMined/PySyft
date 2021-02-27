@@ -11,10 +11,10 @@ from ...messages.user_messages import DeleteUserMessage
 from ...messages.user_messages import GetUserMessage
 from ...messages.user_messages import GetUsersMessage
 from ...messages.user_messages import UpdateUserMessage
-from .service_request import GridServiceRequest
+from .request_api import GridRequestAPI
 
 
-class UserServiceRequest(GridServiceRequest):
+class UserRequestAPI(GridRequestAPI):
     response_key = "user"
 
     def __init__(self, send):
@@ -25,5 +25,11 @@ class UserServiceRequest(GridServiceRequest):
             update_msg=UpdateUserMessage,
             delete_msg=DeleteUserMessage,
             send=send,
-            response_key=UserServiceRequest.response_key,
+            response_key=UserRequestAPI.response_key,
         )
+
+    def __getitem__(self, key):
+        return self.get(user_id=key)
+
+    def __delitem__(self, key):
+        self.delete(user_id=key)
