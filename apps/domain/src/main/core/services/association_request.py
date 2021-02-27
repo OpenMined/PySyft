@@ -6,6 +6,7 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
 from requests import post
 
 # syft relative
@@ -42,15 +43,23 @@ from ..database import expand_user_object
 def send_association_request_msg(
     msg: SendAssociationRequestMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> SendAssociationRequestResponse:
     # Get Payload Content
     name = msg.content.get("name", None)
-    address = msg.content.get("address", None)
+    target_address = msg.content.get("address", None)
     current_user_id = msg.content.get("current_user", None)
     sender_address = msg.content.get("sender_address", None)
 
+    users = node.users
+
+    if not current_user_id:
+        current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
     # Check if name/address fields are empty
-    missing_paramaters = not name or not address
+    missing_paramaters = not name or not target_address
     if missing_paramaters:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (name/adress)!"
@@ -61,7 +70,7 @@ def send_association_request_msg(
     if allowed:
         association_requests = node.association_requests
         association_request_obj = association_requests.create_association_request(
-            name, address
+            name, target_address, sender_address
         )
         handshake_value = association_request_obj.handshake_value
 
@@ -70,8 +79,9 @@ def send_association_request_msg(
             "name": name,
             "address": sender_address,
             "handshake": handshake_value,
+            "sender_address": target_address,
         }
-        url = address + "/association-requests/receive"
+        url = target_address + "/association-requests/receive"
 
         response = post(url=url, json=payload)
         response_message = (
@@ -93,16 +103,18 @@ def send_association_request_msg(
 def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> ReceiveAssociationRequestResponse:
     # Get Payload Content
     address = msg.content.get("address", None)
     handshake_value = msg.content.get("handshake", None)
+    sender_address = msg.content.get("sender_address", None)
 
     # Check if name/address fields are empty
-    missing_paramaters = not address or not handshake_value
+    missing_paramaters = not address or not handshake_value or not sender_address
     if missing_paramaters:
         raise MissingRequestKeyError(
-            message="Invalid request payload, empty fields (adress/handhsake)!"
+            message="Invalid request payload, empty fields (adress/handhsake/sender_address)!"
         )
 
     association_requests = node.association_requests
@@ -117,7 +129,7 @@ def recv_association_request_msg(
                 message="Invalid request payload, empty fields (name)!"
             )
 
-        association_requests.create_association_request(name, address)
+        association_requests.create_association_request(name, address, sender_address)
 
     else:
         value = msg.content.get("value", None)
@@ -140,6 +152,7 @@ def recv_association_request_msg(
 def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> RespondAssociationRequestResponse:
 
     # Get Payload Content
@@ -148,6 +161,13 @@ def respond_association_request_msg(
     handshake_value = msg.content.get("handshake", None)
     value = msg.content.get("value", None)
     sender_address = msg.content.get("sender_address", None)
+
+    users = node.users
+
+    if not current_user_id:
+        current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     # Check if handshake/address/value fields are empty
     missing_paramaters = not address or not handshake_value or not value
@@ -168,6 +188,7 @@ def respond_association_request_msg(
             "address": sender_address,
             "handshake": handshake_value,
             "value": value,
+            "sender_address": address,
         }
         url = address + "/association-requests/receive"
 
@@ -187,12 +208,21 @@ def respond_association_request_msg(
 
 
 def get_association_request_msg(
-    msg: GetAssociationRequestMessage, node: AbstractNode
+    msg: GetAssociationRequestMessage,
+    node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetAssociationRequestResponse:
 
     # Get Payload Content
     association_request_id = msg.content.get("association_request_id", None)
     current_user_id = msg.content.get("current_user", None)
+
+    users = node.users
+
+    if not current_user_id:
+        current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
 
@@ -215,20 +245,31 @@ def get_association_request_msg(
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetAssociationRequestsResponse:
 
     # Get Payload Content
-    current_user_id = msg.content.get("current_user", None)
+    try:
+        current_user_id = msg.content.get("current_user", None)
+    except Exception:
+        current_user_id = None
+
+    users = node.users
+
+    if not current_user_id:
+        current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     allowed = node.users.can_manage_infrastructure(user_id=current_user_id)
 
     if allowed:
         association_requests = node.association_requests
         association_requests = association_requests.all()
-        association_requests_json = {
-            association_request.id: model_to_json(association_request)
+        association_requests_json = [
+            model_to_json(association_request)
             for association_request in association_requests
-        }
+        ]
     else:
         raise AuthorizationError(
             "You're not allowed to get Association Request information!"
@@ -244,6 +285,7 @@ def get_all_association_request_msg(
 def del_association_request_msg(
     msg: DeleteAssociationRequestMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> DeleteAssociationRequestResponse:
 
     # Get Payload Content
@@ -297,7 +339,12 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         GetAssociationRequestResponse,
         DeleteAssociationRequestResponse,
     ]:
-        return AssociationRequestService.msg_handler_map[type(msg)](msg=msg, node=node)
+        try:
+            return AssociationRequestService.msg_handler_map[type(msg)](
+                msg=msg, node=node, verify_key=verify_key
+            )
+        except Exception as e:
+            print("\n\n\n My Exception: ", str(e), "\n\n\n")
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
