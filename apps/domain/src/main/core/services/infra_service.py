@@ -151,7 +151,7 @@ def get_worker_msg(
         return GetWorkerResponse(
             address=msg.reply_to,
             status_code=200,
-            content={"worker": _msg},
+            content=_msg,
         )
     except Exception as e:
         return GetWorkerResponse(
@@ -190,7 +190,7 @@ def get_workers_msg(
         return GetWorkersResponse(
             address=msg.reply_to,
             status_code=200,
-            content={"workers": _msg},
+            content=_msg,
         )
     except Exception as e:
         return GetWorkersResponse(
