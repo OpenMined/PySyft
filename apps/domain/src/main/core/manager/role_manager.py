@@ -26,3 +26,9 @@ class RoleManager(DatabaseManager):
         if len(results) == 0:
             raise RoleNotFoundError
         return results
+
+    def set(self, role_id, params):
+        if self.contain(id=role_id):
+            self.modify({"id": role_id}, params)
+        else:
+            raise RoleNotFoundError
