@@ -278,30 +278,30 @@ def test_get_all_roles_success(client, database, cleanup):
     result = client.get("/roles", headers=headers)
 
     assert result.status_code == 200
-    assert result.get_json() == {
-        "roles": {
-            "asd64f85as": {
-                "name": "role name1",
-                "can_triage_requests": False,
-                "can_edit_settings": False,
-                "can_create_users": True,
-                "can_create_groups": True,
-                "can_edit_roles": False,
-                "can_manage_infrastructure": False,
-                "can_upload_data": False,
-            },
-            "esad556d1a": {
-                "name": "role name2",
-                "can_triage_requests": False,
-                "can_edit_settings": False,
-                "can_create_users": True,
-                "can_create_groups": True,
-                "can_edit_roles": False,
-                "can_manage_infrastructure": False,
-                "can_upload_data": False,
-            },
-        }
-    }
+    assert result.get_json() == [
+        {
+            "can_create_groups": False,
+            "can_create_users": False,
+            "can_edit_roles": False,
+            "can_edit_settings": False,
+            "can_manage_infrastructure": False,
+            "can_triage_requests": False,
+            "can_upload_data": False,
+            "id": 1,
+            "name": "User",
+        },
+        {
+            "can_create_groups": True,
+            "can_create_users": True,
+            "can_edit_roles": False,
+            "can_edit_settings": True,
+            "can_manage_infrastructure": False,
+            "can_triage_requests": True,
+            "can_upload_data": True,
+            "id": 2,
+            "name": "Administrator",
+        },
+    ]
 
 
 # GET SINGLE ROLE
@@ -417,11 +417,12 @@ def test_get_role_success(client, database, cleanup):
 
     assert result.status_code == 200
     assert result.get_json() == {
-        "name": "mario mario",
+        "id": 1,
+        "name": "User",
         "can_triage_requests": False,
         "can_edit_settings": False,
-        "can_create_users": True,
-        "can_create_groups": True,
+        "can_create_users": False,
+        "can_create_groups": False,
         "can_edit_roles": False,
         "can_manage_infrastructure": False,
         "can_upload_data": False,
@@ -689,25 +690,23 @@ def test_delete_role_user_with_missing_role(client, database, cleanup):
 
 
 def test_delete_role_success(client, database, cleanup):
-    new_role = create_role(*admin_role)
-    database.session.add(new_role)
+    role2 = create_role(*owner_role)
+    database.session.add(role2)
 
-    new_role = create_role(*owner_role)
-    database.session.add(new_role)
+    role1 = create_role(*user_role)
+    database.session.add(role1)
 
-    new_user = create_user(*user_2)
+    new_user = create_user(*user_1)
     database.session.add(new_user)
 
     database.session.commit()
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
+        "private-key": "3c777d6e1cece1e78aa9c26ae7fa2ecf33a6d3fb1db7c1313e7b79ef3ee884eb",
         "token": token.decode("UTF-8"),
     }
+    result = client.delete("/roles/2", headers=headers)
 
-    result = client.delete("/roles/dasdwead", headers=headers)
-
-    # result = client.delete("/roles/1", headers=headers, content_type="application/json")
-
-    # assert result.status_code == 200
+    assert result.status_code == 200
     assert result.get_json() == {"msg": "Role has been deleted!"}

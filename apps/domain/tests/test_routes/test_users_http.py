@@ -252,9 +252,9 @@ def test_get_users_success(client, database, cleanup):
     result = client.get("/users", headers=headers, content_type="application/json")
 
     assert result.status_code == 200
-    assert len(result.get_json()["users"]) == 2
-    assert result.get_json()["users"][0]["id"] == 1
-    assert result.get_json()["users"][1]["id"] == 2
+    assert len(result.get_json()) == 2
+    assert result.get_json()[0]["id"] == 1
+    assert result.get_json()[1]["id"] == 2
 
 
 def test_get_users_unauthorized(client, database, cleanup):
@@ -342,8 +342,8 @@ def test_get_one_user_success(client, database, cleanup):
     result = client.get("/users/2", headers=headers, content_type="application/json")
 
     assert result.status_code == 200
-    assert result.get_json()["user"]["id"] == 2
-    assert result.get_json()["user"]["email"] == "anemail@anemail.com"
+    assert result.get_json()["id"] == 2
+    assert result.get_json()["email"] == "anemail@anemail.com"
 
 
 def test_get_one_user_missing_token(client, database, cleanup):
@@ -1704,8 +1704,8 @@ def test_search_users_success(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert len(result.get_json()["users"]) == 1
-    assert result.get_json()["users"]["2"]["id"] == 2
+    assert len(result.get_json()) == 1
+    assert result.get_json()[0]["id"] == 2
 
 
 def test_search_users_nomatch(client, database, cleanup):
@@ -1768,7 +1768,7 @@ def test_search_users_nomatch(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert len(result.get_json()["users"]) == 0
+    assert len(result.get_json()) == 0
 
 
 def test_search_users_onematch(client, database, cleanup):
@@ -1831,8 +1831,8 @@ def test_search_users_onematch(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert len(result.get_json()["users"]) == 1
-    assert result.get_json()["users"]["2"]["id"] == 2
+    assert len(result.get_json()) == 1
+    assert result.get_json()[0]["id"] == 2
 
 
 def test_search_users_missing_token(client, database, cleanup):
