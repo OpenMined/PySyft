@@ -263,7 +263,7 @@ def get_user_msg(
     return GetUserResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"user": _msg},
+        content=_msg,
     )
 
 
@@ -296,7 +296,7 @@ def get_all_users_msg(
     return GetUsersResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"users": _msg},
+        content=_msg,
     )
 
 
@@ -372,9 +372,9 @@ def search_users_msg(
                     lambda x: node.groups.contain_association(user=x.id, group=_group),
                     users,
                 )
-                _msg = {user.id: model_to_json(user) for user in filtered_users}
+                _msg = [model_to_json(user) for user in filtered_users]
             else:
-                _msg = {user.id: model_to_json(user) for user in users}
+                _msg = [model_to_json(user) for user in users]
         except UserNotFoundError:
             _msg = {}
     else:
@@ -383,7 +383,7 @@ def search_users_msg(
     return SearchUsersResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"users": _msg},
+        content=_msg,
     )
 
 
