@@ -24,7 +24,7 @@ class AssociationRequestManager(DatabaseManager):
 
         return result
 
-    def create_association_request(self, name, address):
+    def create_association_request(self, name, address, sender_address):
         date = datetime.now()
         handshake_value = self.__generate_hash(name)
 
@@ -32,6 +32,7 @@ class AssociationRequestManager(DatabaseManager):
             date=date,
             name=name,
             address=address,
+            sender_address=sender_address,
             handshake_value=handshake_value,
         )
 
