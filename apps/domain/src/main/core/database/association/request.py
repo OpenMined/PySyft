@@ -20,6 +20,7 @@ class AssociationRequest(BaseModel):
     date = db.Column(db.DateTime())
     name = db.Column(db.String(255))
     address = db.Column(db.String(255))
+    sender_address = db.Column(db.String(255))
     accepted = db.Column(db.Boolean(), default=False)
     pending = db.Column(db.Boolean(), default=True)
     handshake_value = db.Column(db.String(255))
