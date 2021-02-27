@@ -249,33 +249,33 @@ def test_get_all_workers(client, database, cleanup):
         headers=headers,
     )
     assert result.get_json() == [
-            {
-                "id": 1,
-                "name": "Train Environment",
-                "address": "http://localhost:5000/",
-                "syft_address": None,
-                "memory": "32",
-                "instance": "EC2",
-                "gpu": "RTX3070",
-            },
-            {
-                "id": 2,
-                "name": "Test Environment",
-                "address": "http://localhost:7000/",
-                "syft_address": None,
-                "memory": "64",
-                "instance": "EC2-large",
-                "gpu": "RTX3070",
-            },
-            {
-                "id": 3,
-                "name": "Private Environment",
-                "address": "http://localhost:4000/",
-                "syft_address": None,
-                "memory": "16",
-                "instance": "EC2",
-                "gpu": "GTX",
-            },
+        {
+            "id": 1,
+            "name": "Train Environment",
+            "address": "http://localhost:5000/",
+            "syft_address": None,
+            "memory": "32",
+            "instance": "EC2",
+            "gpu": "RTX3070",
+        },
+        {
+            "id": 2,
+            "name": "Test Environment",
+            "address": "http://localhost:7000/",
+            "syft_address": None,
+            "memory": "64",
+            "instance": "EC2-large",
+            "gpu": "RTX3070",
+        },
+        {
+            "id": 3,
+            "name": "Private Environment",
+            "address": "http://localhost:4000/",
+            "syft_address": None,
+            "memory": "16",
+            "instance": "EC2",
+            "gpu": "GTX",
+        },
     ]
 
 
@@ -330,14 +330,14 @@ def test_get_specific_worker(client, database, cleanup):
     )
 
     assert result.get_json() == {
-            "id": 2,
-            "name": "Test Environment",
-            "address": "http://localhost:7000/",
-            "syft_address": None,
-            "memory": "64",
-            "instance": "EC2-large",
-            "gpu": "RTX3070",
-        }
+        "id": 2,
+        "name": "Test Environment",
+        "address": "http://localhost:7000/",
+        "syft_address": None,
+        "memory": "64",
+        "instance": "EC2-large",
+        "gpu": "RTX3070",
+    }
 
 
 def test_delete_worker(client, database, cleanup):
