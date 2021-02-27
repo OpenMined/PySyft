@@ -6,13 +6,13 @@ class Role(BaseModel):
 
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
-    can_triage_requests = db.Column(db.Boolean())
-    can_edit_settings = db.Column(db.Boolean())
-    can_create_users = db.Column(db.Boolean())
-    can_create_groups = db.Column(db.Boolean())
-    can_edit_roles = db.Column(db.Boolean())
-    can_manage_infrastructure = db.Column(db.Boolean())
-    can_upload_data = db.Column(db.Boolean())
+    can_triage_requests = db.Column(db.Boolean(), default=False)
+    can_edit_settings = db.Column(db.Boolean(), default=False)
+    can_create_users = db.Column(db.Boolean(), default=False)
+    can_create_groups = db.Column(db.Boolean(), default=False)
+    can_edit_roles = db.Column(db.Boolean(), default=False)
+    can_manage_infrastructure = db.Column(db.Boolean(), default=False)
+    can_upload_data = db.Column(db.Boolean(), default=False)
 
     def __str__(self):
         return (
