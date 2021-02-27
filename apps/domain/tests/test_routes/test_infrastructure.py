@@ -248,8 +248,7 @@ def test_get_all_workers(client, database, cleanup):
         "/dcfl/workers",
         headers=headers,
     )
-    assert result.get_json() == {
-        "workers": [
+    assert result.get_json() == [
             {
                 "id": 1,
                 "name": "Train Environment",
@@ -277,8 +276,7 @@ def test_get_all_workers(client, database, cleanup):
                 "instance": "EC2",
                 "gpu": "GTX",
             },
-        ]
-    }
+    ]
 
 
 def test_get_specific_worker(client, database, cleanup):
@@ -332,7 +330,6 @@ def test_get_specific_worker(client, database, cleanup):
     )
 
     assert result.get_json() == {
-        "worker": {
             "id": 2,
             "name": "Test Environment",
             "address": "http://localhost:7000/",
@@ -341,7 +338,6 @@ def test_get_specific_worker(client, database, cleanup):
             "instance": "EC2-large",
             "gpu": "RTX3070",
         }
-    }
 
 
 def test_delete_worker(client, database, cleanup):
