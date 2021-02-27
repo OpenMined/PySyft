@@ -43,6 +43,7 @@ def create_role_msg(
     _can_create_groups = msg.content.get("can_create_groups", False)
     _can_edit_roles = msg.content.get("can_edit_roles", False)
     _can_manage_infrastructure = msg.content.get("can_manage_infrastructure", False)
+    _can_upload_data = msg.content.get("can_upload_data", False)
     _current_user_id = msg.content.get("current_user", False)
 
     users = node.users
@@ -68,6 +69,7 @@ def create_role_msg(
             can_create_groups=_can_create_groups,
             can_edit_roles=_can_edit_roles,
             can_manage_infrastructure=_can_manage_infrastructure,
+            can_upload_data=_can_upload_data,
         )
     else:
         raise AuthorizationError("You're not allowed to create a new Role!")
@@ -188,6 +190,13 @@ def del_role_msg(
 ) -> DeleteRoleResponse:
     _role_id = msg.content.get("role_id", None)
     _current_user_id = msg.content.get("current_user", None)
+
+    users = node.users
+
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
 
     if not _role_id:
         raise MissingRequestKeyError
