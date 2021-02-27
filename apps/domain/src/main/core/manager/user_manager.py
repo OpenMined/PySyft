@@ -91,6 +91,9 @@ class UserManager(DatabaseManager):
     def can_manage_infrastructure(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_manage_infrastructure
 
+    def can_edit_roles(self, user_id: str) -> bool:
+        return self.role(user_id=user_id).can_edit_roles
+
     def can_create_groups(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_create_groups
 
