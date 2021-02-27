@@ -126,12 +126,11 @@ def get_group_msg(
 
     _msg = model_to_json(_group)
     _msg["users"] = node.groups.get_users(group_id=_group_id)
-    _msg_field = "group"
 
     return GetGroupResponse(
         address=msg.reply_to,
         status_code=200,
-        content={_msg_field: _msg},
+        content=_msg,
     )
 
 
@@ -164,12 +163,10 @@ def get_all_groups_msg(
     for group in _groups:
         group["users"] = node.groups.get_users(group_id=group["id"])
 
-    _msg_field = "groups"
-
     return GetGroupsResponse(
         address=msg.reply_to,
         status_code=200,
-        content={_msg_field: _groups},
+        content=_groups,
     )
 
 
