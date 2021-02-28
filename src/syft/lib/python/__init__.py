@@ -35,6 +35,7 @@ for syft_type in [
     _SyNone,
     Any,
     PyPrimitive,
+    Slice,
     String,
     Tuple,
     ValuesIndices,
@@ -53,6 +54,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Float", "syft.lib.python.Float", Float),
         ("syft.lib.python.Int", "syft.lib.python.Int", Int),
         ("syft.lib.python.List", "syft.lib.python.List", List),
+        ("syft.lib.python.Slice", "syft.lib.python.Slice", Slice),
         ("syft.lib.python.String", "syft.lib.python.String", String),
         ("syft.lib.python._SyNone", "syft.lib.python._SyNone", _SyNone),
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
@@ -73,6 +75,20 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ]
 
     methods = [
+        # Slice methods - quite there
+        ("syft.lib.python.Slice.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.Slice.__iter__", "syft.lib.python.Iterator"),
+        ("syft.lib.python.Slice.__eq__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__ge__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__gt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__le__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__lt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__ne__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Slice.__sizeof__", "syft.lib.python.Int"),
+        ("syft.lib.python.Slice.copy", "syft.lib.python.Slice"),
+        ("syft.lib.python.Slice.getindices", "syft.lib.python.Slice"),
+        ("syft.lib.python.Slice.unpack", "syft.lib.python.Slice"),
+        ("syft.lib.python.Slice.adjustindices", "syft.lib.python.Slice"),
         # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any"),
