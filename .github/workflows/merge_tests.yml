@@ -212,7 +212,6 @@ jobs:
           pip install -e .
 
       - name: Run torch tests
-        if: startsWith(runner.os, 'Windows') != true
         run: |
           pytest -m torch -n auto -p no:benchmark
 
