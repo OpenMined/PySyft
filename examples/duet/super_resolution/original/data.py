@@ -7,12 +7,14 @@ from os.path import join
 import tarfile
 
 # third party
-from dataset import DatasetFromFolder
 from six.moves import urllib
 from torchvision.transforms import CenterCrop
 from torchvision.transforms import Compose
 from torchvision.transforms import Resize
 from torchvision.transforms import ToTensor
+
+# first party
+from dataset import DatasetFromFolder
 
 
 def download_bsd300(dest="dataset"):
