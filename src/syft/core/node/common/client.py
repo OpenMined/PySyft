@@ -14,8 +14,8 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from .... import serialize
 from ....core.pointer.pointer import Pointer
-from ....decorators import syft_decorator
 from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
@@ -52,7 +52,6 @@ class Client(AbstractNodeClient):
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str],
@@ -141,7 +140,6 @@ class Client(AbstractNodeClient):
     def add_me_to_my_address(self) -> None:
         traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def register_in_memory_client(self, client: AbstractNodeClient) -> None:
         # WARNING: Gross hack
         route_index = self.default_route_index
@@ -164,7 +162,6 @@ class Client(AbstractNodeClient):
                 Exception("Unable to save client reference without SoloRoute")
             )
 
-    @syft_decorator(typechecking=True)
     def register(self, client: AbstractNodeClient) -> None:
         debug(f"> Registering {client.pprint} with {self.pprint}")
         self.register_in_memory_client(client=client)
@@ -206,7 +203,7 @@ class Client(AbstractNodeClient):
         traceback_and_raise(NotImplementedError)
 
     # TODO fix the msg type but currently tensor needs SyftMessage
-    @syft_decorator(typechecking=True)
+
     def send_immediate_msg_with_reply(
         self,
         msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
@@ -239,7 +236,7 @@ class Client(AbstractNodeClient):
         )
 
     # TODO fix the msg type but currently tensor needs SyftMessage
-    @syft_decorator(typechecking=True)
+
     def send_immediate_msg_without_reply(
         self,
         msg: Union[
@@ -259,7 +256,6 @@ class Client(AbstractNodeClient):
         debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
-    @syft_decorator(typechecking=True)
     def send_eventual_msg_without_reply(
         self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
     ) -> None:
@@ -275,23 +271,19 @@ class Client(AbstractNodeClient):
 
         self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
 
-    @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"
 
-    @syft_decorator(typechecking=True)
     def register_route(self, route: Route) -> None:
         self.routes.append(route)
 
-    @syft_decorator(typechecking=True)
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> Client_PB:
         obj_type = get_fully_qualified_name(obj=self)
 
-        routes = [route.serialize() for route in self.routes]
+        routes = [serialize(route) for route in self.routes]
 
         network = self.network._object2proto() if self.network is not None else None
 
@@ -303,7 +295,7 @@ class Client(AbstractNodeClient):
 
         client_pb = Client_PB(
             obj_type=obj_type,
-            id=self.id.serialize(),
+            id=serialize(self.id),
             name=self.name,
             routes=routes,
             has_network=self.network is not None,
@@ -379,7 +371,12 @@ class StoreClient:
         msg = ObjectSearchMessage(
             address=self.client.address, reply_to=self.client.address
         )
-        results = self.client.send_immediate_msg_with_reply(msg=msg).results
+
+        results = getattr(
+            self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+        )
+        if results is None:
+            traceback_and_raise(ValueError("TODO"))
 
         # This is because of a current limitation in Pointer where we cannot
         # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
@@ -398,9 +395,8 @@ class StoreClient:
         if isinstance(key, str):
             matches = 0
             match_obj: Optional[Pointer] = None
+
             for obj in self.store:
-                if key in str(obj.id_at_location.value).replace("-", ""):
-                    return obj
                 if key in obj.tags:
                     matches += 1
                     match_obj = obj
@@ -408,8 +404,24 @@ class StoreClient:
                 return match_obj
             elif matches > 1:
                 traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
+            else:
+                # If key does not math with any tags, we then try to match it with id string.
+                # But we only do this if len(key)>=5, because if key is too short, for example
+                # if key="a", there are chances of mismatch it with id string, and I don't
+                # think the user pass a key such short as part of id string.
+                if len(key) >= 5:
+                    for obj in self.store:
+                        if key in str(obj.id_at_location.value).replace("-", ""):
+                            return obj
+                else:
+                    traceback_and_raise(
+                        KeyError(
+                            f"No such item found for tag: {key}, and we "
+                            + "don't consider it as part of id string because its too short."
+                        )
+                    )
 
-            traceback_and_raise(KeyError("No such request found for id:" + str(key)))
+            traceback_and_raise(KeyError("No such item found for id:" + str(key)))
         if isinstance(key, int):
             return self.store[key]
         else:

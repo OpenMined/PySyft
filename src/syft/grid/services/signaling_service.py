@@ -11,10 +11,12 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ... import serialize
 from ...core.common.message import ImmediateSyftMessageWithReply
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...core.node.abstract.node import AbstractNode
@@ -22,7 +24,6 @@ from ...core.node.common.metadata import Metadata
 from ...core.node.common.service.auth import service_auth
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from ...decorators.syft_decorator_impl import syft_decorator
 from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )
@@ -52,6 +53,7 @@ from ...proto.grid.service.signaling_service_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -66,7 +68,6 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> OfferPullRequestMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -78,16 +79,16 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: OfferPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return OfferPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -135,6 +136,7 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         return OfferPullRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -149,7 +151,6 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> AnswerPullRequestMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -161,16 +162,16 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: AnswerPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return AnswerPullRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -218,6 +219,7 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         return AnswerPullRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -228,7 +230,6 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> RegisterNewPeerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -240,14 +241,14 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         :rtype: AnswerPullRequestMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RegisterNewPeerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -293,6 +294,7 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         return RegisterNewPeerMessage_PB
 
 
+@bind_protobuf
 @final
 class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -304,7 +306,6 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.peer_id = peer_id
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> PeerSuccessfullyRegistered_PB:
         """Returns a protobuf serialization of self.
 
@@ -316,13 +317,13 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingOfferMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return PeerSuccessfullyRegistered_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             peer_id=self.peer_id,
         )
 
@@ -371,6 +372,7 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         return PeerSuccessfullyRegistered_PB
 
 
+@bind_protobuf
 @final
 class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -388,7 +390,6 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingOfferMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -400,15 +401,15 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingOfferMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SignalingOfferMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             payload=self.payload,
-            host_metadata=self.host_metadata.serialize(),
+            host_metadata=serialize(self.host_metadata),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -459,6 +460,7 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         return SignalingOfferMessage_PB
 
 
+@bind_protobuf
 @final
 class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -476,7 +478,6 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         self.target_peer = target_peer
         self.host_peer = host_peer
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingAnswerMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -488,16 +489,16 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingAnswerMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return SignalingAnswerMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             payload=self.payload,
-            host_metadata=self.host_metadata.serialize(),
+            host_metadata=serialize(self.host_metadata),
             target_peer=self.target_peer,
             host_peer=self.host_peer,
         )
@@ -547,6 +548,7 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         return SignalingAnswerMessage_PB
 
 
+@bind_protobuf
 @final
 class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -556,7 +558,6 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> SignalingRequestsNotFound_PB:
         """Returns a protobuf serialization of self.
 
@@ -568,13 +569,13 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         :rtype: SignalingRequestsNotFound_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SignalingRequestsNotFound_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
         )
 
     @staticmethod
@@ -620,6 +621,7 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         return SignalingRequestsNotFound_PB
 
 
+@bind_protobuf
 @final
 class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -629,7 +631,6 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> InvalidLoopBackRequest_PB:
         """Returns a protobuf serialization of self.
 
@@ -641,13 +642,13 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         :rtype: InvalidLoopBackRequest_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return InvalidLoopBackRequest_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
         )
 
     @staticmethod
@@ -702,7 +703,6 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> CloseConnectionMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -714,13 +714,13 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
         :rtype: CloseConnectionMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CloseConnectionMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
         )
 
     @staticmethod

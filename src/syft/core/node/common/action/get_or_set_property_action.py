@@ -14,11 +14,13 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )
+from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -33,6 +35,7 @@ class PropertyActions(Enum):
     DEL = 3
 
 
+@bind_protobuf
 class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -62,23 +65,27 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast.query(self.path).object_ref
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        resolved_self = node.store[self._self.id_at_location]
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []
+        tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+            tag_args.append(r_arg)
             resolved_args.append(r_arg.data)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+            tag_kwargs[arg_name] = r_arg
             resolved_kwargs[arg_name] = r_arg.data
 
         if not inspect.isdatadescriptor(method):
@@ -113,7 +120,8 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError:
                     raise Exception("MAKE VALID SCHEMA")
 
@@ -124,9 +132,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
+        # When GET, result is a new object, we give new tags to it
+        if self.action == PropertyActions.GET:
+            inherit_tags(
+                attr_path_and_name=self.path,
+                result=result,
+                self_obj=resolved_self,
+                args=tag_args,
+                kwargs=tag_kwargs,
+            )
+
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GetOrSetPropertyAction_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -135,18 +152,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetOrSetPropertyAction_PB(
             path=self.path,
-            id_at_location=self.id_at_location.serialize(),
-            args=list(map(lambda x: x.serialize(), self.args)),
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            address=self.address.serialize(),
-            _self=self._self.serialize(),
-            msg_id=self.id.serialize(),
+            id_at_location=serialize(self.id_at_location),
+            args=list(map(lambda x: serialize(x), self.args)),
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            address=serialize(self.address),
+            _self=serialize(self._self),
+            msg_id=serialize(self.id),
             action=self.action.value,
         )
 
