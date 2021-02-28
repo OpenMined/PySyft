@@ -27,12 +27,12 @@ on:
 jobs:
   python-tests-all:
     strategy:
-      max-parallel: 144
+      max-parallel: 18
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
         torch-version: [1.6.0, 1.7.0]
-        chunk: [1, 2, 3, 4, 5, 6, 7, 8]
+        # chunk: [1, 2, 3, 4, 5, 6, 7, 8]
         # include:
         #   - os: ubuntu-latest
         #     python-version: 3.7
@@ -211,24 +211,29 @@ jobs:
           pip install -r requirements.dev.txt
           pip install -e .
 
-      - name: Run torch test chunks Linux and MacOS
+      - name: Run torch tests
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          export TEST_CHUNKS=16
-          export TEST_CHUNK=${{ matrix.chunk }}
-          echo "Running $TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
-          export TEST_CHUNK=$(( ${{ matrix.chunk }}+8 ))
-          echo "Running $TEST_CHUNK"
           pytest -m torch -n auto -p no:benchmark
 
-      - name: Run torch test chunks Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          $Env:TEST_CHUNKS=16
-          $Env:TEST_CHUNK=${{ matrix.chunk }}
-          echo "Running $Env:TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
-          $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+8
-          echo "Running $Env:TEST_CHUNK"
-          pytest -m torch -n auto -p no:benchmark
+      # - name: Run torch test chunks Linux and MacOS
+      #   if: startsWith(runner.os, 'Windows') != true
+      #   run: |
+      #     export TEST_CHUNKS=16
+      #     export TEST_CHUNK=${{ matrix.chunk }}
+      #     echo "Running $TEST_CHUNK"
+      #     pytest -m torch -n auto -p no:benchmark
+      #     export TEST_CHUNK=$(( ${{ matrix.chunk }}+8 ))
+      #     echo "Running $TEST_CHUNK"
+      #     pytest -m torch -n auto -p no:benchmark
+
+      # - name: Run torch test chunks Windows
+      #   if: startsWith(runner.os, 'Windows')
+      #   run: |
+      #     $Env:TEST_CHUNKS=16
+      #     $Env:TEST_CHUNK=${{ matrix.chunk }}
+      #     echo "Running $Env:TEST_CHUNK"
+      #     pytest -m torch -n auto -p no:benchmark
+      #     $Env:TEST_CHUNK=[int]${{ matrix.chunk }}+8
+      #     echo "Running $Env:TEST_CHUNK"
+      #     pytest -m torch -n auto -p no:benchmark
