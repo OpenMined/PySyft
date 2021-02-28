@@ -89,7 +89,7 @@ class Slice(int, PyPrimitive):
             else:
                 step = step
         if start is None:
-            start = step < 0 ? length-1 : 0
+            start = length - 1 if step < 0 else 0
         else:
             if not isinstance(start, UserLong):
                 return -1
@@ -98,7 +98,7 @@ class Slice(int, PyPrimitive):
                 if start < 0:
                     start = start + length
         if stop is None:
-            stop = step < 0 ? -1 : length
+            stop = -1 if step < 0 else length
         else:
             if not isinstance(stop, UserLong):
                 return -1
@@ -116,9 +116,8 @@ class Slice(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
         def unpack(self, start, stop, step) -> SyPrimitiveRet:
-            assert -sys.maxint - 1 + 1  <= -sys.maxint
 
-            if step == None:
+            if step is None:
                 step = 1
             else:
                 if step == 0:
@@ -130,10 +129,10 @@ class Slice(int, PyPrimitive):
                     step = -sys.maxint
 
             if start is None:
-                start = step < 0 ? sys.maxint : 0
+                start = sys.maxint if step < 0 else 0
 
             if stop is None:
-                stop = step < 0 ? -sys.maxint - 1 : sys.maxint
+                stop = -sys.maxint - 1 if step < 0 else sys.maxint
 
             res = super().unpack(start, stop, step)
             return PrimitiveFactory.generate_primitive(value=res)
@@ -145,19 +144,19 @@ class Slice(int, PyPrimitive):
             if start < 0:
                 start = start + length
                 if start < 0:
-                    start = step < 0 ? -1 : 0
+                    start = -1 if step < 0 else 0
             else:
                 if start >= length:
-                    start = step < 0 ? length - 1 ; length
+                    start = length - 1 if step < 0 else length
 
             if stop < 0:
                 stop = stop + length
                 if stop < 0:
-                    stop = step < 0 ? -1 : 0
+                    stop = -1 if step < 0 else 0
 
             else:
                 if stop >= length:
-                    stop = step < 0 ? length - 1 : length
+                    stop = length - 1 if step < 0 else length
 
             if step < 0:
                 if stop < start:
@@ -165,7 +164,7 @@ class Slice(int, PyPrimitive):
 
             else:
                 if start < stop:
-                    return (stop - start -1) / step + 1
+                    return (stop - start - 1) / step + 1
 
             res = super().adjustindices(length, start, stop, step)
             return PrimitiveFactory.generate_primitive(value=res)

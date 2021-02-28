@@ -24,6 +24,7 @@ from .primitive_interface import PyPrimitive
 from .set import Set
 from .string import String
 from .tuple import Tuple
+from .slice import Slice
 
 for syft_type in [
     Bool,
