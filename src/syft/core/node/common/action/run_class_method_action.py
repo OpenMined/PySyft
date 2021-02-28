@@ -1,4 +1,5 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -16,6 +17,7 @@ from ..... import lib
 from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -149,31 +151,27 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             # get it again from the actual object so for now lets allow the following
             # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
-            if method_name in ["step", "zero_grad"]:
-                # TODO: Remove this Opacus workaround
-                try:
-                    method = getattr(resolved_self.data, method_name, None)
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                except Exception as e:
-                    critical(
-                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
-                    )
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
-                    )
+
+            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                result = method(
+                    resolved_self.data,
+                    node,
+                    verify_key,
+                    *self.args,
+                    **upcasted_kwargs,
+                )
             else:
-                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
-                    result = method(
-                        resolved_self.data,
-                        node,
-                        verify_key,
-                        *self.args,
-                        **upcasted_kwargs,
+                target_method = getattr(resolved_self.data, method_name, None)
+
+                if id(target_method) != id(method):
+                    warning(
+                        f"Method {method_name} overwritten on object {resolved_self.data}"
                     )
+                    method = target_method
                 else:
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
-                    )
+                    method = functools.partial(method, resolved_self.data)
+
+                result = method(*upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive

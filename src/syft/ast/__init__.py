@@ -155,6 +155,7 @@ def add_classes(
                 object_ref=ref,
                 return_type_name=return_type,
                 client=ast.client,
+                parent=parent,
             ),
         )
 
