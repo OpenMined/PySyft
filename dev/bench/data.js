@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1614492592049,
+  "lastUpdate": 1614493321823,
   "repoUrl": "https://github.com/OpenMined/PySyft",
   "entries": {
     "Pytest-benchmarks": [
@@ -4796,6 +4796,163 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.12060148910130336",
             "extra": "mean: 7.185597032555557 sec\nrounds: 3"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "me@madhavajay.com",
+            "name": "Madhava Jay",
+            "username": "madhavajay"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9f6aa934844ba526db765f6ad779b9cb94ad22d2",
+          "message": "Merge pull request #5227 from madhavajay/madhava/fix_windows_torch_test\n\nForgot windows check on torch tests",
+          "timestamp": "2021-02-27T22:11:18-08:00",
+          "tree_id": "924763b3a6603ac1dc9f8cb748d61d2e461e9ad5",
+          "url": "https://github.com/OpenMined/PySyft/commit/9f6aa934844ba526db765f6ad779b9cb94ad22d2"
+        },
+        "date": 1614493321120,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde[10485760]",
+            "value": 71.12734823778047,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024830129189924694",
+            "extra": "mean: 14.059289777779643 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_string_serde[104857600]",
+            "value": 6.509883867707958,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007584988701011557",
+            "extra": "mean: 153.61257133333262 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_list_serde[10]",
+            "value": 1133.0135213960357,
+            "unit": "iter/sec",
+            "range": "stddev: 0",
+            "extra": "mean: 882.6019999901291 usec\nrounds: 1"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_list_serde[100]",
+            "value": 138.5690829925417,
+            "unit": "iter/sec",
+            "range": "stddev: 0",
+            "extra": "mean: 7.216617000011638 msec\nrounds: 1"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_list_serde[1000]",
+            "value": 12.549966121364424,
+            "unit": "iter/sec",
+            "range": "stddev: 0",
+            "extra": "mean: 79.6814900000129 msec\nrounds: 1"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_local[10240]",
+            "value": 398.9776596444882,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005393036662733979",
+            "extra": "mean: 2.506406000002749 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_local[102400]",
+            "value": 183.69927351220238,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00011374747157473742",
+            "extra": "mean: 5.443679666667676 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_local[1048576]",
+            "value": 28.690732287140534,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005743125747238623",
+            "extra": "mean: 34.85446066666656 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_local[10485760]",
+            "value": 2.3448382125465113,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003828576158877198",
+            "extra": "mean: 426.4686555555544 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_local[10]",
+            "value": 152.66053472276474,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000575141686880112",
+            "extra": "mean: 6.550481444441579 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_local[100]",
+            "value": 22.405526871889904,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007939770190030225",
+            "extra": "mean: 44.631844888887905 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_local[1000]",
+            "value": 1.9906418823621626,
+            "unit": "iter/sec",
+            "range": "stddev: 0.008505990357540238",
+            "extra": "mean: 502.35052766666723 msec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_multiprocess[10240]",
+            "value": 0.18814011484709828,
+            "unit": "iter/sec",
+            "range": "stddev: 0.08533052901548681",
+            "extra": "mean: 5.315187570777776 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_multiprocess[102400]",
+            "value": 0.1524108877062932,
+            "unit": "iter/sec",
+            "range": "stddev: 0.11125770818945638",
+            "extra": "mean: 6.561211046333331 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_multiprocess[1048576]",
+            "value": 0.15046601522722805,
+            "unit": "iter/sec",
+            "range": "stddev: 0.11071624135021971",
+            "extra": "mean: 6.646019026222222 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_string_multiprocess[10485760]",
+            "value": 0.10823913536105625,
+            "unit": "iter/sec",
+            "range": "stddev: 0.060638366090231016",
+            "extra": "mean: 9.238802552000001 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_multiprocess[10]",
+            "value": 0.201190095025489,
+            "unit": "iter/sec",
+            "range": "stddev: 0.29347072137172237",
+            "extra": "mean: 4.970423617888887 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_multiprocess[100]",
+            "value": 0.17718898198965263,
+            "unit": "iter/sec",
+            "range": "stddev: 0.14164606033664387",
+            "extra": "mean: 5.643691773444453 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/pytest_benchmarks/bench_test.py::test_duet_list_multiprocess[1000]",
+            "value": 0.12204127241936759,
+            "unit": "iter/sec",
+            "range": "stddev: 0.3104483158328459",
+            "extra": "mean: 8.193949310555556 sec\nrounds: 3"
           }
         ]
       }
