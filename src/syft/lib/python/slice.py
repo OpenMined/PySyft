@@ -27,7 +27,13 @@ from .util import upcast
 @bind_protobuf
 class Slice(int, PyPrimitive):
 
-    def __init__(self, start: Any = None, stop: Any = None, step: Any = None, id: Optional[UID] = None):
+    def __init__(
+        self,
+        start: Any = None,
+        stop: Any = None,
+        step: Any = None,
+        id: Optional[UID] = None
+    ):
         if not start and not stop and not step:
             start = NULL
             stop = NULL
@@ -80,7 +86,13 @@ class Slice(int, PyPrimitive):
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def getindices(self, length: Optional[int] = None, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None) -> SyPrimitiveRet:
+    def getindices(
+        self,
+        length: Optional[int] = None,
+        start: Optional[int] = None,
+        stop: Optional[int] = None,
+        step: Optional[int] = None
+    ) -> SyPrimitiveRet:
         if step is None:
             step = 1
         else:
@@ -121,9 +133,7 @@ class Slice(int, PyPrimitive):
                 step = 1
             else:
                 if step == 0:
-                    traceback_and_raise(
-                        TypeError("slice step can't be zero")
-                    )
+                    traceback_and_raise(TypeError("slice step can't be zero"))
                     return -1
                 if step < -sys.maxint:
                     step = -sys.maxint
@@ -170,13 +180,24 @@ class Slice(int, PyPrimitive):
             return PrimitiveFactory.generate_primitive(value=res)
 
         def _object2proto(self) -> Slice_PB:
-            return Slice_PB(start=self.start, stop=self.stop, step=self.step, id=serialize(obj=self.id))
+            return Slice_PB(
+                start=self.start,
+                stop=self.stop,
+                step=self.step,
+                id=serialize(obj=self.id),
+            )
 
         @staticmethod
         def _proto2object(proto: Slice_PB) -> "Slice":
             id_: UID = deserialize(blob=proto.id)
 
-            return Slice(start=proto.start, stop=proto.stop, step=self.step, id=id_, from_bytes=True)
+            return Slice(
+                start=proto.start,
+                stop=proto.stop,
+                step=self.step,
+                id=id_,
+                from_bytes=True,
+            )
 
         @staticmethod
         def get_protobuf_schema() -> GeneratedProtocolMessageType:

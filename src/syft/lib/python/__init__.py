@@ -22,9 +22,9 @@ from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .set import Set
+from .slice import Slice
 from .string import String
 from .tuple import Tuple
-from .slice import Slice
 
 for syft_type in [
     Bool,
