@@ -30,11 +30,11 @@ class GridRequestAPI:
         self.__delete_message = delete_msg
         self.__send = send
         self.__response_key = response_key
-    
+
     @property
     def send(self) -> Callable:
         return self.__send
-    
+
     def create(self, **kwargs: Any) -> Dict[str, str]:
         return self.__send(grid_msg=self.__create_message, content=kwargs)
 
