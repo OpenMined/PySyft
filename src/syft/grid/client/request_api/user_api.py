@@ -1,9 +1,6 @@
 # stdlib
 from typing import Any
-from typing import Dict
-
-# third party
-from pandas import DataFrame
+from typing import Callable
 
 # syft relative
 from ...messages.user_messages import CreateUserMessage
@@ -17,7 +14,7 @@ from .request_api import GridRequestAPI
 class UserRequestAPI(GridRequestAPI):
     response_key = "user"
 
-    def __init__(self, send):
+    def __init__(self, send: Callable):
         super().__init__(
             create_msg=CreateUserMessage,
             get_msg=GetUserMessage,
@@ -28,8 +25,8 @@ class UserRequestAPI(GridRequestAPI):
             response_key=UserRequestAPI.response_key,
         )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         return self.get(user_id=key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: int) -> None:
         self.delete(user_id=key)
