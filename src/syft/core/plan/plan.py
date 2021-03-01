@@ -16,13 +16,13 @@ from syft.core.common.object import Serializable
 from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.action.common import Action
-from syft.core.node.common.util import listify
-from syft.core.pointer.pointer import Pointer
-from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
-from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
 # from ...abstract.node import AbstractNode
-# from ..util import listify
+from syft.core.node.common.util import listify
+from syft.core.pointer.pointer import Pointer
+from syft.core.store.storeable_object import StorableObject
+from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
+from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -38,14 +38,18 @@ class Plan(Serializable):
     """
 
     def __init__(
-        self, actions: List[Action], inputs: Union[Pointer, List[Pointer], None] = None
+        self,
+        actions: Union[List[Action], None] = None,
+        inputs: Union[Pointer, List[Pointer], None] = None,
+        outputs: Union[Pointer, List[Pointer], None] = None,
     ):
-        self.actions = actions
+        self.actions: List[Action] = listify(actions)
         self.inputs: List[Pointer] = listify(inputs)
+        self.outputs: List[Pointer] = listify(outputs)
 
     def __call__(
         self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
-    ) -> None:
+    ) -> List[StorableObject]:
         """
         1) For all pointers that were passed into the init as `inputs`, this method
            replaces those pointers in self.actions by the pointers passed in as *args.
@@ -75,6 +79,15 @@ class Plan(Serializable):
 
         for a in self.actions:
             a.execute_action(node, verify_key)
+
+        if len(self.outputs):
+            resolved_outputs = []
+            for arg in self.outputs:
+                r_arg = node.store[arg.id_at_location]
+                resolved_outputs.append(r_arg.data)
+            return resolved_outputs
+        else:
+            return []
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -123,8 +136,9 @@ class Plan(Serializable):
             for action in self.actions
         ]
         inputs_pb = [inp._object2proto() for inp in self.inputs]
+        outputs_pb = [out._object2proto() for out in self.outputs]
 
-        return Plan_PB(actions=actions_pb, inputs=inputs_pb)
+        return Plan_PB(actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb)
 
     @staticmethod
     def _proto2object(proto: Plan_PB) -> "Plan":
@@ -154,5 +168,8 @@ class Plan(Serializable):
         inputs = [
             Pointer._proto2object(pointer_proto) for pointer_proto in proto.inputs
         ]
+        outputs = [
+            Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
+        ]
 
-        return Plan(actions=actions, inputs=inputs)
+        return Plan(actions=actions, inputs=inputs, outputs=outputs)

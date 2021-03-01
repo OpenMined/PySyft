@@ -10,4 +10,5 @@ import "proto/core/pointer/pointer.proto";
 message Plan {
     repeated syft.core.node.common.action.Action actions = 1;
     repeated syft.core.pointer.Pointer inputs = 2;
+    repeated syft.core.pointer.Pointer outputs = 3;
 }
