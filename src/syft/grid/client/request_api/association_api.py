@@ -1,9 +1,7 @@
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import Dict
-
-# third party
-from pandas import DataFrame
 
 # syft relative
 from ...messages.association_messages import DeleteAssociationRequestMessage
@@ -16,28 +14,29 @@ from .request_api import GridRequestAPI
 
 class AssociationRequestAPI(GridRequestAPI):
     response_key = "association-request"
+    _accept = "accept"
+    _deny = "deny"
 
-    def __init__(self, send):
+    def __init__(self, send: Callable):
         super().__init__(
             create_msg=SendAssociationRequestMessage,
             get_msg=GetAssociationRequestMessage,
             get_all_msg=GetAssociationRequestsMessage,
-            update_msg=None,
             delete_msg=DeleteAssociationRequestMessage,
             send=send,
             response_key=AssociationRequestAPI.response_key,
         )
 
-    def update(self, **kwargs):
+    def update(self, **kwargs: Any) -> Dict[Any, Any]:
         raise NotImplementedError("Method not implemented to Association Requests!")
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         return self.get(association_request_id=key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: int) -> None:
         self.delete(association_request_id=key)
 
-    def to_obj(self, result: Dict[Any, Any]):
+    def to_obj(self, result: Dict[Any, Any]) -> Any:
         _association_obj = super().to_obj(result)
 
         _content = {
@@ -46,15 +45,15 @@ class AssociationRequestAPI(GridRequestAPI):
             "sender_address": _association_obj.sender_address,
         }
 
-        def _accept():
-            _content["value"] = "accept"
-            return self.send_method(
+        def _accept() -> Dict[str, str]:
+            _content["value"] = AssociationRequestAPI._accept
+            return self.__send(
                 grid_msg=RespondAssociationRequestMessage, content=_content
             )
 
-        def _deny():
-            _content["value"] = "deny"
-            return self.send_method(
+        def _deny() -> Dict[str, str]:
+            _content["value"] = AssociationRequestAPI._deny
+            return self.__send(
                 grid_msg=RespondAssociationRequestMessage, content=_content
             )
 
