@@ -47,13 +47,13 @@ class AssociationRequestAPI(GridRequestAPI):
 
         def _accept() -> Dict[str, str]:
             _content["value"] = AssociationRequestAPI._accept
-            return self.__send(
+            return self.send(
                 grid_msg=RespondAssociationRequestMessage, content=_content
             )
 
         def _deny() -> Dict[str, str]:
             _content["value"] = AssociationRequestAPI._deny
-            return self.__send(
+            return self.send(
                 grid_msg=RespondAssociationRequestMessage, content=_content
             )
 
