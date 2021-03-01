@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import Callable
+
 # syft relative
 from ...messages.role_messages import CreateRoleMessage
 from ...messages.role_messages import DeleteRoleMessage
@@ -8,9 +12,9 @@ from .request_api import GridRequestAPI
 
 
 class RoleRequestAPI(GridRequestAPI):
-    response_key = "role"
+    response_key: str = "role"
 
-    def __init__(self, send):
+    def __init__(self, send: Callable):
         super().__init__(
             create_msg=CreateRoleMessage,
             get_msg=GetRoleMessage,
@@ -21,8 +25,8 @@ class RoleRequestAPI(GridRequestAPI):
             response_key=RoleRequestAPI.response_key,
         )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         return self.get(role_id=key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: int) -> None:
         self.delete(role_id=key)
