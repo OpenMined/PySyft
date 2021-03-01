@@ -1,9 +1,6 @@
 # stdlib
 from typing import Any
-from typing import Dict
-
-# third party
-from pandas import DataFrame
+from typing import Callable
 
 # syft relative
 from ...messages.group_messages import CreateGroupMessage
@@ -17,7 +14,7 @@ from .request_api import GridRequestAPI
 class GroupRequestAPI(GridRequestAPI):
     response_key = "group"
 
-    def __init__(self, send):
+    def __init__(self, send: Callable):
         super().__init__(
             create_msg=CreateGroupMessage,
             get_msg=GetGroupMessage,
@@ -28,8 +25,8 @@ class GroupRequestAPI(GridRequestAPI):
             response_key=GroupRequestAPI.response_key,
         )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         return self.get(group_id=key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: int) -> Any:
         self.delete(group_id=key)
