@@ -5,7 +5,7 @@ package syft.lib.pandas;
 import "proto/core/common/common_object.proto";
 import "proto/lib/python/dict.proto";
 
-message PandasDataFrame {
+message PandasSeries {
   syft.core.common.UID id = 1;
-  syft.lib.python.Dict dataframe = 2;
+  syft.lib.python.Dict series = 2;
 }

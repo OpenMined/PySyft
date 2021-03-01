@@ -173,6 +173,15 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
                 result = method(*upcasted_args, **upcasted_kwargs)
 
+        # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
+        if "numpy." in str(type(result)):
+            if "float" in type(result).__name__:
+                result = float(result)
+            if "int" in type(result).__name__:
+                result = int(result)
+            if "bool" in type(result).__name__:
+                result = bool(result)
+
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(

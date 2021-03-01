@@ -8,12 +8,12 @@ from typing import Tuple as TypeTuple
 import numpy as np
 
 # syft relative
+from . import ndarray  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
-from .frame import NumpyNdarrayWrapper  # noqa: 401
 
 LIB_NAME = "numpy"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -37,7 +37,6 @@ def create_ast(client: TypeAny = None) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
 
     return ast

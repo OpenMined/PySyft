@@ -135,20 +135,21 @@ def test_tags() -> None:
     assert result_ptr.tags == ["f", "__len__"]
 
 
-def test_description() -> None:
-    bob = sy.VirtualMachine(name="Bob")
-    root_client = bob.get_root_client()
+# TODO: Make only for DataFrames etc
+# def test_description() -> None:
+#     bob = sy.VirtualMachine(name="Bob")
+#     root_client = bob.get_root_client()
 
-    ten = th.tensor([1, 2])
+#     ten = th.tensor([1, 2])
 
-    ten = ten.describe("description 1")
-    assert ten.description == "description 1"
+#     ten = ten.describe("description 1")
+#     assert ten.description == "description 1"
 
-    # .send without `description` passed in
-    ptr = ten.send(root_client)
-    assert ptr.description == "description 1"
+#     # .send without `description` passed in
+#     ptr = ten.send(root_client)
+#     assert ptr.description == "description 1"
 
-    # .send with `description` passed in
-    ptr = ten.send(root_client, description="description 2")
-    assert ten.description == "description 2"
-    assert ptr.description == "description 2"
+#     # .send with `description` passed in
+#     ptr = ten.send(root_client, description="description 2")
+#     assert ten.description == "description 2"
+#     assert ptr.description == "description 2"

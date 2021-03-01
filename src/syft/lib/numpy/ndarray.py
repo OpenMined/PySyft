@@ -1,4 +1,5 @@
 # third party
+import numpy as np
 import pandas as pd
 
 # syft relative
@@ -8,8 +9,9 @@ from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 
 
-def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
-    pd_dict = PrimitiveFactory.generate_primitive(value=obj.to_dict())
+def object2proto(obj: np.ndarray) -> PandasDataFrame_PB:
+    value = pd.DataFrame(obj)
+    pd_dict = PrimitiveFactory.generate_primitive(value=value.to_dict())
     dict_proto = pd_dict._object2proto()
 
     return PandasDataFrame_PB(
@@ -18,14 +20,14 @@ def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
     )
 
 
-def proto2object(proto: PandasDataFrame_PB) -> pd.DataFrame:
+def proto2object(proto: PandasDataFrame_PB) -> np.ndarray:
     dataframe_dict = Dict._proto2object(proto=proto.dataframe)
-    return pd.DataFrame.from_dict(dataframe_dict.upcast())
+    return pd.DataFrame.from_dict(dataframe_dict.upcast()).to_numpy()
 
 
 GenerateWrapper(
-    wrapped_type=pd.DataFrame,
-    import_path="pandas.DataFrame",
+    wrapped_type=np.ndarray,
+    import_path="np.ndarray",
     protobuf_scheme=PandasDataFrame_PB,
     type_object2proto=object2proto,
     type_proto2object=proto2object,

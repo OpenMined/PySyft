@@ -74,9 +74,24 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
                 global lib_ast
                 update_ast(ast_or_client=lib_ast)
 
+                # regenerate unions
+                union_misc_ast = getattr(
+                    getattr(create_union_ast(lib_ast, None), "syft"), "lib"
+                )
+                lib_ast.syft.lib.add_attr(
+                    attr_name="misc", attr=union_misc_ast.attrs["misc"]
+                )
+
                 for _, client in lib_ast.registered_clients.items():
                     update_ast(ast_or_client=client)
 
+                    # regenerate unions
+                    union_misc_ast = getattr(
+                        getattr(create_union_ast(lib_ast, client), "syft"), "lib"
+                    )
+                    client.syft.lib.add_attr(
+                        attr_name="misc", attr=union_misc_ast.attrs["misc"]
+                    )
                 # cache the constructor for future created clients
                 lib_ast.loaded_lib_constructors[lib] = update_ast
     except VendorLibraryImportException as e:
@@ -102,8 +117,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
-    misc_root = getattr(getattr(lib_ast, "syft"), "lib")
-    misc_root.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
     return lib_ast
 

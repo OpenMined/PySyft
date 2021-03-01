@@ -331,8 +331,9 @@ class Class(Callable):
             obj_description = getattr(self, "description", "")
             description = description if description else obj_description
 
-            attach_tags(self, tags)
-            attach_description(self, description)
+            # TODO: Make only for DataFrames etc
+            # attach_tags(self, tags)
+            # attach_description(self, description)
 
             id_at_location = UID()
 
@@ -374,8 +375,9 @@ class Class(Callable):
             attach_description(self, description)
             return self
 
-        aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
-        aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
+        # TODO: Make only for DataFrames etc
+        # aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
+        # aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
 
     def add_path(
         self,

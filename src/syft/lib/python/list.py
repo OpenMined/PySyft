@@ -19,6 +19,7 @@ from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import downcast
+from .util import upcast
 
 
 class ListIterator(Iterator):
@@ -50,7 +51,13 @@ class List(UserList, PyPrimitive):
         return self._id
 
     def upcast(self) -> list:
-        return list(self)
+        # recursively upcast
+        new_list = []
+        # list comprehension doesn't work since it results in a
+        # [generator()] which is not equal to an empty list
+        for v in self:
+            new_list.append(upcast(v))
+        return new_list
 
     def __gt__(self, other: Any) -> SyPrimitiveRet:
         res = super().__gt__(other)
@@ -145,7 +152,11 @@ class List(UserList, PyPrimitive):
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
         id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element, from_bytes=True) for element in proto.data]
+        value = []
+        # list comprehension doesn't work since it results in a
+        # [generator()] which is not equal to an empty list
+        for element in proto.data:
+            value.append(upcast(deserialize(blob=element, from_bytes=True)))
         new_list = List(value=value)
         new_list._id = id_
         return new_list

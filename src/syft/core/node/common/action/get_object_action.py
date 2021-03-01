@@ -92,8 +92,10 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     def data(self) -> object:
         data = self.obj.data
         try:
-            data.tags = self.obj.tags
-            data.description = self.obj.description
+            # TODO: Make only for DataFrames etc
+            # data.tags = self.obj.tags
+            # data.description = self.obj.description
+            pass
         except AttributeError:
             warning(
                 f"'tags' and 'description' can't be attached to {type(data)} object."
