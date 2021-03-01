@@ -238,7 +238,7 @@ def get_association_request_msg(
     return GetAssociationRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"association-request": association_request_json},
+        content=association_request_json,
     )
 
 
@@ -278,7 +278,7 @@ def get_all_association_request_msg(
     return GetAssociationRequestsResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"association-requests": association_requests_json},
+        content=association_requests_json,
     )
 
 
