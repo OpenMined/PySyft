@@ -15,20 +15,20 @@ from torchvision import transforms
 import syft as sy
 from syft.ast.module import Module
 
-# TODO: Automatically synthesize these Union types
-SyModuleProxyType = Union[ModuleType, Module]
-SyModelProxyType = Union[nn.Module, sy.Module]
-TorchTensorPointerType = sy.lib_ast.torch.Tensor.pointer_type
-TorchDataLoaderPointerType = sy.lib_ast.torch.utils.data.DataLoader
-SyTensorProxyType = Union[torch.Tensor, TorchTensorPointerType]  # type: ignore
-SyDataLoaderProxyType = Union[torch.utils.data.DataLoader, TorchDataLoaderPointerType]  # type: ignore
-
 
 @pytest.mark.vendor(lib="pytorch_lightning")
 def test_mnist() -> None:
     # third party
     from pytorch_lightning import LightningModule
     from pytorch_lightning import Trainer
+
+    # TODO: Automatically synthesize these Union types
+    SyModuleProxyType = Union[ModuleType, Module]
+    SyModelProxyType = Union[nn.Module, sy.Module]
+    TorchTensorPointerType = sy.lib_ast.torch.Tensor.pointer_type
+    TorchDataLoaderPointerType = sy.lib_ast.torch.utils.data.DataLoader
+    SyTensorProxyType = Union[torch.Tensor, TorchTensorPointerType]  # type: ignore
+    SyDataLoaderProxyType = Union[torch.utils.data.DataLoader, TorchDataLoaderPointerType]  # type: ignore
 
     sy.logger.remove()
     alice = sy.VirtualMachine(name="alice")
