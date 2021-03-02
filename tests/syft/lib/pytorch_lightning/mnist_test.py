@@ -6,8 +6,6 @@ from typing import Union
 
 # third party
 import pytest
-from pytorch_lightning import LightningModule
-from pytorch_lightning import Trainer
 import torch
 from torch import nn
 import torchvision
@@ -28,6 +26,10 @@ SyDataLoaderProxyType = Union[torch.utils.data.DataLoader, TorchDataLoaderPointe
 
 @pytest.mark.vendor(lib="pytorch_lightning")
 def test_mnist() -> None:
+    # third party
+    from pytorch_lightning import LightningModule
+    from pytorch_lightning import Trainer
+
     sy.logger.remove()
     alice = sy.VirtualMachine(name="alice")
     duet = alice.get_root_client()
