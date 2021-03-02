@@ -139,7 +139,10 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + str(n_request_handlers)
                     )
                     out += "                                "
-                    info("\r" + out, end="\r", print=True)
+                    # STOP changing this to logging, this happens every fraction of a
+                    # second to update the jupyter display, logging this creates
+                    # unnecessary noise, in addition the end= parameter broke logging
+                    print("\r" + out, end="\r")  # DO NOT change to log
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):
