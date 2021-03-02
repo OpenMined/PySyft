@@ -8,7 +8,7 @@ pids=()
 pytest -m fast -n auto & pids+=($!)
 
 # check bandit in parallel
-bandit -r src -ll & pids+=($!)
+bandit -r src & pids+=($!)
 
 # run API documentation test notebooks in parallel
 ./scripts/nb_test.sh && pytest examples/api --cov-fail-under 0 & pids+=($!)
