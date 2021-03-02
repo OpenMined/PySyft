@@ -66,12 +66,19 @@ def create_log_and_print_function(level: str) -> Callable:
             if "print" in kwargs and kwargs["print"] is True:
                 del kwargs["print"]
                 print(*args, **kwargs)
+                if "end" in kwargs:
+                    # clean up extra end for printing
+                    del kwargs["end"]
             if method is not None:
                 method(*args, **kwargs)
             else:
                 raise Exception(f"no method {level} on logger")
         except BaseException as e:
-            logger.debug("failed to log exception", e)
+            msg = f"failed to log exception. {e}"
+            try:
+                logger.debug(msg)
+            except Exception as e:
+                print(f"{msg}. {e}")
 
     return log_and_print
 

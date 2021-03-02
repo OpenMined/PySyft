@@ -1,5 +1,5 @@
 # stdlib
-from random import randint
+from secrets import randbelow
 from typing import Any
 from typing import List
 from typing import Optional
@@ -102,13 +102,17 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     """
     attr_list = fully_qualified_name.split(".")
-    assert attr_list[0] == "syft"
-    assert (
-        attr_list[1] == "core"
-        or attr_list[1] == "lib"
-        or attr_list[1] == "grid"
-        or attr_list[1] == "wrappers"
-    )
+    if attr_list[0] != "syft":
+        raise ReferenceError(f"Reference don't match: {attr_list[0]}")
+
+    if (
+        attr_list[1] != "core"
+        and attr_list[1] != "lib"
+        and attr_list[1] != "grid"
+        and attr_list[1] != "wrappers"
+    ):
+        raise ReferenceError(f"Reference don't match: {attr_list[1]}")
+
     return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
 
 
@@ -179,7 +183,8 @@ def key_emoji(key: object) -> str:
         if isinstance(key, (bytes, SigningKey, VerifyKey)):
             hex_chars = bytes(key).hex()[-8:]
             return char_emoji(hex_chars=hex_chars)
-    except Exception:
+    except Exception as e:
+        error(f"Fail to get key emoji: {e}")
         pass
     return "ALL"
 
@@ -550,8 +555,8 @@ right_name = [
 
 
 def random_name() -> str:
-    left_i = randint(0, len(left_name) - 1)
-    right_i = randint(0, len(right_name) - 1)
+    left_i = randbelow(len(left_name) - 1)
+    right_i = randbelow(len(right_name) - 1)
     return f"{left_name[left_i].capitalize()} {right_name[right_i].capitalize()}"
 
 
