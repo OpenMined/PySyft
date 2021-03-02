@@ -111,7 +111,7 @@ def test_uid_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     blob = _serialize(obj=uid)
     _ = _deserialize(blob=blob)
-    assert uid.serialize() == blob
+    assert sy.serialize(uid) == blob
 
 
 def test_uid_default_deserialization() -> None:
@@ -130,9 +130,9 @@ def test_uid_proto_serialization() -> None:
 
     blob = _serialize(obj=uid)
 
-    assert uid.proto() == blob
-    assert uid.to_proto() == blob
-    assert uid.serialize(to_proto=True) == blob
+    assert sy.serialize(uid, to_proto=True) == blob
+    assert sy.serialize(uid, to_proto=True) == blob
+    assert sy.serialize(uid, to_proto=True) == blob
 
 
 def test_uid_proto_deserialization() -> None:
@@ -154,9 +154,9 @@ def test_uid_binary_serialization() -> None:
         + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
 
-    assert uid.binary() == blob
-    assert uid.to_bytes() == blob
-    assert uid.serialize(to_bytes=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
 
 
 def test_uid_binary_deserialization() -> None:

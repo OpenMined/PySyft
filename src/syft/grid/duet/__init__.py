@@ -14,6 +14,7 @@ import requests
 from ...core.common.environment import is_jupyter
 from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
+from ...logger import error
 from ...logger import info
 from ...logger import traceback_and_raise
 from .bcolors import bcolors
@@ -57,7 +58,8 @@ def get_available_network() -> str:
         try:
             requests.get(addr + "/metadata")
             return addr
-        except Exception:
+        except Exception as e:
+            error(f"Failed request addr: {e}")
             continue
     traceback_and_raise(Exception("Couldn't find any available network."))
 
@@ -139,7 +141,10 @@ def begin_duet_logger(my_domain: Domain) -> None:
                         + str(n_request_handlers)
                     )
                     out += "                                "
-                    info("\r" + out, end="\r", print=True)
+                    # STOP changing this to logging, this happens every fraction of a
+                    # second to update the jupyter display, logging this creates
+                    # unnecessary noise, in addition the end= parameter broke logging
+                    print("\r" + out, end="\r")  # DO NOT change to log
                 iterator += 1
 
     if hasattr(sys.stdout, "parent_header"):

@@ -32,6 +32,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -50,22 +54,20 @@ jobs:
         with:
           version: "3.x"
 
-      - uses: pre-commit/action@v2.0.0
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Run lint checks
+      - name: Build Protos
         run: |
           set -e
-          pip install -r requirements.txt --default-timeout=60
+
+          pip install black isort
           ./scripts/build_proto.sh
-          pre-commit run --all-files
-      - name: Run darglint - Ignore Errors
-        continue-on-error: true
-        run: |
-          darglint src tests
+
+      - uses: pre-commit/action@v2.0.0
+
+      # - name: Run darglint via flake8 - Ignore Errors
+      #   continue-on-error: true
+      #   run: |
+      #     pip install darglint flake8
+      #     flake8 src tests
 
   python-tests-fast:
     needs: [python-linting]
@@ -74,20 +76,20 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        include:
-          - os: ubuntu-latest
-            python-version: 3.7
-            torch-version: 1.4.0
-          # - os: windows-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: ubuntu-20.04
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: macos-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
+        torch-version: [1.6.0, 1.7.0]
+        # include:
+        # - os: ubuntu-latest
+        #   python-version: 3.7
+        #   torch-version: 1.4.0
+        # - os: windows-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: ubuntu-20.04
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: macos-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -98,7 +100,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -109,36 +113,26 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ matrix.torch-version }}-
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Scan for security issues
+      - name: Install PyTorch
         run: |
-          pip install bandit --default-timeout=60
-          bandit -r src -ll
-
-      # - name: Install aiortc native dependencies
-      #   if: startsWith(runner.os, 'Linux') == true
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
-
-      - name: Install PyTorch Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
-        run: |
-          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
-
-      - name: Install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt --default-timeout=60
-          pip install -e . --default-timeout=60
+          pip install -r requirements.dev.txt
+          pip install -e .
           pip list
+        timeout-minutes: 20
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
 
       - name: Run normal tests
         run: |
@@ -156,19 +150,9 @@ jobs:
             pip install $i --default-timeout=60
           }
 
-      - name: Re-install PyTorch Linux and MacOS
-        if: startsWith(runner.os, 'Windows') != true
-        run: |
-          ./scripts/pytorch_install.sh ${{ matrix.torch-version }}
-
-      - name: Re-install PyTorch Windows
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          ./scripts/pytorch_install.ps1 ${{ matrix.torch-version }}
-
       - name: Run supported library tests
         run: |
-          pip freeze
+          pip list
           pytest -m libs -n auto -k "not tenseal"
           pytest -m libs -n 1 -k "tenseal"
 
@@ -179,6 +163,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
+        torch-version: [1.7.0]
         os: [ubuntu-latest, macos-latest]
 
     steps:
@@ -189,7 +174,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -204,23 +191,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt
+          pip install -e .
+          pip list
+        timeout-minutes: 20
+
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
-      - name: Install supported library packages Linux and MacOS - Ignore Errors
-        if: ${{ matrix.os != 'windows-latest' }}
+      - name: Install supported library packages
         run: |
-          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+          pip install -r requirements/supported_libs.txt
+        timeout-minutes: 10
 
       - name: Run notebook Duet examples
         run: |
-          pip install -r requirements.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
           cd tests/syft/notebooks/ && pytest . -n 1
 
@@ -231,6 +227,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
+        torch-version: [1.7.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -240,7 +237,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -261,10 +260,15 @@ jobs:
           ref: "pygrid_0.4.0"
           path: "pygrid"
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          ls
           pip install -e . --default-timeout=60
           pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
                       sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
