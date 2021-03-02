@@ -20,8 +20,6 @@ from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-from .util import downcast
-from .util import upcast
 
 
 @bind_protobuf
@@ -35,16 +33,13 @@ class Slice(int, PyPrimitive):
         id: Optional[UID] = None
     ):
         if not start and not stop and not step:
-            start = NULL
-            stop = NULL
-            step = NULL
+            start = None
+            stop = None
+            step = None
 
         UserSlice.__init__(self, start, stop, step)
 
         self._id: UID = id if id else UID()
-
-    def upcast(self) -> slice:
-        return slice(self)
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         res = super().__eq__(other)
@@ -148,7 +143,7 @@ class Slice(int, PyPrimitive):
             return PrimitiveFactory.generate_primitive(value=res)
 
         def adjustindices(self, length, start, stop, step) -> SyPrimitiveRet:
-            assert step is not 0
+            assert step != 0
             assert step >= -sys.maxint
 
             if start < 0:
