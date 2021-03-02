@@ -202,7 +202,7 @@ class Pointer(AbstractPointer):
 
     def get(
         self,
-        request_block: bool = False,
+        request_block: bool = True,
         timeout_secs: int = 20,
         reason: str = "",
         delete_obj: bool = True,
