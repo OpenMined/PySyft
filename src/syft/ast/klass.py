@@ -436,7 +436,6 @@ class Class(Callable):
 
     def __getattribute__(self, item: str) -> Any:
         # self.apply_node_changes()
-
         try:
             target_object = super().__getattribute__(item)
 

@@ -51,7 +51,13 @@ def get_allowed_functions(
     def solve_real_type_functions(path: str) -> Set[str]:
         parts = path.split(".")
         klass_name = parts[-1]
-        return set(dir(getattr(sys.modules[".".join(parts[:-1])], klass_name)))
+        # A way to walkaround the problem we can't `import torch.return_types` and
+        # get it from `sys.modules`. TODO: a general solution to this.
+        if parts[-2] == "return_types":
+            modu = getattr(sys.modules["torch"], "return_types")
+        else:
+            modu = sys.modules[".".join(parts[:-1])]
+        return set(dir(getattr(modu, klass_name)))
 
     for union_type in union_types:
         real_type_function_set = solve_real_type_functions(union_type)
