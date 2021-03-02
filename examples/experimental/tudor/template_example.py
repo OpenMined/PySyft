@@ -4,6 +4,7 @@ from syft.lib.python.primitive_factory import PrimitiveFactory
 from typing import Any
 from typing import TypeVar
 from inspect import signature
+from itertools import chain
 
 type_cache = dict()
 
@@ -42,18 +43,24 @@ def generate_attrs_and_allowlist(templated_type, target_underlying_type):
         target_signature = signature(method)
         variable_checks = []
 
-        for elem, target_type in target_signature.parameters.items():
-            if target_type is T:
-                variable_checks.append(lambda: isinstance(locals()[elem], target_underlying_type))
+        for idx, (name, target_type) in enumerate(target_signature.parameters.items()):
+            if target_type.annotation is T:
+                variable_checks.append(idx)
 
         ret_type_check = target_signature.return_annotation is T
 
         def func(variable_checks):
             def _func(*args, **kwargs):
-                assert all([variable_check() for variable_check in variable_checks])
+                arg_list = list(chain(args, kwargs.items()))
+
+                for idx in variable_checks:
+                    assert isinstance(arg_list[idx], target_underlying_type)
+
                 result = method(*args, **kwargs)
+
                 if ret_type_check:
                     assert isinstance(result, target_underlying_type)
+
                 return result
             return _func
 
@@ -173,18 +180,25 @@ class _TemplateableIterator(PyPrimitive):
         except Exception as e:
             raise e
 
+    def dummy_example(self, type: T) -> T:
+        return type
+
 iter_allowlist = {
     "syft.lib.python.Iterator.__init__": "syft.lib.python.Iterator",
     "syft.lib.python.Iterator.__next__": None,
     "syft.lib.python.Iterator.__iter__": "syft.lib.python.Any",
-    "syft.lib.python.Iterator.__eq__": "syft.lib.python.Bool"
+    "syft.lib.python.Iterator.__eq__": "syft.lib.python.Bool",
+    "syft.lib.python.Iterator.dummy_example": None
 }
 
-int_iterable_type = Iterator(int)
+int_iterable_type = Iterator[int]
 iterable = int_iterable_type(([1, 2.5, 3]))
 
 print(type_cache)
 # {'intIterator': {'__init__': 'syft.lib.python.Iterator', '__next__': 'int', '__iter__': 'syft.lib.python.Any', '__eq__': 'syft.lib.python.Bool'}}
 
 print(next(iterable)) # works
-print(next(iterable)) # will break
+
+iterable.dummy_example(5)
+iterable.dummy_example(5.5)
+#print(next(iterable)) # will break
