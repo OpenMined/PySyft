@@ -28,28 +28,28 @@ from syft.proto.grid.messages.dataset_messages_pb2 import (
     DeleteDatasetResponse as DeleteDatasetResponse_PB,
 )
 from syft.proto.grid.messages.dataset_messages_pb2 import (
-    GetDatasetMessage as GetDatasetMessage_PB,
-)
-from syft.proto.grid.messages.dataset_messages_pb2 import (
-    GetDatasetResponse as GetDatasetResponse_PB,
-)
-from syft.proto.grid.messages.dataset_messages_pb2 import (
-    GetDatasetsMessage as GetDatasetsMessage_PB,
-)
-from syft.proto.grid.messages.dataset_messages_pb2 import (
-    GetDatasetsResponse as GetDatasetsResponse_PB,
-)
-from syft.proto.grid.messages.dataset_messages_pb2 import (
     GetDatasetInfoMessage as GetDatasetInfoMessage_PB,
 )
 from syft.proto.grid.messages.dataset_messages_pb2 import (
     GetDatasetInfoResponse as GetDatasetInfoResponse_PB,
 )
 from syft.proto.grid.messages.dataset_messages_pb2 import (
+    GetDatasetMessage as GetDatasetMessage_PB,
+)
+from syft.proto.grid.messages.dataset_messages_pb2 import (
+    GetDatasetResponse as GetDatasetResponse_PB,
+)
+from syft.proto.grid.messages.dataset_messages_pb2 import (
     GetDatasetsInfoMessage as GetDatasetsInfoMessage_PB,
 )
 from syft.proto.grid.messages.dataset_messages_pb2 import (
     GetDatasetsInfoResponse as GetDatasetsInfoResponse_PB,
+)
+from syft.proto.grid.messages.dataset_messages_pb2 import (
+    GetDatasetsMessage as GetDatasetsMessage_PB,
+)
+from syft.proto.grid.messages.dataset_messages_pb2 import (
+    GetDatasetsResponse as GetDatasetsResponse_PB,
 )
 from syft.proto.grid.messages.dataset_messages_pb2 import (
     UpdateDatasetMessage as UpdateDatasetMessage_PB,
