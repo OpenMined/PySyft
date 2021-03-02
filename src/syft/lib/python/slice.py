@@ -1,8 +1,8 @@
 # stdlib
+from collections import UserLong
 from typing import Any
-from typing import Iterable
 from typing import Optional
-from typing import Union
+import sys
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,11 +13,8 @@ from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...logger import traceback_and_raise
-from ...logger import warning
 from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
-from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
-from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
@@ -30,14 +27,12 @@ class Slice(int, PyPrimitive):
         start: Any = None,
         stop: Any = None,
         step: Any = None,
-        id: Optional[UID] = None
+        id: Optional[UID] = None,
     ):
         if not start and not stop and not step:
             start = None
             stop = None
             step = None
-
-        UserSlice.__init__(self, start, stop, step)
 
         self._id: UID = id if id else UID()
 
@@ -86,7 +81,7 @@ class Slice(int, PyPrimitive):
         length: Optional[int] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
-        step: Optional[int] = None
+        step: Optional[int] = None,
     ) -> SyPrimitiveRet:
         if step is None:
             step = 1
