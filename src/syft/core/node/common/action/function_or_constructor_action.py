@@ -231,3 +231,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         for i, arg in enumerate(self.args):
             if arg.id_at_location == current_input.id_at_location:
                 self.args[i] = new_input
+
+        for k, v in self.kwargs.items():
+            if v.id_at_location == current_input.id_at_location:
+                self.kwargs[k] = new_input

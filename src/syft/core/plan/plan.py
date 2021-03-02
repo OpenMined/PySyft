@@ -4,6 +4,7 @@ import sys
 from typing import Any
 from typing import List
 from typing import Tuple
+from typing import Dict
 from typing import Union
 
 # third party
@@ -40,15 +41,15 @@ class Plan(Serializable):
     def __init__(
         self,
         actions: Union[List[Action], None] = None,
-        inputs: Union[Pointer, List[Pointer], None] = None,
+        inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
     ):
         self.actions: List[Action] = listify(actions)
-        self.inputs: List[Pointer] = listify(inputs)
+        self.inputs: List[Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
 
     def __call__(
-        self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
+        self, node: AbstractNode, verify_key: VerifyKey, **kwargs: Dict[str, Any]
     ) -> List[StorableObject]:
         """
         1) For all pointers that were passed into the init as `inputs`, this method
@@ -64,18 +65,22 @@ class Plan(Serializable):
         Args:
             *args: the new inputs for the plan, passed as pointers
         """
-        inputs = listify(args)
 
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
-        for i, (current_input, new_input) in enumerate(zip(self.inputs, inputs)):
+
+        new_inputs = dict()
+        for (k, current_input) in self.inputs.items():
+            new_input = kwargs[k]
             for a in self.actions:
                 if hasattr(a, "remap_input"):
                     a.remap_input(current_input, new_input)
 
             # redefine the inputs of the plan
-            self.inputs[i] = new_input
+            new_inputs[k] = new_input
+        self.inputs = new_inputs
+
 
         for a in self.actions:
             a.execute_action(node, verify_key)
@@ -135,7 +140,7 @@ class Plan(Serializable):
             )
             for action in self.actions
         ]
-        inputs_pb = [inp._object2proto() for inp in self.inputs]
+        inputs_pb = {k: v._object2proto() for k, v in self.inputs.items()}
         outputs_pb = [out._object2proto() for out in self.outputs]
 
         return Plan_PB(actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb)
@@ -165,9 +170,9 @@ class Plan(Serializable):
             inner_action = getattr(action_proto, action_proto.WhichOneof("action"))
             actions.append(action_cls._proto2object(inner_action))
 
-        inputs = [
-            Pointer._proto2object(pointer_proto) for pointer_proto in proto.inputs
-        ]
+        inputs = {
+            k: Pointer._proto2object(proto.inputs[k]) for k in proto.inputs
+        }
         outputs = [
             Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
         ]

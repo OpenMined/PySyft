@@ -163,12 +163,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     )
             else:
                 if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                    if len(self.args) > 0:
+                        raise ValueError("You passed args to Plan.__call__, while it only accepts kwargs")
+                    assert not self.args
                     result = method(
                         resolved_self.data,
                         node,
                         verify_key,
-                        *self.args,
-                        **upcasted_kwargs,
+                        **self.kwargs
                     )
                 else:
                     result = method(
@@ -290,7 +292,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
             self._self = new_input
-        else:
-            for i, arg in enumerate(self.args):
-                if arg.id_at_location == current_input.id_at_location:
-                    self.args[i] = new_input
+
+        for i, arg in enumerate(self.args):
+            if arg.id_at_location == current_input.id_at_location:
+                self.args[i] = new_input
+
+        for k, v in self.kwargs.items():
+            if v.id_at_location == current_input.id_at_location:
+                self.kwargs[k] = new_input
+
