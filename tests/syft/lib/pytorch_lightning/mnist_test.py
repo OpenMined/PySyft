@@ -1,5 +1,6 @@
 # stdlib
 from types import ModuleType
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Union
@@ -25,8 +26,10 @@ def test_mnist() -> None:
     # TODO: Automatically synthesize these Union types
     SyModuleProxyType = Union[ModuleType, Module]
     SyModelProxyType = Union[nn.Module, sy.Module]
-    TorchTensorPointerType = sy.lib_ast.torch.Tensor.pointer_type
-    TorchDataLoaderPointerType = sy.lib_ast.torch.utils.data.DataLoader
+
+    # cant use lib_ast during test search time
+    TorchTensorPointerType = Any  # sy.lib_ast.torch.Tensor.pointer_type
+    TorchDataLoaderPointerType = Any  # sy.lib_ast.torch.utils.data.DataLoader
     SyTensorProxyType = Union[torch.Tensor, TorchTensorPointerType]  # type: ignore
     SyDataLoaderProxyType = Union[torch.utils.data.DataLoader, TorchDataLoaderPointerType]  # type: ignore
 
