@@ -45,6 +45,8 @@ repos:
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
           ]
+        language_version: python3.9
+
   - repo: local
     hooks:
       - id: flynt
