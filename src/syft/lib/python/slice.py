@@ -1,8 +1,7 @@
 # stdlib
-from collections import UserLong
+import sys
 from typing import Any
 from typing import Optional
-import sys
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -21,7 +20,6 @@ from .types import SyPrimitiveRet
 
 @bind_protobuf
 class Slice(int, PyPrimitive):
-
     def __init__(
         self,
         start: Any = None,
@@ -52,10 +50,6 @@ class Slice(int, PyPrimitive):
         res = super().__hash__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __iter__(self) -> SyPrimitiveRet:
-        res = super().__iter__()
-        return PrimitiveFactory.generate_primitive(value=res)
-
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -72,7 +66,15 @@ class Slice(int, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __copy__(self) -> SyPrimitiveRet:
+    def __getitem__(self, key: Any) -> Union[SyPrimitiveRet, Any]:
+        res = super().__getitem__(key)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
+
+    def copy(self) -> SyPrimitiveRet:
         res = super().copy()
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -86,14 +88,14 @@ class Slice(int, PyPrimitive):
         if step is None:
             step = 1
         else:
-            if not isinstance(step, UserLong):
+            if not isinstance(step, int):
                 return -1
             else:
                 step = step
         if start is None:
             start = length - 1 if step < 0 else 0
         else:
-            if not isinstance(start, UserLong):
+            if not isinstance(start, int):
                 return -1
             else:
                 start = start
@@ -102,7 +104,7 @@ class Slice(int, PyPrimitive):
         if stop is None:
             stop = -1 if step < 0 else length
         else:
-            if not isinstance(stop, UserLong):
+            if not isinstance(stop, int):
                 return -1
             else:
                 stop = stop

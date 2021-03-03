@@ -77,7 +77,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
 
     methods = [
         # Slice methods - quite there
-        ("syft.lib.python.Slice.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.Slice.getindices", "syft.lib.python.Any"),
         ("syft.lib.python.Slice.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.Slice.__eq__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__ge__", "syft.lib.python.Bool"),

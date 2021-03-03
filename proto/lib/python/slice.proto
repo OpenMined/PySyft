@@ -4,8 +4,8 @@ package syft.lib.python;
 import "proto/core/common/common_object.proto";
 
 message Slice {
-  repeated bytes start = 1;
-  repeated bytes stop = 2;
-  repeated bytes step = 3;
+  int start = 1;
+  int stop = 2;
+  int step = 3;
   syft.core.common.UID id = 4;
 }
