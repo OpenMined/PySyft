@@ -117,6 +117,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - uses: pre-commit/action@v2.0.0
+
       - name: Install PyTorch
         run: |
           python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
@@ -129,8 +131,6 @@ jobs:
           pip install -e .
           pip list
         timeout-minutes: 20
-
-      - uses: pre-commit/action@v2.0.0
 
       - name: Scan for security issues
         run: |
