@@ -18,6 +18,7 @@ from ..lib.torchvision import create_torchvision_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
 from .misc import create_union_ast
+from .python.iterator import create_iterator_ast
 
 
 class VendorLibraryImportException(Exception):
@@ -104,6 +105,12 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
     misc_root = getattr(getattr(lib_ast, "syft"), "lib")
     misc_root.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+
+    iterator_ast = getattr(
+        getattr(getattr(create_iterator_ast(lib_ast, client), "syft"), "lib"), "python"
+    )
+    iterator_root = getattr(getattr(getattr(lib_ast, "syft"), "lib"), "python")
+    iterator_root.add_attr(attr_name="iterator", attr=iterator_ast.iterator)
 
     return lib_ast
 

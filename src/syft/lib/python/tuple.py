@@ -12,17 +12,13 @@ from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
-from .iterator import Iterator
+from .iterator import TemplateableIterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
-
-
-class TupleIterator(Iterator):
-    pass
 
 
 @bind_protobuf
@@ -96,8 +92,8 @@ class Tuple(tuple, PyPrimitive):
     ) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().index(__value, __stop))
 
-    def __iter__(self, max_len: Optional[int] = None) -> TupleIterator:
-        return TupleIterator(self, max_len=max_len)
+    def __iter__(self, max_len: Optional[int] = None) -> TemplateableIterator:
+        return TemplateableIterator(self, max_len=max_len)
 
     @staticmethod
     def _proto2object(proto: Tuple_PB) -> "Tuple":

@@ -1,14 +1,18 @@
-from syft.lib.python import PyPrimitive
-from syft.lib.python.types import SyPrimitiveRet
-from syft.lib.python.primitive_factory import PrimitiveFactory
-from typing import Any
-from typing import TypeVar
+# stdlib
 from inspect import signature
 from itertools import chain
+from typing import Any
+from typing import TypeVar
+
+# syft absolute
+from syft.lib.python import PyPrimitive
+from syft.lib.python.primitive_factory import PrimitiveFactory
+from syft.lib.python.types import SyPrimitiveRet
 
 type_cache = dict()
 
 T = TypeVar("T")
+
 
 class IndexableTrait(type):
     """
@@ -27,13 +31,15 @@ class Iterator(type, metaclass=IndexableTrait):
         if name in type_cache:
             return type_cache[name]
 
-        bases = (_TemplateableIterator, )
+        bases = (_TemplateableIterator,)
         attrs, allowlist = generate_attrs_and_allowlist(
-            _TemplateableIterator, targeted_underlying_type)
-        new_type =  super().__new__(cls, name, bases, attrs)
+            _TemplateableIterator, targeted_underlying_type
+        )
+        new_type = super().__new__(cls, name, bases, attrs)
         globals()[name] = new_type
         type_cache[name] = allowlist
         return new_type
+
 
 def generate_attrs_and_allowlist(templated_type, target_underlying_type):
     attrs = {}
@@ -62,10 +68,10 @@ def generate_attrs_and_allowlist(templated_type, target_underlying_type):
                     assert isinstance(result, target_underlying_type)
 
                 return result
+
             return _func
 
         return func(variable_checks)
-
 
     for method_path, type_path in iter_allowlist.items():
         method_name = method_path.rsplit(".", 1)[-1]
@@ -80,8 +86,9 @@ def generate_attrs_and_allowlist(templated_type, target_underlying_type):
 
     return attrs, allowlist
 
+
 class _TemplateableIterator(PyPrimitive):
-    def __init__(self, _ref: Any, max_len = None):
+    def __init__(self, _ref: Any, max_len=None):
         super().__init__()
         self._obj_ref = _ref
         self._index = 0
@@ -183,12 +190,13 @@ class _TemplateableIterator(PyPrimitive):
     def dummy_example(self, type: T) -> T:
         return type
 
+
 iter_allowlist = {
     "syft.lib.python.Iterator.__init__": "syft.lib.python.Iterator",
     "syft.lib.python.Iterator.__next__": None,
     "syft.lib.python.Iterator.__iter__": "syft.lib.python.Any",
     "syft.lib.python.Iterator.__eq__": "syft.lib.python.Bool",
-    "syft.lib.python.Iterator.dummy_example": None
+    "syft.lib.python.Iterator.dummy_example": None,
 }
 
 int_iterable_type = Iterator[int]
@@ -197,8 +205,8 @@ iterable = int_iterable_type(([1, 2.5, 3]))
 print(type_cache)
 # {'intIterator': {'__init__': 'syft.lib.python.Iterator', '__next__': 'int', '__iter__': 'syft.lib.python.Any', '__eq__': 'syft.lib.python.Bool'}}
 
-print(next(iterable)) # works
+print(next(iterable))  # works
 
 iterable.dummy_example(5)
 iterable.dummy_example(5.5)
-#print(next(iterable)) # will break
+# print(next(iterable)) # will break

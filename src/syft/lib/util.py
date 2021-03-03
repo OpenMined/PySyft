@@ -3,6 +3,7 @@ import inspect
 from types import ModuleType
 from typing import Callable
 from typing import Optional
+from typing import TypeVar
 from typing import Union
 from typing import Union as TypeUnion
 
@@ -12,6 +13,9 @@ from ..core.node.abstract.node import AbstractNodeClient
 
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method
+
+
+T = TypeVar("T")
 
 
 def generic_update_ast(

@@ -18,6 +18,8 @@ from .types import SyPrimitiveRet
 
 @bind_protobuf
 class Int(int, PyPrimitive):
+    __qualname__ = "syft.lib.python.Int"
+
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
     ) -> "Int":

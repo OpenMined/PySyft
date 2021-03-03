@@ -8,7 +8,6 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
-from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
@@ -58,7 +57,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
-        ("syft.lib.python.Iterator", "syft.lib.python.Iterator", Iterator),
         ("syft.lib.python.Set", "syft.lib.python.Set", Set),
         (
             "syft.lib.python.collections.OrderedDict",
@@ -76,7 +74,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.List.__getitem__", "syft.lib.python.Any"),
-        ("syft.lib.python.List.__iter__", "syft.lib.python.Iterator"),
+        ("syft.lib.python.List.__iter__", Iterator[None]),
         ("syft.lib.python.List.__add__", "syft.lib.python.List"),
         ("syft.lib.python.List.append", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.__gt__", "syft.lib.python.Bool"),
@@ -107,8 +105,9 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.List.insert", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.clear", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.extend", "syft.lib.python._SyNone"),
-        ("syft.lib.python.List.__reversed__", "syft.lib.python.Iterator"),
+        ("syft.lib.python.List.__reversed__", Iterator[None]),
         ("syft.lib.python.List.__delitem__", "syft.lib.python._SyNone"),
+        ("syft.lib.python.List.test", Iterator["syft.lib.python.Int"]),
         # Bool methods - quite there
         ("syft.lib.python.Bool.__abs__", "syft.lib.python.Int"),
         ("syft.lib.python.Bool.__eq__", "syft.lib.python.Bool"),
@@ -380,17 +379,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Any.__rmul__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__sub__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rsub__", "syft.lib.python.Any"),
-        (
-            "syft.lib.python.Iterator.__next__",
-            UnionGenerator[
-                "syft.lib.python.Int",
-                "syft.lib.python.Float",
-                "syft.lib.python.String",
-                "torch.nn.Parameter",
-                "torch.Tensor",
-            ],
-        ),  # temp until casting
-        ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
         ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
         ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
         ("syft.lib.python.Set.__eq__", "syft.lib.python.Bool"),

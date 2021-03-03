@@ -19,7 +19,7 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
-from .iterator import Iterator
+from .iterator import TemplateableIterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
@@ -117,8 +117,8 @@ class Dict(UserDict, PyPrimitive):
         res = super().__hash__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __iter__(self, max_len: Optional[int] = None) -> Iterator:
-        return Iterator(super().__iter__(), max_len=max_len)
+    def __iter__(self, max_len: Optional[int] = None) -> TemplateableIterator:
+        return TemplateableIterator(super().__iter__(), max_len=max_len)
 
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)  # type: ignore
@@ -155,13 +155,13 @@ class Dict(UserDict, PyPrimitive):
         res = super().get(key, default)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def items(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
-        return Iterator(ItemsView(self), max_len=max_len)
+    def items(self, max_len: Optional[int] = None) -> TemplateableIterator:  # type: ignore
+        return TemplateableIterator(ItemsView(self), max_len=max_len)
 
-    def keys(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
-        return Iterator(KeysView(self), max_len=max_len)
+    def keys(self, max_len: Optional[int] = None) -> TemplateableIterator:  # type: ignore
+        return TemplateableIterator(KeysView(self), max_len=max_len)
 
-    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+    def values(self, *args: Any, max_len: Optional[int] = None) -> TemplateableIterator:  # type: ignore
         # this is what the super type does and there is a test in dict_test.py
         # test_values which checks for this so we could disable the test or
         # keep this workaround
@@ -169,7 +169,7 @@ class Dict(UserDict, PyPrimitive):
             traceback_and_raise(
                 TypeError("values() takes 1 positional argument but 2 were given")
             )
-        return Iterator(ValuesView(self), max_len=max_len)
+        return TemplateableIterator(ValuesView(self), max_len=max_len)
 
     def pop(self, key: Any, *args: Any) -> SyPrimitiveRet:
         res = super().pop(key, *args)

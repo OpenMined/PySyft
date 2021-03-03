@@ -8,21 +8,18 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
+from . import iterator
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.list_pb2 import List as List_PB
-from .iterator import Iterator
+from .iterator import TemplateableIterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import downcast
-
-
-class ListIterator(Iterator):
-    pass
 
 
 @bind_protobuf
@@ -120,8 +117,11 @@ class List(UserList, PyPrimitive):
             return PrimitiveFactory.generate_primitive(value=res)
         return res
 
-    def __iter__(self, max_len: Optional[int] = None) -> ListIterator:
-        return ListIterator(self, max_len=max_len)
+    def __iter__(self, max_len: Optional[int] = None) -> TemplateableIterator:
+        return TemplateableIterator(self, max_len=max_len)
+
+    def test(self) -> TemplateableIterator:
+        return getattr(iterator, "IntIterator")([1, 2.5, 3])
 
     def copy(self) -> "List":
         res = super().copy()

@@ -6,6 +6,8 @@ from .types import SyPrimitiveRet
 
 
 class Any:
+    __qualname__ = "syft.lib.python.Any"
+
     def __iter__(self) -> "Any":
         return self
 
