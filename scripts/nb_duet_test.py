@@ -53,6 +53,7 @@ for path in (
     + list(Path("examples/duet/dcgan").rglob("*.ipynb"))
     + list(Path("examples/duet/super_resolution").rglob("*.ipynb"))
     + list(Path("examples/private-ai-series/duet_basics").rglob("*.ipynb"))
+    + list(Path("examples/differential-privacy/opacus").rglob("*.ipynb"))
 ):
     if ".ipynb_checkpoints" in str(path):
         continue
