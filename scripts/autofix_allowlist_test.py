@@ -35,6 +35,7 @@ exception_pattern_2 = re.compile(
     + "|xpected"
     + "|can't be cast to the desired output type"
     + "|Can only calculate the mean of floating types"
+    + "|input tensor"
 )
 
 
@@ -65,9 +66,38 @@ def fix_exception_pattern_2(
         not_available[i]["data_types"].append(tensor_type)
 
 
+exception_pattern_3 = re.compile("argument")
+
+
+def fix_exception_pattern_3(not_available: list, inputs: Any, **kwargs: None) -> None:
+    def get_ele_index() -> int:
+        keys = {"inputs", "lte_version", "gte_version"}
+        i = -1
+        for i, ele in enumerate(not_available):
+            if (
+                set(ele) == keys
+                and ele["lte_version"] == torch_version
+                and ele["gte_version"] == torch_version
+            ):
+                return i
+        not_available.append(
+            {
+                "inputs": [],
+                "lte_version": torch_version,
+                "gte_version": torch_version,
+            }
+        )
+        return i + 1
+
+    i = get_ele_index()
+    if inputs not in not_available[i]["inputs"]:
+        not_available[i]["inputs"].append(inputs)
+
+
 exception_fix = []
 exception_fix.append((exception_pattern_1, fix_exception_pattern_1))
 exception_fix.append((exception_pattern_2, fix_exception_pattern_2))  # type: ignore
+exception_fix.append((exception_pattern_3, fix_exception_pattern_3))  # type: ignore
 
 
 # ------------------------------
@@ -108,7 +138,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m torch -n auto -p no:benchmark > /dev/null")
+    os.system("pytest -m torch -n auto -p no:benchmark")
     print("Slow test done.")
     print()
 
@@ -119,20 +149,9 @@ while continue_loop:
         print()
         print("-" * 20)
         print("All tests passed. Auto fix done.")
-        print("Don't forget to:")
-        print(
-            "{:<10}{:<}".format(
-                "", f"- recover the original content of {p/'allowlist.py'}"
-            )
-        )
-        print(
-            "{:<10}{:<}".format("", f"- remove the backup file {p/'allowlist.py.bak'}")
-        )
-        print(
-            "{:<10}{:<}".format(
-                "", "- remove the backup file tests/syft/lib/allowlist_test.json.bak"
-            )
-        )
+        os.system(f"git co {p/'allowlist.py'}")
+        os.system(f"rm {p/'allowlist.py.bak'}")
+        os.system("rm tests/syft/lib/allowlist_test.json.bak")
         break
 
     # get errors.jsonl file name
@@ -169,6 +188,9 @@ while continue_loop:
                 adding_hash = True
             else:
                 adding_hash = False
+            # don't comment out `sum` and `backward`, because we will need them when test "grad"
+            if "sum" in line or "backward" in line:
+                adding_hash = False
         if adding_hash:
             lines[i] = "#" + line
 
@@ -187,6 +209,7 @@ while continue_loop:
             # get error informations
             op_name = err["input"]["op_name"]
             tensor_type = err["input"]["tensor_type"]
+            inputs = err["input"]["_args"]
             exception = err["exception"]
 
             # get the not_available list for this operator
@@ -200,7 +223,11 @@ while continue_loop:
             matched = False
             for exception_pattern, fix_method in exception_fix:
                 if match_pattern(exception, exception_pattern):
-                    fix_method(not_available=not_available, tensor_type=tensor_type)
+                    fix_method(
+                        not_available=not_available,
+                        tensor_type=tensor_type,
+                        inputs=inputs,
+                    )
                     matched = True
             # we suppose to handle all kinds of error, if there is an error we don't handle, raise an exception
             if not matched:

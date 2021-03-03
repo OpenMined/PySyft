@@ -439,7 +439,7 @@ def test_all_allowlisted_tensor_methods(
         # Step 3: Create the object we're going to call a method on
         # NOTE: we need a second copy because some methods mutate tensor before we send
         requires_grad = False
-        if op_name in ["backward", "retain_grad"]:
+        if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
         self_tensor, self_tensor_copy = (
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
@@ -511,6 +511,9 @@ def test_all_allowlisted_tensor_methods(
             raise Exception(err)
 
         # Step 4: Get the method we're going to call
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            self_tensor.sum().backward()  # type: ignore
         target_op_method = getattr(self_tensor, op_name)
 
         # Step 5: Test to see whether this method and arguments combination is valid
@@ -560,6 +563,11 @@ def test_all_allowlisted_tensor_methods(
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
+
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            xp.sum().backward()
+
         argsp: ListType[Any] = []
         if len(args) > 0 and not is_property:
             if isinstance(args, dict):
