@@ -12,6 +12,7 @@ from syft.core.node.device.client import DeviceClient
 from syft.grid.connections.http_connection import HTTPConnection
 from syft.core.io.location import SpecificLocation
 from syft.core.io.location import Location
+from syft import serialize
 
 # Services
 from .services.association_request import AssociationRequestService
@@ -104,8 +105,7 @@ class GridDomain(Domain):
         return {
             "token": token,
             "key": user.private_key,
-            "metadata": self.get_metadata_for_client()
-            .serialize()
+            "metadata": serialize(self.get_metadata_for_client())
             .SerializeToString()
             .decode("ISO-8859-1"),
         }
