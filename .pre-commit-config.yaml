@@ -60,4 +60,3 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
-        exclude: ^(examples/duet/super_resolution/original)
