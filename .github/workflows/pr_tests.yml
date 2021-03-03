@@ -130,6 +130,8 @@ jobs:
           pip list
         timeout-minutes: 20
 
+      - uses: pre-commit/action@v2.0.0
+
       - name: Scan for security issues
         run: |
           bandit -r src
