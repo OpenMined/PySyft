@@ -1079,6 +1079,14 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1107,6 +1115,14 @@
               "int64"
             ],
             "lte_version": "1.6.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1122,6 +1138,17 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "float32",
+              "bool",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1291,6 +1318,14 @@
               "bfloat16"
             ],
             "lte_version": "1.6.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1314,6 +1349,14 @@
               "bfloat16"
             ],
             "lte_version": "1.6.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1363,6 +1406,14 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1375,6 +1426,14 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1394,6 +1453,14 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1408,6 +1475,15 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -1441,6 +1517,18 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2933,6 +3021,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "int32",
+              "int64",
+              "float16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -2961,6 +3062,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3166,7 +3280,7 @@
                 1
               ]
             ],
-            "lte_version": "1.7.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": [
@@ -3175,6 +3289,15 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3274,6 +3397,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3302,6 +3438,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3330,6 +3479,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3358,6 +3520,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3386,6 +3561,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3414,6 +3602,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3442,6 +3643,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3470,6 +3684,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3498,6 +3725,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -3526,6 +3766,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4308,6 +4561,14 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4332,6 +4593,13 @@
               "bool"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4349,6 +4617,13 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4463,6 +4738,19 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4492,6 +4780,20 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4560,6 +4862,14 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4577,6 +4887,14 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4597,6 +4915,14 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4620,6 +4946,18 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4643,6 +4981,18 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4656,6 +5006,15 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4669,6 +5028,15 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4696,6 +5064,18 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4772,6 +5152,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -4800,6 +5193,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5012,6 +5418,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5040,6 +5459,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5063,6 +5495,20 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5086,6 +5532,20 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5114,6 +5574,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5142,6 +5615,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5200,6 +5686,13 @@
               "float16"
             ],
             "gte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5222,6 +5715,13 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5244,6 +5744,13 @@
               "float16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5294,6 +5801,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5322,6 +5842,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5350,6 +5883,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5378,6 +5924,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5400,6 +5959,15 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5419,6 +5987,13 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5438,6 +6013,13 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5457,6 +6039,13 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5476,6 +6065,13 @@
               "bfloat16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5504,6 +6100,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5532,6 +6141,19 @@
               "bfloat16"
             ],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5549,6 +6171,14 @@
               "float16"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bfloat16",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -5603,6 +6233,19 @@
               "float16"
             ],
             "gte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6000,6 +6643,13 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6097,6 +6747,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6120,6 +6784,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6143,6 +6821,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6166,6 +6858,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6191,6 +6897,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6214,6 +6934,18 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6237,6 +6969,18 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6257,6 +7001,14 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6274,6 +7026,14 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6290,6 +7050,13 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6306,6 +7073,13 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6341,6 +7115,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6367,6 +7155,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6393,6 +7195,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6414,6 +7230,18 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6435,6 +7263,18 @@
           {
             "lte_version": "1.5.1",
             "reason": "not_available"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6455,6 +7295,15 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6493,6 +7342,18 @@
             ],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ],
         "deterministic": false
@@ -6541,6 +7402,20 @@
               "int64"
             ],
             "lte_version": "1.7.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6566,6 +7441,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6688,6 +7577,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6704,6 +7601,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6730,6 +7635,22 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6751,6 +7672,22 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6773,6 +7710,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6803,6 +7754,15 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -6987,6 +7947,18 @@
             ],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ],
         "deterministic": false
@@ -7013,6 +7985,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7170,6 +8156,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7193,6 +8193,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7218,6 +8232,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7239,6 +8267,22 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7262,7 +8306,24 @@
             "reason": "input_quant"
           }
         ],
-        "not_available": []
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
+        ]
       },
       "inverse": {
         "profile": "tensor_method_noinput",
@@ -7285,7 +8346,22 @@
             "reason": "input_quant"
           }
         ],
-        "not_available": []
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
+        ]
       },
       "irfft": {
         "profile": "default",
@@ -7311,7 +8387,22 @@
             "reason": "input_quant"
           }
         ],
-        "not_available": []
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
+        ]
       },
       "is_complex": {
         "profile": "tensor_method_noinput",
@@ -7534,7 +8625,8 @@
               "int16",
               "int32",
               "int64",
-              "float16"
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.7.1",
             "gte_version": "1.7.1"
@@ -7567,7 +8659,10 @@
               "int8",
               "int16",
               "int32",
-              "int64"
+              "int64",
+              "bool",
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.7.1",
             "gte_version": "1.7.1"
@@ -7598,6 +8693,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7623,6 +8732,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7648,6 +8770,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7673,6 +8809,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7731,6 +8881,19 @@
             ],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7787,6 +8950,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7809,6 +8986,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7834,6 +9025,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7857,6 +9062,24 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "q_per_channel_scales": {
@@ -7878,6 +9101,24 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "q_per_channel_zero_points": {
@@ -7898,6 +9139,24 @@
             ],
             "lte_version": "1.7.0",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7921,6 +9180,24 @@
             "lte_version": "1.7.0",
             "reason": "input_quant"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "q_zero_point": {
@@ -7942,6 +9219,24 @@
             ],
             "lte_version": "1.7.0",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -7975,6 +9270,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8032,6 +9335,18 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8054,6 +9369,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8093,6 +9422,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8173,6 +9516,13 @@
               "bfloat16"
             ],
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8193,6 +9543,13 @@
               "bfloat16"
             ],
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8215,6 +9572,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8237,6 +9607,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8260,6 +9643,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16",
+              "bool",
+              "uint8"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8283,6 +9680,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8305,6 +9716,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8327,6 +9751,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8350,6 +9787,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "int8",
+              "int16",
+              "int32",
+              "bool",
+              "int64",
+              "uint8",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8373,6 +9824,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8395,6 +9860,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8417,6 +9895,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8440,6 +9931,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8463,6 +9968,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8483,6 +10002,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8503,6 +10030,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8546,6 +10081,18 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_conversion"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int64",
+              "int8",
+              "int16",
+              "int32"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8568,6 +10115,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8590,6 +10150,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8612,6 +10185,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8634,6 +10220,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8657,6 +10256,17 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8680,6 +10290,17 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8777,6 +10398,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8802,6 +10436,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8824,6 +10471,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8846,6 +10506,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "int32",
+              "int64",
+              "float16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8896,6 +10569,17 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float32",
+              "float64",
+              "bfloat16",
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8919,6 +10603,17 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -8993,6 +10688,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9019,6 +10727,19 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bool",
+              "uint8"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9072,6 +10793,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9104,6 +10839,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9129,7 +10871,7 @@
               "int32",
               "int64"
             ],
-            "lte_version": "1.7.0",
+            "lte_version": "1.7.1",
             "reason": "no_cpu"
           }
         ]
@@ -9151,6 +10893,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9167,6 +10916,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9183,6 +10939,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9209,6 +10972,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "bfloat16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9235,6 +11012,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bool",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9275,7 +11066,7 @@
               "int32",
               "int64"
             ],
-            "lte_version": "1.7.0",
+            "lte_version": "1.7.1",
             "reason": "no_cpu"
           }
         ]
@@ -9323,6 +11114,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9342,6 +11140,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9420,6 +11225,14 @@
           {
             "lte_version": "1.4.0",
             "reason": "added_feature"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9441,6 +11254,14 @@
           {
             "lte_version": "1.4.0",
             "reason": "added_feature"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9469,6 +11290,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9525,6 +11360,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9548,6 +11397,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9571,6 +11434,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9589,6 +11466,15 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9615,6 +11501,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9648,6 +11548,13 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9674,6 +11581,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9695,6 +11616,15 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9721,6 +11651,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9747,6 +11691,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9824,6 +11782,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9841,6 +11807,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9858,6 +11832,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9875,6 +11857,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9892,6 +11882,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9909,6 +11907,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -9936,6 +11942,18 @@
             ],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10379,6 +12397,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10445,6 +12477,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10474,6 +12520,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10739,6 +12799,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "int64",
+              "float16",
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10763,6 +12837,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10953,6 +13035,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -10976,6 +13066,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11088,6 +13186,20 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11234,6 +13346,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11265,6 +13385,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11382,6 +13510,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11411,6 +13547,18 @@
             ],
             "lte_version": "1.5.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11427,6 +13575,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11458,6 +13614,24 @@
             "lte_version": "1.7.0",
             "reason": "untested"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "int8",
+              "int16",
+              "int64",
+              "uint8",
+              "float16",
+              "float32",
+              "int32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
+          }
         ]
       },
       "detach_": {
@@ -11477,6 +13651,22 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ],
         "skip": [
@@ -11504,6 +13694,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11511,10 +13709,11 @@
         "profile": "tensor_property_noinput",
         "skip": [
           {
-            "lte_version": "1.7.0",
+            "lte_version": "1.7.1",
             "reason": "untested"
           }
-        ]
+        ],
+        "not_available": []
       },
       "masked_select": {
         "profile": "default",
@@ -11551,6 +13750,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11591,6 +13798,20 @@
           {
             "lte_version": "1.5.1",
             "reason": "added_feature"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11610,6 +13831,15 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11628,6 +13858,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       },
@@ -11646,6 +13884,14 @@
             ],
             "lte_version": "1.7.0",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.7.1",
+            "gte_version": "1.7.1"
           }
         ]
       }
