@@ -2,6 +2,7 @@
 
 bandit
 black
+black-nb
 darglint
 doc8
 flake8
