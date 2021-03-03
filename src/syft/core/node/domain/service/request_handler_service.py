@@ -116,6 +116,7 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
 
         return UpdateRequestHandlerMessage_PB
 
+
 @bind_protobuf
 class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -186,6 +187,7 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAllRequestHandlersMessage_PB
+
 
 @bind_protobuf
 class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
