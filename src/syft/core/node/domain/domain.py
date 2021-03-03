@@ -224,7 +224,7 @@ class Domain(Node):
 
         # We match a handler and a request when they have a same set of tags,
         # or if handler["tags"]=[], it matches with any request.
-        if tags != [] and not set(request.object_tags) == set(tags):
+        if len(tags) > 0 and not set(request.object_tags) == set(tags):
             debug(f"HANDLER Ignoring request handler {handler} against {request}")
             return False
 
