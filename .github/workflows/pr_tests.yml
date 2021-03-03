@@ -132,7 +132,7 @@ jobs:
 
       - name: Scan for security issues
         run: |
-          bandit -r src -ll
+          bandit -r src
 
       - name: Run normal tests
         run: |
