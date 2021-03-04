@@ -72,7 +72,6 @@ jobs:
   python-tests-fast:
     needs: [python-linting]
     strategy:
-      fail-fast: false
       max-parallel: 30
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
