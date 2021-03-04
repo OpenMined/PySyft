@@ -151,7 +151,11 @@ allowlist[
 allowlist["torchvision.transforms.Resize"] = "torchvision.transforms.Resize"
 allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
 allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
-allowlist["torchvision.transforms.GaussianBlur"] = "torchvision.transforms.GaussianBlur"
+allowlist["torchvision.transforms.GaussianBlur"] = {
+    "return_type": "torchvision.transforms.GaussianBlur",
+    "min_version": "1.7.0",
+}
+
 allowlist["torchvision.transforms.RandomChoice"] = "torchvision.transforms.RandomChoice"
 allowlist["torchvision.transforms.RandomOrder"] = "torchvision.transforms.RandomOrder"
 allowlist[
@@ -161,8 +165,9 @@ allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normaliz
 allowlist[
     "torchvision.transforms.RandomErasing"
 ] = "torchvision.transforms.RandomErasing"
-allowlist[
-    "torchvision.transforms.ConvertImageDtype"
-] = "torchvision.transforms.ConvertImageDtype"
+allowlist["torchvision.transforms.ConvertImageDtype"] = {
+    "return_type": "torchvision.transforms.ConvertImageDtype",
+    "min_version": "1.7.0",
+}
 allowlist["torchvision.transforms.ToPILImage"] = "torchvision.transforms.ToPILImage"
 allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
