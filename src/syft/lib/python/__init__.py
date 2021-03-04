@@ -15,7 +15,6 @@ from .float import Float
 from .int import Int
 from .iterator import Iterator
 from .list import List
-from .namedtuple import ValuesIndices
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
@@ -36,7 +35,6 @@ for syft_type in [
     PyPrimitive,
     String,
     Tuple,
-    ValuesIndices,
 ]:
     syft_type.__module__ = __name__
 
@@ -62,11 +60,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict",
             "syft.lib.python.collections.OrderedDict",
             collections.OrderedDict,
-        ),
-        (
-            "syft.lib.python.ValuesIndices",
-            "syft.lib.python.ValuesIndices",
-            ValuesIndices,
         ),
     ]
 
@@ -413,67 +406,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Set.symmetric_difference", "syft.lib.python.Set"),
         ("syft.lib.python.Set.union", "syft.lib.python.Set"),
         ("syft.lib.python.Set.update", "syft.lib.python._SyNone"),
-        # ValueIndicies
-        (
-            "syft.lib.python.ValuesIndices.values",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.indices",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.eigenvalues",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.eigenvectors",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.solution",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.QR",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.sign",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.logabsdet",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.Q",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.R",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.LU",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.cloned_coefficient",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.U",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.S",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.V",
-            "torch.Tensor",
-        ),
         (
             "syft.lib.python.collections.OrderedDict.__contains__",
             "syft.lib.python.Bool",
