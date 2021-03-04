@@ -105,3 +105,52 @@ allowlist["torchvision.datasets.VOCDetection"] = "torchvision.datasets.VOCDetect
 allowlist[
     "torchvision.datasets.VOCDetection.__len__"
 ] = "torchvision.datasets.VOCDetection"
+
+allowlist["torchvision.transforms.CenterCrop"] = "torchvision.transforms.CenterCrop"
+allowlist["torchvision.transforms.ColorJitter"] = "torchvision.transforms.ColorJitter"
+allowlist["torchvision.transforms.FiveCrop"] = "torchvision.transforms.FiveCrop"
+allowlist["torchvision.transforms.Grayscale"] = "torchvision.transforms.Grayscale"
+allowlist["torchvision.transforms.Pad"] = "torchvision.transforms.Pad"
+allowlist["torchvision.transforms.RandomAffine"] = "torchvision.transforms.RandomAffine"
+allowlist["torchvision.transforms.RandomApply"] = "torchvision.transforms.RandomApply"
+allowlist["torchvision.transforms.RandomCrop"] = "torchvision.transforms.RandomCrop"
+allowlist[
+    "torchvision.transforms.RandomGrayscale"
+] = "torchvision.transforms.RandomGrayscale"
+
+allowlist[
+    "torchvision.transforms.RandomHorizontalFlip"
+] = "torchvision.transforms.RandomHorizontalFlip"
+allowlist[
+    "torchvision.transforms.RandomPerspective"
+] = "torchvision.transforms.RandomPerspective"
+allowlist[
+    "torchvision.transforms.RandomResizedCrop"
+] = "torchvision.transforms.RandomResizedCrop"
+allowlist[
+    "torchvision.transforms.RandomRotation"
+] = "torchvision.transforms.RandomRotation"
+allowlist[
+    "torchvision.transforms.RandomSizedCrop"
+] = "torchvision.transforms.RandomSizedCrop"
+allowlist[
+    "torchvision.transforms.RandomVerticalFlip"
+] = "torchvision.transforms.RandomVerticalFlip"
+allowlist["torchvision.transforms.Resize"] = "torchvision.transforms.Resize"
+allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
+allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
+allowlist["torchvision.transforms.GaussianBlur"] = "torchvision.transforms.GaussianBlur"
+allowlist["torchvision.transforms.RandomChoice"] = "torchvision.transforms.RandomChoice"
+allowlist["torchvision.transforms.RandomOrder"] = "torchvision.transforms.RandomOrder"
+allowlist[
+    "torchvision.transforms.LinearTransformation"
+] = "torchvision.transforms.LinearTransformation"
+allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normalize"
+allowlist[
+    "torchvision.transforms.RandomErasing"
+] = "torchvision.transforms.RandomErasing"
+allowlist[
+    "torchvision.transforms.ConvertImageDtype"
+] = "torchvision.transforms.ConvertImageDtype"
+allowlist["torchvision.transforms.ToPILImage"] = "torchvision.transforms.ToPILImage"
+allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
