@@ -78,7 +78,9 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # SECTION - Module methods
 allowlist["torch.set_grad_enabled"] = "syft.lib.python._SyNone"
 allowlist["torch.zeros"] = "torch.Tensor"
-
+allowlist["torch.randn"] = "torch.Tensor"
+allowlist["torch.ones_like"] = "torch.Tensor"
+allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
