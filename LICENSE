@@ -199,3 +199,14 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+
+The following files are copied from CPython and are under the PSF license.
+See here for more: https://github.com/python/cpython/blob/master/LICENSE
+
+tests/syft/lib/python/collections/ordered_dict/ordered_dict_sanity_test.py
+tests/syft/lib/python/complex/complex_test.py
+tests/syft/lib/python/dict/dict_test.py
+tests/syft/lib/python/float/float_test.py
+tests/syft/lib/python/list/list_test.py
+tests/syft/lib/python/string/string_utils_test.py

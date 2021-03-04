@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from typing import Any
 from typing import Optional
 
@@ -286,8 +287,11 @@ class Int(int, PyPrimitive):
         return Int_PB
 
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        tpl = super().as_integer_ratio()
-        return PrimitiveFactory.generate_primitive(value=tpl)
+        if sys.version_info < (3, 8):
+            raise NotImplementedError
+        else:
+            tpl = super().as_integer_ratio()
+            return PrimitiveFactory.generate_primitive(value=tpl)
 
     def bit_length(self) -> SyPrimitiveRet:
         res = super().bit_length()
@@ -296,6 +300,14 @@ class Int(int, PyPrimitive):
     def denominator(self) -> SyPrimitiveRet:
         res = super().denominator
         return PrimitiveFactory.generate_primitive(value=res)
+
+    def to_bytes(
+        self,
+        length: int,
+        byteorder: str,
+        signed: bool = False,
+    ) -> bytes:
+        return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
 
     @staticmethod
     def from_bytes(bytes: Any, byteorder: str, *, signed: Any = True) -> SyPrimitiveRet:
@@ -317,15 +329,3 @@ class Int(int, PyPrimitive):
     def conjugate(self) -> SyPrimitiveRet:
         res = super().conjugate()
         return PrimitiveFactory.generate_primitive(value=res)
-
-    # method signature override
-    def to_bytes(
-        self,
-        length: Optional[int] = None,
-        byteorder: Optional[str] = None,
-        signed: Optional[bool] = True,
-    ) -> bytes:
-        if length is not None and byteorder is not None and signed is not None:
-            return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
-        else:
-            return PyPrimitive.to_bytes(self)

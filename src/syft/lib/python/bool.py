@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from typing import Any
 from typing import Optional
 
@@ -231,8 +232,11 @@ class Bool(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=self.value.__xor__(other))
 
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        res = self.value.as_integer_ratio()
-        return PrimitiveFactory.generate_primitive(value=res)
+        if sys.version_info < (3, 8):
+            raise NotImplementedError
+        else:
+            res = self.value.as_integer_ratio()
+            return PrimitiveFactory.generate_primitive(value=res)
 
     def bit_length(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.bit_length())
@@ -264,15 +268,3 @@ class Bool(int, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Bool_PB
-
-    # method signature override
-    def to_bytes(
-        self,
-        length: Optional[int] = None,
-        byteorder: Optional[str] = None,
-        signed: Optional[bool] = True,
-    ) -> bytes:
-        if length is not None and byteorder is not None and signed is not None:
-            return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
-        else:
-            return PyPrimitive.to_bytes(self)

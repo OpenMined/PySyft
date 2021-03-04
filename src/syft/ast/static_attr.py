@@ -29,11 +29,11 @@ class StaticAttribute(ast.attribute.Attribute):
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
     ):
-        self.parent = parent
         super().__init__(
             path_and_name=path_and_name,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
 
     def get_remote_value(self) -> AbstractPointer:
@@ -67,12 +67,16 @@ class StaticAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_value(self) -> Any:
+        self.apply_node_changes()
+
         if self.path_and_name is None:
             raise ValueError("path_and_none should not be None")
 
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
+        self.apply_node_changes()
+
         if self.path_and_name is None:
             raise ValueError("path_and_none should not be None")
 

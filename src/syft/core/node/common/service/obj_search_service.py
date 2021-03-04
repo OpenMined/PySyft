@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
 from .....logger import error
 from .....proto.core.node.common.service.object_search_message_pb2 import (
@@ -58,14 +59,14 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         :rtype: ObjectSearchMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            reply_to=self.reply_to.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -136,14 +137,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ObjectSearchReplyMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchReplyMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            results=list(map(lambda x: x.serialize(), self.results)),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            results=list(map(lambda x: serialize(x), self.results)),
         )
 
     @staticmethod
