@@ -286,6 +286,7 @@ def test_mlp_plan() -> None:
         with ROOT_CLIENT.torch.no_grad():
             for p in model.parameters():
                 p.data = p.data - lr * p.grad
+                # Todo: fix this
                 p.grad = th.zeros_like(p.grad.get())
 
     local_model = MLP(th)  # type: ignore
@@ -299,7 +300,7 @@ def test_mlp_plan() -> None:
 
         model = local_model.send(ROOT_CLIENT)
         set_params(model, params)
-        for i in range(1):
+        for i in range(2):
             indices = th.tensor(range(64 * i, 64 * (i + 1)))
             x, y = xs.index_select(0, indices), ys.index_select(0, indices)
             out = model(x)
