@@ -147,7 +147,6 @@ class Attribute:
         Returns:
             The attribute in the AST at the given initial path.
         """
-
         if obj_type is not None:
             # If the searched given type has already been seen, resolve it with the path from `lookup_cache`.
             if obj_type in self.lookup_cache:

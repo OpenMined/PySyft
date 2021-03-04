@@ -8,11 +8,12 @@ import tarfile
 
 # third party
 from six.moves import urllib
-from dataset import DatasetFromFolder
 from torchvision.transforms import CenterCrop
 from torchvision.transforms import Compose
 from torchvision.transforms import Resize
 from torchvision.transforms import ToTensor
+
+from dataset import DatasetFromFolder  # isort:skip
 
 
 def download_bsd300(dest="dataset"):
