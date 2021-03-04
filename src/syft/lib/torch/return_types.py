@@ -15,7 +15,7 @@ from ...proto.lib.torch.returntypes_pb2 import ReturnTypes as ReturnTypes_PB
 from ..torch.tensor_util import protobuf_tensor_deserializer
 from ..torch.tensor_util import protobuf_tensor_serializer
 
-# add a fake module "return_types" to torch
+# TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
 module_type = type(torch)
 torch.__dict__["return_types"] = module_type(name="return_types")
 parent = torch.__dict__["return_types"]
@@ -121,6 +121,7 @@ def wrap_type(typ: type, fields: List[str]) -> None:
         type_proto2object=proto2object,
     )
 
+    # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
     # add type to torch.return_types
     parent.__dict__[typ.__name__] = typ
 

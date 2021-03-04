@@ -51,8 +51,10 @@ def get_allowed_functions(
     def solve_real_type_functions(path: str) -> Set[str]:
         parts = path.split(".")
         klass_name = parts[-1]
+
+        # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
         # A way to walkaround the problem we can't `import torch.return_types` and
-        # get it from `sys.modules`. TODO: a general solution to this.
+        # get it from `sys.modules`.
         if parts[-2] == "return_types":
             modu = getattr(sys.modules["torch"], "return_types")
         else:
