@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -24,8 +25,10 @@ from ...core.node.device.client import DeviceClient
 from ...core.node.domain.client import DomainClient
 from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
+from ...core.pointer.pointer import Pointer
 from ..messages.setup_messages import CreateInitialSetUpMessage
 from ..messages.setup_messages import GetSetUpMessage
+from ..messages.transfer_messages import LoadObjectMessage
 from .request_api.association_api import AssociationRequestAPI
 from .request_api.group_api import GroupRequestAPI
 from .request_api.role_api import RoleRequestAPI
@@ -38,6 +41,7 @@ def connect(
     conn_type: ClientConnection,
     client_type: Client,
     credentials: Dict = {},
+    user_key: Optional[SigningKey] = None,
 ) -> Any:
     class GridClient(client_type):  # type: ignore
         def __init__(
@@ -52,11 +56,14 @@ def connect(
             conn = conn_type(url=url)  # type: ignore
 
             if credentials:
-                metadata, user_key = conn.login(credentials=credentials)
-                user_key = SigningKey(user_key.encode("utf-8"), encoder=HexEncoder)
+                metadata, _user_key = conn.login(credentials=credentials)
+                _user_key = SigningKey(_user_key.encode("utf-8"), encoder=HexEncoder)
             else:
                 metadata = conn._get_metadata()
-                user_key = SigningKey.generate()
+                if not user_key:
+                    _user_key = SigningKey.generate()
+                else:
+                    _user_key = user_key
 
             (
                 spec_location,
@@ -81,22 +88,28 @@ def connect(
                 vm=location_args[VirtualMachineClient],
                 name=name,
                 routes=[route],
-                signing_key=user_key,
+                signing_key=_user_key,
             )
 
             self.groups = GroupRequestAPI(send=self.__perform_grid_request)
             self.users = UserRequestAPI(send=self.__perform_grid_request)
             self.roles = RoleRequestAPI(send=self.__perform_grid_request)
-            self.workers = WorkerRequestAPI(send=self.__perform_grid_request)
+            self.workers = WorkerRequestAPI(
+                send=self.__perform_grid_request, client=self
+            )
             self.association_requests = AssociationRequestAPI(
                 send=self.__perform_grid_request
             )
 
-        def proxy(self, vm_address: Address) -> None:
-            self.proxy_address = vm_address
-
-        def unproxy(self) -> None:
-            self.proxy_address = None
+        def load(
+            self, obj_ptr: Type[Pointer], address: Address, searchable: bool = False
+        ) -> None:
+            content = {
+                "address": address.serialize().SerializeToString().decode("ISO-8859-1"),  # type: ignore
+                "uid": str(obj_ptr.id_at_location.value),
+                "searchable": searchable,
+            }
+            self.__perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
         def initial_setup(self, **kwargs: Any) -> Any:
             return self.__perform_grid_request(
@@ -113,7 +126,6 @@ def connect(
             ],
             route_index: int = 0,
         ) -> SyftMessage:
-
             if self.proxy_address:
                 msg.address = self.proxy_address
 
