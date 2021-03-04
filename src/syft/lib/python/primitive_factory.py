@@ -25,6 +25,7 @@ primitives = [
     list,
     tuple,
     set,
+    slice,
     None,
     NoneType,
     str,
@@ -43,6 +44,7 @@ PrimitiveType = Union[
     tuple,
     list,
     set,
+    slice,
     None,
     NoneType,
     str,
@@ -89,6 +91,9 @@ class PrimitiveFactory(ABC):
 
         if isinstance(value, set):
             return python.Set(value)
+
+        if isinstance(value, slice):
+            return python.Slice(value)
 
         if type(value) in [list, UserList]:
             if not recurse:

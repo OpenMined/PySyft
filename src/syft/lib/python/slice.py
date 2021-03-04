@@ -2,6 +2,7 @@
 import sys
 from typing import Any
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -14,6 +15,7 @@ from ...core.common.serde.serializable import bind_protobuf
 from ...logger import traceback_and_raise
 from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
 from .primitive_factory import PrimitiveFactory
+from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
@@ -28,9 +30,9 @@ class Slice(int, PyPrimitive):
         id: Optional[UID] = None,
     ):
         if not start and not stop and not step:
-            start = None
-            stop = None
-            step = None
+            self.start = None
+            self.stop = None
+            self.step = None
 
         self._id: UID = id if id else UID()
 
@@ -67,7 +69,7 @@ class Slice(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __getitem__(self, key: Any) -> Union[SyPrimitiveRet, Any]:
-        res = super().__getitem__(key)
+        res = super().__getitem__(key)  # ignore = type
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
         else:
@@ -80,117 +82,117 @@ class Slice(int, PyPrimitive):
 
     def getindices(
         self,
-        length: Optional[int] = None,
+        length: Any = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
         step: Optional[int] = None,
     ) -> SyPrimitiveRet:
-        if step is None:
+        if self.step is None:
             step = 1
+        if not isinstance(step, int):
+            traceback_and_raise(TypeError("expected integer type arguments for step"))
         else:
-            if not isinstance(step, int):
-                return -1
-            else:
-                step = step
-        if start is None:
+            step = step
+        if self.start is None:
             start = length - 1 if step < 0 else 0
+        if not isinstance(start, int):
+            traceback_and_raise(TypeError("expected integer type arguments for start"))
         else:
-            if not isinstance(start, int):
-                return -1
-            else:
-                start = start
-                if start < 0:
-                    start = start + length
-        if stop is None:
+            start = start
+            if start < 0:
+                start = start + length
+        if self.stop is None:
             stop = -1 if step < 0 else length
+        if not isinstance(stop, int):
+            traceback_and_raise(TypeError("expected integer type arguments for stop"))
         else:
-            if not isinstance(stop, int):
-                return -1
-            else:
-                stop = stop
-                if stop < 0:
-                    stop = stop + length
+            stop = stop
+            if stop < 0:
+                stop = stop + length
         if stop > length:
-            return -1
+            traceback_and_raise(
+                TypeError("no attributes should be more than maximum length")
+            )
         if start >= length:
-            return -1
+            traceback_and_raise(
+                TypeError("no attributes should be more than maximum length")
+            )
         if step == 0:
-            return -1
+            traceback_and_raise(
+                TypeError("no attributes should be more than maximum length")
+            )
         res = super().getindices(length, start, stop, step)
         return PrimitiveFactory.generate_primitive(value=res)
 
-        def unpack(self, start, stop, step) -> SyPrimitiveRet:
+    def unpack(self, start: Any, stop: Any, step: Any) -> SyPrimitiveRet:
+        if self.step is None:
+            step = 1
+        if step == 0:
+            traceback_and_raise(TypeError("slice step can't be zero"))
+        if step < -sys.maxsize:
+            step = -sys.maxsize
+        if self.start is None:
+            start = sys.maxsize if step < 0 else 0
 
-            if step is None:
-                step = 1
-            else:
-                if step == 0:
-                    traceback_and_raise(TypeError("slice step can't be zero"))
-                    return -1
-                if step < -sys.maxint:
-                    step = -sys.maxint
+        if self.stop is None:
+            stop = -sys.maxsize - 1 if step < 0 else sys.maxsize
 
-            if start is None:
-                start = sys.maxint if step < 0 else 0
+        res = super().unpack(start, stop, step)
+        return PrimitiveFactory.generate_primitive(value=res)
 
-            if stop is None:
-                stop = -sys.maxint - 1 if step < 0 else sys.maxint
+    def adjustindices(
+        self, length: Any, start: Any, stop: Any, step: Any
+    ) -> SyPrimitiveRet:
+        assert step != 0
+        assert step >= -sys.maxsize
 
-            res = super().unpack(start, stop, step)
-            return PrimitiveFactory.generate_primitive(value=res)
-
-        def adjustindices(self, length, start, stop, step) -> SyPrimitiveRet:
-            assert step != 0
-            assert step >= -sys.maxint
-
+        if start < 0:
+            start = start + length
             if start < 0:
-                start = start + length
-                if start < 0:
-                    start = -1 if step < 0 else 0
-            else:
-                if start >= length:
-                    start = length - 1 if step < 0 else length
+                start = -1 if step < 0 else 0
+        else:
+            if start >= length:
+                start = length - 1 if step < 0 else length
 
+        if stop < 0:
+            stop = stop + length
             if stop < 0:
-                stop = stop + length
-                if stop < 0:
-                    stop = -1 if step < 0 else 0
+                stop = -1 if step < 0 else 0
 
-            else:
-                if stop >= length:
-                    stop = length - 1 if step < 0 else length
+        else:
+            if stop >= length:
+                stop = length - 1 if step < 0 else length
 
-            if step < 0:
-                if stop < start:
-                    return (start - stop - 1) / (-step) + 1
+        if step < 0:
+            if stop < start:
+                return (start - stop - 1) / (-step) + 1
 
-            else:
-                if start < stop:
-                    return (stop - start - 1) / step + 1
+        else:
+            if start < stop:
+                return (stop - start - 1) / step + 1
 
-            res = super().adjustindices(length, start, stop, step)
-            return PrimitiveFactory.generate_primitive(value=res)
+        res = super().adjustindices(length, start, stop, step)
+        return PrimitiveFactory.generate_primitive(value=res)
 
-        def _object2proto(self) -> Slice_PB:
-            return Slice_PB(
-                start=self.start,
-                stop=self.stop,
-                step=self.step,
-                id=serialize(obj=self.id),
-            )
+    def _object2proto(self) -> Slice_PB:
+        return Slice_PB(
+            start=self.start,
+            stop=self.stop,
+            step=self.step,
+            id=serialize(obj=self._id),
+        )
 
-        @staticmethod
-        def _proto2object(proto: Slice_PB) -> "Slice":
-            id_: UID = deserialize(blob=proto.id)
+    @staticmethod
+    def _proto2object(proto: Slice_PB) -> "Slice":
+        id_: UID = deserialize(blob=proto.id)
 
-            return Slice(
-                start=proto.start,
-                stop=proto.stop,
-                step=self.step,
-                id=id_,
-                from_bytes=True,
-            )
+        return Slice(
+            start=proto.start,
+            stop=proto.stop,
+            step=proto.step,
+            id=id_,
+        )
 
-        @staticmethod
-        def get_protobuf_schema() -> GeneratedProtocolMessageType:
-            return Slice_PB
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Slice_PB
