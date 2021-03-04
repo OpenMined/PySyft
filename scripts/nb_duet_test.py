@@ -55,6 +55,7 @@ for path in (
     + list(Path("examples/private-ai-series/duet_basics").rglob("*.ipynb"))
     + list(Path("examples/private-ai-series/duet_iris_classifier").rglob("*.ipynb"))
     + list(Path("examples/differential-privacy/opacus").rglob("*.ipynb"))
+    + list(Path("examples/duet/mnist").rglob("*.ipynb"))
     + list(Path("examples/duet/mnist_lightning").rglob("*.ipynb"))
 ):
     if ".ipynb_checkpoints" in str(path):
