@@ -146,10 +146,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
 
             if isinstance(resolved_self.data, Plan) and method_name == "__call__":
@@ -173,6 +169,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
                 result = method(*upcasted_args, **upcasted_kwargs)
 
+        # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
+        if "numpy." in str(type(result)):
+            if "float" in type(result).__name__:
+                result = float(result)
+            if "int" in type(result).__name__:
+                result = int(result)
+
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
@@ -188,7 +191,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
