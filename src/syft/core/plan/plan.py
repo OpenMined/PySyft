@@ -4,7 +4,6 @@ import sys
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -45,7 +44,7 @@ class Plan(Serializable):
         outputs: Union[Pointer, List[Pointer], None] = None,
     ):
         self.actions: List[Action] = listify(actions)
-        self.inputs: List[Pointer] = inputs if inputs is not None else dict()
+        self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
 
     def __call__(

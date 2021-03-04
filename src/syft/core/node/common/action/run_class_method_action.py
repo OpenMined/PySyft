@@ -82,12 +82,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         method_name = self.path.split(".")[-1]
         self_name = self._self.class_name
         arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k,v in self.kwargs.items()])
-        return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {self.kwargs})"
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)

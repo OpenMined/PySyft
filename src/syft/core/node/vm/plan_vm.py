@@ -16,7 +16,7 @@ from ...io.location import SpecificLocation
 from .vm import VirtualMachine
 
 
-class PlanVirtualMachine(VirtualMachine):
+class PlanVirtualMachine(VirtualMachine):  # type: ignore
     def __init__(
         self,
         *,  # Trasterisk

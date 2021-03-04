@@ -144,11 +144,9 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         attr_name = self.path.split(".")[-1]
         self_name = self._self.class_name
-        arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k,v in self.kwargs.items()])
 
         if self.action == PropertyActions.SET:
             val = self.args[0]

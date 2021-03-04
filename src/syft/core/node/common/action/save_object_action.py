@@ -31,9 +31,15 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         obj_str = str(self.obj)
-        obj_str = obj_str = obj_str[:50] if len(obj_str) < 50 else obj_str[:50] + " ... " + obj_str[max(-50, -len(obj_str)+50):]
+        # make obj_str of reasonable length, if too long: cut into begin and end
+        neg_index = max(-50, -len(obj_str) + 50)
+        obj_str = obj_str = (
+            obj_str[:50]
+            if len(obj_str) < 50
+            else obj_str[:50] + " ... " + obj_str[neg_index:]
+        )
         return f"SaveObjectAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:

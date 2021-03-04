@@ -7,6 +7,7 @@ from typing import Dict
 from typing import KeysView
 from typing import List as TypeList
 from typing import Set
+
 # syft relative
 from ...ast import add_classes
 from ...ast import add_methods
@@ -14,6 +15,8 @@ from ...ast import add_modules
 from ...ast import globals
 from ...logger import traceback_and_raise
 from .union import lazy_pairing
+
+
 def get_allowed_functions(
     lib_ast: globals.Globals, union_types: TypeList[str]
 ) -> Dict[str, bool]:
@@ -33,15 +36,18 @@ def get_allowed_functions(
         and the values are Bool (if they are allowed or not).
     """
     allowed_functions: Dict[str, bool] = defaultdict(lambda: True)
+
     def solve_ast_type_functions(path: str) -> KeysView:
         root = lib_ast
         for path_element in path.split("."):
             root = getattr(root, path_element)
         return root.attrs.keys()
+
     def solve_real_type_functions(path: str) -> Set[str]:
         parts = path.split(".")
         klass_name = parts[-1]
         return set(dir(getattr(sys.modules[".".join(parts[:-1])], klass_name)))
+
     for union_type in union_types:
         real_type_function_set = solve_real_type_functions(union_type)
         ast_type_function_set = solve_ast_type_functions(union_type)
@@ -51,6 +57,8 @@ def get_allowed_functions(
         for rejected_function in rejected_function_set:
             allowed_functions[rejected_function] = False
     return allowed_functions
+
+
 def create_union_ast(
     lib_ast: globals.Globals, client: TypeAny = None
 ) -> globals.Globals:
@@ -71,6 +79,7 @@ def create_union_ast(
         for target_method, allowed in allowed_functions.items():
             if not allowed:
                 continue
+
             def generate_func(target_method: str) -> Callable:
                 def func(self: TypeAny, *args: TypeAny, **kwargs: TypeAny) -> TypeAny:
                     func = getattr(self, target_method, None)
@@ -82,25 +91,31 @@ def create_union_ast(
                                 f"Can't call {target_method} on {klass} with the instance type of {type(self)}"
                             )
                         )
+
                 return func
+
             def generate_prop(target_property: str) -> TypeAny:
-                def prop(self) -> TypeAny:
+                def prop(self: TypeAny) -> TypeAny:
                     prop = getattr(self, target_property, None)
                     if prop is not None:
                         return prop
                     else:
                         ValueError("TODO")
+
                 return property(prop)
+
             def generate_attribute(target_attribute: str) -> TypeAny:
-                def prop_get(self) -> TypeAny:
+                def prop_get(self: TypeAny) -> TypeAny:
                     prop = getattr(self, target_attribute, None)
                     if prop is not None:
                         return prop
                     else:
                         ValueError("TODO")
-                def prop_set(self, value) -> TypeAny:
+
+                def prop_set(self: TypeAny, value: TypeAny) -> TypeAny:
                     setattr(self, target_attribute, value)
-                return property(prop_get, prop_set) 
+
+                return property(prop_get, prop_set)
 
             if target_method == "grad":
                 setattr(klass, target_method, generate_attribute(target_method))

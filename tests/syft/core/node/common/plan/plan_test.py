@@ -1,4 +1,5 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
@@ -28,6 +29,7 @@ from syft.core.node.common.action.get_or_set_static_attribute_action import (
 )
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
+from syft.core.plan.plan_builder import make_plan
 from syft.core.store.storeable_object import StorableObject
 
 
@@ -189,7 +191,9 @@ def test_plan_batched_execution() -> None:
         msg_id=UID(),
     )
 
-    plan = Plan([a1, a2, a3], inputs=[input_tensor_pointer1, input_tensor_pointer2])
+    plan = Plan(
+        [a1, a2, a3], inputs={"x": input_tensor_pointer1, "y": input_tensor_pointer2}
+    )
     plan_pointer = plan.send(alice_client)
 
     # Test
@@ -203,7 +207,50 @@ def test_plan_batched_execution() -> None:
     ]
 
     for x, y in zip(x_batches, y_batches):
-        plan_pointer(x, y)
+        plan_pointer(x=x, y=y)
 
         # checks if (model(x) == y) == [True, True]
         assert all(result_tensor_pointer3.get())
+
+
+def test_make_plan() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    input_tensor = th.tensor([1, 2, 3])
+    plan_pointer = add_plan.send(alice_client)
+    res = plan_pointer(inp=input_tensor)
+    assert th.equal(res.get()[0], th.tensor([2, 4, 6]))
+
+
+def test_make_plan2() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def mul_plan(inp=th.zeros((3)), inp2=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp * inp2
+
+    t1, t2 = th.tensor([1, 2, 3]), th.tensor([1, 2, 3])
+    plan_pointer = mul_plan.send(alice_client)
+    res = plan_pointer(inp=t1, inp2=t2)
+    assert th.equal(res.get()[0], th.tensor([1, 4, 9]))
+
+
+def test_make_plan_error_no_kwargs() -> None:
+    def assertRaises(exc, obj, methodname, *args) -> None:  # type: ignore
+        with pytest.raises(exc) as e_info:
+            getattr(obj, methodname)(*args)
+        assert str(e_info) != ""
+
+    def test_define_plan():  # type: ignore
+        @make_plan
+        def add_plan(inp):  # type: ignore
+            return inp + inp
+
+    # we can only define a plan with *kwargs* when using the @make_plan decorator, not with args
+    assertRaises(ValueError, test_define_plan, "__call__")
