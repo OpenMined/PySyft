@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from typing import Any
 from typing import Optional
 
@@ -288,8 +289,11 @@ class Int(int, PyPrimitive):
         return Int_PB
 
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        tpl = super().as_integer_ratio()
-        return PrimitiveFactory.generate_primitive(value=tpl)
+        if sys.version_info < (3, 8):
+            raise NotImplementedError
+        else:
+            tpl = super().as_integer_ratio()
+            return PrimitiveFactory.generate_primitive(value=tpl)
 
     def bit_length(self) -> SyPrimitiveRet:
         res = super().bit_length()

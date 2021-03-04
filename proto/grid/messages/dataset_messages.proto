@@ -37,6 +37,22 @@ message GetDatasetResponse {
   syft.core.io.Address address = 4;
 }
 
+// GET Dataset Info
+message GetDatasetInfoMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetDatasetInfoResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
 // GET ALL Datasets
 message GetDatasetsMessage {
   syft.core.common.UID msg_id = 1;
@@ -51,6 +67,22 @@ message GetDatasetsResponse {
   string content = 3;
   syft.core.io.Address address = 4;
 }
+
+// GET ALL Datasets
+message GetDatasetsInfoMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetDatasetsInfoResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
 
 // SEARCH Dataset
 message SearchDatasetMessage {
