@@ -68,18 +68,24 @@ allowlist["torchvision.datasets.LSUN.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.Omniglot"] = {
     "return_type": "torchvision.datasets.Omniglot",
-    "min_version": "0.8.0",
+    "min_version": "1.7.0",
 }
-allowlist["torchvision.datasets.Omniglot.__len__"] = "syft.lib.python.Int"
+allowlist["torchvision.datasets.Omniglot.__len__"] = {
+    "return_type": "syft.lib.python.Int",
+    "min_version": "1.7.0",
+}
 
 allowlist["torchvision.datasets.PhotoTour"] = "torchvision.datasets.PhotoTour"
 allowlist["torchvision.datasets.PhotoTour.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.Places365"] = {
     "return_type": "torchvision.datasets.Places365",
-    "min_version": "0.8.0",
+    "min_version": "1.7.0",
 }
-allowlist["torchvision.datasets.Places365.__len__"] = "syft.lib.python.Int"
+allowlist["torchvision.datasets.Places365.__len__"] = {
+    "return_type": "syft.lib.python.Int",
+    "min_version": "1.7.0",
+}
 
 allowlist["torchvision.datasets.QMNIST"] = "torchvision.datasets.QMNIST"
 allowlist["torchvision.datasets.QMNIST.__len__"] = "syft.lib.python.Int"
