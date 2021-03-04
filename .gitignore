@@ -30,4 +30,6 @@ examples/**/dcgan/result/*
 **/*.sqlite-journal
 tests/syft/notebooks/*.py
 tests/syft/notebooks/checkpoints
+tests/syft/notebooks/data
+tests/syft/notebooks/dataset
 /data
