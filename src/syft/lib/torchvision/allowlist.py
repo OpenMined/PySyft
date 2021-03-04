@@ -27,6 +27,9 @@ allowlist["torchvision.datasets.CelebA.__len__"] = "syft.lib.python.Int"
 allowlist["torchvision.datasets.CIFAR10"] = "torchvision.datasets.CIFAR10"
 allowlist["torchvision.datasets.CIFAR10.__len__"] = "syft.lib.python.Int"
 
+allowlist["torchvision.datasets.CIFAR100"] = "torchvision.datasets.CIFAR100"
+allowlist["torchvision.datasets.CIFAR10.__len__"] = "syft.lib.python.Int"
+
 allowlist["torchvision.datasets.Cityscapes"] = "torchvision.datasets.Cityscapes"
 allowlist["torchvision.datasets.Cityscapes.__len__"] = "syft.lib.python.Int"
 
