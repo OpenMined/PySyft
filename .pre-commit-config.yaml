@@ -28,7 +28,7 @@ repos:
       - id: black
         exclude: ^(src/syft/proto|examples/duet)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.800
+    rev: v0.812
     hooks:
       - id: mypy
         exclude: ^(src/syft/proto|tests/syft/lib/python|examples/duet)
@@ -45,6 +45,7 @@ repos:
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
           ]
+
   - repo: local
     hooks:
       - id: flynt
