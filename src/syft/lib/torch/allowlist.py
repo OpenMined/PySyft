@@ -1701,6 +1701,7 @@ allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
+allowlist["torch.nn.Module.add_module"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Module.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist[
     "torch.nn.Module.load_state_dict"
