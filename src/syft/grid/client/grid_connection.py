@@ -9,10 +9,7 @@ import requests
 
 # syft relative
 from ...core.common.message import SyftMessage
-<<<<<<< HEAD
-=======
 from ...core.common.serde.serialize import _serialize
->>>>>>> 6bfa546f0bf0379e911c9f35f61647744eb162da
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ..connections.http_connection import HTTPConnection
 
