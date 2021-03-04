@@ -5,7 +5,6 @@ on what expected inputs and return types are provided by the json file.
 # stdlib
 from itertools import product
 import json
-import math
 import os
 from pathlib import Path
 import platform
@@ -29,11 +28,11 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
-from syft.lib.python.namedtuple import get_keys
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
 from syft.lib.torch import allowlist
+from syft.lib.torch.return_types import types_fields
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
@@ -385,15 +384,18 @@ for op in BASIC_OPS:
 
 # if the environment variables below are set bigger than 1 we will split the TEST_DATA
 # into parts so that these can be parallelized by different test runners or containers
-TEST_CHUNK = int(os.getenv("TEST_CHUNK", 1))
-TEST_CHUNKS = int(os.getenv("TEST_CHUNKS", 1))
+# TEST_CHUNK = int(os.getenv("TEST_CHUNK", 1))
+# TEST_CHUNKS = int(os.getenv("TEST_CHUNKS", 1))
 
-# chunk the tests
-if TEST_CHUNKS > 1:
-    chunk_size = math.ceil(len(TEST_DATA) / TEST_CHUNKS)
-    start_offset = (TEST_CHUNK - 1) * chunk_size
-    end_offset = start_offset + chunk_size
-    TEST_DATA = TEST_DATA[start_offset:end_offset]
+# # chunk the tests
+# if TEST_CHUNKS > 1:
+#     chunk_size = math.ceil(len(TEST_DATA) / TEST_CHUNKS)
+#     start_offset = (TEST_CHUNK - 1) * chunk_size
+#     end_offset = start_offset + chunk_size
+#     TEST_DATA = TEST_DATA[start_offset:end_offset]
+
+alice = sy.VirtualMachine(name="alice")
+alice_client = alice.get_client()
 
 
 @pytest.mark.torch
@@ -428,9 +430,8 @@ def test_all_allowlisted_tensor_methods(
     }
 
     try:
-        # Step 1: Create the alice client
-        alice = sy.VirtualMachine(name="alice")
-        alice_client = alice.get_client()
+        # Step 1: Clear store
+        alice.store.clear()
 
         # Step 2: Decide which type we're testing
         t_type = TORCH_STR_DTYPE[tensor_type]
@@ -599,15 +600,12 @@ def test_all_allowlisted_tensor_methods(
         try:
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
-                local_fqn = full_name_with_qualname(klass=type(local_result))
-                keys = get_keys(klass_name=local_fqn)
-                # temporary work around while ValuesIndicesWrapper has storable attrs
-                for key in keys:
+                fields = types_fields[type(local_result)]
+                for field in fields:
                     assert compare_tensors(
-                        left=getattr(local_result, key, None),
-                        right=getattr(target_result, key, None),
+                        left=getattr(local_result, field, None),
+                        right=getattr(target_result, field, None),
                     )
-                # finish the check for now
                 return
 
             # only do single value comparisons, do lists, tuples etc below in the else
