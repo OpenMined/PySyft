@@ -6399,7 +6399,7 @@
       "cummax": {
         "profile": "default",
         "inputs": [0],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.cummax",
         "not_available": [
           {
             "lte_version": "1.7.0",
@@ -6415,7 +6415,7 @@
       "cummin": {
         "profile": "default",
         "inputs": [0],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.cummin",
         "not_available": [
           {
             "lte_version": "1.7.0",
@@ -6432,7 +6432,7 @@
         "profile": "default",
         "inputs": [null, false, true],
         "tensors": ["tensor2"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.eig",
         "not_available": [
           {
             "data_types": [
@@ -6454,7 +6454,7 @@
         "profile": "default",
         "inputs": [1],
         "tensors": ["tensor1"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.kthvalue",
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
@@ -6472,7 +6472,7 @@
         "profile": "default",
         "inputs": ["self"],
         "tensors": ["lstsq_a"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.lstsq",
         "not_available": [
           {
             "data_types": [
@@ -6493,7 +6493,7 @@
       "slogdet": {
         "profile": "tensor_method_noinput",
         "tensors": ["tensor2"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.slogdet",
         "not_available": [
           {
             "data_types": [
@@ -6514,7 +6514,7 @@
       "qr": {
         "profile": "tensor_method_noinput",
         "tensors": ["tensor2"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.qr",
         "not_available": [
           {
             "data_types": [
@@ -6535,7 +6535,7 @@
       "mode": {
         "profile": "tensor_method_noinput",
         "tensors": ["tensor2"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.mode",
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
@@ -6548,7 +6548,7 @@
         "profile": "default",
         "tensors": ["tensor_cube"],
         "inputs": ["self"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.solve",
         "not_available": [
           {
             "data_types": [
@@ -6570,7 +6570,7 @@
         "profile": "default",
         "tensors": ["tensor_cube"],
         "inputs": [null],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.sort",
         "not_available": [
           {
             "data_types": ["float16"],
@@ -6593,7 +6593,7 @@
         "profile": "default",
         "tensors": ["tensor_cube"],
         "inputs": [null],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.symeig",
         "not_available": [
           {
             "data_types": [
@@ -6615,7 +6615,7 @@
         "profile": "default",
         "tensors": ["tensor1"],
         "inputs": [1],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.topk",
         "not_available": [
           {
             "data_types": ["bool", "bfloat16", "float16"],
@@ -6628,7 +6628,7 @@
         "profile": "default",
         "tensors": ["tensor2"],
         "inputs": ["self"],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.triangular_solve",
         "not_available": [
           {
             "data_types": [
@@ -6650,7 +6650,7 @@
         "profile": "default",
         "tensors": ["tensor2"],
         "inputs": [null],
-        "return_type": "syft.lib.python.ValuesIndices",
+        "return_type": "torch.return_types.svd",
         "not_available": [
           {
             "data_types": [
