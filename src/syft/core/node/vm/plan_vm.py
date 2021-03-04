@@ -43,7 +43,7 @@ class PlanVirtualMachine(VirtualMachine):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        if self.record:
+        if self.record and isinstance(msg.message, Action):
             self.recorded_actions.append(msg.message)
         super().recv_immediate_msg_without_reply(msg)
 

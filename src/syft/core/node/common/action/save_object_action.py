@@ -31,6 +31,11 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
 
+    def __repr__(self):
+        obj_str = str(self.obj)
+        obj_str = obj_str = obj_str[:50] if len(obj_str) < 50 else obj_str[:50] + " ... " + obj_str[max(-50, -len(obj_str)+50):]
+        return f"SaveObjectAction {obj_str}"
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         self.obj.read_permissions = {
             node.verify_key: node.id,

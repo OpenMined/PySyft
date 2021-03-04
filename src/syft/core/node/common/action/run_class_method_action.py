@@ -82,6 +82,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
+    def __repr__(self):
+        method_name = self.path.split(".")[-1]
+        self_name = self._self.class_name
+        arg_names = ",".join([a.class_name for a in self.args])
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k,v in self.kwargs.items()])
+        return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {self.kwargs})"
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
@@ -164,14 +171,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             else:
                 if isinstance(resolved_self.data, Plan) and method_name == "__call__":
                     if len(self.args) > 0:
-                        raise ValueError("You passed args to Plan.__call__, while it only accepts kwargs")
+                        raise ValueError(
+                            "You passed args to Plan.__call__, while it only accepts kwargs"
+                        )
                     assert not self.args
-                    result = method(
-                        resolved_self.data,
-                        node,
-                        verify_key,
-                        **self.kwargs
-                    )
+                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
                 else:
                     result = method(
                         resolved_self.data, *upcasted_args, **upcasted_kwargs
@@ -300,4 +304,3 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         for k, v in self.kwargs.items():
             if v.id_at_location == current_input.id_at_location:
                 self.kwargs[k] = new_input
-

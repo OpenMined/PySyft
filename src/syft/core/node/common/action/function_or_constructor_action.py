@@ -156,6 +156,13 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
+    def __repr__(self):
+        method_name = self.path.split(".")[-1]
+        arg_names = ",".join([a.class_name for a in self.args])
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k,v in self.kwargs.items()])
+        return f"RunClassMethodAction {method_name}({arg_names}, {self.kwargs})"
+
+
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
         """Returns a protobuf serialization of self.
 

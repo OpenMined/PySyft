@@ -2,9 +2,9 @@
 import re
 import sys
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Dict
 from typing import Union
 
 # third party
@@ -80,7 +80,6 @@ class Plan(Serializable):
             # redefine the inputs of the plan
             new_inputs[k] = new_input
         self.inputs = new_inputs
-
 
         for a in self.actions:
             a.execute_action(node, verify_key)
@@ -170,9 +169,7 @@ class Plan(Serializable):
             inner_action = getattr(action_proto, action_proto.WhichOneof("action"))
             actions.append(action_cls._proto2object(inner_action))
 
-        inputs = {
-            k: Pointer._proto2object(proto.inputs[k]) for k in proto.inputs
-        }
+        inputs = {k: Pointer._proto2object(proto.inputs[k]) for k in proto.inputs}
         outputs = [
             Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
         ]
