@@ -46,6 +46,10 @@ jobs:
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
+      - name: Reset git
+        run: |
+          git reset --hard
+
       - name: Install PySyft dependencies
         run: |
           pip install -r requirements.dev.txt
