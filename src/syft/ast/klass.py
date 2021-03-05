@@ -312,7 +312,7 @@ class Class(Callable):
         def send(
             self: Any,
             client: Any,
-            searchable: bool = False,
+            pointable: bool = True,
             description: str = "",
             tags: Optional[List[str]] = None,
         ) -> Pointer:
@@ -344,7 +344,7 @@ class Class(Callable):
                 description=description,
             )
 
-            if searchable:
+            if pointable:
                 ptr.gc_enabled = False
 
             # Step 2: create message which contains object to send
@@ -353,7 +353,7 @@ class Class(Callable):
                 data=self,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll(): None} if searchable else {},
+                search_permissions={VerifyAll(): None} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 

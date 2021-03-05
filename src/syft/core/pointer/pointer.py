@@ -436,30 +436,30 @@ class Pointer(AbstractPointer):
                     return status
 
     @property
-    def searchable(self) -> bool:
+    def pointable(self) -> bool:
         return self._searchable
 
-    @searchable.setter
-    def searchable(self, value: bool) -> None:
+    @pointable.setter
+    def pointable(self, value: bool) -> None:
         if value != self._searchable:
             self.update_searchability(not self._searchable)
 
     def update_searchability(
-        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+        self, pointable: bool = True, target_verify_key: Optional[VerifyKey] = None
     ) -> None:
-        """Make the object pointed at searchable or not for other people. If
+        """Make the object pointed at pointable or not for other people. If
         target_verify_key is not specified, the searchability for the VerifyAll group
         will be toggled.
 
-        :param searchable: If the target object should be made searchable or not.
+        :param pointable: If the target object should be made pointable or not.
         :type target_verify_key: bool
         :param target_verify_key: The verify_key of the client to which we want to give
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
-        self._searchable = searchable
+        self._searchable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
-            add_instead_of_remove=searchable,
+            add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
             address=self.client.address,

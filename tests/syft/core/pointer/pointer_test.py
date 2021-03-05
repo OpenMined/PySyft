@@ -44,9 +44,9 @@ def test_make_unsearchable(with_verify_key: bool) -> None:
     assert len(client.store) == 1
 
     if with_verify_key:
-        ptr.update_searchability(searchable=False, target_verify_key=client.verify_key)
+        ptr.update_searchability(pointable=False, target_verify_key=client.verify_key)
     else:
-        ptr.update_searchability(searchable=False)
+        ptr.update_searchability(pointable=False)
 
     assert len(client.store) == 0
 
@@ -61,16 +61,16 @@ def test_searchable_property() -> None:
     ptr = ten.send(root_client)
     assert len(client.store) == 0
 
-    ptr.searchable = False
+    ptr.pointable = False
     assert len(client.store) == 0
 
-    ptr.searchable = True
+    ptr.pointable = True
     assert len(client.store) == 1
 
-    ptr.searchable = True
+    ptr.pointable = True
     assert len(client.store) == 1
 
-    ptr.searchable = False
+    ptr.pointable = False
     assert len(client.store) == 0
 
 
@@ -95,12 +95,12 @@ def test_tags() -> None:
     assert ten.tags == ["tag2", "other"]
     assert ptr.tags == ["tag2", "other"]
 
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["a"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["b"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["c"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["d"])
-    sy.lib.python.Int(2).send(root_client, searchable=True, tags=["e"])
-    sy.lib.python.List([1, 2, 3]).send(root_client, searchable=True, tags=["f"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["a"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["b"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["c"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["d"])
+    sy.lib.python.Int(2).send(root_client, pointable=True, tags=["e"])
+    sy.lib.python.List([1, 2, 3]).send(root_client, pointable=True, tags=["f"])
 
     a = root_client.store["a"]
     b = root_client.store["b"]

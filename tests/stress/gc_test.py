@@ -51,7 +51,7 @@ def test_send_same_obj_gc() -> None:
     alice_client = alice.get_client()
 
     for _ in range(100):
-        ptr.append(x.send(alice_client))
+        ptr.append(x.send(alice_client, pointable=False))
 
     gc.collect()
     assert len(alice.store) == 100
