@@ -5,7 +5,7 @@ from typing import Union
 
 # third party
 from packaging import version
-import torch as tr
+import torch as th
 import torchvision as tv
 
 # syft relative
@@ -14,7 +14,7 @@ from ...logger import critical
 from .allowlist import allowlist
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
-TORCH_VERSION = version.parse(tr.__version__)
+TORCH_VERSION = version.parse(th.__version__)
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
