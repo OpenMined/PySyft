@@ -19,7 +19,9 @@ from collections import defaultdict
 import os
 from pathlib import Path
 import re
+import secrets
 import shutil
+from typing import Dict
 
 # third party
 from nbconvert import PythonExporter
@@ -31,6 +33,7 @@ output_dir = Path("tests/syft/notebooks")
 checkpoint_dir = Path("tests/syft/notebooks/checkpoints")
 
 SLEEP_TIME = 360
+PORTS: Dict[str, int] = {}
 
 try:
     os.mkdir(output_dir)
@@ -79,6 +82,13 @@ for path in (
     else:
         continue
 
+    # generate a unique port for this testcase
+    while testcase not in PORTS:
+        PORT = secrets.choice(range(21000, 22000))
+        if PORT not in PORTS.values():
+            # unique port so set
+            PORTS[testcase] = PORT
+
     notebook_nodes = nbformat.read(path, as_version=4)
 
     custom_cell = nbformat.v4.new_code_cell(
@@ -95,8 +105,9 @@ loop = asyncio.get_event_loop()
 
     for idx, cell in enumerate(notebook_nodes["cells"]):
         if cell["cell_type"] == "code" and "loopback=True" in cell["source"]:
+            network_url = f"http://127.0.0.1:{PORTS[testcase]}"
             notebook_nodes["cells"][idx]["source"] = cell["source"].replace(
-                "loopback=True", 'loopback=True, network_url=f"http://127.0.0.1:21000"'
+                "loopback=True", f"loopback=True, network_url='{network_url}'"
             )
         if cell["cell_type"] == "markdown" and "Checkpoint" in cell["source"]:
             checkpoint = (
@@ -108,12 +119,14 @@ loop = asyncio.get_event_loop()
                 .strip()
             )
 
+            testcase_checkpoint_dir = f"checkpoints/{testcase}/"
+
             # For DO, we wait until DS gets to the same checkpoint
             if is_do:
-                ck_file = "checkpoints/" + (
+                ck_file = testcase_checkpoint_dir + (
                     testcase + "_DO_checkpoint_" + str(checkpoint)
                 )
-                wait_file = "checkpoints/" + (
+                wait_file = testcase_checkpoint_dir + (
                     testcase + "_DS_checkpoint_" + str(checkpoint)
                 )
                 checkpoint_cell = nbformat.v4.new_code_cell(
@@ -129,10 +142,10 @@ for retry in range({SLEEP_TIME}):
 
             # For DS, we wait until DO gets to the next checkpoint
             elif is_ds:
-                ck_file = "checkpoints/" + (
+                ck_file = testcase_checkpoint_dir + (
                     testcase + "_DS_checkpoint_" + str(checkpoint)
                 )
-                wait_file = "checkpoints/" + (
+                wait_file = testcase_checkpoint_dir + (
                     testcase + "_DO_checkpoint_" + str(int(checkpoint) + 1)
                 )
                 checkpoint_cell = nbformat.v4.new_code_cell(
@@ -176,6 +189,9 @@ for case in tests:
     template = open(output_dir / "duet_test.py.template").read()
 
     output_py = template.replace("{{TESTCASE}}", str(case))
+    output_py = output_py.replace("21000", f"{PORTS[case]}")
+    output_py = output_py.replace("checkpoints", f"checkpoints/{case}")
+
     for script in test:
         if "Data_Owner" in script:
             output_py = output_py.replace("{{DO_SCRIPT}}", script)
