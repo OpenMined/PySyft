@@ -4,6 +4,7 @@ from typing import Union
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
+allowlist["torchvision.__version__"] = "syft.lib.python.String"
 # MNIST
 allowlist["torchvision.transforms.Compose"] = "torchvision.transforms.Compose"
 # allowlist["torchvision.transforms.Compose.__iter__"] = "torchvision.transforms.ToTensor"
@@ -174,3 +175,62 @@ allowlist["torchvision.transforms.ConvertImageDtype"] = {
 }
 allowlist["torchvision.transforms.ToPILImage"] = "torchvision.transforms.ToPILImage"
 allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
+
+allowlist["torchvision.transforms.functional.adjust_brightness"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_contrast"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torchvision.transforms.functional.adjust_gamma"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_hue"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_saturation"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.affine"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.autocontrast"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.center_crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.convert_image_dtype"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.equalize"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.erase"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.five_crop"] = "torch.Tensor"
+allowlist["orchvision.transforms.functional.gaussian_blur"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
+allowlist["torchvision.transforms.functional.hflip"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.invert"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.normalize"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.pad"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.perspective"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.posterize"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.resize"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.resized_crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.rotate"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.solarize"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torchvision.transforms.functional.ten_crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.to_grayscale"] = "torch.Tensor"
+# Not adding because of datatype doubt torchvision.transforms.functional.to_pil_image
+# https://pytorch.org/vision/stable/transforms.html
+
+allowlist[" torchvision.transforms.functional.to_tensor"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.vflip"] = "torch.Tensor"
