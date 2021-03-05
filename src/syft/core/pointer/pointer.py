@@ -135,7 +135,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
-    _searchable: bool = False
+    _pointable: bool = False
 
     def __init__(
         self,
@@ -437,12 +437,12 @@ class Pointer(AbstractPointer):
 
     @property
     def pointable(self) -> bool:
-        return self._searchable
+        return self._pointable
 
     @pointable.setter
     def pointable(self, value: bool) -> None:
-        if value != self._searchable:
-            self.update_searchability(not self._searchable)
+        if value != self._pointable:
+            self.update_searchability(not self._pointable)
 
     def update_searchability(
         self, pointable: bool = True, target_verify_key: Optional[VerifyKey] = None
@@ -457,7 +457,7 @@ class Pointer(AbstractPointer):
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
-        self._searchable = pointable
+        self._pointable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
             add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,

@@ -8,13 +8,13 @@ import syft as sy
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_searchable(with_verify_key: bool) -> None:
+def test_make_pointable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
 
     assert len(client.store) == 0
 
@@ -28,13 +28,13 @@ def test_make_searchable(with_verify_key: bool) -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_unsearchable(with_verify_key: bool) -> None:
+def test_make_unpointable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
 
     if with_verify_key:
         ptr.update_searchability(target_verify_key=client.verify_key)
@@ -52,13 +52,13 @@ def test_make_unsearchable(with_verify_key: bool) -> None:
 
 
 @pytest.mark.slow
-def test_searchable_property() -> None:
+def test_pointable_property() -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0
 
     ptr.pointable = False

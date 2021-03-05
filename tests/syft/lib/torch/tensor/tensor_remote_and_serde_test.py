@@ -18,11 +18,11 @@ def test_torch_remote_tensor_register() -> None:
     alice_client = alice.get_client()
 
     x = th.tensor([-1, 0, 1, 2, 3, 4])
-    ptr = x.send(alice_client)
+    ptr = x.send(alice_client, pointable=False)
 
     assert len(alice.store) == 1
 
-    ptr = x.send(alice_client)
+    ptr = x.send(alice_client, pointable=False)
     gc.collect()
 
     # the previous objects get deleted because we overwrite

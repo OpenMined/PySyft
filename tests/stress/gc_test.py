@@ -25,7 +25,7 @@ def test_same_var_for_ptr_gc() -> None:
         Override the ptr multiple times to make sure we trigger
         the gc
         """
-        ptr = x.send(alice_client)
+        ptr = x.send(alice_client, pointable=False)
 
     gc.collect()
 
