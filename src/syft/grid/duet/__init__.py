@@ -1,7 +1,6 @@
 # stdlib
 import json
 import os
-from pathlib import Path
 import sys
 from typing import Any
 from typing import Generator
@@ -22,6 +21,7 @@ from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
+from .ui import LOGO_URL
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
 if is_jupyter:
@@ -33,8 +33,6 @@ if is_jupyter:
 ADDR_REPOSITORY = (
     "https://raw.githubusercontent.com/OpenMined/OpenGridNodes/master/network_address"
 )
-
-LOGO_URL = os.path.abspath(Path(__file__) / "../../../img/logo.png")
 
 
 def generate_donation_msg(name: str) -> str:
