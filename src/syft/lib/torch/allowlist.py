@@ -74,13 +74,6 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.to_mkldnn"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
-
-# SECTION - Module methods
-allowlist["torch.set_grad_enabled"] = "syft.lib.python._SyNone"
-allowlist["torch.zeros"] = "torch.Tensor"
-allowlist["torch.randn"] = "torch.Tensor"
-allowlist["torch.ones_like"] = "torch.Tensor"
-allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
@@ -1087,6 +1080,13 @@ allowlist["torch.Tensor.shape"] = "torch.Size"  # requires torch.Size
 # allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse tensors
 # allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse
 # allowlist["torch.Tensor.values"] = "unknown"  # requires sparse tensors
+
+# SECTION - Module methods
+allowlist["torch.set_grad_enabled"] = "syft.lib.python._SyNone"
+allowlist["torch.zeros"] = "torch.Tensor"
+allowlist["torch.randn"] = "torch.Tensor"
+allowlist["torch.ones_like"] = "torch.Tensor"
+allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Torch functions enabled as torch.Tensor methods above
