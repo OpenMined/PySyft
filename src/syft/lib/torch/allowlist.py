@@ -1780,54 +1780,67 @@ allowlist["torch.flatten"] = "torch.Tensor"
 allowlist["torch.optim.ASGD"] = "torch.optim.ASGD"
 allowlist["torch.optim.ASGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.ASGD.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.ASGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
 allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adadelta.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adadelta.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adagrad"] = "torch.optim.Adagrad"
 allowlist["torch.optim.Adagrad.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adagrad.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adagrad.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adam"] = "torch.optim.Adam"
 allowlist["torch.optim.Adam.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adam.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adam.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.AdamW"] = "torch.optim.AdamW"
 allowlist["torch.optim.AdamW.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.AdamW.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.AdamW.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adamax"] = "torch.optim.Adamax"
 allowlist["torch.optim.Adamax.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adamax.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adamax.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.LBFGS"] = "torch.optim.LBFGS"
 allowlist["torch.optim.LBFGS.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.LBFGS.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.LBFGS.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Optimizer"] = "torch.optim.Optimizer"
 allowlist["torch.optim.Optimizer.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Optimizer.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Optimizer.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.RMSprop"] = "torch.optim.RMSprop"
 allowlist["torch.optim.RMSprop.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.RMSprop.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.RMSprop.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Rprop"] = "torch.optim.Rprop"
 allowlist["torch.optim.Rprop.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Rprop.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Rprop.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.SGD"] = "torch.optim.SGD"
 allowlist["torch.optim.SGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.SGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.SparseAdam"] = "torch.optim.SparseAdam"
 allowlist["torch.optim.SparseAdam.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SparseAdam.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.SparseAdam.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 # Scheduler
 allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
 allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.lr_scheduler.StepLR.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 # Autograd
 allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
