@@ -16,12 +16,13 @@ from typing import Union
 import torch
 
 # syft relative
-from ...core.node.common.service.auth import AuthorizationException
-from ...core.pointer.pointer import Pointer
+# from ...core.pointer.pointer import Pointer
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
 from ...logger import traceback_and_raise
+
+# from ...core.node.common.service.auth import AuthorizationException
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -101,13 +102,13 @@ class Module:
         self._modules: OrderedDict[str, Module] = OrderedDict()
         real_module = torch_ref.nn.Module()
         self.__dict__["real_module"] = real_module  # bypass getattr/setattr
-        if issubclass(type(real_module), Pointer):
-            try:
-                # TODO: this needs fixing but should be on by default for now
-                # https://github.com/OpenMined/PySyft/issues/5242
-                real_module.searchable = True
-            except AuthorizationException as e:
-                print(f"Cant make real_module searchable. {e}")
+        # if issubclass(type(real_module), Pointer):
+        #     try:
+        #         # TODO: this needs fixing but should be on by default for now
+        #         # https://github.com/OpenMined/PySyft/issues/5242
+        #         real_module.searchable = True
+        #     except AuthorizationException as e:
+        #         print(f"Cant make real_module searchable. {e}")
 
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
         # this is how we catch the modules being set during subclass init

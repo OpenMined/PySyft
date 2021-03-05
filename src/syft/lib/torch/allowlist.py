@@ -1770,6 +1770,17 @@ allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
 allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.Iterator"
 allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
 
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
+] = "syft.lib.python.Iterator"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
+] = "syft.lib.python.Int"
+
+
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
@@ -1820,6 +1831,7 @@ allowlist["torch.optim.Rprop.step"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD"] = "torch.optim.SGD"
 allowlist["torch.optim.SGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.SGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.SparseAdam"] = "torch.optim.SparseAdam"
 allowlist["torch.optim.SparseAdam.zero_grad"] = "syft.lib.python._SyNone"
