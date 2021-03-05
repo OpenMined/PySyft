@@ -12,7 +12,7 @@ def do_test(port: int) -> None:
 
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
+    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}")
     duet.requests.add_handler(action="accept")
 
     t = torch.randn(20).reshape(4, 5)
@@ -30,7 +30,7 @@ def ds_test(port: int) -> None:
 
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
+    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}")
 
     time.sleep(3)
 

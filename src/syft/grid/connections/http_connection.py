@@ -93,7 +93,7 @@ class HTTPConnection(ClientConnection):
         :return: returns node metadata
         :rtype: str of bytes
         """
-        data: bytes = requests.get(self.base_url + "metadata").content
+        data: bytes = requests.get(self.base_url + "/metadata").content
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(data)
         return metadata_pb
