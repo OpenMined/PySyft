@@ -20,6 +20,15 @@ from syft.util import get_root_data_path
 
 @pytest.mark.vendor(lib="pytorch_lightning")
 def test_mnist() -> None:
+
+    # TorchVision hotfix https://github.com/pytorch/vision/issues/1938
+    # third party
+    from six.moves import urllib
+
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("User-agent", "Mozilla/5.0")]
+    urllib.request.install_opener(opener)
+
     # third party
     from pytorch_lightning import LightningModule
     from pytorch_lightning import Trainer
