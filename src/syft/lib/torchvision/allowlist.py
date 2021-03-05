@@ -221,7 +221,10 @@ allowlist["torchvision.transforms.functional.posterize"] = {
 }
 allowlist["torchvision.transforms.functional.resize"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.resized_crop"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+}
 allowlist["torchvision.transforms.functional.rotate"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.solarize"] = {
     "return_type": "torch.Tensor",
