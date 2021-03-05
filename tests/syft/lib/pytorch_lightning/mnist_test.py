@@ -15,10 +15,20 @@ from torchvision import transforms
 # syft absolute
 import syft as sy
 from syft.ast.module import Module
+from syft.util import get_root_data_path
 
 
 @pytest.mark.vendor(lib="pytorch_lightning")
 def test_mnist() -> None:
+
+    # TorchVision hotfix https://github.com/pytorch/vision/issues/1938
+    # third party
+    from six.moves import urllib
+
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("User-agent", "Mozilla/5.0")]
+    urllib.request.install_opener(opener)
+
     # third party
     from pytorch_lightning import LightningModule
     from pytorch_lightning import Trainer
@@ -150,7 +160,10 @@ def test_mnist() -> None:
         def train_dataloader(self) -> SyDataLoaderProxyType:
             transforms = self.get_transforms()
             train_data_ptr = self.torchvision.datasets.MNIST(  # type: ignore
-                "../data", train=True, download=True, transform=transforms
+                str(get_root_data_path()),
+                train=True,
+                download=True,
+                transform=transforms,
             )
             train_loader_ptr = self.torch.utils.data.DataLoader(  # type: ignore
                 train_data_ptr, batch_size=1
@@ -160,7 +173,10 @@ def test_mnist() -> None:
         def test_dataloader(self) -> SyDataLoaderProxyType:
             transforms = self.get_transforms()
             test_data = self.torchvision.datasets.MNIST(  # type: ignore
-                "../data", train=False, download=True, transform=transforms
+                str(get_root_data_path()),
+                train=False,
+                download=True,
+                transform=transforms,
             )
             test_loader = self.torch.utils.data.DataLoader(test_data, batch_size=1)  # type: ignore
             return test_loader

@@ -73,7 +73,7 @@ jobs:
     needs: [python-linting]
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         python-version: [3.8]
         torch-version: [1.7.0]

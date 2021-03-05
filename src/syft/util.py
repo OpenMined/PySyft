@@ -590,7 +590,7 @@ def inherit_tags(
 def get_root_data_path() -> Path:
     # get the PySyft / data directory to share datasets between notebooks
     here = Path(os.path.dirname(os.path.realpath("__file__")))
-    while os.path.basename(here) != "PySyft" and here != here.parent:
+    while os.path.basename(here).lower() != "pysyft" and here != here.parent:
         here = here.parent
 
     data_dir = here / "data"
