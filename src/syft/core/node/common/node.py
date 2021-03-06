@@ -263,7 +263,7 @@ class Node(AbstractNode):
         return "📍"
 
     def get_client(self, routes: List[Route] = []) -> ClientT:
-        if not len(routes):
+        if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
