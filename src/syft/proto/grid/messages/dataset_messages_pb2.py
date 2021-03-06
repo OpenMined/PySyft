@@ -4,7 +4,7 @@
 # stdlib
 import sys
 
-_b = sys.version_info[0] < 3 and (lambda x: x) or (lambda x: x.encode("latin1"))
+_b = (lambda x: x) if sys.version_info[0] < 3 else (lambda x: x.encode("latin1"))
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
