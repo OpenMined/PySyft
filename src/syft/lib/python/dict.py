@@ -36,7 +36,7 @@ class Dict(UserDict, PyPrimitive):
     # python 3.8 signature includes a new PEP 570 (args, /, kwargs) syntax:
     # https://www.python.org/dev/peps/pep-0570/
 
-    def __init__(*args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if not args:
             traceback_and_raise(
                 TypeError("descriptor '__init__' of 'Dict' object " "needs an argument")
