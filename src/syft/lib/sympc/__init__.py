@@ -57,7 +57,7 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
-            "sympc.session.Session.populate_crypto_store",
+            "sympc.store.CryptoStore.populate_store",
             "syft.lib.python._SyNone",
         ),
         (
