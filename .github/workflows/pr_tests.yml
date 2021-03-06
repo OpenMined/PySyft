@@ -10,9 +10,9 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
 
