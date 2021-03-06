@@ -1,4 +1,6 @@
 # stdlib
+import os
+from pathlib import Path
 from secrets import randbelow
 from typing import Any
 from typing import List
@@ -32,7 +34,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
 def validate_field(_object: object, _field: str) -> Any:
     object = getattr(_object, _field, None)
 
-    if object:
+    if object is not None:
         return object
 
     traceback_and_raise(f"Object {_object} has no {_field} field set.")
@@ -583,3 +585,14 @@ def inherit_tags(
     if tags:
         tags.append(attr_path_and_name.split(".")[-1])
         result.tags = tags  # type: ignore
+
+
+def get_root_data_path() -> Path:
+    # get the PySyft / data directory to share datasets between notebooks
+    here = Path(os.path.dirname(os.path.realpath("__file__")))
+    while os.path.basename(here) != "PySyft" and here != here.parent:
+        here = here.parent
+
+    data_dir = here / "data"
+    os.makedirs(data_dir, exist_ok=True)
+    return data_dir
