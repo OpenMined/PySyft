@@ -60,7 +60,9 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
     return True
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load_lib(lib: str, options: TypeDict[str, TypeAny] = None) -> None:
+    if options is None:
+        options = {}
     try:
         _ = importlib.import_module(lib)
         vendor_ast = importlib.import_module(f"syft.lib.{lib}")

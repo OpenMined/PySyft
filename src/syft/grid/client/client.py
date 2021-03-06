@@ -37,8 +37,10 @@ def connect(
     url: str,
     conn_type: ClientConnection,
     client_type: Client,
-    credentials: Dict = {},
+    credentials: Dict = None,
 ) -> Any:
+    if credentials is None:
+        credentials = {}
     class GridClient(client_type):  # type: ignore
         def __init__(
             self,
@@ -160,8 +162,10 @@ def connect(
             return locations
 
         def __perform_grid_request(
-            self, grid_msg: Any, content: Dict[Any, Any] = {}
+            self, grid_msg: Any, content: Dict[Any, Any] = None
         ) -> Dict[Any, Any]:
+            if content is None:
+                content = {}
             signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
             response = self.send_immediate_msg_with_reply(msg=signed_msg)
             return self.__process_response(response=response)
