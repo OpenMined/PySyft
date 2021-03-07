@@ -30,9 +30,9 @@ jobs:
       - name: Get head coverage
         run: |
           git checkout ${{ github.event.pull_request.head.sha }}
-          docstr-coverage --fail-under=$BASE_COV src
+          docstr-coverage -p --fail-under=$BASE_COV src
 
-      - name: Blame
+      - name: Check docstring modified files
         if: ${{ failure() }}
         run: |
           git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
