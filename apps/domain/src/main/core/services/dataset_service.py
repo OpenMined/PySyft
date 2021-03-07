@@ -2,6 +2,7 @@
 import secrets
 from typing import List, Type, Union
 from base64 import b64encode, b64decode
+from json import dumps
 
 # third party
 from nacl.signing import VerifyKey
@@ -9,8 +10,11 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # syft relative
+from syft.core.store import Dataset
+from syft.core.common.uid import UID
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
+from syft.core.store.storeable_object import StorableObject
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.core.common.message import ImmediateSyftMessageWithReply
@@ -53,20 +57,19 @@ def create_dataset_msg(
 
     if _allowed:
         _dataset = msg.content.get("dataset", None)
-        dataset = b64decode(_dataset)
         storage = node.disk_store
-        _id = storage.store_bytes(dataset)
+        _json = storage.store_json(_dataset)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
     return CreateDatasetResponse(
         address=msg.reply_to,
         status_code=200,
-        content={_id: _dataset},
+        content=_json,
     )
 
 
-def get_dataset_msg(
+def get_dataset_metadata_msg(
     msg: GetDatasetMessage,
     node: AbstractNode,
 ) -> GetDatasetResponse:
@@ -79,10 +82,7 @@ def get_dataset_msg(
     _allowed = users.can_triage_requests(user_id=_current_user_id)
     if _allowed:
         storage = node.disk_store
-        dataset = storage.get_object(_dataset_id)
-        dataset = b64encode(dataset)
-        dataset = dataset.decode(ENCODING)
-        _msg = {_dataset_id: dataset}
+        _msg = storage.get_dataset_metadata(_dataset_id)
     else:
         raise AuthorizationError("You're not allowed to get a Dataset!")
 
@@ -93,7 +93,7 @@ def get_dataset_msg(
     )
 
 
-def get_all_datasets_msg(
+def get_all_datasets_metadata_msg(
     msg: GetDatasetsMessage,
     node: AbstractNode,
 ) -> GetDatasetsResponse:
@@ -105,9 +105,7 @@ def get_all_datasets_msg(
     _allowed = users.can_triage_requests(user_id=_current_user_id)
     if _allowed:
         storage = node.disk_store
-        datasets = storage.pairs()
-        datasets = {k: b64encode(v).decode(ENCODING) for k, v in datasets.items()}
-        _msg = {"datasets": datasets}
+        _msg = storage.get_all_datasets_metadata()
     else:
         raise AuthorizationError("You're not allowed to get Datasets!")
 
@@ -130,10 +128,10 @@ def update_dataset_msg(
     users = node.users
     _allowed = users.can_upload_data(user_id=_current_user_id)
 
+    _msg = {}
     if _allowed:
-        dataset = b64decode(dataset)
         storage = node.disk_store
-        storage.store_bytes_at(_dataset_id, dataset)
+        _msg = storage.update_dataset(_dataset_id, dataset)
 
     else:
         raise AuthorizationError("You're not allowed to upload data!")
@@ -141,7 +139,7 @@ def update_dataset_msg(
     return UpdateDatasetResponse(
         address=msg.reply_to,
         status_code=204,
-        content={},
+        content=_msg,
     )
 
 
@@ -174,8 +172,8 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
 
     msg_handler_map = {
         CreateDatasetMessage: create_dataset_msg,
-        GetDatasetMessage: get_dataset_msg,
-        GetDatasetsMessage: get_all_datasets_msg,
+        GetDatasetMessage: get_dataset_metadata_msg,
+        GetDatasetsMessage: get_all_datasets_metadata_msg,
         UpdateDatasetMessage: update_dataset_msg,
         DeleteDatasetMessage: delete_dataset_msg,
     }
