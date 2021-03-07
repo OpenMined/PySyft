@@ -281,7 +281,10 @@ allowlist["torch.Tensor.expand"] = "torch.Tensor"
 allowlist["torch.Tensor.expm1_"] = "torch.Tensor"
 allowlist["torch.Tensor.expm1"] = "torch.Tensor"
 allowlist["torch.Tensor.exponential_"] = "torch.Tensor"
-allowlist["torch.Tensor.fft"] = "torch.Tensor"
+allowlist["torch.Tensor.fft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.Tensor.fill_"] = "torch.Tensor"
 allowlist["torch.Tensor.fill_diagonal_"] = "torch.Tensor"
 allowlist["torch.Tensor.flatten"] = "torch.Tensor"
@@ -305,7 +308,10 @@ allowlist["torch.Tensor.gt"] = "torch.Tensor"
 allowlist["torch.Tensor.half"] = "torch.Tensor"
 allowlist["torch.Tensor.hardshrink"] = "torch.Tensor"
 allowlist["torch.Tensor.histc"] = "torch.Tensor"
-allowlist["torch.Tensor.ifft"] = "torch.Tensor"
+allowlist["torch.Tensor.ifft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.Tensor.index_add_"] = "torch.Tensor"
 allowlist["torch.Tensor.index_add"] = "torch.Tensor"
 allowlist["torch.Tensor.index_copy_"] = "torch.Tensor"
@@ -319,7 +325,10 @@ allowlist["torch.Tensor.indices"] = "torch.Tensor"
 allowlist["torch.Tensor.int_repr"] = "torch.Tensor"
 allowlist["torch.Tensor.int"] = "torch.Tensor"
 allowlist["torch.Tensor.inverse"] = "torch.Tensor"
-allowlist["torch.Tensor.irfft"] = "torch.Tensor"
+allowlist["torch.Tensor.irfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.Tensor.is_coalesced"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_complex"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_contiguous"] = "syft.lib.python.Bool"
@@ -459,7 +468,10 @@ allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
 allowlist["torch.Tensor.resize_as"] = "torch.Tensor"
 allowlist["torch.Tensor.resize"] = "torch.Tensor"
 allowlist["torch.Tensor.retain_grad"] = "syft.lib.python._SyNone"
-allowlist["torch.Tensor.rfft"] = "torch.Tensor"
+allowlist["torch.Tensor.rfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.Tensor.roll"] = "torch.Tensor"
 allowlist["torch.Tensor.rot90"] = "torch.Tensor"
 allowlist["torch.Tensor.round_"] = "torch.Tensor"
@@ -1196,7 +1208,10 @@ allowlist["torch.get_device"] = "syft.lib.python.Int"
 allowlist["torch.gt"] = "torch.Tensor"
 allowlist["torch.hardshrink"] = "torch.Tensor"
 allowlist["torch.histc"] = "torch.Tensor"
-allowlist["torch.ifft"] = "torch.Tensor"
+allowlist["torch.ifft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.index_add"] = "torch.Tensor"
 allowlist["torch.index_copy"] = "torch.Tensor"
 allowlist["torch.index_fill"] = "torch.Tensor"
@@ -1205,7 +1220,10 @@ allowlist["torch.index_put"] = "torch.Tensor"
 allowlist["torch.index_select"] = "torch.Tensor"
 allowlist["torch.int_repr"] = "torch.Tensor"
 allowlist["torch.inverse"] = "torch.Tensor"
-allowlist["torch.irfft"] = "torch.Tensor"
+allowlist["torch.irfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.is_complex"] = "syft.lib.python.Bool"
 allowlist["torch.is_distributed"] = "syft.lib.python.Bool"
 allowlist["torch.is_floating_point"] = "syft.lib.python.Bool"
@@ -1281,7 +1299,10 @@ allowlist["torch.renorm"] = "torch.Tensor"
 allowlist["torch.repeat_interleave"] = "torch.Tensor"
 allowlist["torch.reshape"] = "torch.Tensor"
 allowlist["torch.resize_as_"] = "torch.Tensor"
-allowlist["torch.rfft"] = "torch.Tensor"
+allowlist["torch.rfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.0",
+}
 allowlist["torch.roll"] = "torch.Tensor"
 allowlist["torch.rot90"] = "torch.Tensor"
 allowlist["torch.round_"] = "torch.Tensor"
