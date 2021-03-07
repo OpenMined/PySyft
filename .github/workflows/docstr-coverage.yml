@@ -3,6 +3,7 @@ name: docstr-coverage
 on:
   pull_request:
     branches:
+      - dev
       - master
 
 jobs:
