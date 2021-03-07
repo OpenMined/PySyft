@@ -16,6 +16,7 @@ from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
+from ...core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
 from ...core.io.location.specific import SpecificLocation
@@ -51,15 +52,17 @@ def connect(
             conn_type: ClientConnection,
             client_type: Client,
         ) -> None:
+
             # Use Server metadata
             # to build client route
-            conn = conn_type(url=url)  # type: ignore
+            self.conn = conn_type(url=url)  # type: ignore
+            self.client_type = client_type
 
             if credentials:
-                metadata, _user_key = conn.login(credentials=credentials)
+                metadata, _user_key = self.conn.login(credentials=credentials)
                 _user_key = SigningKey(_user_key.encode("utf-8"), encoder=HexEncoder)
             else:
-                metadata = conn._get_metadata()
+                metadata = self.conn._get_metadata()
                 if not user_key:
                     _user_key = SigningKey.generate()
                 else:
@@ -69,13 +72,15 @@ def connect(
                 spec_location,
                 name,
                 client_id,
-            ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
+            ) = self.client_type.deserialize_client_metadata_from_node(
+                metadata=metadata
+            )
 
             # Create a new Solo Route using the selected connection type
-            route = SoloRoute(destination=spec_location, connection=conn)
+            route = SoloRoute(destination=spec_location, connection=self.conn)
 
             location_args = self.__route_client_location(
-                client_type=client_type, location=spec_location
+                client_type=self.client_type, location=spec_location
             )
 
             self.proxy_address: Optional[Address] = None
@@ -95,7 +100,7 @@ def connect(
             self.users = UserRequestAPI(send=self.__perform_grid_request)
             self.roles = RoleRequestAPI(send=self.__perform_grid_request)
             self.workers = WorkerRequestAPI(
-                send=self.__perform_grid_request, client=self
+                send=self.__perform_grid_request, domain_client=self
             )
             self.association_requests = AssociationRequestAPI(
                 send=self.__perform_grid_request
@@ -105,7 +110,7 @@ def connect(
             self, obj_ptr: Type[Pointer], address: Address, searchable: bool = False
         ) -> None:
             content = {
-                "address": address.serialize().SerializeToString().decode("ISO-8859-1"),  # type: ignore
+                "address": serialize(address).SerializeToString().decode("ISO-8859-1"),  # type: ignore
                 "uid": str(obj_ptr.id_at_location.value),
                 "searchable": searchable,
             }
@@ -126,9 +131,6 @@ def connect(
             ],
             route_index: int = 0,
         ) -> SyftMessage:
-            if self.proxy_address:
-                msg.address = self.proxy_address
-
             return super(GridClient, self).send_immediate_msg_with_reply(
                 msg=msg, route_index=route_index
             )
@@ -140,10 +142,7 @@ def connect(
             ],
             route_index: int = 0,
         ) -> None:
-            if self.proxy_address:
-                msg.address = self.proxy_address
-
-            return super(GridClient, self).send_immediate_msg_without_reply(
+            super(GridClient, self).send_immediate_msg_without_reply(
                 msg=msg, route_index=route_index
             )
 
@@ -152,9 +151,6 @@ def connect(
             msg: EventualSyftMessageWithoutReply,
             route_index: int = 0,
         ) -> None:
-            if self.proxy_address:
-                msg.address = self.proxy_address
-
             return super(GridClient, self).send_eventual_msg_without_reply(
                 msg=msg, route_index=route_index
             )
