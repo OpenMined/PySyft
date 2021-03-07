@@ -104,7 +104,7 @@ def update_role_msg(
         "can_manage_infrastructure": msg.content.get("can_manage_infrastructure", None),
     }
 
-    filter_parameters = lambda key: params[key]
+    filter_parameters = lambda key: (params[key] != None)
     filtered_parameters = filter(filter_parameters, params.keys())
     role_parameters = {key: params[key] for key in filtered_parameters}
 
