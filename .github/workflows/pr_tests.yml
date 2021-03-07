@@ -80,6 +80,11 @@ jobs:
         exclude:
           - python-version: 3.9
             torch-version: 1.6.0
+          - python-version: 3.9
+            torch-version: 1.7.0
+        include:
+          - python-version: 3.9
+            torch-version: 1.7.1
         # include:
         # - os: ubuntu-latest
         #   python-version: 3.7
