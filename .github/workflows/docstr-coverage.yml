@@ -25,12 +25,12 @@ jobs:
       - name: Get base coverage
         run: |
           git checkout ${{ github.event.pull_request.base.sha }}
-          echo "BASE_COV=$(docstr-coverage -p)" >> $GITHUB_ENV
+          echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
 
       - name: Get head coverage
         run: |
           git checkout ${{ github.event.pull_request.head.sha }}
-          docstr-coverage --fail-under=$BASE_COV
+          docstr-coverage --fail-under=$BASE_COV src
 
       - name: Blame
         if: ${{ failure() }}
