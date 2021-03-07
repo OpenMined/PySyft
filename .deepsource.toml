@@ -4,7 +4,8 @@ test_patterns = ["tests/**/*_test.py"]
 
 exclude_patterns = [
     "docs/**",
-    "examples/**"
+    "examples/**",
+    "proto/**"
 ]
 
 [[analyzers]]

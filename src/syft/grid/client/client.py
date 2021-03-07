@@ -41,6 +41,7 @@ def connect(
 ) -> Any:
     if credentials is None:
         credentials = {}
+
     class GridClient(client_type):  # type: ignore
         def __init__(
             self,
