@@ -12,6 +12,7 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.transfer_messages_pb2 import (
@@ -54,10 +55,10 @@ class LoadObjectMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return LoadObjectMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -126,8 +127,8 @@ class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
             object.
         """
         return LoadObjectResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -173,15 +174,14 @@ class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
 
 @bind_protobuf
 @final
-class SaveObjectMessage(ImmediateSyftMessageWithReply):
+class SaveObjectMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
         content: Dict,
-        reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, msg_id=msg_id)
         self.content = content
 
     def _object2proto(self) -> SaveObjectMessage_PB:
@@ -197,10 +197,9 @@ class SaveObjectMessage(ImmediateSyftMessageWithReply):
             object.
         """
         return SaveObjectMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
         )
 
     @staticmethod
@@ -221,7 +220,6 @@ class SaveObjectMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
         )
 
     @staticmethod
@@ -269,8 +267,8 @@ class SaveObjectResponse(ImmediateSyftMessageWithoutReply):
             object.
         """
         return SaveObjectResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
