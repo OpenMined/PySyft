@@ -1,32 +1,43 @@
-import syft as sy
+# stdlib
+import operator
+from typing import Callable
+from typing import List
+from typing import Tuple
+
+# third party
 import pytest
 import torch
-import operator
+
+# syft absolute
+import syft as sy
 
 
 @pytest.fixture()
-def client():
+def client() -> sy.VirtualMachineClient:
     return sy.VirtualMachine().get_root_client()
 
 
 @pytest.fixture()
-def inputs():
+def inputs() -> Tuple[int, float, bool, torch.Tensor]:
     return (1, 1.5, True, torch.Tensor([1, 2, 3]))
 
 
 @pytest.fixture()
-def input_pointer_types():
+def input_pointer_types() -> Tuple[str, str, str, str]:
     return ("IntPointer", "FloatPointer", "BoolPointer", "TensorPointer")
 
 
 @pytest.fixture()
-def equality_functions():
-    return (operator.eq, operator.eq, operator.eq, torch.equal)
+def equality_functions() -> List[Callable]:
+    return [operator.eq, operator.eq, operator.eq, torch.equal]
 
 
 def test_solve_any_pointer_type(
-    client, inputs, input_pointer_types, equality_functions
-):
+    client: sy.VirtualMachineClient,
+    inputs: Tuple[int, float, bool, torch.Tensor],
+    input_pointer_types: Tuple[str, str, str, str],
+    equality_functions: List[Callable],
+) -> None:
     tuple_ptr = client.syft.lib.python.Tuple(inputs)
 
     for idx, elem in enumerate(inputs):
@@ -40,8 +51,11 @@ def test_solve_any_pointer_type(
 
 
 def test_solve_union_pointer_type(
-    client, inputs, input_pointer_types, equality_functions
-):
+    client: sy.VirtualMachineClient,
+    inputs: Tuple[int, float, bool, torch.Tensor],
+    input_pointer_types: Tuple[str, str, str, str],
+    equality_functions: List[Callable],
+) -> None:
     list_ptr = client.syft.lib.python.List(list(inputs))
 
     for idx, remote_pointer in enumerate(list_ptr):

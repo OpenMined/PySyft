@@ -33,7 +33,7 @@ from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
 
-def _resolve_pointer_type(self):
+def _resolve_pointer_type(self: Any) -> CallableT:
     id_at_location = getattr(self, "id_at_location", None)
     cmd = SolvePointerTypeMessage(
         id_at_location=id_at_location,

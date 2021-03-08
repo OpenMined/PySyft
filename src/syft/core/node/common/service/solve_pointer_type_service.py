@@ -1,11 +1,3 @@
-# syft relative
-from .....proto.core.node.common.service.solve_pointer_type_service_pb2 import (
-    SolvePointerTypeMessage as SolvePointerTypeMessage_PB,
-)
-from .....proto.core.node.common.service.solve_pointer_type_service_pb2 import (
-    SolvePointerTypeAnswerMessage as SolvePointerTypeAnswerMessage_PB,
-)
-
 # stdlib
 from typing import List
 from typing import Optional
@@ -18,6 +10,12 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
+from .....proto.core.node.common.service.solve_pointer_type_service_pb2 import (
+    SolvePointerTypeAnswerMessage as SolvePointerTypeAnswerMessage_PB,
+)
+from .....proto.core.node.common.service.solve_pointer_type_service_pb2 import (
+    SolvePointerTypeMessage as SolvePointerTypeMessage_PB,
+)
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
