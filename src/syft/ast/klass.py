@@ -52,8 +52,9 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     id_at_location = getattr(self, "id_at_location", None)
 
     if None:
-        traceback_and_raise(ValueError("Can't resolve a pointer that has no underlying object."))
-
+        traceback_and_raise(
+            ValueError("Can't resolve a pointer that has no underlying object.")
+        )
 
     cmd = SolvePointerTypeMessage(
         id_at_location=id_at_location,
@@ -68,7 +69,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     )
 
     # we disable the garbage collection message and then we delete the existing message.
-    self.gc_collect = False
+    self.gc_enabled = False
     del self
 
     return new_pointer
