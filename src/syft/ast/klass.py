@@ -35,17 +35,19 @@ from ..util import inherit_tags
 
 def _resolve_pointer_type(self):
     id_at_location = getattr(self, "id_at_location", None)
-
     cmd = SolvePointerTypeMessage(
         id_at_location=id_at_location,
         address=self.client.address,
         reply_to=self.client.address,
     )
-
     real_type_path = self.client.send_immediate_msg_with_reply(msg=cmd).type_path
     new_pointer = self.client.lib_ast.query(real_type_path).pointer_type(
         client=self.client, id_at_location=id_at_location
     )
+
+    self.gc_collect = False
+    del self
+
     return new_pointer
 
 
