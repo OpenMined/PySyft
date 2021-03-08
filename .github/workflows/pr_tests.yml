@@ -227,7 +227,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.7.0, 1.7.1]
+        torch-version: [1.7.1]
 
     steps:
       - uses: actions/checkout@v2

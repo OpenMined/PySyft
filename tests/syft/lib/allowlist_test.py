@@ -614,10 +614,7 @@ def test_all_allowlisted_tensor_methods(
                         left=getattr(local_result, field, None),
                         right=getattr(target_result, field, None),
                     )
-                return
-
-            # only do single value comparisons, do lists, tuples etc below in the else
-            if (
+            elif (
                 issubclass(type(local_result), (str, String))
                 or not hasattr(target_result, "__len__")
                 and (
@@ -625,6 +622,7 @@ def test_all_allowlisted_tensor_methods(
                     or issubclass(type(local_result), PyPrimitive)
                 )
             ):
+                # only do single value comparisons, do lists, tuples etc below in the else
                 # check that it matches functionally
                 if deterministic:
                     if issubclass(type(target_result), float):
@@ -683,8 +681,10 @@ def test_all_allowlisted_tensor_methods(
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if hasattr(local_result, "__len__") and not issubclass(
-                type(local_result), (th.Tensor, str, String)
+            if (
+                hasattr(local_result, "__len__")
+                and not issubclass(type(local_result), (th.Tensor, str, String))
+                and not target_fqn.startswith("torch.return_types.")
             ):
                 if issubclass(type(local_result), (list, List)) and issubclass(
                     type(target_result), (list, List)
@@ -712,9 +712,14 @@ def test_all_allowlisted_tensor_methods(
 
             # make sure the return type matches the specified allowlist return type
             if not issubclass(type(local_result), th.Tensor):
-                local_type = full_name_with_qualname(
-                    klass=type(PrimitiveFactory.generate_primitive(value=local_result))
-                )
+                if target_fqn.startswith("torch.return_types."):
+                    local_type = full_name_with_qualname(klass=type(local_result))
+                else:
+                    local_type = full_name_with_qualname(
+                        klass=type(
+                            PrimitiveFactory.generate_primitive(value=local_result)
+                        )
+                    )
                 full_result_pointer_type = full_name_with_qualname(
                     klass=result_pointer_type
                 )
