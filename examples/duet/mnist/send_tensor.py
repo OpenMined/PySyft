@@ -28,7 +28,7 @@ def do() -> None:
     t = th.randn(4000000)
     print("DO: Tensor sum:", t.sum())
     start = time.time()
-    tp = t.send(duet, searchable=True)
+    tp = t.send(duet, pointable=True)
     end = time.time()
     print("DO: Pointer: ", tp, "serialized in", end - start)
     print("DO: Store: ", duet.store)

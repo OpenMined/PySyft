@@ -89,8 +89,8 @@ There are three main methods which are automatically added to torch.Tensor.
 - `torch.Tensor.describe()`
   This provides for more room to add a lengthy description of your data.
 - `torch.Tensor.send()`
-  This method lets you send the tensor to Duet. If you want to make it searchable by
-  your partner don't forget to use the `searchable=True` keyword argument.
+  This method lets you send the tensor to Duet. If you want to make it pointable by
+  your partner don't forget to use the `pointable=True` keyword argument.
 
 ### duet.store
 
