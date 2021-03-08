@@ -28,11 +28,11 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
-from syft.lib.python.namedtuple import get_keys
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
 from syft.lib.torch import allowlist
+from syft.lib.torch.return_types import types_fields
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
@@ -608,15 +608,12 @@ def test_all_allowlisted_tensor_methods(
         try:
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
-                local_fqn = full_name_with_qualname(klass=type(local_result))
-                keys = get_keys(klass_name=local_fqn)
-                # temporary work around while ValuesIndicesWrapper has storable attrs
-                for key in keys:
+                fields = types_fields[type(local_result)]
+                for field in fields:
                     assert compare_tensors(
-                        left=getattr(local_result, key, None),
-                        right=getattr(target_result, key, None),
+                        left=getattr(local_result, field, None),
+                        right=getattr(target_result, field, None),
                     )
-                # finish the check for now
                 return
 
             # only do single value comparisons, do lists, tuples etc below in the else
