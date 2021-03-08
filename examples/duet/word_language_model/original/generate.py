@@ -8,8 +8,10 @@
 # stdlib
 import argparse
 
-# third party
+# first party
 import data
+
+# third party
 import torch
 
 parser = argparse.ArgumentParser(description="PyTorch Wikitext-2 Language Model")

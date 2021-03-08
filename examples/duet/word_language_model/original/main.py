@@ -5,8 +5,10 @@ import math
 import os
 import time
 
-# third party
+# first party
 import data
+
+# third party
 import model
 import torch
 import torch.nn as nn
