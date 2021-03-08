@@ -70,6 +70,10 @@ jobs:
       #     flake8 src tests
 
       # check docstring coverage. If head coverage < base, exitcode = 1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - name: Install docstr-coverage
         run: pip install docstr-coverage
 
