@@ -26,7 +26,7 @@ def test_create_tensor_message_serde() -> None:
         "tensor": [1, 2, 3, 4, 5, 6],
         "description": "Tensor Description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
     }
     msg = CreateTensorMessage(
         address=target,
@@ -110,7 +110,7 @@ def test_update_tensor_message_serde() -> None:
         "tensor": [1, 2, 3, 4, 5, 6],
         "description": "Tensor description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
     }
     msg = UpdateTensorMessage(
         address=target,
@@ -218,13 +218,13 @@ def test_get_all_tensors_response_serde() -> None:
                 "tensor": [1, 2, 3, 4, 5, 6],
                 "description": "Tensor description",
                 "tags": ["#x", "#data-sample"],
-                "searchable": True,
+                "pointable": True,
             },
             "a84ew64wq6e": {
                 "tensor": [9, 8, 2, 3, 5, 6],
                 "description": "Tensor sample description",
                 "tags": ["#y", "#label-sample"],
-                "searchable": True,
+                "pointable": True,
             },
         }
     }

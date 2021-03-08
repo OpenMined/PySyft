@@ -30,8 +30,8 @@ def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -48,9 +48,9 @@ def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -77,9 +77,9 @@ def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -106,9 +106,9 @@ def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -134,8 +134,8 @@ def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -166,8 +166,8 @@ def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -186,8 +186,8 @@ def test_tenseal_bfvvector_imul(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
