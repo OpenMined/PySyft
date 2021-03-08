@@ -164,7 +164,8 @@ jobs:
       matrix:
         python-version: [3.8]
         torch-version: [1.7.0]
-        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2

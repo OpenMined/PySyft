@@ -16,7 +16,7 @@ def do_test(port: int) -> None:
     duet.requests.add_handler(action="accept")
 
     t = torch.randn(20).reshape(4, 5)
-    _ = t.send(duet, searchable=True)
+    _ = t.send(duet, pointable=True)
 
     sy.core.common.event_loop.loop.run_forever()
 
