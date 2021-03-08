@@ -89,6 +89,7 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -100,6 +101,7 @@ import syft as sy
 # syft relative
 from ...logger import debug
 from ...logger import error
+from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -436,6 +438,26 @@ class Pointer(AbstractPointer):
                     return status
 
     @property
+    def searchable(self) -> bool:
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        return self._pointable
+
+    @searchable.setter
+    def searchable(self, value: bool) -> None:
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        self.pointable = value
+
+    @property
     def pointable(self) -> bool:
         return self._pointable
 
@@ -445,7 +467,10 @@ class Pointer(AbstractPointer):
             self.update_searchability(not self._pointable)
 
     def update_searchability(
-        self, pointable: bool = True, target_verify_key: Optional[VerifyKey] = None
+        self,
+        pointable: bool = True,
+        target_verify_key: Optional[VerifyKey] = None,
+        searchable: Optional[bool] = None,
     ) -> None:
         """Make the object pointed at pointable or not for other people. If
         target_verify_key is not specified, the searchability for the VerifyAll group
@@ -457,6 +482,16 @@ class Pointer(AbstractPointer):
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
+
+        if searchable is not None:
+            warn_msg = "`searchable` is deprecated please use `pointable` in future"
+            warning(warn_msg, print=True)
+            warnings.warn(
+                warn_msg,
+                DeprecationWarning,
+            )
+            pointable = searchable
+
         self._pointable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
             add_instead_of_remove=pointable,

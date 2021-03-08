@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import warnings
 
 # syft relative
 from .. import ast
@@ -315,7 +316,17 @@ class Class(Callable):
             pointable: bool = True,
             description: str = "",
             tags: Optional[List[str]] = None,
+            searchable: Optional[bool] = None,
         ) -> Pointer:
+            if searchable is not None:
+                msg = "`searchable` is deprecated please use `pointable` in future"
+                warning(msg, print=True)
+                warnings.warn(
+                    msg,
+                    DeprecationWarning,
+                )
+                pointable = searchable
+
             if not hasattr(self, "id"):
                 try:
                     self.id = UID()
@@ -343,6 +354,8 @@ class Class(Callable):
                 tags=tags,
                 description=description,
             )
+
+            ptr._pointable = pointable
 
             if pointable:
                 ptr.gc_enabled = False
