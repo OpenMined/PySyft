@@ -10,9 +10,9 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
 
@@ -164,7 +164,8 @@ jobs:
       matrix:
         python-version: [3.8]
         torch-version: [1.7.0]
-        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2

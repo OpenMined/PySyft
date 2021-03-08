@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import warnings
 
 # syft relative
 from .. import ast
@@ -312,10 +313,20 @@ class Class(Callable):
         def send(
             self: Any,
             client: Any,
-            searchable: bool = False,
+            pointable: bool = True,
             description: str = "",
             tags: Optional[List[str]] = None,
+            searchable: Optional[bool] = None,
         ) -> Pointer:
+            if searchable is not None:
+                msg = "`searchable` is deprecated please use `pointable` in future"
+                warning(msg, print=True)
+                warnings.warn(
+                    msg,
+                    DeprecationWarning,
+                )
+                pointable = searchable
+
             if not hasattr(self, "id"):
                 try:
                     self.id = UID()
@@ -344,7 +355,9 @@ class Class(Callable):
                 description=description,
             )
 
-            if searchable:
+            ptr._pointable = pointable
+
+            if pointable:
                 ptr.gc_enabled = False
 
             # Step 2: create message which contains object to send
@@ -353,7 +366,7 @@ class Class(Callable):
                 data=self,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll(): None} if searchable else {},
+                search_permissions={VerifyAll(): None} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
