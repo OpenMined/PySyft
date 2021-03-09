@@ -12,7 +12,7 @@ def do_test(port: int) -> None:
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
     duet.requests.add_handler(action="accept")
 
-    _ = sy.lib.python.List([1, 2, 3]).send(duet, searchable=True)
+    _ = sy.lib.python.List([1, 2, 3]).send(duet, pointable=True)
 
     sy.core.common.event_loop.loop.run_forever()
 
