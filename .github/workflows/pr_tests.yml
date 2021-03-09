@@ -153,8 +153,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
