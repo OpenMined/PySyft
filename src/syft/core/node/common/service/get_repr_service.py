@@ -60,22 +60,6 @@ class GetReprMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
         return GetReprMessage_PB
 
 
@@ -107,22 +91,6 @@ class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
         return GetReprReplyMessage_PB
 
 
@@ -135,7 +103,7 @@ class GetReprService(ImmediateNodeServiceWithReply):
     ) -> GetReprReplyMessage:
         if verify_key is None:
             traceback_and_raise(
-                "Can't process an ImmediateObjectSearchService with no "
+                "Can't process an GetReprService with no "
                 "verification key."
             )
 
@@ -149,9 +117,9 @@ class GetReprService(ImmediateNodeServiceWithReply):
             or contains_all_in_permissions
         ):
             raise PermissionError("Permission to get repr of object not granted!")
-
-        result = repr(obj.data)
-        return GetReprReplyMessage(repr=result, address=msg.reply_to)
+        else:
+            result = repr(obj.data)
+            return GetReprReplyMessage(repr=result, address=msg.reply_to)
 
     @staticmethod
     def message_handler_types() -> List[Type[GetReprMessage]]:
