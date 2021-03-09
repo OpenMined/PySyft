@@ -10,9 +10,9 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
 
@@ -69,70 +69,6 @@ jobs:
       #     pip install darglint flake8
       #     flake8 src tests
 
-  python-nb-examples:
-    needs: [python-linting]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      max-parallel: 2
-      matrix:
-        python-version: [3.8]
-        torch-version: [1.7.0]
-        os: [ubuntu-latest, macos-latest]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-      - name: Install PyTorch
-        run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: Install packages
-        run: |
-          pip install -r requirements.dev.txt
-          pip install -e .
-          pip list
-        timeout-minutes: 20
-
-      - name: Run notebook API examples
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          ./scripts/nb_test.sh
-          pytest examples/api -n auto
-
-      - name: Install supported library packages
-        run: |
-          pip install -r requirements/supported_libs.txt
-        timeout-minutes: 10
-
-      - name: Run notebook Duet examples
-        run: |
-          python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
-
   python-tests-fast:
     needs: [python-linting]
     strategy:
@@ -140,7 +76,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.6.0, 1.7.0]
+        torch-version: [1.6.0, 1.7.0, 1.7.1]
         # include:
         # - os: ubuntu-latest
         #   python-version: 3.7
@@ -220,6 +156,70 @@ jobs:
           pytest -m libs -n auto -k "not tenseal"
           pytest -m libs -n 1 -k "tenseal"
 
+  python-nb-examples:
+    needs: [python-linting]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+        torch-version: [1.7.1]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt
+          pip install -e .
+          pip list
+        timeout-minutes: 20
+
+      - name: Run notebook API examples
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          ./scripts/nb_test.sh
+          pytest examples/api -n auto
+
+      - name: Install supported library packages
+        run: |
+          pip install -r requirements/supported_libs.txt
+        timeout-minutes: 10
+
+      - name: Run notebook Duet examples
+        run: |
+          python ./scripts/nb_duet_test.py
+          cd tests/syft/notebooks/ && pytest . -n 1
+
   pygrid-unit-tests:
     needs: [python-linting]
     runs-on: ubuntu-latest
@@ -227,7 +227,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.7.0]
+        torch-version: [1.7.1]
 
     steps:
       - uses: actions/checkout@v2

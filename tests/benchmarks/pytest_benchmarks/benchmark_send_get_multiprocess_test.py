@@ -21,7 +21,7 @@ def do_send(data: Any) -> None:
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
     duet.requests.add_handler(action="accept")
 
-    _ = data.send(duet, searchable=True)
+    _ = data.send(duet, pointable=True)
 
     sy.core.common.event_loop.loop.run_forever()
 
