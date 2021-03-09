@@ -199,6 +199,10 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             data_len_ptr = len_func(self)
             try:
                 data_len = data_len_ptr.get(**self.get_request_config())
+
+                if data_len is None:
+                    raise Exception
+
                 return data_len
             except Exception:
                 traceback_and_raise(
