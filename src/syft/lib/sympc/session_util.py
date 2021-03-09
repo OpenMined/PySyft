@@ -25,8 +25,6 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
         (length_nr_parties + 7) // 8, byteorder="big"
     )
 
-    session.crypto_store = CryptoStore()
-
     return MPCSession_PB(
         uuid=session.uuid.bytes,
         config=conf_proto,
