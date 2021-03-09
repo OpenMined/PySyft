@@ -113,11 +113,12 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-from ..node.common.service.get_repr_service import GetReprMessage
+
 
 # TODO: Fix the Client, Address, Location confusion
 @bind_protobuf

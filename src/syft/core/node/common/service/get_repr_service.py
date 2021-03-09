@@ -11,6 +11,12 @@ from typing_extensions import final
 # syft relative
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
+from .....proto.core.node.common.service.get_repr_service_pb2 import (
+    GetReprMessage as GetReprMessage_PB,
+)
+from .....proto.core.node.common.service.get_repr_service_pb2 import (
+    GetReprReplyMessage as GetReprReplyMessage_PB,
+)
 from .....util import traceback_and_raise
 from ....common.group import VerifyAll
 from ....common.message import ImmediateSyftMessageWithReply
@@ -20,12 +26,6 @@ from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .node_service import ImmediateNodeServiceWithReply
-from .....proto.core.node.common.service.get_repr_service_pb2 import (
-    GetReprMessage as GetReprMessage_PB,
-)
-from .....proto.core.node.common.service.get_repr_service_pb2 import (
-    GetReprReplyMessage as GetReprReplyMessage_PB,
-)
 
 
 @bind_protobuf
@@ -103,8 +103,7 @@ class GetReprService(ImmediateNodeServiceWithReply):
     ) -> GetReprReplyMessage:
         if verify_key is None:
             traceback_and_raise(
-                "Can't process an GetReprService with no "
-                "verification key."
+                "Can't process an GetReprService with no " "verification key."
             )
 
         obj = node.store[msg.id_at_location]
