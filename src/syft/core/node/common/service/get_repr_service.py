@@ -1,0 +1,158 @@
+# stdlib
+from typing import List
+from typing import Optional
+from typing import Type
+
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
+from typing_extensions import final
+
+# syft relative
+from ..... import serialize
+from .....core.common.serde.serializable import bind_protobuf
+from .....util import traceback_and_raise
+from ....common.group import VerifyAll
+from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize
+from ....common.uid import UID
+from ....io.address import Address
+from ...abstract.node import AbstractNode
+from .node_service import ImmediateNodeServiceWithReply
+from .....proto.core.node.common.service.get_repr_service_pb2 import (
+    GetReprMessage as GetReprMessage_PB,
+)
+from .....proto.core.node.common.service.get_repr_service_pb2 import (
+    GetReprReplyMessage as GetReprReplyMessage_PB,
+)
+
+
+@bind_protobuf
+@final
+class GetReprMessage(ImmediateSyftMessageWithReply):
+    def __init__(
+        self,
+        address: Address,
+        reply_to: Address,
+        id_at_location: UID,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.id_at_location = id_at_location
+
+    def _object2proto(self) -> GetReprMessage_PB:
+        return GetReprMessage_PB(
+            id_at_location=serialize(self.id_at_location),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
+        )
+
+    @staticmethod
+    def _proto2object(proto: GetReprMessage_PB) -> "GetReprMessage":
+        return GetReprMessage(
+            id_at_location=_deserialize(blob=proto.id_at_location),
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            reply_to=_deserialize(blob=proto.reply_to),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return GetReprMessage_PB
+
+
+@bind_protobuf
+class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        repr: str,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.repr = repr
+
+    def _object2proto(self) -> GetReprReplyMessage_PB:
+        return GetReprReplyMessage_PB(
+            repr=self.repr,
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+        )
+
+    @staticmethod
+    def _proto2object(proto: GetReprReplyMessage_PB) -> "GetReprReplyMessage":
+        return GetReprReplyMessage(
+            repr=proto.repr,
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return GetReprReplyMessage_PB
+
+
+class GetReprService(ImmediateNodeServiceWithReply):
+    @staticmethod
+    def process(
+        node: AbstractNode,
+        msg: GetReprMessage,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> GetReprReplyMessage:
+        if verify_key is None:
+            traceback_and_raise(
+                "Can't process an ImmediateObjectSearchService with no "
+                "verification key."
+            )
+
+        obj = node.store[msg.id_at_location]
+        contains_all_in_permissions = any(
+            key is VerifyAll for key in obj.search_permissions.keys()
+        )
+        if not (
+            verify_key in obj.search_permissions.keys()
+            or verify_key == node.root_verify_key
+            or contains_all_in_permissions
+        ):
+            raise PermissionError("Permission to get repr of object not granted!")
+
+        result = repr(obj.data)
+        return GetReprReplyMessage(repr=result, address=msg.reply_to)
+
+    @staticmethod
+    def message_handler_types() -> List[Type[GetReprMessage]]:
+        return [GetReprMessage]

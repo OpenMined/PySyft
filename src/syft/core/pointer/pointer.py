@@ -117,7 +117,7 @@ from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-
+from ..node.common.service.get_repr_service import GetReprMessage
 
 # TODO: Fix the Client, Address, Location confusion
 @bind_protobuf
@@ -201,6 +201,20 @@ class Pointer(AbstractPointer):
             delete_obj=False,
             verbose=verbose,
         )
+
+    def print(self) -> "Pointer":
+        obj_msg = GetReprMessage(
+            id_at_location=self.id_at_location,
+            address=self.client.address,
+            reply_to=self.client.address,
+        )
+
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
+
+        # feedback on how to actually display the object.
+        print(obj)
+
+        return self
 
     def get(
         self,
