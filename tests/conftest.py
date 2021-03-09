@@ -71,8 +71,7 @@ def pytest_collection_modifyitems(
                     try:
                         _load_lib(lib=lib_name)
                         loaded_libs[lib_name] = True
-                    except VendorLibraryImportException as e:
-                        print(e)
+                    except Exception:
                         loaded_libs[lib_name] = False
                 if not loaded_libs[lib_name]:
                     continue
