@@ -28,7 +28,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
     if isinstance(support_dict, str):
         return True
     else:
-        return TORCH_VERSION >= version.parse(support_dict["min_version"])
+        return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
 def create_torchvision_ast(client: Any = None) -> Globals:

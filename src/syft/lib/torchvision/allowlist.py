@@ -72,11 +72,11 @@ allowlist["torchvision.datasets.LSUN.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.Omniglot"] = {
     "return_type": "torchvision.datasets.Omniglot",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.datasets.Omniglot.__len__"] = {
     "return_type": "syft.lib.python.Int",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 
 allowlist["torchvision.datasets.PhotoTour"] = "torchvision.datasets.PhotoTour"
@@ -84,11 +84,11 @@ allowlist["torchvision.datasets.PhotoTour.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.Places365"] = {
     "return_type": "torchvision.datasets.Places365",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.datasets.Places365.__len__"] = {
     "return_type": "syft.lib.python.Int",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 
 allowlist["torchvision.datasets.QMNIST"] = "torchvision.datasets.QMNIST"
@@ -157,7 +157,7 @@ allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
 allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
 allowlist["torchvision.transforms.GaussianBlur"] = {
     "return_type": "torchvision.transforms.GaussianBlur",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 
 allowlist["torchvision.transforms.RandomChoice"] = "torchvision.transforms.RandomChoice"
@@ -171,7 +171,7 @@ allowlist[
 ] = "torchvision.transforms.RandomErasing"
 allowlist["torchvision.transforms.ConvertImageDtype"] = {
     "return_type": "torchvision.transforms.ConvertImageDtype",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.transforms.ToPILImage"] = "torchvision.transforms.ToPILImage"
 allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
@@ -179,37 +179,37 @@ allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
 allowlist["torchvision.transforms.functional.adjust_brightness"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.adjust_contrast"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.transforms.functional.adjust_gamma"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.adjust_hue"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.adjust_saturation"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.affine"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.autocontrast"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.center_crop"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.convert_image_dtype"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.crop"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.equalize"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.erase"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.five_crop"] = "torch.Tensor"
 allowlist["orchvision.transforms.functional.gaussian_blur"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.transforms.functional.hflip"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.invert"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.normalize"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.pad"] = "torch.Tensor"
@@ -217,23 +217,23 @@ allowlist["torchvision.transforms.functional.perspective"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.posterize"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.resize"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.resized_crop"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.7.0",
+    "min_version": "0.8.0",
 }
 allowlist["torchvision.transforms.functional.rotate"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.solarize"] = {
     "return_type": "torch.Tensor",
-    "min_version": "1.8.0",
+    "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.ten_crop"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.to_grayscale"] = "torch.Tensor"
-# Not adding because of datatype doubt torchvision.transforms.functional.to_pil_image
-# https://pytorch.org/vision/stable/transforms.html
+
+# allowlist["torchvision.transforms.functional.to_pil_image"] = "PIL.Image.Image"
 
 allowlist[" torchvision.transforms.functional.to_tensor"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.vflip"] = "torch.Tensor"
