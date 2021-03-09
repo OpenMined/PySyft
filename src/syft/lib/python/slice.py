@@ -33,7 +33,7 @@ class Slice(slice, PyPrimitive):
             self.start = None
             self.stop = None
             self.step = None
-        #slice.__init__(self, start, stop, step)
+        super().__init__()
         self._id: UID = id if id else UID()
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
