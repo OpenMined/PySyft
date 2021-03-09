@@ -21,7 +21,7 @@ from .types import SyPrimitiveRet
 
 
 @bind_protobuf
-class Slice(int, PyPrimitive):
+class Slice(slice, PyPrimitive):
     def __init__(
         self,
         start: Any = None,
@@ -33,7 +33,7 @@ class Slice(int, PyPrimitive):
             self.start = None
             self.stop = None
             self.step = None
-
+        #slice.__init__(self, start, stop, step)
         self._id: UID = id if id else UID()
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
@@ -68,17 +68,16 @@ class Slice(int, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Any) -> Union[SyPrimitiveRet, Any]:
+    def __getitem__(self, key: Union[int, slice]) -> Any:
         res = super().__getitem__(key)  # ignore = type
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
-        else:
-            # we can have torch.Tensor and other types
-            return res
+        return res
 
-    def copy(self) -> SyPrimitiveRet:
+    def copy(self) -> "Slice":
         res = super().copy()
-        return PrimitiveFactory.generate_primitive(value=res)
+        res._id = UID()
+        return res
 
     def getindices(
         self,
