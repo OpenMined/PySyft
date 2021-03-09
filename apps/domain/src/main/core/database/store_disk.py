@@ -142,6 +142,23 @@ class DiskObjectStore(ObjectStore):
         self.db.session.commit()
         return _json
 
+    def update_dataset_metadata(self, key: str, **kwargs) -> None:
+        json_obj = self.db.session.query(JsonObject).get(key)
+
+        if json_obj is None:
+            return
+
+        _json = deepcopy(json_obj.binary)
+
+        for att, value in kwargs.items():
+            if att not in _json:
+                _json[att] = {value["verify_key"]: value["request_id"]}
+            else:
+                _json[att][value["verify_key"]] = value["request_id"]
+
+        setattr(json_obj, "binary", _json)
+        self.db.session.commit()
+
     def store_bytes_at(self, key: str, obj: bytes) -> None:
         bin_obj = self.db.session.query(BinaryObject).get(key)
 

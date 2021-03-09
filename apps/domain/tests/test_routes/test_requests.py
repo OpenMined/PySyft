@@ -1,39 +1,201 @@
-def test_create_user(client):
+from json import dumps, loads
+
+import jwt
+import pytest
+from flask import current_app as app
+
+from src.main.core.database import *
+import time
+
+owner_role = ("Owner", True, True, True, True, True, True, True)
+
+user1 = (
+    "tech@gibberish.com",
+    "BDEB6E8EE39B6C70835993486C9E65DC",
+    "]GBF[R>GX[9Cmk@DthFT!mhloUc%[f",
+    "fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+    1,
+)
+
+
+@pytest.fixture
+def cleanup(database):
+    yield
+    try:
+        database.session.query(User).delete()
+        database.session.query(Role).delete()
+        database.session.query(Group).delete()
+        database.session.query(UserGroup).delete()
+        database.session.commit()
+    except:
+        database.session.rollback()
+
+
+def test_create_request(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    object_id = "61612325"
+    reason = "sample reason"
+    request_type = "permissions"
+
     result = client.post(
         "/dcfl/requests",
-        data={"id": "61612325", "dataset": "12354", "reason": " reason sample"},
+        json={
+            "object_id": object_id,
+            "reason": reason,
+            "request_type": request_type,
+        },
+        headers=headers,
+        content_type="application/json",
     )
+
+    response = result.get_json()
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Request created succesfully!"}
+    assert response["id"] == 1
+    assert response["object_id"] == object_id
+    assert response["reason"] == reason
+    assert response["request_type"] == request_type
+    assert response["status"] == "pending"
 
 
-def test_get_all_requests(client):
-    result = client.get("/dcfl/requests")
-    assert result.status_code == 200
-    assert result.get_json() == {
-        "requests": [
-            {"id": "35654sad6ada", "reason": "request A reason"},
-            {"id": "adfarf3f1af5", "reason": "request B reason"},
-            {"id": "fas4e6e1fas", "reason": "request C reason"},
-        ]
+def test_get_specific_request(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
     }
 
+    object_id = "61612325"
+    reason = "this is a sample reason"
+    request_type = "budget"
 
-def test_get_specific_request(client):
-    result = client.get("/dcfl/requests/6516513")
+    create = client.post(
+        "/dcfl/requests",
+        json={
+            "object_id": object_id,
+            "reason": reason,
+            "request_type": request_type,
+        },
+        headers=headers,
+    )
+
+    request_id = create.get_json()["id"]
+
+    result = client.get(
+        "/dcfl/requests/" + str(request_id),
+        headers=headers,
+        content_type="application/json",
+    )
+    response = result.get_json()
+
+    assert create.status_code == 200
     assert result.status_code == 200
-    assert result.get_json() == {
-        "request": {"id": "6516513", "reason": "request reason"}
+    assert response["id"] == request_id
+    assert response["object_id"] == object_id
+    assert response["reason"] == reason
+    assert response["request_type"] == request_type
+    assert response["status"] == "pending"
+
+
+def test_get_all_requests(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
     }
 
+    object_id = "61612325"
+    reason = "sample reason"
+    request_type = "permissions"
 
-def test_update_request(client):
-    result = client.put("/dcfl/requests/546313", data={"request": "{new_request}"})
+    result = client.get(
+        "/dcfl/requests", headers=headers, content_type="application/json"
+    )
+
+    response = result.get_json()
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Request updated succesfully!"}
+    assert object_id in [el["object_id"] for el in response]
+    assert reason in [el["reason"] for el in response]
+    assert request_type in [el["request_type"] for el in response]
 
 
-def test_delete_request(client):
-    result = client.delete("/dcfl/requests/546313")
+def test_update_request(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+    status = "accepted"
+    request_id = "1"
+
+    client.put(
+        "/dcfl/requests/" + request_id,
+        json={"status": status},
+        headers=headers,
+        content_type="application/json",
+    )
+
+    result = client.get(
+        "/dcfl/requests/" + request_id,
+        headers=headers,
+        content_type="application/json",
+    )
+
+    response = result.get_json()
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Request deleted succesfully!"}
+    assert response["id"] == int(request_id)
+    assert response["status"] == "accepted"
+
+
+def test_delete_request(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    request_id = "1"
+
+    result = client.delete(
+        "/dcfl/requests/" + request_id,
+        headers=headers,
+        content_type="application/json",
+    )
+
+    response = result.get_json()
+    assert result.status_code == 200
+    assert response["msg"] == "Request deleted!"

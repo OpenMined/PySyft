@@ -1,191 +1,117 @@
-from ..blueprint import dcfl_blueprint as dcfl_route
-from flask import request, Response
-import json
+from json import dumps, loads
 
+from flask import request, Response
 from syft.core.node.common.service.repr_service import ReprMessage
-from ...auth import error_handler, token_required
+from syft.grid.messages.dataset_messages import CreateDatasetMessage
+from syft.grid.messages.request_messages import (
+    CreateRequestMessage,
+    GetRequestMessage,
+    GetRequestsMessage,
+    UpdateRequestMessage,
+    DeleteRequestMessage,
+)
+
+from ...auth import error_handler, token_required, optional_token
+from main.core.task_handler import route_logic, task_handler
+from ..blueprint import dcfl_blueprint as dcfl_route
 from ....core.node import node
 
 
 @dcfl_route.route("/requests", methods=["POST"])
-# @token_required
-def create_request():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def create_request(current_user):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-        syft_message = {}
-        syft_message[
-            "message_class"
-        ] = ReprMessage  # TODO: Create a new data request Message
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    status_code, response_msg = error_handler(
+        route_logic, CreateRequestMessage, current_user, content
+    )
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {"msg": "Request created succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/requests/<request_id>", methods=["GET"])
-# @token_required
-def get_specific_request(request_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def get_specific_request(current_user, request_id):
+    content = {}
+    content["request_id"] = request_id
 
-        syft_message = {}
-        syft_message[
-            "message_class"
-        ] = ReprMessage  # TODO: Get Specific Request Messages
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    status_code, response_msg = error_handler(
+        route_logic, GetRequestMessage, current_user, content
+    )
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {
-        "request": {"id": "6516513", "reason": "request reason"}
-    }
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/requests", methods=["GET"])
-# @token_required
-def get_all_requests():
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def get_all_requests(current_user):
+    content = {}
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: Get All Requests Message
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    status_code, response_msg = error_handler(
+        route_logic, GetRequestsMessage, current_user, content
+    )
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {
-        "requests": [
-            {"id": "35654sad6ada", "reason": "request A reason"},
-            {"id": "adfarf3f1af5", "reason": "request B reason"},
-            {"id": "fas4e6e1fas", "reason": "request C reason"},
-        ]
-    }
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/requests/<request_id>", methods=["PUT"])
-# @token_required
-def update_request(request_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def update_request(current_user, request_id):
+    # Get request body
+    content = request.get_json()
+    if not content:
+        content = {}
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: Update a data request
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    content["request_id"] = request_id
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
+    status_code, response_msg = error_handler(
+        route_logic, UpdateRequestMessage, current_user, content
+    )
 
-    # status_code, response_body = error_handler(process_as_syft_message)
-    status_code, response_body = 200, {"msg": "Request updated succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
+
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )
 
 
 @dcfl_route.route("/requests/<request_id>", methods=["DELETE"])
-# @token_required
-def delete_request(request_id):
-    def route_logic():
-        # Get request body
-        content = loads(request.data)
+@token_required
+def delete_request(current_user, request_id):
+    content = {}
+    content["request_id"] = request_id
 
-        syft_message = {}
-        syft_message["message_class"] = ReprMessage  # TODO: Delete a Request Message
-        syft_message["message_content"] = content
-        syft_message[
-            "sign_key"
-        ] = node.signing_key  # TODO: Method to map token into sign-key
+    status_code, response_msg = error_handler(
+        route_logic, DeleteRequestMessage, current_user, content
+    )
 
-        # Execute task
-        status_code, response_body = task_handler(
-            route_function=process_as_syft_message,
-            data=syft_message,
-            mandatory={
-                "message_class": MissingRequestKeyError,
-                "message_content": MissingRequestKeyError,
-                "sign_key": MissingRequestKeyError,
-            },
-        )
-        return response_body
-
-    # status_code, response_body = error_handler(process_as_syft_message)
-
-    status_code, response_body = 200, {"msg": "Request deleted succesfully!"}
+    response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
+        dumps(response),
+        status=status_code,
+        mimetype="application/json",
     )

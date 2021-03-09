@@ -23,6 +23,7 @@ from .services.role_service import RoleManagerService
 from .services.user_service import UserManagerService
 from .services.dataset_service import DatasetManagerService
 from .services.group_service import GroupManagerService
+from .services.request_service import RequestService
 
 # Database Management
 from .database import db
@@ -33,6 +34,7 @@ from .manager.group_manager import GroupManager
 from .manager.environment_manager import EnvironmentManager
 from .manager.setup_manager import SetupManager
 from .manager.association_request_manager import AssociationRequestManager
+from .manager.request_manager import RequestManager
 
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -80,6 +82,7 @@ class GridDomain(Domain):
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
         self.association_requests = AssociationRequestManager(db)
+        self.requests = RequestManager(db)
 
         self.env_clients = {}
 
@@ -92,6 +95,7 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)
+        self.immediate_services_with_reply.append(RequestService)
         self._register_services()
 
         self.__handlers_flag = True
