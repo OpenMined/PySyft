@@ -14,7 +14,11 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "sympc"
-PACKAGE_SUPPORT = {"lib": LIB_NAME, "torch": {"min_version": "1.6.0"}}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "torch": {"min_version": "1.6.0"},
+    "python": {"min_version": (3, 7)},
+}
 
 
 def create_ast(client: TypeAny = None) -> Globals:

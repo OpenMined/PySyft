@@ -20,7 +20,7 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "tenseal"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {"lib": LIB_NAME, "torch": {"max_version": "1.7.0"}}
 
 
 def create_ast(client: TypeAny) -> Globals:
