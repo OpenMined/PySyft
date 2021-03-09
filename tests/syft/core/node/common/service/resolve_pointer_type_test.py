@@ -32,7 +32,7 @@ def equality_functions() -> List[Callable]:
     return [operator.eq, operator.eq, operator.eq, torch.equal]
 
 
-def test_solve_any_pointer_type(
+def test_resolve_any_pointer_type(
     client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],
     input_pointer_types: Tuple[str, str, str, str],
@@ -44,13 +44,13 @@ def test_solve_any_pointer_type(
         remote_pointer = tuple_ptr[idx]
 
         assert type(remote_pointer).__name__ == "AnyPointer"
-        solved_pointer = remote_pointer.resolve_pointer_type()
-        assert remote_pointer.id_at_location == solved_pointer.id_at_location
-        assert type(solved_pointer).__name__ == input_pointer_types[idx]
-        assert equality_functions[idx](solved_pointer.get(), elem)
+        resolved_pointer = remote_pointer.resolve_pointer_type()
+        assert remote_pointer.id_at_location == resolved_pointer.id_at_location
+        assert type(resolved_pointer).__name__ == input_pointer_types[idx]
+        assert equality_functions[idx](resolved_pointer.get(), elem)
 
 
-def test_solve_union_pointer_type(
+def test_resolve_union_pointer_type(
     client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],
     input_pointer_types: Tuple[str, str, str, str],
@@ -62,7 +62,7 @@ def test_solve_union_pointer_type(
         assert (
             type(remote_pointer).__name__ == "FloatIntStringTensorParameterUnionPointer"
         )
-        solved_pointer = remote_pointer.resolve_pointer_type()
-        assert remote_pointer.id_at_location == solved_pointer.id_at_location
-        assert type(solved_pointer).__name__ == input_pointer_types[idx]
-        assert equality_functions[idx](solved_pointer.get(), inputs[idx])
+        resolved_pointer = remote_pointer.resolve_pointer_type()
+        assert remote_pointer.id_at_location == resolved_pointer.id_at_location
+        assert type(resolved_pointer).__name__ == input_pointer_types[idx]
+        assert equality_functions[idx](resolved_pointer.get(), inputs[idx])

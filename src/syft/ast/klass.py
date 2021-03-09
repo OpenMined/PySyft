@@ -21,8 +21,8 @@ from ..core.node.common.action.get_or_set_property_action import GetOrSetPropert
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
-from ..core.node.common.service.solve_pointer_type_service import (
-    SolvePointerTypeMessage,
+from ..core.node.common.service.resolve_pointer_type_service import (
+    ResolvePointerTypeMessage,
 )
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
@@ -56,7 +56,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
             ValueError("Can't resolve a pointer that has no underlying object.")
         )
 
-    cmd = SolvePointerTypeMessage(
+    cmd = ResolvePointerTypeMessage(
         id_at_location=id_at_location,
         address=self.client.address,
         reply_to=self.client.address,
