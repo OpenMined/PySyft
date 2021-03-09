@@ -58,6 +58,7 @@ def pytest_collection_modifyitems(
     # the tests against that dynamic keyword
     vendor_tests = pytest.mark.libs  # note libs != vendor
     loaded_libs: TypeDict[str, bool] = {}
+    vendor_skip = pytest.mark.skip(reason="vendor requirements not  met")
     for item in items:
         # mark with: pytest.mark.vendor
         # run with: pytest -m libs -n auto 0
@@ -74,6 +75,7 @@ def pytest_collection_modifyitems(
                     except Exception:
                         loaded_libs[lib_name] = False
                 if not loaded_libs[lib_name]:
+                    item.add_marker(vendor_skip)
                     continue
 
             try:
