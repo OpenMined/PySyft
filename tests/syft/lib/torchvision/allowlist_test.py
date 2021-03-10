@@ -32,7 +32,7 @@ def test_transforms_functional(alice: sy.VirtualMachine, tens: torch.Tensor) -> 
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
     torchvision.transforms.functional.adjust_brightness(tens, 0.2)
-    torchvision.transforms.functional.adjust_contrast(tens, 0.2)
+    torchvision.transforms.functional.rotate(tens, 0.2)
     torchvision.transforms.functional.adjust_gamma(tens, 0.2)
     torchvision.transforms.functional.adjust_hue(tens, 0.2)
     torchvision.transforms.functional.adjust_saturation(tens, 0.2)
