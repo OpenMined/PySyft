@@ -5,6 +5,7 @@ from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Optional
+import warnings
 
 # third party
 from packaging import version
@@ -17,6 +18,7 @@ from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
 
 
@@ -70,7 +72,7 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
     return True
 
 
-def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def _load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -90,13 +92,20 @@ def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             lib_ast.loaded_lib_constructors[lib] = update_ast
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
-        _load_lib(lib=lib, options=options)
+        _load(lib=lib, options=options)
     except VendorLibraryImportException as e:
         critical(e)
     except Exception as e:
         critical(f"Unable to load package support for: {lib}. {e}")
+
+
+def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    msg = "load_lib() is deprecated please use load() in the future"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+    load(lib=lib, options=options)
 
 
 # now we need to load the relevant frameworks onto the node
