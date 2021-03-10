@@ -36,6 +36,7 @@ def test_transforms_functional(alice: sy.VirtualMachine, tens: torch.Tensor) -> 
     torchvision.transforms.functional.adjust_gamma(tens, 0.2)
     torchvision.transforms.functional.adjust_hue(tens, 0.2)
     torchvision.transforms.functional.adjust_saturation(tens, 0.2)
+    torchvision.transforms.functional.erase(tens, 0, 10, 15, 20, 25)
 
 
 def test_transforms(alice: sy.VirtualMachine) -> None:
