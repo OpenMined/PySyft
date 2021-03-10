@@ -140,7 +140,7 @@ def test_issue_5170() -> None:
     with pytest.raises(ValueError) as e:
         f_guest.__len__()
 
-    assert str(e.value) == "Request to access data length not granted."
+    assert str(e.value) == "Request to access data length rejected."
 
 
 def test_description() -> None:
