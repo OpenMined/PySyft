@@ -56,10 +56,6 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         ("sympc.store.CryptoStore.get_primitives_from_store", "syft.lib.python.List"),
-        (
-            "sympc.store.CryptoStore.populate_store",
-            "syft.lib.python._SyNone",
-        ),
         ("sympc.session.Session.crypto_store", "sympc.store.CryptoStore"),
         ("sympc.protocol.fss.fss.mask_builder", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.fss.fss.evaluate", "sympc.tensor.ShareTensor"),
