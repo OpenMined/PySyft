@@ -41,7 +41,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("sympc.protocol.fss.fss", sympc.protocol.fss.fss),
         ("sympc.protocol.spdz", sympc.protocol.spdz),
         ("sympc.protocol.spdz.spdz", sympc.protocol.spdz.spdz),
-        ("sympc.utils", sympc.utils)
+        ("sympc.utils", sympc.utils),
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
